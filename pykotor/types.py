@@ -5,10 +5,10 @@ from typing import overload, Union
 
 
 class ResourceType:
-    def __init__(self, id, extension, category):
-        self.id: int = 0
-        self.category: str = ""
-        self.extension: str = ""
+    def __init__(self, id: int, extension: str, category: str):
+        self.id: int = id
+        self.category: str = category
+        self.extension: str = extension
 
     def __eq__(self, other):
         if type(other) is str:
@@ -35,11 +35,11 @@ class ResourceType:
 
     @staticmethod
     def get(arg1: Union[str, int, ResourceType]) -> ResourceType:
-        if arg1 is str:
+        if type(arg1) is str:
             return resource_types[arg1]
-        if arg1 is int:
+        if type(arg1) is int:
             return resource_types[arg1]
-        if arg1 is ResourceType:
+        if type(arg1) is ResourceType:
             return arg1
 
 
