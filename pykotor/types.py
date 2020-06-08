@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import overload
+from typing import overload, Union
 
 
 class ResourceType:
@@ -21,16 +21,26 @@ class ResourceType:
     @staticmethod
     @overload
     def get(extension: str) -> ResourceType:
-        return resource_types[extension]
+        ...
 
     @staticmethod
     @overload
     def get(resource_type: ResourceType) -> ResourceType:
-        return resource_type
+        ...
 
     @staticmethod
-    def get(resource_id: int):
-        return resource_types[resource_id]
+    @overload
+    def get(resource_id: int) -> ResourceType:
+        ...
+
+    @staticmethod
+    def get(arg1: Union[str, int, ResourceType]) -> ResourceType:
+        if arg1 is str:
+            return resource_types[arg1]
+        if arg1 is int:
+            return resource_types[arg1]
+        if arg1 is ResourceType:
+            return arg1
 
 
 class Language(IntEnum):
