@@ -12,17 +12,17 @@ class BinaryReader:
         self.stream = stream
 
     @classmethod
-    def path_stream(cls, path):
+    def from_path(cls, path):
         file = open(path, 'rb')
         return cls.wrap_stream(file)
 
     @classmethod
-    def data_stream(cls, data):
+    def from_data(cls, data):
         stream = io.BytesIO(data)
         return BinaryReader(stream)
 
     @classmethod
-    def wrap_stream(cls, stream):
+    def from_stream(cls, stream):
         return BinaryReader(stream)
 
     def read_string(self, length):
