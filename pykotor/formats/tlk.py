@@ -103,5 +103,15 @@ class _TLKReaderXML:
 class _TLKWriterXML:
     @staticmethod
     def build(tlk: TLK) -> str:
-        pass
-        # TODO
+        xml = Element('tlk')
+        xml.set('language', tlk.language)
+
+        for i, entry in enumerate(tlk.entries):
+            entry_element = Element('string')
+            entry_element.set('id', str(i))
+            entry_element.set('sound', entry.res_ref)
+            entry_element.text = entry.text
+            entry_element.tail = "\n"  # makes sure that each is separated by a new line
+            xml.append(entry_element)
+
+        return ElementTree.tostring(xml, encoding='utf-8', xml_declaration=True).decode()
