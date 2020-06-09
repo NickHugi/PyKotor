@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import List
 
 from pykotor.general.binary_reader import BinaryReader
+from pykotor.general.binary_writer import BinaryWriter
 
 
 class SSF:
@@ -45,8 +46,15 @@ class _SSFReader:
 class _SSFWriter:
     @staticmethod
     def build(ssf: SSF) -> bytes:
-        pass
-        # TODO
+        writer = BinaryWriter.from_data()
+        writer.write_string("SSF ")
+        writer.write_string("V1.0")
+        writer.write_uint32(12)
+
+        for string_ref in ssf.entries:
+            writer.write_int32(string_ref)
+
+        return writer.get_data()
 
 
 class _SSFReaderXML:
