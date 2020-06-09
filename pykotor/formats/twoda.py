@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List, Union
 
+from pykotor.general.binary_reader import BinaryReader
+
 
 class TwoDA:
     @staticmethod
@@ -77,8 +79,41 @@ class TwoDA:
 class _2DAReader:
     @staticmethod
     def load(data: bytes) -> TwoDA:
-        pass
-        # TODO
+        reader = BinaryReader.from_data(data)
+        twoda = TwoDA()
+
+        file_type = reader.read_string(4)
+        file_version = reader.read_string(4)
+        reader.skip(1)
+
+        columns = []
+        while reader.peek() != 0:
+            columns.append(reader.read_terminated_string('\t'))
+            twoda.add_column(columns[-1])
+        column_count = len(columns)
+
+        reader.skip(1)
+        row_count = reader.read_int32()
+        for i in range(row_count):
+            row_name = reader.read_terminated_string('\t')
+
+        cell_count = row_count * len(columns)
+        cell_offsets = []
+        for i in range(cell_count):
+            cell_offsets.append(reader.read_uint16())
+
+        reader.skip(2)
+        data_offset = reader.position()
+
+        for i in range(row_count):
+            twoda.add_row()
+            for j in range(column_count):
+                cell_index = j + i * column_count
+                reader.seek(data_offset + cell_offsets[cell_index])
+                data = reader.read_terminated_string('\0')
+                twoda.set_data(columns[j], i, data)
+
+        return twoda
 
 
 class _2DAWriter:
