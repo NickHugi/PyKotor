@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from typing import List
+
+from pykotor.general.binary_reader import BinaryReader
+
 
 class SSF:
     @staticmethod
@@ -17,14 +21,25 @@ class SSF:
         return _SSFWriterXML.build(self)
 
     def __init__(self):
-        pass
+        self.entries: List[int] = [-1] * 40
 
 
 class _SSFReader:
     @staticmethod
     def load(data: bytes) -> SSF:
-        pass
-        # TODO
+        ssf = SSF()
+        reader = BinaryReader.from_data(data)
+
+        file_type = reader.read_string(4)
+        file_version = reader.read_string(4)
+
+        table_offset = reader.read_uint32()
+
+        reader.seek(table_offset)
+        for i in range(40):
+            ssf.entries[i] = reader.read_int32()
+
+        return ssf
 
 
 class _SSFWriter:
