@@ -88,8 +88,16 @@ class _TLKWriter(BinaryWriter):
 class _TLKReaderXML:
     @staticmethod
     def load(data: str) -> TLK:
-        pass
-        # TODO
+        xml: Element = ElementTree.fromstring(data)
+        tlk = TLK()
+        tlk.set_language(xml.get('language'))
+
+        for item in list(xml):  # type: Element
+            res_ref = "" if item.get('sound') is None else item.get('sound')
+            entry = Entry.new(res_ref, item.text)
+            tlk.add(entry)
+
+        return tlk
 
 
 class _TLKWriterXML:
