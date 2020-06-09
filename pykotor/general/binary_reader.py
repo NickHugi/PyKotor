@@ -111,3 +111,8 @@ class BinaryReader:
         size = self.position()
         self.stream.seek(original_position)
         return size
+
+    def peek(self):
+        byte = self.read_uint8()
+        self.stream.seek(-1, 1)
+        return byte
