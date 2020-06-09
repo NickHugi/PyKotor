@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import csv
+import io
 from typing import List, Union
 
 from pykotor.general.binary_reader import BinaryReader
@@ -41,6 +43,9 @@ class TwoDA:
         self._columns.remove(name)
         for row in self._data:
             del row[name]
+
+    def get_columns(self):
+        return self._columns.copy()
 
     def get_column(self, name: str) -> List[str]:
         column_data = []
@@ -126,12 +131,40 @@ class _2DAWriter:
 class _2DAReaderCSV:
     @staticmethod
     def load(data: str) -> TwoDA:
-        pass
-        # TODO
+        twoda = TwoDA()
+        input = io.StringIO(data)
+        reader = csv.reader(input)
+
+        rows = list(reader)
+
+        columns = []
+        for column in rows[0]:
+            columns.append(column)
+            twoda.add_column(column)
+        del rows[0]
+
+        for i, row in enumerate(rows):
+            twoda.add_row()
+            for j, cell in enumerate(row):
+                column = columns[j]
+                twoda.set_data(column, i, cell)
+
+        return twoda
 
 
 class _2DAWriterCSV:
     @staticmethod
     def build(twoda: TwoDA) -> str:
-        pass
-        # TODO
+        output = io.StringIO()
+
+        wrap = csv.writer(output, quoting=csv.QUOTE_ALL)
+        wrap.writerow(twoda.get_columns())
+
+        columns = twoda.get_columns()
+        for row in range(twoda.row_count()):
+            row_data = []
+            for column in columns:
+                row_data.append(twoda.get_data(column, row))
+            wrap.writerow(row_data)
+
+        return output.getvalue().replace('\r', '')
