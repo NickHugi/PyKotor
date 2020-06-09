@@ -4,12 +4,12 @@ import struct
 
 class BinaryWriter:
     @classmethod
-    def path_stream(cls, path):
+    def from_path(cls, path):
         stream = open(path, 'wb')
         return BinaryWriter(stream)
 
     @classmethod
-    def data_stream(cls, data=None):
+    def from_data(cls, data=None):
         if data is None:
             data = bytearray()
         stream = io.BytesIO(data)
@@ -23,8 +23,9 @@ class BinaryWriter:
         self.stream = stream
 
     def write_string(self, string, padding_length=0, padding=b'\0'):
-        string = string[:padding_length]
-        string.rjust(padding_length, padding)
+        if padding_length != 0:
+            string = string[:padding_length]
+            string.rjust(padding_length, padding)
         self.stream.write(string.encode())
 
     def write_uint8(self, value, big_endian=False):
