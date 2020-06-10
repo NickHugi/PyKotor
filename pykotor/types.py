@@ -13,6 +13,8 @@ class ResourceType:
     def __eq__(self, other):
         if type(other) is str:
             return self.extension == other
+        elif type(other) is int:
+            return self.id == other
         elif type(other) is ResourceType:
             return self.extension == other.extension
         else:
@@ -41,6 +43,9 @@ class ResourceType:
             return resource_types[arg1]
         if type(arg1) is ResourceType:
             return arg1
+
+    def __str__(self):
+        return self.extension
 
 
 class Language(IntEnum):
