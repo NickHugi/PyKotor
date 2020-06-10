@@ -4,6 +4,7 @@ from enum import IntEnum
 from typing import List, Tuple
 
 from pykotor.general.binary_reader import BinaryReader
+from pykotor.general.binary_writer import BinaryWriter
 
 
 class TextureType(IntEnum):
@@ -22,6 +23,9 @@ class TPC:
 
     def build(self):
         return _TPCWriter.build(self)
+
+    def build_tga(self):
+        return _TGAWriter.build(self.get_rgba_bytes(), self._width, self._height)
 
     def __init__(self):
         self.txi: str = ""
@@ -43,29 +47,29 @@ class TPC:
         self._texture_type = texture_type
 
     def get_mipmap_size(self, mipmap: int = 0) -> Tuple[int, int]:
-        width = self.width
-        height = self.height
+        width = self._width
+        height = self._height
         for i in range(mipmap):
             width >>= 1
             height >>= 1
         return width, height
 
-    def get_rgba_bytes(self, mipmap: int = 0) -> List[bytearray]:
-        if self.texture_type == TextureType.Greyscale:
+    def get_rgba_bytes(self, mipmap: int = 0) -> bytearray:
+        if self._texture_type == TextureType.Greyscale:
             return self._rgba_bytes_from_gray(mipmap)
-        elif self.texture_type == TextureType.RGB:
+        elif self._texture_type == TextureType.RGB:
             return self._rgba_bytes_from_rgb(mipmap)
-        elif self.texture_type == TextureType.RGBA:
+        elif self._texture_type == TextureType.RGBA:
             return self._rgba_bytes_from_rgba(mipmap)
-        elif self.texture_type == TextureType.DXT1:
+        elif self._texture_type == TextureType.DXT1:
             return self._rgba_bytes_from_dxt1(mipmap)
-        elif self.texture_type == TextureType.DXT5:
+        elif self._texture_type == TextureType.DXT5:
             return self._rgba_bytes_from_dxt5(mipmap)
 
-    def _rgba_bytes_from_gray(self, mipmap: int = 0) -> List[bytearray]:
+    def _rgba_bytes_from_gray(self, mipmap: int = 0) -> bytearray:
         data = bytearray()
 
-        for gray in self.mipmaps[mipmap]:
+        for gray in self._mipmaps[mipmap]:
             data.append(gray)
             data.append(gray)
             data.append(gray)
@@ -73,10 +77,10 @@ class TPC:
 
         return data
 
-    def _rgba_bytes_from_rgba(self, mipmap: int = 0) -> List[bytearray]:
+    def _rgba_bytes_from_rgba(self, mipmap: int = 0) -> bytearray:
         data = bytearray()
 
-        pixels = zip(*[iter(self.mipmaps[mipmap])] * 4)
+        pixels = zip(*[iter(self._mipmaps[mipmap])] * 4)
         for r, g, b, a in pixels:
             data.append(r)
             data.append(g)
@@ -85,10 +89,10 @@ class TPC:
 
         return data
 
-    def _rgba_bytes_from_rgb(self, mipmap: int = 0) -> List[bytearray]:
+    def _rgba_bytes_from_rgb(self, mipmap: int = 0) -> bytearray:
         data = bytearray()
 
-        pixels = zip(*[iter(self.mipmaps[mipmap])]*3)
+        pixels = zip(*[iter(self._mipmaps[mipmap])]*3)
         for r, g, b in pixels:
             data.append(r)
             data.append(g)
@@ -97,8 +101,8 @@ class TPC:
 
         return data
 
-    def _rgba_bytes_from_dxt1(self, mipmap: int = 0) -> List[bytearray]:
-        dxt_reader = BinaryReader.from_data(self.mipmaps[mipmap])
+    def _rgba_bytes_from_dxt1(self, mipmap: int = 0) -> bytearray:
+        dxt_reader = BinaryReader.from_data(self._mipmaps[mipmap])
         width, height = self.get_mipmap_size(mipmap)
         pixels = [0] * width * height
 
@@ -121,7 +125,7 @@ class TPC:
                     for x in range(4):
                         pixel_code = dxt_pixels & 3
                         dxt_pixels >>= 2
-                        pixels[(ty - 4 + y) * self.width + (tx + x)] = color_code[pixel_code] + 0xFF000000
+                        pixels[(ty - 4 + y) * self._width + (tx + x)] = color_code[pixel_code] + 0xFF000000
 
         data = bytearray()
         for pixel in pixels:
@@ -133,8 +137,8 @@ class TPC:
 
         return data
 
-    def _rgba_bytes_from_dxt5(self, mipmap: int = 0) -> List[bytearray]:
-        dxt_reader = BinaryReader.from_data(self.mipmaps[mipmap])
+    def _rgba_bytes_from_dxt5(self, mipmap: int = 0) -> bytearray:
+        dxt_reader = BinaryReader.from_data(self._mipmaps[mipmap])
         width, height = self.get_mipmap_size(mipmap)
         pixels = [0] * width * height
 
@@ -211,7 +215,7 @@ class TPC:
 
         return (blue) + (green << 8) + (red << 16)
 
-    def _integer48(self, bytes48: int) -> int:
+    def _integer48(self, bytes48: bytes) -> int:
         return bytes48[0] + (bytes48[1] << 8) + (bytes48[2] << 16) + (bytes48[3] << 24) + (bytes48[4] << 32) + (
                     bytes48[5] << 40)
 
@@ -219,8 +223,74 @@ class TPC:
 class _TPCReader:
     @staticmethod
     def load(data: bytes) -> TPC:
-        pass
-        # TODO
+        tpc = TPC()
+        reader = BinaryReader.from_data(data)
+
+        size = reader.read_int32()
+        unknown = reader.read_float32()
+        width = reader.read_int16()
+        height = reader.read_int16()
+        encoding = reader.read_uint8()
+        mipmap_count = reader.read_uint8()
+        reader.skip(114)
+
+        texture_type = TextureType.Invalid
+        if encoding == 1 and size == 0:
+            texture_type = TextureType.Greyscale
+        if encoding == 2 and size == 0:
+            texture_type = TextureType.RGB
+        if encoding == 4 and size == 0:
+            texture_type = TextureType.RGBA
+        if encoding == 2 and size > 0:
+            texture_type = TextureType.DXT1
+        if encoding == 4 and size > 0:
+            texture_type = TextureType.DXT5
+
+        mipmap_width = width
+        mipmap_height = height
+        mipmaps = []
+        for i in range(mipmap_count):
+            mipmap_data = reader.read_bytes(_TPCReader._get_data_size(texture_type, mipmap_width, mipmap_height))
+            mipmap_width >>= 1
+            mipmap_height >>= 1
+            mipmaps.append(mipmap_data)
+
+        tpc.set_mipmaps(width, height, mipmaps, texture_type)
+
+        reader.seek(_TPCReader._get_txi_offset(texture_type, width, height, len(mipmaps), size))
+        tpc.txi = reader.read_string(reader.size() - reader.position())
+
+        return tpc
+
+    @staticmethod
+    def _get_txi_offset(texture_type, width, height, mipmap_count, min_size):
+        offset = 0
+        cube_map = (height / width) == 6
+        if cube_map: height = height // 6
+
+        for i in range(mipmap_count):
+            offset += _TPCReader._get_data_size(texture_type, width, height)
+            width >>= 1
+            height >>= 1
+
+        if cube_map:
+            offset *= 6
+        offset = offset if min_size < offset else min_size
+
+        return offset + 128
+
+    @staticmethod
+    def _get_data_size(texture_type, width, height):
+        if texture_type == TextureType.Greyscale:
+            return max(width * height, 1)
+        if texture_type == TextureType.RGB:
+            return max(3 * width * height, 3)
+        if texture_type == TextureType.RGBA:
+            return max(4 * width * height, 4)
+        if texture_type == TextureType.DXT1:
+            return max(8 * (width // 4) * (height // 4), 8)
+        if texture_type == TextureType.DXT5:
+            return max(16 * (width // 4) * (height // 4), 16)
 
 
 class _TPCWriter:
@@ -232,6 +302,27 @@ class _TPCWriter:
 
 class _TGAWriter:
     @staticmethod
-    def build(rgba: bytes) -> bytes:
-        pass
-        # TODO
+    def build(rgba: bytearray, width: int, height: int) -> bytes:
+        writer = BinaryWriter.from_data()
+        writer.write_int8(0)
+        writer.write_int8(0)
+        writer.write_int8(2)
+        writer.write_int16(0)
+        writer.write_int16(0)
+        writer.write_int8(0)
+        writer.write_int16(0)
+        writer.write_int16(0)
+        writer.write_uint16(width)
+        writer.write_uint16(height)
+        writer.write_uint8(32)
+        writer.write_int8(40)
+
+        # RGBA -> BGRA
+        for i in range(len(rgba) // 4):
+            writer.write_uint8(rgba[i * 4 + 2])
+            writer.write_uint8(rgba[i * 4 + 1])
+            writer.write_uint8(rgba[i * 4 + 0])
+            writer.write_uint8(rgba[i * 4 + 3])
+            #writer.write_uint32(pixel)
+
+        return writer.get_data()
