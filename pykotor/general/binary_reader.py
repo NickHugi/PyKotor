@@ -14,7 +14,7 @@ class BinaryReader:
     @classmethod
     def from_path(cls, path):
         file = open(path, 'rb')
-        return cls.wrap_stream(file)
+        return cls.from_stream(file)
 
     @classmethod
     def from_data(cls, data):
@@ -116,3 +116,6 @@ class BinaryReader:
         byte = self.read_uint8()
         self.stream.seek(-1, 1)
         return byte
+
+    def close(self):
+        self.stream.close()

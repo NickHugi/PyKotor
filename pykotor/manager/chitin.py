@@ -46,6 +46,12 @@ class Chitin:
             return True
         return False
 
+    def resource_path(self, res_ref: str, res_type: Union[ResourceType, str, int]) -> Optional[str]:
+        resource = self._get_resource(res_ref, res_type)
+        if resource is not None:
+            return resource.path
+        return None
+
     def close_handles(self) -> None:
         for handle in self._handles.values():
             handle.close()
