@@ -3,6 +3,7 @@ This module holds classes relating to geometry.
 """
 from __future__ import annotations
 import math
+from enum import IntEnum
 
 
 class Vector2:
@@ -119,7 +120,7 @@ class Vector2:
         Returns:
             The magnitude of the vector.
         """
-        return math.sqrt(self.x**2 + self.y**2)
+        return math.sqrt(self.x ** 2 + self.y ** 2)
 
     def angle(self) -> float:
         """
@@ -255,7 +256,7 @@ class Vector3:
         Returns:
             The magnitude of the vector.
         """
-        return math.sqrt(self.x**2 + self.y**2 + self.z**2)
+        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
 
     def normalize(self) -> None:
         """
@@ -391,7 +392,7 @@ class Vector4:
         Returns:
             The magnitude of the vector.
         """
-        return math.sqrt(self.x**2 + self.y**2 + self.z**2 + self.w**2)
+        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2 + self.w ** 2)
 
     def normalize(self) -> Vector4:
         """
@@ -471,3 +472,66 @@ class AxisAngle:
             A new AxisAngle instance.
         """
         return AxisAngle(Vector3.from_null(), 0.0)
+
+
+class SurfaceMaterial(IntEnum):
+    """
+    The surface materials for walkmeshes found in both games.
+    """
+    # as according to 'surfacemat.2da'
+    UNDEFINED = 0
+    DIRT = 1
+    OBSCURING = 2
+    GRASS = 3
+    STONE = 4
+    WOOD = 5
+    WATER = 6
+    NON_WALK = 7
+    TRANSPARENT = 8
+    CARPET = 9
+    METAL = 10
+    PUDDLES = 11
+    SWAMP = 12
+    MUD = 13
+    LEAVES = 14
+    LAVA = 15
+    BOTTOMLESS_PIT = 16
+    DEEP_WATER = 17
+    DOOR = 18
+    NON_WALK_GRASS = 19
+    TRIGGER = 30
+
+
+class Face:
+    """
+    Represents a triangle in 3D space.
+
+    Attributes:
+        v1: First point of the triangle.
+        v2: Second point of the triangle.
+        v3: Third point of the triangle.
+        material: Material of the triangle, for usage in-game.
+    """
+
+    def __init__(self, v1: Vector3, v2: Vector3, v3: Vector3, material=SurfaceMaterial.UNDEFINED):
+        self.v1: Vector3 = v1
+        self.v2: Vector3 = v2
+        self.v3: Vector3 = v3
+        self.material: SurfaceMaterial = material
+
+    def normal(self) -> Vector3:
+        """
+        Returns the normal for the face.
+
+        Returns:
+            A new Vector3 instance representing the face normal.
+        """
+        u = self.v2 - self.v1
+        v = self.v3 - self.v2
+
+        normal = Vector3.from_null()
+        normal.x = (u.y * v.z) - (u.z * v.y)
+        normal.y = (u.z * v.x) - (u.x * v.z)
+        normal.z = (u.x * v.y) - (u.y * v.x)
+
+        return normal
