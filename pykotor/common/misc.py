@@ -7,12 +7,16 @@ from enum import IntEnum
 
 
 class ResRef:
-    class InvalidEncodingError(ValueError): ...
-    class ExceedsMaxLengthError(ValueError): ...
+    class InvalidEncodingError(ValueError):
+        ...
+
+    class ExceedsMaxLengthError(ValueError):
+        ...
 
     """
     A string reference to a game resource. ResRefs can be a maximum of 16 characters in length.
     """
+
     def __init__(self, text: str):
         self._value = ""
         self.set(text)
@@ -27,7 +31,7 @@ class ResRef:
         if isinstance(other, ResRef):
             return other.get() == self.get()
         elif isinstance(other, str):
-            return  other == self.get()
+            return other == self.get()
         else:
             return NotImplemented
 
@@ -90,6 +94,13 @@ class Game(IntEnum):
 
 
 class Color:
+    # Listed here for hinting purposes
+    RED: Color
+    GREEN: Color
+    BLUE: Color
+    BLACK: Color
+    WHITE: Color
+
     def __init__(self, r: float, g: float, b: float, a: float = 1.0):
         self.r = r
         self.g = g
@@ -169,3 +180,10 @@ class Color:
         green = int(self.g * 255) << 8
         blue = int(self.b * 255)
         return red + green + blue
+
+
+Color.RED = Color(1.0, 0.0, 0.0)
+Color.GREEN = Color(0.0, 1.0, 0.0)
+Color.BLUE = Color(0.0, 0.0, 1.0)
+Color.BLACK = Color(0.0, 0.0, 0.0)
+Color.WHITE = Color(1.0, 1.0, 1.0)
