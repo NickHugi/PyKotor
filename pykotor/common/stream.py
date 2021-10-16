@@ -70,6 +70,20 @@ class BinaryReader:
         stream = io.BytesIO(data)
         return BinaryReader(stream, offset)
 
+    @classmethod
+    def from_auto(cls, source: Optional[str, bytes, BinaryReader], offset: int = 0):
+        if isinstance(source, str):  # is path
+            reader = BinaryReader.from_file(source, offset)
+        elif isinstance(source, bytes):  # is binary data
+            reader = BinaryReader.from_bytes(source, offset)
+        elif isinstance(source, BinaryReader):
+            reader = source
+            reader.offset = offset
+        else:
+            raise ValueError("Must specify a path, bytes object or an existing BinaryReader instance.")
+
+        return reader
+
     @staticmethod
     def load_file(path: str) -> bytes:
         """
