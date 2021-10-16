@@ -10,6 +10,19 @@ from pykotor.common.language import LocalizedString
 from multipledispatch import dispatch
 
 
+def _endian_char(big) -> str:
+    """
+    Returns the character that represents either big endian or small endian in struct unpack.
+
+    Args:
+        big: True if big endian.
+
+    Returns:
+        Character representing either big or small endian.
+    """
+    return '>' if big else '<'
+
+
 class BinaryReader:
     """
     Used for easy reading of binary files.
