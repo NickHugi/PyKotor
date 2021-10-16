@@ -30,14 +30,15 @@ class BinaryReader:
 
     def __init__(self, stream: BinaryIO, offset: int = 0):
         self._stream = stream
-        self._offset = offset
-        #self._stream.seek(offset)
+        self.offset = offset
+        self.auto_close: bool = True
+        self._stream.seek(offset)
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        if self.auto_close: self.close()
 
     @classmethod
     def from_file(cls, path: str, offset: int = 0) -> BinaryReader:
@@ -118,7 +119,7 @@ class BinaryReader:
         Returns:
             The byte offset.
         """
-        return self._stream.tell() - self._offset
+        return self._stream.tell() - self.offset
 
     def seek(self, position) -> None:
         """
@@ -127,11 +128,11 @@ class BinaryReader:
         Args:
             position: The byte index into stream.
         """
-        self._stream.seek(position + self._offset)
+        self._stream.seek(position + self.offset)
 
     def read_all(self) -> bytes:
-        length = self.size() - self._offset
-        self._stream.seek(self._offset)
+        length = self.size() - self.offset
+        self._stream.seek(self.offset)
         return self._stream.read(length)
 
     def read_uint8(self, *, big: bool = False) -> int:
