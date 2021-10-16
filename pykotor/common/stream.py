@@ -29,8 +29,8 @@ class BinaryReader:
     """
 
     def __init__(self, stream: BinaryIO, offset: int = 0):
-        self._stream = stream
-        self.offset = offset
+        self._stream: BinaryIO = stream
+        self.offset: int = offset
         self.auto_close: bool = True
         self._stream.seek(offset)
 
