@@ -187,3 +187,30 @@ Color.GREEN = Color(0.0, 1.0, 0.0)
 Color.BLUE = Color(0.0, 0.0, 1.0)
 Color.BLACK = Color(0.0, 0.0, 0.0)
 Color.WHITE = Color(1.0, 1.0, 1.0)
+
+
+class WrappedInt:
+    def __init__(self, value: int = 0):
+        self._value: int = value
+
+    def __add__(self, other):
+        if isinstance(other, WrappedInt):
+            return self.get() + other.get()
+        elif isinstance(other, int):
+            return self.get() + other
+        else:
+            return NotImplemented
+
+    def __eq__(self, other):
+        if isinstance(other, WrappedInt):
+            return self.get() == other.get()
+        elif isinstance(other, int):
+            return self.get() == other
+        else:
+            return NotImplemented
+
+    def set(self, value: int) -> None:
+        self._value = value
+
+    def get(self) -> int:
+        return self._value
