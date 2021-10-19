@@ -4,7 +4,7 @@ resource classes found in the submodules.
 """
 
 from abc import ABC
-from typing import overload, Union
+from typing import overload, Union, Any
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
@@ -33,25 +33,21 @@ class BinaryOps(ABC):
         with BinaryReader.from_auto(source, offset) as reader:
             return cls.BINARY_READER(reader).load()
 
-    @classmethod
     @overload
-    def write_binary(cls, filepath):
+    def write_binary(self, filepath) -> None:
         ...
 
-    @classmethod
     @overload
-    def write_binary(cls, data: bytes):
+    def write_binary(self, data: bytes) -> None:
         ...
 
-    @classmethod
     @overload
-    def write_binary(cls, reader: BinaryReader):
+    def write_binary(self, reader: BinaryReader) -> None:
         ...
 
-    @classmethod
-    def write_binary(cls, source: Union[str, bytes, BinaryReader]):
-        with BinaryWriter.to_auto(source) as reader:
-            return cls.BINARY_WRITER(reader).load()
+    def write_binary(self, destination: Union[str, bytes, BinaryReader]) -> None:
+        with BinaryWriter.to_auto(destination) as writer:
+            return self.BINARY_WRITER(writer, self).write()
 
 
 class XMLOps(ABC):
@@ -78,25 +74,21 @@ class XMLOps(ABC):
         with BinaryReader.from_auto(source, offset) as reader:
             return cls.XML_READER(reader).load()
 
-    @classmethod
     @overload
-    def write_xml(cls, filepath):
+    def write_xml(self, filepath):
         ...
 
-    @classmethod
     @overload
-    def write_xml(cls, data: bytes):
+    def write_xml(self, data: bytes):
         ...
 
-    @classmethod
     @overload
-    def write_xml(cls, reader: BinaryReader):
+    def write_xml(self, reader: BinaryReader):
         ...
 
-    @classmethod
-    def write_xml(cls, source: Union[str, bytes, BinaryReader]):
-        with BinaryWriter.to_auto(source) as reader:
-            return cls.XML_WRITER(reader).load()
+    def write_xml(self, destination: Union[str, bytes, BinaryReader]) -> None:
+        with BinaryWriter.to_auto(destination) as writer:
+            return self.XML_WRITER(writer, self).write(self)
 
 
 class CSVOps(ABC):
@@ -123,22 +115,18 @@ class CSVOps(ABC):
         with BinaryReader.from_auto(source, offset) as reader:
             return cls.CSV_READER(reader).load()
 
-    @classmethod
     @overload
-    def write_csv(cls, filepath):
+    def write_csv(self, filepath):
         ...
 
-    @classmethod
     @overload
-    def write_csv(cls, data: bytes):
+    def write_csv(self, data: bytes):
         ...
 
-    @classmethod
     @overload
-    def write_csv(cls, reader: BinaryReader):
+    def write_csv(self, reader: BinaryReader):
         ...
 
-    @classmethod
-    def write_csv(cls, source: Union[str, bytes, BinaryReader]):
-        with BinaryWriter.to_auto(source) as reader:
-            return cls.CSV_WRITER(reader).load()
+    def write_csv(self, destination: Union[str, bytes, BinaryReader]) -> None:
+        with BinaryWriter.to_auto(destination) as writer:
+            return self.CSV_WRITER(writer, self).write(self)
