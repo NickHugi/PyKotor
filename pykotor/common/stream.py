@@ -80,7 +80,7 @@ class BinaryReader:
             reader = source
             reader.offset = offset
         else:
-            raise ValueError("Must specify a path, bytes object or an existing BinaryReader instance.")
+            raise NotImplementedError("Must specify a path, bytes object or an existing BinaryReader instance.")
 
         return reader
 
@@ -406,7 +406,7 @@ class BinaryWriter:
         if self.auto_close: self.close()
 
     @classmethod
-    def for_file(cls, path: str) -> BinaryWriter:
+    def to_file(cls, path: str) -> BinaryWriter:
         """
         Returns a new BinaryWriter with a stream established to the specified path.
 
@@ -420,7 +420,7 @@ class BinaryWriter:
         return BinaryWriter(stream)
 
     @classmethod
-    def for_bytes(cls, data: bytes = b'') -> BinaryWriter:
+    def to_bytes(cls, data: bytes = b'') -> BinaryWriter:
         """
         Returns a new BinaryWriter with a stream established to the specified bytes.
 
@@ -432,6 +432,17 @@ class BinaryWriter:
         """
         stream = io.BytesIO(data)
         return BinaryWriter(stream)
+
+    @classmethod
+    def to_auto(cls, source: Union[str, bytes, BinaryWriter]) -> BinaryWriter:
+        if isinstance(source, str):  # is path
+            return BinaryWriter.to_file(source)
+        elif isinstance(source, bytes):  # is binary data
+            return BinaryWriter.to_bytes(source)
+        elif isinstance(source, BinaryWriter):
+            return source
+        else:
+            raise NotImplementedError("Must specify a path, bytes object or an existing BinaryWriter instance.")
 
     @staticmethod
     def dump(path: str, data: bytes) -> None:
@@ -723,7 +734,7 @@ class BinaryWriter:
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.for_bytes(b'')
+        bw = BinaryWriter.to_bytes(b'')
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
         for language, gender, substring in value:
