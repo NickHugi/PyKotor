@@ -23,6 +23,12 @@ def _endian_char(big) -> str:
     return '>' if big else '<'
 
 
+class ArrayHead:
+    def __init__(self, array_offset: int = 0, array_length: int = 0):
+        self.length: int = array_length
+        self.offset: int = array_offset
+
+
 class BinaryReader:
     """
     Used for easy reading of binary files.
@@ -385,6 +391,9 @@ class BinaryReader:
             language, gender = LocalizedString.substring_pair(string_id)
             locstring.set(language, gender, string)
         return locstring
+
+    def read_array_head(self) -> ArrayHead:
+        return ArrayHead(self.read_uint32(), self.read_uint32())
 
     def peek(self, length: int = 1) -> bytes:
         data = self._stream.read(length)
