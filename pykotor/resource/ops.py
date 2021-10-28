@@ -25,11 +25,16 @@ class BinaryOps(ABC):
 
     @classmethod
     @overload
+    def load_binary(cls, data: bytearray, offset: int = 0):
+        ...
+
+    @classmethod
+    @overload
     def load_binary(cls, reader: BinaryReader, offset: int = 0):
         ...
 
     @classmethod
-    def load_binary(cls, source: Union[str, bytes, BinaryReader], offset: int = 0):
+    def load_binary(cls, source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0):
         with BinaryReader.from_auto(source, offset) as reader:
             return cls.BINARY_READER(reader).load()
 
@@ -66,11 +71,16 @@ class XMLOps(ABC):
 
     @classmethod
     @overload
+    def load_xml(cls, data: bytearray, offset: int = 0):
+        ...
+
+    @classmethod
+    @overload
     def load_xml(cls, reader: BinaryReader, offset: int = 0):
         ...
 
     @classmethod
-    def load_xml(cls, source: Union[str, bytes, BinaryReader], offset: int = 0):
+    def load_xml(cls, source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0):
         with BinaryReader.from_auto(source, offset) as reader:
             return cls.XML_READER(reader).load()
 
@@ -107,11 +117,16 @@ class CSVOps(ABC):
 
     @classmethod
     @overload
+    def load_csv(cls, data: bytearray, offset: int = 0):
+        ...
+
+    @classmethod
+    @overload
     def load_csv(cls, reader: BinaryReader, offset: int = 0):
         ...
 
     @classmethod
-    def load_csv(cls, source: Union[str, bytes, BinaryReader], offset: int = 0):
+    def load_csv(cls, source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0):
         with BinaryReader.from_auto(source, offset) as reader:
             return cls.CSV_READER(reader).load()
 
