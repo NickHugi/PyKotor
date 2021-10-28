@@ -4,10 +4,10 @@ This module holds classes relating to read and write operations.
 from __future__ import annotations
 import io
 import struct
+from abc import ABC, abstractmethod
 from typing import BinaryIO, Union, TextIO, List, overload, Optional
 from pykotor.common.geometry import Vector3, Vector4, Vector2
 from pykotor.common.language import LocalizedString
-from multipledispatch import dispatch
 
 
 def _endian_char(big) -> str:
@@ -380,7 +380,7 @@ class BinaryReader:
         Returns:
             A LocalizedString read from the stream.
         """
-        locstring = LocalizedString()
+        locstring = LocalizedString.from_invalid()
         self.skip(4)  # total number of bytes of the localized string
         locstring.stringref = self.read_uint32(max_neg1=True)
         string_count = self.read_uint32()
@@ -401,19 +401,7 @@ class BinaryReader:
         return data
 
 
-class BinaryWriter:
-    def __init__(self, stream: BinaryIO, offset: int = 0):
-        self._stream: BinaryIO = stream
-        self.offset: int = offset
-        self.auto_close: bool = True
-        self._stream.seek(offset)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.auto_close: self.close()
-
+class BinaryWriter(ABC):
     @classmethod
     def to_file(cls, path: str) -> BinaryWriter:
         """
@@ -426,10 +414,10 @@ class BinaryWriter:
             A new BinaryWriter instance.
         """
         stream = open(path, 'wb')
-        return BinaryWriter(stream)
+        return BinaryWriterFile(stream)
 
     @classmethod
-    def to_bytes(cls, data: bytes = b'') -> BinaryWriter:
+    def to_bytearray(cls, data: bytes = b'') -> BinaryWriter:
         """
         Returns a new BinaryWriter with a stream established to the specified bytes.
 
@@ -464,6 +452,254 @@ class BinaryWriter:
         """
         with open(path, 'wb') as file:
             file.write(data)
+
+    @abstractmethod
+    def close(self) -> None:
+        """
+        Closes the stream.
+        """
+
+    @abstractmethod
+    def size(self) -> int:
+        """
+        Returns the total file size.
+
+        Returns:
+            The total file size.
+        """
+
+    @abstractmethod
+    def data(self) -> bytes:
+        """
+        Returns the full file data.
+
+        Returns:
+            The full file data.
+        """
+
+    @abstractmethod
+    def clear(self) -> None:
+        """
+        Clears all the data in the file.
+        """
+
+    @abstractmethod
+    def seek(self, position) -> None:
+        """
+        Moves the stream pointer to the byte offset.
+
+        Args:
+            position: The byte index into stream.
+        """
+
+    @abstractmethod
+    def end(self) -> None:
+        """
+        Moves the pointer for the stream to the end.
+        """
+
+    @abstractmethod
+    def position(self) -> int:
+        """
+        Returns the byte offset into the stream.
+
+        Returns:
+            The byte offset.
+        """
+
+    @abstractmethod
+    def write_uint8(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes an unsigned 8-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_int8(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 8-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_uint16(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes an unsigned 16-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_int16(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 16-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_uint32(self, value: int, *, max_neg1: bool = False, big: bool = False) -> None:
+        """
+        Writes an unsigned 32-bit integer to the stream.
+
+        If the max_neg1 flag is set to true and the specified value is equal to -1 then the stream will accept the value
+        and write 0xFFFFFFFF to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+            max_neg1: When the value is -1 it is to be converted to the max uint32 value.
+        """
+
+    @abstractmethod
+    def write_int32(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 32-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_uint64(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes an unsigned 64-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_int64(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 64-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_single(self, value: float, *, big: bool = False) -> None:
+        """
+        Writes an 32-bit floating point number to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_double(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a 64-bit floating point number to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_vector2(self, value: Vector2, *, big: bool = False) -> None:
+        """
+        Writes two 32-bit floating point numbers to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_vector3(self, value: Vector3, *, big: bool = False) -> None:
+        """
+        Writes three 32-bit floating point numbers to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_vector4(self, value: Vector4, *, big: bool = False) -> None:
+        """
+        Writes four 32-bit floating point numbers to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+
+    @abstractmethod
+    def write_bytes(self, value: bytes) -> None:
+        """
+        Writes the specified bytes to the stream.
+
+        Args:
+            value: The bytes to be written.
+        """
+
+    @abstractmethod
+    def write_string(self, value: str, *, big: bool = False, prefix_length: int = 0, string_length: int = -1,
+                     padding: str = '\0') -> None:
+        """
+        Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
+        strings length.
+
+        Args:
+            value: The string to be written.
+            prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
+            big: Write the prefix length integer as big endian.
+            string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
+            padding: What character is used as padding where applicable.
+        """
+
+    @abstractmethod
+    def write_line(self, indent: int, *args) -> None:
+        """
+        Writes a line with specified indentation and array of values that are separated by whitespace.
+
+        Args:
+            indent: Level of indentation.
+            *args: Values to write.
+        """
+
+    @abstractmethod
+    def write_localized_string(self, value: LocalizedString, *, big: bool = False):
+        """
+        Writes the specified localized string to the stream.
+
+        The binary data structure that is read follows the structure found in the GFF format specification.
+
+        Args:
+            value: The localized string to be written.
+            big: Write any integers as big endian.
+        """
+
+
+class BinaryWriterFile(BinaryWriter):
+    def __init__(self, stream: BinaryIO, offset: int = 0):
+        self._stream: BinaryIO = stream
+        self.offset: int = offset
+        self.auto_close: bool = True
+        self._stream.seek(offset)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.auto_close: self.close()
 
     def close(self) -> None:
         """
@@ -754,3 +990,297 @@ class BinaryWriter:
 
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
+
+
+class BinaryWriterBytearray(BinaryWriter):
+    def __init__(self, ba: bytearray, offset: int = 0):
+        self._ba = ba
+        self._offset: int = offset
+        self._position = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        ...
+
+    def close(self) -> None:
+        """
+        Closes the stream.
+        """
+
+    def size(self) -> int:
+        """
+        Returns the total file size.
+
+        Returns:
+            The total file size.
+        """
+        return len(self._ba)
+
+    def data(self) -> bytes:
+        """
+        Returns the full file data.
+
+        Returns:
+            The full file data.
+        """
+        return bytes(self._ba)
+
+    def clear(self) -> None:
+        """
+        Clears all the data in the file.
+        """
+        self._ba.clear()
+
+    def seek(self, position) -> None:
+        """
+        Moves the stream pointer to the byte offset.
+
+        Args:
+            position: The byte index into stream.
+        """
+        self._position = position
+
+    def end(self) -> None:
+        """
+        Moves the pointer for the stream to the end.
+        """
+        self._position = len(self._ba) - 1
+
+    def position(self) -> int:
+        """
+        Returns the byte offset into the stream.
+
+        Returns:
+            The byte offset.
+        """
+        return self._position - self._offset
+
+    def write_uint8(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes an unsigned 8-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'B', value))
+
+    def write_int8(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 8-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'b', value))
+
+    def write_uint16(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes an unsigned 16-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'H', value))
+
+    def write_int16(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 16-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'h', value))
+
+    def write_uint32(self, value: int, *, max_neg1: bool = False, big: bool = False) -> None:
+        """
+        Writes an unsigned 32-bit integer to the stream.
+
+        If the max_neg1 flag is set to true and the specified value is equal to -1 then the stream will accept the value
+        and write 0xFFFFFFFF to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+            max_neg1: When the value is -1 it is to be converted to the max uint32 value.
+        """
+        if max_neg1 and value == -1:
+            value = 4294967295
+
+        self._ba.extend(struct.pack(_endian_char(big) + 'I', value))
+
+    def write_int32(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 32-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'i', value))
+
+    def write_uint64(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes an unsigned 64-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'Q', value))
+
+    def write_int64(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a signed 64-bit integer to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'q', value))
+
+    def write_single(self, value: float, *, big: bool = False) -> None:
+        """
+        Writes an 32-bit floating point number to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write int bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value))
+
+    def write_double(self, value: int, *, big: bool = False) -> None:
+        """
+        Writes a 64-bit floating point number to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'd', value))
+
+    def write_vector2(self, value: Vector2, *, big: bool = False) -> None:
+        """
+        Writes two 32-bit floating point numbers to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.x))
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.y))
+
+    def write_vector3(self, value: Vector3, *, big: bool = False) -> None:
+        """
+        Writes three 32-bit floating point numbers to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.x))
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.y))
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.z))
+
+    def write_vector4(self, value: Vector4, *, big: bool = False) -> None:
+        """
+        Writes four 32-bit floating point numbers to the stream.
+
+        Args:
+            value: The value to be written.
+            big: Write bytes as big endian.
+        """
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.x))
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.y))
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.z))
+        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.w))
+
+    def write_bytes(self, value: bytes) -> None:
+        """
+        Writes the specified bytes to the stream.
+
+        Args:
+            value: The bytes to be written.
+        """
+        self._ba.extend(value)
+
+    def write_string(self, value: str, *, big: bool = False, prefix_length: int = 0, string_length: int = -1,
+                     padding: str = '\0') -> None:
+        """
+        Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
+        strings length.
+
+        Args:
+            value: The string to be written.
+            prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
+            big: Write the prefix length integer as big endian.
+            string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
+            padding: What character is used as padding where applicable.
+        """
+        if prefix_length == 1:
+            if len(value) > 255:
+                raise ValueError("The string length is too large for a prefix length of 1.")
+            self.write_uint8(len(value), big=big)
+        elif prefix_length == 2:
+            if len(value) > 65535:
+                raise ValueError("The string length is too large for a prefix length of 2.")
+            self.write_uint16(len(value), big=big)
+        elif prefix_length == 4:
+            if len(value) > 4294967295:
+                raise ValueError("The string length is too large for a prefix length of 4.")
+            self.write_uint32(len(value), big=big)
+        elif prefix_length != 0:
+            raise ValueError("An invalid prefix length was provided.")
+
+        if string_length != -1:
+            while len(value) < string_length:
+                value += padding
+            value = value[:string_length]
+
+        self._ba.extend(value.encode('ascii'))
+
+    def write_line(self, indent: int, *args) -> None:
+        """
+        Writes a line with specified indentation and array of values that are separated by whitespace.
+
+        Args:
+            indent: Level of indentation.
+            *args: Values to write.
+        """
+        line = "  " * indent
+        for arg in args:
+            if isinstance(arg, float):
+                line += str(round(arg, 7))
+            else:
+                line += str(arg)
+            line += " "
+        line += "\n"
+        self._ba.extend(line.encode())
+
+    def write_localized_string(self, value: LocalizedString, *, big: bool = False):
+        """
+        Writes the specified localized string to the stream.
+
+        The binary data structure that is read follows the structure found in the GFF format specification.
+
+        Args:
+            value: The localized string to be written.
+            big: Write any integers as big endian.
+        """
+        bw = BinaryWriter.to_bytearray(b'')
+        bw.write_uint32(value.stringref, big=big, max_neg1=True)
+        bw.write_uint32(len(value), big=big)
+        for language, gender, substring in value:
+            string_id = LocalizedString.substring_id(language, gender)
+            bw.write_uint32(string_id, big=big)
+            bw.write_string(substring, prefix_length=4)
+        locstring_data = bw.data()
+
+        self.write_uint32(len(locstring_data))
+        self.write_bytes(locstring_data)
+
