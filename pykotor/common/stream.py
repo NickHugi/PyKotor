@@ -417,7 +417,7 @@ class BinaryWriter(ABC):
         return BinaryWriterFile(stream)
 
     @classmethod
-    def to_bytearray(cls, data: bytes = b'') -> BinaryWriter:
+    def to_bytearray(cls, data: bytearray = None) -> BinaryWriter:
         """
         Returns a new BinaryWriter with a stream established to the specified bytes.
 
@@ -427,8 +427,9 @@ class BinaryWriter(ABC):
         Returns:
             A new BinaryWriter instance.
         """
-        stream = io.BytesIO(data)
-        return BinaryWriter(stream)
+        if data is None:
+            data = bytearray()
+        return BinaryWriterBytearray(data)
 
     @classmethod
     def to_auto(cls, source: Union[str, bytes, BinaryWriter]) -> BinaryWriter:
