@@ -7,10 +7,18 @@ from typing import List
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
+from pykotor.resource.formats.tlk_io import TLKBinaryReader, TLKBinaryWriter
+from pykotor.resource.ops import XMLOps, BinaryOps
 
 
-class TLK:
+class TLK(BinaryOps, XMLOps):
+    BINARY_READER = TLKBinaryReader
+    BINARY_WRITER = TLKBinaryWriter
+
     def __init__(self):
+        BinaryOps.__init__(self)
+        XMLOps.__init__(self)
+
         self.entries: List[TLKEntry] = []
         self.language: Language = Language.ENGLISH
 
