@@ -38,14 +38,14 @@ class BinaryOps(ABC):
         ...
 
     @overload
-    def write_binary(self, data: bytes) -> None:
+    def write_binary(self, data: bytearray) -> None:
         ...
 
     @overload
     def write_binary(self, reader: BinaryReader) -> None:
         ...
 
-    def write_binary(self, destination: Union[str, bytes, BinaryReader]) -> None:
+    def write_binary(self, destination: Union[str, bytearray, BinaryReader]) -> None:
         with BinaryWriter.to_auto(destination) as writer:
             return self.BINARY_WRITER(writer, self).write()
 
@@ -79,14 +79,14 @@ class XMLOps(ABC):
         ...
 
     @overload
-    def write_xml(self, data: bytes):
+    def write_xml(self, data: bytearray):
         ...
 
     @overload
     def write_xml(self, reader: BinaryReader):
         ...
 
-    def write_xml(self, destination: Union[str, bytes, BinaryReader]) -> None:
+    def write_xml(self, destination: Union[str, bytearray, BinaryReader]) -> None:
         with BinaryWriter.to_auto(destination) as writer:
             return self.XML_WRITER(writer, self).write(self)
 
@@ -120,13 +120,13 @@ class CSVOps(ABC):
         ...
 
     @overload
-    def write_csv(self, data: bytes):
+    def write_csv(self, data: bytearray):
         ...
 
     @overload
     def write_csv(self, reader: BinaryReader):
         ...
 
-    def write_csv(self, destination: Union[str, bytes, BinaryReader]) -> None:
+    def write_csv(self, destination: Union[str, bytearray, BinaryReader]) -> None:
         with BinaryWriter.to_auto(destination) as writer:
             return self.CSV_WRITER(writer, self).write(self)
