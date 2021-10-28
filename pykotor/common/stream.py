@@ -432,11 +432,11 @@ class BinaryWriter(ABC):
         return BinaryWriterBytearray(data)
 
     @classmethod
-    def to_auto(cls, source: Union[str, bytes, BinaryWriter]) -> BinaryWriter:
+    def to_auto(cls, source: Union[str, bytearray, BinaryWriter]) -> BinaryWriter:
         if isinstance(source, str):  # is path
             return BinaryWriter.to_file(source)
-        elif isinstance(source, bytes):  # is binary data
-            return BinaryWriter.to_bytes(source)
+        elif isinstance(source, bytearray):  # is binary data
+            return BinaryWriter.to_bytearray(source)
         elif isinstance(source, BinaryWriter):
             return source
         else:
