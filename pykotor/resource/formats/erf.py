@@ -3,6 +3,7 @@ This module handles classes relating to editing ERF files.
 """
 from __future__ import annotations
 
+from copy import copy
 from typing import List, Optional
 
 from pykotor.common.misc import ResRef
@@ -19,10 +20,10 @@ class ERF:
 
     def __iter__(self):
         """
-        Iterates through the stored resources.
+        Iterates through the stored resources yielding a copied resource each iteration.
         """
         for resource in self._resources:
-            yield resource
+            yield copy(resource)
 
     def __len__(self):
         """
