@@ -88,6 +88,18 @@ class RIM:
         """
         self._resources = [res for res in self._resources if res.resref != resref and res.restype != restype]
 
+    def to_erf(self):
+        """
+        Returns a ERF with the same resources.
+
+        Returns:
+            A new ERF object.
+        """
+        from pykotor.resource.formats.erf import ERF  # Prevent circular imports
+        erf = ERF()
+        for resource in self._resources:
+            erf.set(resource.resref.get(), resource.restype, resource.data)
+
 
 class RIMResource:
     def __init__(self, resref: ResRef, restype: ResourceType, data: bytes):
