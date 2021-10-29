@@ -38,7 +38,7 @@ class TLK(BinaryOps, XMLOps):
         if len(self) > size:
             self.entries = self.entries[:size]
         else:
-            self.entries = [ResRef.from_blank() for _ in range(len(self), size)]
+            self.entries = [TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)]
 
 
 class TLKEntry:
