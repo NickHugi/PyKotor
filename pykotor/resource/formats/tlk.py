@@ -16,9 +16,6 @@ class TLK(BinaryOps, XMLOps):
     BINARY_WRITER = TLKBinaryWriter
 
     def __init__(self):
-        BinaryOps.__init__(self)
-        XMLOps.__init__(self)
-
         self.entries: List[TLKEntry] = []
         self.language: Language = Language.ENGLISH
 
@@ -30,6 +27,8 @@ class TLK(BinaryOps, XMLOps):
             yield stringref, entry
 
     def __getitem__(self, item):
+        if not isinstance(item, int):
+            return NotImplemented
         return self.entries[item]
 
     def get(self, stringref: int):
@@ -48,6 +47,6 @@ class TLKEntry:
         self.voiceover: ResRef = voiceover
 
     def __eq__(self, other):
-        if isinstance(other, TLKEntry):
+        if not isinstance(other, TLKEntry):
             return NotImplemented
         return other.text == self.text and other.voiceover == self.voiceover
