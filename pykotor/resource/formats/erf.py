@@ -4,18 +4,35 @@ This module handles classes relating to editing ERF files.
 from __future__ import annotations
 
 from copy import copy
+from enum import Enum
 from typing import List, Optional
 
 from pykotor.common.misc import ResRef
+from pykotor.resource.formats.erf_io import ERFBinaryReader, ERFBinaryWriter
+from pykotor.resource.ops import BinaryOps, XMLOps
 from pykotor.resource.type import ResourceType
 
 
-class ERF:
+class ERFType(Enum):
+    """
+    The type of ERF.
+    """
+    ERF = "ERF "
+    MOD = "MOD "
+
+
+class ERF(BinaryOps, XMLOps):
     """
     Represents the data of a ERF file.
-    """
 
-    def __init__(self):
+    Attributes:
+        erf_type: The ERF type.
+    """
+    BINARY_READER = ERFBinaryReader
+    BINARY_WRITER = ERFBinaryWriter
+
+    def __init__(self, erf_type: ERFType = ERFType.ERF):
+        self.erf_type: ERFType = erf_type
         self._resources: List[ERFResource] = []
 
     def __iter__(self):
@@ -56,7 +73,7 @@ class ERF:
             restype: The resource type.
             data: The new resource data.
         """
-        resource = next([resource for resource in self._resources if resource.resref == resref and resource.restype == restype], None)
+        resource = next((resource for resource in self._resources if resource.resref == resref and resource.restype == restype), None)
         if resource is None:
             self._resources.append(ERFResource(ResRef(resref), restype, data))
         else:
@@ -75,7 +92,7 @@ class ERF:
         Returns:
             The bytes data of the resource or None.
         """
-        resource = next([resource for resource in self._resources if resource.resref == resref and resource.restype == restype], None)
+        resource = next((resource for resource in self._resources if resource.resref == resref and resource.restype == restype), None)
         return None if resource is None else resource.data
 
     def remove(self, resref: str, restype: ResourceType) -> None:
