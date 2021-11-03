@@ -1,15 +1,8 @@
-import io
 from unittest import TestCase
 
-from pykotor.common.language import Language
-from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import ERF
-from pykotor.resource.formats.tlk import TLK, TLKEntry
-
-import time
-
 from pykotor.resource.type import ResourceType
+
 
 BINARY_TEST_FILE = "../../files/test.erf"
 
