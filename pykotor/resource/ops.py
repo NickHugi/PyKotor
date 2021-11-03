@@ -98,7 +98,7 @@ class XMLOps(ABC):
 
     def write_xml(self, destination: Union[str, bytearray, BinaryReader]) -> None:
         with BinaryWriter.to_auto(destination) as writer:
-            return self.XML_WRITER(writer, self).write(self)
+            return self.XML_WRITER(writer, self).write()
 
 
 class CSVOps(ABC):
@@ -144,4 +144,4 @@ class CSVOps(ABC):
 
     def write_csv(self, destination: Union[str, bytearray, BinaryReader]) -> None:
         with BinaryWriter.to_auto(destination) as writer:
-            return self.CSV_WRITER(writer, self).write(self)
+            return self.CSV_WRITER(writer, self).write()
