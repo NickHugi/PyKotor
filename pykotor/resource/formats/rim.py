@@ -7,13 +7,17 @@ from copy import copy
 from typing import List, Optional
 
 from pykotor.common.misc import ResRef
+from pykotor.resource.formats.rim_io import RIMBinaryReader, RIMBinaryWriter
+from pykotor.resource.ops import BinaryOps
 from pykotor.resource.type import ResourceType
 
 
-class RIM:
+class RIM(BinaryOps):
     """
     Represents the data of a RIM file.
     """
+    BINARY_READER = RIMBinaryReader
+    BINARY_WRITER = RIMBinaryWriter
 
     def __init__(self):
         self._resources: List[RIMResource] = []
@@ -56,7 +60,7 @@ class RIM:
             restype: The resource type.
             data: The new resource data.
         """
-        resource = next([resource for resource in self._resources if resource.resref == resref and resource.restype == restype], None)
+        resource = next((resource for resource in self._resources if resource.resref == resref and resource.restype == restype), None)
         if resource is None:
             self._resources.append(RIMResource(ResRef(resref), restype, data))
         else:
@@ -75,7 +79,7 @@ class RIM:
         Returns:
             The bytes data of the resource or None.
         """
-        resource = next([resource for resource in self._resources if resource.resref == resref and resource.restype == restype], None)
+        resource = next((resource for resource in self._resources if resource.resref == resref and resource.restype == restype), None)
         return None if resource is None else resource.data
 
     def remove(self, resref: str, restype: ResourceType) -> None:
