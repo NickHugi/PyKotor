@@ -4,7 +4,7 @@ from typing import Optional
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
-import pykotor.resource.formats.tlk
+import pykotor.resource.formats.erf
 from pykotor.resource.type import ResourceType
 
 

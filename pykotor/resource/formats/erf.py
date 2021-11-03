@@ -21,7 +21,7 @@ class ERFType(Enum):
     MOD = "MOD "
 
 
-class ERF(BinaryOps, XMLOps):
+class ERF(BinaryOps):
     """
     Represents the data of a ERF file.
 
