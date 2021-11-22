@@ -6,11 +6,16 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional
 
+from pykotor.resource.formats.ssf_io import SSFBinaryWriter, SSFBinaryReader
+from pykotor.resource.ops import BinaryOps, XMLOps
 
-class SSF:
+
+class SSF(BinaryOps, XMLOps):
     """
     Represents the data stored in a SSF file.
     """
+    BINARY_READER = SSFBinaryReader
+    BINARY_WRITER = SSFBinaryWriter
 
     def __init__(self):
         self._sounds: List[int] = [-1] * 28
