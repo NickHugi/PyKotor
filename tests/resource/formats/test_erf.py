@@ -1,20 +1,20 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.erf import ERF
+from pykotor.resource.formats.erf import ERF, ERFBinaryReader, write_erf
 from pykotor.resource.type import ResourceType
-
 
 BINARY_TEST_FILE = "../../files/test.erf"
 
 
 class TestERF(TestCase):
     def test_binary_io(self):
-        erf: ERF = ERF.load_binary(BINARY_TEST_FILE)
+        erf = ERFBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(erf)
 
         data = bytearray()
-        erf.write_binary(data)
-        ERF.load_binary(data)
+        write_erf(erf, data)
+        erf = ERFBinaryReader(data).load()
+        self.validate_io(erf)
 
     def validate_io(self, erf: ERF):
         self.assertEqual(len(erf), 3)

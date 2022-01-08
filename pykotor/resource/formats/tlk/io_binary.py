@@ -1,25 +1,23 @@
 from __future__ import annotations
 
-from collections import namedtuple
-from typing import Optional, List
+from typing import Optional
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
-from pykotor.common.stream import BinaryReader, BinaryWriter, ArrayHead
+from pykotor.common.stream import ArrayHead
+from pykotor.resource.formats.tlk import TLK, TLKEntry
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader
 
-import pykotor.resource.formats.tlk
 
-
-class TLKBinaryReader:
-    def __init__(self, reader: BinaryReader):
-        self._reader = reader
-
-        self._tlk: Optional[pykotor.resource.formats.tlk.TLK] = None
+class TLKBinaryReader(ResourceReader):
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
+        super().__init__(source, offset)
+        self._tlk: Optional[TLK] = None
         self._texts_offset = 0
         self._text_headers = []
 
-    def load(self) -> pykotor.resource.formats.tlk.TLK:
-        self._tlk = pykotor.resource.formats.tlk.TLK()
+    def load(self, auto_close: bool = True) -> TLK:
+        self._tlk = TLK()
         self._texts_offset = 0
         self._text_headers = []
 
@@ -28,6 +26,9 @@ class TLKBinaryReader:
         self._load_file_header()
         [self._load_entry(stringref) for stringref, entry in self._tlk]
         [self._load_text(stringref) for stringref, entry in self._tlk]
+
+        if auto_close:
+            self._reader.close()
 
         return self._tlk
 
@@ -68,12 +69,12 @@ class TLKBinaryReader:
         self._tlk.entries[stringref].text = text
 
 
-class TLKBinaryWriter:
+class TLKBinaryWriter(ResourceWriter):
     FILE_HEADER_SIZE = 20
     ENTRY_SIZE = 40
 
-    def __init__(self, writer: BinaryWriter, tlk: pykotor.resource.formats.tlk.TLK):
-        self._writer = writer
+    def __init__(self, tlk: TLK, target: TARGET_TYPES):
+        super().__init__(target)
         self._tlk = tlk
 
     def write(self) -> None:
@@ -97,7 +98,7 @@ class TLKBinaryWriter:
         self._writer.write_uint32(string_count)
         self._writer.write_uint32(entries_offset)
 
-    def _write_entry(self, entry: pykotor.resource.formats.tlk.TLKEntry, previous_offset: WrappedInt):
+    def _write_entry(self, entry: TLKEntry, previous_offset: WrappedInt):
         sound_resref = entry.voiceover.get()
         text_offset = previous_offset.get()
         text_length = len(entry.text)

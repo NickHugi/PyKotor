@@ -1,24 +1,18 @@
 from __future__ import annotations
 
-import io
 from typing import Optional
-from xml.etree import ElementTree
 
-from pykotor.common.stream import BinaryReader, BinaryWriter
-
-import pykotor.resource.formats.ssf
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.ssf.data import SSF, SSFSound
+from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
 
 
-class SSFBinaryReader:
-    def __init__(self, reader: BinaryReader):
-        self._reader: BinaryReader = reader
-        self._ssf: Optional[pykotor.resource.formats.ssf.SSF] = None
-    
-    def load(self) -> pykotor.resource.formats.ssf.SSF:
-        from pykotor.resource.formats.ssf import SSFSound
-        
-        self._ssf = pykotor.resource.formats.ssf.SSF()
+class SSFBinaryReader(ResourceReader):
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
+        super().__init__(source, offset)
+        self._ssf: Optional[SSF] = None
+
+    def load(self, auto_close: bool = True) -> SSF:
+        self._ssf = SSF()
 
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
@@ -60,20 +54,19 @@ class SSFBinaryReader:
         self._ssf.set(SSFSound.SEPARATED_FROM_PARTY, self._reader.read_uint32())
         self._ssf.set(SSFSound.REJOINED_PARTY, self._reader.read_uint32())
         self._ssf.set(SSFSound.POISONED, self._reader.read_uint32())
-        
+
+        if auto_close:
+            self._reader.close()
+
         return self._ssf
 
 
-class SSFBinaryWriter:
-    def __init__(self, writer: BinaryWriter, ssf: pykotor.resource.formats.ssf.SSF):
-        self._writer: BinaryWriter = writer
-        self._ssf = ssf
+class SSFBinaryWriter(ResourceWriter):
+    def __init__(self, ssf: SSF, target: TARGET_TYPES):
+        super().__init__(target)
+        self._ssf: SSF = ssf
 
     def write(self) -> None:
-        from pykotor.resource.formats.ssf import SSFSound
-
-        self._writer.clear()
-
         self._writer.write_string("SSF ")
         self._writer.write_string("V1.1")
         self._writer.write_uint32(12)
@@ -109,24 +102,3 @@ class SSFBinaryWriter:
 
         for i in range(8):
             self._writer.write_uint32(0xFFFFFFFF)
-
-
-class SSFXMLReader:
-    def __init__(self, reader: BinaryReader):
-        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(reader.read_all().decode())).getroot()
-        self._ssf: Optional[pykotor.resource.formats.ssf.SSF] = None
-
-    def load(self) -> pykotor.resource.formats.ssf.SSF:
-        from pykotor.resource.formats.ssf import SSFSound
-
-        self._ssf = pykotor.resource.formats.ssf.SSF()
-
-        for child in self._xml_root.getroot():
-            try:
-                sound = SSFSound(int(child.attrib['id']))
-                stringref = int(child.attrib['strref'])
-                self._ssf.set(sound, stringref)
-            except ValueError:
-                pass
-
-        return self._ssf

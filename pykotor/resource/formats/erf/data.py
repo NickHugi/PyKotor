@@ -8,8 +8,6 @@ from enum import Enum
 from typing import List, Optional
 
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.erf_io import ERFBinaryReader, ERFBinaryWriter
-from pykotor.resource.ops import BinaryOps, XMLOps
 from pykotor.resource.type import ResourceType
 
 
@@ -21,15 +19,13 @@ class ERFType(Enum):
     MOD = "MOD "
 
 
-class ERF(BinaryOps):
+class ERF:
     """
     Represents the data of a ERF file.
 
     Attributes:
         erf_type: The ERF type.
     """
-    BINARY_READER = ERFBinaryReader
-    BINARY_WRITER = ERFBinaryWriter
 
     def __init__(self, erf_type: ERFType = ERFType.ERF):
         self.erf_type: ERFType = erf_type

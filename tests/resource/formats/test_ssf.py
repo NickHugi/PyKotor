@@ -1,7 +1,8 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.ssf import SSF, SSFSound
-from pykotor.resource.type import ResourceType
+from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats.ssf import SSF, SSFSound, SSFBinaryReader, detect_ssf, SSFXMLReader, write_ssf
+from pykotor.resource.formats.ssf.auto import FileFormat
 
 BINARY_TEST_FILE = "../../files/test.ssf"
 XML_TEST_FILE = "../../files/test.ssf.xml"
@@ -9,20 +10,26 @@ XML_TEST_FILE = "../../files/test.ssf.xml"
 
 class TestSSF(TestCase):
     def test_binary_io(self):
-        ssf: SSF = SSF.load_binary(BINARY_TEST_FILE)
+        self.assertEqual(detect_ssf(BINARY_TEST_FILE), FileFormat.BINARY)
+
+        ssf = SSFBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(ssf)
 
         data = bytearray()
-        ssf.write_binary(data)
-        SSF.load_binary(data)
+        write_ssf(ssf, data, FileFormat.BINARY)
+        ssf = SSFBinaryReader(data).load()
+        self.validate_io(ssf)
 
     def test_xml_io(self):
-        ssf: SSF = SSF.load_binary(BINARY_TEST_FILE)
+        self.assertEqual(detect_ssf(XML_TEST_FILE), FileFormat.XML)
+
+        ssf = SSFXMLReader(XML_TEST_FILE).load()
         self.validate_io(ssf)
 
         data = bytearray()
-        ssf.write_binary(data)
-        SSF.load_binary(data)
+        write_ssf(ssf, data, FileFormat.XML)
+        ssf = SSFXMLReader(data).load()
+        self.validate_io(ssf)
 
     def validate_io(self, ssf: SSF):
         self.assertEqual(ssf.get(SSFSound.BATTLE_CRY_1), 123075)

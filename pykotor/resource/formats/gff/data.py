@@ -80,6 +80,7 @@ class GFF:
     """
     Represents the data of a GFF file.
     """
+
     def __init__(self, content: GFFContent = GFFContent.GFF):
         self.content: GFFContent = content
         self.root: GFFStruct = GFFStruct(-1)
@@ -89,6 +90,7 @@ class _GFFField:
     """
     Data structure for items stored in GFFStruct.
     """
+
     def __init__(self, field_type: GFFFieldType, value: Any):
         self._field_type: GFFFieldType = field_type
         self._value: Any = value
@@ -101,7 +103,7 @@ class _GFFField:
             The field's field_type.
         """
         return self._field_type
-    
+
     def value(self) -> Any:
         """
         Returns the value.
@@ -119,6 +121,7 @@ class GFFStruct:
     Attributes:
         struct_id: User defined id.
     """
+
     def __init__(self, struct_id: int = 0):
         self.struct_id: int = struct_id
         self._fields: Dict[str, _GFFField] = {}
@@ -143,7 +146,7 @@ class GFFStruct:
         if not isinstance(item, str):
             return NotImplemented
         return self._fields[item].value()
-    
+
     def remove(self, label: str) -> None:
         """
         Removes the field with the specified label.
@@ -153,7 +156,7 @@ class GFFStruct:
         """
         if label in self._fields:
             self._fields.pop(label)
-            
+
     def exists(self, label) -> GFFFieldType:
         """
         Returns the type of the field with the specified label.
@@ -515,7 +518,7 @@ class GFFStruct:
         if self._fields[label].field_type() != GFFFieldType.Double:
             raise TypeError("The specified field does not store a Double value.")
         return self._fields[label].value()
-    
+
     def get_resref(self, label: str) -> ResRef:
         """
         Returns the value of the field with the specified label.
@@ -532,7 +535,7 @@ class GFFStruct:
         if self._fields[label].field_type() != GFFFieldType.ResRef:
             raise TypeError("The specified field does not store a ResRef value.")
         return self._fields[label].value()
-    
+
     def get_string(self, label: str) -> str:
         """
         Returns the value of the field with the specified label.
@@ -657,6 +660,7 @@ class GFFList:
     """
     A collection of GFFStructs.
     """
+
     def __init__(self):
         self._structs: List[GFFStruct] = []
 

@@ -1,28 +1,30 @@
-import io
 from unittest import TestCase
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
-from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.tlk import TLK, TLKEntry
-
-import time
+from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryReader, write_tlk, load_tlk
+from pykotor.resource.type import FileFormat
 
 BINARY_TEST_FILE = "../../files/test.tlk"
+XML_TEST_FILE = "../../files/test.tlk.xml"
 
 
 class TestTLK(TestCase):
     def test_binary_io(self):
-        tlk: TLK = TLK.load_binary(BINARY_TEST_FILE)
+        self.assertEqual(detect_tlk(BINARY_TEST_FILE), FileFormat.BINARY)
+
+        tlk = TLKBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(tlk)
 
         data = bytearray()
-        tlk.write_binary(data)
-        TLK.load_binary(data)
+        write_tlk(tlk, data, FileFormat.BINARY)
+        tlk = load_tlk(data)
+        self.validate_io(tlk)
 
     def validate_io(self, tlk: TLK):
         self.assertIs(tlk.language, Language.ENGLISH)
 
+        print(tlk[0].text)
         self.assertEqual(TLKEntry("abcdef", ResRef("resref01")), tlk[0])
         self.assertEqual(TLKEntry("ghijklmnop", ResRef("resref02")), tlk[1])
         self.assertEqual(TLKEntry("qrstuvwxyz", ResRef("")), tlk[2])

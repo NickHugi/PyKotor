@@ -6,11 +6,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional
 
-from pykotor.resource.formats.lip_io import LIPBinaryReader, LIPBinaryWriter, LIPXMLWriter, LIPXMLReader
-from pykotor.resource.ops import XMLOps, BinaryOps
 
-
-class LIP(BinaryOps, XMLOps):
+class LIP:
     """
     Represents the data of a LIP file.
 
@@ -18,10 +15,6 @@ class LIP(BinaryOps, XMLOps):
         length: The total duration of lip animation.
         frames: The keyframes for the lip animation.
     """
-    BINARY_READER = LIPBinaryReader
-    BINARY_WRITER = LIPBinaryWriter
-    XML_READER = LIPXMLReader
-    XML_WRITER = LIPXMLWriter
 
     def __init__(self):
         self.length: float = 0.0

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.rim import RIM
+from pykotor.resource.formats.rim import RIM, RIMBinaryReader, write_rim, RIMBinaryWriter, load_rim
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.rim"
@@ -8,12 +8,13 @@ BINARY_TEST_FILE = "../../files/test.rim"
 
 class TestRIM(TestCase):
     def test_binary_io(self):
-        rim: RIM = RIM.load_binary(BINARY_TEST_FILE)
+        rim = RIMBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(rim)
 
         data = bytearray()
-        rim.write_binary(data)
-        RIM.load_binary(data)
+        write_rim(rim, data)
+        rim = load_rim(data)
+        self.validate_io(rim)
 
     def validate_io(self, rim: RIM):
         self.assertEqual(len(rim), 3)

@@ -2,19 +2,17 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pykotor.common.stream import BinaryReader, BinaryWriter
-
-import pykotor.resource.formats.rim
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.rim import RIM
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 
 
-class RIMBinaryReader:
-    def __init__(self, reader: BinaryReader):
-        self._reader: BinaryReader = reader
-        self._rim: Optional[pykotor.resource.formats.rim.RIM] = None
+class RIMBinaryReader(ResourceReader):
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
+        super().__init__(source, offset)
+        self._rim: Optional[RIM] = None
 
-    def load(self) -> pykotor.resource.formats.rim.RIM:
-        self._rim = pykotor.resource.formats.rim.RIM()
+    def load(self, auto_close: bool = True)  -> RIM:
+        self._rim = RIM()
 
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
@@ -47,15 +45,18 @@ class RIMBinaryReader:
             resdata = self._reader.read_bytes(ressizes[i])
             self._rim.set(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
 
+        if auto_close:
+            self._reader.close()
+
         return self._rim
 
 
-class RIMBinaryWriter:
+class RIMBinaryWriter(ResourceWriter):
     FILE_HEADER_SIZE = 120
     KEY_ELEMENT_SIZE = 32
 
-    def __init__(self, writer: BinaryWriter, rim: pykotor.resource.formats.rim.RIM):
-        self._writer: BinaryWriter = writer
+    def __init__(self, rim: RIM, target: TARGET_TYPES):
+        super().__init__(target)
         self._rim = rim
 
     def write(self) -> None:

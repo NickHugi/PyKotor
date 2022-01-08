@@ -4,7 +4,64 @@ games.
 """
 from __future__ import annotations
 
-from typing import Union
+from abc import ABC
+from enum import Enum
+from typing import Union, overload
+
+from pykotor.common.stream import BinaryReader, BinaryWriter
+
+SOURCE_TYPES = Union[str, bytes, bytearray, BinaryReader]
+TARGET_TYPES = Union[str, bytearray, BinaryWriter]
+
+
+class FileFormat(Enum):
+    INVALID = "invalid"
+    BINARY = "binary"
+    ASCII = "ascii"
+    XML = "xml"
+    CSV = "csv"
+
+
+class ResourceReader(ABC):
+    @overload
+    def __init__(self, filepath: str, offset: int = 0):
+        ...
+
+    @overload
+    def __init__(self, data: bytes, offset: int = 0):
+        ...
+
+    @overload
+    def __init__(self, data: bytearray, offset: int = 0):
+        ...
+
+    @overload
+    def __init__(self, reader: BinaryReader, offset: int = 0):
+        ...
+
+    def __init__(self, source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0):
+        self._reader = BinaryReader.from_auto(source, offset)
+
+
+class ResourceWriter(ABC):
+    @overload
+    def __init__(self, filepath: str):
+        ...
+
+    @overload
+    def __init__(self, data: bytes):
+        ...
+
+    @overload
+    def __init__(self, data: bytearray):
+        ...
+
+    @overload
+    def __init__(self, reader: BinaryWriter):
+        ...
+
+    def __init__(self, target: Union[str, bytearray, BinaryReader]):
+        self._writer = BinaryWriter.to_auto(target)
 
 
 class ResourceType:
@@ -208,5 +265,5 @@ ResourceType.PTH    = ResourceType(3003,    "pth",  "Paths",        "gff")
 ResourceType.LIP    = ResourceType(3004,    "lip",  "Lip Syncs",    "lips")
 ResourceType.TPC    = ResourceType(3007,    "tpc",  "Textures",     "binary")
 ResourceType.MDX    = ResourceType(3008,    "mdx",  "Model",       "binary")
-ResourceType.ERF    = ResourceType(9997,    "erf",  "Archive",      "binary")
+ResourceType.ERF    = ResourceType(9997,    "ssf",  "Archive",      "binary")
 ResourceType.MP3    = ResourceType(25014,   "mp3",  "Audio",        "binary")

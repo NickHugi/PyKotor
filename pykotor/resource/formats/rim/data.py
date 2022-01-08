@@ -7,17 +7,13 @@ from copy import copy
 from typing import List, Optional
 
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.rim_io import RIMBinaryReader, RIMBinaryWriter
-from pykotor.resource.ops import BinaryOps
 from pykotor.resource.type import ResourceType
 
 
-class RIM(BinaryOps):
+class RIM:
     """
     Represents the data of a RIM file.
     """
-    BINARY_READER = RIMBinaryReader
-    BINARY_WRITER = RIMBinaryWriter
 
     def __init__(self):
         self._resources: List[RIMResource] = []
@@ -99,7 +95,7 @@ class RIM(BinaryOps):
         Returns:
             A new ERF object.
         """
-        from pykotor.resource.formats.erf import ERF  # Prevent circular imports
+        from pykotor.resource.formats.ssf import ERF  # Prevent circular imports
         erf = ERF()
         for resource in self._resources:
             erf.set(resource.resref.get(), resource.restype, resource.data)
