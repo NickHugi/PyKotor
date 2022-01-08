@@ -1,17 +1,368 @@
 """
-This module handles classes relating to editing 2DA files.
+This module handles classes related to reading, modifying and writing 2DA files.
 """
 from __future__ import annotations
 
-from pykotor.resource.formats.twoda_io import *
-from pykotor.resource.ops import BinaryOps, CSVOps
+from contextlib import suppress
+from copy import copy
+from enum import Enum
+from typing import List, Dict, Optional, Any, Type
 
 
-class TwoDA(BinaryOps, CSVOps):
+class TwoDA:
     """
-    Represents the data of a 2DA file.
+    Represents a 2DA file.
     """
-    BINARY_READER = TwoDABinaryReader
 
     def __init__(self):
-        ...
+        self._rows: List[Dict[str, str]] = []
+        self._headers: List[str] = []
+
+    def __iter__(self):
+        """
+        Iterates through each row yielding a new linked TwoDARow instance.
+        """
+        for row in self._rows:
+            yield TwoDARow(row)
+
+    def get_headers(self) -> List[str]:
+        """
+        Returns a copy of the set of column headers.
+
+        Returns:
+            The column headers.
+        """
+        return copy(self._headers)
+
+    def get_column(self, header: str) -> List[str]:
+        """
+        Returns every cell listed under the specified column header.
+
+        Args:
+            header: The column header.
+
+        Raises:
+            KeyError: If the specified column header does not exist.
+
+        Returns:
+            A list of cells.
+        """
+        if header not in self._headers:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        return [self._rows[i][header] for i in range(self.get_height())]
+
+    def add_column(self, header: str) -> None:
+        """
+        Adds a new column with the specified header and populates it with blank cells for each row.
+
+        Args:
+            header: The header for the new column.
+
+        Raises:
+            KeyError: If the specified column header already exists.
+        """
+
+        if header in self._headers:
+            raise KeyError("The header '{}' already exists.".format(header))
+
+        self._headers.append(header)
+        for row in self._rows:
+            row[header] = ""
+
+    def remove_column(self, header: str) -> None:
+        """
+        Removes a column from the table with the specified column header. If no such column header exists it is ignored;
+        no error is thrown.
+
+        Args:
+            header: The column header.
+        """
+        if header in self._headers:
+            for row in self._rows:
+                row.pop(header)
+
+        self._headers.remove(header)
+
+    def get_row(self, row_id: int) -> TwoDARow:
+        """
+        Returns a TwoDARow instance which can update and retrieve the values of the cells for the specified row.
+
+        Args:
+            row_id: The row id.
+
+        Raises:
+            IndexError: If the specified row does not exist.
+
+        Returns:
+            A new TwoDARow instance.
+        """
+        return TwoDARow(self._rows[row_id])
+
+    def add_row(self, cells: Dict[str, Any] = None) -> int:
+        """
+        Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
+        itself will be ignored, headers that are not specified in the cells parameter but do exist in the table will
+        default to being blank. All cells are converted to strings before being added into the 2DA.
+
+        Args:
+            cells: A dictionary representing the cells of the new row. A key is the header and value is the cell.
+
+        Returns:
+            The id of the new row.
+        """
+        self._rows.append({})
+
+        if cells is None:
+            cells = {}
+
+        for header in cells:
+            cells[header] = str(cells[header])
+
+        for header in self._headers:
+            self._rows[-1][header] = cells[header] if header in cells else ""
+
+        return len(self._rows) - 1
+
+    def get_cell(self, row_id, column: str) -> str:
+        """
+        Returns the value of the cell at the specified row under the specified column.
+
+        Args:
+            row_id: The row id.
+            column: The column header.
+
+        Raises:
+            KeyError: If the specified column does not exist.
+            IndexError: If the specified row does not exist.
+
+        Returns:
+            The cell value.
+        """
+        return self._rows[row_id][column]
+
+    def set_cell(self, row_id: int, column: str, value: Any) -> None:
+        """
+        Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a
+        blank string.
+
+        Args:
+            row_id: The row id.
+            column: The column header.
+            value: The new value of the target cell.
+
+        Raises:
+            KeyError: If the specified column does not exist.
+            IndexError: If the specified row does not exist.
+        """
+        value = "" if value is None else value
+        self._rows[row_id][column] = str(value)
+
+    def get_height(self) -> int:
+        """
+        Returns the number of rows in the table.
+
+        Returns:
+            The number of rows.
+        """
+        return len(self._rows)
+
+    def get_width(self) -> int:
+        """
+        Returns the number of columns in the table.
+
+        Returns:
+            The number of columns.
+        """
+        return len(self._headers)
+
+    def resize(self, row_count: int) -> None:
+        """
+        Sets the number of rows in the table. Use with caution; specifying a height less than the current height will
+        result in a loss of data.
+
+        Args:
+            row_count: The number of rows to set.
+
+        Raises:
+            ValueError: If the height is negative.
+        """
+
+        if self.get_height() < 0:
+            raise ValueError("The height of the table cannot be negative.")
+        current_height = len(self._rows)
+
+        if row_count < current_height:
+            # trim the _rows list
+            self._rows = self._rows[:row_count]
+        else:
+            # insert the new rows with each cell filled in blank
+            for i in range(row_count - current_height):
+                self.add_row()
+
+
+class TwoDARow:
+    def __init__(self, row_data: Dict[str, str]):
+        self._data: Dict[str, str] = row_data
+
+    def get_string(self, header: str) -> str:
+        """
+        Returns the string value for the cell under the specified header.
+
+        Args:
+            header: The column header for the cell.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+
+        Returns:
+            The cell value.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+        return self._data[header]
+
+    def get_integer(self, header: str, default: Optional[int] = None) -> float:
+        """
+        Returns the integer value for the cell under the specified header. If the value of the cell is an invalid
+        integer then a default value is used instead.
+
+        Args:
+            header: The column header for the cell.
+            default: The default value.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+
+        Returns:
+            The cell value as an integer or a default value.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        value = default
+        with suppress(ValueError):
+            cell = self._data[header]
+            if cell.startswith("0x"):
+                value = int(cell, 16)
+            else:
+                value = int(cell)
+        return value
+
+    def get_float(self, header: str, default: Optional[int] = None) -> float:
+        """
+        Returns the float value for the cell under the specified header. If the value of the cell is an invalid float
+        then a default value is used instead.
+
+        Args:
+            header: The column header for the cell.
+            default: The default value.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+
+        Returns:
+            The cell value as a float or default value.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        value = default
+        with suppress(ValueError):
+            cell = self._data[header]
+            value = float(cell)
+        return value
+
+    def get_enum(self, header: str, enum_type: Type[Enum], default: Optional[Enum]) -> Optional[Enum]:
+        """
+        Returns the enum value for the cell under the specified header.
+
+        Args:
+            header: The column header for the cell.
+            enum_type: The enum class to try parse the cell value with.
+            default: The default value.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+
+        Returns:
+            The cell value as a enum or default value.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        value = default
+        if enum_type(self._data[header]) != "":
+            value = enum_type(self._data[header])
+        return value
+
+    def set_string(self, header: str, value: Optional[str]) -> None:
+        """
+        Sets the value of a cell under the specified header. If the value is none it will default to a empty string.
+
+        Args:
+            header: The column header for the cell.
+            value: The new cell value.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        value = "" if value is None else value
+        self._data[header] = value
+
+    def set_integer(self, header: str, value: Optional[int]) -> None:
+        """
+        Sets the value of a cell under the specified header, converting the integer into a string. If the value is none
+        it will default to a empty string.
+
+        Args:
+            header: The column header for the cell.
+            value: The new cell value.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        value = "" if value is None else value
+        self._data[header] = str(value)
+
+    def set_float(self, header: str, value: Optional[float]) -> None:
+        """
+        Sets the value of a cell under the specified header, converting the float into a string. If the value is none
+        it will default to a empty string.
+
+        Args:
+            header: The column header for the cell.
+            value: The new cell value.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        value = "" if value is None else value
+        self._data[header] = str(value)
+
+    def set_enum(self, header: str, value: Optional[Enum]):
+        """
+        Sets the value of a cell under the specified header, converting the enum into a string. If the value is none
+        it will default to a empty string.
+
+        Args:
+            header: The column header for the cell.
+            value: The new cell value.
+
+        Raises:
+            KeyError: If the specified header does not exist.
+        """
+        if header not in self._data:
+            raise KeyError("The header '{}' does not exist.".format(header))
+
+        value = "" if value is None else value.value
+        self._data[header] = value
