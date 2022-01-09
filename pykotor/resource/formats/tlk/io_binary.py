@@ -10,8 +10,8 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, Re
 
 
 class TLKBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
-        super().__init__(source, offset)
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+        super().__init__(source, offset, size)
         self._tlk: Optional[TLK] = None
         self._texts_offset = 0
         self._text_headers = []

@@ -7,8 +7,8 @@ from pykotor.resource.type import ResourceType, TARGET_TYPES, ResourceReader, SO
 
 
 class ERFBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
-        super().__init__(source, offset)
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+        super().__init__(source, offset, size)
         self._erf: Optional[ERF] = None
 
     def load(self, auto_close: bool = True) -> ERF:

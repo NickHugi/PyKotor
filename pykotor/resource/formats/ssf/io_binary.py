@@ -7,8 +7,8 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 
 
 class SSFBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
-        super().__init__(source, offset)
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+        super().__init__(source, offset, size)
         self._ssf: Optional[SSF] = None
 
     def load(self, auto_close: bool = True) -> SSF:

@@ -9,9 +9,9 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class LIPXMLReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
-        super().__init__(source, offset)
-        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_all().decode())).getroot()
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+        super().__init__(source, offset, size)
+        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
         self._lip: Optional[LIP] = None
 
     def load(self, auto_close: bool = True) -> LIP:

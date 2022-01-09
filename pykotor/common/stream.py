@@ -106,7 +106,7 @@ class BinaryReader:
 
     def size(self) -> int:
         """
-        Returns the total file size.
+        Returns the total number of bytes in the stream.
 
         Returns:
             The total file size.
@@ -116,6 +116,19 @@ class BinaryReader:
         size = self._stream.tell()
         self._stream.seek(pos)
         return size
+
+    def remaining(self) -> int:
+        """
+        Returns the remaining number of bytes in the stream.
+
+        Returns:
+            The total file size.
+        """
+        pos = self._stream.tell()
+        self._stream.seek(0, 2)
+        size = self._stream.tell()
+        self._stream.seek(pos)
+        return size - pos
 
     def close(self) -> None:
         """

@@ -24,23 +24,24 @@ class FileFormat(Enum):
 
 class ResourceReader(ABC):
     @overload
-    def __init__(self, filepath: str, offset: int = 0):
+    def __init__(self, filepath: str, offset: int = 0, size: int = 0):
         ...
 
     @overload
-    def __init__(self, data: bytes, offset: int = 0):
+    def __init__(self, data: bytes, offset: int = 0, size: int = 0):
         ...
 
     @overload
-    def __init__(self, data: bytearray, offset: int = 0):
+    def __init__(self, data: bytearray, offset: int = 0, size: int = 0):
         ...
 
     @overload
-    def __init__(self, reader: BinaryReader, offset: int = 0):
+    def __init__(self, reader: BinaryReader, offset: int = 0, size: int = 0):
         ...
 
-    def __init__(self, source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0):
+    def __init__(self, source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = 0):
         self._reader = BinaryReader.from_auto(source, offset)
+        self._size = self._reader.remaining() if size == 0 else size
 
 
 class ResourceWriter(ABC):

@@ -9,9 +9,9 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 
 
 class TwoDACSVReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0):
-        super().__init__(source, offset)
-        self._csv: csv.reader = csv.reader(io.StringIO(self._reader.read_all().decode()))
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+        super().__init__(source, offset, size)
+        self._csv: csv.reader = csv.reader(io.StringIO(self._reader.read_bytes(self._size).decode()))
         self._twoda: Optional[TwoDA] = None
 
     def load(self, auto_close: bool = True) -> TwoDA:
