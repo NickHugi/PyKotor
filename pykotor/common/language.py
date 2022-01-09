@@ -44,7 +44,7 @@ class LocalizedString:
         Iterates through the list of substrings. Yields a tuple containing [language, gender, text]
         """
         for substring_id, text in self._substrings.items():
-            return *LocalizedString.substring_pair(substring_id), text
+            yield *LocalizedString.substring_pair(substring_id), text
 
     def __len__(self):
         """
