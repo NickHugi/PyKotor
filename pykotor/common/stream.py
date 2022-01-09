@@ -1060,7 +1060,7 @@ class BinaryWriterBytearray(BinaryWriter):
         """
         Moves the pointer for the stream to the end.
         """
-        self._position = len(self._ba) - 1
+        self._position = len(self._ba)
 
     def position(self) -> int:
         """
@@ -1079,7 +1079,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'B', value))
+        self._ba[self._position:self._position + 1] = struct.pack(_endian_char(big) + 'B', value)
+        self._position += 1
 
     def write_int8(self, value: int, *, big: bool = False) -> None:
         """
@@ -1089,7 +1090,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'b', value))
+        self._ba[self._position:self._position + 1] = struct.pack(_endian_char(big) + 'b', value)
+        self._position += 1
 
     def write_uint16(self, value: int, *, big: bool = False) -> None:
         """
@@ -1099,7 +1101,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'H', value))
+        self._ba[self._position:self._position + 2] = struct.pack(_endian_char(big) + 'H', value)
+        self._position += 2
 
     def write_int16(self, value: int, *, big: bool = False) -> None:
         """
@@ -1109,7 +1112,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'h', value))
+        self._ba[self._position:self._position + 2] = struct.pack(_endian_char(big) + 'h', value)
+        self._position += 2
 
     def write_uint32(self, value: int, *, max_neg1: bool = False, big: bool = False) -> None:
         """
@@ -1125,8 +1129,8 @@ class BinaryWriterBytearray(BinaryWriter):
         """
         if max_neg1 and value == -1:
             value = 4294967295
-
-        self._ba.extend(struct.pack(_endian_char(big) + 'I', value))
+        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'I', value)
+        self._position += 4
 
     def write_int32(self, value: int, *, big: bool = False) -> None:
         """
@@ -1136,7 +1140,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'i', value))
+        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'i', value)
+        self._position += 4
 
     def write_uint64(self, value: int, *, big: bool = False) -> None:
         """
@@ -1146,7 +1151,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'Q', value))
+        self._ba[self._position:self._position + 8] = struct.pack(_endian_char(big) + 'Q', value)
+        self._position += 8
 
     def write_int64(self, value: int, *, big: bool = False) -> None:
         """
@@ -1156,7 +1162,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'q', value))
+        self._ba[self._position:self._position + 8] = struct.pack(_endian_char(big) + 'q', value)
+        self._position += 8
 
     def write_single(self, value: float, *, big: bool = False) -> None:
         """
@@ -1166,7 +1173,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write int bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value))
+        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'f', value)
+        self._position += 4
 
     def write_double(self, value: int, *, big: bool = False) -> None:
         """
@@ -1176,7 +1184,8 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'd', value))
+        self._ba[self._position:self._position + 8] = struct.pack(_endian_char(big) + 'd', value)
+        self._position += 8
 
     def write_vector2(self, value: Vector2, *, big: bool = False) -> None:
         """
@@ -1186,8 +1195,9 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.x))
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.y))
+        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'f', value.x)
+        self._ba[self._position + 4:self._position + 8] = struct.pack(_endian_char(big) + 'f', value.y)
+        self._position += 8
 
     def write_vector3(self, value: Vector3, *, big: bool = False) -> None:
         """
@@ -1197,9 +1207,10 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.x))
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.y))
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.z))
+        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'f', value.x)
+        self._ba[self._position + 4:self._position + 8] = struct.pack(_endian_char(big) + 'f', value.y)
+        self._ba[self._position + 8:self._position + 12] = struct.pack(_endian_char(big) + 'f', value.z)
+        self._position += 12
 
     def write_vector4(self, value: Vector4, *, big: bool = False) -> None:
         """
@@ -1209,10 +1220,11 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.x))
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.y))
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.z))
-        self._ba.extend(struct.pack(_endian_char(big) + 'f', value.w))
+        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'f', value.x)
+        self._ba[self._position + 4:self._position + 8] = struct.pack(_endian_char(big) + 'f', value.y)
+        self._ba[self._position + 8:self._position + 12] = struct.pack(_endian_char(big) + 'f', value.z)
+        self._ba[self._position + 12:self._position + 16] = struct.pack(_endian_char(big) + 'f', value.w)
+        self._position += 16
 
     def write_bytes(self, value: bytes) -> None:
         """
@@ -1221,7 +1233,8 @@ class BinaryWriterBytearray(BinaryWriter):
         Args:
             value: The bytes to be written.
         """
-        self._ba.extend(value)
+        self._ba[self._position:self._position + len(value)] = value
+        self._position += len(value)
 
     def write_string(self, value: str, *, big: bool = False, prefix_length: int = 0, string_length: int = -1,
                      padding: str = '\0') -> None:
@@ -1256,7 +1269,9 @@ class BinaryWriterBytearray(BinaryWriter):
                 value += padding
             value = value[:string_length]
 
-        self._ba.extend(value.encode('ascii'))
+        encoded = value.encode('ascii')
+        self._ba[self._position:self._position + len(encoded)] = encoded
+        self._position += len(encoded)
 
     def write_line(self, indent: int, *args) -> None:
         """
@@ -1274,7 +1289,10 @@ class BinaryWriterBytearray(BinaryWriter):
                 line += str(arg)
             line += " "
         line += "\n"
-        self._ba.extend(line.encode())
+
+        encoded = line.encode('ascii')
+        self._ba[self._position:self._position + len(encoded)] = encoded
+        self._position += len(encoded)
 
     def write_localized_string(self, value: LocalizedString, *, big: bool = False):
         """
@@ -1286,9 +1304,10 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.to_bytearray(b'')
+        bw = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
+
         for language, gender, substring in value:
             string_id = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
