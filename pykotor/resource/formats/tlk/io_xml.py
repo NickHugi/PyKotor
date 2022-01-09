@@ -14,12 +14,14 @@ class TLKXMLReader(ResourceReader):
         self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_all().decode())).getroot()
         self._tlk: Optional[TLK] = None
 
-    def load(self) -> TLK:
+    def load(self, auto_close: bool = True) -> TLK:
         self._tlk = TLK()
 
         # TODO
 
-        self._reader.close()
+        if auto_close:
+            self._reader.close()
+
         return self._tlk
 
 
@@ -29,9 +31,11 @@ class TLKXMLWriter(ResourceWriter):
         self.xml_root: ElementTree.Element = ElementTree.Element("xml")
         self.tlk: TLK = tlk
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         # TODO
 
         ElementTree.indent(self.xml_root)
         self._writer.write_bytes(ElementTree.tostring(self.xml_root))
-        self._writer.close()
+
+        if auto_close:
+            self._writer.close()

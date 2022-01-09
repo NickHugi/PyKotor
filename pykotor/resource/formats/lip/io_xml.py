@@ -14,7 +14,7 @@ class LIPXMLReader(ResourceReader):
         self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_all().decode())).getroot()
         self._lip: Optional[LIP] = None
 
-    def load(self) -> LIP:
+    def load(self, auto_close: bool = True) -> LIP:
         if self._xml_root.tag != "lip":
             raise TypeError("The XML file that was loaded was not a valid LIP.")
 
@@ -27,7 +27,9 @@ class LIPXMLReader(ResourceReader):
             shape = LIPShape(int(subelement.get("shape")))
             self._lip.add(time, shape)
 
-        self._reader.close()
+        if auto_close:
+            self._reader.close()
+
         return self._lip
 
 
@@ -37,7 +39,7 @@ class LIPXMLWriter(ResourceWriter):
         self._lip = lip
         self._xml_root: ElementTree.Element = ElementTree.Element("lip")
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:
@@ -48,4 +50,6 @@ class LIPXMLWriter(ResourceWriter):
 
         ElementTree.indent(self._xml_root)
         self._writer.write_bytes(ElementTree.tostring(self._xml_root))
-        self._writer.close()
+
+        if auto_close:
+            self._writer.close()

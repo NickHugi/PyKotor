@@ -14,7 +14,7 @@ class SSFXMLReader(ResourceReader):
         self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_all().decode())).getroot()
         self._ssf: Optional[SSF] = None
 
-    def load(self) -> SSF:
+    def load(self, auto_close: bool = True) -> SSF:
         self._ssf = SSF()
 
         for child in self._xml_root:
@@ -25,7 +25,9 @@ class SSFXMLReader(ResourceReader):
             except ValueError:
                 pass
 
-        self._reader.close()
+        if auto_close:
+            self._reader.close()
+
         return self._ssf
 
 
@@ -35,7 +37,7 @@ class SSFXMLWriter(ResourceWriter):
         self.xml_root: ElementTree.Element = ElementTree.Element("xml")
         self.ssf: SSF = ssf
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         for sound_name, sound in SSFSound.__members__.items():
             ElementTree.SubElement(self.xml_root, "sound", {
                 "id": str(sound.value),
@@ -45,4 +47,6 @@ class SSFXMLWriter(ResourceWriter):
 
         ElementTree.indent(self.xml_root)
         self._writer.write_bytes(ElementTree.tostring(self.xml_root))
-        self._writer.close()
+
+        if auto_close:
+            self._writer.close()

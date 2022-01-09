@@ -66,7 +66,7 @@ class SSFBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._ssf: SSF = ssf
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         self._writer.write_string("SSF ")
         self._writer.write_string("V1.1")
         self._writer.write_uint32(12)
@@ -102,3 +102,6 @@ class SSFBinaryWriter(ResourceWriter):
 
         for i in range(8):
             self._writer.write_uint32(0xFFFFFFFF)
+
+        if auto_close:
+            self._writer.close()

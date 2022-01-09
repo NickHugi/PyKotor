@@ -59,7 +59,7 @@ class RIMBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._rim = rim
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         entry_count = len(self._rim)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
 
@@ -83,3 +83,6 @@ class RIMBinaryWriter(ResourceWriter):
 
         for resource in self._rim:
             self._writer.write_bytes(resource.data)
+
+        if auto_close:
+            self._writer.close()

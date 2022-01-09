@@ -66,7 +66,7 @@ class TwoDABinaryWriter(ResourceWriter):
         super().__init__(target)
         self._twoda: TwoDA = twoda
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         headers = self._twoda.get_headers()
 
         self._writer.write_string("2DA ")
@@ -103,3 +103,6 @@ class TwoDABinaryWriter(ResourceWriter):
 
         for value in values:
             self._writer.write_string(value)
+
+        if auto_close:
+            self._writer.close()

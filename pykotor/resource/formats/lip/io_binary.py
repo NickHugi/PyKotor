@@ -45,7 +45,7 @@ class LIPBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._lip: LIP = lip
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         self._writer.write_string("LIP ")
         self._writer.write_string("V1.0")
         self._writer.write_single(self._lip.length)
@@ -54,3 +54,6 @@ class LIPBinaryWriter(ResourceWriter):
         for keyframe in self._lip:
             self._writer.write_single(keyframe.time)
             self._writer.write_uint8(keyframe.shape.value)
+
+        if auto_close:
+            self._writer.close()

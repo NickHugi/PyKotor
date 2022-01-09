@@ -77,12 +77,15 @@ class TLKBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._tlk = tlk
 
-    def write(self) -> None:
+    def write(self, auto_close: bool = True) -> None:
         self._write_file_header()
 
         text_offset = WrappedInt(self._calculate_entries_offset())
         [self._write_entry(entry, text_offset) for entry in self._tlk.entries]
         [self._writer.write_string(entry.text) for entry in self._tlk.entries]
+
+        if auto_close:
+            self._writer.close()
 
     def _calculate_entries_offset(self):
         return TLKBinaryWriter.FILE_HEADER_SIZE + len(self._tlk) * TLKBinaryWriter.ENTRY_SIZE
