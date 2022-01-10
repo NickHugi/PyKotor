@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+from pykotor.common.language import LocalizedString
+from pykotor.common.misc import Game, ResRef
+from pykotor.resource.formats.gff import GFF
+
+
+class UTT:
+    """
+    Stores trigger data.
+
+    Attributes:
+        tag: "Tag" field.
+        resref: "TemplateResRef" field.
+        auto_remove_key: "AutoRemoveKey" field.
+        faction_id: "Faction" field.
+        cursor_id: "Cursor" field.
+        highlight_height: "HighlightHeight" field.
+        key_name: "KeyName" field.
+        type_id: "Type" field.
+        trap_detectable: "TrapDetectable" field.
+        trap_detect_dc: "TrapDetectDC" field.
+        trap_disarmable: "TrapDisarmable" field.
+        trap_disarm_dc: "DisarmDC" field.
+        is_trap: "TrapFlag" field.
+        trap_once: "TrapOneShot" field.
+        trap_type: "TrapType" field.
+        on_disarm: "OnDisarm" field.
+        on_trap_triggered: "OnTrapTriggered" field.
+        on_click: "OnClick" field.
+        on_heartbeat: "ScriptHeartbeat" field.
+        on_enter: "ScriptOnEnter" field.
+        on_exit: "ScriptOnExit" field.
+        on_user_defined: "ScriptUserDefine" field.
+        comment: "Comment" field.
+
+        palette_id: "PaletteID" field. Used in toolset only.
+
+        name: "LocalizedName" field. Not used by the game engine.
+        loadscreen_id: "LoadScreenID" field. Not used by the game engine.
+        portrait_id: "PortraitId" field. Not used by the game engine.
+    """
+
+    def __init__(self):
+        self.resref: ResRef = ResRef.from_blank()
+        self.comment: str = ""
+        self.tag: str = ""
+
+        self.name: LocalizedString = LocalizedString.from_invalid()
+
+        self.faction_id: int = 0
+        self.cursor_id: int = 0
+        self.type_id: int = 0
+
+        self.auto_remove_key: bool = True
+        self.key_name: str = ""
+
+        self.highlight_height: float = 0.0
+
+        self.is_trap: bool = False
+        self.trap_type: int = 0
+        self.trap_once: bool = False
+        self.trap_detectable: bool = False
+        self.trap_detect_dc: int = 0
+        self.trap_disarmable: bool = False
+        self.trap_disarm_dc: int = 0
+
+        self.on_disarm: ResRef = ResRef.from_blank()
+        self.on_click: ResRef = ResRef.from_blank()
+        self.on_trap_triggered: ResRef = ResRef.from_blank()
+        self.on_heartbeat: ResRef = ResRef.from_blank()
+        self.on_enter: ResRef = ResRef.from_blank()
+        self.on_exit: ResRef = ResRef.from_blank()
+        self.on_user_defined = ResRef.from_blank()
+
+        # Deprecated:
+        self.portrait_id: int = 0
+        self.loadscreen_id: int = 0
+        self.palette_id: int = 0
+        self.name: LocalizedString = LocalizedString.from_invalid()
+
+
+def construct_utt(gff: GFF) -> UTT:
+    utt = UTT()
+
+    root = gff.root
+
+    utt.tag = root.acquire("Tag", "")
+    utt.resref = root.acquire("TemplateResRef", ResRef.from_blank())
+    utt.auto_remove_key = root.acquire("AutoRemoveKey", 0)
+    utt.faction_id = root.acquire("Faction", 0)
+    utt.cursor_id = root.acquire("Cursor", 0)
+    utt.highlight_height = root.acquire("HighlightHeight", 0.0)
+    utt.key_name = root.acquire("KeyName", "")
+    utt.type_id = root.acquire("Type", 0)
+    utt.trap_detectable = root.acquire("TrapDetectable", 0)
+    utt.trap_detect_dc = root.acquire("TrapDetectDC", 0)
+    utt.trap_disarmable = root.acquire("TrapDisarmable", 0)
+    utt.trap_disarm_dc = root.acquire("DisarmDC", 0)
+    utt.is_trap = root.acquire("TrapFlag", 0)
+    utt.trap_once = root.acquire("TrapOneShot", 0)
+    utt.trap_type = root.acquire("TrapType", 0)
+    utt.on_disarm = root.acquire("OnDisarm", ResRef.from_blank())
+    utt.on_trap_triggered = root.acquire("OnTrapTriggered", ResRef.from_blank())
+    utt.on_click = root.acquire("OnClick", ResRef.from_blank())
+    utt.on_heartbeat = root.acquire("ScriptHeartbeat", ResRef.from_blank())
+    utt.on_enter = root.acquire("ScriptOnEnter", ResRef.from_blank())
+    utt.on_exit = root.acquire("ScriptOnExit", ResRef.from_blank())
+    utt.on_user_defined = root.acquire("ScriptUserDefine", ResRef.from_blank())
+    utt.comment = root.acquire("Comment", "")
+    utt.name = root.acquire("LocalizedName", LocalizedString.from_invalid())
+    utt.loadscreen_id = root.acquire("LoadScreenID", 0)
+    utt.portrait_id = root.acquire("PortraitId", 0)
+    utt.palette_id = root.acquire("PaletteID", 0)
+
+    return utt
+
+
+def dismantle_utt(utt: UTT, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+    gff = GFF()
+
+    root = gff.root
+    root.set_string("Tag", utt.tag)
+    root.set_resref("TemplateResRef", utt.resref)
+    root.set_uint8("AutoRemoveKey", utt.auto_remove_key)
+    root.set_uint32("Faction", utt.faction_id)
+    root.set_uint8("Cursor", utt.cursor_id)
+    root.set_single("HighlightHeight", utt.highlight_height)
+    root.set_string("KeyName", utt.key_name)
+    root.set_int32("Type", utt.type_id)
+    root.set_uint8("TrapDetectable", utt.trap_detectable)
+    root.set_uint8("TrapDetectDC", utt.trap_detect_dc)
+    root.set_uint8("TrapDisarmable", utt.trap_disarmable)
+    root.set_uint8("DisarmDC", utt.trap_disarm_dc)
+    root.set_uint8("TrapFlag", utt.is_trap)
+    root.set_uint8("TrapOneShot", utt.trap_once)
+    root.set_uint8("TrapType", utt.trap_type)
+    root.set_resref("OnDisarm", utt.on_disarm)
+    root.set_resref("OnTrapTriggered", utt.on_trap_triggered)
+    root.set_resref("OnClick", utt.on_click)
+    root.set_resref("ScriptHeartbeat", utt.on_heartbeat)
+    root.set_resref("ScriptOnEnter", utt.on_enter)
+    root.set_resref("ScriptOnExit", utt.on_exit)
+    root.set_resref("ScriptUserDefine", utt.on_user_defined)
+    root.set_string("Comment", utt.comment)
+
+    root.set_uint8("PaletteID", utt.palette_id)
+
+    if use_deprecated:
+        root.set_locstring("LocalizedName", utt.name)
+        root.set_uint16("LoadScreenID", utt.loadscreen_id)
+        root.set_uint16("PortraitId", utt.portrait_id)
+
+    return gff
