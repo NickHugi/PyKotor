@@ -195,7 +195,7 @@ class GFFStruct:
         """
         return self._fields[label].field_type() if label in self._fields else None
 
-    def acquire(self, label: str, default: Any, object_type: Type) -> Any:
+    def acquire(self, label: str, default: Any, object_type: Type = None) -> Any:
         """
         Gets the value from the specified field. If the field does not exist or the value type does not match the
         specified type then the default is returned instead.
@@ -203,13 +203,15 @@ class GFFStruct:
         Args:
             label: The field label.
             default: Default value to return if value does not match object_type.
-            object_type: The preferred type of the field value.
+            object_type: The preferred type of the field value. If not specified it will match the default's type.
 
         Returns:
             The field value or default value.
         """
         value = default
-        if self.exists(label) and isinstance(self[label], object_type):
+        if object_type is None:
+            object_type = type(value)
+        if self.exists(label) is not None and isinstance(self[label], object_type):
             value = self[label]
         return value
 
@@ -373,25 +375,33 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Vector4, value)
 
-    def set_struct(self, label: str, value: GFFStruct) -> None:
+    def set_struct(self, label: str, value: GFFStruct) -> GFFStruct:
         """
         Sets the value and field type of the field with the specified label.
 
         Args:
             label: The field label.
             value: The new field value.
+
+        Returns:
+            The value that was passed to the method.
         """
         self._fields[label] = _GFFField(GFFFieldType.Struct, value)
+        return value
 
-    def set_list(self, label: str, value: GFFList) -> None:
+    def set_list(self, label: str, value: GFFList) -> GFFList:
         """
         Sets the value and field type of the field with the specified label.
 
         Args:
             label: The field label.
             value: The new field value.
+
+        Returns:
+            The value that was passed to the method.
         """
         self._fields[label] = _GFFField(GFFFieldType.List, value)
+        return value
 
     def get_uint8(self, label: str) -> int:
         """
@@ -746,14 +756,16 @@ class GFFList:
             return NotImplemented
         return self._structs[item]
 
-    def add(self, struct_id: int) -> None:
+    def add(self, struct_id: int) -> GFFStruct:
         """
         Adds a new struct into the list.
 
         Args:
             struct_id: The StructID of the new struct.
         """
-        self._structs.append(GFFStruct(struct_id))
+        gff_list = GFFStruct(struct_id)
+        self._structs.append(gff_list)
+        return gff_list
 
     def at(self, index: int) -> Optional[GFFStruct]:
         """
