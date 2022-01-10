@@ -5,11 +5,15 @@ from __future__ import annotations
 
 from copy import copy, deepcopy
 from enum import IntEnum, Enum
-from typing import List, Optional, Any, Dict, Type
+from typing import List, Optional, Any, Dict, TypeVar, Union
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
+
+
+T = TypeVar("T")
+U = TypeVar("U")
 
 
 class GFFContent(Enum):
@@ -195,7 +199,7 @@ class GFFStruct:
         """
         return self._fields[label].field_type() if label in self._fields else None
 
-    def acquire(self, label: str, default: Any, object_type: Type = None) -> Any:
+    def acquire(self, label: str, default: T, object_type: U = None) -> Union[T, U]:
         """
         Gets the value from the specified field. If the field does not exist or the value type does not match the
         specified type then the default is returned instead.
