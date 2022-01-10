@@ -3,7 +3,7 @@ This module holds various unrelated classes.
 """
 from __future__ import annotations
 import os
-from enum import IntEnum
+from enum import IntEnum, Enum
 
 
 class ResRef:
@@ -214,3 +214,31 @@ class WrappedInt:
 
     def get(self) -> int:
         return self._value
+
+
+class InventoryItem:
+    def __init__(self, resref: ResRef, droppable: bool = False):
+        self.resref: ResRef = resref
+        self.droppable: bool = droppable
+
+    def __str__(self):
+        return self.resref
+
+    def __eq__(self, other: InventoryItem):
+        return self.resref == other.resref and self.droppable == other.droppable
+
+
+class EquipmentSlot(Enum):
+    HEAD        = 1
+    ARMOR       = 2
+    GAUNTLET    = 8
+    RIGHT_HAND  = 16
+    LEFT_HAND   = 32
+    RIGHT_ARM   = 128
+    LEFT_ARM    = 256
+    IMPLANT     = 512
+    BELT        = 1024
+    CLAW1       = 16384
+    CLAW2       = 32768
+    CLAW3       = 65536
+    HIDE        = 131072
