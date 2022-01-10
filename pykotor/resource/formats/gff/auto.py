@@ -40,11 +40,13 @@ def detect_gff(source: SOURCE_TYPES, offset: int = 0) -> FileFormat:
     try:
         if isinstance(source, str):
             with BinaryReader.from_file(source, offset) as reader:
-                file_format = FileFormat.BINARY if any(x for x in GFFContent if x.value == reader.read_string(4)) else FileFormat.XML
+                file_header = reader.read_string(4)
+                file_format = FileFormat.BINARY if any(x.value == file_header for x in GFFContent) else FileFormat.XML
         elif isinstance(source, bytes) or isinstance(source, bytearray):
             file_format = FileFormat.BINARY if any(x for x in GFFContent if x.value == source[:4].decode('ascii', 'ignore')) else FileFormat.XML
         elif isinstance(source, BinaryReader):
-            file_format = FileFormat.BINARY if any(x for x in GFFContent if x.value == source.read_string(4)) else FileFormat.XML
+            file_header = source.read_string(4)
+            file_format = FileFormat.BINARY if any(x.value == file_header for x in GFFContent) else FileFormat.XML
             source.skip(-4)
         else:
             file_format = FileFormat.INVALID
