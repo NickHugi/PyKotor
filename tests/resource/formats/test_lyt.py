@@ -8,7 +8,7 @@ from pykotor.resource.type import FileFormat
 ASCII_TEST_FILE = "../../files/test.lyt"
 
 
-class TestLIP(TestCase):
+class TestLYT(TestCase):
     def test_binary_io(self):
         lyt = LYTAsciiReader(ASCII_TEST_FILE).load()
         self.validate_io(lyt)
