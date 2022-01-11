@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from enum import IntEnum, Enum
 
+from pykotor.common.geometry import Vector3
+
 
 class ResRef:
     class InvalidEncodingError(ValueError):
@@ -157,6 +159,38 @@ class Color:
         blue = (0x000000FF & integer) / 255
         return Color(red, green, blue)
 
+    @classmethod
+    def from_rgb_vector3(cls, vector3: Vector3) -> Color:
+        """
+        Returns a Color from the specified vector components.
+
+        Args:
+            vector3: A Vector3 instance.
+
+        Returns:
+            A new Color instance.
+        """
+        red = vector3.x
+        green = vector3.y
+        blue = vector3.z
+        return Color(red, green, blue)
+
+    @classmethod
+    def from_bgr_vector3(cls, vector3: Vector3) -> Color:
+        """
+        Returns a Color from the specified vector components.
+
+        Args:
+            vector3: A Vector3 instance.
+
+        Returns:
+            A new Color instance.
+        """
+        red = vector3.z
+        green = vector3.y
+        blue = vector3.x
+        return Color(red, green, blue)
+
     def rgb_integer(self) -> int:
         """
         Returns a RGB integer encoded from the color components.
@@ -180,6 +214,24 @@ class Color:
         green = int(self.g * 255) << 8
         blue = int(self.b * 255)
         return red + green + blue
+
+    def rgb_vector3(self) -> Vector3:
+        """
+        Returns a Vector3 representing a color with its components.
+
+        Returns:
+            A new Vector3 instance.
+        """
+        return Vector3(self.r, self.g, self.b)
+
+    def bgr_vector3(self) -> Vector3:
+        """
+        Returns a Vector3 representing a color with its components.
+
+        Returns:
+            A new Vector3 instance.
+        """
+        return Vector3(self.b, self.g, self.r)
 
 
 Color.RED = Color(1.0, 0.0, 0.0)
