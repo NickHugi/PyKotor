@@ -187,7 +187,7 @@ class GFFStruct:
         if label in self._fields:
             self._fields.pop(label)
 
-    def exists(self, label: str) -> GFFFieldType:
+    def exists(self, label: str) -> bool:
         """
         Returns the type of the field with the specified label.
 
@@ -197,7 +197,7 @@ class GFFStruct:
         Returns:
             A GFFFieldType value.
         """
-        return self._fields[label].field_type() if label in self._fields else None
+        return True if label in self._fields else None
 
     def acquire(self, label: str, default: T, object_type: U = None) -> Union[T, U]:
         """
@@ -215,7 +215,7 @@ class GFFStruct:
         value = default
         if object_type is None:
             object_type = type(value)
-        if self.exists(label) is not None and isinstance(self[label], object_type):
+        if self.exists(label) and isinstance(self[label], object_type):
             value = self[label]
         return value
 
