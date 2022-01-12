@@ -19,6 +19,9 @@ class Vector2:
         self.x: float = x
         self.y: float = y
 
+    def __iter__(self):
+        yield self.x, self.y
+
     def __repr__(self):
         return "Vector2({}, {})".format(self.x, self.y)
 
@@ -166,6 +169,9 @@ class Vector3:
         self.y: float = y
         self.z: float = z
 
+    def __iter__(self):
+        yield self.x, self.y, self.z
+
     def __repr__(self):
         return "Vector3({}, {}, {})".format(self.x, self.y, self.z)
 
@@ -298,6 +304,9 @@ class Vector4:
         self.z: float = z
         self.w: float = w
 
+    def __iter__(self):
+        return iter((self.x, self.y, self.z, self.w))
+
     def __repr__(self):
         return "Vector4({}, {}, {}, {})".format(self.x, self.y, self.z, self.w)
 
@@ -384,6 +393,24 @@ class Vector4:
             A new Vector4 instance.
         """
         return Vector4(0.0, 0.0, 0.0, 0.0)
+
+    @classmethod
+    def from_compressed(cls, data: int) -> Vector4:
+        x = 1 - (data & 0x7FF) / 1023
+        y = 1 - ((data >> 11) & 0x7FF) / 1023
+        z = 1 - (data >> 22) / 511
+
+        temp = x ** 2 + y ** 2 + z ** 2
+        if temp < 1.0:
+            w = -math.sqrt(1.0 - temp)
+        else:
+            temp = math.sqrt(temp)
+            x /= temp
+            y /= temp
+            z /= temp
+            w = 0
+
+        return Vector4(x, y, z, w)
 
     def magnitude(self) -> float:
         """

@@ -36,7 +36,7 @@ class BinaryReader:
 
     def __init__(self, stream: BinaryIO, offset: int = 0):
         self._stream: BinaryIO = stream
-        self.offset: int = offset
+        self._offset: int = offset
         self.auto_close: bool = True
         self._stream.seek(offset)
 
@@ -84,7 +84,7 @@ class BinaryReader:
             reader = BinaryReader.from_bytes(source, offset)
         elif isinstance(source, BinaryReader):
             reader = source
-            reader.offset = offset
+            reader._offset = offset
         else:
             raise NotImplementedError("Must specify a path, bytes object or an existing BinaryReader instance.")
 
@@ -103,6 +103,14 @@ class BinaryReader:
         """
         with open(path, 'rb') as file:
             return file.read()
+
+    def offset(self) -> int:
+        return self._offset
+
+    def set_offset(self, offset: int) -> None:
+        original = self._offset
+        self.seek(self.position() + offset)
+        self._offset = offset
 
     def size(self) -> int:
         """
@@ -152,7 +160,7 @@ class BinaryReader:
         Returns:
             The byte offset.
         """
-        return self._stream.tell() - self.offset
+        return self._stream.tell() - self._offset
 
     def seek(self, position) -> None:
         """
@@ -161,11 +169,11 @@ class BinaryReader:
         Args:
             position: The byte index into stream.
         """
-        self._stream.seek(position + self.offset)
+        self._stream.seek(position + self._offset)
 
     def read_all(self) -> bytes:
-        length = self.size() - self.offset
-        self._stream.seek(self.offset)
+        length = self.size() - self._offset
+        self._stream.seek(self._offset)
         return self._stream.read(length)
 
     def read_uint8(self, *, big: bool = False) -> int:
