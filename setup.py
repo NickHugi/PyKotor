@@ -1,16 +1,17 @@
-from setuptools import setup, find_packages
+import pathlib
+from setuptools import setup, find_packages, find_namespace_packages
+
+HERE = pathlib.Path(__file__).parent
 
 NAME = "PyKotor"
-VERSION = 1.0
+VERSION = "0.1.1"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "Read, modify and write files used by KotOR's game engine."
-PACKAGES = find_packages(exclude=['tests*'])
+PACKAGES = find_namespace_packages(exclude=["tests"])
+URL = "https://github.com/NickHugi/PyKotor"
 
-with open("requirements.txt", 'r') as file:
-    REQUIREMENTS = file.read()
-
-with open("README.rd", 'r') as file:
-    README = file.read()
+README = (HERE / "README.rd").read_text()
+REQUIREMENTS = (HERE / "requirements.txt").read_text()
 
 setup(
     name=NAME,
@@ -19,5 +20,6 @@ setup(
     description=DESCRIPTION,
     install_requires=REQUIREMENTS,
     long_description=README,
-    packages=PACKAGES
+    packages=PACKAGES,
+    url=URL
 )
