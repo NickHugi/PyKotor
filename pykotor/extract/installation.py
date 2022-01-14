@@ -1,0 +1,171 @@
+import os
+from contextlib import suppress
+from typing import Dict, List, Optional, Tuple
+
+from pykotor.extract.file import FileResource, FileQuery
+from pykotor.extract.capsule import Capsule
+from pykotor.extract.chitin import Chitin
+from pykotor.resource.formats.mdl import MDL
+from pykotor.resource.formats.tpc import TPC
+from pykotor.resource.type import ResourceType
+
+
+class Installation:
+    """
+    Installation provides a centralized location for loading resources stored in the game through its
+    various folders and formats.
+    """
+    TEXTURES_TYPES = [ResourceType.TPC, ResourceType.TGA, ResourceType.DDS]
+
+    def __init__(self, path: str):
+        self._path: str = path.replace('\\', '/')
+        if not self._path.endswith('/'): self._path += '/'
+
+        self._chitin: List[FileResource] = []
+        self._modules: Dict[str, List[FileResource]] = {}
+        self._lips: Dict[str, List[FileResource]] = {}
+        self._texturepacks: Dict[str, List[FileResource]] = {}
+        self._override: Dict[str, FileResource] = {}
+
+        self.load_modules()
+        self.load_override()
+        self.load_lips()
+        self.load_textures()
+        self.load_chitin()
+
+    # region Get Paths
+    def module_path(self) -> str:
+        module_path = self._path
+        for folder in os.listdir(self._path):
+            if os.path.isdir(module_path + folder) and folder.lower() == "modules":
+                module_path += folder + "/"
+        if module_path == self._path:
+            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
+        return module_path
+
+    def override_path(self) -> str:
+        override_path = self._path
+        for folder in os.listdir(self._path):
+            if os.path.isdir(override_path + folder) and folder.lower() == "override":
+                override_path += folder + "/"
+        if override_path == self._path:
+            raise ValueError("Could not find override folder in '{}'.".format(self._path))
+        return override_path
+
+    def lips_path(self) -> str:
+        lips_path = self._path
+        for folder in os.listdir(self._path):
+            if os.path.isdir(lips_path + folder) and folder.lower() == "lips":
+                lips_path += folder + "/"
+        if lips_path == self._path:
+            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
+        return lips_path
+
+    def texturepacks_path(self) -> str:
+        texturepacks_path = self._path
+        for folder in os.listdir(self._path):
+            if os.path.isdir(texturepacks_path + folder) and folder.lower() == "texturepacks":
+                texturepacks_path += folder + "/"
+        if texturepacks_path == self._path:
+            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
+        return texturepacks_path
+    # endregion
+
+    # region Load Data
+    def load_chitin(self) -> None:
+        chitin = Chitin(self._path)
+        self._chitin = [resource for resource in chitin]
+
+    def load_modules(self) -> None:
+        self._modules = {}
+        module_path = self.module_path()
+        module_files = [file for file in os.listdir(module_path) if file.endswith('.mod')or file.endswith('.rim') or file.endswith('.erf')]
+        for module in module_files:
+            self._modules[module] = [resource for resource in Capsule(module_path + module)]
+
+    def load_lips(self) -> None:
+        self._lips = {}
+        lips_path = self.lips_path()
+        lip_files = [file for file in os.listdir(lips_path) if file.endswith('.mod')]
+        for module in lip_files:
+            self._lips[module] = [resource for resource in Capsule(lips_path + module)]
+
+    def load_textures(self) -> None:
+        self._texturepacks = {}
+        texturepacks_path = self.texturepacks_path()
+        texturepacks_files = [file for file in os.listdir(texturepacks_path) if file.endswith('.erf')]
+        for module in texturepacks_files:
+            self._texturepacks[module] = [resource for resource in Capsule(texturepacks_path + module)]
+
+    def load_override(self) -> None:
+        self._override = {}
+        override_path = self.override_path()
+        for file in os.listdir(override_path):
+            with suppress(Exception):
+                name, ext = file.split('.')
+                size = os.path.getsize(override_path + file)
+                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, override_path + file)
+                self._override[file] = resource
+    # endregion
+
+    # region Get FileResources
+    def chitin_resources(self) -> List[FileResource]:
+        return self._chitin[:]
+
+    def modules_list(self) -> List[str]:
+        return list(self._modules.keys())
+
+    def module_resources(self, filename) -> List[FileResource]:
+        return self._modules[filename][:]
+
+    def lips_list(self) -> List[str]:
+        return list(self._lips.keys())
+
+    def lip_resources(self, filename) -> List[FileResource]:
+        return self._lips[filename][:]
+
+    def texturepacks_list(self) -> List[str]:
+        return list(self._texturepacks.keys())
+
+    def texturepack_resources(self, filename) -> List[FileResource]:
+        return self._texturepacks[filename][:]
+
+    def override_list(self) -> List[str]:
+        return list(self._override.keys())
+
+    def override_resources(self) -> List[FileResource]:
+        return list(self._override.values())
+
+    def resource(self, resref: str, restype: ResourceType) -> Optional[bytes]:
+        """
+        Returns a resource matching the specified resref and restype. If no resource is found then None is returned
+        instead. The method checks the following locations in descending order: override folder, in modules folder,
+        then finally chitin.key.
+
+        Args:
+            resref: The ResRef.
+            restype: The resource type.
+
+        Returns:
+            Resource data or None.
+        """
+        query = FileQuery(resref, restype)
+
+        # 1st: Override
+        for file_name, resource in self._override.items():
+            if resource == query:
+                return resource.data()
+
+        # 2nd: Modules
+        for module_name, resources in self._modules.items():
+            for resource in resources:
+                if resource == query:
+                    return resource.data()
+
+        # 3rd: Chitin
+        for resource in self._chitin:
+            if resource == query:
+                return resource.data()
+
+        return None
+    # endregion
