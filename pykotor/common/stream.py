@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import struct
 from abc import ABC, abstractmethod
-from typing import BinaryIO, Union, TextIO, List, overload, Optional
+from typing import BinaryIO, Union, Optional
 from pykotor.common.geometry import Vector3, Vector4, Vector2
 from pykotor.common.language import LocalizedString
 
@@ -392,7 +392,7 @@ class BinaryReader:
             char = self.read_bytes(1).decode('ascii', errors='ignore')
         return string
 
-    def read_localized_string(self) -> LocalizedString:
+    def read_locstring(self) -> LocalizedString:
         """
         Reads the localized string data structure from the stream.
 
@@ -698,7 +698,7 @@ class BinaryWriter(ABC):
         """
 
     @abstractmethod
-    def write_localized_string(self, value: LocalizedString, *, big: bool = False):
+    def write_locstring(self, value: LocalizedString, *, big: bool = False):
         """
         Writes the specified localized string to the stream.
 
@@ -991,7 +991,7 @@ class BinaryWriterFile(BinaryWriter):
         line += "\n"
         self._stream.write(line.encode())
 
-    def write_localized_string(self, value: LocalizedString, *, big: bool = False):
+    def write_locstring(self, value: LocalizedString, *, big: bool = False):
         """
         Writes the specified localized string to the stream.
 
@@ -1001,7 +1001,7 @@ class BinaryWriterFile(BinaryWriter):
             value: The localized string to be written.
             big: Write any integers as big endian.
         """
-        bw = BinaryWriter.to_bytes(b'')
+        bw = BinaryWriter.to_bytearray()
         bw.write_uint32(value.stringref, big=big, max_neg1=True)
         bw.write_uint32(len(value), big=big)
         for language, gender, substring in value:
@@ -1302,7 +1302,7 @@ class BinaryWriterBytearray(BinaryWriter):
         self._ba[self._position:self._position + len(encoded)] = encoded
         self._position += len(encoded)
 
-    def write_localized_string(self, value: LocalizedString, *, big: bool = False):
+    def write_locstring(self, value: LocalizedString, *, big: bool = False):
         """
         Writes the specified localized string to the stream.
 
@@ -1324,4 +1324,5 @@ class BinaryWriterBytearray(BinaryWriter):
 
         self.write_uint32(len(locstring_data))
         self.write_bytes(locstring_data)
+
 

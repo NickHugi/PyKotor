@@ -100,7 +100,7 @@ class GFFBinaryReader(ResourceReader):
                 value = ResRef(self._reader.read_string(length))
                 gff_struct.set_resref(label, value)
             elif field_type is GFFFieldType.LocalizedString:
-                gff_struct.set_locstring(label, self._reader.read_localized_string())
+                gff_struct.set_locstring(label, self._reader.read_locstring())
             elif field_type is GFFFieldType.Binary:
                 length = self._reader.read_uint32()
                 gff_struct.set_binary(label, self._reader.read_bytes(length))
@@ -266,7 +266,7 @@ class GFFBinaryWriter(ResourceWriter):
             elif field_type is GFFFieldType.ResRef:
                 self._field_data_writer.write_string(value.get(), prefix_length=1)
             elif field_type is GFFFieldType.LocalizedString:
-                self._field_data_writer.write_localized_string(value)
+                self._field_data_writer.write_locstring(value)
             elif field_type is GFFFieldType.Binary:
                 self._field_data_writer.write_uint32(len(value))
                 self._field_data_writer.write_bytes(value)
