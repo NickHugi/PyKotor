@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List, Optional, Union, Tuple, Dict
+from typing import List, Optional, Union, Tuple, Dict, Set
 
 from pykotor.common.geometry import Vector3, Vector4, Vector2, SurfaceMaterial
 from pykotor.common.misc import Color
@@ -69,6 +69,20 @@ class MDL:
             if node.node_id == node_id:
                 return node
         raise ValueError
+
+    def all_textures(self) -> Set[str]:
+        textures = set()
+        for node in self.all_nodes():
+            if node.mesh and node.mesh.texture_1 != "NULL" and node.mesh.texture_1 != "":
+                textures.add(node.mesh.texture_1)
+        return textures
+
+    def all_lightmaps(self) -> Set[str]:
+        lightmaps = set()
+        for node in self.all_nodes():
+            if node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2 != "":
+                lightmaps.add(node.mesh.texture_2)
+        return lightmaps
 
 
 # region Animation Data
@@ -387,4 +401,3 @@ class MDLControllerRow:
     def __str__(self):
         return "{} {}".format(self.time, self.data).replace(',', '').replace('[', '').replace(']', '')
 # endregion
-
