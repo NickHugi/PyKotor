@@ -1,13 +1,22 @@
+from __future__ import annotations
+
 import os
 from contextlib import suppress
+from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
 from pykotor.extract.file import FileResource, FileQuery
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.resource.formats.mdl import MDL
-from pykotor.resource.formats.tpc import TPC
+from pykotor.resource.formats.tpc import TPC, load_tpc
 from pykotor.resource.type import ResourceType
+
+
+class TextureQuality(Enum):
+    HIGH = "a"
+    MODERATE = "b"
+    LOW = "c"
 
 
 class Installation:
@@ -135,6 +144,7 @@ class Installation:
 
     def override_resources(self) -> List[FileResource]:
         return list(self._override.values())
+    # endregion
 
     def resource(self, resref: str, restype: ResourceType) -> Optional[bytes]:
         """
@@ -168,4 +178,48 @@ class Installation:
                 return resource.data()
 
         return None
-    # endregion
+
+    def texture(self, resref: str, *, check_modules: bool = True, check_chitin: bool = True,
+                check_gui: bool = True, texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
+        """
+        Returns a TPC object loaded from a resource with the specified ResRef. If no resource is found then None is
+        returned instead. The method checks the following locations in descending order: override folder, tpa texture
+        pack, then optionally the chitin.key and/or all modules.
+
+        Args:
+            resref: The ResRef.
+            check_modules: Check the modules in the /modules folder.
+            check_chitin: Check the resources referenced by the chitin.key file.
+            check_gui: Check the textures stored in the GUI texturepack.
+            texture_quality: Which texturepack to check.
+
+        Returns:
+            TPC object or None.
+        """
+        for file_name, resource in self._override.items():
+            if resource.resref() == resref and resource.restype() == ResourceType.TGA:
+                return load_tpc(resource.data())
+            elif resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                return load_tpc(resource.data())
+
+        for resource in self.texturepack_resources("swpc_tex_tp{}.erf".format(texture_quality.value)):
+            if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                return load_tpc(resource.data())
+
+        if check_gui:
+            for resource in self.texturepack_resources("swpc_tex_gui.erf"):
+                if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                    return load_tpc(resource.data())
+
+        if check_chitin:
+            for resource in self._chitin:
+                if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                    return load_tpc(resource.data())
+
+        if check_modules:
+            for module_name, resources in self._modules.items():
+                for resource in resources:
+                    if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                        return load_tpc(resource.data())
+
+        return None
