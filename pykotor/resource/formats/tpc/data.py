@@ -24,7 +24,6 @@ class TPC:
         self._width: int = 0
         self._height: int = 0
         self.txi: str = ""
-        self.txi_str: str = ""
 
         # TODO: cube maps
 
@@ -354,4 +353,3 @@ class TPCTextureFormat(IntEnum):
     RGBA = 2
     DXT1 = 3
     DXT5 = 4
-
