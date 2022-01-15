@@ -28,43 +28,6 @@ class TPC:
 
         # TODO: cube maps
 
-    @classmethod
-    def load(cls, *, path: Optional[str] = None, data: Optional[bytes] = None, offset: int = 0) -> TPC:
-        """
-        Returns a new TPC instance from either the specified path or data.
-
-        Args:
-            path: File path to load.
-            data: Raw data to load.
-            offset: Offset into the data to consider position 0.
-
-        Raises:
-            ValueError: If neither a path nor data is specified.
-            FileNotFoundError: If a path is specified but not found.
-            TypeError: If the TPC file is invalid.
-
-        Returns:
-            A new TPC instance.
-        """
-        if path is not None:
-            reader = BinaryReader.from_file(path, offset)
-        elif data is not None:
-            reader = BinaryReader.from_bytes(data, offset)
-        else:
-            raise ValueError("Must specify a file path or data to read.")
-
-        with reader:
-            return _TPCReader(reader).load()
-
-    def build_tpc(self) -> bytes:
-        return _TPCWriter(self).build()
-
-    def build_tga(self) -> bytes:
-        return _TGAWriter(self).build()
-
-    def build_bmp(self) -> bytes:
-        return _BMPWriter(self).build()
-
     def mipmap_count(self) -> int:
         """
         Returns the number of mipmaps.
