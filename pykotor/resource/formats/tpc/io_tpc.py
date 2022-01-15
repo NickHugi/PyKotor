@@ -6,6 +6,19 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader
 
 
+def _get_size(width: int, height: int, tpc_format: TPCTextureFormat) -> int:
+    if tpc_format is TPCTextureFormat.Greyscale:
+        return width * height * 1
+    elif tpc_format is TPCTextureFormat.RGB:
+        return width * height * 3
+    elif tpc_format is TPCTextureFormat.RGBA:
+        return width * height * 4
+    elif tpc_format is TPCTextureFormat.DXT1:
+        return max(8, ((width + 3) // 4) * ((height + 3) // 4) * 8)
+    elif tpc_format is TPCTextureFormat.DXT5:
+        return max(16, ((width + 3) // 4) * ((height + 3) // 4) * 16)
+
+
 class TPCBinaryReader(ResourceReader):
     def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
@@ -50,7 +63,7 @@ class TPCBinaryReader(ResourceReader):
         mipmaps = []
         mm_width, mm_height = width, height
         for i in range(mipmap_count):
-            mm_size = self._get_size(mm_width, mm_height, tpc_format)
+            mm_size = _get_size(mm_width, mm_height, tpc_format)
             mipmaps.append(self._reader.read_bytes(mm_size))
 
             mm_width >>= 1
@@ -61,25 +74,13 @@ class TPCBinaryReader(ResourceReader):
         file_size = self._reader.size()
         txi = self._reader.read_string(file_size - self._reader.position())
 
-        self._tpc.txi_str = txi
+        self._tpc.txi = txi
         self._tpc.set(width, height, mipmaps, tpc_format)
 
         if auto_close:
             self._reader.close()
 
         return self._tpc
-
-    def _get_size(self, width: int, height: int, tpc_format: TPCTextureFormat) -> int:
-        if tpc_format is TPCTextureFormat.Greyscale:
-            return width * height * 1
-        elif tpc_format is TPCTextureFormat.RGB:
-            return width * height * 3
-        elif tpc_format is TPCTextureFormat.RGBA:
-            return width * height * 4
-        elif tpc_format is TPCTextureFormat.DXT1:
-            return max(8, ((width + 3) // 4) * ((height + 3) // 4) * 8)
-        elif tpc_format is TPCTextureFormat.DXT5:
-            return max(16, ((width + 3) // 4) * ((height + 3) // 4) * 16)
 
 
 class TPCBinaryWriter(ResourceWriter):
@@ -88,9 +89,41 @@ class TPCBinaryWriter(ResourceWriter):
         self._tpc = tpc
 
     def write(self, auto_close: bool = True) -> None:
-        # TODO
+
+        data = b''
+        size = 0
+
+        for i in range(self._tpc.mipmap_count()):
+            width, height, texture_format, data = self._tpc.get(i)
+            size += _get_size(width, height, texture_format)
+
+        if self._tpc.format() == TPCTextureFormat.RGBA:
+            encoding = 4
+            size = 0
+        elif self._tpc.format() == TPCTextureFormat.RGB:
+            encoding = 2
+            size = 0
+        elif self._tpc.format() == TPCTextureFormat.Greyscale:
+            encoding = 1
+            size = 0
+        elif self._tpc.format() == TPCTextureFormat.DXT1:
+            encoding = 2
+        elif self._tpc.format() == TPCTextureFormat.DXT5:
+            encoding = 4
+        else:
+            raise ValueError("Invalid TPC texture format.")
+
+        width, height = self._tpc.dimensions()
+
+        self._writer.write_uint32(size)
+        self._writer.write_single(0.0)
+        self._writer.write_uint16(width)
+        self._writer.write_uint16(height)
+        self._writer.write_uint8(encoding)
+        self._writer.write_uint8(self._tpc.mipmap_count())
+        self._writer.write_bytes(b'\x00' * 114)
+        self._writer.write_bytes(data)
+        self._writer.write_bytes(self._tpc.txi.encode('ascii'))
 
         if auto_close:
             self._writer.close()
-
-        raise NotImplementedError
