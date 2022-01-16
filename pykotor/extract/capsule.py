@@ -96,5 +96,5 @@ class Capsule:
             res_id = reader.read_uint32()
             offset = reader.read_uint32()
             size = reader.read_uint32()
-            self._resources.append(FileResource(resref, restype, offset, size, self._path))
+            self._resources.append(FileResource(resref, restype, size, offset, self._path))
 
