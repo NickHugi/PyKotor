@@ -213,7 +213,7 @@ class ResourceType:
             The corresponding ResourceType object.
         """
         for value in ResourceType.__dict__.values():
-            if value == extension:
+            if value.upper() == extension.upper():
                 return value
         else:
             raise ValueError("Could not find resource with extension '{}'.".format(extension))
