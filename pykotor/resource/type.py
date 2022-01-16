@@ -198,6 +198,8 @@ class ResourceType:
         for value in ResourceType.__dict__.values():
             if value == type_id:
                 return value
+        else:
+            raise ValueError("Could not find resource type with ID {}.".format(type_id))
 
     @classmethod
     def from_extension(cls, extension: str) -> ResourceType:
@@ -213,6 +215,8 @@ class ResourceType:
         for value in ResourceType.__dict__.values():
             if value == extension:
                 return value
+        else:
+            raise ValueError("Could not find resource with extension '{}'.".format(extension))
 
 
 ResourceType.INVALID = ResourceType(0,      "",     "Undefined",    "binary")
