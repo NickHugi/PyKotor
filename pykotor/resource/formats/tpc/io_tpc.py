@@ -90,11 +90,12 @@ class TPCBinaryWriter(ResourceWriter):
 
     def write(self, auto_close: bool = True) -> None:
 
-        data = b''
+        data = bytearray()
         size = 0
 
         for i in range(self._tpc.mipmap_count()):
-            width, height, texture_format, data = self._tpc.get(i)
+            width, height, texture_format, mm_data = self._tpc.get(i)
+            data += mm_data
             size += _get_size(width, height, texture_format)
 
         if self._tpc.format() == TPCTextureFormat.RGBA:
