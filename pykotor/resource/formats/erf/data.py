@@ -73,7 +73,7 @@ class ERF:
         if resource is None:
             self._resources.append(ERFResource(ResRef(resref), restype, data))
         else:
-            resource.resref = resref
+            resource.resref = ResRef(resref)
             resource.restype = restype
             resource.data = data
 
