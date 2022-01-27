@@ -8,7 +8,9 @@ from typing import Dict, List, Optional, Tuple
 from pykotor.extract.file import FileResource, FileQuery
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
+from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.mdl import MDL
+from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tpc import TPC, load_tpc
 from pykotor.resource.type import ResourceType
 
@@ -35,12 +37,14 @@ class Installation:
         self._lips: Dict[str, List[FileResource]] = {}
         self._texturepacks: Dict[str, List[FileResource]] = {}
         self._override: Dict[str, FileResource] = {}
+        self._talktable: Optional[TalkTable] = None
 
         self.load_modules()
         self.load_override()
         self.load_lips()
         self.load_textures()
         self.load_chitin()
+        self._talktable = TalkTable(self._path + "dialog.tlk")
 
     # region Get Paths
     def path(self) -> str:
@@ -114,7 +118,7 @@ class Installation:
         override_path = self.override_path()
         for file in os.listdir(override_path):
             with suppress(Exception):
-                name, ext = file.split('.')
+                name, ext = file.split('.', 1)
                 size = os.path.getsize(override_path + file)
                 resource = FileResource(name, ResourceType.from_extension(ext), size, 0, override_path + file)
                 self._override[file] = resource
@@ -148,6 +152,9 @@ class Installation:
     def override_resources(self) -> List[FileResource]:
         return list(self._override.values())
     # endregion
+
+    def talktable(self) -> TalkTable:
+        return self._talktable
 
     def resource(self, resref: str, restype: ResourceType) -> Optional[bytes]:
         """
@@ -226,3 +233,6 @@ class Installation:
                         return load_tpc(resource.data())
 
         return None
+
+    def string(self, stringref: int) -> str:
+        return self._talktable.string(stringref)
