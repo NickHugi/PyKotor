@@ -43,6 +43,9 @@ class Installation:
         self.load_chitin()
 
     # region Get Paths
+    def path(self) -> str:
+        return self._path
+
     def module_path(self) -> str:
         module_path = self._path
         for folder in os.listdir(self._path):
