@@ -212,9 +212,11 @@ class ResourceType:
         Returns:
             The corresponding ResourceType object.
         """
-        for value in ResourceType.__dict__.values():
-            if value.upper() == extension.upper():
-                return value
+        for resource_type in ResourceType.__annotations__:
+            if not isinstance(ResourceType.__dict__[resource_type], ResourceType):
+                continue
+            if ResourceType.__dict__[resource_type].extension.upper() == extension.upper():
+                return ResourceType.__dict__[resource_type]
         else:
             raise ValueError("Could not find resource with extension '{}'.".format(extension))
 
