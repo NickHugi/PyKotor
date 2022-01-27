@@ -142,6 +142,30 @@ class ResourceType:
     MDX: ResourceType
     ERF: ResourceType
     MP3: ResourceType
+    TLK_XML: ResourceType
+    MDL_ASCII: ResourceType
+    TwoDA_CSV: ResourceType
+    GFF_XML: ResourceType
+    IFO_XML: ResourceType
+    GIT_XML: ResourceType
+    UTI_XML: ResourceType
+    UTC_XML: ResourceType
+    DLG_XML: ResourceType
+    IPT_XML: ResourceType
+    UTT_XML: ResourceType
+    UTS_XML: ResourceType
+    FAC_XML: ResourceType
+    UTE_XML: ResourceType
+    UTD_XML: ResourceType
+    UTP_XML: ResourceType
+    GUI_XML: ResourceType
+    UTM_XML: ResourceType
+    JRL_XML: ResourceType
+    UTW_XML: ResourceType
+    PTH_XML: ResourceType
+    LIP_XML: ResourceType
+    SSF_XML: ResourceType
+
 
     def __init__(self, type_id: int, extension: str, category: str, contents: str):
         self.type_id = type_id
@@ -278,4 +302,29 @@ ResourceType.LIP    = ResourceType(3004,    "lip",  "Lips",         "lips")
 ResourceType.TPC    = ResourceType(3007,    "tpc",  "Textures",     "binary")
 ResourceType.MDX    = ResourceType(3008,    "mdx",  "Models",       "binary")
 ResourceType.ERF    = ResourceType(9997,    "erf",  "Module",       "binary")
-ResourceType.MP3    = ResourceType(25014,   "mp3",  "Audio",        "binary")
+
+# For Toolset Use:
+ResourceType.MP3        = ResourceType(25014,   "mp3",          "Audio",        "binary")
+ResourceType.TLK_XML    = ResourceType(50001,   "tlk.xml",      "Talk Tables",  "binary")
+ResourceType.MDL_ASCII  = ResourceType(50002,   "mdl.ascii",    "Models",       "binary")
+ResourceType.TwoDA_CSV  = ResourceType(50003,   "2da.csv",    "Models",       "binary")
+ResourceType.GFF_XML    = ResourceType(50004,   "gff.xml",    "Models",       "binary")
+ResourceType.IFO_XML    = ResourceType(50005,   "ifo.xml",    "Models",       "binary")
+ResourceType.GIT_XML    = ResourceType(50006,   "git.xml",    "Models",       "binary")
+ResourceType.UTI_XML    = ResourceType(50007,   "uti.xml",    "Models",       "binary")
+ResourceType.UTC_XML    = ResourceType(50008,   "utc.xml",    "Models",       "binary")
+ResourceType.DLG_XML    = ResourceType(50009,   "dlg.xml",    "Models",       "binary")
+ResourceType.ITP_XML    = ResourceType(50010,   "itp.xml",    "Models",       "binary")
+ResourceType.UTT_XML    = ResourceType(50011,   "utt.xml",    "Models",       "binary")
+ResourceType.UTS_XML    = ResourceType(50012,   "uts.xml",    "Models",       "binary")
+ResourceType.FAC_XML    = ResourceType(50013,   "fac.xml",    "Models",       "binary")
+ResourceType.UTE_XML    = ResourceType(50014,   "ute.xml",    "Models",       "binary")
+ResourceType.UTD_XML    = ResourceType(50015,   "utd.xml",    "Models",       "binary")
+ResourceType.UTP_XML    = ResourceType(50016,   "utp.xml",    "Models",       "binary")
+ResourceType.GUI_XML    = ResourceType(50017,   "gui.xml",    "Models",       "binary")
+ResourceType.UTM_XML    = ResourceType(50018,   "utm.xml",    "Models",       "binary")
+ResourceType.JRL_XML    = ResourceType(50019,   "jrl.xml",    "Models",       "binary")
+ResourceType.UTW_XML    = ResourceType(50020,   "utw.xml",    "Models",       "binary")
+ResourceType.PTH_XML    = ResourceType(50021,   "pth.xml",    "Models",       "binary")
+ResourceType.LIP_XML    = ResourceType(50022,   "lip.xml",    "Models",       "binary")
+ResourceType.SSF_XML    = ResourceType(50023,   "ssf.xml",    "Models",       "binary")
