@@ -8,6 +8,10 @@ TEST_FILE = "../../tests/files/test.tlk"
 
 
 class TestTalkTable(TestCase):
+    def test_size(self):
+        talktable = TalkTable(TEST_FILE)
+        self.assertEqual(3, talktable.size())
+
     def test_string(self):
         talktable = TalkTable(TEST_FILE)
         self.assertEqual("abcdef", talktable.string(0))

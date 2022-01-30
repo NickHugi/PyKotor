@@ -119,3 +119,16 @@ class TalkTable:
         reader.close()
 
         return batch
+
+    def size(self) -> int:
+        """
+        Returns the number of entries in the talk table.
+
+        Returns:
+            The number of entries in the talk table.
+        """
+        reader = BinaryReader.from_file(self._path)
+        reader.seek(12)
+        entries_count = reader.read_uint32()
+        reader.close()
+        return entries_count
