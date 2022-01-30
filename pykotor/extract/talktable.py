@@ -24,10 +24,11 @@ class TalkTable:
             A string.
         """
         reader = BinaryReader.from_file(self._path)
-        reader.seek(16)
+        reader.seek(12)
+        entries_count = reader.read_uint32()
         texts_offset = reader.read_uint32()
 
-        if stringref == -1:
+        if stringref == -1 or stringref >= entries_count:
             string = ""
         else:
             reader.seek(20 + 40 * stringref)
@@ -61,7 +62,7 @@ class TalkTable:
         entries_count = reader.read_uint32()
         texts_offset = reader.read_uint32()
 
-        if stringref == -1:
+        if stringref == -1 or stringref >= entries_count:
             sound_resref = ""
         else:
             reader.seek(20 + 40 * stringref)
@@ -89,13 +90,14 @@ class TalkTable:
             Dictionary with stringref keys and Tuples (string, sound) values.
         """
         reader = BinaryReader.from_file(self._path)
-        reader.seek(16)
+        reader.seek(12)
+        entries_count = reader.read_uint32()
         texts_offset = reader.read_uint32()
 
         batch = {}
 
         for stringref in stringrefs:
-            if stringref == -1:
+            if stringref == -1 or stringref >= entries_count:
                 batch[stringref] = ("", ResRef.from_blank())
                 continue
 
