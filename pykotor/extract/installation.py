@@ -36,7 +36,7 @@ class Installation:
         self._modules: Dict[str, List[FileResource]] = {}
         self._lips: Dict[str, List[FileResource]] = {}
         self._texturepacks: Dict[str, List[FileResource]] = {}
-        self._override: Dict[str, FileResource] = {}
+        self._override: Dict[str, Dict[str, FileResource]] = {}
         self._talktable: Optional[TalkTable] = None
 
         self.load_modules()
@@ -115,13 +115,18 @@ class Installation:
 
     def load_override(self) -> None:
         self._override = {}
-        override_path = self.override_path()
-        for file in os.listdir(override_path):
-            with suppress(Exception):
-                name, ext = file.split('.', 1)
-                size = os.path.getsize(override_path + file)
-                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, override_path + file)
-                self._override[file] = resource
+
+        for path, subdirs, files in os.walk(self.override_path()):
+            directory = path.replace("\\", "/").replace(self.override_path(), "")
+            path = (path if path.endswith("/") else path + "/").replace("\\", "/")
+            self._override[directory] = {}
+
+            for file in files:
+                with suppress(Exception):
+                    name, ext = file.split('.', 1)
+                    size = os.path.getsize(path + file)
+                    resource = FileResource(name, ResourceType.from_extension(ext), size, 0, path + file)
+                    self._override[directory][file] = resource
     # endregion
 
     # region Get FileResources
@@ -149,8 +154,8 @@ class Installation:
     def override_list(self) -> List[str]:
         return list(self._override.keys())
 
-    def override_resources(self) -> List[FileResource]:
-        return list(self._override.values())
+    def override_resources(self, directory: str) -> List[FileResource]:
+        return list(self._override[directory].values())
     # endregion
 
     def talktable(self) -> TalkTable:
@@ -172,9 +177,10 @@ class Installation:
         query = FileQuery(resref, restype)
 
         # 1st: Override
-        for file_name, resource in self._override.items():
-            if resource == query:
-                return resource.data()
+        for directory in self._override.values():
+            for file_name, resource in directory.items():
+                if resource == query:
+                    return resource.data()
 
         # 2nd: Modules
         for module_name, resources in self._modules.items():
@@ -206,11 +212,12 @@ class Installation:
         Returns:
             TPC object or None.
         """
-        for file_name, resource in self._override.items():
-            if resource.resref() == resref and resource.restype() == ResourceType.TGA:
-                return load_tpc(resource.data())
-            elif resource.resref() == resref and resource.restype() == ResourceType.TPC:
-                return load_tpc(resource.data())
+        for directory in self._override.values():
+            for file_name, resource in directory.items():
+                if resource.resref() == resref and resource.restype() == ResourceType.TGA:
+                    return load_tpc(resource.data())
+                elif resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                    return load_tpc(resource.data())
 
         for resource in self.texturepack_resources("swpc_tex_tp{}.erf".format(texture_quality.value)):
             if resource.resref() == resref and resource.restype() == ResourceType.TPC:
