@@ -70,19 +70,23 @@ class ToolWindow(QMainWindow):
 
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
-
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
-        self.ui.modulesCombo.currentTextChanged.connect(self.changeModule)
         self.ui.extractButton.clicked.connect(self.extractFromSelected)
         self.ui.openButton.clicked.connect(self.openFromSelected)
-        self.ui.openAction.triggered.connect(self.openFromFile)
+
         self.ui.coreSearchEdit.textEdited.connect(self.filterDataModel)
+
         self.ui.moduleSearchEdit.textEdited.connect(self.filterDataModel)
-        self.ui.overrideSearchEdit.textEdited.connect(self.filterDataModel)
         self.ui.moduleReloadButton.clicked.connect(self.reloadModule)
         self.ui.moduleRefreshButton.clicked.connect(self.refreshModuleList)
-        self.ui.overrideRefreshButton.clicked.connect(self.reloadOverride)
+        self.ui.modulesCombo.currentTextChanged.connect(self.changeModule)
 
+        self.ui.overrideSearchEdit.textEdited.connect(self.filterDataModel)
+        self.ui.overrideRefreshButton.clicked.connect(self.refreshOverrideList)
+        self.ui.overrideReloadButton.clicked.connect(self.reloadOverride)
+        self.ui.overrideFolderCombo.currentTextChanged.connect(self.changeOverrideFolder)
+
+        self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self, self.active).show())
@@ -159,6 +163,9 @@ class ToolWindow(QMainWindow):
         self.ui.modulesCombo.clear()
         self.ui.modulesCombo.addItem("[None]")
 
+        self.ui.overrideFolderCombo.clear()
+        self.ui.overrideFolderCombo.addItem("[Root]")
+
         self.coreModel.clear()
         self.modulesModel.clear()
         self.overrideModel.clear()
@@ -223,8 +230,8 @@ class ToolWindow(QMainWindow):
                     self.coreModel.addResource(resource)
                 for resource in self.active.texturepack_resources("swpc_tex_tpa.erf"):
                     self.coreModel.addResource(resource)
-                for resource in self.active.override_resources():
-                    self.overrideModel.addResource(resource)
+                for directory in self.active.override_list():
+                    self.refreshOverrideList()
                 for module in self.active.modules_list():
                     self.ui.modulesCombo.addItem(module)
             else:
@@ -234,11 +241,11 @@ class ToolWindow(QMainWindow):
         """
         Updates the items in the module tree to the module specified.
         """
+        self.modulesModel.clear()
+
         if module == "" or module == "[None]":
-            self.modulesModel.clear()
             return
 
-        self.modulesModel.clear()
         for resource in self.active.module_resources(module):
             self.modulesModel.addResource(resource)
 
@@ -267,14 +274,41 @@ class ToolWindow(QMainWindow):
         for module in self.active.modules_list():
             self.ui.modulesCombo.addItem(module)
 
+    def changeOverrideFolder(self, folder: str) -> None:
+        self.overrideModel.clear()
+
+        if self.active is None:
+            return
+
+        folder = "" if folder == "[Root]" else folder
+
+        for resource in self.active.override_resources(folder):
+            self.overrideModel.addResource(resource)
+
+    def refreshOverrideList(self) -> None:
+        """
+        Refreshes the list of override directories in the overrideFolderCombo combobox.
+        """
+        self.active.load_override()
+
+        self.ui.overrideFolderCombo.clear()
+        self.ui.overrideFolderCombo.addItem("[Root]")
+        for directory in self.active.override_list():
+            if directory == "":
+                continue
+            self.ui.overrideFolderCombo.addItem(directory)
+
     def reloadOverride(self) -> None:
         """
         Reloads the files stored in the active installation's override folder and updates the respective data model.
         """
         self.active.load_override()
 
+        folder = self.ui.overrideFolderCombo.currentText()
+        folder = "" if folder == "[Root]" else folder
+
         self.overrideModel.clear()
-        for resource in self.active.override_resources():
+        for resource in self.active.override_resources(folder):
             self.overrideModel.addResource(resource)
 
     def currentDataTree(self) -> QTreeView:
