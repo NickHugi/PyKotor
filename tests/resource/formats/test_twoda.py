@@ -10,7 +10,6 @@ CSV_TEST_FILE = "../../files/test.2da.csv"
 class TestTwoDA(TestCase):
     def test_binary_io(self):
         self.assertEqual(detect_2da(BINARY_TEST_FILE), FileFormat.BINARY)
-
         twoda = TwoDABinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(twoda)
 
@@ -26,7 +25,6 @@ class TestTwoDA(TestCase):
         self.validate_io(twoda)
 
         data = bytearray()
-        write_2da(twoda, "D:/test.2da.csv", FileFormat.CSV)
         write_2da(twoda, data, FileFormat.CSV)
         twoda = load_2da(data)
         self.validate_io(twoda)

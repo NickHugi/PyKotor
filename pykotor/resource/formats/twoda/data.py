@@ -12,18 +12,20 @@ from typing import List, Dict, Optional, Any, Type
 class TwoDA:
     """
     Represents a 2DA file.
+
     """
 
     def __init__(self):
         self._rows: List[Dict[str, str]] = []
-        self._headers: List[str] = []
+        self._headers: List[str] = []  # for columns
+        self._labels: List[int] = []  # for rows
 
     def __iter__(self):
         """
         Iterates through each row yielding a new linked TwoDARow instance.
         """
-        for row in self._rows:
-            yield TwoDARow(row)
+        for i, row in enumerate(self._rows):
+            yield TwoDARow(self.get_label(i), row)
 
     def get_headers(self) -> List[str]:
         """
@@ -84,12 +86,43 @@ class TwoDA:
 
         self._headers.remove(header)
 
-    def get_row(self, row_id: int) -> TwoDARow:
+    def get_labels(self) -> List[int]:
+        """
+        Returns a copy of the set of row labels.
+
+        Returns:
+            The column headers.
+        """
+        return copy(self._labels)
+
+    def get_label(self, row_index: int) -> int:
+        """
+        Returns the row label for the given row.
+
+        Args:
+            row_index: The index of the row.
+
+        Returns:
+            Returns the row label.
+        """
+        return self._labels[row_index]
+
+    def set_label(self, row_index: int, value: int) -> None:
+        """
+        Sets the row label at the given index.
+
+        Args:
+            row_index: The index of the row to change.
+            value: The new row label.
+        """
+        self._labels[row_index] = value
+
+    def get_row(self, row_index: int) -> TwoDARow:
         """
         Returns a TwoDARow instance which can update and retrieve the values of the cells for the specified row.
 
         Args:
-            row_id: The row id.
+            row_index: The row index.
 
         Raises:
             IndexError: If the specified row does not exist.
@@ -97,21 +130,23 @@ class TwoDA:
         Returns:
             A new TwoDARow instance.
         """
-        return TwoDARow(self._rows[row_id])
+        return TwoDARow(self.get_label(row_index), self._rows[row_index])
 
-    def add_row(self, cells: Dict[str, Any] = None) -> int:
+    def add_row(self, row_label: Optional[int] = None, cells: Dict[str, Any] = None) -> int:
         """
         Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
         itself will be ignored, headers that are not specified in the cells parameter but do exist in the table will
         default to being blank. All cells are converted to strings before being added into the 2DA.
 
         Args:
+            row_label: The row label. If None then the row label will be its index.
             cells: A dictionary representing the cells of the new row. A key is the header and value is the cell.
 
         Returns:
             The id of the new row.
         """
         self._rows.append({})
+        self._labels.append(len(self._rows) if row_label is None else row_label)
 
         if cells is None:
             cells = {}
@@ -124,12 +159,12 @@ class TwoDA:
 
         return len(self._rows) - 1
 
-    def get_cell(self, row_id, column: str) -> str:
+    def get_cell(self, row_index, column: str) -> str:
         """
         Returns the value of the cell at the specified row under the specified column.
 
         Args:
-            row_id: The row id.
+            row_index: The row index.
             column: The column header.
 
         Raises:
@@ -139,15 +174,15 @@ class TwoDA:
         Returns:
             The cell value.
         """
-        return self._rows[row_id][column]
+        return self._rows[row_index][column]
 
-    def set_cell(self, row_id: int, column: str, value: Any) -> None:
+    def set_cell(self, row_index: int, column: str, value: Any) -> None:
         """
         Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a
         blank string.
 
         Args:
-            row_id: The row id.
+            row_index: The row index.
             column: The column header.
             value: The new value of the target cell.
 
@@ -156,7 +191,7 @@ class TwoDA:
             IndexError: If the specified row does not exist.
         """
         value = "" if value is None else value
-        self._rows[row_id][column] = str(value)
+        self._rows[row_index][column] = str(value)
 
     def get_height(self) -> int:
         """
@@ -202,8 +237,18 @@ class TwoDA:
 
 
 class TwoDARow:
-    def __init__(self, row_data: Dict[str, str]):
+    def __init__(self, row_label: int, row_data: Dict[str, str]):
+        self._row_label: int = row_label
         self._data: Dict[str, str] = row_data
+
+    def label(self) -> int:
+        """
+        Returns the row label.
+
+        Returns:
+            The label for the row.
+        """
+        return self._row_label
 
     def get_string(self, header: str) -> str:
         """

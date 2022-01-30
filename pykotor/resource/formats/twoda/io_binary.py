@@ -38,6 +38,8 @@ class TwoDABinaryReader(ResourceReader):
         cell_count = row_count * column_count
         for i in range(row_count):
             row_header = self._reader.read_terminated_string("\t")
+            row_label = int(row_header)
+            self._twoda.add_row(row_label)
 
         cell_offsets = [0] * cell_count
         for i in range(cell_count):
@@ -46,7 +48,6 @@ class TwoDABinaryReader(ResourceReader):
         cell_data_size = self._reader.read_uint16()
         cell_data_offset = self._reader.position()
 
-        self._twoda.resize(row_count)
         for i in range(cell_count):
             column_id = i % column_count
             row_id = i // column_count
@@ -78,8 +79,8 @@ class TwoDABinaryWriter(ResourceWriter):
         self._writer.write_string("\0")
 
         self._writer.write_uint32(self._twoda.get_height())
-        for i in range(self._twoda.get_height()):
-            self._writer.write_string(str(i) + "\t")
+        for row_label in self._twoda.get_labels():
+            self._writer.write_string(str(row_label) + "\t")
 
         values = []
         value_offsets = []

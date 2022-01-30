@@ -17,13 +17,14 @@ class TwoDACSVReader(ResourceReader):
     def load(self, auto_close: bool = True) -> TwoDA:
         self._twoda = TwoDA()
 
-        headers = next(self._csv)
+        headers = next(self._csv)[1:]
         for header in headers:
             self._twoda.add_column(header)
 
         for row in self._csv:
-            cells = dict(zip(headers, row))
-            self._twoda.add_row(cells)
+            label = int(row[:1][0])
+            cells = dict(zip(headers, row[1:]))
+            self._twoda.add_row(label, cells)
 
         if auto_close:
             self._reader.close()
@@ -40,10 +41,14 @@ class TwoDACSVWriter(ResourceWriter):
 
     def write(self, auto_close: bool = True) -> None:
         headers = self._twoda.get_headers()
-        self._csv_writer.writerow(headers)
+
+        insert = [""]
+        for header in headers:
+            insert.append(header)
+        self._csv_writer.writerow(insert)
 
         for row in self._twoda:
-            insert = []
+            insert = [str(row.label())]
             for header in headers:
                 insert.append(row.get_string(header))
             self._csv_writer.writerow(insert)
