@@ -5,6 +5,7 @@ from typing import List, Union, Optional
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMenu, QMessageBox, QMenuBar, QListWidgetItem, QAction, \
     QShortcut
 from pykotor.extract.capsule import Capsule
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import write_erf, load_erf, ERFType, ERF
 from pykotor.resource.formats.rim import load_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
@@ -17,7 +18,8 @@ class Editor(QMainWindow):
     Editor is a base class for all file-specific editors. It provides methods for saving and loading files that are
     stored directly in folders and for files that are encapsulated in a MOD or RIM.
     """
-    def __init__(self, parent, title: str, read_supported: List[ResourceType], write_supported: List[ResourceType]):
+    def __init__(self, parent, title: str, read_supported: List[ResourceType], write_supported: List[ResourceType],
+                 installation: Optional[Installation] = None):
         super().__init__(parent)
 
         self.msgbox = None
@@ -28,6 +30,7 @@ class Editor(QMainWindow):
         self._revert: Optional[bytes] = None
         self._read_supported: List[ResourceType] = read_supported
         self._write_supported: List[ResourceType] = write_supported
+        self._installation: Optional[Installation] = installation
 
         self._editor_title = title
         self.setWindowTitle(title)
