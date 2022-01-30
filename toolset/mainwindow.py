@@ -21,6 +21,7 @@ from pykotor.resource.type import ResourceType, FileFormat
 import mainwindow_ui
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
+from editors.ssf.sff_editor import SSFEditor
 from editors.tlk.tlk_editor import TLKEditor
 from editors.tpc.tpc_editor import TPCEditor
 from editors.twoda.twoda_editor import TwoDAEditor
@@ -87,6 +88,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self).show())
         self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self).show())
         self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self).show())
+        self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionHelpUpdates.triggered.connect(self.openUpdatesDialog)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
@@ -357,6 +359,9 @@ class ToolWindow(QMainWindow):
                 external = self.settings.value('2daEditor')
             else:
                 editor = TwoDAEditor(self)
+
+        if restype in [ResourceType.SSF]:
+            editor = SSFEditor(self, self.active)
 
         if restype in [ResourceType.TLK]:
             if self.settings.value('tlkEditor'): external = self.settings.value('tlkEditor')
