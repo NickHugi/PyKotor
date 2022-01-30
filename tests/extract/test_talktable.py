@@ -13,15 +13,18 @@ class TestTalkTable(TestCase):
         self.assertEqual("abcdef", talktable.string(0))
         self.assertEqual("ghijklmnop", talktable.string(1))
         self.assertEqual("qrstuvwxyz", talktable.string(2))
+        self.assertEqual("", talktable.string(-1))
 
     def test_voiceover(self):
         talktable = TalkTable(TEST_FILE)
         self.assertEqual("resref01", talktable.sound(0))
         self.assertEqual("resref02", talktable.sound(1))
         self.assertEqual("", talktable.sound(2))
-        
+        self.assertEqual("", talktable.sound(-1))
+
     def test_batch(self):
         talktable = TalkTable(TEST_FILE)
-        batch = talktable.batch([2, 0])
+        batch = talktable.batch([2, 0, -1])
         self.assertEqual(("abcdef", "resref01"), batch[0])
         self.assertEqual(("qrstuvwxyz", ""), batch[2])
+        self.assertEqual(("", ""), batch[-1])

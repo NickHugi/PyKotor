@@ -26,18 +26,21 @@ class TalkTable:
         reader = BinaryReader.from_file(self._path)
         reader.seek(16)
         texts_offset = reader.read_uint32()
-        
-        reader.seek(20 + 40 * stringref)
-        flags = reader.read_uint32()
-        sound_resref = reader.read_string(16)
-        volume_variance = reader.read_uint32()
-        pitch_variance = reader.read_uint32()
-        text_offset = reader.read_uint32()
-        text_length = reader.read_uint32()
-        sound_length = reader.read_single()
 
-        reader.seek(texts_offset + text_offset)
-        string = reader.read_string(text_length)
+        if stringref == -1:
+            string = ""
+        else:
+            reader.seek(20 + 40 * stringref)
+            flags = reader.read_uint32()
+            sound_resref = reader.read_string(16)
+            volume_variance = reader.read_uint32()
+            pitch_variance = reader.read_uint32()
+            text_offset = reader.read_uint32()
+            text_length = reader.read_uint32()
+            sound_length = reader.read_single()
+
+            reader.seek(texts_offset + text_offset)
+            string = reader.read_string(text_length)
 
         reader.close()
 
@@ -58,14 +61,17 @@ class TalkTable:
         entries_count = reader.read_uint32()
         texts_offset = reader.read_uint32()
 
-        reader.seek(20 + 40 * stringref)
-        flags = reader.read_uint32()
-        sound_resref = reader.read_string(16)
-        volume_variance = reader.read_uint32()
-        pitch_variance = reader.read_uint32()
-        text_offset = reader.read_uint32()
-        text_length = reader.read_uint32()
-        sound_length = reader.read_single()
+        if stringref == -1:
+            sound_resref = ""
+        else:
+            reader.seek(20 + 40 * stringref)
+            flags = reader.read_uint32()
+            sound_resref = reader.read_string(16)
+            volume_variance = reader.read_uint32()
+            pitch_variance = reader.read_uint32()
+            text_offset = reader.read_uint32()
+            text_length = reader.read_uint32()
+            sound_length = reader.read_single()
 
         reader.close()
 
@@ -89,6 +95,10 @@ class TalkTable:
         batch = {}
 
         for stringref in stringrefs:
+            if stringref == -1:
+                batch[stringref] = ("", ResRef.from_blank())
+                continue
+
             reader.seek(20 + 40 * stringref)
             flags = reader.read_uint32()
             sound_resref = reader.read_string(16)
