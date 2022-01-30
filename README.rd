@@ -1,0 +1,1 @@
+A PyQt5 application that can edit the files used by the KotOR game engine.
