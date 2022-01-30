@@ -28,9 +28,11 @@ class Installation:
     """
     TEXTURES_TYPES = [ResourceType.TPC, ResourceType.TGA, ResourceType.DDS]
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, name: str):
         self._path: str = path.replace('\\', '/')
         if not self._path.endswith('/'): self._path += '/'
+
+        self.name = name
 
         self._chitin: List[FileResource] = []
         self._modules: Dict[str, List[FileResource]] = {}
