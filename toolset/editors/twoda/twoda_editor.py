@@ -1,7 +1,10 @@
+from typing import Optional
+
 import pyperclip as pyperclip
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QShortcut, QMessageBox
+from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.twoda import TwoDA, write_2da, load_2da
 from pykotor.resource.type import ResourceType
 
@@ -10,8 +13,8 @@ from editors.twoda import twoda_editor_ui
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent):
-        super().__init__(parent, "2DA Editor", [ResourceType.TwoDA], [ResourceType.TwoDA])
+    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+        super().__init__(parent, "2DA Editor", [ResourceType.TwoDA], [ResourceType.TwoDA], installation)
         self.resize(400, 250)
 
         self.ui = twoda_editor_ui.Ui_MainWindow()

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QWidget
 from pykotor.extract.installation import Installation
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.ssf import load_ssf, SSFSound, SSF, write_ssf
@@ -11,7 +11,7 @@ from editors.ssf import sff_editor_ui
 
 
 class SSFEditor(Editor):
-    def __init__(self, parent, installation: Installation = None):
+    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
         supported = [ResourceType.SSF]
         super().__init__(parent, "Soundset Editor", supported, supported, installation)
 

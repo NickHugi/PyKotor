@@ -1,8 +1,10 @@
 import os
+from typing import Optional
 
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
 from pykotor.common.misc import ResRef
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import load_erf, ERF, ERFType, write_erf, ERFResource
 from pykotor.resource.formats.rim import load_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
@@ -12,9 +14,9 @@ from editors.erf import erf_editor_ui
 
 
 class ERFEditor(Editor):
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
         supported = [ResourceType.ERF, ResourceType.MOD, ResourceType.RIM]
-        super().__init__(parent, "ERF Editor", supported, supported)
+        super().__init__(parent, "ERF Editor", supported, supported, installation)
         self.resize(400, 250)
 
         self.ui = erf_editor_ui.Ui_MainWindow()

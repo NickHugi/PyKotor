@@ -1,4 +1,8 @@
+from typing import Optional
+
 from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QWidget
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import load_tpc, TPCTextureFormat, TPC, write_tpc
 from pykotor.resource.type import ResourceType, FileFormat
 
@@ -7,8 +11,8 @@ from editors.tpc import tpc_editor_ui
 
 
 class TPCEditor(Editor):
-    def __init__(self, parent):
-        super().__init__(parent, "Texture Viewer", [ResourceType.TPC, ResourceType.TGA], [ResourceType.TPC, ResourceType.TGA])
+    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+        super().__init__(parent, "Texture Viewer", [ResourceType.TPC, ResourceType.TGA], [ResourceType.TPC, ResourceType.TGA], installation)
 
         self.ui = tpc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)

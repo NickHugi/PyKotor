@@ -1,12 +1,13 @@
-from typing import Any
+from typing import Any, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor
-from PyQt5.QtWidgets import QListWidgetItem, QMenu
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.common.misc import ResRef
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import load_gff, GFFStruct, GFFFieldType, GFFList, GFF, write_gff
 from pykotor.resource.type import ResourceType
 
@@ -22,12 +23,12 @@ _TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
 
 
 class GFFEditor(Editor):
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
         supported = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
                      ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                      ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,
                      ResourceType.JRL, ResourceType.ITP]
-        super().__init__(parent, "GFF Editor", supported, supported)
+        super().__init__(parent, "GFF Editor", supported, supported, installation)
         self.resize(400, 250)
 
         self.ui = gff_editor_ui.Ui_MainWindow()

@@ -71,14 +71,14 @@ class Editor(QMainWindow):
         return self._filepath.endswith(".rim") or self._filepath.endswith(".erf") or self._filepath.endswith(".mod")
 
     def refreshWindowTitle(self) -> None:
+        installationName = "No Installation" if self._installation is None else self._installation.name
+
         if self._filepath is None:
             self.setWindowTitle(self._editor_title)
         elif self.encapsulated():
-            self.setWindowTitle("{}.{} - {}".format(self._resref, self._restype.extension, self._editor_title))
-            # self.setWindowTitle("{}/{}.{} - {}".format(self._filepath, self._resref, self._restype.extension, self._editor_title))
+            self.setWindowTitle("{}/{}.{} - {} - {}".format(os.path.basename(self._filepath), self._resref, self._restype.extension, installationName, self._editor_title))
         else:
-            self.setWindowTitle("{}.{} - {}".format(self._resref, self._restype.extension, self._editor_title))
-            # self.setWindowTitle("{} - {}".format(self._filepath, self._editor_title))
+            self.setWindowTitle("{}.{} - {} - {}".format(self._resref, self._restype.extension, installationName, self._editor_title))
 
     def saveAs(self) -> None:
         filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")

@@ -1,4 +1,8 @@
+from typing import Optional
+
 import chardet
+from PyQt5.QtWidgets import QWidget
+from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
@@ -6,9 +10,9 @@ from editors.txt import txt_editor_ui
 
 
 class TXTEditor(Editor):
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
         supported = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
-        super().__init__(parent, "Text Editor", supported, supported)
+        super().__init__(parent, "Text Editor", supported, supported, installation)
         self.resize(400, 250)
 
         self.ui = txt_editor_ui.Ui_MainWindow()

@@ -85,9 +85,9 @@ class ToolWindow(QMainWindow):
 
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
-        self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self).show())
-        self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self).show())
-        self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self).show())
+        self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self, self.active).show())
+        self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self, self.active).show())
+        self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
         self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionHelpUpdates.triggered.connect(self.openUpdatesDialog)
@@ -208,7 +208,7 @@ class ToolWindow(QMainWindow):
         else:
             # If the installation had not already been loaded previously this session, load it now
             if name not in self.installations:
-                dialog = InstallationLoaderDialog(self, path)
+                dialog = InstallationLoaderDialog(self, path, name)
                 if dialog.exec_():
                     games = self.settings.value('games')
                     games[name]['path'] = path
@@ -358,17 +358,17 @@ class ToolWindow(QMainWindow):
             if self.settings.value('2daEditor'):
                 external = self.settings.value('2daEditor')
             else:
-                editor = TwoDAEditor(self)
+                editor = TwoDAEditor(self, self.active)
 
         if restype in [ResourceType.SSF]:
             editor = SSFEditor(self, self.active)
 
         if restype in [ResourceType.TLK]:
             if self.settings.value('tlkEditor'): external = self.settings.value('tlkEditor')
-            else: editor = TLKEditor(self)
+            else: editor = TLKEditor(self, self.active)
 
         if restype in [ResourceType.TPC, ResourceType.TGA]:
-            editor = TPCEditor(self)
+            editor = TPCEditor(self, self.active)
 
         if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
             if self.settings.value('txtEditor'): external = self.settings.value('txtEditor')
@@ -376,21 +376,21 @@ class ToolWindow(QMainWindow):
 
         if restype in [ResourceType.NSS]:
             if self.settings.value('nssEditor'): external = self.settings.value('nssEditor')
-            else: editor = TXTEditor(self)
+            else: editor = TXTEditor(self, self.active)
 
         if restype in [ResourceType.DLG]:
             if self.settings.value('dlgEditor'): external = self.settings.value('dlgEditor')
-            else: editor = GFFEditor(self)
+            else: editor = GFFEditor(self, self.active)
 
         if restype in [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
                        ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL,
                        ResourceType.ITP]:
             if self.settings.value('gffEditor'): external = self.settings.value('gffEditor')
-            else: editor = GFFEditor(self)
+            else: editor = GFFEditor(self, self.active)
 
         if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
-            editor = ERFEditor(self)
+            editor = ERFEditor(self, self.active)
 
         if editor is not None:
             editor.load(filepath, resref, restype, data)
@@ -416,7 +416,7 @@ class InstallationLoaderDialog(QDialog):
     """
     Popup dialog responsible for loading and returning an installation.
     """
-    def __init__(self, parent, path):
+    def __init__(self, parent, path: str, name: str):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -435,7 +435,7 @@ class InstallationLoaderDialog(QDialog):
 
         self.installation: Optional[Installation] = None
 
-        self.worker = InstallationLoaderWorker(path)
+        self.worker = InstallationLoaderWorker(path, name)
         self.worker.loaded.connect(self.loadingCompleted)
         self.worker.failed.connect(self.loadingFailed)
         self.worker.start()
@@ -453,13 +453,14 @@ class InstallationLoaderWorker(QtCore.QThread):
     loaded = QtCore.pyqtSignal(object)
     failed = QtCore.pyqtSignal(object)
 
-    def __init__(self, path):
+    def __init__(self, path: str, name: str):
         super().__init__()
-        self._path = path
+        self._path: str = path
+        self._name: str = name
 
     def run(self):
         try:
-            installation = Installation(self._path)
+            installation = Installation(self._path, self._name)
             self.loaded.emit(installation)
         except ValueError as e:
             self.failed.emit(e)
