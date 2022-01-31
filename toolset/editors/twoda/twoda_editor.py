@@ -32,9 +32,15 @@ class TwoDAEditor(Editor):
         self.ui.actionCopy.triggered.connect(self.copySelection)
         self.ui.actionPaste.triggered.connect(self.pasteSelection)
 
+        self.ui.actionInsertRow.triggered.connect(self.insertRow)
+        self.ui.actionRemovesRow.triggered.connect(self.removeSelectedRows)
+        self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
+
         QShortcut("Ctrl+F", self).activated.connect(self.toggleFilter)
         QShortcut("Ctrl+C", self).activated.connect(self.copySelection)
         QShortcut("Ctrl+V", self).activated.connect(self.pasteSelection)
+        QShortcut("Ctrl+I", self).activated.connect(self.insertRow)
+        QShortcut("Ctrl+D", self).activated.connect(self.removeSelectedRows)
 
         self.new()
 
@@ -150,6 +156,36 @@ class TwoDAEditor(Editor):
                 x += 1
             x = left
             y += 1
+
+    def insertRow(self) -> None:
+        """
+        Inserts a new row at the end of the table.
+        """
+        rowIndex = self.model.rowCount()
+        self.model.appendRow([QStandardItem("") for i in range(self.model.columnCount())])
+        self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
+        font = self.model.item(rowIndex, 0).font()
+        font.setBold(True)
+        self.model.item(rowIndex, 0).setFont(font)
+        self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
+        self.model.setVerticalHeaderItem(rowIndex, QStandardItem("   "))
+
+    def removeSelectedRows(self) -> None:
+        """
+        Removes the rows the user has selected.
+        """
+        for i in range(self.model.rowCount())[::-1]:
+            for j in range(self.model.columnCount()):
+                if self.ui.twodaTable.selectionModel().isSelected(self.model.index(i, j)):
+                    self.model.removeRow(i)
+                    continue
+
+    def redoRowLabels(self) -> None:
+        """
+        Iterates through every row setting the row label to match the row index.
+        """
+        for i in range(self.model.rowCount()):
+            self.model.item(i, 0).setText(str(i))
 
 
 class SortFilterProxyModel(QSortFilterProxyModel):
