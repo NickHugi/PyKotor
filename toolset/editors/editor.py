@@ -84,6 +84,7 @@ class Editor(QMainWindow):
         filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
         if filepath != "":
             encapsulated = filepath.endswith(".erf") or filepath.endswith(".mod") or filepath.endswith(".rim")
+            encapsulated = encapsulated and "Save into module (*.erf *.mod *.rim)" in self._saveFilter
             if encapsulated:
                 if self._resref is None:
                     self._resref = "new"
@@ -136,6 +137,7 @@ class Editor(QMainWindow):
         filepath, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath != "":
             encapsulated = filepath.endswith(".erf") or filepath.endswith(".mod") or filepath.endswith(".rim")
+            encapsulated = encapsulated and "Load from module (*.erf *.mod *.rim)" in self._openFilter
             if encapsulated:
                 dialog = LoadFromModuleDialog(Capsule(filepath), self._read_supported)
                 if dialog.exec_():
