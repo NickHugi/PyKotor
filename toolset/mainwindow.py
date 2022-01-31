@@ -19,6 +19,7 @@ from pykotor.resource.formats.tpc import load_tpc, write_tpc
 from pykotor.resource.type import ResourceType, FileFormat
 
 import mainwindow_ui
+from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
 from editors.ssf.sff_editor import SSFEditor
@@ -384,7 +385,20 @@ class ToolWindow(QMainWindow):
                 data = file.read()
             self.openResourceEditor(filepath, resref, restype, data)
 
-    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> Optional[Editor]:
+        """
+        Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
+        the editor, otherwise it returns None
+
+        Args:
+            filepath: Path to the resource.
+            resref: The ResRef.
+            restype: The resource type.
+            data: The resource data.
+
+        Returns:
+            The inbuilt editor window or None.
+        """
         editor = None
         external = None
 
@@ -429,6 +443,7 @@ class ToolWindow(QMainWindow):
         if editor is not None:
             editor.load(filepath, resref, restype, data)
             editor.show()
+            return editor
         elif external is not None:
             try:
                 if filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif'):
@@ -444,6 +459,7 @@ class ToolWindow(QMainWindow):
         else:
             QMessageBox(QMessageBox.Critical, "Failed to open file", "The selected file is not yet supported.",
                         QMessageBox.Ok, self).show()
+        return None
 
 
 class InstallationLoaderDialog(QDialog):

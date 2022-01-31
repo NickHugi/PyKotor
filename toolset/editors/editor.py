@@ -2,6 +2,7 @@ import os
 from abc import abstractmethod
 from typing import List, Union, Optional
 
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMenu, QMessageBox, QMenuBar, QListWidgetItem, QAction, \
     QShortcut
 from pykotor.extract.capsule import Capsule
@@ -18,6 +19,11 @@ class Editor(QMainWindow):
     Editor is a base class for all file-specific editors. It provides methods for saving and loading files that are
     stored directly in folders and for files that are encapsulated in a MOD or RIM.
     """
+
+    newFile = QtCore.pyqtSignal()
+    savedFile = QtCore.pyqtSignal(object, object, object, object)
+    loadedFile = QtCore.pyqtSignal(object, object, object, object)
+
     def __init__(self, parent, title: str, read_supported: List[ResourceType], write_supported: List[ResourceType],
                  installation: Optional[Installation] = None):
         super().__init__(parent)
@@ -114,6 +120,8 @@ class Editor(QMainWindow):
             data = self.build()
             self._revert = data
 
+            self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+
             if self._filepath.endswith(".bif"):
                 self.msgbox = QMessageBox(QMessageBox.Critical, "Could not save file",
                                           "Cannot save resource into a .BIF file, select another destination instead.")
@@ -162,6 +170,7 @@ class Editor(QMainWindow):
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "Revert": action.setEnabled(True)
         self.refreshWindowTitle()
+        self.loadedFile.emit(self._filepath, self._resref, self._restype, data)
 
     def exit(self) -> None:
         self.close()
@@ -172,6 +181,7 @@ class Editor(QMainWindow):
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "Revert": action.setEnabled(False)
         self.refreshWindowTitle()
+        self.newFile.emit()
 
     def revert(self) -> None:
         if self._revert is not None:

@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 
+from PyQt5.QtCore import QItemSelection
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
 from pykotor.common.misc import ResRef
@@ -29,6 +30,9 @@ class ERFEditor(Editor):
         self.ui.extractButton.clicked.connect(self.extractSelected)
         self.ui.loadButton.clicked.connect(self.add)
         self.ui.unloadButton.clicked.connect(self.removeSelected)
+        self.ui.openButton.clicked.connect(self.openSelected)
+        self.ui.refreshButton.clicked.connect(self.refresh)
+        self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
 
         # Disable saving file into module
         self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim)", "")
@@ -42,6 +46,7 @@ class ERFEditor(Editor):
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
+        self.ui.refreshButton.setEnabled(True)
 
         if restype in [ResourceType.ERF, ResourceType.MOD]:
             erf = load_erf(data)
@@ -89,12 +94,15 @@ class ERFEditor(Editor):
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
+        self.ui.refreshButton.setEnabled(False)
 
     def save(self) -> None:
         # Must override the method as the superclass method breaks due to filepath always ending in .rim/mod/erf
         if self._filepath is None:
             self.saveAs()
             return
+
+        self.ui.refreshButton.setEnabled(True)
 
         data = self.build()
         self._revert = data
@@ -136,3 +144,37 @@ class ERFEditor(Editor):
                 sizeItem = QStandardItem(str(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
 
+    def openSelected(self) -> None:
+        if self._filepath is None:
+            QMessageBox(QMessageBox.Critical, "Cannot edit resource", "Save the ERF and try again.", QMessageBox.Ok, self).exec_()
+            return
+
+        for index in self.ui.tableView.selectionModel().selectedRows(0):
+            item = self.model.itemFromIndex(index)
+            resource = item.data()
+            editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype, resource.data)
+            editor.savedFile.connect(self.resourceSaved)
+
+    def refresh(self) -> None:
+        with open(self._filepath, 'rb') as file:
+            data = file.read()
+            self.load(self._filepath, self._resref, self._restype, data)
+
+    def selectionChanged(self, selection: QItemSelection) -> None:
+        if len(selection.indexes()) == 0:
+            self.ui.extractButton.setEnabled(False)
+            self.ui.openButton.setEnabled(False)
+            self.ui.unloadButton.setEnabled(False)
+        else:
+            self.ui.extractButton.setEnabled(True)
+            self.ui.openButton.setEnabled(True)
+            self.ui.unloadButton.setEnabled(True)
+
+    def resourceSaved(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+        if filepath != self._filepath:
+            return
+
+        for index in self.ui.tableView.selectionModel().selectedRows(0):
+            item = self.model.itemFromIndex(index)
+            if item.data().resref == resref and item.data().restype == restype:
+                item.data().data = data
