@@ -33,7 +33,7 @@ from misc.settings import Settings
 import resources_rc
 
 
-PROGRAM_VERSION = "1.0.2"
+PROGRAM_VERSION = "1.1.0"
 
 
 class ToolWindow(QMainWindow):
