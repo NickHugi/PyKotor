@@ -139,7 +139,7 @@
              <widget class="QComboBox" name="overrideFolderCombo"/>
             </item>
             <item>
-             <widget class="QPushButton" name="overrideFolderRefreshButton">
+             <widget class="QPushButton" name="overrideRefreshButton">
               <property name="toolTip">
                <string>Refresh the list of modules.</string>
               </property>
@@ -160,7 +160,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="overrideRefreshButton">
+             <widget class="QPushButton" name="overrideReloadButton">
               <property name="toolTip">
                <string>Refresh the list of files in the override folder.</string>
               </property>
