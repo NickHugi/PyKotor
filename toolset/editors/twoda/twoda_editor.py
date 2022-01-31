@@ -46,19 +46,26 @@ class TwoDAEditor(Editor):
         try:
             twoda = load_2da(data)
 
-            headers = list(twoda.get_headers())
+            headers = [""] + list(twoda.get_headers())
             self.model.setColumnCount(len(headers))
             self.model.setHorizontalHeaderLabels(headers)
 
             for i, row in enumerate(twoda):
                 self.model.insertRow(i)
                 for j, header in enumerate(headers):
-                    self.model.setItem(i, j, QStandardItem(row.get_string(header)))
+                    if j == 0:
+                        self.model.setItem(i, 0, QStandardItem(str(twoda.get_label(i))))
+                        font = self.model.item(i, 0).font()
+                        font.setBold(True)
+                        self.model.item(i, 0).setFont(font)
+                        self.model.item(i, 0).setBackground(self.palette().midlight())
+                    else:
+                        self.model.setItem(i, j, QStandardItem(row.get_string(header)))
 
             for i in range(twoda.get_height()):
                 self.ui.twodaTable.resizeColumnToContents(i)
 
-            self.model.setVerticalHeaderLabels([str(i) for i in range(twoda.get_height())])
+            self.model.setVerticalHeaderLabels(["   " for i in range(twoda.get_height())])
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
             self.new()
@@ -66,13 +73,14 @@ class TwoDAEditor(Editor):
     def build(self) -> bytes:
         twoda = TwoDA()
 
-        for i in range(self.model.columnCount()):
+        for i in range(self.model.columnCount())[1:]:
             twoda.add_column(self.model.horizontalHeaderItem(i).text())
 
         for i in range(self.model.rowCount()):
             twoda.add_row()
+            twoda.set_label(i, int(self.model.item(i, 0).text()))
             for j, header in enumerate(twoda.get_headers()):
-                twoda.set_cell(i, header, self.model.item(i, j).text())
+                twoda.set_cell(i, header, self.model.item(i, j+1).text())
 
         data = bytearray()
         write_2da(twoda, data)
