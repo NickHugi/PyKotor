@@ -274,7 +274,7 @@ class Ui_MainWindow(object):
         self.tpcTxiCheckbox.setText(_translate("MainWindow", "Extract TXI"))
         self.mdlGroup_2.setTitle(_translate("MainWindow", "MDL"))
         self.mdlDecompileCheckbox.setText(_translate("MainWindow", "Decompile"))
-        self.mdlTexturesCheckbox.setText(_translate("MainWindow", "Extract Textuers"))
+        self.mdlTexturesCheckbox.setText(_translate("MainWindow", "Extract Textures"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.menuNew.setTitle(_translate("MainWindow", "New"))
         self.menuTools.setTitle(_translate("MainWindow", "Tools"))

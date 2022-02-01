@@ -315,7 +315,7 @@
             <item>
              <widget class="QCheckBox" name="mdlTexturesCheckbox">
               <property name="text">
-               <string>Extract Textuers</string>
+               <string>Extract Textures</string>
               </property>
              </widget>
             </item>
