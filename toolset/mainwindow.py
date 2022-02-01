@@ -4,7 +4,7 @@ import json
 import os
 import subprocess
 from distutils.version import Version, StrictVersion
-from typing import Optional, List
+from typing import Optional, List, Union
 
 import requests
 from PyQt5 import QtCore
@@ -391,7 +391,7 @@ class ToolWindow(QMainWindow):
                 data = file.read()
             self.openResourceEditor(filepath, resref, restype, data)
 
-    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes, *, noExternal=False) -> Optional[Editor]:
+    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes, *, noExternal = False) -> Union[Editor, str, None]:
         """
         Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
         the editor, otherwise it returns None
@@ -404,7 +404,8 @@ class ToolWindow(QMainWindow):
             noExternal: If True, internal editors will only be used, regardless of user settings.
 
         Returns:
-            The inbuilt editor window or None.
+            Either the Editor object if using an internal editor, the filepath if using a external editor or None if
+            no editor was successfully opened.
         """
         editor = None
         external = None
@@ -468,8 +469,10 @@ class ToolWindow(QMainWindow):
                     with open(tempFilepath, 'wb') as file:
                         file.write(data)
                     subprocess.Popen([external, tempFilepath])
+                    return tempFilepath
                 else:
                     subprocess.Popen([external, filepath])
+                    return filepath
             except:
                 QMessageBox(QMessageBox.Critical, "Could not open editor", "Double check the file path in settings.",
                             QMessageBox.Ok, self).show()
