@@ -100,7 +100,7 @@ class SSFBinaryWriter(ResourceWriter):
         self._writer.write_uint32(self._ssf.get(SSFSound.REJOINED_PARTY), max_neg1=True)
         self._writer.write_uint32(self._ssf.get(SSFSound.POISONED), max_neg1=True)
 
-        for i in range(8):
+        for i in range(12):
             self._writer.write_uint32(0xFFFFFFFF)
 
         if auto_close:
