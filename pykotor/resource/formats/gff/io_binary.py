@@ -176,7 +176,7 @@ class GFFBinaryWriter(ResourceWriter):
         list_indices_offset = field_indices_offset + self._field_indices_writer.size()
         list_indices_count = self._list_indices_writer.size()
 
-        self._writer.write_string("GFF ")
+        self._writer.write_string(self._gff.content.value)
         self._writer.write_string("V3.2")
         self._writer.write_uint32(struct_offset)
         self._writer.write_uint32(struct_count)
