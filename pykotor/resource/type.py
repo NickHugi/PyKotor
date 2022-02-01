@@ -151,7 +151,7 @@ class ResourceType:
     UTI_XML: ResourceType
     UTC_XML: ResourceType
     DLG_XML: ResourceType
-    IPT_XML: ResourceType
+    ITP_XML: ResourceType
     UTT_XML: ResourceType
     UTS_XML: ResourceType
     FAC_XML: ResourceType
