@@ -1,3 +1,4 @@
+from contextlib import suppress
 from typing import Any, Optional
 
 from PyQt5 import QtCore
@@ -8,7 +9,7 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.gff import load_gff, GFFStruct, GFFFieldType, GFFList, GFF, write_gff
+from pykotor.resource.formats.gff import load_gff, GFFStruct, GFFFieldType, GFFList, GFF, write_gff, GFFContent
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
@@ -107,7 +108,12 @@ class GFFEditor(Editor):
             self._load_struct(childNode, gffSturct)
 
     def build(self) -> bytes:
-        gff = GFF()
+        try:
+            content = GFFContent(self._restype.extension.upper() + " ")
+        except ValueError:
+            content = GFFContent.GFF
+
+        gff = GFF(content)
 
         self._build_struct(self.model.item(0, 0), gff.root)
 
