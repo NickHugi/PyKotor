@@ -152,8 +152,9 @@ class ERFEditor(Editor):
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item = self.model.itemFromIndex(index)
             resource = item.data()
-            editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype, resource.data)
-            editor.savedFile.connect(self.resourceSaved)
+            editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype, resource.data, noExternal=True)
+            if editor is not None:
+                editor.savedFile.connect(self.resourceSaved)
 
     def refresh(self) -> None:
         with open(self._filepath, 'rb') as file:

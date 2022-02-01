@@ -385,7 +385,7 @@ class ToolWindow(QMainWindow):
                 data = file.read()
             self.openResourceEditor(filepath, resref, restype, data)
 
-    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> Optional[Editor]:
+    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes, *, noExternal=False) -> Optional[Editor]:
         """
         Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
         the editor, otherwise it returns None
@@ -395,6 +395,7 @@ class ToolWindow(QMainWindow):
             resref: The ResRef.
             restype: The resource type.
             data: The resource data.
+            noExternal: If True, internal editors will only be used, regardless of user settings.
 
         Returns:
             The inbuilt editor window or None.
@@ -412,30 +413,40 @@ class ToolWindow(QMainWindow):
             editor = SSFEditor(self, self.active)
 
         if restype in [ResourceType.TLK]:
-            if self.settings.value('tlkEditor'): external = self.settings.value('tlkEditor')
-            else: editor = TLKEditor(self, self.active)
+            if self.settings.value('tlkEditor') and not noExternal:
+                external = self.settings.value('tlkEditor')
+            else:
+                editor = TLKEditor(self, self.active)
 
         if restype in [ResourceType.TPC, ResourceType.TGA]:
             editor = TPCEditor(self, self.active)
 
         if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
-            if self.settings.value('txtEditor'): external = self.settings.value('txtEditor')
-            else: editor = TXTEditor(self)
+            if self.settings.value('txtEditor') and not noExternal:
+                external = self.settings.value('txtEditor')
+            else:
+                editor = TXTEditor(self)
 
         if restype in [ResourceType.NSS]:
-            if self.settings.value('nssEditor'): external = self.settings.value('nssEditor')
-            else: editor = TXTEditor(self, self.active)
+            if self.settings.value('nssEditor') and not noExternal:
+                external = self.settings.value('nssEditor')
+            else:
+                editor = TXTEditor(self, self.active)
 
         if restype in [ResourceType.DLG]:
-            if self.settings.value('dlgEditor'): external = self.settings.value('dlgEditor')
-            else: editor = GFFEditor(self, self.active)
+            if self.settings.value('dlgEditor') and not noExternal:
+                external = self.settings.value('dlgEditor')
+            else:
+                editor = GFFEditor(self, self.active)
 
         if restype in [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
                        ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL,
                        ResourceType.ITP]:
-            if self.settings.value('gffEditor'): external = self.settings.value('gffEditor')
-            else: editor = GFFEditor(self, self.active)
+            if self.settings.value('gffEditor') and not noExternal:
+                external = self.settings.value('gffEditor')
+            else:
+                editor = GFFEditor(self, self.active)
 
         if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
             editor = ERFEditor(self, self.active)
