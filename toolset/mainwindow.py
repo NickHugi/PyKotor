@@ -101,14 +101,20 @@ class ToolWindow(QMainWindow):
         self.coreModel = ResourceModel()
         self.ui.coreTree.setModel(self.coreModel.proxyModel())
         self.ui.coreTree.header().resizeSection(1, 40)
+        self.ui.coreTree.setSortingEnabled(True)
+        self.ui.coreTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         self.modulesModel = ResourceModel()
         self.ui.modulesTree.setModel(self.modulesModel.proxyModel())
         self.ui.modulesTree.header().resizeSection(1, 40)
+        self.ui.modulesTree.setSortingEnabled(True)
+        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         self.overrideModel = ResourceModel()
         self.ui.overrideTree.setModel(self.overrideModel.proxyModel())
         self.ui.overrideTree.header().resizeSection(1, 40)
+        self.ui.overrideTree.setSortingEnabled(True)
+        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         self._clearModels()
 
