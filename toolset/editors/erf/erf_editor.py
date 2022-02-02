@@ -158,11 +158,11 @@ class ERFEditor(Editor):
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item = self.model.itemFromIndex(index)
             resource = item.data()
-            editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype, resource.data)
+            tempPath, editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype, resource.data)
             if isinstance(editor, Editor):
                 editor.savedFile.connect(self.resourceSavedInternal)
-            elif isinstance(editor, str):
-                handler = ExternalUpdateEventHandler(editor, resource.resref.get(), resource.restype, self.resourceSavedExternal)
+            elif editor is not None:
+                handler = ExternalUpdateEventHandler(tempPath, resource.resref.get(), resource.restype, self.resourceSavedExternal)
                 handler.start()
                 self._externalHandlers.append(handler)
                 self._externalOpened = True

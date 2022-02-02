@@ -4,19 +4,24 @@ import json
 import os
 import subprocess
 from distutils.version import Version, StrictVersion
-from typing import Optional, List, Union
+from time import sleep
+from typing import Optional, List, Union, Tuple
 
 import requests
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex
+from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
     QLabel, QWidget, QMessageBox
 from pykotor.extract.file import FileResource
 from pykotor.extract.installation import Installation
+from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
 from pykotor.resource.formats.mdl import load_mdl, write_mdl
+from pykotor.resource.formats.rim import write_rim, load_rim
 from pykotor.resource.formats.tpc import load_tpc, write_tpc
 from pykotor.resource.type import ResourceType, FileFormat
+from watchdog.events import FileSystemEventHandler, FileModifiedEvent
+from watchdog.observers import Observer
 
 import mainwindow_ui
 from editors.editor import Editor
@@ -363,7 +368,8 @@ class ToolWindow(QMainWindow):
             if filepath:
                 resref = os.path.basename(filepath)
                 resref = resref.split('.')[0] if '.' in resref else resref
-                resources = [FileResource(resref, resources[0].restype(), resources[0].size(), resources[0].offset(), resources[0].filepath())]
+                resources = [FileResource(resref, resources[0].restype(), resources[0].size(), resources[0].offset(),
+                                          resources[0].filepath())]
                 folderpath = os.path.dirname(filepath) + "/"
                 ResourceExtractorDialog(self, folderpath, resources, self.active, self).exec_()
 
@@ -379,7 +385,13 @@ class ToolWindow(QMainWindow):
         """
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataTree().selectedIndexes())
         for resource in resources:
-            self.openResourceEditor(resource.filepath(), resource.resref(), resource.restype(), resource.data())
+            filepath, editor = self.openResourceEditor(resource.filepath(), resource.resref(), resource.restype(), resource.data())
+
+            # If opened with external editor AND the resource in encapsulated
+            if isinstance(editor, subprocess.Popen) and resource.filepath() != editor:
+                handler = EncapsulatedExternalUpdateHandler(filepath, editor, resource.filepath(), resource.resref(), resource.restype())
+                handler.errorOccurred.connect(self.externalEncapsulatedSavedError)
+                handler.start()
 
     def openFromFile(self) -> None:
         filepath, filter = QFileDialog.getOpenFileName(self, "Open a file")
@@ -391,7 +403,8 @@ class ToolWindow(QMainWindow):
                 data = file.read()
             self.openResourceEditor(filepath, resref, restype, data)
 
-    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes, *, noExternal = False) -> Union[Editor, str, None]:
+    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes, *,
+                           noExternal=False) -> Union[Tuple[str, Editor], Tuple[str, subprocess.Popen], Tuple[None, None]]:
         """
         Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
         the editor, otherwise it returns None
@@ -461,31 +474,45 @@ class ToolWindow(QMainWindow):
         if editor is not None:
             editor.load(filepath, resref, restype, data)
             editor.show()
-            return editor
+            return filepath, editor
         elif external is not None:
             try:
                 if filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif'):
-                    tempFilepath = "{}/{}.{}".format(self.settings.value('tempDir'), resref, restype.extension)
+                    modName = os.path.basename(filepath.replace(".rim", "").replace(".erf", "").replace(".mod", ""))
+                    tempFilepath = "{}/{}-{}.{}".format(self.settings.value('tempDir'), modName, resref, restype.extension)
                     with open(tempFilepath, 'wb') as file:
                         file.write(data)
-                    subprocess.Popen([external, tempFilepath])
-                    return tempFilepath
+                    process = subprocess.Popen([external, tempFilepath])
+                    return tempFilepath, process
                 else:
-                    subprocess.Popen([external, filepath])
-                    return filepath
+                    process = subprocess.Popen([external, filepath])
+                    return filepath, process
             except:
                 QMessageBox(QMessageBox.Critical, "Could not open editor", "Double check the file path in settings.",
                             QMessageBox.Ok, self).show()
         else:
             QMessageBox(QMessageBox.Critical, "Failed to open file", "The selected file is not yet supported.",
                         QMessageBox.Ok, self).show()
-        return None
+        return None, None
+
+    def externalEncapsulatedSavedError(self, tempFilepath: str, modFilepath: str, error: Exception) -> None:
+        """
+        Opens a messagebox for when an error occurred trying to save a resource through an external editor into an
+        encapsulated file.
+
+        Attributes:
+            error: The error that occurred.
+        """
+        QMessageBox(QMessageBox.Critical, "Could not saved resource to ERF/MOD/RIM",
+                    "Tried to save a resource '{}' into ".format(tempFilepath) +
+                    "'{}' using an external editor.".format(modFilepath), QMessageBox.Ok, self).exec_()
 
 
 class InstallationLoaderDialog(QDialog):
     """
     Popup dialog responsible for loading and returning an installation.
     """
+
     def __init__(self, parent, path: str, name: str):
         super().__init__(parent)
 
@@ -540,6 +567,7 @@ class ResourceExtractorDialog(QDialog):
     """
     Popup dialog responsible for extracting a list of resources from the game files.
     """
+
     def __init__(self, parent: QWidget, folderpath: str, resources: List[FileResource], active: Installation,
                  toolwindow: ToolWindow):
         super().__init__(parent)
@@ -548,7 +576,8 @@ class ResourceExtractorDialog(QDialog):
         self._progressBar.setMaximum(len(resources))
         self._progressBar.setValue(0)
 
-        filename = resources[self._progressBar.value()].resref() + "." + resources[self._progressBar.value()].restype().extension
+        filename = resources[self._progressBar.value()].resref() + "." + resources[
+            self._progressBar.value()].restype().extension
         self._progressText = QLabel("Extracting resource: " + filename)
 
         self.setLayout(QVBoxLayout())
@@ -614,7 +643,6 @@ class ResourceExtractorWorker(QtCore.QThread):
             try:
                 self.saveResource(resource, self._folderpath, resource.resref() + "." + resource.restype().extension)
             except Exception as e:
-                print(e)
                 self.error.emit("Failed to extract resource: " + resource.resref())
             self.extracted.emit(resource)
 
@@ -675,6 +703,7 @@ class ResourceModel(QStandardItemModel):
     A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources
     while sorting the into categories.
     """
+
     def __init__(self):
         super().__init__()
         self._categoryItems = {}
@@ -713,3 +742,67 @@ class ResourceModel(QStandardItemModel):
 
     def resourceFromItems(self, items: List[QStandardItem]) -> List[FileResource]:
         return [item.resource for item in items if hasattr(item, 'resource')]
+
+
+class EncapsulatedExternalUpdateHandler(FileSystemEventHandler, QThread):
+    errorOccurred = QtCore.pyqtSignal(object, object, object)
+
+    def __init__(self, tempFilepath: str, process: subprocess.Popen, modFilepath: str, resref: str, restype: ResourceType):
+        super().__init__()
+        self._tempFilename = os.path.basename(tempFilepath)
+        self._tempFilepath: str = tempFilepath
+        self._modFilepath: str = modFilepath
+        self._resref: str = resref
+        self._restype: ResourceType = restype
+        self._observer: Observer = Observer()
+        self._closeListener = ProcessCloseListener(process)
+        self._closeListener.closed.connect(self.stop)
+        self._first: bool = True
+
+    def observer(self) -> Observer:
+        return self._observer
+
+    def run(self) -> None:
+        sleep(2)
+        self._closeListener.start()
+        self._observer.schedule(self, os.path.dirname(self._tempFilepath), recursive=False)
+        self._observer.start()
+        self._observer.join()
+
+    def on_modified(self, event: FileModifiedEvent):
+        if not event.is_directory and event.src_path.endswith(self._tempFilename):
+            if self._first:
+                self._first = False
+                return
+
+            try:
+                with open(self._tempFilepath, 'rb') as file:
+                    data = file.read()
+                    if self._modFilepath.endswith(".erf") or self._modFilepath.endswith(".mod"):
+                        erf = load_erf(self._modFilepath)
+                        erf.erf_type = ERFType.ERF if self._modFilepath.endswith(".erf") else ERFType.MOD
+                        if erf.get(self._resref, self._restype) != data:
+                            erf.set(self._resref, self._restype, data)
+                            write_erf(erf, self._modFilepath)
+                    elif self._modFilepath.endswith(".rim"):
+                        rim = load_rim(self._modFilepath)
+                        if rim.get(self._resref, self._restype) != data:
+                            rim.set(self._resref, self._restype, data)
+                            write_rim(rim, self._modFilepath)
+            except Exception as e:
+                self.errorOccurred.emit(self._tempFilepath, self._modFilepath, e)
+
+    def stop(self) -> None:
+        self._observer.stop()
+
+
+class ProcessCloseListener(QThread):
+    closed = QtCore.pyqtSignal()
+
+    def __init__(self, process: subprocess.Popen):
+        super().__init__()
+        self._process = process
+
+    def run(self):
+        self._process.wait()
+        self.closed.emit()
