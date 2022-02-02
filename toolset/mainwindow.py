@@ -3,13 +3,14 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from contextlib import suppress
 from distutils.version import Version, StrictVersion
 from time import sleep
 from typing import Optional, List, Union, Tuple, Dict
 
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread
+from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
     QLabel, QWidget, QMessageBox, QHeaderView
@@ -85,7 +86,7 @@ class ToolWindow(QMainWindow):
         self.ui.moduleSearchEdit.textEdited.connect(self.filterDataModel)
         self.ui.moduleReloadButton.clicked.connect(self.reloadModule)
         self.ui.moduleRefreshButton.clicked.connect(self.refreshModuleList)
-        self.ui.modulesCombo.currentTextChanged.connect(lambda: self.changeModule(self.ui.modulesCombo.itemData(self.ui.modulesCombo.currentIndex())))
+        self.ui.modulesCombo.currentIndexChanged.connect(lambda index: self.changeModule(self._modules_list[self.active.name].index(index, 0).data(QtCore.Qt.UserRole)))
 
         self.ui.overrideSearchEdit.textEdited.connect(self.filterDataModel)
         self.ui.overrideRefreshButton.clicked.connect(self.refreshOverrideList)
@@ -103,6 +104,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionHelpUpdates.triggered.connect(self.openUpdatesDialog)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
 
+        self._core_models: Dict[str, ResourceModel] = {}
         self.ui.coreTree.setModel(ResourceModel())
         self.ui.coreTree.header().resizeSection(1, 40)
         self.ui.coreTree.setSortingEnabled(True)
@@ -120,7 +122,8 @@ class ToolWindow(QMainWindow):
         self.ui.overrideTree.setSortingEnabled(True)
         self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
-        self._core_models: Dict[str, ResourceModel] = {}
+        self._modules_list: Dict[str, QStandardItemModel] = {}
+        self.ui.modulesCombo.setModel(QStandardItemModel())
 
         self._clearModels()
         self.reloadSettings()
@@ -194,7 +197,7 @@ class ToolWindow(QMainWindow):
         Clears all data models for the different tabs.
         """
 
-        self.ui.modulesCombo.clear()
+        self.ui.modulesCombo.setModel(QStandardItemModel())
         self.ui.overrideFolderCombo.clear()
         self.ui.overrideFolderCombo.addItem("[Root]")
 
@@ -266,8 +269,12 @@ class ToolWindow(QMainWindow):
                     [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_tpa.erf")]
                 self.ui.coreTree.setModel(self._core_models[name].proxyModel())
 
+                if name not in self._modules_list:
+                    self.refreshModuleList()
+                else:
+                    self.ui.modulesCombo.setModel(self._modules_list[name])
+
                 self.refreshOverrideList()
-                self.refreshModuleList()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
 
@@ -275,6 +282,7 @@ class ToolWindow(QMainWindow):
         """
         Updates the items in the module tree to the module specified.
         """
+
         self.modulesModel.clear()
         self.ui.moduleReloadButton.setEnabled(True)
 
@@ -300,19 +308,27 @@ class ToolWindow(QMainWindow):
         """
         Refreshes the list of modules in the modulesCombo combobox.
         """
+        if self.active is None:
+            return
+
         self.active.load_modules()
 
-        self.ui.modulesCombo.clear()
-        self.ui.modulesCombo.addItem("[None]")
+        self._modules_list[self.active.name] = QStandardItemModel(self)
+        self._modules_list[self.active.name].appendRow(QStandardItem("[None]"))
 
         if self.settings.value('showModuleNames', True, bool):
             areaNames = self.active.module_names()
             for module in self.active.modules_list():
-                text = "[{}] {}".format(areaNames[module], module)
-                self.ui.modulesCombo.addItem(text, userData=module)
+                item = QStandardItem("[{}] {}".format(areaNames[module], module))
+                item.setData(module, QtCore.Qt.UserRole)
+                self._modules_list[self.active.name].appendRow(item)
         else:
             for module in self.active.modules_list():
-                self.ui.modulesCombo.addItem(module, userData=module)
+                item = QStandardItem(module)
+                item.setData(module, QtCore.Qt.UserRole)
+                self._modules_list[self.active.name].appendRow()
+
+        self.ui.modulesCombo.setModel(self._modules_list[self.active.name])
 
     def changeOverrideFolder(self, folder: str) -> None:
         self.overrideModel.clear()
