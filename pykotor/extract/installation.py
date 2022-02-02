@@ -5,10 +5,12 @@ from contextlib import suppress
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from pykotor.common.language import Language, Gender
 from pykotor.extract.file import FileResource, FileQuery
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.talktable import TalkTable
+from pykotor.resource.formats.gff import load_gff
 from pykotor.resource.formats.mdl import MDL
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tpc import TPC, load_tpc
@@ -245,3 +247,51 @@ class Installation:
 
     def string(self, stringref: int) -> str:
         return self._talktable.string(stringref)
+
+    def module_name(self, module_filename: str) -> str:
+        """
+        Returns the name of the area for a module from the installations module list. The name is taken from the
+        LocalizedString "Name" in the relevant module file's ARE resource.
+
+        Args:
+            module_filename: The name of the module file.
+
+        Returns:
+            The name of the area for the module.
+        """
+        root = module_filename.removesuffix(".mod").removesuffix(".erf").removesuffix(".rim")
+        root = root.removesuffix("_s").removesuffix("_dlg")
+
+        name = ""
+
+        for module in self.modules_list():
+            if root not in module:
+                continue
+            tag = ""
+            capsule = Capsule(self.module_path() + module)
+            if capsule.exists("module", ResourceType.IFO):
+                ifo = load_gff(capsule.resource("module", ResourceType.IFO))
+                tag = ifo.root.get_resref("Mod_Entry_Area").get()
+            if capsule.exists(tag, ResourceType.ARE):
+                are = load_gff(capsule.resource(tag, ResourceType.ARE))
+                locstring = are.root.get_locstring("Name")
+                if locstring.stringref > 0:
+                    name = self._talktable.string(locstring.stringref)
+                elif locstring.exists(Language.ENGLISH, Gender.MALE):
+                    name = locstring.get(Language.ENGLISH, Gender.MALE)
+                break
+
+        return name
+
+    def module_names(self) -> Dict[str, str]:
+        """
+        Returns a dictionary mapping module filename to the name of the area. The name is taken from the LocalizedString
+        "Name" in the relevant module file's ARE resource.
+
+        Returns:
+            A dictionary mapping module filename to in-game module area name.
+        """
+        module_names = {}
+        for module in self.modules_list():
+            module_names[module] = self.module_name(module)
+        return module_names
