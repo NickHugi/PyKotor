@@ -158,6 +158,13 @@ class ERFEditor(Editor):
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item = self.model.itemFromIndex(index)
             resource = item.data()
+
+            if resource.restype in [ResourceType.ERF, ResourceType.MOD, ResourceType.RIM]:
+                QMessageBox(QMessageBox.Warning, "Cannot open nested ERF files",
+                            "Editing ERF or RIM files nested within each other is no supported.",
+                            QMessageBox.Ok, self).exec_()
+                continue
+
             noExternal = not self._settings.value('encapsulatedExternalEditor', False, bool)
             tempPath, editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype,
                                                                 resource.data, noExternal=noExternal)
