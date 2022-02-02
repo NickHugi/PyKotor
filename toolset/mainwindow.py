@@ -237,6 +237,7 @@ class ToolWindow(QMainWindow):
 
         name = self.ui.gameCombo.itemText(index)
         path = self.settings.value('games')[name]['path']
+        tsl = bool(self.settings.value('games')[name]['tsl'])
 
         # If the user has not set a path for the particular game yet, ask them too.
         if path == "":
@@ -248,7 +249,7 @@ class ToolWindow(QMainWindow):
         else:
             # If the installation had not already been loaded previously this session, load it now
             if name not in self.installations:
-                dialog = InstallationLoaderDialog(self, path, name)
+                dialog = InstallationLoaderDialog(self, path, name, tsl)
                 if dialog.exec_():
                     games = self.settings.value('games')
                     games[name]['path'] = path
@@ -288,10 +289,10 @@ class ToolWindow(QMainWindow):
         """
         Reloads the files stored in the currently selected module and updates the data model.
         """
-        self.active.load_modules()
+        module = self.ui.modulesCombo.currentData()
+        self.active.reload_module(module)
 
         self.modulesModel.clear()
-        module = self.ui.modulesCombo.currentData()
         for resource in self.active.module_resources(module):
             self.modulesModel.addResource(resource)
 
@@ -341,10 +342,10 @@ class ToolWindow(QMainWindow):
         """
         Reloads the files stored in the active installation's override folder and updates the respective data model.
         """
-        self.active.load_override()
-
         folder = self.ui.overrideFolderCombo.currentText()
         folder = "" if folder == "[Root]" else folder
+
+        self.active.reload_override(folder)
 
         self.overrideModel.clear()
         for resource in self.active.override_resources(folder):
@@ -549,7 +550,7 @@ class InstallationLoaderDialog(QDialog):
     Popup dialog responsible for loading and returning an installation.
     """
 
-    def __init__(self, parent, path: str, name: str):
+    def __init__(self, parent, path: str, name: str, tsl: bool):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -568,7 +569,7 @@ class InstallationLoaderDialog(QDialog):
 
         self.installation: Optional[Installation] = None
 
-        self.worker = InstallationLoaderWorker(path, name)
+        self.worker = InstallationLoaderWorker(path, name, tsl)
         self.worker.loaded.connect(self.loadingCompleted)
         self.worker.failed.connect(self.loadingFailed)
         self.worker.start()
@@ -586,14 +587,15 @@ class InstallationLoaderWorker(QtCore.QThread):
     loaded = QtCore.pyqtSignal(object)
     failed = QtCore.pyqtSignal(object)
 
-    def __init__(self, path: str, name: str):
+    def __init__(self, path: str, name: str, tsl: bool):
         super().__init__()
         self._path: str = path
         self._name: str = name
+        self._tsl: bool = tsl
 
     def run(self):
         try:
-            installation = Installation(self._path, self._name)
+            installation = Installation(self._path, self._name, self._tsl)
             self.loaded.emit(installation)
         except ValueError as e:
             self.failed.emit(e)
