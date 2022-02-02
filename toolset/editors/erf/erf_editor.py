@@ -162,7 +162,7 @@ class ERFEditor(Editor):
             if isinstance(editor, Editor):
                 editor.savedFile.connect(self.resourceSavedInternal)
             elif editor is not None:
-                handler = ExternalUpdateEventHandler(tempPath, resource.resref.get(), resource.restype, self.resourceSavedExternal)
+                handler = ExternalUpdateEventHandler(self, tempPath, resource.resref.get(), resource.restype, self.resourceSavedExternal)
                 handler.start()
                 self._externalHandlers.append(handler)
                 self._externalOpened = True
@@ -203,8 +203,8 @@ class ERFEditor(Editor):
 
 
 class ExternalUpdateEventHandler(FileSystemEventHandler, QThread):
-    def __init__(self, filepath: str, resref: str, restype: ResourceType, callback: Callable):
-        super().__init__()
+    def __init__(self, parent, filepath: str, resref: str, restype: ResourceType, callback: Callable):
+        super().__init__(parent)
         self._filename = os.path.basename(filepath)
         self._filepath: str = filepath
         self._callback: Callable = callback
