@@ -33,7 +33,7 @@ class TwoDAEditor(Editor):
         self.ui.actionPaste.triggered.connect(self.pasteSelection)
 
         self.ui.actionInsertRow.triggered.connect(self.insertRow)
-        self.ui.actionRemovesRow.triggered.connect(self.removeSelectedRows)
+        self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
         QShortcut("Ctrl+F", self).activated.connect(self.toggleFilter)

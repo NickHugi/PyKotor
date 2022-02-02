@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>645</width>
+    <height>450</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,7 +47,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>645</width>
      <height>21</height>
     </rect>
    </property>
@@ -75,6 +75,11 @@
      <string>Tools</string>
     </property>
     <addaction name="actionToggleFilter"/>
+    <addaction name="separator"/>
+    <addaction name="actionInsertRow"/>
+    <addaction name="actionRemoveRows"/>
+    <addaction name="separator"/>
+    <addaction name="actionRedoRowLabels"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -123,6 +128,21 @@
   <action name="actionPaste">
    <property name="text">
     <string>Paste</string>
+   </property>
+  </action>
+  <action name="actionInsertRow">
+   <property name="text">
+    <string>Insert Row</string>
+   </property>
+  </action>
+  <action name="actionRemoveRows">
+   <property name="text">
+    <string>Remove Rows</string>
+   </property>
+  </action>
+  <action name="actionRedoRowLabels">
+   <property name="text">
+    <string>Redo Row Labels</string>
    </property>
   </action>
  </widget>
