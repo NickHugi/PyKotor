@@ -17,7 +17,7 @@ class Capsule:
         self._path: str = path
         self._resources: List[FileResource] = []
 
-        self.load()
+        self.reload()
 
     def __iter__(self):
         for resource in self._resources:
@@ -26,17 +26,21 @@ class Capsule:
     def __len__(self):
         return len(self._resources)
 
-    def resource(self, resref: str, restype: ResourceType) -> Optional[bytes]:
+    def resource(self, resref: str, restype: ResourceType, reload: bool = False) -> Optional[bytes]:
         """
         Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
         Args:
             resref: The resource ResRef.
             restype: The resource type.
+            reload: If True Capsule will reload the ERF before opening rather than using cached offsets.
 
         Returns:
             None or bytes data of resource.
         """
+        if reload:
+            self.reload()
+
         query = FileQuery(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return None if resource is None else resource.data()
@@ -46,7 +50,7 @@ class Capsule:
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource is not None
 
-    def load(self):
+    def reload(self):
         """
         Reload the list of resource info linked from the module file.
         """
