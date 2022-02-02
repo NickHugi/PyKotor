@@ -168,7 +168,7 @@
          <enum>QFrame::StyledPanel</enum>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>7</number>
         </property>
         <widget class="QWidget" name="linePage">
          <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -403,6 +403,28 @@
            </layout>
           </item>
           <item>
+           <widget class="QPlainTextEdit" name="tlkTextEdit">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>40</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>40</height>
+             </size>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="Line" name="line">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -532,7 +554,14 @@
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionSetTLK"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuTools"/>
   </widget>
   <action name="actionNew">
    <property name="text">
@@ -562,6 +591,11 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionSetTLK">
+   <property name="text">
+    <string>Set TLK</string>
    </property>
   </action>
  </widget>

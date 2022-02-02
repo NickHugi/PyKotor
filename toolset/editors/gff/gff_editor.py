@@ -4,11 +4,12 @@ from typing import Any, Optional
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget, QFileDialog
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
+from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import load_gff, GFFStruct, GFFFieldType, GFFList, GFF, write_gff, GFFContent
 from pykotor.resource.type import ResourceType
 
@@ -32,9 +33,13 @@ class GFFEditor(Editor):
         super().__init__(parent, "GFF Editor", supported, supported, installation)
         self.resize(400, 250)
 
+        self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
+
         self.ui = gff_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+
+        self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
         self.model: QStandardItemModel = QStandardItemModel(self)
         self.ui.treeView.setModel(self.model)
@@ -53,6 +58,7 @@ class GFFEditor(Editor):
         self.ui.wVec4Spin.editingFinished.connect(self.updateData)
         self.ui.labelEdit.editingFinished.connect(self.updateData)
 
+        self.ui.stringrefSpin.valueChanged.connect(self.changeLocstringText)
         self.ui.stringrefSpin.editingFinished.connect(self.updateData)
         self.ui.substringList.itemSelectionChanged.connect(self.substringSelected)
         self.ui.addSubstringButton.clicked.connect(self.addSubstring)
@@ -452,3 +458,15 @@ class GFFEditor(Editor):
 
             menu.popup(self.ui.treeView.viewport().mapToGlobal(point))
 
+    def selectTalkTable(self) -> None:
+        filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
+        if filepath:
+            self._talktable = TalkTable(filepath)
+        self.updateTextBoxes()
+
+    def changeLocstringText(self) -> None:
+        if self._talktable is not None:
+            text = self._talktable.string(self.ui.stringrefSpin.value())
+            self.ui.tlkTextEdit.setPlainText(text)
+        else:
+            self.ui.tlkTextEdit.setPlainText("")
