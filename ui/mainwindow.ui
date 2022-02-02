@@ -54,6 +54,9 @@
             <property name="sortingEnabled">
              <bool>true</bool>
             </property>
+            <property name="allColumnsShowFocus">
+             <bool>true</bool>
+            </property>
             <attribute name="headerShowSortIndicator" stdset="0">
              <bool>true</bool>
             </attribute>
@@ -125,6 +128,9 @@
             <property name="sortingEnabled">
              <bool>true</bool>
             </property>
+            <property name="allColumnsShowFocus">
+             <bool>true</bool>
+            </property>
             <attribute name="headerShowSortIndicator" stdset="0">
              <bool>false</bool>
             </attribute>
@@ -187,6 +193,9 @@
              <enum>QAbstractItemView::ExtendedSelection</enum>
             </property>
             <property name="sortingEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="allColumnsShowFocus">
              <bool>true</bool>
             </property>
             <attribute name="headerShowSortIndicator" stdset="0">

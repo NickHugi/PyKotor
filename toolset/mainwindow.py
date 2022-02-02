@@ -8,11 +8,11 @@ from time import sleep
 from typing import Optional, List, Union, Tuple
 
 import requests
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
-    QLabel, QWidget, QMessageBox
+    QLabel, QWidget, QMessageBox, QHeaderView
 from pykotor.extract.file import FileResource
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
@@ -75,6 +75,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
+        self.ui.resourceTabs.currentChanged.connect(self.resizeColumns)
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
         self.ui.extractButton.clicked.connect(self.extractFromSelected)
         self.ui.openButton.clicked.connect(self.openFromSelected)
@@ -172,6 +173,21 @@ class ToolWindow(QMainWindow):
             QMessageBox(QMessageBox.Critical, "Could not open TLK file", "Must have a game selected first.",
                         QMessageBox.Ok, self).exec_()
 
+    def resizeColumns(self) -> None:
+        self.ui.coreTree.setColumnWidth(1, 10)
+        self.ui.coreTree.setColumnWidth(0, self.ui.coreTree.width() - 80)
+        self.ui.coreTree.header().setSectionResizeMode(QHeaderView.Fixed)
+        self.ui.modulesTree.setColumnWidth(1, 10)
+        self.ui.modulesTree.setColumnWidth(0, self.ui.modulesTree.width() - 80)
+        self.ui.modulesTree.header().setSectionResizeMode(QHeaderView.Fixed)
+        self.ui.overrideTree.setColumnWidth(1, 10)
+        self.ui.overrideTree.setColumnWidth(0, self.ui.overrideTree.width() - 80)
+        self.ui.overrideTree.header().setSectionResizeMode(QHeaderView.Fixed)
+
+    def resizeEvent(self, size: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(size)
+        self.resizeColumns()
+
     def _clearModels(self) -> None:
         """
         Clears all data models for the different tabs.
@@ -184,6 +200,8 @@ class ToolWindow(QMainWindow):
         self.coreModel.clear()
         self.modulesModel.clear()
         self.overrideModel.clear()
+
+        self.resizeColumns()
 
     def reloadInstallations(self) -> None:
         """
