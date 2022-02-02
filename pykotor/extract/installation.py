@@ -136,6 +136,7 @@ class Installation:
                     self._override[directory][file] = resource
 
     def reload_override(self, directory):
+        self._override[directory] = {}
         files = os.listdir(self.override_path() + directory)
         for file in files:
             with suppress(Exception):
