@@ -28,8 +28,6 @@ class Editor(QMainWindow):
                  installation: Optional[Installation] = None):
         super().__init__(parent)
 
-        self.msgbox = None
-
         self._filepath: Optional[str] = None
         self._resref: Optional[str] = None
         self._restype: Optional[ResourceType] = None
@@ -123,9 +121,9 @@ class Editor(QMainWindow):
             self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
             if self._filepath.endswith(".bif"):
-                self.msgbox = QMessageBox(QMessageBox.Critical, "Could not save file",
-                                          "Cannot save resource into a .BIF file, select another destination instead.")
-                self.msgbox.show()
+                QMessageBox(QMessageBox.Critical, "Could not save file",
+                            "Cannot save resource into a .BIF file, select another destination instead.",
+                            QMessageBox.Ok, self).show()
             elif self._filepath.endswith(".rim"):
                 rim = load_rim(self._filepath)
                 rim.set(self._resref, self._restype, data)
