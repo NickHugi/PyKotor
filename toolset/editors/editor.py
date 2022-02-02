@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import List, Union, Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMenu, QMessageBox, QMenuBar, QListWidgetItem, QAction, \
     QShortcut
 from pykotor.extract.capsule import Capsule
@@ -34,6 +35,7 @@ class Editor(QMainWindow):
         self._revert: Optional[bytes] = None
         self._read_supported: List[ResourceType] = read_supported
         self._write_supported: List[ResourceType] = write_supported
+        self._settings = QSettings('cortisol', 'holocrontoolset')
         self._installation: Optional[Installation] = installation
 
         self._editor_title = title

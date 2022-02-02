@@ -158,7 +158,9 @@ class ERFEditor(Editor):
         for index in self.ui.tableView.selectionModel().selectedRows(0):
             item = self.model.itemFromIndex(index)
             resource = item.data()
-            tempPath, editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype, resource.data)
+            noExternal = not self._settings.value('encapsulatedExternalEditor', False, bool)
+            tempPath, editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype,
+                                                                resource.data, noExternal=noExternal)
             if isinstance(editor, Editor):
                 editor.savedFile.connect(self.resourceSavedInternal)
             elif editor is not None:
