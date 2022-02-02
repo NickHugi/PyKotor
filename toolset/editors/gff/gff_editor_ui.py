@@ -290,7 +290,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuTools.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.pages.setCurrentIndex(7)
+        self.pages.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

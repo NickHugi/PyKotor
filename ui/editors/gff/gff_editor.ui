@@ -168,7 +168,7 @@
          <enum>QFrame::StyledPanel</enum>
         </property>
         <property name="currentIndex">
-         <number>7</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="linePage">
          <layout class="QVBoxLayout" name="verticalLayout_2">
