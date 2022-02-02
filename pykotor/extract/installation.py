@@ -98,10 +98,12 @@ class Installation:
 
     def load_modules(self) -> None:
         self._modules = {}
-        module_path = self.module_path()
-        module_files = [file for file in os.listdir(module_path) if file.endswith('.mod')or file.endswith('.rim') or file.endswith('.erf')]
+        module_files = [file for file in os.listdir(self.module_path()) if file.endswith('.mod')or file.endswith('.rim') or file.endswith('.erf')]
         for module in module_files:
-            self._modules[module] = [resource for resource in Capsule(module_path + module)]
+            self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
+
+    def reload_module(self, module) -> None:
+        self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
 
     def load_lips(self) -> None:
         self._lips = {}
@@ -131,6 +133,15 @@ class Installation:
                     size = os.path.getsize(path + file)
                     resource = FileResource(name, ResourceType.from_extension(ext), size, 0, path + file)
                     self._override[directory][file] = resource
+
+    def reload_override(self, directory):
+        files = os.listdir(self.override_path() + directory)
+        for file in files:
+            with suppress(Exception):
+                name, ext = file.split('.', 1)
+                size = os.path.getsize(self.override_path() + directory + file)
+                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, self.override_path() + directory + file)
+                self._override[directory][file] = resource
     # endregion
 
     # region Get FileResources
