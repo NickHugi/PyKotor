@@ -273,7 +273,7 @@ class ToolWindow(QMainWindow):
         self.active.load_modules()
 
         self.modulesModel.clear()
-        module = self.ui.modulesCombo.currentText()
+        module = self.ui.modulesCombo.currentData()
         for resource in self.active.module_resources(module):
             self.modulesModel.addResource(resource)
 
@@ -401,10 +401,10 @@ class ToolWindow(QMainWindow):
             if isinstance(editor, subprocess.Popen) and resource.filepath() != editor and inERForRIM:
                 handler = EncapsulatedExternalUpdateHandler(self, filepath, editor, resource.filepath(), resource.resref(), resource.restype())
                 handler.errorOccurred.connect(self.externalEncapsulatedSavedError)
-                try:
-                    handler.start()
-                except Exception as e:
-                    print(e)
+                handler.fileModified.connect(self.reloadModule)
+                handler.start()
+            elif self.active.module_path() in filepath and isinstance(editor, Editor):
+                editor.savedFile.connect(self.reloadModule)
 
     def openFromFile(self) -> None:
         filepath, filter = QFileDialog.getOpenFileName(self, "Open a file")
@@ -764,6 +764,7 @@ class ResourceModel(QStandardItemModel):
 
 class EncapsulatedExternalUpdateHandler(FileSystemEventHandler, QThread):
     errorOccurred = QtCore.pyqtSignal(object, object, object)
+    fileModified = QtCore.pyqtSignal(object)
 
     def __init__(self, parent, tempFilepath: str, process: subprocess.Popen, modFilepath: str, resref: str, restype: ResourceType):
         super().__init__(parent)
@@ -807,6 +808,7 @@ class EncapsulatedExternalUpdateHandler(FileSystemEventHandler, QThread):
                         if rim.get(self._resref, self._restype) != data:
                             rim.set(self._resref, self._restype, data)
                             write_rim(rim, self._modFilepath)
+                    self.fileModified.emit(self._modFilepath)
             except Exception as e:
                 self.errorOccurred.emit(self._tempFilepath, self._modFilepath, e)
 
