@@ -84,7 +84,7 @@ class ToolWindow(QMainWindow):
         self.ui.moduleSearchEdit.textEdited.connect(self.filterDataModel)
         self.ui.moduleReloadButton.clicked.connect(self.reloadModule)
         self.ui.moduleRefreshButton.clicked.connect(self.refreshModuleList)
-        self.ui.modulesCombo.currentTextChanged.connect(self.changeModule)
+        self.ui.modulesCombo.currentTextChanged.connect(lambda: self.changeModule(self.ui.modulesCombo.itemData(self.ui.modulesCombo.currentIndex())))
 
         self.ui.overrideSearchEdit.textEdited.connect(self.filterDataModel)
         self.ui.overrideRefreshButton.clicked.connect(self.refreshOverrideList)
@@ -176,9 +176,8 @@ class ToolWindow(QMainWindow):
         """
         Clears all data models for the different tabs.
         """
-        self.ui.modulesCombo.clear()
-        self.ui.modulesCombo.addItem("[None]")
 
+        self.ui.modulesCombo.clear()
         self.ui.overrideFolderCombo.clear()
         self.ui.overrideFolderCombo.addItem("[Root]")
 
@@ -248,8 +247,7 @@ class ToolWindow(QMainWindow):
                     self.coreModel.addResource(resource)
                 for directory in self.active.override_list():
                     self.refreshOverrideList()
-                for module in self.active.modules_list():
-                    self.ui.modulesCombo.addItem(module)
+                self.refreshModuleList()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
 
@@ -259,7 +257,7 @@ class ToolWindow(QMainWindow):
         """
         self.modulesModel.clear()
 
-        if module == "" or module == "[None]":
+        if self.active is None or module is None or module == "" or module == "[None]":
             return
 
         for resource in self.active.module_resources(module):
@@ -287,8 +285,15 @@ class ToolWindow(QMainWindow):
 
         self.ui.modulesCombo.clear()
         self.ui.modulesCombo.addItem("[None]")
-        for module in self.active.modules_list():
-            self.ui.modulesCombo.addItem(module)
+
+        if self.settings.value('showModuleNames', True, bool):
+            areaNames = self.active.module_names()
+            for module in self.active.modules_list():
+                text = "[{}] {}".format(areaNames[module], module)
+                self.ui.modulesCombo.addItem(text, userData=module)
+        else:
+            for module in self.active.modules_list():
+                self.ui.modulesCombo.addItem(module, userData=module)
 
     def changeOverrideFolder(self, folder: str) -> None:
         self.overrideModel.clear()

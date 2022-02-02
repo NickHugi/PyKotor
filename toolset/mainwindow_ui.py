@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(439, 471)
+        MainWindow.resize(536, 471)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
@@ -51,6 +51,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.modulesCombo = QtWidgets.QComboBox(self.modulesTab)
+        self.modulesCombo.setMaxVisibleItems(18)
         self.modulesCombo.setObjectName("modulesCombo")
         self.horizontalLayout_2.addWidget(self.modulesCombo)
         self.moduleRefreshButton = QtWidgets.QPushButton(self.modulesTab)
@@ -166,7 +167,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addLayout(self.vboxlayout)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 439, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 536, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")

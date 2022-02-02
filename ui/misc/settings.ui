@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -536,6 +536,13 @@
             </layout>
            </item>
            <item>
+            <widget class="QCheckBox" name="showModuleNameCheckbox">
+             <property name="text">
+              <string>Show location names for modules</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="Line" name="line_2">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -574,7 +581,7 @@
              <property name="sizeHint" stdset="0">
               <size>
                <width>20</width>
-               <height>95</height>
+               <height>72</height>
               </size>
              </property>
             </spacer>

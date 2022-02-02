@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>439</width>
+    <width>536</width>
     <height>471</height>
    </rect>
   </property>
@@ -72,7 +72,11 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="4,1">
             <item>
-             <widget class="QComboBox" name="modulesCombo"/>
+             <widget class="QComboBox" name="modulesCombo">
+              <property name="maxVisibleItems">
+               <number>18</number>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QPushButton" name="moduleRefreshButton">
@@ -347,7 +351,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>439</width>
+     <width>536</width>
      <height>21</height>
     </rect>
    </property>

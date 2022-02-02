@@ -264,6 +264,9 @@ class Ui_Dialog(object):
         self.tempMiscEdit.setObjectName("tempMiscEdit")
         self.formLayout_3.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.tempMiscEdit)
         self.verticalLayout_3.addLayout(self.formLayout_3)
+        self.showModuleNameCheckbox = QtWidgets.QCheckBox(self.scrollAreaWidgetContents_2)
+        self.showModuleNameCheckbox.setObjectName("showModuleNameCheckbox")
+        self.verticalLayout_3.addWidget(self.showModuleNameCheckbox)
         self.line_2 = QtWidgets.QFrame(self.scrollAreaWidgetContents_2)
         self.line_2.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
@@ -279,7 +282,7 @@ class Ui_Dialog(object):
         self.experimentalExternalCheckbox = QtWidgets.QCheckBox(self.scrollAreaWidgetContents_2)
         self.experimentalExternalCheckbox.setObjectName("experimentalExternalCheckbox")
         self.verticalLayout_3.addWidget(self.experimentalExternalCheckbox)
-        spacerItem = QtWidgets.QSpacerItem(20, 95, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        spacerItem = QtWidgets.QSpacerItem(20, 72, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.verticalLayout_3.addItem(spacerItem)
         self.scrollArea_2.setWidget(self.scrollAreaWidgetContents_2)
         self.gridLayout_2.addWidget(self.scrollArea_2, 0, 0, 1, 1)
@@ -301,7 +304,7 @@ class Ui_Dialog(object):
         self.verticalLayout.addLayout(self.horizontalLayout_9)
 
         self.retranslateUi(Dialog)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
@@ -342,6 +345,7 @@ class Ui_Dialog(object):
         self.label_16.setText(_translate("Dialog", "<html><head/><body><p><span style=\" font-weight:600;\">External editors will not be used by default when editing resources stored inside ERF/MOD/RIM files. This can be changed under the &quot;Misc&quot; tab.</span></p></body></html>"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Dialog", "Tools"))
         self.label.setText(_translate("Dialog", "Extract Directory:"))
+        self.showModuleNameCheckbox.setText(_translate("Dialog", "Show location names for modules"))
         self.label_15.setText(_translate("Dialog", "<html><head/><body><p><span style=\" font-weight:600;\">The following features are incomplete and so are unstable. Use with caution.</span></p></body></html>"))
         self.experimentalMdlCheckbox.setText(_translate("Dialog", "EXPERIMENTAL: Enable MDL Decompiler"))
         self.experimentalExternalCheckbox.setText(_translate("Dialog", "EXPERIMENTAL: Enable External Editor for resouces in ERF/MOD/RIM"))
