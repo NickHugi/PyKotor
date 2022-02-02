@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -112,7 +112,7 @@
        <string>Tools</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0">
+       <item row="1" column="0">
         <widget class="QScrollArea" name="scrollArea">
          <property name="widgetResizable">
           <bool>true</bool>
@@ -123,18 +123,18 @@
             <x>0</x>
             <y>0</y>
             <width>439</width>
-            <height>290</height>
+            <height>296</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="formLayout">
-           <item row="0" column="0">
+           <item row="1" column="0">
             <widget class="QLabel" name="label_3">
              <property name="text">
               <string>GFF Editor:</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
+           <item row="1" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
               <widget class="QComboBox" name="gffToolCombo">
@@ -165,14 +165,14 @@
              </item>
             </layout>
            </item>
-           <item row="1" column="0">
+           <item row="2" column="0">
             <widget class="QLabel" name="label_7">
              <property name="text">
               <string>2DA Editor:</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
+           <item row="2" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
               <widget class="QComboBox" name="twodaToolCombo">
@@ -203,14 +203,14 @@
              </item>
             </layout>
            </item>
-           <item row="2" column="0">
+           <item row="3" column="0">
             <widget class="QLabel" name="label_8">
              <property name="text">
               <string>DLG Editor:</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="1">
+           <item row="3" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
               <widget class="QComboBox" name="dlgToolCombo">
@@ -244,14 +244,14 @@
              </item>
             </layout>
            </item>
-           <item row="3" column="0">
+           <item row="4" column="0">
             <widget class="QLabel" name="label_9">
              <property name="text">
               <string>TLK Editor:</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="1">
+           <item row="4" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
               <widget class="QComboBox" name="tlkToolCombo">
@@ -282,14 +282,14 @@
              </item>
             </layout>
            </item>
-           <item row="6" column="0">
+           <item row="7" column="0">
             <widget class="QLabel" name="label_5">
              <property name="text">
               <string>UTx Editor:</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="1">
+           <item row="7" column="1">
             <widget class="QComboBox" name="utxToolCombo">
              <item>
               <property name="text">
@@ -298,14 +298,14 @@
              </item>
             </widget>
            </item>
-           <item row="7" column="0">
+           <item row="8" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
               <string>NSS Compiler:</string>
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
+           <item row="8" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
               <widget class="QComboBox" name="nssCompToolCombo">
@@ -334,14 +334,14 @@
              </item>
             </layout>
            </item>
-           <item row="8" column="0">
+           <item row="9" column="0">
             <widget class="QLabel" name="label_10">
              <property name="text">
               <string>NCS Decompiler:</string>
              </property>
             </widget>
            </item>
-           <item row="8" column="1">
+           <item row="9" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_7">
              <item>
               <widget class="QComboBox" name="ncsToolCombo">
@@ -370,14 +370,14 @@
              </item>
             </layout>
            </item>
-           <item row="9" column="0">
+           <item row="10" column="0">
             <widget class="QLabel" name="label_6">
              <property name="text">
               <string>MDL Decompiler:</string>
              </property>
             </widget>
            </item>
-           <item row="9" column="1">
+           <item row="10" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
               <widget class="QComboBox" name="mdlToolCombo">
@@ -406,21 +406,21 @@
              </item>
             </layout>
            </item>
-           <item row="4" column="0">
+           <item row="5" column="0">
             <widget class="QLabel" name="label_2">
              <property name="text">
               <string>TXT Editor:</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
+           <item row="6" column="0">
             <widget class="QLabel" name="label_14">
              <property name="text">
               <string>NSS Editor:</string>
              </property>
             </widget>
            </item>
-           <item row="4" column="1">
+           <item row="5" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_10">
              <item>
               <widget class="QComboBox" name="txtToolCombo">
@@ -451,7 +451,7 @@
              </item>
             </layout>
            </item>
-           <item row="5" column="1">
+           <item row="6" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_11">
              <item>
               <widget class="QComboBox" name="nssToolCombo">
@@ -484,6 +484,16 @@
            </item>
           </layout>
          </widget>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_16">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;External editors will not be used by default when editing resources stored inside ERF/MOD/RIM files. This can be changed under the &amp;quot;Misc&amp;quot; tab.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
       </layout>
