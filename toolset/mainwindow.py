@@ -5,7 +5,7 @@ import os
 import subprocess
 from distutils.version import Version, StrictVersion
 from time import sleep
-from typing import Optional, List, Union, Tuple
+from typing import Optional, List, Union, Tuple, Dict
 
 import requests
 from PyQt5 import QtCore, QtGui
@@ -103,8 +103,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionHelpUpdates.triggered.connect(self.openUpdatesDialog)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
 
-        self.coreModel = ResourceModel()
-        self.ui.coreTree.setModel(self.coreModel.proxyModel())
+        self.ui.coreTree.setModel(ResourceModel())
         self.ui.coreTree.header().resizeSection(1, 40)
         self.ui.coreTree.setSortingEnabled(True)
         self.ui.coreTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
@@ -120,6 +119,8 @@ class ToolWindow(QMainWindow):
         self.ui.overrideTree.header().resizeSection(1, 40)
         self.ui.overrideTree.setSortingEnabled(True)
         self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+        self._core_models: Dict[str, ResourceModel] = {}
 
         self._clearModels()
         self.reloadSettings()
@@ -197,7 +198,6 @@ class ToolWindow(QMainWindow):
         self.ui.overrideFolderCombo.clear()
         self.ui.overrideFolderCombo.addItem("[Root]")
 
-        self.coreModel.clear()
         self.modulesModel.clear()
         self.overrideModel.clear()
 
@@ -259,12 +259,13 @@ class ToolWindow(QMainWindow):
             if name in self.installations:
                 self.active = self.installations[name]
 
-                for resource in self.active.chitin_resources():
-                    self.coreModel.addResource(resource)
-                for resource in self.active.texturepack_resources("swpc_tex_tpa.erf"):
-                    self.coreModel.addResource(resource)
-                for directory in self.active.override_list():
-                    self.refreshOverrideList()
+                if name not in self._core_models:
+                    self._core_models[name] = ResourceModel()
+                    [self._core_models[name].addResource(resource) for resource in self.active.chitin_resources()]
+                    [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_tpa.erf")]
+                self.ui.coreTree.setModel(self._core_models[name].proxyModel())
+
+                self.refreshOverrideList()
                 self.refreshModuleList()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
@@ -366,7 +367,7 @@ class ToolWindow(QMainWindow):
         Returns the QTreeView object that is currently being shown on the resourceTabs.
         """
         if self.ui.resourceTabs.currentIndex() == 0:
-            return self.coreModel
+            return self.ui.coreTree.model().parent()
         if self.ui.resourceTabs.currentIndex() == 1:
             return self.modulesModel
         if self.ui.resourceTabs.currentIndex() == 2:
@@ -743,9 +744,11 @@ class ResourceModel(QStandardItemModel):
     def __init__(self):
         super().__init__()
         self._categoryItems = {}
-        self._proxyModel = QSortFilterProxyModel()
+        self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
         self._proxyModel.setRecursiveFilteringEnabled(True)
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels(["ResRef", "Type"])
 
     def proxyModel(self) -> QSortFilterProxyModel:
         return self._proxyModel
