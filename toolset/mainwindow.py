@@ -72,7 +72,6 @@ class ToolWindow(QMainWindow):
                 self.settings.setValue('tempDir', "")
 
         self.installations = {}
-        self.reloadInstallations()
 
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
@@ -122,13 +121,18 @@ class ToolWindow(QMainWindow):
         self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         self._clearModels()
+        self.reloadSettings()
+
+    def reloadSettings(self) -> None:
+        self.ui.mdlDecompileCheckbox.setVisible(self.settings.value('mdlDecompile', False, bool))
+        self.reloadInstallations()
 
     def openSettingsDialog(self) -> None:
         """
         Opens the Settings dialog and refresh installation combo list if changes.
         """
         if Settings().exec_():
-            self.reloadInstallations()
+            self.reloadSettings()
 
     def openAboutDialog(self) -> None:
         """
@@ -386,12 +390,16 @@ class ToolWindow(QMainWindow):
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataTree().selectedIndexes())
         for resource in resources:
             filepath, editor = self.openResourceEditor(resource.filepath(), resource.resref(), resource.restype(), resource.data())
+            inERForRIM = resource.filepath().endswith('.erf') or resource.filepath().endswith('.rim') or resource.filepath().endswith('.mod')
 
-            # If opened with external editor AND the resource in encapsulated
-            if isinstance(editor, subprocess.Popen) and resource.filepath() != editor:
-                handler = EncapsulatedExternalUpdateHandler(filepath, editor, resource.filepath(), resource.resref(), resource.restype())
+            # If opened with external editor AND the resource in encapsulated in ERF/RIM
+            if isinstance(editor, subprocess.Popen) and resource.filepath() != editor and inERForRIM:
+                handler = EncapsulatedExternalUpdateHandler(self, filepath, editor, resource.filepath(), resource.resref(), resource.restype())
                 handler.errorOccurred.connect(self.externalEncapsulatedSavedError)
-                handler.start()
+                try:
+                    handler.start()
+                except Exception as e:
+                    print(e)
 
     def openFromFile(self) -> None:
         filepath, filter = QFileDialog.getOpenFileName(self, "Open a file")
@@ -423,8 +431,13 @@ class ToolWindow(QMainWindow):
         editor = None
         external = None
 
+        encapsulated = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif')
+        inERForRIM = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod')
+        shouldUseExternal = (self.settings.value('encapsulatedExternalEditor', False, bool) and inERForRIM) or not inERForRIM
+        noExternal = noExternal or not shouldUseExternal
+
         if restype in [ResourceType.TwoDA]:
-            if self.settings.value('2daEditor'):
+            if self.settings.value('2daEditor') and not noExternal:
                 external = self.settings.value('2daEditor')
             else:
                 editor = TwoDAEditor(self, self.active)
@@ -477,7 +490,7 @@ class ToolWindow(QMainWindow):
             return filepath, editor
         elif external is not None:
             try:
-                if filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif'):
+                if encapsulated:
                     modName = os.path.basename(filepath.replace(".rim", "").replace(".erf", "").replace(".mod", ""))
                     tempFilepath = "{}/{}-{}.{}".format(self.settings.value('tempDir'), modName, resref, restype.extension)
                     with open(tempFilepath, 'wb') as file:
@@ -487,7 +500,7 @@ class ToolWindow(QMainWindow):
                 else:
                     process = subprocess.Popen([external, filepath])
                     return filepath, process
-            except:
+            except Exception as e:
                 QMessageBox(QMessageBox.Critical, "Could not open editor", "Double check the file path in settings.",
                             QMessageBox.Ok, self).show()
         else:
@@ -747,8 +760,8 @@ class ResourceModel(QStandardItemModel):
 class EncapsulatedExternalUpdateHandler(FileSystemEventHandler, QThread):
     errorOccurred = QtCore.pyqtSignal(object, object, object)
 
-    def __init__(self, tempFilepath: str, process: subprocess.Popen, modFilepath: str, resref: str, restype: ResourceType):
-        super().__init__()
+    def __init__(self, parent, tempFilepath: str, process: subprocess.Popen, modFilepath: str, resref: str, restype: ResourceType):
+        super().__init__(parent)
         self._tempFilename = os.path.basename(tempFilepath)
         self._tempFilepath: str = tempFilepath
         self._modFilepath: str = modFilepath

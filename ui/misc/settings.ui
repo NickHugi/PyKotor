@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -121,7 +121,7 @@
           <property name="geometry">
            <rect>
             <x>0</x>
-            <y>-72</y>
+            <y>0</y>
             <width>439</width>
             <height>290</height>
            </rect>
@@ -495,6 +495,9 @@
       <layout class="QGridLayout" name="gridLayout_2">
        <item row="0" column="0">
         <widget class="QScrollArea" name="scrollArea_2">
+         <property name="horizontalScrollBarPolicy">
+          <enum>Qt::ScrollBarAlwaysOff</enum>
+         </property>
          <property name="widgetResizable">
           <bool>true</bool>
          </property>
@@ -507,16 +510,64 @@
             <height>218</height>
            </rect>
           </property>
-          <layout class="QFormLayout" name="formLayout_3">
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="tempMiscEdit"/>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <layout class="QFormLayout" name="formLayout_3">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>Extract Directory:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="tempMiscEdit"/>
+             </item>
+            </layout>
            </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Extract Directory:</string>
+           <item>
+            <widget class="Line" name="line_2">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
             </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_15">
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;The following features are incomplete and so are unstable. Use with caution.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="experimentalMdlCheckbox">
+             <property name="text">
+              <string>EXPERIMENTAL: Enable MDL Decompiler</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="experimentalExternalCheckbox">
+             <property name="text">
+              <string>EXPERIMENTAL: Enable External Editor for resouces in ERF/MOD/RIM</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>95</height>
+              </size>
+             </property>
+            </spacer>
            </item>
           </layout>
          </widget>

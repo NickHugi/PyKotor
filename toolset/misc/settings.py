@@ -63,6 +63,8 @@ class Settings(QDialog):
         self.settings.setValue('nssEditor', self.ui.nssToolEdit.text())
 
         self.settings.setValue('tempDir', self.ui.tempMiscEdit.text().replace('\\', '/'))
+        self.settings.setValue('mdlDecompile', self.ui.experimentalMdlCheckbox.isChecked())
+        self.settings.setValue('encapsulatedExternalEditor', self.ui.experimentalExternalCheckbox.isChecked())
 
     def cancel(self) -> None:
         """
@@ -179,3 +181,5 @@ class Settings(QDialog):
 
     def loadMisc(self) -> None:
         self.ui.tempMiscEdit.setText(self.settings.value('tempDir'))
+        self.ui.experimentalMdlCheckbox.setChecked(self.settings.value('mdlDecompile', False, bool))
+        self.ui.experimentalExternalCheckbox.setChecked(self.settings.value('encapsulatedExternalEditor', False, bool))
