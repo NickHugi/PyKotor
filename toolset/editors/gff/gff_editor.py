@@ -462,7 +462,6 @@ class GFFEditor(Editor):
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
         if filepath:
             self._talktable = TalkTable(filepath)
-        self.updateTextBoxes()
 
     def changeLocstringText(self) -> None:
         if self._talktable is not None:
