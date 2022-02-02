@@ -259,8 +259,9 @@ class Installation:
         Returns:
             The name of the area for the module.
         """
-        root = module_filename.removesuffix(".mod").removesuffix(".erf").removesuffix(".rim")
-        root = root.removesuffix("_s").removesuffix("_dlg")
+        root = module_filename.replace(".mod", "").replace(".erf", "").replace(".rim", "")
+        root = root[:-len("_s")] if root.endswith("_s") else root
+        root = root[:-len("_dlg")] if root.endswith("_dlg") else root
 
         name = ""
 
