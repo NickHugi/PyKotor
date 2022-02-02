@@ -275,8 +275,10 @@ class ToolWindow(QMainWindow):
         Updates the items in the module tree to the module specified.
         """
         self.modulesModel.clear()
+        self.ui.moduleReloadButton.setEnabled(True)
 
         if self.active is None or module is None or module == "" or module == "[None]":
+            self.ui.moduleReloadButton.setEnabled(False)
             return
 
         for resource in self.active.module_resources(module):
@@ -285,9 +287,6 @@ class ToolWindow(QMainWindow):
     def reloadModule(self) -> None:
         """
         Reloads the files stored in the currently selected module and updates the data model.
-
-        Returns:
-
         """
         self.active.load_modules()
 
