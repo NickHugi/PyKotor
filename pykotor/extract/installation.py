@@ -180,7 +180,7 @@ class Installation:
     def talktable(self) -> TalkTable:
         return self._talktable
 
-    def resource(self, resref: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
+    def resource(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
                  skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> Optional[bytes]:
         """
         Returns a resource matching the specified resref and restype. If no resource is found then None is returned
@@ -194,7 +194,7 @@ class Installation:
             5. Installation Chitin.
 
         Args:
-            resref: The ResRef.
+            resname: The ResRef string.
             restype: The resource type.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
@@ -208,7 +208,7 @@ class Installation:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        query = FileQuery(resref, restype)
+        query = FileQuery(resname, restype)
 
         # 1 - Check user provided folders
         for folder in folders:
@@ -228,8 +228,8 @@ class Installation:
   
         # 3 - Check user provided modules
         for capsule in capsules:
-            if capsule.exists(resref, restype):
-                return capsule.resource(resref, restype)
+            if capsule.exists(resname, restype):
+                return capsule.resource(resname, restype)
 
         # 4 - Check installation modules
         if not skip_modules:
@@ -246,7 +246,7 @@ class Installation:
 
         return None
 
-    def texture(self, resref: str, *, capsules: List[Capsule] = None, folders: List[str] = None,
+    def texture(self, resname: str, *, capsules: List[Capsule] = None, folders: List[str] = None,
                 skip_modules: bool = False, skip_chitin: bool = True, skip_gui: bool = True,
                 texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
         """
@@ -262,7 +262,7 @@ class Installation:
             7. Installation module files in modules folder.
 
         Args:
-            resref: The ResRef.
+            resname: The ResRef string.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
             skip_modules: If true, skips searching through module files in the installation modules folder.
@@ -282,48 +282,48 @@ class Installation:
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
-                    if resref == f_resref and f_restype in [ResourceType.TPC, ResourceType.TGA]:
+                    if resname == f_resref and f_restype in [ResourceType.TPC, ResourceType.TGA]:
                         return load_tpc(BinaryReader.load_file(folder + file))
 
         # 2 - Check user provided modules
         for capsule in capsules:
-            if capsule.exists(resref, ResourceType.TGA):
-                return capsule.resource(resref, ResourceType.TPC)
-            if capsule.exists(resref, ResourceType.TPC):
-                return capsule.resource(resref, ResourceType.TGA)
+            if capsule.exists(resname, ResourceType.TGA):
+                return capsule.resource(resname, ResourceType.TPC)
+            if capsule.exists(resname, ResourceType.TPC):
+                return capsule.resource(resname, ResourceType.TGA)
 
         # 3 - Check installation override folder
         for directory in self._override.values():
             for file_name, resource in directory.items():
-                if resource.resref() == resref and resource.restype() == ResourceType.TGA:
+                if resource.resref() == resname and resource.restype() == ResourceType.TGA:
                     return load_tpc(resource.data())
-                elif resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                elif resource.resref() == resname and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
         # 4 - Check normal texturepack
         for resource in self.texturepack_resources("swpc_tex_tp{}.erf".format(texture_quality.value)):
-            if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+            if resource.resref() == resname and resource.restype() == ResourceType.TPC:
                 return load_tpc(resource.data())
 
         # 5 - Check GUI texturepack
         if not skip_gui:
             for resource in self.texturepack_resources("swpc_tex_gui.erf"):
-                if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                if resource.resref() == resname and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
         # 6 - Check chitin
         if not skip_chitin:
             for resource in self._chitin:
-                if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                if resource.resref() == resname and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
         # 7 - Check modules files in installation modules folder
         if not skip_modules:
             for module_name, resources in self._modules.items():
                 for resource in resources:
-                    if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                    if resource.resref() == resname and resource.restype() == ResourceType.TPC:
                         return load_tpc(resource.data())
-                    if resource.resref() == resref and resource.restype() == ResourceType.TGA:
+                    if resource.resref() == resname and resource.restype() == ResourceType.TGA:
                         return load_tpc(resource.data())
 
         return None
