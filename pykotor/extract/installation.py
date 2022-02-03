@@ -30,7 +30,7 @@ class Installation:
     """
     TEXTURES_TYPES = [ResourceType.TPC, ResourceType.TGA, ResourceType.DDS]
 
-    def __init__(self, path: str, name: str, tsl: bool):
+    def __init__(self, path: str, name: str = "KotOR", tsl: bool = False):
         self._path: str = path.replace('\\', '/')
         if not self._path.endswith('/'): self._path += '/'
 
@@ -42,14 +42,13 @@ class Installation:
         self._lips: Dict[str, List[FileResource]] = {}
         self._texturepacks: Dict[str, List[FileResource]] = {}
         self._override: Dict[str, Dict[str, FileResource]] = {}
-        self._talktable: Optional[TalkTable] = None
+        self._talktable: Optional[TalkTable] = TalkTable(self._path + "dialog.tlk")
 
         self.load_modules()
         self.load_override()
         self.load_lips()
         self.load_textures()
         self.load_chitin()
-        self._talktable = TalkTable(self._path + "dialog.tlk")
 
     # region Get Paths
     def path(self) -> str:
