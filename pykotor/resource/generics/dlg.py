@@ -144,6 +144,7 @@ class DLGComputerType(IntEnum):
 class DLGConversationType(IntEnum):
     Human = 0
     Computer = 1
+    Other = 2
 
 
 class DLGNode:
