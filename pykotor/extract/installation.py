@@ -189,8 +189,9 @@ class Installation:
         Resource is search for in the following order:
             1. "folders" parameter.
             2. Installation override folder.
-            3. Installation module files in modules folder.
-            4. Installation Chitin.
+            3. "capsules" parameter.
+            4. Installation module files in modules folder.
+            5. Installation Chitin.
 
         Args:
             resref: The ResRef.
@@ -214,8 +215,8 @@ class Installation:
             folder = folder + '/' if not folder.endswith('/') else folder
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
-                    resref, restype = filepath_info(file)
-                    if query.resref == resref and query.restype == restype:
+                    f_resref, f_restype = filepath_info(file)
+                    if query.resref == f_resref and query.restype == f_restype:
                         return BinaryReader.load_file(folder + file)
 
         # 2 - Check installation override
@@ -237,7 +238,7 @@ class Installation:
                     if resource == query:
                         return resource.data()
 
-        # 5- Check installation chitin
+        # 5 - Check installation chitin
         if not skip_chitin:
             for resource in self._chitin:
                 if resource == query:
@@ -245,23 +246,53 @@ class Installation:
 
         return None
 
-    def texture(self, resref: str, *, skip_modules: bool = True, skip_chitin: bool = True, skip_gui: bool = True,
+    def texture(self, resref: str, *, capsules: List[Capsule] = None, folders: List[str] = None,
+                skip_modules: bool = False, skip_chitin: bool = True, skip_gui: bool = True,
                 texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
         """
-        Returns a TPC object loaded from a resource with the specified ResRef. If no resource is found then None is
-        returned instead. The method checks the following locations in descending order: override folder, tpa texture
-        pack, then optionally the chitin.key and/or all modules.
+        Returns a TPC object loaded from a resource with the specified ResRef.
+
+        Texture is search for in the following order:
+            1. "folders" parameter.
+            2. "capsules" parameter.
+            3. Installation override folder.
+            4. Normal texture pack.
+            5. GUI texture pack.
+            6. Installation Chitin.
+            7. Installation module files in modules folder.
 
         Args:
             resref: The ResRef.
+            capsules: An extra list of capsules to search in.
+            folders: An extra list of folders to search in.
             skip_modules: If true, skips searching through module files in the installation modules folder.
             skip_chitin: If true, skips searching through chitin files in the installation.
             skip_gui: If true, skips searching through the gui files in the texturepacks folder.
-            texture_quality: Which texturepack to check.
+            texture_quality: Which texturepack to search through.
 
         Returns:
             TPC object or None.
         """
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
+
+        # 1 - Check user provided folders
+        for folder in folders:
+            folder = folder + '/' if not folder.endswith('/') else folder
+            for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                with suppress(Exception):
+                    f_resref, f_restype = filepath_info(file)
+                    if resref == f_resref and f_restype in [ResourceType.TPC, ResourceType.TGA]:
+                        return load_tpc(BinaryReader.load_file(folder + file))
+
+        # 2 - Check user provided modules
+        for capsule in capsules:
+            if capsule.exists(resref, ResourceType.TGA):
+                return capsule.resource(resref, ResourceType.TPC)
+            if capsule.exists(resref, ResourceType.TPC):
+                return capsule.resource(resref, ResourceType.TGA)
+
+        # 3 - Check installation override folder
         for directory in self._override.values():
             for file_name, resource in directory.items():
                 if resource.resref() == resref and resource.restype() == ResourceType.TGA:
@@ -269,24 +300,30 @@ class Installation:
                 elif resource.resref() == resref and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
+        # 4 - Check normal texturepack
         for resource in self.texturepack_resources("swpc_tex_tp{}.erf".format(texture_quality.value)):
             if resource.resref() == resref and resource.restype() == ResourceType.TPC:
                 return load_tpc(resource.data())
 
+        # 5 - Check GUI texturepack
         if not skip_gui:
             for resource in self.texturepack_resources("swpc_tex_gui.erf"):
                 if resource.resref() == resref and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
+        # 6 - Check chitin
         if not skip_chitin:
             for resource in self._chitin:
                 if resource.resref() == resref and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
+        # 7 - Check modules files in installation modules folder
         if not skip_modules:
             for module_name, resources in self._modules.items():
                 for resource in resources:
                     if resource.resref() == resref and resource.restype() == ResourceType.TPC:
+                        return load_tpc(resource.data())
+                    if resource.resref() == resref and resource.restype() == ResourceType.TGA:
                         return load_tpc(resource.data())
 
         return None
