@@ -34,9 +34,9 @@ class ResRef:
         A ResRef can be compared to another ResRef or a str.
         """
         if isinstance(other, ResRef):
-            return other.get() == self.get()
+            return other.get().lower() == self.get().lower()
         elif isinstance(other, str):
-            return other == self.get()
+            return other.lower() == self.get().lower()
         else:
             return NotImplemented
 
