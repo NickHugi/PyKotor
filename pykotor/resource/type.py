@@ -208,6 +208,9 @@ class ResourceType:
         else:
             return NotImplemented
 
+    def __hash__(self):
+        return hash(str(self.extension))
+
     @classmethod
     def from_id(cls, type_id: int) -> ResourceType:
         """
