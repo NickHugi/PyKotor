@@ -65,6 +65,9 @@ class Capsule:
             else:
                 raise ValueError("File '{}' was not an ERF/MOD/RIM.".format(self._path))
 
+    def path(self) -> str:
+        return self._path
+
     def _load_erf(self, reader: BinaryReader):
         reader.skip(8)
         entry_count = reader.read_uint32()
