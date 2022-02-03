@@ -5,7 +5,10 @@ from contextlib import suppress
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from pykotor.common.stream import BinaryReader
+
 from pykotor.common.language import Language, Gender
+from pykotor.common.misc import filepath_info
 from pykotor.extract.file import FileResource, FileQuery
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
@@ -98,7 +101,7 @@ class Installation:
 
     def load_modules(self) -> None:
         self._modules = {}
-        module_files = [file for file in os.listdir(self.module_path()) if file.endswith('.mod')or file.endswith('.rim') or file.endswith('.erf')]
+        module_files = [file for file in os.listdir(self.module_path()) if file.endswith('.mod') or file.endswith('.rim') or file.endswith('.erf')]
         for module in module_files:
             self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
 
@@ -177,37 +180,68 @@ class Installation:
     def talktable(self) -> TalkTable:
         return self._talktable
 
-    def resource(self, resref: str, restype: ResourceType) -> Optional[bytes]:
+    def resource(self, resref: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
+                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> Optional[bytes]:
         """
         Returns a resource matching the specified resref and restype. If no resource is found then None is returned
-        instead. The method checks the following locations in descending order: override folder, in modules folder,
-        then finally chitin.key.
+        instead.
+
+        Resource is search for in the following order:
+            1. "folders" parameter.
+            2. Installation override folder.
+            3. Installation module files in modules folder.
+            4. Installation Chitin.
 
         Args:
             resref: The ResRef.
             restype: The resource type.
+            capsules: An extra list of capsules to search in.
+            folders: An extra list of folders to search in.
+            skip_chitin: If true, skips searching chitin files.
+            skip_modules: If true, skips searching through module files.
+            skip_override: If true, skips searching through override files.
 
         Returns:
-            Resource data or None.
+            Resource bytes data or None.
         """
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
+
         query = FileQuery(resref, restype)
 
-        # 1st: Override
-        for directory in self._override.values():
-            for file_name, resource in directory.items():
+        # 1 - Check user provided folders
+        for folder in folders:
+            folder = folder + '/' if not folder.endswith('/') else folder
+            for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                with suppress(Exception):
+                    resref, restype = filepath_info(file)
+                    if query.resref == resref and query.restype == restype:
+                        return BinaryReader.load_file(folder + file)
+
+        # 2 - Check installation override
+        if not skip_override:
+            for directory in self._override.values():
+                for file_name, resource in directory.items():
+                    if resource == query:
+                        return resource.data()
+  
+        # 3 - Check user provided modules
+        for capsule in capsules:
+            if capsule.exists(resref, restype):
+                return capsule.resource(resref, restype)
+
+        # 4 - Check installation modules
+        if not skip_modules:
+            for module_name, resources in self._modules.items():
+                for resource in resources:
+                    if resource == query:
+                        return resource.data()
+
+        # 5- Check installation chitin
+        if not skip_chitin:
+            for resource in self._chitin:
                 if resource == query:
                     return resource.data()
-
-        # 2nd: Modules
-        for module_name, resources in self._modules.items():
-            for resource in resources:
-                if resource == query:
-                    return resource.data()
-
-        # 3rd: Chitin
-        for resource in self._chitin:
-            if resource == query:
-                return resource.data()
 
         return None
 
