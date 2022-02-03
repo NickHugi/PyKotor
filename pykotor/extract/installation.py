@@ -246,6 +246,80 @@ class Installation:
 
         return None
 
+    def locate(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
+               skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False,
+               skip_textures: bool = False) -> List[str]:
+        """
+        Returns a list filepaths for where a particular resource matching the given resref and restype are located.
+
+        Texture is search for in the following order:
+            1. "folders" parameter.
+            2. Installation override folder.
+            3. "capsules" parameter.
+            4. Installation module files in modules folder.
+            5. Normal texture pack.
+            6. Installation Chitin.
+
+        Args:
+            resname: The ResRef string.
+            restype: The resource type.
+            capsules: An extra list of capsules to search in.
+            folders: An extra list of folders to search in.
+            skip_chitin: If true, skips searching chitin files.
+            skip_modules: If true, skips searching through module files.
+            skip_override: If true, skips searching through override files.
+            skip_textures: If true, skips searching through the texturepack.
+
+        Returns:
+            A list of filepaths.
+        """
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
+
+        locations = []
+
+        # 1 - Check user provided folders
+        for folder in folders:
+            folder = folder + '/' if not folder.endswith('/') else folder
+            for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                with suppress(Exception):
+                    f_resref, f_restype = filepath_info(file)
+                    if resname == f_resref and restype == f_restype:
+                        locations.append(folder + file)
+
+        # 2 - Check installation override
+        if not skip_override:
+            for subfolder, files in self._override.items():
+                for filename, resource in files.items():
+                    if resname == resource.resref() and restype == resource.restype():
+                        locations.append(self.override_path() + subfolder + filename)
+
+        # 3 - Check user provided modules
+        for capsule in capsules:
+            if capsule.exists(resname, restype):
+                locations.append(capsule.path())
+
+        # 4 - Check installation modules
+        if not skip_modules:
+            for module_name, resources in self._modules.items():
+                for resource in resources:
+                    if resname == resource.resref() and restype == resource.restype():
+                        locations.append(self.module_path() + module_name)
+
+        # 5 - Check installation texturepack
+        if not skip_textures:
+            for resource in self.texturepack_resources("swpc_tex_tpa.erf"):
+                if resource.resref() == resname and resource.restype() == ResourceType.TPC:
+                    locations.append(self.texturepacks_path() + "swpc_tex_tpa.erf")
+
+        # 6 - Check installation chitin
+        if not skip_chitin:
+            for resource in self._chitin:
+                if resname == resource.resref() and restype == resource.restype():
+                    locations.append(self.path() + "chitin.key")
+
+        return locations
+
     def texture(self, resname: str, *, capsules: List[Capsule] = None, folders: List[str] = None,
                 skip_modules: bool = False, skip_chitin: bool = True, skip_gui: bool = True,
                 texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
