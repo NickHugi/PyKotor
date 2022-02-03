@@ -245,8 +245,8 @@ class Installation:
 
         return None
 
-    def texture(self, resref: str, *, check_modules: bool = True, check_chitin: bool = True,
-                check_gui: bool = True, texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
+    def texture(self, resref: str, *, skip_modules: bool = True, skip_chitin: bool = True, skip_gui: bool = True,
+                texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
         """
         Returns a TPC object loaded from a resource with the specified ResRef. If no resource is found then None is
         returned instead. The method checks the following locations in descending order: override folder, tpa texture
@@ -254,9 +254,9 @@ class Installation:
 
         Args:
             resref: The ResRef.
-            check_modules: Check the modules in the /modules folder.
-            check_chitin: Check the resources referenced by the chitin.key file.
-            check_gui: Check the textures stored in the GUI texturepack.
+            skip_modules: If true, skips searching through module files in the installation modules folder.
+            skip_chitin: If true, skips searching through chitin files in the installation.
+            skip_gui: If true, skips searching through the gui files in the texturepacks folder.
             texture_quality: Which texturepack to check.
 
         Returns:
@@ -273,17 +273,17 @@ class Installation:
             if resource.resref() == resref and resource.restype() == ResourceType.TPC:
                 return load_tpc(resource.data())
 
-        if check_gui:
+        if not skip_gui:
             for resource in self.texturepack_resources("swpc_tex_gui.erf"):
                 if resource.resref() == resref and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
-        if check_chitin:
+        if not skip_chitin:
             for resource in self._chitin:
                 if resource.resref() == resref and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
-        if check_modules:
+        if not skip_modules:
             for module_name, resources in self._modules.items():
                 for resource in resources:
                     if resource.resref() == resref and resource.restype() == ResourceType.TPC:
