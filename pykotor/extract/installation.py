@@ -17,6 +17,7 @@ from pykotor.resource.formats.gff import load_gff
 from pykotor.resource.formats.mdl import MDL
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tpc import TPC, load_tpc
+from pykotor.resource.formats.twoda import TwoDA, load_2da
 from pykotor.resource.type import ResourceType
 
 
@@ -401,6 +402,9 @@ class Installation:
                         return load_tpc(resource.data())
 
         return None
+
+    def twoda(self, resname: str) -> Optional[TwoDA]:
+        return load_2da(self.resource(resname, ResourceType.TwoDA))
 
     def string(self, stringref: int) -> str:
         return self._talktable.string(stringref)
