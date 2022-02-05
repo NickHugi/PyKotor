@@ -149,23 +149,27 @@ class ToolWindow(QMainWindow):
         """
         About(self, PROGRAM_VERSION).exec_()
 
-    def openUpdatesDialog(self) -> None:
+    def checkForUpdates(self, silent: bool = True) -> None:
         """
         Scans for any updates and opens a dialog with a message based on the scan result.
         """
-        req = requests.get("https://pastebin.com/raw/tUJCGgrX")
-        data = json.loads(req.text)
+        try:
+            req = requests.get("https://pastebin.com/raw/tUJCGgrX")
+            data = json.loads(req.text)
 
-        latestVersion = data['latestVersion']
-        downloadLink = data['downloadLink']
+            latestVersion = data['latestVersion']
+            downloadLink = data['downloadLink']
 
-        if StrictVersion(latestVersion) > StrictVersion(PROGRAM_VERSION):
-            QMessageBox(QMessageBox.Information, "New version is available.",
-                        "New version available for <a href='{}'>download</a>.".format(downloadLink),
-                        QMessageBox.Ok, self).exec_()
-        else:
-            QMessageBox(QMessageBox.Information, "Version is up to date",
-                        "You are running the latest version (" + latestVersion + ").", QMessageBox.Ok, self).exec_()
+            if StrictVersion(latestVersion) > StrictVersion(PROGRAM_VERSION):
+                QMessageBox(QMessageBox.Information, "New version is available.",
+                            "New version available for <a href='{}'>download</a>.".format(downloadLink),
+                            QMessageBox.Ok, self).exec_()
+            else:
+                QMessageBox(QMessageBox.Information, "Version is up to date",
+                            "You are running the latest version (" + latestVersion + ").", QMessageBox.Ok, self).exec_()
+        except Exception:
+            QMessageBox(QMessageBox.Information, "Unable to fetch latest version.",
+                        "Check if you are connected to the internet.", QMessageBox.Ok, self).exec_()
 
     def openActiveTalktable(self) -> None:
         """
