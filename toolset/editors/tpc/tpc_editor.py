@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QTransform
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import load_tpc, TPCTextureFormat, TPC, write_tpc
@@ -31,6 +31,7 @@ class TPCEditor(Editor):
 
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
         pixmap = QPixmap.fromImage(image)
+
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.txiEdit.setPlainText(self._tpc.txi)
 
@@ -50,8 +51,7 @@ class TPCEditor(Editor):
         self._tpc.txi = self.ui.txiEdit.toPlainText()
 
         data = bytearray()
-
-        fileFormat = FileFormat.Binary
+        fileFormat = FileFormat.BINARY
         if self._restype == ResourceType.TGA:
             fileFormat = FileFormat.TGA
 
