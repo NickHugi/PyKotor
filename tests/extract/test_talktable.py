@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+from pykotor.common.language import Language
+
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.type import ResourceType
@@ -35,3 +37,7 @@ class TestTalkTable(TestCase):
         self.assertEqual(("qrstuvwxyz", ""), batch[2])
         self.assertEqual(("", ""), batch[-1])
         self.assertEqual(("", ""), batch[3])
+
+    def test_language(self):
+        talktable = TalkTable(TEST_FILE)
+        self.assertEqual(talktable.language(), Language.ENGLISH)

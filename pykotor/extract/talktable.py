@@ -1,5 +1,7 @@
 from typing import List, Tuple, Dict
 
+from pykotor.common.language import Language, Gender
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 
@@ -132,3 +134,10 @@ class TalkTable:
         entries_count = reader.read_uint32()
         reader.close()
         return entries_count
+
+    def language(self) -> Language:
+        reader = BinaryReader.from_file(self._path)
+        reader.seek(8)
+        language_id = reader.read_uint32()
+        reader.close()
+        return Language(language_id)
