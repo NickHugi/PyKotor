@@ -298,6 +298,8 @@ class ToolWindow(QMainWindow):
         for resource in self.active.module_resources(module):
             self.modulesModel.addResource(resource)
 
+        self.resizeColumns()
+
     def reloadModule(self) -> None:
         """
         Reloads the files stored in the currently selected module and updates the data model.
@@ -345,6 +347,8 @@ class ToolWindow(QMainWindow):
 
         for resource in self.active.override_resources(folder):
             self.overrideModel.addResource(resource)
+
+        self.resizeColumns()
 
     def refreshOverrideList(self) -> None:
         """
