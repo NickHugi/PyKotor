@@ -217,7 +217,7 @@ class Installation:
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
-                    if query.resref == f_resref and query.restype == f_restype:
+                    if query.resref.lower() == f_resref and query.restype == f_restype:
                         return BinaryReader.load_file(folder + file)
 
         # 2 - Check installation override
@@ -285,14 +285,14 @@ class Installation:
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
-                    if resname == f_resref and restype == f_restype:
+                    if resname.lower() == f_resref and restype == f_restype:
                         locations.append(folder + file)
 
         # 2 - Check installation override
         if not skip_override:
             for subfolder, files in self._override.items():
                 for filename, resource in files.items():
-                    if resname == resource.resname() and restype == resource.restype():
+                    if resname.lower() == resource.resname().lower() and restype == resource.restype():
                         locations.append(self.override_path() + subfolder + filename)
 
         # 3 - Check user provided modules
@@ -304,19 +304,19 @@ class Installation:
         if not skip_modules:
             for module_name, resources in self._modules.items():
                 for resource in resources:
-                    if resname == resource.resname() and restype == resource.restype():
+                    if resname.lower() == resource.resname().lower() and restype == resource.restype():
                         locations.append(self.module_path() + module_name)
 
         # 5 - Check installation texturepack
         if not skip_textures:
             for resource in self.texturepack_resources("swpc_tex_tpa.erf"):
-                if resource.resname() == resname and resource.restype() == ResourceType.TPC:
+                if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
                     locations.append(self.texturepacks_path() + "swpc_tex_tpa.erf")
 
         # 6 - Check installation chitin
         if not skip_chitin:
             for resource in self._chitin:
-                if resname == resource.resname() and restype == resource.restype():
+                if resname.lower() == resource.resname().lower() and restype == resource.restype():
                     locations.append(self.path() + "chitin.key")
 
         return locations
@@ -358,7 +358,7 @@ class Installation:
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
-                    if resname == f_resref and f_restype in [ResourceType.TPC, ResourceType.TGA]:
+                    if resname.lower() == f_resref and f_restype in [ResourceType.TPC, ResourceType.TGA]:
                         return load_tpc(BinaryReader.load_file(folder + file))
 
         # 2 - Check user provided modules
@@ -372,35 +372,35 @@ class Installation:
         if not skip_override:
             for directory in self._override.values():
                 for file_name, resource in directory.items():
-                    if resource.resname() == resname and resource.restype() == ResourceType.TGA:
+                    if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TGA:
                         return load_tpc(resource.data())
-                    elif resource.resname() == resname and resource.restype() == ResourceType.TPC:
+                    elif resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
                         return load_tpc(resource.data())
 
         # 4 - Check normal texturepack
         for resource in self.texturepack_resources("swpc_tex_tp{}.erf".format(texture_quality.value)):
-            if resource.resname() == resname and resource.restype() == ResourceType.TPC:
+            if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
                 return load_tpc(resource.data())
 
         # 5 - Check GUI texturepack
         if not skip_gui:
             for resource in self.texturepack_resources("swpc_tex_gui.erf"):
-                if resource.resname() == resname and resource.restype() == ResourceType.TPC:
+                if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
         # 6 - Check chitin
         if not skip_chitin:
             for resource in self._chitin:
-                if resource.resname() == resname and resource.restype() == ResourceType.TPC:
+                if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
         # 7 - Check modules files in installation modules folder
         if not skip_modules:
             for module_name, resources in self._modules.items():
                 for resource in resources:
-                    if resource.resname() == resname and resource.restype() == ResourceType.TPC:
+                    if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
                         return load_tpc(resource.data())
-                    if resource.resname() == resname and resource.restype() == ResourceType.TGA:
+                    if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TGA:
                         return load_tpc(resource.data())
 
         return None

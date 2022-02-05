@@ -22,9 +22,9 @@ class FileResource:
 
     def __eq__(self, other: FileResource):
         if isinstance(other, FileResource):
-            return other._resname == self._resname and other._restype == self._restype
+            return other._resname.lower() == self._resname.lower() and other._restype == self._restype
         elif isinstance(other, FileQuery):
-            return other.resref == self._resname and other.restype == self._restype
+            return other.resref.lower() == self._resname.lower() and other.restype == self._restype
         else:
             return NotImplemented
 
