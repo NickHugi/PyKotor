@@ -40,7 +40,7 @@ from misc.settings import Settings
 import resources_rc
 
 
-PROGRAM_VERSION = "1.1.1"
+PROGRAM_VERSION = "1.1.2"
 
 
 class ToolWindow(QMainWindow):
