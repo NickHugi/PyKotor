@@ -6,7 +6,7 @@ from typing import List, Optional
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import LocalizedString, Gender, Language
 from pykotor.common.misc import Game, ResRef, Color
-from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct
+from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, GFFContent
 
 
 class DLG:
@@ -321,9 +321,9 @@ class DLGLink:
         script2_param6: "ParamStrB" field. KotOR 2 Only.
     """
 
-    def __init__(self):
+    def __init__(self, node: DLGNode = DLGNode):
         self.active: ResRef = ResRef.from_blank()
-        self.node: DLGNode = DLGNode()
+        self.node: DLGNode = node
 
         # not in StartingList
         self.is_child: bool = False
@@ -599,7 +599,7 @@ def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True
     all_entries = dlg.all_entries()
     all_replies = dlg.all_replies()
 
-    gff = GFF()
+    gff = GFF(GFFContent.DLG)
 
     root = gff.root
     root.set_uint32("NumWords", dlg.word_count)
