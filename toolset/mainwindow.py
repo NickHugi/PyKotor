@@ -33,6 +33,7 @@ from editors.tlk.tlk_editor import TLKEditor
 from editors.tpc.tpc_editor import TPCEditor
 from editors.twoda.twoda_editor import TwoDAEditor
 from editors.txt.txt_editor import TXTEditor
+from editors.utc.utc_editor import UTCEditor
 from misc.about import About
 from misc.settings import Settings
 
@@ -411,7 +412,7 @@ class ToolWindow(QMainWindow):
 
         if len(resources) == 1:
             # Player saves resource with a specific name
-            default = resources[0].resref() + "." + resources[0].restype().extension
+            default = resources[0].resname() + "." + resources[0].restype().extension
             filepath = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
             if filepath:
                 resref = os.path.basename(filepath)
@@ -433,12 +434,12 @@ class ToolWindow(QMainWindow):
         """
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataTree().selectedIndexes())
         for resource in resources:
-            filepath, editor = self.openResourceEditor(resource.filepath(), resource.resref(), resource.restype(), resource.data())
+            filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data())
             inERForRIM = resource.filepath().endswith('.erf') or resource.filepath().endswith('.rim') or resource.filepath().endswith('.mod')
 
             # If opened with external editor AND the resource in encapsulated in ERF/RIM
             if isinstance(editor, subprocess.Popen) and resource.filepath() != editor and inERForRIM:
-                handler = EncapsulatedExternalUpdateHandler(self, filepath, editor, resource.filepath(), resource.resref(), resource.restype())
+                handler = EncapsulatedExternalUpdateHandler(self, filepath, editor, resource.filepath(), resource.resname(), resource.restype())
                 handler.errorOccurred.connect(self.externalEncapsulatedSavedError)
                 handler.fileModified.connect(self.reloadModule)
                 handler.start()
@@ -475,7 +476,7 @@ class ToolWindow(QMainWindow):
         editor = None
         external = None
 
-        encapsulated = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif')
+        encapsulated = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif') or filepath.endswith('.key')
         inERForRIM = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod')
         shouldUseExternal = (self.settings.value('encapsulatedExternalEditor', False, bool) and inERForRIM) or not inERForRIM
         noExternal = noExternal or not shouldUseExternal
@@ -516,10 +517,10 @@ class ToolWindow(QMainWindow):
             else:
                 editor = GFFEditor(self, self.active)
 
-        if restype in [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
+        if restype in [ResourceType.GFF, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI, ResourceType.ITP,
                        ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL,
-                       ResourceType.ITP]:
+                       ResourceType.UTC]:
             if self.settings.value('gffEditor') and not noExternal:
                 external = self.settings.value('gffEditor')
             else:
@@ -634,7 +635,7 @@ class ResourceExtractorDialog(QDialog):
         self._progressBar.setMaximum(len(resources))
         self._progressBar.setValue(0)
 
-        filename = resources[self._progressBar.value()].resref() + "." + resources[
+        filename = resources[self._progressBar.value()].resname() + "." + resources[
             self._progressBar.value()].restype().extension
         self._progressText = QLabel("Extracting resource: " + filename)
 
@@ -677,7 +678,7 @@ class ResourceExtractorDialog(QDialog):
                 msgbox.exec_()
             self.close()
         else:
-            filename = self._resources[progress].resref() + "." + self._resources[progress].restype().extension
+            filename = self._resources[progress].resname() + "." + self._resources[progress].restype().extension
             self._progressText = QLabel("Extracting resource: " + filename)
 
 
@@ -699,9 +700,9 @@ class ResourceExtractorWorker(QtCore.QThread):
     def run(self) -> None:
         for resource in self._resources:
             try:
-                self.saveResource(resource, self._folderpath, resource.resref() + "." + resource.restype().extension)
+                self.saveResource(resource, self._folderpath, resource.resname() + "." + resource.restype().extension)
             except Exception as e:
-                self.error.emit("Failed to extract resource: " + resource.resref())
+                self.error.emit("Failed to extract resource: " + resource.resname())
             self.extracted.emit(resource)
 
     def saveResource(self, resource: FileResource, folderpath: str, filename: str) -> None:
@@ -728,7 +729,7 @@ class ResourceExtractorWorker(QtCore.QThread):
                 filename = filename.replace(".tpc", ".tga")
 
         if resource.restype() == ResourceType.MDL and manipulateMDL:
-            mdx_data = self._active.resource(resource.restype(), ResourceType.MDX)
+            _, mdx_data = self._active.resource(resource.restype(), ResourceType.MDX)
             mdl = load_mdl(data, 0, mdx_data)
 
             if self._decompileMdl:
@@ -788,7 +789,7 @@ class ResourceModel(QStandardItemModel):
         return self._categoryItems[resourceType.category]
 
     def addResource(self, resource: FileResource) -> None:
-        item1 = QStandardItem(resource.resref())
+        item1 = QStandardItem(resource.resname())
         item1.resource = resource
         item2 = QStandardItem(resource.restype().extension.upper())
         self._getCategoryItem(resource.restype()).appendRow([item1, item2])
