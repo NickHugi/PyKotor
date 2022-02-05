@@ -23,6 +23,7 @@ class Ui_MainWindow(object):
         self.textureImage.setFrameShape(QtWidgets.QFrame.Box)
         self.textureImage.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.textureImage.setText("")
+        self.textureImage.setAlignment(QtCore.Qt.AlignCenter)
         self.textureImage.setObjectName("textureImage")
         self.verticalLayout.addWidget(self.textureImage)
         self.txiEdit = QtWidgets.QPlainTextEdit(self.centralwidget)
