@@ -11,7 +11,7 @@ def onAppCrash(e: BaseException, value: str, tback: TracebackType):
     with open("errorlog.txt", 'a') as file:
         file.writelines(traceback.format_exception(e, value, tback))
         file.write("\n----------------------\n")
-    sys.exit()
+    raise e
 
 
 if __name__ == '__main__':
