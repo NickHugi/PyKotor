@@ -51,7 +51,14 @@ class TLKEditor(Editor):
         self.model.setColumnCount(2)
         self.ui.talkTable.hideColumn(1)
 
-        LoaderDialog(self, data, self.model).exec_()
+        dialog = LoaderDialog(self, data, self.model)
+        dialog.exec_()
+        self.model = dialog.model
+        self.proxyModel = QSortFilterProxyModel(self)
+        self.proxyModel.setSourceModel(self.model)
+        self.ui.talkTable.setModel(self.proxyModel)
+        self.ui.talkTable.selectionModel().selectionChanged.connect(self.selectionChanged)
+
         self.ui.jumpSpinbox.setMaximum(self.model.rowCount())
 
     def new(self) -> None:
@@ -139,7 +146,8 @@ class LoaderDialog(QDialog):
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
-        self._model = model
+        self.model = QStandardItemModel()
+        self.model.setColumnCount(2)
 
         self.worker = LoaderWorker(fileData, model)
         self.worker.entryCount.connect(self.onEntryCount)
@@ -152,10 +160,10 @@ class LoaderDialog(QDialog):
 
     def onBatch(self, batch: List[QStandardItem]):
         for row in batch:
-            self._model.appendRow(row)
-            index = self._model.rowCount() - 1
-            self._model.setVerticalHeaderItem(index, QStandardItem(str(index)))
-        self._progressBar.setValue(self._model.rowCount())
+            self.model.appendRow(row)
+            index = self.model.rowCount() - 1
+            self.model.setVerticalHeaderItem(index, QStandardItem(str(index)))
+        self._progressBar.setValue(self.model.rowCount())
 
     def onLoaded(self):
         self.close()
@@ -179,7 +187,7 @@ class LoaderWorker(QThread):
         batch = []
         for stringref, entry in tlk:
             batch.append([QStandardItem(entry.text), QStandardItem(entry.voiceover.get())])
-            if len(batch) > 10:
+            if len(batch) > 200:
                 self.batch.emit(batch)
                 batch = []
                 sleep(0.001)
