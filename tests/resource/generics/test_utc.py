@@ -21,7 +21,7 @@ class TestUTC(TestCase):
     def validate_io(self, utc):
         self.assertEqual(636, utc.appearance_id)
         self.assertEqual(120.0, utc.blindspot)
-        self.assertEqual(1, utc.body_variation)
+        self.assertEqual(1, utc.model_variation)
         self.assertEqual(10, utc.charisma)
         self.assertEqual(1.0, utc.challenge_rating)
         self.assertEqual("comment", utc.comment)

@@ -30,7 +30,7 @@ class TestUTI(TestCase):
         self.assertEqual(1, uti.stack_size)
         self.assertEqual(1, uti.plot)
         self.assertEqual(50, uti.add_cost)
-        self.assertEqual(3, uti.body_variation)
+        self.assertEqual(3, uti.model_variation)
         self.assertEqual(1, uti.texture_variation)
         self.assertEqual(1, uti.palette_id)
         self.assertEqual("itemo", uti.comment)

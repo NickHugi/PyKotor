@@ -34,7 +34,7 @@ class UTI:
         self.properties: List[UTIProperty] = []
 
         # Armor Items Only:
-        self.body_variation: int = 0
+        self.model_variation: int = 0
         self.texture_variation: int = 0
 
         # Deprecated:
@@ -73,9 +73,7 @@ def construct_uti(gff: GFF) -> UTI:
     uti.add_cost = root.acquire("AddCost", 0)
     uti.palette_id = root.acquire("PaletteID", 0)
     uti.comment = root.acquire("Comment", "")
-    uti.body_variation = root.acquire("BodyVariation", 0)
-    uti.texture_variation = root.acquire("TextureVar", 0)
-    uti.body_variation = root.acquire("BodyVariation", 0)
+    uti.model_variation = root.acquire("ModelVariation", 0)
     uti.texture_variation = root.acquire("TextureVar", 0)
     uti.upgrade_level = root.acquire("UpgradeLevel", 0)
     uti.stolen = root.acquire("Stolen", 0)
@@ -130,7 +128,7 @@ def dismantle_uti(uti: UTI, game: Game = Game.K2, *, use_deprecated: bool = True
             properties_struct.set_uint8("UpgradeType", prop.upgrade_type)
 
     if uti.is_armor():
-        root.set_uint8("BodyVariation", uti.body_variation)
+        root.set_uint8("ModelVariation", uti.model_variation)
         root.set_uint8("TextureVar", uti.texture_variation)
 
     if game == Game.K2:
