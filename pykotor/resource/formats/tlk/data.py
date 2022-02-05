@@ -54,7 +54,7 @@ class TLK:
         Returns:
             The corresponding TLKEntry or None.
         """
-        return self.entries[stringref] if stringref in self.entries else None
+        return self.entries[stringref] if 0 <= stringref < len(self) else None
 
     def resize(self, size: int) -> None:
         """
