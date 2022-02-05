@@ -270,6 +270,7 @@ class ToolWindow(QMainWindow):
                     self._core_models[name] = ResourceModel()
                     [self._core_models[name].addResource(resource) for resource in self.active.chitin_resources()]
                     [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_tpa.erf")]
+                    [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_gui.erf")]
                 self.ui.coreTree.setModel(self._core_models[name].proxyModel())
 
                 if name not in self._modules_list:
