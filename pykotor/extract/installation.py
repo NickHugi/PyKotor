@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
+from collections import namedtuple
 from contextlib import suppress
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, NamedTuple
 
 from pykotor.common.stream import BinaryReader
 
@@ -19,6 +20,11 @@ from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tpc import TPC, load_tpc
 from pykotor.resource.formats.twoda import TwoDA, load_2da
 from pykotor.resource.type import ResourceType
+
+
+class SearchResult(NamedTuple):
+    filepath: str
+    data: Optional[bytes]
 
 
 class TextureQuality(Enum):
@@ -182,7 +188,7 @@ class Installation:
         return self._talktable
 
     def resource(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
-                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> Optional[bytes]:
+                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> SearchResult:
         """
         Returns a resource matching the specified resref and restype. If no resource is found then None is returned
         instead.
@@ -204,7 +210,7 @@ class Installation:
             skip_override: If true, skips searching through override files.
 
         Returns:
-            Resource bytes data or None.
+            The filepath to the resource and resource bytes data or None.
         """
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
@@ -215,37 +221,41 @@ class Installation:
         for folder in folders:
             folder = folder + '/' if not folder.endswith('/') else folder
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                filepath = folder + file
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
                     if query.resref.lower() == f_resref and query.restype == f_restype:
-                        return BinaryReader.load_file(folder + file)
+                        return SearchResult(filepath, BinaryReader.load_file(filepath))
 
         # 2 - Check installation override
         if not skip_override:
-            for directory in self._override.values():
-                for file_name, resource in directory.items():
+            for subfolder, directory in self._override.items():
+                for filename, resource in directory.items():
+                    filepath = self.override_path() + subfolder + filename
                     if resource == query:
-                        return resource.data()
+                        return SearchResult(filepath, resource.data())
   
         # 3 - Check user provided modules
         for capsule in capsules:
             if capsule.exists(resname, restype):
-                return capsule.resource(resname, restype)
+                return SearchResult(capsule.path(), capsule.resource(resname, restype))
 
         # 4 - Check installation modules
         if not skip_modules:
             for module_name, resources in self._modules.items():
+                filepath = self.module_path() + module_name
                 for resource in resources:
                     if resource == query:
-                        return resource.data()
+                        return SearchResult(filepath, resource.data())
 
         # 5 - Check installation chitin
         if not skip_chitin:
+            filepath = self.path() + "chitin.key"
             for resource in self._chitin:
                 if resource == query:
-                    return resource.data()
+                    return SearchResult(filepath, resource.data())
 
-        return None
+        return SearchResult("", None)
 
     def locate(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
                skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False,
@@ -406,7 +416,7 @@ class Installation:
         return None
 
     def twoda(self, resname: str) -> Optional[TwoDA]:
-        return load_2da(self.resource(resname, ResourceType.TwoDA))
+        return load_2da(self.resource(resname, ResourceType.TwoDA).data)
 
     def string(self, stringref: int) -> str:
         return self._talktable.string(stringref)
