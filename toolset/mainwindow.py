@@ -282,6 +282,8 @@ class ToolWindow(QMainWindow):
                     self.ui.modulesCombo.setModel(self._modules_list[name])
 
                 self.refreshOverrideList()
+                self.ui.overrideFolderFrame.setVisible(self.active.tsl)
+                self.ui.overrideLine.setVisible(self.active.tsl)
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
 
