@@ -24,7 +24,7 @@ class TPCBinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: Optional[TPC] = None
 
-    def load(self, auto_close: bool = True) -> TPC:
+    def load(self, auto_close: bool = True, flip: bool = True) -> TPC:
         self._tpc = TPC()
 
         size = self._reader.read_uint32()
@@ -64,7 +64,18 @@ class TPCBinaryReader(ResourceReader):
         mm_width, mm_height = width, height
         for i in range(mipmap_count):
             mm_size = _get_size(mm_width, mm_height, tpc_format)
-            mipmaps.append(self._reader.read_bytes(mm_size))
+            mm_data = self._reader.read_bytes(mm_size)
+
+            if not compressed and flip:
+                flipped_data = bytearray(mm_size)
+                for y in range(mm_width):
+                    for x in range(mm_height):
+                        index = (x + mm_width*y)*min_size
+                        for z in range(min_size):
+                            flipped_data[index+z] = mm_data[mm_size - index - min_size + z]
+                mm_data = flipped_data
+
+            mipmaps.append(mm_data)
 
             mm_width >>= 1
             mm_height >>= 1
