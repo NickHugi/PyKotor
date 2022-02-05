@@ -7,29 +7,29 @@ class FileResource:
     """
     Stores information for a resource regarding its name, type and where the data can be loaded from.
     """
-    def __init__(self, resref: str, restype: ResourceType, size: int, offset: int, filepath: str):
-        self._resref: str = resref
+    def __init__(self, resname: str, restype: ResourceType, size: int, offset: int, filepath: str):
+        self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
         self._filepath: str = filepath
         self._offset: int = offset
 
     def __repr__(self):
-        return self._resref + "." + self._restype.extension
+        return self._resname + "." + self._restype.extension
 
     def __str__(self):
-        return self._resref + "." + self._restype.extension
+        return self._resname + "." + self._restype.extension
 
     def __eq__(self, other: FileResource):
         if isinstance(other, FileResource):
-            return other._resref == self._resref and other._restype == self._restype
+            return other._resname == self._resname and other._restype == self._restype
         elif isinstance(other, FileQuery):
-            return other.resref == self._resref and other.restype == self._restype
+            return other.resref == self._resname and other.restype == self._restype
         else:
             return NotImplemented
 
-    def resref(self) -> str:
-        return self._resref
+    def resname(self) -> str:
+        return self._resname
 
     def restype(self) -> ResourceType:
         return self._restype

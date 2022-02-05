@@ -292,7 +292,7 @@ class Installation:
         if not skip_override:
             for subfolder, files in self._override.items():
                 for filename, resource in files.items():
-                    if resname == resource.resref() and restype == resource.restype():
+                    if resname == resource.resname() and restype == resource.restype():
                         locations.append(self.override_path() + subfolder + filename)
 
         # 3 - Check user provided modules
@@ -304,19 +304,19 @@ class Installation:
         if not skip_modules:
             for module_name, resources in self._modules.items():
                 for resource in resources:
-                    if resname == resource.resref() and restype == resource.restype():
+                    if resname == resource.resname() and restype == resource.restype():
                         locations.append(self.module_path() + module_name)
 
         # 5 - Check installation texturepack
         if not skip_textures:
             for resource in self.texturepack_resources("swpc_tex_tpa.erf"):
-                if resource.resref() == resname and resource.restype() == ResourceType.TPC:
+                if resource.resname() == resname and resource.restype() == ResourceType.TPC:
                     locations.append(self.texturepacks_path() + "swpc_tex_tpa.erf")
 
         # 6 - Check installation chitin
         if not skip_chitin:
             for resource in self._chitin:
-                if resname == resource.resref() and restype == resource.restype():
+                if resname == resource.resname() and restype == resource.restype():
                     locations.append(self.path() + "chitin.key")
 
         return locations
@@ -372,35 +372,35 @@ class Installation:
         if not skip_override:
             for directory in self._override.values():
                 for file_name, resource in directory.items():
-                    if resource.resref() == resname and resource.restype() == ResourceType.TGA:
+                    if resource.resname() == resname and resource.restype() == ResourceType.TGA:
                         return load_tpc(resource.data())
-                    elif resource.resref() == resname and resource.restype() == ResourceType.TPC:
+                    elif resource.resname() == resname and resource.restype() == ResourceType.TPC:
                         return load_tpc(resource.data())
 
         # 4 - Check normal texturepack
         for resource in self.texturepack_resources("swpc_tex_tp{}.erf".format(texture_quality.value)):
-            if resource.resref() == resname and resource.restype() == ResourceType.TPC:
+            if resource.resname() == resname and resource.restype() == ResourceType.TPC:
                 return load_tpc(resource.data())
 
         # 5 - Check GUI texturepack
         if not skip_gui:
             for resource in self.texturepack_resources("swpc_tex_gui.erf"):
-                if resource.resref() == resname and resource.restype() == ResourceType.TPC:
+                if resource.resname() == resname and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
         # 6 - Check chitin
         if not skip_chitin:
             for resource in self._chitin:
-                if resource.resref() == resname and resource.restype() == ResourceType.TPC:
+                if resource.resname() == resname and resource.restype() == ResourceType.TPC:
                     return load_tpc(resource.data())
 
         # 7 - Check modules files in installation modules folder
         if not skip_modules:
             for module_name, resources in self._modules.items():
                 for resource in resources:
-                    if resource.resref() == resname and resource.restype() == ResourceType.TPC:
+                    if resource.resname() == resname and resource.restype() == ResourceType.TPC:
                         return load_tpc(resource.data())
-                    if resource.resref() == resname and resource.restype() == ResourceType.TGA:
+                    if resource.resname() == resname and resource.restype() == ResourceType.TGA:
                         return load_tpc(resource.data())
 
         return None
