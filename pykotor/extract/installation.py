@@ -323,7 +323,7 @@ class Installation:
 
     def texture(self, resname: str, *, capsules: List[Capsule] = None, folders: List[str] = None,
                 skip_modules: bool = False, skip_chitin: bool = True, skip_gui: bool = True,
-                texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
+                skip_override: bool = False, texture_quality: TextureQuality = TextureQuality.HIGH) -> Optional[TPC]:
         """
         Returns a TPC object loaded from a resource with the specified ResRef.
 
@@ -343,6 +343,7 @@ class Installation:
             skip_modules: If true, skips searching through module files in the installation modules folder.
             skip_chitin: If true, skips searching through chitin files in the installation.
             skip_gui: If true, skips searching through the gui files in the texturepacks folder.
+            skip_override: If true, skips searching through the override files in the installation.
             texture_quality: Which texturepack to search through.
 
         Returns:
@@ -368,12 +369,13 @@ class Installation:
                 return capsule.resource(resname, ResourceType.TGA)
 
         # 3 - Check installation override folder
-        for directory in self._override.values():
-            for file_name, resource in directory.items():
-                if resource.resref() == resname and resource.restype() == ResourceType.TGA:
-                    return load_tpc(resource.data())
-                elif resource.resref() == resname and resource.restype() == ResourceType.TPC:
-                    return load_tpc(resource.data())
+        if not skip_override:
+            for directory in self._override.values():
+                for file_name, resource in directory.items():
+                    if resource.resref() == resname and resource.restype() == ResourceType.TGA:
+                        return load_tpc(resource.data())
+                    elif resource.resref() == resname and resource.restype() == ResourceType.TPC:
+                        return load_tpc(resource.data())
 
         # 4 - Check normal texturepack
         for resource in self.texturepack_resources("swpc_tex_tp{}.erf".format(texture_quality.value)):
