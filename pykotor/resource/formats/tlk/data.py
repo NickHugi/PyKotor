@@ -66,7 +66,7 @@ class TLK:
         if len(self) > size:
             self.entries = self.entries[:size]
         else:
-            self.entries = [TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)]
+            self.entries.extend([TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)])
 
 
 class TLKEntry:

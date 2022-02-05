@@ -28,4 +28,13 @@ class TestTLK(TestCase):
         self.assertEqual(TLKEntry("ghijklmnop", ResRef("resref02")), tlk[1])
         self.assertEqual(TLKEntry("qrstuvwxyz", ResRef("")), tlk[2])
 
-
+    def test_resize(self):
+        tlk = TLKBinaryReader(BINARY_TEST_FILE).load()
+        self.assertEqual(len(tlk), 3)
+        tlk.resize(4)
+        self.assertEqual(len(tlk), 4)
+        self.assertEqual(TLKEntry("qrstuvwxyz", ResRef("")), tlk[2])
+        self.assertEqual(TLKEntry("", ResRef("")), tlk[3])
+        tlk.resize(1)
+        self.assertEqual(len(tlk), 1)
+        self.assertEqual(TLKEntry("abcdef", ResRef("resref01")), tlk[0])
