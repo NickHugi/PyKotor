@@ -37,4 +37,5 @@ class TestTLK(TestCase):
         self.assertEqual(TLKEntry("", ResRef("")), tlk[3])
         tlk.resize(1)
         self.assertEqual(len(tlk), 1)
-        self.assertEqual(TLKEntry("abcdef", ResRef("resref01")), tlk[0])
+        self.assertEqual(TLKEntry("abcdef", ResRef("resref01")), tlk.get(0))
+        self.assertIsNone(tlk.get(1))
