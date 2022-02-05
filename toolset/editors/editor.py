@@ -276,7 +276,6 @@ class LocalizedStringDialog(QDialog):
             tlk = load_tlk(self._installation.path() + "dialog.tlk")
             if len(tlk) <= self.locstring.stringref:
                 tlk.resize(self.locstring.stringref + 1)
-                print(self.locstring.stringref, len(tlk))
             tlk.get(self.locstring.stringref).text = self.ui.stringEdit.toPlainText()
             write_tlk(tlk, self._installation.path() + "dialog.tlk")
         super().accept()

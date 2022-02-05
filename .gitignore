@@ -1,3 +1,6 @@
 .git
 .idea
 venv
+toolset/errorlog.txt
+dist
+build
