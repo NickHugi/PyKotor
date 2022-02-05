@@ -273,6 +273,8 @@ class ToolWindow(QMainWindow):
                     [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_tpa.erf")]
                     [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_gui.erf")]
                 self.ui.coreTree.setModel(self._core_models[name].proxyModel())
+                self._core_models[name].proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+                self._core_models[name].proxyModel().setFilterFixedString(self.ui.coreSearchEdit.text())
 
                 if name not in self._modules_list:
                     self.refreshModuleList()
@@ -405,6 +407,7 @@ class ToolWindow(QMainWindow):
         Args:
             text: The text to filter through.
         """
+        self.currentDataTree().model().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.currentDataTree().model().setFilterFixedString(text)
 
     def extractFromSelected(self) -> None:
