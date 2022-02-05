@@ -250,9 +250,9 @@ class WrappedInt:
 
     def __add__(self, other):
         if isinstance(other, WrappedInt):
-            return self.get() + other.get()
+            self._value += other.get()
         elif isinstance(other, int):
-            return self.get() + other
+            self._value += other
         else:
             return NotImplemented
 

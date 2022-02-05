@@ -9,6 +9,10 @@ from pykotor.resource.formats.tlk import TLK, TLKEntry
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader
 
 
+_FILE_HEADER_SIZE = 20
+_ENTRY_SIZE = 40
+
+
 class TLKBinaryReader(ResourceReader):
     def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
@@ -70,9 +74,6 @@ class TLKBinaryReader(ResourceReader):
 
 
 class TLKBinaryWriter(ResourceWriter):
-    FILE_HEADER_SIZE = 20
-    ENTRY_SIZE = 40
-
     def __init__(self, tlk: TLK, target: TARGET_TYPES):
         super().__init__(target)
         self._tlk = tlk
@@ -80,7 +81,7 @@ class TLKBinaryWriter(ResourceWriter):
     def write(self, auto_close: bool = True) -> None:
         self._write_file_header()
 
-        text_offset = WrappedInt(self._calculate_entries_offset())
+        text_offset = WrappedInt(0)
         [self._write_entry(entry, text_offset) for entry in self._tlk.entries]
         [self._writer.write_string(entry.text) for entry in self._tlk.entries]
 
@@ -88,12 +89,12 @@ class TLKBinaryWriter(ResourceWriter):
             self._writer.close()
 
     def _calculate_entries_offset(self):
-        return TLKBinaryWriter.FILE_HEADER_SIZE + len(self._tlk) * TLKBinaryWriter.ENTRY_SIZE
+        return _FILE_HEADER_SIZE + len(self._tlk) * _ENTRY_SIZE
 
     def _write_file_header(self) -> None:
         language_id = self._tlk.language.value
         string_count = len(self._tlk)
-        entries_offset = TLKBinaryWriter.FILE_HEADER_SIZE
+        entries_offset = self._calculate_entries_offset()
 
         self._writer.write_string("TLK ", string_length=4)
         self._writer.write_string("V3.0", string_length=4)
