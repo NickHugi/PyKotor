@@ -277,7 +277,7 @@ class InventoryItem:
         self.droppable: bool = droppable
 
     def __str__(self):
-        return self.resref
+        return self.resref.get()
 
     def __eq__(self, other: InventoryItem):
         return self.resref == other.resref and self.droppable == other.droppable
