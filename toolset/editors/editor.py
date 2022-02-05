@@ -1,18 +1,21 @@
 import os
 from abc import abstractmethod
+from copy import deepcopy
 from typing import List, Union, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMenu, QMessageBox, QMenuBar, QListWidgetItem, QAction, \
-    QShortcut
+    QShortcut, QLineEdit, QWidget
+from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import write_erf, load_erf, ERFType, ERF
 from pykotor.resource.formats.rim import load_rim, write_rim, RIM
+from pykotor.resource.formats.tlk import load_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
-from editors import savetomodule_ui, loadfrommodule_ui
+from editors import savetomodule_ui, loadfrommodule_ui, locstring_ui
 
 
 class Editor(QMainWindow):
@@ -187,6 +190,17 @@ class Editor(QMainWindow):
         if self._revert is not None:
             self.load(self._filepath, self._resref, self._restype, self._revert)
 
+    def _loadLocstring(self, textbox: QLineEdit, locstring: LocalizedString) -> None:
+        textbox.locstring = locstring
+        if locstring.stringref == -1:
+            text = str(locstring)
+            textbox.setText(text if text != "-1" else "")
+            textbox.setStyleSheet("QLineEdit {background-color: white;}")
+        else:
+            text = self._installation.talktable().string(locstring.stringref)
+            textbox.setText(self._installation.talktable().string(locstring.stringref))
+            textbox.setStyleSheet("QLineEdit {background-color: #fffded;}")
+
 
 class SaveToModuleDialog(QDialog):
     """
@@ -236,3 +250,66 @@ class LoadFromModuleDialog(QDialog):
     def data(self) -> bytes:
         return self.ui.resourceList.currentItem().resource.data()
 
+
+class LocalizedStringDialog(QDialog):
+    def __init__(self, parent: QWidget, installation: Installation, locstring: LocalizedString):
+        super().__init__(parent)
+
+        self.ui = locstring_ui.Ui_Dialog()
+        self.ui.setupUi(self)
+        self.setWindowTitle("{} - {} - Localized String Editor".format(installation.talktable().language().name.title(), installation.name))
+
+        self.ui.stringrefSpin.valueChanged.connect(self.stringrefChanged)
+        self.ui.stringrefNewButton.clicked.connect(self.newTlkString)
+        self.ui.stringrefNoneButton.clicked.connect(self.noTlkString)
+        self.ui.maleRadio.clicked.connect(self.substringChanged)
+        self.ui.femaleRadio.clicked.connect(self.substringChanged)
+        self.ui.languageSelect.currentIndexChanged.connect(self.substringChanged)
+        self.ui.stringEdit.textChanged.connect(self.stringEdited)
+
+        self._installation = installation
+        self.locstring = deepcopy(locstring)
+        self.ui.stringrefSpin.setValue(locstring.stringref)
+
+    def accept(self) -> None:
+        if self.locstring.stringref != -1:
+            tlk = load_tlk(self._installation.path() + "dialog.tlk")
+            if len(tlk) <= self.locstring.stringref:
+                tlk.resize(self.locstring.stringref + 1)
+                print(self.locstring.stringref, len(tlk))
+            tlk.get(self.locstring.stringref).text = self.ui.stringEdit.toPlainText()
+            write_tlk(tlk, self._installation.path() + "dialog.tlk")
+        super().accept()
+
+    def reject(self) -> None:
+        super().reject()
+
+    def stringrefChanged(self, stringref: int) -> None:
+        self.ui.substringFrame.setVisible(stringref == -1)
+        self.locstring.stringref = stringref
+
+        if stringref == -1:
+            language = Language(self.ui.languageSelect.currentIndex())
+            gender = Gender(int(self.ui.femaleRadio.isChecked()))
+            text = self.locstring.get(language, gender) if self.locstring.get(language, gender) is not None else ""
+            self.ui.stringEdit.setPlainText(text)
+        else:
+            self.ui.stringEdit.setPlainText(self._installation.string(stringref))
+
+    def newTlkString(self):
+        self.ui.stringrefSpin.setValue(self._installation.talktable().size())
+
+    def noTlkString(self) -> None:
+        self.ui.stringrefSpin.setValue(-1)
+
+    def substringChanged(self) -> None:
+        language = Language(self.ui.languageSelect.currentIndex())
+        gender = Gender(int(self.ui.femaleRadio.isChecked()))
+        text = self.locstring.get(language, gender) if self.locstring.get(language, gender) is not None else ""
+        self.ui.stringEdit.setPlainText(text)
+
+    def stringEdited(self) -> None:
+        if self.locstring.stringref == -1:
+            language = Language(self.ui.languageSelect.currentIndex())
+            gender = Gender(int(self.ui.femaleRadio.isChecked()))
+            self.locstring.set(language, gender, self.ui.stringEdit.toPlainText())
