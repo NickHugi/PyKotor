@@ -102,7 +102,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
         self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
-        self.ui.actionHelpUpdates.triggered.connect(self.openUpdatesDialog)
+        self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
 
         self._core_models: Dict[str, ResourceModel] = {}
@@ -132,6 +132,8 @@ class ToolWindow(QMainWindow):
         self._clearModels()
         self.reloadSettings()
 
+        self.checkForUpdates(True)
+
     def reloadSettings(self) -> None:
         self.ui.mdlDecompileCheckbox.setVisible(self.settings.value('mdlDecompile', False, bool))
         self.reloadInstallations()
@@ -149,9 +151,12 @@ class ToolWindow(QMainWindow):
         """
         About(self, PROGRAM_VERSION).exec_()
 
-    def checkForUpdates(self, silent: bool = True) -> None:
+    def checkForUpdates(self, silent: bool = False) -> None:
         """
         Scans for any updates and opens a dialog with a message based on the scan result.
+
+        Args:
+            silent: If true, only shows popup if an update is available.
         """
         try:
             req = requests.get("https://pastebin.com/raw/tUJCGgrX")
@@ -165,11 +170,13 @@ class ToolWindow(QMainWindow):
                             "New version available for <a href='{}'>download</a>.".format(downloadLink),
                             QMessageBox.Ok, self).exec_()
             else:
-                QMessageBox(QMessageBox.Information, "Version is up to date",
-                            "You are running the latest version (" + latestVersion + ").", QMessageBox.Ok, self).exec_()
+                if not silent:
+                    QMessageBox(QMessageBox.Information, "Version is up to date",
+                                "You are running the latest version (" + latestVersion + ").", QMessageBox.Ok, self).exec_()
         except Exception:
-            QMessageBox(QMessageBox.Information, "Unable to fetch latest version.",
-                        "Check if you are connected to the internet.", QMessageBox.Ok, self).exec_()
+            if not silent:
+                QMessageBox(QMessageBox.Information, "Unable to fetch latest version.",
+                            "Check if you are connected to the internet.", QMessageBox.Ok, self).exec_()
 
     def openActiveTalktable(self) -> None:
         """
