@@ -5,9 +5,22 @@ from __future__ import annotations
 
 import struct
 from enum import IntEnum
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, NamedTuple
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
+
+
+class TPCGetResult(NamedTuple):
+    width: int
+    height: int
+    format: TPCTextureFormat
+    data: Optional[bytes]
+
+
+class TPCConvertResult(NamedTuple):
+    width: int
+    height: int
+    data: Optional[bytes]
 
 
 class TPC:
@@ -54,7 +67,7 @@ class TPC:
         """
         return self._width, self._height
 
-    def get(self, mipmap: int = 0) -> Tuple[int, int, TPCTextureFormat, bytes]:
+    def get(self, mipmap: int = 0) -> TPCGetResult:
         """
         Returns a tuple containing the width, height, texture format, and data of the specified mipmap.
 
@@ -65,9 +78,9 @@ class TPC:
             A tuple equal to (width, height, texture format, data).
         """
         width, height = self._mipmap_size(mipmap)
-        return width, height, self._texture_format, self._mipmaps[mipmap]
+        return TPCGetResult(width, height, self._texture_format, self._mipmaps[mipmap])
 
-    def convert(self, texture_format: TPCTextureFormat, mipmap: int = 0) -> Tuple[int, int, bytes]:
+    def convert(self, texture_format: TPCTextureFormat, mipmap: int = 0) -> TPCConvertResult:
         """
         Returns a tuple containing the width, height and data of the specified mipmap where the data returned is in
         the texture format specified.
@@ -116,7 +129,7 @@ class TPC:
                 data = TPC._grey_to_rgba(raw_data, width, height)
                 data = TPC._rgba_to_rgb(data, width, height)
 
-        return width, height, data
+        return TPCConvertResult(width, height, data)
 
     def set_single(self, width: int, height: int, data: bytes, texture_format: TPCTextureFormat) -> None:
         """
