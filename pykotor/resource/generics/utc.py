@@ -169,7 +169,7 @@ class UTC:
         self.classes: List[UTCClass] = []
         self.feats: List[int] = []
         self.inventory: List[InventoryItem] = []
-        self.equipment: Dict[EquipmentSlot, Optional[InventoryItem]] = {}
+        self.equipment: Dict[EquipmentSlot, InventoryItem] = {}
 
         # Deprecated:
         self.palette_id: int = 0
