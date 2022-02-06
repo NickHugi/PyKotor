@@ -42,9 +42,12 @@ class HTInstallation(Installation):
 
     def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
         if reload:
-            queries = [FileQuery(resname, ResourceType.TwoDA) for resname in resnames if resname not in self._cache2da]
-        else:
             queries = [FileQuery(resname, ResourceType.TwoDA) for resname in resnames]
+        else:
+            queries = [FileQuery(resname, ResourceType.TwoDA) for resname in resnames if resname not in self._cache2da]
+
+        if not queries:
+            return
 
         resources = self.resource_batch(queries, skip_modules=True)
         for resource in resources:
@@ -62,9 +65,12 @@ class HTInstallation(Installation):
 
     def htBatchCacheTPC(self, names: List[str], reload: bool = False):
         if reload:
-            queries = [name for name in names if name not in self._cache2da]
-        else:
             queries = [name for name in names]
+        else:
+            queries = [name for name in names if name not in self._cache2da]
+
+        if not queries:
+            return
 
         for resname in queries:
             self._cacheTpc[resname] = self.texture(resname, skip_modules=True, skip_chitin=True, skip_gui=False)
