@@ -98,6 +98,7 @@ class ToolWindow(QMainWindow):
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
+        self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
         self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self, self.active).show())
         self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self, self.active).show())
         self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
@@ -134,6 +135,13 @@ class ToolWindow(QMainWindow):
         self.reloadSettings()
 
         self.checkForUpdates(True)
+
+    def updateNewMenu(self) -> None:
+        version = "x" if self.active is None else "2" if self.active.tsl else "1"
+
+        creatureIconPath = ":/images/icons/k{}/creature.png".format(version)
+        self.ui.actionNewUTC.setIcon(QIcon(QPixmap(creatureIconPath)))
+        self.ui.actionNewUTC.setEnabled(self.active is not None)
 
     def reloadSettings(self) -> None:
         self.ui.mdlDecompileCheckbox.setVisible(self.settings.value('mdlDecompile', False, bool))
@@ -247,6 +255,7 @@ class ToolWindow(QMainWindow):
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
         self.active = None
+        self.updateNewMenu()
 
         if index <= 0:
             return
@@ -296,6 +305,7 @@ class ToolWindow(QMainWindow):
                 self.refreshOverrideList()
                 self.ui.overrideFolderFrame.setVisible(self.active.tsl)
                 self.ui.overrideLine.setVisible(self.active.tsl)
+                self.updateNewMenu()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
 
