@@ -3,7 +3,11 @@ This module holds classes relating to string localization.
 """
 from __future__ import annotations
 from enum import IntEnum
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pykotor.extract.talktable import TalkTable
+    from pykotor.resource.formats.tlk import TLK
 
 
 class Language(IntEnum):
@@ -169,3 +173,28 @@ class LocalizedString:
         substring_id = LocalizedString.substring_id(language, gender)
         return substring_id in self._substrings
 
+    def determine(self, tlk: Union[TLK, TalkTable, Optional] = None, no_name: str = ""):
+        """
+        Returns the text of the localized string, checking the provided TLK/TalkTable source first if available,
+        otherwise checking the existing substrings. If the TLK search and substring search fail, returns the
+        no_name argument.
+
+        Args:
+            tlk:
+            no_name
+
+        Returns:
+
+        """
+        from pykotor.extract.talktable import TalkTable
+        from pykotor.resource.formats.tlk import TLK
+
+        if isinstance(tlk, TLK) and 0 < self.stringref < len(tlk):
+            return tlk.get(self.stringref).text
+        elif isinstance(tlk, TalkTable) and 0 < self.stringref < tlk.size():
+            return tlk.string(self.stringref)
+        elif len(self) > 0:
+            for substring_id, text in self:
+                return text
+        else:
+            return no_name
