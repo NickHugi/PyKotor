@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections import namedtuple
 from contextlib import suppress
+from copy import copy
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, NamedTuple
 
@@ -24,7 +25,14 @@ from pykotor.resource.type import ResourceType
 
 class SearchResult(NamedTuple):
     filepath: str
+    resname: str
     data: Optional[bytes]
+
+
+class ItemTuple(NamedTuple):
+    resname: str
+    name: str
+    filepath: str
 
 
 class TextureQuality(Enum):
@@ -225,7 +233,7 @@ class Installation:
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
                     if query.resref.lower() == f_resref and query.restype == f_restype:
-                        return SearchResult(filepath, BinaryReader.load_file(filepath))
+                        return SearchResult(filepath, resname, BinaryReader.load_file(filepath))
 
         # 2 - Check installation override
         if not skip_override:
@@ -233,12 +241,12 @@ class Installation:
                 for filename, resource in directory.items():
                     filepath = self.override_path() + subfolder + filename
                     if resource == query:
-                        return SearchResult(filepath, resource.data())
+                        return SearchResult(filepath, resname, resource.data())
   
         # 3 - Check user provided modules
         for capsule in capsules:
             if capsule.exists(resname, restype):
-                return SearchResult(capsule.path(), capsule.resource(resname, restype))
+                return SearchResult(capsule.path(), resname, capsule.resource(resname, restype))
 
         # 4 - Check installation modules
         if not skip_modules:
@@ -246,16 +254,74 @@ class Installation:
                 filepath = self.module_path() + module_name
                 for resource in resources:
                     if resource == query:
-                        return SearchResult(filepath, resource.data())
+                        return SearchResult(filepath, resname, resource.data())
 
         # 5 - Check installation chitin
         if not skip_chitin:
             filepath = self.path() + "chitin.key"
             for resource in self._chitin:
                 if resource == query:
-                    return SearchResult(filepath, resource.data())
+                    return SearchResult(resource.filepath(), resname, resource.data())
 
-        return SearchResult("", None)
+        return SearchResult("", "", None)
+
+    def resource_batch(self, queries: List[FileQuery], *, capsules: List[Capsule] = None, folders: List[str] = None,
+                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> List[SearchResult]:
+        results: List[SearchResult] = []
+
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
+
+        # 1 - Check user provided folders
+        for folder in folders:
+            folder = folder + '/' if not folder.endswith('/') else folder
+            for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                filepath = folder + file
+                with suppress(Exception):
+                    f_resref, f_restype = filepath_info(file)
+                    for query in copy(queries):
+                        if query.resref.lower() == f_resref and query.restype == f_restype:
+                            queries.remove(query)
+                            results.append(SearchResult(filepath, query.resref, BinaryReader.load_file(filepath)))
+
+        # 2 - Check installation override
+        if not skip_override:
+            for subfolder, directory in self._override.items():
+                for filename, resource in directory.items():
+                    filepath = self.override_path() + subfolder + filename
+                    for query in copy(queries):
+                        if resource == query:
+                            queries.remove(query)
+                            results.append(SearchResult(filepath, query.resref, resource.data()))
+
+        # 3 - Check user provided modules
+        for capsule in capsules:
+            for query in copy(queries):
+                if capsule.exists(query.resref, query.restype):
+                    results.append(SearchResult(capsule.path(), query.resref, capsule.resource(query.resref, query.restype)))
+
+        # 4 - Check installation modules
+        if not skip_modules:
+            for module_name, resources in self._modules.items():
+                filepath = self.module_path() + module_name
+                for resource in resources:
+                    for query in copy(queries):
+                        if resource == query:
+                            results.append(SearchResult(filepath, query.resref, resource.data()))
+
+        # 5 - Check installation chitin
+        if not skip_chitin:
+            handles = {}
+            for resource in self._chitin:
+                for query in copy(queries):
+                    if resource == query:
+                        if resource.filepath() not in handles:
+                            handles[resource.filepath()] = BinaryReader.from_file(resource.filepath())
+                        handles[resource.filepath()].seek(resource.offset())
+                        data = handles[resource.filepath()].read_bytes(resource.size())
+                        results.append(SearchResult(resource.filepath(), query.resref, data))
+
+        return results
 
     def locate(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
                skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False,
