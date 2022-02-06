@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os.path
 from typing import List, TypeVar, Generic, Optional, Dict
 
 from pykotor.common.stream import BinaryReader
@@ -71,6 +72,25 @@ class Module:
         self._info: ModuleResource[IFO] = ModuleResource("module", IFO(), None, [])
 
         self.reload_resources()
+
+    @staticmethod
+    def get_root(filepath: str) -> str:
+        """
+        Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
+        become "danm13".
+
+        Args:
+            filepath: The filename or filepath of one of the module encapsulated file.
+
+        Returns:
+            The string for the root name of a module.
+        """
+        root = os.path.basename(filepath).replace(".rim", "").replace(".erf", "").replace(".mod", "")
+        roota = root[:5]
+        rootb = root[5:]
+        if "_" in rootb:
+            rootb = rootb[:rootb.index("_")]
+        return roota + rootb
 
     def reload_resources(self):
         self._layout: ModuleResource[LYT] = ModuleResource(self._id, LYT(), None, [])
