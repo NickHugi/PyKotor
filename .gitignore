@@ -4,3 +4,9 @@ venv
 toolset/errorlog.txt
 dist
 build
+/__main__.dist/
+/__main__.build/
+/__main__.onefile-build/
+*.exe
+*.spec
+*.zip
