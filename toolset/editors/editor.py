@@ -1,4 +1,6 @@
+import io
 import os
+import traceback
 from abc import abstractmethod
 from copy import deepcopy
 from typing import List, Union, Optional
@@ -142,6 +144,11 @@ class Editor(QMainWindow):
                 with open(self._filepath, 'wb') as file:
                     file.write(data)
         except Exception as e:
+            with open("errorlog.txt", 'a') as file:
+                lines = traceback.format_exception(type(e), e, e.__traceback__)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
+            print(''.join(lines))
             QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
 
     def open(self):
