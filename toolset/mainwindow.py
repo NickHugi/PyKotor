@@ -25,6 +25,7 @@ from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
 
 import mainwindow_ui
+from data.installation import HTInstallation
 from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
@@ -49,9 +50,9 @@ class ToolWindow(QMainWindow):
 
         self.ui = mainwindow_ui.Ui_MainWindow()
         self.ui.setupUi(self)
-        self.setWindowIcon(QIcon(QPixmap(":/icons/sith.png")))
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
 
-        self.active: Optional[Installation] = None
+        self.active: Optional[HTInstallation] = None
         self.settings = QSettings('cortisol', 'holocrontoolset')
 
         firstTime = self.settings.value('firstTime', True, bool)
@@ -267,7 +268,7 @@ class ToolWindow(QMainWindow):
         else:
             # If the installation had not already been loaded previously this session, load it now
             if name not in self.installations:
-                dialog = InstallationLoaderDialog(self, path, name, tsl)
+                dialog = InstallationLoaderDialog(self, path, name, tsl, self)
                 if dialog.exec_():
                     games = self.settings.value('games')
                     games[name]['path'] = path
@@ -537,10 +538,12 @@ class ToolWindow(QMainWindow):
             else:
                 editor = GFFEditor(self, self.active)
 
+        if restype in [ResourceType.UTC]:
+            editor = UTCEditor(self, self.active)
+
         if restype in [ResourceType.GFF, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI, ResourceType.ITP,
                        ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
-                       ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL,
-                       ResourceType.UTC]:
+                       ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
             if self.settings.value('gffEditor') and not noExternal:
                 external = self.settings.value('gffEditor')
             else:
@@ -591,7 +594,7 @@ class InstallationLoaderDialog(QDialog):
     Popup dialog responsible for loading and returning an installation.
     """
 
-    def __init__(self, parent, path: str, name: str, tsl: bool):
+    def __init__(self, parent, path: str, name: str, tsl: bool, mainWindow: ToolWindow):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -610,7 +613,7 @@ class InstallationLoaderDialog(QDialog):
 
         self.installation: Optional[Installation] = None
 
-        self.worker = InstallationLoaderWorker(path, name, tsl)
+        self.worker = InstallationLoaderWorker(path, name, tsl, mainWindow)
         self.worker.loaded.connect(self.loadingCompleted)
         self.worker.failed.connect(self.loadingFailed)
         self.worker.start()
@@ -628,15 +631,16 @@ class InstallationLoaderWorker(QtCore.QThread):
     loaded = QtCore.pyqtSignal(object)
     failed = QtCore.pyqtSignal(object)
 
-    def __init__(self, path: str, name: str, tsl: bool):
+    def __init__(self, path: str, name: str, tsl: bool, mainWindow: ToolWindow):
         super().__init__()
         self._path: str = path
         self._name: str = name
         self._tsl: bool = tsl
+        self._mainWindow: ToolWindow = mainWindow
 
     def run(self):
         try:
-            installation = Installation(self._path, self._name, self._tsl)
+            installation = HTInstallation(self._path, self._name, self._tsl, self._mainWindow)
             self.loaded.emit(installation)
         except ValueError as e:
             self.failed.emit(e)
@@ -647,7 +651,7 @@ class ResourceExtractorDialog(QDialog):
     Popup dialog responsible for extracting a list of resources from the game files.
     """
 
-    def __init__(self, parent: QWidget, folderpath: str, resources: List[FileResource], active: Installation,
+    def __init__(self, parent: QWidget, folderpath: str, resources: List[FileResource], active: HTInstallation,
                  toolwindow: ToolWindow):
         super().__init__(parent)
 
@@ -667,7 +671,7 @@ class ResourceExtractorDialog(QDialog):
 
         self._folderpath: str = folderpath
         self._resources: List[FileResource] = resources
-        self._active: Installation = active
+        self._active: HTInstallation = active
         self._errorLog: str = ""
 
         decompileTpc = toolwindow.ui.tpcDecompileCheckbox.isChecked()

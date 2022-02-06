@@ -26,7 +26,7 @@
       <item>
        <widget class="QTabWidget" name="resourceTabs">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="coreTab">
          <attribute name="title">
@@ -83,6 +83,18 @@
             </item>
             <item>
              <widget class="QPushButton" name="moduleRefreshButton">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>70</height>
+               </size>
+              </property>
               <property name="toolTip">
                <string>Refresh the list of modules.</string>
               </property>
@@ -113,6 +125,18 @@
              <widget class="QPushButton" name="moduleReloadButton">
               <property name="enabled">
                <bool>false</bool>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
               </property>
               <property name="toolTip">
                <string>Reload the active module.</string>
@@ -154,24 +178,56 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="4,1">
-            <item>
-             <widget class="QComboBox" name="overrideFolderCombo"/>
-            </item>
-            <item>
-             <widget class="QPushButton" name="overrideRefreshButton">
-              <property name="toolTip">
-               <string>Refresh the list of modules.</string>
-              </property>
-              <property name="text">
-               <string>Refresh</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <widget class="QFrame" name="overrideFolderFrame">
+            <property name="frameShape">
+             <enum>QFrame::NoFrame</enum>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,0">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QComboBox" name="overrideFolderCombo"/>
+             </item>
+             <item>
+              <widget class="QPushButton" name="overrideRefreshButton">
+               <property name="minimumSize">
+                <size>
+                 <width>70</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>70</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>Refresh the list of modules.</string>
+               </property>
+               <property name="text">
+                <string>Refresh</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
           <item>
-           <widget class="Line" name="line_2">
+           <widget class="Line" name="overrideLine">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -188,6 +244,18 @@
             </item>
             <item>
              <widget class="QPushButton" name="overrideReloadButton">
+              <property name="minimumSize">
+               <size>
+                <width>70</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>70</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <property name="toolTip">
                <string>Refresh the list of files in the override folder.</string>
               </property>
@@ -278,28 +346,10 @@
          <item>
           <widget class="QPushButton" name="extractButton">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>124</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>124</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="baseSize">
-            <size>
-             <width>124</width>
-             <height>0</height>
-            </size>
            </property>
            <property name="text">
             <string>Extract Selected</string>
@@ -389,6 +439,8 @@
      <property name="title">
       <string>New</string>
      </property>
+     <addaction name="actionNewUTC"/>
+     <addaction name="separator"/>
      <addaction name="actionNewGFF"/>
      <addaction name="actionNewERF"/>
      <addaction name="actionNewTXT"/>
@@ -540,6 +592,19 @@
   <action name="actionNewSSF">
    <property name="text">
     <string>SSF</string>
+   </property>
+  </action>
+  <action name="actionNewUTC">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normalon>:/images/icons/kx/creature.png</normalon>
+    </iconset>
+   </property>
+   <property name="text">
+    <string>Creature</string>
    </property>
   </action>
  </widget>
