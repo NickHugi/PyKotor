@@ -1032,6 +1032,7 @@ class TextureListWorker(QThread):
     def run(self):
         while not self._stop:
             if not self._buffer:
+                sleep(1)
                 continue
 
             item, resname = self._buffer.pop()
