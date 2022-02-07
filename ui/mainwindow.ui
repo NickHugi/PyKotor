@@ -26,7 +26,7 @@
       <item>
        <widget class="QTabWidget" name="resourceTabs">
         <property name="currentIndex">
-         <number>0</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="coreTab">
          <attribute name="title">
@@ -286,6 +286,67 @@
             <attribute name="headerShowSortIndicator" stdset="0">
              <bool>false</bool>
             </attribute>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="texturesTab">
+         <attribute name="title">
+          <string>Textures</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <widget class="QComboBox" name="texturesCombo"/>
+          </item>
+          <item>
+           <widget class="Line" name="textureLine">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="textureSearchEdit">
+            <property name="placeholderText">
+             <string>search...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="TexturesView" name="texturesList">
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="showDropIndicator" stdset="0">
+             <bool>false</bool>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>64</width>
+              <height>64</height>
+             </size>
+            </property>
+            <property name="isWrapping" stdset="0">
+             <bool>true</bool>
+            </property>
+            <property name="resizeMode">
+             <enum>QListView::Adjust</enum>
+            </property>
+            <property name="layoutMode">
+             <enum>QListView::Batched</enum>
+            </property>
+            <property name="gridSize">
+             <size>
+              <width>92</width>
+              <height>92</height>
+             </size>
+            </property>
+            <property name="viewMode">
+             <enum>QListView::IconMode</enum>
+            </property>
+            <property name="uniformItemSizes">
+             <bool>true</bool>
+            </property>
            </widget>
           </item>
          </layout>
@@ -608,6 +669,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>TexturesView</class>
+   <extends>QListView</extends>
+   <header location="global">toolset.mainwindow</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

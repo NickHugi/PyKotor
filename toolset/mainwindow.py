@@ -4,22 +4,26 @@ import json
 import os
 import subprocess
 from contextlib import suppress
+from copy import copy
 from distutils.version import Version, StrictVersion
 from time import sleep
 from typing import Optional, List, Union, Tuple, Dict
 
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
+from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel, QMargins, QRect, \
+    QSize, QPoint
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QShowEvent, QWheelEvent, QImage, QColor, \
+    QBrush, QCloseEvent
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
-    QLabel, QWidget, QMessageBox, QHeaderView
+    QLabel, QWidget, QMessageBox, QHeaderView, QLayout, QSizePolicy, QScrollArea, QStyle, QGridLayout, QTableWidget, \
+    QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QListView
 from pykotor.extract.file import FileResource
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
 from pykotor.resource.formats.mdl import load_mdl, write_mdl
 from pykotor.resource.formats.rim import write_rim, load_rim
-from pykotor.resource.formats.tpc import load_tpc, write_tpc
+from pykotor.resource.formats.tpc import load_tpc, write_tpc, TPCTextureFormat, TPC
 from pykotor.resource.type import ResourceType, FileFormat
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
@@ -95,6 +99,10 @@ class ToolWindow(QMainWindow):
         self.ui.overrideReloadButton.clicked.connect(self.reloadOverride)
         self.ui.overrideFolderCombo.currentTextChanged.connect(self.changeOverrideFolder)
 
+        self.ui.texturesCombo.currentTextChanged.connect(self.changeTexturePack)
+        self.ui.textureSearchEdit.textEdited.connect(self.filterDataModel)
+        self.ui.textureSearchEdit.textEdited.connect(self.ui.texturesList.loadVisibleTextures)
+
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
@@ -120,6 +128,8 @@ class ToolWindow(QMainWindow):
         self.ui.modulesTree.setSortingEnabled(True)
         self.ui.modulesTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.ui.modulesTree.doubleClicked.connect(self.openFromSelected)
+        self._modules_list: Dict[str, QStandardItemModel] = {}
+        self.ui.modulesCombo.setModel(QStandardItemModel())
 
         self.overrideModel = ResourceModel()
         self.ui.overrideTree.setModel(self.overrideModel.proxyModel())
@@ -128,13 +138,35 @@ class ToolWindow(QMainWindow):
         self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.ui.overrideTree.doubleClicked.connect(self.openFromSelected)
 
-        self._modules_list: Dict[str, QStandardItemModel] = {}
-        self.ui.modulesCombo.setModel(QStandardItemModel())
+        self.texturesModel = TextureListModel()
+        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
 
         self._clearModels()
         self.reloadSettings()
 
         self.checkForUpdates(True)
+
+    def closeEvent(self, e: QCloseEvent) -> None:
+        self.ui.texturesList.stopWorker()
+
+    def refreshTexturePackList(self):
+        for texturepack in self.active.texturepacks_list():
+            self.ui.texturesCombo.addItem(texturepack)
+
+    def changeTexturePack(self, texturepack: str):
+        self.texturesModel = TextureListModel()
+        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
+        self.texturesModel.proxyModel().setFilterFixedString(self.ui.textureSearchEdit.text())
+        image = QImage(bytes([0 for i in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
+        icon = QIcon(QPixmap.fromImage(image))
+
+        for texture in self.active.texturepack_resources(texturepack):
+            item = QStandardItem(icon, texture.resname())
+            item.setToolTip(texture.resname())
+            item.resource = texture
+            item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
+            self.texturesModel.appendRow(item)
+        self.ui.texturesList.startWorker(self.active)
 
     def updateNewMenu(self) -> None:
         version = "x" if self.active is None else "2" if self.active.tsl else "1"
@@ -291,8 +323,6 @@ class ToolWindow(QMainWindow):
                 if name not in self._core_models:
                     self._core_models[name] = ResourceModel()
                     [self._core_models[name].addResource(resource) for resource in self.active.chitin_resources()]
-                    [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_tpa.erf")]
-                    [self._core_models[name].addResource(resource) for resource in self.active.texturepack_resources("swpc_tex_gui.erf")]
                 self.ui.coreTree.setModel(self._core_models[name].proxyModel())
                 self._core_models[name].proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
                 self._core_models[name].proxyModel().setFilterFixedString(self.ui.coreSearchEdit.text())
@@ -305,6 +335,9 @@ class ToolWindow(QMainWindow):
                 self.refreshOverrideList()
                 self.ui.overrideFolderFrame.setVisible(self.active.tsl)
                 self.ui.overrideLine.setVisible(self.active.tsl)
+
+                self.refreshTexturePackList()
+
                 self.updateNewMenu()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
@@ -402,7 +435,7 @@ class ToolWindow(QMainWindow):
         for resource in self.active.override_resources(folder):
             self.overrideModel.addResource(resource)
 
-    def currentDataTree(self) -> QTreeView:
+    def currentDataView(self) -> QAbstractItemView:
         """
         Returns the QTreeView object that is currently being shown on the resourceTabs.
         """
@@ -412,6 +445,8 @@ class ToolWindow(QMainWindow):
             return self.ui.modulesTree
         if self.ui.resourceTabs.currentIndex() == 2:
             return self.ui.overrideTree
+        if self.ui.resourceTabs.currentIndex() == 3:
+            return self.ui.texturesList
 
     def currentDataModel(self) -> ResourceModel:
         """
@@ -423,6 +458,8 @@ class ToolWindow(QMainWindow):
             return self.modulesModel
         if self.ui.resourceTabs.currentIndex() == 2:
             return self.overrideModel
+        if self.ui.resourceTabs.currentIndex() == 3:
+            return self.texturesModel
 
     def filterDataModel(self, text: str) -> None:
         """
@@ -431,15 +468,15 @@ class ToolWindow(QMainWindow):
         Args:
             text: The text to filter through.
         """
-        self.currentDataTree().model().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        self.currentDataTree().model().setFilterFixedString(text)
+        self.currentDataView().model().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.currentDataView().model().setFilterFixedString(text)
 
     def extractFromSelected(self) -> None:
         """
         Extracts the resources from the items selected in the tree of the currently open resourceTabs tab.
         """
 
-        resources = self.currentDataModel().resourceFromIndexes(self.currentDataTree().selectedIndexes())
+        resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
 
         if len(resources) == 1:
             # Player saves resource with a specific name
@@ -463,7 +500,7 @@ class ToolWindow(QMainWindow):
         """
         Opens the resources from the items selected in the tree of the currently open resourceTabs tab.
         """
-        resources = self.currentDataModel().resourceFromIndexes(self.currentDataTree().selectedIndexes())
+        resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
         for resource in resources:
             filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data())
             inERForRIM = resource.filepath().endswith('.erf') or resource.filepath().endswith('.rim') or resource.filepath().endswith('.mod')
@@ -903,3 +940,127 @@ class ProcessCloseListener(QThread):
     def run(self):
         self._process.wait()
         self.closed.emit()
+
+
+class TexturesView(QListView):
+    textureRequest = QtCore.pyqtSignal(object, object)
+
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+        self.verticalScrollBar().valueChanged.connect(self.loadVisibleTextures)
+        self._installation: Optional[HTInstallation] = None
+        self._worker: Optional[TextureListWorker] = None
+
+    def startWorker(self, installation: HTInstallation):
+        self._installation = installation
+
+        if self._worker is not None:
+            self._worker.stop()
+
+        self._worker = TextureListWorker(self, installation)
+        self._worker.loadedTexture.connect(self.loadedTexture)
+        self._worker.start()
+
+        self.loadVisibleTextures()
+
+    def stopWorker(self):
+        if self._worker is not None:
+            self._worker.stop()
+
+    def loadedTexture(self, item: QListWidgetItem, icon: QIcon) -> None:
+        item.setIcon(icon)
+        item.setData(True, QtCore.Qt.UserRole)
+
+    def loadVisibleTextures(self) -> None:
+        for item in self.getVisibleItems():
+            if item.data(QtCore.Qt.UserRole):
+                continue
+
+            self.textureRequest.emit(item, item.text())
+
+    def getVisibleItems(self):
+        if self.model().rowCount() == 0:
+            return []
+
+        items = []
+
+        for y in range(4, self.viewport().rect().height(), 64):
+            for x in range(4, self.viewport().rect().width(), 64):
+                proxyIndex = self.indexAt(QPoint(x, y))
+                proxyModel: QSortFilterProxyModel = self.model()
+                model: QStandardItemModel = self.model().sourceModel()
+                index = proxyModel.mapToSource(proxyIndex)
+                item = model.itemFromIndex(index)
+                if item is not None and item not in items:
+                    items.append(item)
+
+        return items[::-1]
+
+
+class TextureListModel(QStandardItemModel):
+    def __init__(self):
+        super().__init__()
+        self._proxyModel = QSortFilterProxyModel(self)
+        self._proxyModel.setSourceModel(self)
+        self._proxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
+
+    def proxyModel(self) -> QSortFilterProxyModel:
+        return self._proxyModel
+
+    def resourceFromIndexes(self, indexes: List[QModelIndex], proxy: bool = True) -> List[FileResource]:
+        items = []
+        for index in indexes:
+            sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
+            items.append(self.itemFromIndex(sourceIndex))
+        return self.resourceFromItems(items)
+
+    def resourceFromItems(self, items: List[QStandardItem]) -> List[FileResource]:
+        return [item.resource for item in items if hasattr(item, 'resource')]
+
+
+class TextureListWorker(QThread):
+    loadedTexture = QtCore.pyqtSignal(object, object)
+
+    def __init__(self, parent: TexturesView, installation: HTInstallation):
+        super().__init__(parent)
+        self._buffer: List[Tuple[int, str]] = []
+        self.x = []
+        self._installation: HTInstallation = installation
+        self._stop: bool = False
+        parent.textureRequest.connect(self.textureRequest)
+
+    def run(self):
+        while not self._stop:
+            if not self._buffer:
+                continue
+
+            item, resname = self._buffer.pop()
+            tpc = self._installation.texture(resname, skip_modules=True, skip_gui=False, skip_override=True)
+            width, height, rgba = tpc.convert(TPCTextureFormat.RGBA, self.bestMipmap(tpc))
+            image = QImage(rgba, width, height, QImage.Format_RGBA8888)
+            pixmap = QPixmap.fromImage(image)
+            if width < 64:
+                pixmap.scaledToWidth(64)
+            if height < 64:
+                pixmap.scaledToHeight(64)
+            icon = QIcon(pixmap)
+
+            if not self._stop:
+                self.loadedTexture.emit(item, icon)
+
+    def bestMipmap(self, tpc: TPC) -> int:
+        for i in range(tpc.mipmap_count()):
+            size = tpc.get(i).width
+            if size <= 64:
+                return i
+        return 0
+
+    def textureRequest(self, item: QListWidgetItem, resname: str):
+        for i, bufferItem in enumerate(self._buffer):
+            if bufferItem[1] == resname:
+                self._buffer.pop(i)
+                break
+        self._buffer.append((item, resname))
+
+    def stop(self):
+        self._stop = True
