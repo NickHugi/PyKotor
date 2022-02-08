@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, FileQuery
+from pykotor.extract.file import FileResource, FileQuery, ResourceResult
 from pykotor.resource.type import ResourceType
 
 
@@ -45,10 +45,39 @@ class Capsule:
         resource = next((resource for resource in self._resources if resource == query), None)
         return None if resource is None else resource.data()
 
-    def exists(self, resref: str, restype: ResourceType) -> bool:
+    def batch(self, queries: List[FileQuery], reload: bool = False) -> List[ResourceResult]:
+        if reload:
+            self.reload()
+
+        results = []
+        reader = BinaryReader.from_file(self.path())
+        for query in queries:
+            if self.exists(query.resname, query.restype):
+                resource = next((resource for resource in self._resources if resource == query), None)
+                if resource is None:
+                    data = None
+                else:
+                    reader.seek(resource.offset())
+                    data = reader.read_bytes(resource.size())
+                results.append(ResourceResult(self.path(), query.resname, data))
+        reader.close()
+        return results
+
+    def exists(self, resref: str, restype: ResourceType, reload: bool = False) -> bool:
+        if reload:
+            self.reload()
+
         query = FileQuery(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource is not None
+
+    def info(self, resref: str, restype: ResourceType, reload: bool = False) -> FileResource:
+        if reload:
+            self.reload()
+
+        query = FileQuery(resref, restype)
+        resource = next((resource for resource in self._resources if resource == query), None)
+        return resource
 
     def reload(self):
         """

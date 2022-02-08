@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional, NamedTuple
+
 from pykotor.resource.type import ResourceType
 
 
@@ -24,7 +26,7 @@ class FileResource:
         if isinstance(other, FileResource):
             return other._resname.lower() == self._resname.lower() and other._restype == self._restype
         elif isinstance(other, FileQuery):
-            return other.resref.lower() == self._resname.lower() and other.restype == self._restype
+            return other.resname.lower() == self._resname.lower() and other.restype == self._restype
         else:
             return NotImplemented
 
@@ -60,6 +62,18 @@ class FileQuery:
     Stores a ResRef and resource type value. If a FileQuery object is compared (equality) to a FileResource object it
     will return True if the resref and restype values match.
     """
-    def __init__(self, resref: str, restype: ResourceType):
-        self.resref: str = resref
+    def __init__(self, resname: str, restype: ResourceType):
+        self.resname: str = resname
         self.restype: ResourceType = restype
+
+
+class ResourceResult(NamedTuple):
+    filepath: str
+    resname: str
+    data: Optional[bytes]
+
+
+class LocationResult(NamedTuple):
+    filepath: str
+    offset: int
+    size: int

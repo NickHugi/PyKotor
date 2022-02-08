@@ -119,10 +119,10 @@ class Module:
                 if resource.restype() in load_list:
                     dictionary, compile = load_list[resource.restype()]
                     res = compile(resource.data())
-                    if resource.resref() not in dictionary:
-                        dictionary[resource.resref()] = ModuleResource(resource.resref(), res, capsule.path(), [capsule.path()])
+                    if resource.resname() not in dictionary:
+                        dictionary[resource.resname()] = ModuleResource(resource.resname(), res, capsule.path(), [capsule.path()])
                     else:
-                        dictionary[resource.resref()].add_location(capsule.path())
+                        dictionary[resource.resname()].add_location(capsule.path())
 
                 if resource.restype() == ResourceType.LYT:
                     self._layout.resource = load_lyt(resource.data()) if self._layout.resource is None else self._layout.resource

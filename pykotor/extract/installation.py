@@ -11,7 +11,7 @@ from pykotor.common.stream import BinaryReader
 
 from pykotor.common.language import Language, Gender
 from pykotor.common.misc import filepath_info
-from pykotor.extract.file import FileResource, FileQuery
+from pykotor.extract.file import FileResource, FileQuery, ResourceResult, LocationResult
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.talktable import TalkTable
@@ -21,12 +21,6 @@ from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tpc import TPC, load_tpc
 from pykotor.resource.formats.twoda import TwoDA, load_2da
 from pykotor.resource.type import ResourceType
-
-
-class SearchResult(NamedTuple):
-    filepath: str
-    resname: str
-    data: Optional[bytes]
 
 
 class ItemTuple(NamedTuple):
@@ -196,7 +190,7 @@ class Installation:
         return self._talktable
 
     def resource(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
-                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> SearchResult:
+                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> ResourceResult:
         """
         Returns a resource matching the specified resref and restype. If no resource is found then None is returned
         instead.
@@ -232,8 +226,8 @@ class Installation:
                 filepath = folder + file
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
-                    if query.resref.lower() == f_resref and query.restype == f_restype:
-                        return SearchResult(filepath, resname, BinaryReader.load_file(filepath))
+                    if query.resname.lower() == f_resref and query.restype == f_restype:
+                        return ResourceResult(filepath, resname, BinaryReader.load_file(filepath))
 
         # 2 - Check installation override
         if not skip_override:
@@ -241,12 +235,12 @@ class Installation:
                 for filename, resource in directory.items():
                     filepath = self.override_path() + subfolder + filename
                     if resource == query:
-                        return SearchResult(filepath, resname, resource.data())
+                        return ResourceResult(filepath, resname, resource.data())
   
         # 3 - Check user provided modules
         for capsule in capsules:
             if capsule.exists(resname, restype):
-                return SearchResult(capsule.path(), resname, capsule.resource(resname, restype))
+                return ResourceResult(capsule.path(), resname, capsule.resource(resname, restype))
 
         # 4 - Check installation modules
         if not skip_modules:
@@ -254,20 +248,20 @@ class Installation:
                 filepath = self.module_path() + module_name
                 for resource in resources:
                     if resource == query:
-                        return SearchResult(filepath, resname, resource.data())
+                        return ResourceResult(filepath, resname, resource.data())
 
         # 5 - Check installation chitin
         if not skip_chitin:
             filepath = self.path() + "chitin.key"
             for resource in self._chitin:
                 if resource == query:
-                    return SearchResult(resource.filepath(), resname, resource.data())
+                    return ResourceResult(resource.filepath(), resname, resource.data())
 
-        return SearchResult("", "", None)
+        return ResourceResult("", "", None)
 
     def resource_batch(self, queries: List[FileQuery], *, capsules: List[Capsule] = None, folders: List[str] = None,
-                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> List[SearchResult]:
-        results: List[SearchResult] = []
+                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> List[ResourceResult]:
+        results: List[ResourceResult] = []
 
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
@@ -280,9 +274,9 @@ class Installation:
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
                     for query in copy(queries):
-                        if query.resref.lower() == f_resref and query.restype == f_restype:
+                        if query.resname.lower() == f_resref and query.restype == f_restype:
                             queries.remove(query)
-                            results.append(SearchResult(filepath, query.resref, BinaryReader.load_file(filepath)))
+                            results.append(ResourceResult(filepath, query.resname, BinaryReader.load_file(filepath)))
 
         # 2 - Check installation override
         if not skip_override:
@@ -292,13 +286,13 @@ class Installation:
                     for query in copy(queries):
                         if resource == query:
                             queries.remove(query)
-                            results.append(SearchResult(filepath, query.resref, resource.data()))
+                            results.append(ResourceResult(filepath, query.resname, resource.data()))
 
         # 3 - Check user provided modules
         for capsule in capsules:
             for query in copy(queries):
-                if capsule.exists(query.resref, query.restype):
-                    results.append(SearchResult(capsule.path(), query.resref, capsule.resource(query.resref, query.restype)))
+                if capsule.exists(query.resname, query.restype):
+                    results.append(ResourceResult(capsule.path(), query.resname, capsule.resource(query.resname, query.restype)))
 
         # 4 - Check installation modules
         if not skip_modules:
@@ -307,7 +301,7 @@ class Installation:
                 for resource in resources:
                     for query in copy(queries):
                         if resource == query:
-                            results.append(SearchResult(filepath, query.resref, resource.data()))
+                            results.append(ResourceResult(filepath, query.resname, resource.data()))
 
         # 5 - Check installation chitin
         if not skip_chitin:
@@ -319,13 +313,13 @@ class Installation:
                             handles[resource.filepath()] = BinaryReader.from_file(resource.filepath())
                         handles[resource.filepath()].seek(resource.offset())
                         data = handles[resource.filepath()].read_bytes(resource.size())
-                        results.append(SearchResult(resource.filepath(), query.resref, data))
+                        results.append(ResourceResult(resource.filepath(), query.resname, data))
 
         return results
 
     def locate(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
                skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False,
-               skip_textures: bool = False) -> List[str]:
+               skip_textures: bool = False) -> List[LocationResult]:
         """
         Returns a list filepaths for where a particular resource matching the given resref and restype are located.
 
@@ -353,7 +347,8 @@ class Installation:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        locations = []
+        query = FileQuery(resname, restype)
+        locations: List[LocationResult] = []
 
         # 1 - Check user provided folders
         for folder in folders:
@@ -361,39 +356,43 @@ class Installation:
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
                     f_resref, f_restype = filepath_info(file)
+                    f_filepath = folder + file
+                    f_size = os.path.getsize(f_filepath)
                     if resname.lower() == f_resref and restype == f_restype:
-                        locations.append(folder + file)
+                        locations.append(LocationResult(f_filepath, 0, f_size))
 
         # 2 - Check installation override
         if not skip_override:
             for subfolder, files in self._override.items():
                 for filename, resource in files.items():
-                    if resname.lower() == resource.resname().lower() and restype == resource.restype():
-                        locations.append(self.override_path() + subfolder + filename)
+                    if resource == query:
+                        filepath = self.override_path() + subfolder + filename
+                        size = os.path.getsize(filepath)
+                        locations.append(LocationResult(filepath, 0, size))
 
         # 3 - Check user provided modules
         for capsule in capsules:
-            if capsule.exists(resname, restype):
-                locations.append(capsule.path())
+            locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
+                              for resource in capsule if resource == query])
 
         # 4 - Check installation modules
         if not skip_modules:
-            for module_name, resources in self._modules.items():
-                for resource in resources:
-                    if resname.lower() == resource.resname().lower() and restype == resource.restype():
-                        locations.append(self.module_path() + module_name)
+            for modules in self._modules.values():
+                resources = modules
+                locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
+                                  for resource in resources if resource == query])
 
         # 5 - Check installation texturepack
         if not skip_textures:
-            for resource in self.texturepack_resources("swpc_tex_tpa.erf"):
-                if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
-                    locations.append(self.texturepacks_path() + "swpc_tex_tpa.erf")
+            resources = self.texturepack_resources("swpc_tex_tpa.erf")
+            locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
+                              for resource in resources if resource == query])
 
         # 6 - Check installation chitin
         if not skip_chitin:
-            for resource in self._chitin:
-                if resname.lower() == resource.resname().lower() and restype == resource.restype():
-                    locations.append(self.path() + "chitin.key")
+            resources = self._chitin
+            locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
+                              for resource in resources if resource == query])
 
         return locations
 
@@ -509,6 +508,7 @@ class Installation:
                 continue
             tag = ""
             capsule = Capsule(self.module_path() + module)
+
             if capsule.exists("module", ResourceType.IFO):
                 ifo = load_gff(capsule.resource("module", ResourceType.IFO))
                 tag = ifo.root.get_resref("Mod_Entry_Area").get()
