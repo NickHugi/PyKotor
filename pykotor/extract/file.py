@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Optional, NamedTuple
 
 from pykotor.resource.type import ResourceType
@@ -77,3 +78,14 @@ class LocationResult(NamedTuple):
     filepath: str
     offset: int
     size: int
+
+
+class ResourceIdentifier(NamedTuple):
+    resname: str
+    restype: ResourceType
+
+    @staticmethod
+    def from_path(filepath: str) -> ResourceIdentifier:
+        filename = os.path.basename(filepath)
+        resname, restype_ext = filename.split(".", 1)
+        return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

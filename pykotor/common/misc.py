@@ -297,18 +297,3 @@ class EquipmentSlot(Enum):
     CLAW2       = 32768
     CLAW3       = 65536
     HIDE        = 131072
-
-
-def filepath_info(filepath: str) -> Tuple[ResRef, ResourceType]:
-    """
-    Returns a tuple containing the ResRef and ResourceType inferred from a filepath.
-
-    Args:
-        filepath: The filepath.
-
-    Returns:
-        A tuple containing [ResRef, ResourceType].
-    """
-    filename = os.path.basename(filepath)
-    resname, restype_ext = filename.split(".", 1)
-    return ResRef(resname), ResourceType.from_extension(restype_ext)

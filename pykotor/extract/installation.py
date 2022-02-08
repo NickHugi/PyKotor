@@ -10,8 +10,7 @@ from typing import Dict, List, Optional, Tuple, NamedTuple
 from pykotor.common.stream import BinaryReader
 
 from pykotor.common.language import Language, Gender
-from pykotor.common.misc import filepath_info
-from pykotor.extract.file import FileResource, FileQuery, ResourceResult, LocationResult
+from pykotor.extract.file import FileResource, FileQuery, ResourceResult, LocationResult, ResourceIdentifier
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.talktable import TalkTable
@@ -225,7 +224,7 @@ class Installation:
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 filepath = folder + file
                 with suppress(Exception):
-                    f_resref, f_restype = filepath_info(file)
+                    f_resref, f_restype = ResourceIdentifier.from_path(file)
                     if query.resname.lower() == f_resref and query.restype == f_restype:
                         return ResourceResult(filepath, resname, BinaryReader.load_file(filepath))
 
@@ -274,7 +273,7 @@ class Installation:
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 filepath = folder + file
                 with suppress(Exception):
-                    f_resref, f_restype = filepath_info(file)
+                    f_resref, f_restype = ResourceIdentifier.from_path(file)
                     for query in copy(queries):
                         if query.resname.lower() == f_resref and query.restype == f_restype:
                             queries.remove(query)
@@ -359,7 +358,7 @@ class Installation:
             folder = folder + '/' if not folder.endswith('/') else folder
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
-                    f_resref, f_restype = filepath_info(file)
+                    f_resref, f_restype = ResourceIdentifier.from_path(file)
                     f_filepath = folder + file
                     f_size = os.path.getsize(f_filepath)
                     if resname.lower() == f_resref and restype == f_restype:
@@ -437,7 +436,7 @@ class Installation:
             folder = folder + '/' if not folder.endswith('/') else folder
             for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                 with suppress(Exception):
-                    f_resref, f_restype = filepath_info(file)
+                    f_resref, f_restype = ResourceIdentifier.from_path(file)
                     if resname.lower() == f_resref and f_restype in [ResourceType.TPC, ResourceType.TGA]:
                         return load_tpc(BinaryReader.load_file(folder + file))
 
