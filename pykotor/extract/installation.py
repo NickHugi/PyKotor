@@ -231,12 +231,13 @@ class Installation:
 
         # 2 - Check installation override
         if not skip_override:
+            override_path = self.override_path()
             for subfolder, directory in self._override.items():
                 for filename, resource in directory.items():
-                    filepath = self.override_path() + subfolder + filename
+                    filepath = override_path + subfolder + filename
                     if resource == query:
                         return ResourceResult(filepath, resname, resource.data())
-  
+
         # 3 - Check user provided modules
         for capsule in capsules:
             if capsule.exists(resname, restype):
@@ -244,8 +245,9 @@ class Installation:
 
         # 4 - Check installation modules
         if not skip_modules:
+            module_path = self.module_path()
             for module_name, resources in self._modules.items():
-                filepath = self.module_path() + module_name
+                filepath = module_path + module_name
                 for resource in resources:
                     if resource == query:
                         return ResourceResult(filepath, resname, resource.data())
@@ -280,9 +282,10 @@ class Installation:
 
         # 2 - Check installation override
         if not skip_override:
+            override_path = self.override_path()
             for subfolder, directory in self._override.items():
                 for filename, resource in directory.items():
-                    filepath = self.override_path() + subfolder + filename
+                    filepath = override_path + subfolder + filename
                     for query in copy(queries):
                         if resource == query:
                             queries.remove(query)
@@ -296,8 +299,9 @@ class Installation:
 
         # 4 - Check installation modules
         if not skip_modules:
+            modules_path = self.module_path()
             for module_name, resources in self._modules.items():
-                filepath = self.module_path() + module_name
+                filepath = modules_path + module_name
                 for resource in resources:
                     for query in copy(queries):
                         if resource == query:
@@ -363,10 +367,11 @@ class Installation:
 
         # 2 - Check installation override
         if not skip_override:
+            override_path = self.override_path()
             for subfolder, files in self._override.items():
                 for filename, resource in files.items():
                     if resource == query:
-                        filepath = self.override_path() + subfolder + filename
+                        filepath = override_path + subfolder + filename
                         size = os.path.getsize(filepath)
                         locations.append(LocationResult(filepath, 0, size))
 
@@ -506,8 +511,9 @@ class Installation:
         for module in self.modules_list():
             if root not in module:
                 continue
-            tag = ""
+
             capsule = Capsule(self.module_path() + module)
+            tag = ""
 
             if capsule.exists("module", ResourceType.IFO):
                 ifo = load_gff(capsule.resource("module", ResourceType.IFO))
