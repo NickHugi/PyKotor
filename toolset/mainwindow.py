@@ -331,7 +331,7 @@ class ToolWindow(QMainWindow):
                 self._core_models[name].proxyModel().setFilterFixedString(self.ui.coreSearchEdit.text())
 
                 if name not in self._modules_list:
-                    self.refreshModuleList()
+                    self.refreshModuleList(False)
                 else:
                     self.ui.modulesCombo.setModel(self._modules_list[name])
 
@@ -373,14 +373,15 @@ class ToolWindow(QMainWindow):
         for resource in self.active.module_resources(module):
             self.modulesModel.addResource(resource)
 
-    def refreshModuleList(self) -> None:
+    def refreshModuleList(self, reload: bool = True) -> None:
         """
         Refreshes the list of modules in the modulesCombo combobox.
         """
         if self.active is None:
             return
 
-        self.active.load_modules()
+        if reload:
+            self.active.load_modules()
 
         self._modules_list[self.active.name] = QStandardItemModel(self)
         self._modules_list[self.active.name].appendRow(QStandardItem("[None]"))
