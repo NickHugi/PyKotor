@@ -314,7 +314,7 @@ def construct_git(gff: GFF) -> GIT:
 
 
 def dismantle_git(git: GIT, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.GIT)
 
     root = gff.root
     root.set_uint8("UseTemplates", 1)
