@@ -91,18 +91,24 @@ class BinaryReader:
         return reader
 
     @staticmethod
-    def load_file(path: str) -> bytes:
+    def load_file(path: str, offset: int = 0, size: int = -1) -> bytes:
         """
         Returns bytes of a file at from specified path.
 
         Args:
             path: The path of the file.
+            offset: The offset into the file.
+            size: The amount of bytes to load, if size equals -1 loads the whole file.
 
         Returns:
             The bytes of the file.
         """
-        with open(path, 'rb') as file:
-            return file.read()
+        with open(path, 'rb') as reader:
+            reader.seek(offset)
+            if size == -1:
+                return reader.read()
+            else:
+                return reader.read(size)
 
     def offset(self) -> int:
         return self._offset
