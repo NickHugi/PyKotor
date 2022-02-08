@@ -57,6 +57,24 @@ class VIS:
         if model in self._rooms:
             self._rooms.remove(model)
 
+    def rename_room(self, old: str, new: str):
+        if old == new:
+            return
+
+        old = old.lower()
+        new = new.lower()
+
+        self._rooms.remove(old)
+        self._rooms.add(new)
+
+        self._visibility[new] = copy(self._visibility[old])
+        del self._visibility[old]
+
+        for other in self._visibility.keys():
+            if other != new and old in self._visibility[other]:
+                self._visibility[other].remove(old)
+                self._visibility[other].add(new)
+
     def room_exists(self, model: str) -> bool:
         """
         Returns true if the specified room exists.
