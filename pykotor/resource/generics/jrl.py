@@ -5,7 +5,7 @@ from typing import List
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import GFF, GFFList
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
 
 
 class JRL:
@@ -92,7 +92,7 @@ def construct_jrl(gff: GFF) -> JRL:
 
 
 def dismantle_jrl(jrl: JRL, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.JRL)
 
     category_list = gff.root.set_list("Categories", GFFList())
     for i, quest in enumerate(jrl.quests):

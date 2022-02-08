@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import GFF, GFFList
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
 
 
 class PTH:
@@ -105,7 +105,7 @@ def construct_pth(gff: GFF) -> PTH:
 
 
 def dismantle_pth(pth: PTH, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.PTH)
 
     connections_list = gff.root.set_list("Path_Conections", GFFList())
     points_list = gff.root.set_list("Path_Points", GFFList())

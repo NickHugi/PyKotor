@@ -3,7 +3,7 @@ from __future__ import annotations
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList
+from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent
 
 
 class IFO:
@@ -146,7 +146,7 @@ def construct_ifo(gff: GFF) -> IFO:
 
 
 def dismantle_ifo(ifo: IFO, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.IFO)
 
     root = gff.root
     root.set_binary("Mod_ID", ifo.mod_id)

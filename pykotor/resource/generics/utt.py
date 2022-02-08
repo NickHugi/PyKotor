@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF
+from pykotor.resource.formats.gff import GFF, GFFContent
 
 
 class UTT:
@@ -117,7 +117,7 @@ def construct_utt(gff: GFF) -> UTT:
 
 
 def dismantle_utt(utt: UTT, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.UTT)
 
     root = gff.root
     root.set_string("Tag", utt.tag)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF
+from pykotor.resource.formats.gff import GFF, GFFContent
 
 
 class UTW:
@@ -63,7 +63,7 @@ def construct_utw(gff: GFF) -> UTW:
 
 
 def dismantle_utw(utw: UTW, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.UTW)
 
     root = gff.root
     root.set_uint8("Appearance", utw.appearance_id)

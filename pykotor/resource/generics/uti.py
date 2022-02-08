@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFList
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
 
 ARMOR_BASE_ITEMS = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
 """ Base Item IDs that are considered armor as per the 2DA files. """
@@ -97,7 +97,7 @@ def construct_uti(gff: GFF) -> UTI:
 
 
 def dismantle_uti(uti: UTI, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.UTI)
 
     root = gff.root
     root.set_resref("TemplateResRef", uti.resref)

@@ -4,7 +4,7 @@ from typing import List
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game, InventoryItem
-from pykotor.resource.formats.gff import GFF, GFFList
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
 
 
 class UTP:
@@ -222,7 +222,7 @@ def construct_utp(gff: GFF) -> UTP:
 
 
 def dismantle_utp(utp: UTP, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.UTP)
 
     root = gff.root
     root.set_string("Tag", utp.tag)

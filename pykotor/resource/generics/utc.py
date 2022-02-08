@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, EquipmentSlot, InventoryItem, Game
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList
+from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent
 
 
 class UTC:
@@ -310,7 +310,7 @@ def construct_utc(gff: GFF) -> UTC:
 
 
 def dismantle_utc(utc: UTC, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.UTC)
 
     root = gff.root
     root.set_resref("TemplateResRef", utc.template_resref)

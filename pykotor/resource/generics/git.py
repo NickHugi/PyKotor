@@ -6,7 +6,7 @@ from typing import List, Optional
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList
+from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent
 
 
 class GIT:
@@ -157,7 +157,7 @@ class GITWaypoint:
 
 
 def construct_git(gff: GFF) -> GIT:
-    git = GIT()
+    git = GIT(GFFContent.GIT)
 
     root = gff.root
     properties_struct = root.acquire("AreaProperties", GFFStruct())

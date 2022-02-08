@@ -6,7 +6,7 @@ from typing import List
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
-from pykotor.resource.formats.gff import GFF
+from pykotor.resource.formats.gff import GFF, GFFContent
 
 
 class ARE:
@@ -294,7 +294,7 @@ def construct_are(gff: GFF) -> ARE:
 
 
 def dismantle_are(are: ARE, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    gff = GFF()
+    gff = GFF(GFFContent.ARE)
 
     root = gff.root
     root.set_uint32("Version", are.version)
