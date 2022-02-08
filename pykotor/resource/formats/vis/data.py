@@ -3,7 +3,7 @@ This module handles classes relating to editing VIS files.
 """
 from __future__ import annotations
 
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import Dict, Set
 
 from pykotor.resource.type import ResourceType
@@ -34,6 +34,8 @@ class VIS:
         Args:
             model: The name or model of the room.
         """
+        model = model.lower()
+
         if model not in self._rooms:
             self._visibility[model] = set()
 
@@ -46,12 +48,14 @@ class VIS:
         Args:
             model: The name or model of the room.
         """
+        model = model.lower()
 
         for room in self._rooms:
             if model in self._visibility[room]:
                 self._visibility[room].remove(model)
 
-        self._rooms.remove(model)
+        if model in self._rooms:
+            self._rooms.remove(model)
 
     def room_exists(self, model: str) -> bool:
         """
@@ -60,6 +64,7 @@ class VIS:
         Returns:
             True if the room exists.
         """
+        model.lower()
         return model in self._rooms
 
     def set_visible(self, when_inside: str, show: str, visible: bool) -> None:
@@ -71,6 +76,9 @@ class VIS:
             show: The observed room.
             visible: If the observed room is visible.
         """
+        when_inside = when_inside.lower()
+        show = show.lower()
+
         if when_inside not in self._rooms or show not in self._rooms:
             raise ValueError("One of the specified rooms does not exist.")
 
@@ -90,6 +98,9 @@ class VIS:
         Returns:
             True if the room is visible.
         """
+        when_inside = when_inside.lower()
+        show = show.lower()
+
         if when_inside not in self._rooms or show not in self._rooms:
             raise ValueError("One of the specified rooms does not exist.")
 
