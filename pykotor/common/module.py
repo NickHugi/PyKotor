@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os.path
 from copy import copy
-from typing import List, TypeVar, Generic, Optional, Dict
+from typing import List, TypeVar, Generic, Optional, Dict, Type, Any
 
 from pykotor.resource.formats.vis import load_vis
 from pykotor.resource.formats.vis.data import VIS
@@ -67,14 +67,14 @@ class Module:
         self._sounds: Dict[str, ModuleResource[UTS]] = {}
         self._dialog: Dict[str, ModuleResource[DLG]] = {}
         self._paths: Dict[str, ModuleResource[PTH]] = {}
-        self._scripts: Dict[str, ModuleResource[bytes]] = {}
+        self._scripts: Dict[str, ModuleResource] = {}
         self._textures: Dict[str, ModuleResource[TPC]] = {}
 
-        self.layout: ModuleResource[LYT] = ModuleResource(self._id, None, [])
-        self.visibility: ModuleResource[VIS] = ModuleResource(self._id, None, [])
-        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, None, [])
-        self.static: ModuleResource[ARE] = ModuleResource(self._id, None, [])
-        self.info: ModuleResource[IFO] = ModuleResource("module", None, [])
+        self.layout: ModuleResource[LYT] = ModuleResource(self._id, ResourceType.LYT, installation, None, [])
+        self.visibility: ModuleResource[VIS] = ModuleResource(self._id, ResourceType.VIS, installation, None, [])
+        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, ResourceType.GIT, installation, None, [])
+        self.static: ModuleResource[ARE] = ModuleResource(self._id, ResourceType.ARE, installation, None, [])
+        self.info: ModuleResource[IFO] = ModuleResource("module", ResourceType.IFO, installation, None, [])
 
         self.reload_resources()
 
@@ -98,10 +98,10 @@ class Module:
         return roota + rootb
 
     def reload_resources(self):
-        self.layout: ModuleResource[LYT] = ModuleResource(self._id, None, [])
-        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, None, [])
-        self.static: ModuleResource[ARE] = ModuleResource(self._id, None, [])
-        self.info: ModuleResource[IFO] = ModuleResource("module", None, [])
+        self.layout = ModuleResource(self._id, ResourceType.LYT, self._installation, None, [])
+        self.dynamic = ModuleResource(self._id, ResourceType.GIT, self._installation, None, [])
+        self.static = ModuleResource(self._id, ResourceType.ARE, self._installation, None, [])
+        self.info = ModuleResource("module", ResourceType.IFO, self._installation, None, [])
 
         load_list = {
             ResourceType.UTC: self._creatures,
@@ -124,7 +124,8 @@ class Module:
                 if resource.restype() in load_list:
                     dictionary = load_list[resource.restype()]
                     if resource.resname() not in dictionary:
-                        dictionary[resource.resname()] = ModuleResource(resource.resname(), capsule.path(), [capsule.path()])
+                        dictionary[resource.resname()] = ModuleResource(resource.resname(), resource.restype(),
+                                                                        self._installation, capsule.path(), [capsule.path()])
                     else:
                         dictionary[resource.resname()].locations.append(capsule.path())
 
@@ -162,13 +163,16 @@ class Module:
 
 
 class ModuleResource(Generic[T]):
-    def __init__(self, resname: str, active: Optional[str], locations: List[str]):
+    def __init__(self, resname: str, restype: ResourceType, installation: Installation,  active: Optional[str],
+                 locations: List[str]):
         self.resname: str = resname
+        self._installation = installation
+        self.restype: ResourceType = restype
         self.active: str = active
         self.locations: List[str] = locations
 
     def resource(self) -> T:
-        conversion = {
+        conversions = {
             ResourceType.UTC: (lambda data: construct_utc(load_gff(data))),
             ResourceType.UTP: (lambda data: construct_utp(load_gff(data))),
             ResourceType.UTD: (lambda data: construct_utd(load_gff(data))),
@@ -193,8 +197,11 @@ class ModuleResource(Generic[T]):
             ...
         elif self.active.endswith(".erf") or self.active.endswith(".mod") or self.active.endswith(".rim"):
             capsule = Capsule(self.active)
-            data = capsule.resource(self.resname, T.BINARY_TYPE)
-            return conversion[T.BINARY_TYPE](data)
+            data = capsule.resource(self.resname, self.restype)
+            return conversions[self.restype](data)
+        elif self.active.endswith("bif"):
+            data = self._installation.resource(self.resname, self.restype, skip_modules=True, skip_override=True).data
+            return conversions[self.restype](data)
         else:
             data = BinaryReader.load_file(self.active)
-            return conversion[T.BINARY_TYPE](data)
+            return conversions[self.restype](data)
