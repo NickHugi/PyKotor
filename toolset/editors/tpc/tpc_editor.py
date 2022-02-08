@@ -30,7 +30,7 @@ class TPCEditor(Editor):
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGBA, 0)
 
         image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-        pixmap = QPixmap.fromImage(image)
+        pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.txiEdit.setPlainText(self._tpc.txi)

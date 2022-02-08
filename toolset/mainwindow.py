@@ -915,11 +915,8 @@ class TextureListWorker(QThread):
             tpc = self._installation.texture(resname, skip_modules=True, skip_gui=False, skip_override=True)
             width, height, rgba = tpc.convert(TPCTextureFormat.RGBA, self.bestMipmap(tpc))
             image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-            pixmap = QPixmap.fromImage(image)
-            if width < 64:
-                pixmap.scaledToWidth(64)
-            if height < 64:
-                pixmap.scaledToHeight(64)
+            pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+
             icon = QIcon(pixmap)
 
             if not self._stop:

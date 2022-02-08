@@ -287,6 +287,8 @@ class Ui_MainWindow(object):
         icon.addPixmap(QtGui.QPixmap(":/images/icons/kx/creature.png"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         self.actionNewUTC.setIcon(icon)
         self.actionNewUTC.setObjectName("actionNewUTC")
+        self.actionCloneModule = QtWidgets.QAction(MainWindow)
+        self.actionCloneModule.setObjectName("actionCloneModule")
         self.menuNew.addAction(self.actionNewUTC)
         self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionNewGFF)
@@ -295,6 +297,8 @@ class Ui_MainWindow(object):
         self.menuNew.addAction(self.actionNewSSF)
         self.menuFile.addAction(self.menuNew.menuAction())
         self.menuFile.addAction(self.openAction)
+        self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionCloneModule)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionSettings)
         self.menuFile.addSeparator()
@@ -307,7 +311,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.resourceTabs.setCurrentIndex(3)
+        self.resourceTabs.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -366,5 +370,6 @@ class Ui_MainWindow(object):
         self.actionHelpAbout.setText(_translate("MainWindow", "About"))
         self.actionNewSSF.setText(_translate("MainWindow", "SSF"))
         self.actionNewUTC.setText(_translate("MainWindow", "Creature"))
+        self.actionCloneModule.setText(_translate("MainWindow", "Clone Module"))
 from toolset.mainwindow import TexturesView
 import resources_rc
