@@ -40,6 +40,7 @@ from editors.twoda.twoda_editor import TwoDAEditor
 from editors.txt.txt_editor import TXTEditor
 from editors.utc.utc_editor import UTCEditor
 from misc.about import About
+from misc.asyncloader import AsyncLoader
 from misc.settings import Settings
 
 import resources_rc
@@ -309,12 +310,14 @@ class ToolWindow(QMainWindow):
         else:
             # If the installation had not already been loaded previously this session, load it now
             if name not in self.installations:
-                dialog = InstallationLoaderDialog(self, path, name, tsl, self)
-                if dialog.exec_():
+                task = lambda: HTInstallation(path, name, tsl, self)
+                loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
+
+                if loader.exec_():
                     games = self.settings.value('games')
                     games[name]['path'] = path
                     self.settings.setValue('games', games)
-                    self.installations[name] = dialog.installation
+                    self.installations[name] = loader.value
 
             # If the data has been successfully been loaded, dump the data into the models
             if name in self.installations:
@@ -634,63 +637,6 @@ class ToolWindow(QMainWindow):
         QMessageBox(QMessageBox.Critical, "Could not saved resource to ERF/MOD/RIM",
                     "Tried to save a resource '{}' into ".format(tempFilepath) +
                     "'{}' using an external editor.".format(modFilepath), QMessageBox.Ok, self).exec_()
-
-
-class InstallationLoaderDialog(QDialog):
-    """
-    Popup dialog responsible for loading and returning an installation.
-    """
-
-    def __init__(self, parent, path: str, name: str, tsl: bool, mainWindow: ToolWindow):
-        super().__init__(parent)
-
-        self._progressBar = QProgressBar(self)
-        self._progressBar.setMinimum(0)
-        self._progressBar.setMaximum(0)
-        self._progressBar.setTextVisible(False)
-
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self._progressBar)
-
-        self.setWindowTitle("Loading Data...")
-        self.setFixedSize(300, 40)
-
-        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
-
-        self.installation: Optional[Installation] = None
-
-        self.worker = InstallationLoaderWorker(path, name, tsl, mainWindow)
-        self.worker.loaded.connect(self.loadingCompleted)
-        self.worker.failed.connect(self.loadingFailed)
-        self.worker.start()
-
-    def loadingCompleted(self, installation):
-        self.installation = installation
-        self.accept()
-
-    def loadingFailed(self, error):
-        QMessageBox(QMessageBox.Critical, "Failed to load game", str(error), QMessageBox.Ok, self.parent()).show()
-        self.reject()
-
-
-class InstallationLoaderWorker(QtCore.QThread):
-    loaded = QtCore.pyqtSignal(object)
-    failed = QtCore.pyqtSignal(object)
-
-    def __init__(self, path: str, name: str, tsl: bool, mainWindow: ToolWindow):
-        super().__init__()
-        self._path: str = path
-        self._name: str = name
-        self._tsl: bool = tsl
-        self._mainWindow: ToolWindow = mainWindow
-
-    def run(self):
-        try:
-            installation = HTInstallation(self._path, self._name, self._tsl, self._mainWindow)
-            self.loaded.emit(installation)
-        except ValueError as e:
-            self.failed.emit(e)
 
 
 class ResourceExtractorDialog(QDialog):
