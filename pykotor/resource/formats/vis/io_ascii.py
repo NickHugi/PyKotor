@@ -45,9 +45,9 @@ class VISAsciiWriter(ResourceWriter):
 
     def write(self, auto_close: bool = True) -> None:
         for observer, observed in self._vis:
-            self._writer.write_string("{} {}\n".format(observer, str(len(observed))))
+            self._writer.write_string("{} {}\r\n".format(observer, str(len(observed))))
             for room in observed:
-                self._writer.write_string("  {}\n".format(room))
+                self._writer.write_string("  {}\r\n".format(room))
         
         if auto_close:
             self._writer.close()
