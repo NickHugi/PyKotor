@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import LocalizedString, Gender, Language
 from pykotor.common.misc import Game, ResRef, Color
@@ -36,6 +38,8 @@ class DLG:
         delay_entry: "DelayEntry" field. Not used by the game engine.
         delay_reply: "DelayReply" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.DLG
 
     def __init__(self):
         self.starters: List[DLGLink] = []

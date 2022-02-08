@@ -8,12 +8,16 @@ from copy import copy
 from enum import Enum
 from typing import List, Dict, Optional, Any, Type
 
+from pykotor.resource.type import ResourceType
+
 
 class TwoDA:
     """
     Represents a 2DA file.
 
     """
+
+    BINARY_TYPE = ResourceType.TwoDA
 
     def __init__(self):
         self._rows: List[Dict[str, str]] = []

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List, Optional
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
@@ -14,6 +16,8 @@ class UTI:
     """
     Stores item data.
     """
+
+    BINARY_TYPE = ResourceType.UTI
 
     def __init__(self):
         self.resref: ResRef = ResRef.from_blank()

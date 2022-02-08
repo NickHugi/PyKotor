@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
@@ -39,6 +41,8 @@ class UTS:
         hours: "Hours" field. Not used by the game engine.
         times: "Times" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.UTS
 
     def __init__(self):
         self.template_resref: ResRef = ResRef.from_blank()

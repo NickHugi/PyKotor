@@ -27,6 +27,8 @@ class ERF:
         erf_type: The ERF type.
     """
 
+    BINARY_TYPE = ResourceType.ERF
+
     def __init__(self, erf_type: ERFType = ERFType.ERF):
         self.erf_type: ERFType = erf_type
         self._resources: List[ERFResource] = []

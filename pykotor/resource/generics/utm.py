@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
@@ -22,6 +24,8 @@ class UTM:
 
         id: "ID" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.UTM
 
     def __init__(self):
         self.resref: ResRef = ResRef.from_blank()

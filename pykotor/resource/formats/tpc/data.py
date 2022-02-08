@@ -7,6 +7,8 @@ import struct
 from enum import IntEnum
 from typing import List, Tuple, Optional, NamedTuple
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
 
@@ -30,6 +32,8 @@ class TPC:
     Attributes:
         txi: Stores additional information regarding the texture.
     """
+
+    BINARY_TYPE = ResourceType.TPC
 
     def __init__(self):
         self._texture_format: TPCTextureFormat = TPCTextureFormat.Invalid

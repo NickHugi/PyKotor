@@ -7,11 +7,15 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional
 
+from pykotor.resource.type import ResourceType
+
 
 class SSF:
     """
     Represents the data stored in a SSF file.
     """
+
+    BINARY_TYPE = ResourceType.SSF
 
     def __init__(self):
         self._sounds: List[int] = [-1] * 28

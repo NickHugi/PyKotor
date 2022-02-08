@@ -6,11 +6,15 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Dict, Set
 
+from pykotor.resource.type import ResourceType
+
 
 class VIS:
     """
     Represents a VIS file.
     """
+
+    BINARY_TYPE = ResourceType.VIS
 
     def __init__(self):
         self._rooms: Set[str] = set()

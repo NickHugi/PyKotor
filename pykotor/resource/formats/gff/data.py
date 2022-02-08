@@ -7,6 +7,8 @@ from copy import copy, deepcopy
 from enum import IntEnum, Enum
 from typing import List, Optional, Any, Dict, TypeVar, Union
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
@@ -85,6 +87,8 @@ class GFF:
     """
     Represents the data of a GFF file.
     """
+
+    BINARY_TYPE = ResourceType.GFF
 
     def __init__(self, content: GFFContent = GFFContent.GFF):
         self.content: GFFContent = content

@@ -3,6 +3,8 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import List, Optional
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
@@ -12,6 +14,8 @@ class PTH:
     """
     Stores the path data for a module.
     """
+
+    BINARY_TYPE = ResourceType.PTH
 
     def __init__(self):
         self._points: List[Vector2] = []

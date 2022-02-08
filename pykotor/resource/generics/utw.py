@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent
@@ -23,6 +25,8 @@ class UTW:
     linked_to: "LinkedTo" field. Not used by the game engine.
     description: "Description" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.UTW
 
     def __init__(self):
         self.resref: ResRef = ResRef.from_blank()

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game, InventoryItem
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
@@ -75,6 +77,8 @@ class UTP:
         type_id: "Type" field. Not used by the game engine.
         close_dc: "CloseLockDC" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.UTP
 
     def __init__(self):
         self.template_resref: ResRef = ResRef.from_blank()

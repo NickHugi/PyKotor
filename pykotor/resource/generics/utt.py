@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent
@@ -40,6 +42,8 @@ class UTT:
         loadscreen_id: "LoadScreenID" field. Not used by the game engine.
         portrait_id: "PortraitId" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.UTT
 
     def __init__(self):
         self.resref: ResRef = ResRef.from_blank()

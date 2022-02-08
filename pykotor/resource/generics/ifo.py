@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
@@ -51,6 +53,8 @@ class IFO:
         creator_id: "Mod_Creator_ID" field. Not used by the game engine.
         version: "Mod_Version" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.IFO
 
     def __init__(self):
         self.mod_id: bytes = bytes()

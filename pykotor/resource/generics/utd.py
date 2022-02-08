@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game
 from pykotor.resource.formats.gff import GFF, GFFContent
@@ -69,6 +71,8 @@ class UTD:
         on_trap_triggered: "OnTrapTriggered" field. Not used by the game engine.
         loadscreen_id: "LoadScreenID" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.UTD
 
     def __init__(self):
         self.template_resref: ResRef = ResRef.from_blank()

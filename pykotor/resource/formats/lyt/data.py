@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import List
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector3, Vector4
 
 
@@ -12,6 +14,8 @@ class LYT:
     """
     Represents a LYT file.
     """
+
+    BINARY_TYPE = ResourceType.LTR
 
     def __init__(self):
         self.rooms: List[LYTRoom] = []

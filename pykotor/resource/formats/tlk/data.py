@@ -5,11 +5,16 @@ from __future__ import annotations
 
 from typing import List
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 
 
 class TLK:
+
+    BINARY_TYPE = ResourceType.TLK
+
     def __init__(self):
         self.entries: List[TLKEntry] = []
         self.language: Language = Language.ENGLISH

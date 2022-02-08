@@ -7,6 +7,8 @@ import random
 import string
 from typing import Optional, List
 
+from pykotor.resource.type import ResourceType
+
 
 class LTR:
     """
@@ -15,6 +17,8 @@ class LTR:
 
     CHARACTER_SET = string.ascii_lowercase + "'-"
     NUM_CHARACTERS = 28
+
+    BINARY_TYPE = ResourceType.LTR
 
     def __init__(self):
         self._singles: LTRBlock = LTRBlock(LTR.NUM_CHARACTERS)

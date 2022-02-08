@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
@@ -88,6 +90,8 @@ class ARE:
         player_only: "PlayerOnly" field. Not used by the game engine.
         player_vs_player: "PlayerVsPlayer" field. Not used by the game engine.
     """
+
+    BINARY_TYPE = ResourceType.ARE
 
     def __init__(self):
         self.alpha_test: float = 0.0

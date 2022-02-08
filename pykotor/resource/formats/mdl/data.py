@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional, Union, Tuple, Dict, Set
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector3, Vector4, Vector2, SurfaceMaterial
 from pykotor.common.misc import Color
 
@@ -18,6 +20,8 @@ class MDL:
         fog: If fog affects the model.
         supermodel: Name of another model resource to import extra data from.
     """
+
+    BINARY_TYPE = ResourceType.MDL
 
     def __init__(self):
         self.root: MDLNode = MDLNode()

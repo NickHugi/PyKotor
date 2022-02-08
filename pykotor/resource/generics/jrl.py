@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
@@ -12,6 +14,8 @@ class JRL:
     """
     Stores journal (quest) data.
     """
+
+    BINARY_TYPE = ResourceType.JRL
 
     def __init__(self):
         self.quests: List[JRLQuest] = []

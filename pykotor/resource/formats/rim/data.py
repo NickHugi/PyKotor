@@ -15,6 +15,8 @@ class RIM:
     Represents the data of a RIM file.
     """
 
+    BINARY_TYPE = ResourceType.RIM
+
     def __init__(self):
         self._resources: List[RIMResource] = []
 

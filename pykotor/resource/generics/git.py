@@ -3,6 +3,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
@@ -10,6 +12,9 @@ from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent
 
 
 class GIT:
+
+    BINARY_TYPE = ResourceType.GIT
+
     def __init__(self):
         self.ambient_sound_id: int = 0
         self.ambient_volume: int = 0

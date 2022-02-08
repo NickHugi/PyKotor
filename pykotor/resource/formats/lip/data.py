@@ -6,6 +6,8 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional
 
+from pykotor.resource.type import ResourceType
+
 
 class LIP:
     """
@@ -15,6 +17,8 @@ class LIP:
         length: The total duration of lip animation.
         frames: The keyframes for the lip animation.
     """
+
+    BINARY_TYPE = ResourceType.LIP
 
     def __init__(self):
         self.length: float = 0.0
