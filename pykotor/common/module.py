@@ -39,10 +39,10 @@ T = TypeVar('T')
 
 class Module:
     def __init__(self, name: str, installation: Installation, custom_capsule: Optional[Capsule] = None):
-        self.installation = installation
+        self._installation = installation
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
-        self._capsules.extend([Capsule(installation.module_path() + module) for module in self.installation.module_names() if name in module])
+        self._capsules.extend([Capsule(installation.module_path() + module) for module in installation.module_names() if name in module])
 
         for capsule in self._capsules:
             if capsule.exists("module", ResourceType.IFO):
@@ -66,10 +66,11 @@ class Module:
         self._scripts: Dict[str, ModuleResource[bytes]] = {}
         self._textures: Dict[str, ModuleResource[TPC]] = {}
 
-        self._layout: ModuleResource[LYT] = ModuleResource(self._id, LYT(), None, [])
-        self._dynamic: ModuleResource[GIT] = ModuleResource(self._id, GIT(), None, [])
-        self._static: ModuleResource[ARE] = ModuleResource(self._id, ARE(), None, [])
-        self._info: ModuleResource[IFO] = ModuleResource("module", IFO(), None, [])
+        self.layout: ModuleResource[LYT] = ModuleResource(self._id, LYT(), None, [])
+        self.visibility: ModuleResource[VIS] = ModuleResource(self._id, VIS(), None, [])
+        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, GIT(), None, [])
+        self.static: ModuleResource[ARE] = ModuleResource(self._id, ARE(), None, [])
+        self.info: ModuleResource[IFO] = ModuleResource("module", IFO(), None, [])
 
         self.reload_resources()
 
@@ -85,7 +86,7 @@ class Module:
         Returns:
             The string for the root name of a module.
         """
-        root = os.path.basename(filepath).replace(".rim", "").replace(".erf", "").replace(".mod", "")
+        root = os.path.basename(filepath).replace(".rim", "").replace(".erf", "").replace(".mod", "").lower()
         roota = root[:5]
         rootb = root[5:]
         if "_" in rootb:
@@ -93,10 +94,10 @@ class Module:
         return roota + rootb
 
     def reload_resources(self):
-        self._layout: ModuleResource[LYT] = ModuleResource(self._id, LYT(), None, [])
-        self._dynamic: ModuleResource[GIT] = ModuleResource(self._id, GIT(), None, [])
-        self._static: ModuleResource[ARE] = ModuleResource(self._id, ARE(), None, [])
-        self._info: ModuleResource[IFO] = ModuleResource("module", IFO(), None, [])
+        self.layout: ModuleResource[LYT] = ModuleResource(self._id, LYT(), None, [])
+        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, GIT(), None, [])
+        self.static: ModuleResource[ARE] = ModuleResource(self._id, ARE(), None, [])
+        self.info: ModuleResource[IFO] = ModuleResource("module", IFO(), None, [])
 
         load_list = {
             ResourceType.UTC: (self._creatures, lambda data: construct_utc(load_gff(data))),
@@ -125,24 +126,29 @@ class Module:
                         dictionary[resource.resname()].add_location(capsule.path())
 
                 if resource.restype() == ResourceType.LYT:
-                    self._layout.resource = load_lyt(resource.data()) if self._layout.resource is None else self._layout.resource
-                    self._layout.active = capsule.path() if self._layout.active is None else self._layout.active
-                    self._layout.add_location(capsule.path())
+                    self.layout.resource = load_lyt(resource.data()) if self.layout.resource is None else self.layout.resource
+                    self.layout.active = capsule.path() if self.layout.active is None else self.layout.active
+                    self.layout.add_location(capsule.path())
+
+                if resource.restype() == ResourceType.VIS:
+                    self.visibility.resource = load_vis(resource.data()) if self.layout.resource is None else self.visibility.resource
+                    self.visibility.active = capsule.path() if self.layout.active is None else self.visibility.active
+                    self.visibility.add_location(capsule.path())
 
                 if resource.restype() == ResourceType.IFO:
-                    self._info.resource = load_lyt(resource.data()) if self._info.resource is None else self._info.resource
-                    self._info.active = capsule.path() if self._info.active is None else self._info.active
-                    self._info.add_location(capsule.path())
+                    self.info.resource = load_lyt(resource.data()) if self.info.resource is None else self.info.resource
+                    self.info.active = capsule.path() if self.info.active is None else self.info.active
+                    self.info.add_location(capsule.path())
 
                 if resource.restype() == ResourceType.ARE:
-                    self._static.resource = load_lyt(resource.data()) if self._static.resource is None else self._static.resource
-                    self._static.active = capsule.path() if self._static.active is None else self._static.active
-                    self._static.add_location(capsule.path())
+                    self.static.resource = load_lyt(resource.data()) if self.static.resource is None else self.static.resource
+                    self.static.active = capsule.path() if self.static.active is None else self.static.active
+                    self.static.add_location(capsule.path())
 
                 if resource.restype() == ResourceType.GIT:
-                    self._dynamic.resource = load_lyt(resource.data()) if self._dynamic.resource is None else self._dynamic.resource
-                    self._dynamic.active = capsule.path() if self._dynamic.active is None else self._dynamic.active
-                    self._dynamic.add_location(capsule.path())
+                    self.dynamic.resource = load_lyt(resource.data()) if self.dynamic.resource is None else self.dynamic.resource
+                    self.dynamic.active = capsule.path() if self.dynamic.active is None else self.dynamic.active
+                    self.dynamic.add_location(capsule.path())
 
 
 class ModuleResource(Generic[T]):
