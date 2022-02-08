@@ -99,7 +99,10 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
         self._writer.write_uint8(32)
-        self._writer.write_uint8(40)
+        if self._tpc.is_compressed():
+            self._writer.write_uint8(40)
+        else:
+            self._writer.write_uint8(8)
 
         width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
         pixel_reader = BinaryReader.from_bytes(data)
@@ -109,6 +112,6 @@ class TPCTGAWriter(ResourceWriter):
             b = pixel_reader.read_uint8()
             a = pixel_reader.read_uint8()
             self._writer.write_bytes(struct.pack('BBBB', b, g, r, a))
-        
+
         if auto_close:
             self._writer.close()

@@ -165,6 +165,9 @@ class TPC:
         self._width = width
         self._height = height
 
+    def is_compressed(self) -> bool:
+        return self._texture_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]
+
     def _mipmap_size(self, mipmap: int) -> Tuple[int, int]:
         """
         Returns the size of the specified mipmap.
