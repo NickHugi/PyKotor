@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import os.path
+from copy import copy
 from typing import List, TypeVar, Generic, Optional, Dict
+
+from pykotor.resource.formats.vis import load_vis
+from pykotor.resource.formats.vis.data import VIS
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, load_tpc
 
-from pykotor.resource.generics.ifo import IFO
-from pykotor.resource.generics.are import ARE
-from pykotor.resource.generics.git import GIT
+from pykotor.resource.generics.ifo import IFO, construct_ifo
+from pykotor.resource.generics.are import ARE, construct_are
+from pykotor.resource.generics.git import GIT, construct_git
 from pykotor.resource.generics.pth import PTH, construct_pth
 from pykotor.resource.generics.dlg import DLG, construct_dlg
 from pykotor.resource.generics.uts import UTS, construct_uts
@@ -33,7 +37,6 @@ from pykotor.extract.installation import Installation
 from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.generics.utc import UTC, construct_utc
 
-
 T = TypeVar('T')
 
 
@@ -42,7 +45,8 @@ class Module:
         self._installation = installation
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
-        self._capsules.extend([Capsule(installation.module_path() + module) for module in installation.module_names() if name in module])
+        self._capsules.extend(
+            [Capsule(installation.module_path() + module) for module in installation.module_names() if name in module])
 
         for capsule in self._capsules:
             if capsule.exists("module", ResourceType.IFO):
@@ -66,11 +70,11 @@ class Module:
         self._scripts: Dict[str, ModuleResource[bytes]] = {}
         self._textures: Dict[str, ModuleResource[TPC]] = {}
 
-        self.layout: ModuleResource[LYT] = ModuleResource(self._id, LYT(), None, [])
-        self.visibility: ModuleResource[VIS] = ModuleResource(self._id, VIS(), None, [])
-        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, GIT(), None, [])
-        self.static: ModuleResource[ARE] = ModuleResource(self._id, ARE(), None, [])
-        self.info: ModuleResource[IFO] = ModuleResource("module", IFO(), None, [])
+        self.layout: ModuleResource[LYT] = ModuleResource(self._id, None, [])
+        self.visibility: ModuleResource[VIS] = ModuleResource(self._id, None, [])
+        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, None, [])
+        self.static: ModuleResource[ARE] = ModuleResource(self._id, None, [])
+        self.info: ModuleResource[IFO] = ModuleResource("module", None, [])
 
         self.reload_resources()
 
@@ -94,85 +98,103 @@ class Module:
         return roota + rootb
 
     def reload_resources(self):
-        self.layout: ModuleResource[LYT] = ModuleResource(self._id, LYT(), None, [])
-        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, GIT(), None, [])
-        self.static: ModuleResource[ARE] = ModuleResource(self._id, ARE(), None, [])
-        self.info: ModuleResource[IFO] = ModuleResource("module", IFO(), None, [])
+        self.layout: ModuleResource[LYT] = ModuleResource(self._id, None, [])
+        self.dynamic: ModuleResource[GIT] = ModuleResource(self._id, None, [])
+        self.static: ModuleResource[ARE] = ModuleResource(self._id, None, [])
+        self.info: ModuleResource[IFO] = ModuleResource("module", None, [])
 
         load_list = {
-            ResourceType.UTC: (self._creatures, lambda data: construct_utc(load_gff(data))),
-            ResourceType.UTP: (self._placeables, lambda data: construct_utp(load_gff(data))),
-            ResourceType.UTD: (self._doors, lambda data: construct_utd(load_gff(data))),
-            ResourceType.UTI: (self._items, lambda data: construct_uti(load_gff(data))),
-            ResourceType.UTM: (self._merchants, lambda data: construct_utm(load_gff(data))),
-            ResourceType.UTE: (self._encounters, lambda data: construct_ute(load_gff(data))),
-            ResourceType.UTT: (self._triggers, lambda data: construct_utt(load_gff(data))),
-            ResourceType.UTW: (self._waypoints, lambda data: construct_utw(load_gff(data))),
-            ResourceType.UTS: (self._sounds, lambda data: construct_uts(load_gff(data))),
-            ResourceType.DLG: (self._dialog, lambda data: construct_dlg(load_gff(data))),
-            ResourceType.PTH: (self._paths, lambda data: construct_pth(load_gff(data))),
-            ResourceType.NCS: (self._scripts, lambda data: data),
-            ResourceType.TPC: (self._textures, lambda data: load_tpc(data))
+            ResourceType.UTC: self._creatures,
+            ResourceType.UTP: self._placeables,
+            ResourceType.UTD: self._doors,
+            ResourceType.UTI: self._items,
+            ResourceType.UTM: self._merchants,
+            ResourceType.UTE: self._encounters,
+            ResourceType.UTT: self._triggers,
+            ResourceType.UTW: self._waypoints,
+            ResourceType.UTS: self._sounds,
+            ResourceType.DLG: self._dialog,
+            ResourceType.PTH: self._paths,
+            ResourceType.NCS: self._scripts,
+            ResourceType.TPC: self._textures
         }
 
         for capsule in self._capsules:
             for resource in capsule:
                 if resource.restype() in load_list:
-                    dictionary, compile = load_list[resource.restype()]
-                    res = compile(resource.data())
+                    dictionary = load_list[resource.restype()]
                     if resource.resname() not in dictionary:
-                        dictionary[resource.resname()] = ModuleResource(resource.resname(), res, capsule.path(), [capsule.path()])
+                        dictionary[resource.resname()] = ModuleResource(resource.resname(), capsule.path(), [capsule.path()])
                     else:
-                        dictionary[resource.resname()].add_location(capsule.path())
+                        dictionary[resource.resname()].locations.append(capsule.path())
 
                 if resource.restype() == ResourceType.LYT:
-                    self.layout.resource = load_lyt(resource.data()) if self.layout.resource is None else self.layout.resource
                     self.layout.active = capsule.path() if self.layout.active is None else self.layout.active
-                    self.layout.add_location(capsule.path())
+                    self.layout.locations.append(capsule.path())
 
                 if resource.restype() == ResourceType.VIS:
-                    self.visibility.resource = load_vis(resource.data()) if self.layout.resource is None else self.visibility.resource
                     self.visibility.active = capsule.path() if self.layout.active is None else self.visibility.active
-                    self.visibility.add_location(capsule.path())
+                    self.visibility.locations.append(capsule.path())
 
                 if resource.restype() == ResourceType.IFO:
-                    self.info.resource = load_lyt(resource.data()) if self.info.resource is None else self.info.resource
                     self.info.active = capsule.path() if self.info.active is None else self.info.active
-                    self.info.add_location(capsule.path())
+                    self.info.locations.append(capsule.path())
 
                 if resource.restype() == ResourceType.ARE:
-                    self.static.resource = load_lyt(resource.data()) if self.static.resource is None else self.static.resource
                     self.static.active = capsule.path() if self.static.active is None else self.static.active
-                    self.static.add_location(capsule.path())
+                    self.static.locations.append(capsule.path())
 
                 if resource.restype() == ResourceType.GIT:
-                    self.dynamic.resource = load_lyt(resource.data()) if self.dynamic.resource is None else self.dynamic.resource
                     self.dynamic.active = capsule.path() if self.dynamic.active is None else self.dynamic.active
-                    self.dynamic.add_location(capsule.path())
+                    self.dynamic.locations.append(capsule.path())
+
+        lyts = self._installation.locate(self._id, ResourceType.LYT, capsules=self._capsules, skip_modules=True,
+                                         skip_textures=True)
+        for location in lyts:
+            self.layout.active = location.filepath if self.layout.active is None else self.layout.active
+            self.layout.locations.append(location.filepath)
+
+        viss = self._installation.locate(self._id, ResourceType.VIS, capsules=self._capsules, skip_modules=True,
+                                         skip_textures=True)
+        for location in viss:
+            self.visibility.active = location.filepath if self.visibility.active is None else self.visibility.active
+            self.visibility.locations.append(location.filepath)
 
 
 class ModuleResource(Generic[T]):
-    def __init__(self, resname: str, resource: Optional[T], active: Optional[str], locations: List[str]):
-        self._resname: str = resname
-        self._resource: T = resource
-        self._active: str = active
-        self._locations: List[str] = locations
-
-    def change_active(self, location: str) -> None:
-        if location not in self._locations:
-            raise ValueError("Location specified is not valid.")
-
-        if location.endswith(".erf") or location.endswith(".mod") or location.endswith(".rim"):
-            capsule = Capsule(location)
-            data = capsule.resource(self._resname, T)
-        else:
-            data = BinaryReader.load_file(location)
+    def __init__(self, resname: str, active: Optional[str], locations: List[str]):
+        self.resname: str = resname
+        self.active: str = active
+        self.locations: List[str] = locations
 
     def resource(self) -> T:
-        return self._resource
+        conversion = {
+            ResourceType.UTC: (lambda data: construct_utc(load_gff(data))),
+            ResourceType.UTP: (lambda data: construct_utp(load_gff(data))),
+            ResourceType.UTD: (lambda data: construct_utd(load_gff(data))),
+            ResourceType.UTI: (lambda data: construct_uti(load_gff(data))),
+            ResourceType.UTM: (lambda data: construct_utm(load_gff(data))),
+            ResourceType.UTE: (lambda data: construct_ute(load_gff(data))),
+            ResourceType.UTT: (lambda data: construct_utt(load_gff(data))),
+            ResourceType.UTW: (lambda data: construct_utw(load_gff(data))),
+            ResourceType.UTS: (lambda data: construct_uts(load_gff(data))),
+            ResourceType.DLG: (lambda data: construct_dlg(load_gff(data))),
+            ResourceType.PTH: (lambda data: construct_pth(load_gff(data))),
+            ResourceType.NCS: (lambda data: data),
+            ResourceType.TPC: (lambda data: load_tpc(data)),
+            ResourceType.LYT: (lambda data: load_lyt(data)),
+            ResourceType.VIS: (lambda data: load_vis(data)),
+            ResourceType.IFO: (lambda data: construct_ifo(load_gff(data))),
+            ResourceType.ARE: (lambda data: construct_are(load_gff(data))),
+            ResourceType.GIT: (lambda data: construct_git(load_gff(data)))
+        }
 
-    def active(self) -> str:
-        return self._active
-
-    def add_location(self, location: str) -> None:
-        self._locations.append(location)
+        if self.active is None:
+            ...
+        elif self.active.endswith(".erf") or self.active.endswith(".mod") or self.active.endswith(".rim"):
+            capsule = Capsule(self.active)
+            data = capsule.resource(self.resname, T.BINARY_TYPE)
+            return conversion[T.BINARY_TYPE](data)
+        else:
+            data = BinaryReader.load_file(self.active)
+            return conversion[T.BINARY_TYPE](data)
