@@ -4,7 +4,7 @@ from setuptools import setup, find_packages, find_namespace_packages
 HERE = pathlib.Path(__file__).parent
 
 NAME = "PyKotor"
-VERSION = "0.17"
+VERSION = "0.18"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "Read, modify and write files used by KotOR's game engine."
 PACKAGES = find_namespace_packages(exclude=["tests"])
