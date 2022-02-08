@@ -40,7 +40,7 @@ from editors.twoda.twoda_editor import TwoDAEditor
 from editors.txt.txt_editor import TXTEditor
 from editors.utc.utc_editor import UTCEditor
 from misc.about import About
-from misc.asyncloader import AsyncLoader
+from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.settings import Settings
 
 import resources_rc
@@ -486,19 +486,83 @@ class ToolWindow(QMainWindow):
             # Player saves resource with a specific name
             default = resources[0].resname() + "." + resources[0].restype().extension
             filepath = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
+
             if filepath:
-                resref = os.path.basename(filepath)
-                resref = resref.split('.')[0] if '.' in resref else resref
-                resources = [FileResource(resref, resources[0].restype(), resources[0].size(), resources[0].offset(),
-                                          resources[0].filepath())]
-                folderpath = os.path.dirname(filepath) + "/"
-                ResourceExtractorDialog(self, folderpath, resources, self.active, self).exec_()
+                tasks = [lambda: self._extractResource(resources[0], filepath)]
+                loader = AsyncBatchLoader(self, "Extracting Resources", tasks, "Failed to Extract Resources")
+                loader.exec_()
 
         elif len(resources) >= 1:
             # Player saves resources with original name to a specific directory
             folderpath = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
             if folderpath:
-                ResourceExtractorDialog(self, folderpath + "/", resources, self.active, self).exec_()
+                tasks = []
+                for resource in resources:
+                    filename = resource.resname() + "." + resource.restype().extension
+                    filepath = folderpath + "/" + filename
+                    tasks.append(lambda a=resource, b=filepath: self._extractResource(a, b))
+
+                loader = AsyncBatchLoader(self, "Extracting Resources", tasks, "Failed to Extract Resources")
+                loader.exec_()
+
+    def _extractResource(self, resource: FileResource, filepath: str) -> None:
+        try:
+            data = resource.data()
+            folderpath = os.path.dirname(filepath) + "/"
+            filename = os.path.basename(filepath)
+
+            decompileTPC = self.ui.tpcDecompileCheckbox.isChecked()
+            extractTXI = self.ui.tpcTxiCheckbox.isChecked()
+            decompileMDL = self.ui.mdlDecompileCheckbox.isChecked()
+            extractTexturesMDL = self.ui.mdlTexturesCheckbox.isChecked()
+
+            manipulateTPC = decompileTPC or extractTXI
+            manipulateMDL = decompileMDL or extractTexturesMDL
+
+            if resource.restype() == ResourceType.MDX and decompileMDL:
+                # Ignore extracting MDX files if decompiling MDLs
+                return
+
+            if resource.restype() == ResourceType.TPC and manipulateTPC:
+                tpc = load_tpc(data)
+
+                if extractTXI:
+                    txi_filename = filename.replace(".tpc", ".txi")
+                    with open(folderpath + txi_filename, 'wb') as file:
+                        file.write(tpc.txi.encode('ascii'))
+
+                if decompileTPC:
+                    data = bytearray()
+                    write_tpc(tpc, data, FileFormat.TGA)
+                    filepath = filepath.replace(".tpc", ".tga")
+
+            if resource.restype() == ResourceType.MDL and manipulateMDL:
+                mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
+                mdl = load_mdl(data, 0, mdxData)
+
+                if decompileMDL:
+                    data = bytearray()
+                    write_mdl(mdl, data, FileFormat.ASCII)
+                    filepath = filepath.replace(".mdl", ".ascii.mdl")
+
+                if extractTexturesMDL:
+                    for texture in mdl.all_textures():
+                        try:
+                            tpc = self.active.texture(texture)
+                            if extractTXI:
+                                with open(folderpath + texture + ".txi", 'wb') as file:
+                                    file.write(tpc.txi.encode('ascii'))
+                            file_format = FileFormat.TGA if decompileTPC else FileFormat.BINARY
+                            extension = "tga" if file_format == FileFormat.TGA else "tpc"
+                            write_tpc(tpc, "{}{}.{}".format(folderpath, texture, extension), file_format)
+                        except Exception as e:
+                            self.error.emit("Could not find or extract tpc: " + texture)
+
+            with open(filepath, 'wb') as file:
+                file.write(data)
+        except Exception as e:
+            traceback.print_exc()
+            raise Exception("Failed to extract resource: " + resource.resname() + "." + resource.restype().extension)
 
     def openFromSelected(self) -> None:
         """
@@ -638,141 +702,6 @@ class ToolWindow(QMainWindow):
         QMessageBox(QMessageBox.Critical, "Could not saved resource to ERF/MOD/RIM",
                     "Tried to save a resource '{}' into ".format(tempFilepath) +
                     "'{}' using an external editor.".format(modFilepath), QMessageBox.Ok, self).exec_()
-
-
-class ResourceExtractorDialog(QDialog):
-    """
-    Popup dialog responsible for extracting a list of resources from the game files.
-    """
-
-    def __init__(self, parent: QWidget, folderpath: str, resources: List[FileResource], active: HTInstallation,
-                 toolwindow: ToolWindow):
-        super().__init__(parent)
-
-        self._progressBar = QProgressBar(self)
-        self._progressBar.setMaximum(len(resources))
-        self._progressBar.setValue(0)
-
-        filename = resources[self._progressBar.value()].resname() + "." + resources[
-            self._progressBar.value()].restype().extension
-        self._progressText = QLabel("Extracting resource: " + filename)
-
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(self._progressBar)
-        self.layout().addWidget(self._progressText)
-
-        self.setWindowTitle("Extracting Resources...")
-
-        self._folderpath: str = folderpath
-        self._resources: List[FileResource] = resources
-        self._active: HTInstallation = active
-        self._errorLog: str = ""
-
-        decompileTpc = toolwindow.ui.tpcDecompileCheckbox.isChecked()
-        decompileMdl = toolwindow.ui.mdlDecompileCheckbox.isChecked()
-        extractTexturesMdl = toolwindow.ui.mdlTexturesCheckbox.isChecked()
-        extractTxiTpc = toolwindow.ui.tpcTxiCheckbox.isChecked()
-
-        self.worker = ResourceExtractorWorker(self._folderpath, self._resources, self._active,
-                                              decompileTpc=decompileTpc, decompileMdl=decompileMdl,
-                                              extractTexturesMdl=extractTexturesMdl, extractTxiTpc=extractTxiTpc)
-        self.worker.extracted.connect(self.resourceExtracted)
-        self.worker.error.connect(self.errorOccurred)
-        self.worker.start()
-
-    def errorOccurred(self, error: str) -> None:
-        self._errorLog += error + "\n"
-
-    def resourceExtracted(self, resource):
-        progress = self._progressBar.value() + 1
-        self._progressBar.setValue(progress)
-
-        if self._progressBar.value() == len(self._resources):
-            if self._errorLog != "":
-                msgbox = QMessageBox()
-                msgbox.setIcon(QMessageBox.Warning)
-                msgbox.setWindowTitle("The following errors occurred.")
-                msgbox.setText(self._errorLog)
-                msgbox.exec_()
-            self.close()
-        else:
-            filename = self._resources[progress].resname() + "." + self._resources[progress].restype().extension
-            self._progressText = QLabel("Extracting resource: " + filename)
-
-
-class ResourceExtractorWorker(QtCore.QThread):
-    extracted = QtCore.pyqtSignal(object)
-    error = QtCore.pyqtSignal(object)
-
-    def __init__(self, folderpath, resources, active, *, decompileTpc, decompileMdl, extractTexturesMdl, extractTxiTpc):
-        super().__init__()
-        self._folderpath = folderpath
-        self._active = active
-        self._resources = resources
-        self._decompileTpc: bool = decompileTpc
-        self._decompileMdl: bool = decompileMdl
-        self._extractTexturesMdl: bool = extractTexturesMdl
-        self._extractTxiTpc: bool = extractTxiTpc
-        self._errorLog: str = ""
-
-    def run(self) -> None:
-        for resource in self._resources:
-            try:
-                self.saveResource(resource, self._folderpath, resource.resname() + "." + resource.restype().extension)
-            except Exception as e:
-                self.error.emit("Failed to extract resource: " + resource.resname())
-            self.extracted.emit(resource)
-
-    def saveResource(self, resource: FileResource, folderpath: str, filename: str) -> None:
-        data = resource.data()
-
-        manipulateTPC = self._decompileTpc or self._extractTxiTpc
-        manipulateMDL = self._decompileMdl or self._extractTexturesMdl
-
-        if resource.restype() == ResourceType.MDX and self._decompileMdl:
-            # Ignore extracting MDX files if decompiling MDLs
-            return
-
-        if resource.restype() == ResourceType.TPC and manipulateTPC:
-            tpc = load_tpc(data)
-
-            if self._extractTxiTpc:
-                txi_filename = filename.replace(".tpc", ".txi")
-                with open(folderpath + txi_filename, 'wb') as file:
-                    file.write(tpc.txi.encode('ascii'))
-
-            if self._decompileTpc:
-                data = bytearray()
-                write_tpc(tpc, data, FileFormat.TGA)
-                filename = filename.replace(".tpc", ".tga")
-
-        if resource.restype() == ResourceType.MDL and manipulateMDL:
-            _, mdx_data = self._active.resource(resource.restype(), ResourceType.MDX)
-            mdl = load_mdl(data, 0, mdx_data)
-
-            if self._decompileMdl:
-                data = bytearray()
-                write_mdl(mdl, data, FileFormat.ASCII)
-                filename = filename.replace(".mdl", ".ascii.mdl")
-
-            if self._extractTexturesMdl:
-                for texture in mdl.all_textures():
-                    try:
-                        tpc = self._active.texture(texture)
-                        if self._extractTxiTpc:
-                            with open(folderpath + texture + ".txi", 'wb') as file:
-                                file.write(tpc.txi.encode('ascii'))
-                        file_format = FileFormat.TGA if self._decompileTpc else FileFormat.BINARY
-                        extension = "tga" if file_format == FileFormat.TGA else "tpc"
-                        write_tpc(tpc, "{}{}.{}".format(folderpath, texture, extension), file_format)
-                    except Exception as e:
-                        self.error.emit("Could not find or extract tpc: " + texture)
-
-        with open(folderpath + filename, 'wb') as file:
-            file.write(data)
-
-    def errorLog(self) -> str:
-        return self._errorLog
 
 
 class ResourceModel(QStandardItemModel):
