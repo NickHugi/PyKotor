@@ -844,8 +844,9 @@ class TexturesView(QListView):
             self._worker.stop()
 
     def loadedTexture(self, item: QListWidgetItem, icon: QIcon) -> None:
-        item.setIcon(icon)
-        item.setData(True, QtCore.Qt.UserRole)
+        with suppress(Exception):
+            item.setIcon(icon)
+            item.setData(True, QtCore.Qt.UserRole)
 
     def loadVisibleTextures(self) -> None:
         for item in self.getVisibleItems():
