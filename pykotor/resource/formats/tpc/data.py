@@ -195,8 +195,7 @@ class TPC:
     def _dxt5_to_rgba(data: bytes, width: int, height: int) -> bytearray:
         dxt_reader = BinaryReader.from_bytes(data)
         pixels = [0] * width * height
-
-        for ty in range(height, 0, -4):
+        for ty in reversed(range(height, 0, -4)):
             for tx in range(0, width, 4):
                 alpha0 = dxt_reader.read_uint8()
                 alpha1 = dxt_reader.read_uint8()
@@ -230,11 +229,11 @@ class TPC:
                     alpha_code.append(0)
                     alpha_code.append(255)
 
-                for y in range(4):
+                for y in reversed(range(4)):
                     for x in range(4):
                         pixelc_code = dxt_pixels & 3
                         dxt_pixels >>= 2
-                        a = alpha_code[(dxt_alpha >> (3 * (4 * (3 - y) + x))) & 7]
+                        a = alpha_code[(dxt_alpha >> (3 * (4 * (y) + x))) & 7]
                         pixel = color_code[pixelc_code] | (a << 24)
                         pixels[(ty - 4 + y) * width + (tx + x)] = pixel
 
@@ -252,7 +251,7 @@ class TPC:
         dxt_reader = BinaryReader.from_bytes(data)
         pixels = [0] * width * height
 
-        for ty in range(height, 0, -4):
+        for ty in reversed(range(height, 0, -4)):
             for tx in range(0, width, 4):
                 color0 = TPC._rgba565_to_rgb888(dxt_reader.read_int16())
                 color1 = TPC._rgba565_to_rgb888(dxt_reader.read_int16())
@@ -267,7 +266,7 @@ class TPC:
                     color_code.append(TPC._interpolate(0.5555555, color0, color1))
                     color_code.append(0xFF000000)
 
-                for y in range(4):
+                for y in reversed(range(4)):
                     for x in range(4):
                         pixel_code = dxt_pixels & 3
                         dxt_pixels >>= 2
