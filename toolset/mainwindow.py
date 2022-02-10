@@ -732,8 +732,11 @@ class ResourceModel(QStandardItemModel):
     def _getCategoryItem(self, resourceType: ResourceType) -> QStandardItem:
         if resourceType.category not in self._categoryItems:
             categoryItem = QStandardItem(resourceType.category)
+            categoryItem.setSelectable(False)
+            unusedItem = QStandardItem("")
+            unusedItem.setSelectable(False)
             self._categoryItems[resourceType.category] = categoryItem
-            self.appendRow(categoryItem)
+            self.appendRow([categoryItem, unusedItem])
         return self._categoryItems[resourceType.category]
 
     def addResource(self, resource: FileResource) -> None:
