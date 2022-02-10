@@ -6,7 +6,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 
 
 def rename(data: bytes, name: str) -> bytes:
-    data = data[:20] + name.ljust(32, '\0').encode('ascii') + data[52:]
+    return data[:20] + name.ljust(32, '\0').encode('ascii') + data[52:]
 
 
 def list_textures(data: bytes) -> List[str]:
