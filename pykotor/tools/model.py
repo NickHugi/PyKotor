@@ -35,7 +35,7 @@ def list_textures(data: bytes) -> List[str]:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32)
                 if texture != "" and texture != "NULL":
-                    textures.append(texture)
+                    textures.append(texture.lower())
 
     return textures
 
@@ -65,7 +65,8 @@ def list_lightmaps(data: bytes) -> List[str]:
             if node_id & 32:
                 reader.seek(node_offset + 200)
                 lightmap = reader.read_string(32)
-                lightmaps.append(lightmap)
+                if lightmap != "" and lightmap != "NULL":
+                    lightmaps.append(lightmap.lower())
 
     return lightmaps
 
@@ -138,9 +139,9 @@ def change_lightmaps(data: bytes, textures: Dict[str, str]) -> bytes:
 
                 if texture in textures:
                     if texture in offsets:
-                        offsets[texture].append(node_offset + 168)
+                        offsets[texture].append(node_offset + 200)
                     else:
-                        offsets[texture] = [node_offset + 168]
+                        offsets[texture] = [node_offset + 200]
 
         for texture, offsets in offsets.items():
             for offset in offsets:
