@@ -26,7 +26,7 @@
       <item>
        <widget class="QTabWidget" name="resourceTabs">
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="coreTab">
          <attribute name="title">
@@ -319,6 +319,9 @@
             </property>
             <property name="showDropIndicator" stdset="0">
              <bool>false</bool>
+            </property>
+            <property name="selectionMode">
+             <enum>QAbstractItemView::ExtendedSelection</enum>
             </property>
             <property name="iconSize">
              <size>

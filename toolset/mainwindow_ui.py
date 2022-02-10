@@ -155,6 +155,7 @@ class Ui_MainWindow(object):
         self.texturesList = TexturesView(self.texturesTab)
         self.texturesList.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.texturesList.setProperty("showDropIndicator", False)
+        self.texturesList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.texturesList.setIconSize(QtCore.QSize(64, 64))
         self.texturesList.setProperty("isWrapping", True)
         self.texturesList.setResizeMode(QtWidgets.QListView.Adjust)
