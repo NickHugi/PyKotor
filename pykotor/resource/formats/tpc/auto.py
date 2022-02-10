@@ -19,9 +19,12 @@ def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> FileFormat:
     """
     def do_check(first100: bytes) -> FileFormat:
         file_format = FileFormat.BINARY
-        for i in range(15, 100):
-            if first100[i] != 0:
-                file_format = FileFormat.TGA
+        if len(first100) < 100:
+            file_format = FileFormat.TGA
+        else:
+            for i in range(15, 100):
+                if first100[i] != 0:
+                    file_format = FileFormat.TGA
         return file_format
 
     try:
