@@ -141,6 +141,7 @@ class ToolWindow(QMainWindow):
 
         self.texturesModel = TextureListModel()
         self.ui.texturesList.setModel(self.texturesModel.proxyModel())
+        self.ui.texturesList.doubleClicked.connect(self.openFromSelected)
 
         self._clearModels()
         self.reloadSettings()
