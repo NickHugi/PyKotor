@@ -65,11 +65,9 @@ class TPCTGAReader(ResourceReader):
                         pixel_rows[y].extend([r, g, b])
 
             if y_flipped:
-                for pixels in pixel_rows:
-                    data.extend(pixels)
+                [data.extend(pixels) for pixels in reversed(pixel_rows)]
             else:
-                for pixels in reversed(pixel_rows):
-                    data.extend(pixels)
+                [data.extend(pixels) for pixels in pixel_rows]
 
             self._tpc.set(width, height, [bytes(data)], TPCTextureFormat.RGBA)
 
@@ -99,10 +97,7 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
         self._writer.write_uint8(32)
-        if self._tpc.is_compressed():
-            self._writer.write_uint8(40)
-        else:
-            self._writer.write_uint8(8)
+        self._writer.write_uint8(0)
 
         width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
         pixel_reader = BinaryReader.from_bytes(data)
