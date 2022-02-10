@@ -162,7 +162,7 @@ class GITWaypoint:
 
 
 def construct_git(gff: GFF) -> GIT:
-    git = GIT(GFFContent.GIT)
+    git = GIT()
 
     root = gff.root
     properties_struct = root.acquire("AreaProperties", GFFStruct())
