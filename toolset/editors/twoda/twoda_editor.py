@@ -198,10 +198,11 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         self._filterString: str = ""
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
+        pattern = self.filterRegExp().pattern().lower()
         if self.filterRegExp().pattern() == "":
             return True
         for i in range(self.sourceModel().columnCount()):
             index = self.sourceModel().index(sourceRow, i, sourceParent)
-            if self.sourceModel().data(index) is not None and self.filterRegExp().pattern() in self.sourceModel().data(index):
+            if self.sourceModel().data(index) is not None and pattern in self.sourceModel().data(index).lower():
                 return True
         return False
