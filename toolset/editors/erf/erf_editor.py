@@ -4,7 +4,7 @@ from typing import Optional, Callable, List
 from PyQt5 import QtGui
 from PyQt5.QtCore import QItemSelection, QThread
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import load_erf, ERF, ERFType, write_erf, ERFResource
@@ -43,6 +43,8 @@ class ERFEditor(Editor):
 
         self._externalHandlers: List[ExternalUpdateEventHandler] = []
         self._externalOpened: bool = False
+
+        QShortcut("Del", self).activated.connect(self.removeSelected)
 
         # Disable saving file into module
         self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim)", "")
