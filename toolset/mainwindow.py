@@ -632,6 +632,14 @@ class ToolWindow(QMainWindow):
         shouldUseExternal = (self.config.erfExternalEditors and inERForRIM) or not inERForRIM
         noExternal = noExternal or not shouldUseExternal
 
+        def useGFFEditor():
+            editor = external = None
+            if self.config.gffEditorPath and not noExternal:
+                external = self.config.gffEditorPath
+            else:
+                editor = GFFEditor(self, self.active)
+            return editor, external
+
         if restype in [ResourceType.TwoDA]:
             if self.config.twodaEditorPath and not noExternal:
                 external = self.config.twodaEditorPath
@@ -669,15 +677,15 @@ class ToolWindow(QMainWindow):
                 editor = GFFEditor(self, self.active)
 
         if restype in [ResourceType.UTC]:
-            editor = UTCEditor(self, self.active)
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = UTCEditor(self, self.active)
 
         if restype in [ResourceType.GFF, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI, ResourceType.ITP,
                        ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
-            if self.config.gffEditorPath and not noExternal:
-                external = self.config.gffEditorPath
-            else:
-                editor = GFFEditor(self, self.active)
+            editor, external = useGFFEditor()
 
         if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
             editor = ERFEditor(self, self.active)
