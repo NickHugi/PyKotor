@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Clone Module</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_6">
    <item>

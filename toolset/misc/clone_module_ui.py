@@ -108,7 +108,7 @@ class Ui_Dialog(object):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Dialog", "Clone Module"))
         self.keepDoorsCheckbox.setText(_translate("Dialog", "Keep Doors"))
         self.keepPlaceablesCheckbox.setText(_translate("Dialog", "Keep Placeables"))
         self.keepSoundsCheckbox.setText(_translate("Dialog", "Keep Sounds"))
