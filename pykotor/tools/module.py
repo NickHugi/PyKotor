@@ -105,8 +105,8 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
     lyt = oldModule.layout.resource()
     vis = oldModule.visibility.resource()
 
-    newLightmaps = {}
-    newTextures = {}
+    textures = set()
+    lightmaps = set()
 
     for room in lyt.rooms:
         oldModelName = room.model
@@ -120,37 +120,42 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
         wokData = installation.resource(oldModelName, ResourceType.WOK).data
 
         if copyTextures:
+            newTextures = {}
             for texture in model.list_textures(mdlData):
                 if texture not in newTextures:
                     newTextureName = prefix + texture[3:]
                     newTextures[texture] = newTextureName
 
-                    tpc = installation.texture(texture)
-                    rgba = tpc.convert(TPCTextureFormat.RGBA)
+                    if texture not in textures:
+                        textures.add(texture)
 
-                    tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                        tpc = installation.texture(texture)
+                        rgba = tpc.convert(TPCTextureFormat.RGBA)
+                        data = rgba.data
 
-                    tga_data = bytearray()
-                    write_tpc(tga, tga_data, FileFormat.TGA)
-                    newModule.set(newTextureName, ResourceType.TGA, tga_data)
+                        tga = TPC()
+                        tga.set(rgba.width, rgba.height, [data], TPCTextureFormat.RGBA)
+
+                        tga_data = bytearray()
+                        write_tpc(tga, tga_data, FileFormat.TGA)
+                        newModule.set(newTextureName, ResourceType.TGA, tga_data)
             mdlData = model.change_textures(mdlData, newTextures)
 
         if copyLightmaps:
+            newLightmaps = {}
+            count = 0
             for lightmap in model.list_lightmaps(mdlData):
-                if lightmap not in newLightmaps:
-                    newLightmapName = "{}_lm_{}".format(identifier, len(newLightmaps.keys()))
+                if lightmap not in lightmaps:
+                    newLightmapName = "{}_lm_{}".format(identifier, count)
+                    count += 1
                     newLightmaps[lightmap] = newLightmapName
 
-                    tpc = installation.texture(lightmap, skip_chitin=False)
-                    rgba = tpc.convert(TPCTextureFormat.RGBA)
-
-                    tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
-
-                    tga_data = bytearray()
-                    write_tpc(tga, tga_data, FileFormat.TGA)
-                    newModule.set(newLightmapName, ResourceType.TGA, tga_data)
+                    if lightmap not in lightmaps:
+                        lightmaps.add(lightmap)
+                        tga = installation.texture(lightmap, skip_chitin=False)
+                        tga_data = bytearray()
+                        write_tpc(tga, tga_data, FileFormat.TGA)
+                        newModule.set(newLightmapName, ResourceType.TGA, tga_data)
             mdlData = model.change_lightmaps(mdlData, newLightmaps)
 
         mdlData = model.rename(mdlData, newModelName)

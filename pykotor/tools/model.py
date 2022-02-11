@@ -73,12 +73,17 @@ def list_lightmaps(data: bytes) -> List[str]:
 
 def change_textures(data: bytes, textures: Dict[str, str]) -> bytes:
     data = bytearray(data)
+    offsets = {}
+
+    textures_ins = {}
+    for old_texture, new_texture in textures.items():
+        textures_ins[old_texture.lower()] = new_texture.lower()
+    textures = textures_ins
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        offsets = {}
         nodes = [root_offset]
         while nodes:
             node_offset = nodes.pop()
@@ -95,7 +100,7 @@ def change_textures(data: bytes, textures: Dict[str, str]) -> bytes:
 
             if node_id & 32:
                 reader.seek(node_offset + 168)
-                texture = reader.read_string(32)
+                texture = reader.read_string(32).lower()
 
                 if texture in textures:
                     if texture in offsets:
@@ -113,12 +118,17 @@ def change_textures(data: bytes, textures: Dict[str, str]) -> bytes:
 
 def change_lightmaps(data: bytes, textures: Dict[str, str]) -> bytes:
     data = bytearray(data)
+    offsets = {}
+
+    textures_ins = {}
+    for old_texture, new_texture in textures.items():
+        textures_ins[old_texture.lower()] = new_texture.lower()
+    textures = textures_ins
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        offsets = {}
         nodes = [root_offset]
         while nodes:
             node_offset = nodes.pop()
@@ -135,7 +145,7 @@ def change_lightmaps(data: bytes, textures: Dict[str, str]) -> bytes:
 
             if node_id & 32:
                 reader.seek(node_offset + 200)
-                texture = reader.read_string(32)
+                texture = reader.read_string(32).lower()
 
                 if texture in textures:
                     if texture in offsets:
