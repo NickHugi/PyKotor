@@ -96,17 +96,28 @@ class TPCTGAWriter(ResourceWriter):
         self._writer.write_uint16(0)
         self._writer.write_uint16(width)
         self._writer.write_uint16(height)
-        self._writer.write_uint8(32)
-        self._writer.write_uint8(0)
 
-        width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
-        pixel_reader = BinaryReader.from_bytes(data)
-        for i in range(len(data) // 4):
-            r = pixel_reader.read_uint8()
-            g = pixel_reader.read_uint8()
-            b = pixel_reader.read_uint8()
-            a = pixel_reader.read_uint8()
-            self._writer.write_bytes(struct.pack('BBBB', b, g, r, a))
+        if self._tpc.format() in [TPCTextureFormat.RGB or TPCTextureFormat.DXT1]:
+            self._writer.write_uint8(32)
+            self._writer.write_uint8(0)
+            data = self._tpc.convert(TPCTextureFormat.RGB, 0).data
+            pixel_reader = BinaryReader.from_bytes(data)
+            for i in range(len(data) // 3):
+                r = pixel_reader.read_uint8()
+                g = pixel_reader.read_uint8()
+                b = pixel_reader.read_uint8()
+                self._writer.write_bytes(struct.pack('BBBB', b, g, r, 255))
+        else:
+            self._writer.write_uint8(32)
+            self._writer.write_uint8(0)
+            width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
+            pixel_reader = BinaryReader.from_bytes(data)
+            for i in range(len(data) // 4):
+                r = pixel_reader.read_uint8()
+                g = pixel_reader.read_uint8()
+                b = pixel_reader.read_uint8()
+                a = pixel_reader.read_uint8()
+                self._writer.write_bytes(struct.pack('BBBB', b, g, r, a))
 
         if auto_close:
             self._writer.close()
