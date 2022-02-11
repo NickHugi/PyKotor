@@ -14,7 +14,7 @@ from pykotor.common.misc import InventoryItem, EquipmentSlot, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import FileQuery
-from pykotor.extract.installation import Installation, SearchResult
+from pykotor.extract.installation import Installation
 from pykotor.resource.formats.gff import load_gff
 from pykotor.resource.formats.tlk import TLK, load_tlk
 from pykotor.resource.formats.tpc import TPCTextureFormat, TPC
