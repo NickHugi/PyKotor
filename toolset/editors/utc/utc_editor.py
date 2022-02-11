@@ -59,11 +59,11 @@ class UTCEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         utc = construct_utc(load_gff(data))
-        self._load_utc(utc)
+        self._loadUTC(utc)
 
         self.updateItemCount()
 
-    def _load_utc(self, utc: UTC):
+    def _loadUTC(self, utc: UTC):
         self._utc = utc
 
         # Basic
@@ -132,18 +132,30 @@ class UTCEditor(Editor):
         # Feats
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
-            item.setData(QtCore.Qt.UserRole, i)
             item.setCheckState(QtCore.Qt.Unchecked)
-            [item.setCheckState(QtCore.Qt.Checked) for feat in utc.feats if feat == item.data(QtCore.Qt.UserRole)]
+        for feat in utc.feats:
+            item = self.getFeatItem(feat)
+            if item is None:
+                item = QListWidgetItem("[Modded Feat ID: {}]".format(feat))
+                item.setData(QtCore.Qt.UserRole, feat)
+                item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+                self.ui.featList.addItem(item)
+            item.setCheckState(QtCore.Qt.Checked)
 
         # Powers
+
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
-            item.setData(QtCore.Qt.UserRole, i)
             item.setCheckState(QtCore.Qt.Unchecked)
-            for utc_class in utc.classes:
-                [item.setCheckState(QtCore.Qt.Checked) for power in utc_class.powers if
-                 power == item.data(QtCore.Qt.UserRole)]
+        for utc_class in utc.classes:
+            for power in utc_class.powers:
+                item = self.getPowerItem(power)
+                if item is None:
+                    item = QListWidgetItem("[Modded Power ID: {}]".format(power))
+                    item.setData(QtCore.Qt.UserRole, power)
+                    item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+                    self.ui.powerList.addItem(item)
+                item.setCheckState(QtCore.Qt.Checked)
 
         # Scripts
         self.ui.onBlockedEdit.setText(utc.on_blocked.get())
@@ -257,7 +269,7 @@ class UTCEditor(Editor):
 
     def new(self) -> None:
         super().new()
-        self._load_utc(UTC())
+        self._loadUTC(UTC())
         self.updateItemCount()
 
     def setInstallation(self, installation: HTInstallation):
@@ -442,3 +454,19 @@ class UTCEditor(Editor):
 
     def updateItemCount(self) -> None:
         self.ui.inventoryCountLabel.setText("Total Items: {}".format(len(self._utc.inventory)))
+
+    def getFeatItem(self, featId: int) -> Optional[QListWidgetItem]:
+        for i in range(self.ui.featList.count()):
+            item = self.ui.featList.item(i)
+            if item.data(QtCore.Qt.UserRole) == featId:
+                return item
+        else:
+            return None
+
+    def getPowerItem(self, powerId: int) -> Optional[QListWidgetItem]:
+        for i in range(self.ui.powerList.count()):
+            item = self.ui.powerList.item(i)
+            if item.data(QtCore.Qt.UserRole) == powerId:
+                return item
+        else:
+            return None
