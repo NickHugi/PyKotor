@@ -163,6 +163,10 @@ class ToolWindow(QMainWindow):
     def changeTexturePack(self, texturepack: str):
         self.texturesModel = TextureListModel()
         self.ui.texturesList.setModel(self.texturesModel.proxyModel())
+
+        if texturepack == "":
+            return
+
         self.texturesModel.proxyModel().setFilterFixedString(self.ui.textureSearchEdit.text())
         image = QImage(bytes([0 for i in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
         icon = QIcon(QPixmap.fromImage(image))
