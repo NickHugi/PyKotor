@@ -32,7 +32,7 @@ class TXTEditor(Editor):
             self.ui.textEdit.setPlainText(data.decode(encoding))
 
     def build(self) -> bytes:
-        return self.ui.textEdit.toPlainText().encode()
+        return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode()
 
     def new(self) -> None:
         super().new()
