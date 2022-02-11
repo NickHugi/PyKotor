@@ -31,6 +31,7 @@ from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
 
 import mainwindow_ui
+from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
 from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
@@ -61,26 +62,22 @@ class ToolWindow(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
 
         self.active: Optional[HTInstallation] = None
-        self.settings = QSettings('cortisol', 'holocrontoolset')
+        self.config = Configuration()
 
-        firstTime = self.settings.value('firstTime', True, bool)
+        firstTime = self.config.firstTime
         if firstTime:
-            self.settings.setValue('firstTime', False)
-            self.settings.setValue('games', {
-                'KotOR': {'path': "", 'tsl': False},
-                'TSL': {'path': "", 'tsl': True}
-            })
+            self.config.installations = []
+            self.config.installations.append(InstallationConfig("KotOR", "", False))
+            self.config.installations.append(InstallationConfig("TSL", "", True))
 
-            self.settings.setValue('gffEditor', '')
-            self.settings.setValue('2daEditor', '')
-            self.settings.setValue('dlgEditor', '')
-            self.settings.setValue('tlkEditor', '')
+            self.config.firstTime = False
 
-            try:
-                os.mkdir(os.path.realpath('.') + "/ext")
-                self.settings.setValue('tempDir', os.path.realpath('.') + "/ext")
-            except:
-                self.settings.setValue('tempDir', "")
+            with suppress(Exception):
+                extractPath = os.path.realpath('.') + "/ext"
+                os.mkdir(extractPath)
+                self.config.extractPath = extractPath
+
+            self.config.save()
 
         self.installations = {}
 
@@ -190,7 +187,8 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def reloadSettings(self) -> None:
-        self.ui.mdlDecompileCheckbox.setVisible(self.settings.value('mdlDecompile', False, bool))
+        self.config.reload()
+        self.ui.mdlDecompileCheckbox.setVisible(self.config.mdlAllowDecompile)
         self.reloadInstallations()
 
     def openSettingsDialog(self) -> None:
@@ -283,8 +281,8 @@ class ToolWindow(QMainWindow):
         self.ui.gameCombo.clear()
         self.ui.gameCombo.addItem("[None]")
 
-        for name, data in self.settings.value('games', {}).items():
-            self.ui.gameCombo.addItem(name)
+        for installation in self.config.installations:
+            self.ui.gameCombo.addItem(installation.name)
 
     def changeActiveInstallation(self, index: int) -> None:
         """
@@ -310,8 +308,8 @@ class ToolWindow(QMainWindow):
         self.ui.sidebar.setEnabled(True)
 
         name = self.ui.gameCombo.itemText(index)
-        path = self.settings.value('games')[name]['path']
-        tsl = bool(self.settings.value('games')[name]['tsl'])
+        path = self.config.installation(name).path
+        tsl = self.config.installation(name).tsl
 
         # If the user has not set a path for the particular game yet, ask them too.
         if path == "":
@@ -327,9 +325,9 @@ class ToolWindow(QMainWindow):
                 loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
 
                 if loader.exec_():
-                    games = self.settings.value('games')
-                    games[name]['path'] = path
-                    self.settings.setValue('games', games)
+                    self.config.installation(name).path = path
+                    self.config.save()
+
                     self.installations[name] = loader.value
 
             # If the data has been successfully been loaded, dump the data into the models
@@ -401,7 +399,7 @@ class ToolWindow(QMainWindow):
         self._modules_list[self.active.name] = QStandardItemModel(self)
         self._modules_list[self.active.name].appendRow(QStandardItem("[None]"))
 
-        if self.settings.value('showModuleNames', True, bool):
+        if self.config.showModuleNames:
             areaNames = self.active.module_names()
             for module in self.active.modules_list():
                 item = QStandardItem("[{}] {}".format(areaNames[module], module))
@@ -631,12 +629,12 @@ class ToolWindow(QMainWindow):
 
         encapsulated = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif') or filepath.endswith('.key')
         inERForRIM = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod')
-        shouldUseExternal = (self.settings.value('encapsulatedExternalEditor', False, bool) and inERForRIM) or not inERForRIM
+        shouldUseExternal = (self.config.erfExternalEditors and inERForRIM) or not inERForRIM
         noExternal = noExternal or not shouldUseExternal
 
         if restype in [ResourceType.TwoDA]:
-            if self.settings.value('2daEditor') and not noExternal:
-                external = self.settings.value('2daEditor')
+            if self.config.twodaEditorPath and not noExternal:
+                external = self.config.twodaEditorPath
             else:
                 editor = TwoDAEditor(self, self.active)
 
@@ -644,8 +642,8 @@ class ToolWindow(QMainWindow):
             editor = SSFEditor(self, self.active)
 
         if restype in [ResourceType.TLK]:
-            if self.settings.value('tlkEditor') and not noExternal:
-                external = self.settings.value('tlkEditor')
+            if self.config.tlkEditorPath and not noExternal:
+                external = self.config.tlkEditorPath
             else:
                 editor = TLKEditor(self, self.active)
 
@@ -653,20 +651,20 @@ class ToolWindow(QMainWindow):
             editor = TPCEditor(self, self.active)
 
         if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
-            if self.settings.value('txtEditor') and not noExternal:
-                external = self.settings.value('txtEditor')
+            if self.config.txtEditorPath and not noExternal:
+                external = self.config.txtEditorPath
             else:
                 editor = TXTEditor(self)
 
         if restype in [ResourceType.NSS]:
-            if self.settings.value('nssEditor') and not noExternal:
-                external = self.settings.value('nssEditor')
+            if self.config.nssEditorPath and not noExternal:
+                external = self.config.nssEditorPath
             else:
                 editor = TXTEditor(self, self.active)
 
         if restype in [ResourceType.DLG]:
-            if self.settings.value('dlgEditor') and not noExternal:
-                external = self.settings.value('dlgEditor')
+            if self.config.dlgEditorPath and not noExternal:
+                external = self.config.dlgEditorPath
             else:
                 editor = GFFEditor(self, self.active)
 
@@ -676,8 +674,8 @@ class ToolWindow(QMainWindow):
         if restype in [ResourceType.GFF, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI, ResourceType.ITP,
                        ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
-            if self.settings.value('gffEditor') and not noExternal:
-                external = self.settings.value('gffEditor')
+            if self.config.gffEditorPath and not noExternal:
+                external = self.config.gffEditorPath
             else:
                 editor = GFFEditor(self, self.active)
 
@@ -692,7 +690,7 @@ class ToolWindow(QMainWindow):
             try:
                 if encapsulated:
                     modName = os.path.basename(filepath.replace(".rim", "").replace(".erf", "").replace(".mod", ""))
-                    tempFilepath = "{}/{}-{}.{}".format(self.settings.value('tempDir'), modName, resref, restype.extension)
+                    tempFilepath = "{}/{}-{}.{}".format(self.config.extractPath, modName, resref, restype.extension)
                     with open(tempFilepath, 'wb') as file:
                         file.write(data)
                     process = subprocess.Popen([external, tempFilepath])

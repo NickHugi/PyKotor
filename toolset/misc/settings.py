@@ -2,6 +2,7 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QDialog
 
+from data.configuration import Configuration, InstallationConfig
 from misc import settings_ui
 
 
@@ -12,7 +13,7 @@ class Settings(QDialog):
         self.ui.setupUi(self)
 
         self.applied: bool = False
-        self.settings = QSettings('cortisol', 'holocrontoolset')
+        self.config: Configuration = Configuration()
 
         self.pathsModel: QStandardItemModel = QStandardItemModel()
         self.ui.pathList.setModel(self.pathsModel)
@@ -48,24 +49,27 @@ class Settings(QDialog):
         """
         self.applied = True
 
-        games = {}
+        self.config.installations = []
         for i in range(self.pathsModel.rowCount()):
             item = self.pathsModel.item(i, 0)
-            name, path, tsl = item.text(), item.data()['path'], item.data()['tsl']
-            games[name] = {'path': path, 'tsl': tsl}
-        self.settings.setValue('games', games)
+            installation = InstallationConfig(item.text(), item.data()['path'], item.data()['tsl'])
+            self.config.installations.append(installation)
 
-        self.settings.setValue('gffEditor', self.ui.gffToolEdit.text())
-        self.settings.setValue('2daEditor', self.ui.twodaToolEdit.text())
-        self.settings.setValue('dlgEditor', self.ui.dlgToolEdit.text())
-        self.settings.setValue('tlkEditor', self.ui.tlkToolEdit.text())
-        self.settings.setValue('txtEditor', self.ui.txtToolEdit.text())
-        self.settings.setValue('nssEditor', self.ui.nssToolEdit.text())
+        self.config.gffEditorPath = self.ui.gffToolEdit.text()
+        self.config.twodaEditorPath = self.ui.twodaToolEdit.text()
+        self.config.dlgEditorPath = self.ui.dlgToolEdit.text()
+        self.config.tlkEditorPath = self.ui.tlkToolEdit.text()
+        self.config.txtEditorPath = self.ui.txtToolEdit.text()
+        self.config.nssEditorPath = self.ui.nssToolEdit.text()
+        self.config.gffSpecializedEditors = self.ui.utxToolCombo.currentIndex() == 1
 
-        self.settings.setValue('tempDir', self.ui.tempMiscEdit.text().replace('\\', '/'))
-        self.settings.setValue('mdlDecompile', self.ui.experimentalMdlCheckbox.isChecked())
-        self.settings.setValue('encapsulatedExternalEditor', self.ui.experimentalExternalCheckbox.isChecked())
-        self.settings.setValue('showModuleNames', self.ui.showModuleNameCheckbox.isChecked())
+        extractPath = self.ui.tempMiscEdit.text().replace('\\', '/')
+        self.config.extractPath = extractPath if extractPath.endswith('/') else extractPath + '/'
+        self.config.mdlAllowDecompile = self.ui.experimentalMdlCheckbox.isChecked()
+        self.config.erfExternalEditors = self.ui.experimentalExternalCheckbox.isChecked()
+        self.config.showModuleNames = self.ui.showModuleNameCheckbox.isChecked()
+
+        self.config.save()
 
     def cancel(self) -> None:
         """
@@ -75,12 +79,6 @@ class Settings(QDialog):
             self.accept()
         else:
             self.reject()
-
-    def loadPaths(self) -> None:
-        for name, data in self.settings.value('games').items():
-            item = QStandardItem(name)
-            item.setData(data)
-            self.pathsModel.appendRow(item)
 
     def pathSelected(self) -> None:
         if len(self.ui.pathList.selectedIndexes()) > 0:
@@ -117,31 +115,6 @@ class Settings(QDialog):
 
         if len(self.ui.pathList.selectedIndexes()) == 0:
             self.ui.pathFrame.setEnabled(False)
-
-    def loadTools(self) -> None:
-        if self.settings.value('gffEditor'):
-            self.ui.gffToolCombo.setCurrentText("External")
-            self.ui.gffToolEdit.setText(self.settings.value('gffEditor'))
-
-        if self.settings.value('2daEditor'):
-            self.ui.twodaToolCombo.setCurrentText("External")
-            self.ui.twodaToolEdit.setText(self.settings.value('2daEditor'))
-
-        if self.settings.value('dlgEditor'):
-            self.ui.dlgToolCombo.setCurrentText("External")
-            self.ui.dlgToolEdit.setText(self.settings.value('dlgEditor'))
-
-        if self.settings.value('tlkEditor'):
-            self.ui.tlkToolCombo.setCurrentText("External")
-            self.ui.tlkToolEdit.setText(self.settings.value('tlkEditor'))
-
-        if self.settings.value('txtEditor'):
-            self.ui.txtToolCombo.setCurrentText("External")
-            self.ui.txtToolEdit.setText(self.settings.value('txtEditor'))
-
-        if self.settings.value('nssEditor'):
-            self.ui.nssToolCombo.setCurrentText("External")
-            self.ui.nssToolEdit.setText(self.settings.value('nssEditor'))
 
     def toolComboChanged(self) -> None:
         if self.ui.gffToolCombo.currentText() == "External":
@@ -180,8 +153,44 @@ class Settings(QDialog):
             self.ui.nssToolEdit.setEnabled(False)
             self.ui.nssToolEdit.setText("")
 
+    def loadPaths(self) -> None:
+        for installation in self.config.installations:
+            item = QStandardItem(installation.name)
+            item.setData({'path': installation.path, 'tsl': installation.tsl})
+            self.pathsModel.appendRow(item)
+
+    def loadTools(self) -> None:
+        if self.config.gffEditorPath:
+            self.ui.gffToolCombo.setCurrentText("External")
+            self.ui.gffToolEdit.setText(self.config.gffEditorPath)
+
+        if self.config.twodaEditorPath:
+            self.ui.twodaToolCombo.setCurrentText("External")
+            self.ui.twodaToolEdit.setText(self.config.twodaEditorPath)
+
+        if self.config.dlgEditorPath:
+            self.ui.dlgToolCombo.setCurrentText("External")
+            self.ui.dlgToolEdit.setText(self.config.dlgEditorPath)
+
+        if self.config.tlkEditorPath:
+            self.ui.tlkToolCombo.setCurrentText("External")
+            self.ui.tlkToolEdit.setText(self.config.tlkEditorPath)
+
+        if self.config.txtEditorPath:
+            self.ui.txtToolCombo.setCurrentText("External")
+            self.ui.txtToolEdit.setText(self.config.txtEditorPath)
+
+        if self.config.nssEditorPath:
+            self.ui.nssToolCombo.setCurrentText("External")
+            self.ui.nssToolEdit.setText(self.config.nssEditorPath)
+
+        if self.config.gffSpecializedEditors:
+            self.ui.utxToolCombo.setCurrentIndex(1)
+        else:
+            self.ui.utxToolCombo.setCurrentIndex(0)
+
     def loadMisc(self) -> None:
-        self.ui.tempMiscEdit.setText(self.settings.value('tempDir'))
-        self.ui.experimentalMdlCheckbox.setChecked(self.settings.value('mdlDecompile', False, bool))
-        self.ui.experimentalExternalCheckbox.setChecked(self.settings.value('encapsulatedExternalEditor', False, bool))
-        self.ui.showModuleNameCheckbox.setChecked(self.settings.value('showModuleNames', True, bool))
+        self.ui.tempMiscEdit.setText(self.config.extractPath)
+        self.ui.experimentalMdlCheckbox.setChecked(self.config.mdlAllowDecompile)
+        self.ui.experimentalExternalCheckbox.setChecked(self.config.erfExternalEditors)
+        self.ui.showModuleNameCheckbox.setChecked(self.config.showModuleNames)

@@ -17,6 +17,7 @@ from pykotor.resource.formats.rim import load_rim, write_rim, RIM
 from pykotor.resource.formats.tlk import load_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
+from data.configuration import Configuration
 from editors import savetomodule_ui, loadfrommodule_ui, locstring_ui
 
 
@@ -40,7 +41,7 @@ class Editor(QMainWindow):
         self._revert: Optional[bytes] = None
         self._read_supported: List[ResourceType] = read_supported
         self._write_supported: List[ResourceType] = write_supported
-        self._settings = QSettings('cortisol', 'holocrontoolset')
+        self._config: Configuration = Configuration()
         self._installation: Optional[Installation] = installation
 
         self._editor_title = title

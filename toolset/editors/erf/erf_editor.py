@@ -2,7 +2,7 @@ import os
 from typing import Optional, Callable, List, Union
 
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import QItemSelection, QThread, QMimeData, QSettings
+from PyQt5.QtCore import QItemSelection, QThread, QMimeData
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon, QDragLeaveEvent
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
 from pykotor.common.misc import ResRef
@@ -13,6 +13,7 @@ from pykotor.resource.type import ResourceType
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+from data.configuration import Configuration
 from editors.editor import Editor
 from editors.erf import erf_editor_ui
 
@@ -177,7 +178,7 @@ class ERFEditor(Editor):
                             QMessageBox.Ok, self).exec_()
                 continue
 
-            noExternal = not self._settings.value('encapsulatedExternalEditor', False, bool)
+            noExternal = not self._config.erfExternalEditors
             tempPath, editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype,
                                                                 resource.data, noExternal=noExternal)
             if isinstance(editor, Editor):
@@ -254,8 +255,8 @@ class ERFEditorTable(QTableView):
             event.ignore()
 
     def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
-        settings = QSettings('cortisol', 'holocrontoolset')
-        tempDir = settings.value('tempDir', None)
+        config = Configuration()
+        tempDir = config.extractPath
 
         if not tempDir or not os.path.exists(tempDir) or not os.path.isdir(tempDir):
             return

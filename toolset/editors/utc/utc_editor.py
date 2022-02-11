@@ -2,7 +2,6 @@ from typing import Optional
 
 import chardet
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QPixmap, QImage, QTransform, QIcon
 from PyQt5.QtWidgets import QWidget, QLineEdit, QListWidgetItem
 from pykotor.common.language import LocalizedString, Language, Gender
@@ -49,7 +48,6 @@ class UTCEditor(Editor):
         self.ui.inventoryButton.clicked.connect(self.openInventory)
 
         self.setInstallation(installation)
-        self.settings = QSettings('cortisol', 'holocrontoolset')
 
         self._utc = UTC()
 
