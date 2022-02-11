@@ -7,7 +7,7 @@ from typing import Dict, List, NamedTuple, Optional, Union, Tuple
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread, QSortFilterProxyModel, QPoint, QSize
 from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QStandardItem, QDropEvent, QDragEnterEvent, QDragMoveEvent, \
-    QIcon
+    QIcon, QTransform
 from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QProgressBar, QVBoxLayout, QFrame, QTreeView, QMenu, QAction, \
     QTreeWidget, QTreeWidgetItem, QTableWidget, QTableWidgetItem
 from pykotor.common.misc import InventoryItem, EquipmentSlot, ResRef
@@ -178,7 +178,7 @@ class InventoryEditor(QDialog):
             if texture is not None:
                 width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
                 image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                pixmap = QPixmap.fromImage(image)
+                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
                 return pixmap
 
         return pixmap
