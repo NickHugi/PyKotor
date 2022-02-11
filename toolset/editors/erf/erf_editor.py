@@ -187,8 +187,8 @@ class ERFEditor(Editor):
             data = file.read()
             self.load(self._filepath, self._resref, self._restype, data)
 
-    def selectionChanged(self, selection: QItemSelection) -> None:
-        if len(selection.indexes()) == 0:
+    def selectionChanged(self) -> None:
+        if len(self.ui.tableView.selectedIndexes()) == 0:
             self.ui.extractButton.setEnabled(False)
             self.ui.openButton.setEnabled(False)
             self.ui.unloadButton.setEnabled(False)
