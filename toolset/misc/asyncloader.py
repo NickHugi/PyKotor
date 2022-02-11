@@ -1,3 +1,4 @@
+import traceback
 from typing import Callable, Optional, Any, List
 
 from PyQt5 import QtCore
@@ -55,6 +56,11 @@ class AsyncLoader(QDialog):
 
         if self.errorTitle:
             QMessageBox(QMessageBox.Critical, self.errorTitle, str(error)).exec_()
+
+        with open("errorlog.txt", 'a') as file:
+            lines = traceback.format_exception(type(self.error), self.error, self.error.__traceback__)
+            file.writelines(lines)
+            file.write("\n----------------------\n")
 
 
 class AsyncWorker(QThread):
@@ -132,6 +138,11 @@ class AsyncBatchLoader(QDialog):
             if self.errorTitle:
                 errorStrings = [str(error)+"\n" for error in self.errors]
                 QMessageBox(QMessageBox.Critical, self.errorTitle, ''.join(errorStrings)).exec_()
+            with open("errorlog.txt", 'a') as file:
+                lines = []
+                lines.extend(traceback.format_exception(type(e), e, e.__traceback__) for e in self.errors)
+                file.writelines(lines)
+                file.write("\n----------------------\n")
         else:
             self.accept()
 
