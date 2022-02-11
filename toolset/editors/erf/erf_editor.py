@@ -133,7 +133,7 @@ class ERFEditor(Editor):
                     file.write(resource.data)
 
     def removeSelected(self) -> None:
-        for index in self.ui.tableView.selectionModel().selectedRows(0):
+        for index in reversed([index for index in self.ui.tableView.selectedIndexes() if index.column() == 0]):
             item = self.model.itemFromIndex(index)
             self.model.removeRow(item.row())
 
