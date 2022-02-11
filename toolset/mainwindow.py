@@ -934,6 +934,7 @@ class TextureListWorker(QThread):
 
             item, resname = self._buffer.pop()
             tpc = self._installation.texture(resname, skip_modules=True, skip_gui=False, skip_override=True)
+            tpc = TPC() if tpc is None else tpc
             width, height, rgba = tpc.convert(TPCTextureFormat.RGBA, self.bestMipmap(tpc))
             image = QImage(rgba, width, height, QImage.Format_RGBA8888)
             pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
