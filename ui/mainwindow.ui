@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>536</width>
+    <width>461</width>
     <height>471</height>
    </rect>
   </property>
@@ -491,7 +491,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>536</width>
+     <width>461</width>
      <height>21</height>
     </rect>
    </property>
@@ -504,6 +504,8 @@
       <string>New</string>
      </property>
      <addaction name="actionNewUTC"/>
+     <addaction name="separator"/>
+     <addaction name="actionCloneModule"/>
      <addaction name="separator"/>
      <addaction name="actionNewGFF"/>
      <addaction name="actionNewERF"/>
@@ -669,6 +671,14 @@
    </property>
    <property name="text">
     <string>Creature</string>
+   </property>
+  </action>
+  <action name="actionCloneModule">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Clone Module</string>
    </property>
   </action>
  </widget>

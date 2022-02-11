@@ -10,6 +10,7 @@ from distutils.version import Version, StrictVersion
 from time import sleep
 from typing import Optional, List, Union, Tuple, Dict
 
+
 import requests
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel, QMargins, QRect, \
@@ -19,7 +20,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QShow
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
     QLabel, QWidget, QMessageBox, QHeaderView, QLayout, QSizePolicy, QScrollArea, QStyle, QGridLayout, QTableWidget, \
     QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QListView
-from pykotor.extract.file import FileResource
+from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
 from pykotor.resource.formats.mdl import load_mdl, write_mdl
@@ -43,6 +44,7 @@ from editors.utc.utc_editor import UTCEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.settings import Settings
+from misc.clone_module import CloneModuleDialog
 
 import resources_rc
 
@@ -113,6 +115,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self, self.active).show())
         self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
         self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
+        self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
@@ -172,12 +175,15 @@ class ToolWindow(QMainWindow):
             self.texturesModel.appendRow(item)
         self.ui.texturesList.startWorker(self.active)
 
-    def updateNewMenu(self) -> None:
+    def updateMenus(self) -> None:
         version = "x" if self.active is None else "2" if self.active.tsl else "1"
 
         creatureIconPath = ":/images/icons/k{}/creature.png".format(version)
         self.ui.actionNewUTC.setIcon(QIcon(QPixmap(creatureIconPath)))
         self.ui.actionNewUTC.setEnabled(self.active is not None)
+
+        self.ui.actionCloneModule.setEnabled(self.active is not None)
+
 
     def reloadSettings(self) -> None:
         self.ui.mdlDecompileCheckbox.setVisible(self.settings.value('mdlDecompile', False, bool))
@@ -291,7 +297,7 @@ class ToolWindow(QMainWindow):
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
         self.active = None
-        self.updateNewMenu()
+        self.updateMenus()
 
         if index <= 0:
             return
@@ -344,7 +350,7 @@ class ToolWindow(QMainWindow):
 
                 self.refreshTexturePackList()
 
-                self.updateNewMenu()
+                self.updateMenus()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
 
