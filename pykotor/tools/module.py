@@ -1,3 +1,5 @@
+from pykotor.resource.generics.pth import dismantle_pth
+
 from pykotor.resource.formats.lyt.auto import write_lyt
 
 from pykotor.tools import model
@@ -47,7 +49,29 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
     write_gff(dismantle_are(are), are_data)
     newModule.set(identifier, ResourceType.ARE, are_data)
 
+    lyt = oldModule.layout.resource()
+    lyt_data = bytearray()
+    write_lyt(lyt, lyt_data)
+    newModule.set(identifier, ResourceType.LYT, lyt_data)
+
+    vis = oldModule.visibility.resource()
+    vis_data = bytearray()
+    write_vis(vis, vis_data)
+    newModule.set(identifier, ResourceType.VIS, vis_data)
+
+    if keepPathing:
+        pth = oldModule.path.resource()
+        pth_data = bytearray()
+        write_gff(dismantle_pth(pth), pth_data)
+        newModule.set(identifier, ResourceType.PTH, pth_data)
+
     git = oldModule.dynamic.resource()
+    git.creatures = []
+    git.encounters = []
+    git.stores = []
+    git.triggers = []
+    git.waypoints = []
+    git.cameras = []
 
     if keepDoors:
         for i, door in enumerate(git.doors):
@@ -91,25 +115,12 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
     else:
         git.sounds = []
 
-    git.creatures = []
-    git.encounters = []
-    git.sounds = []
-    git.stores = []
-    git.triggers = []
-    git.waypoints = []
-    git.cameras = []
     git_data = bytearray()
     write_gff(dismantle_git(git), git_data)
     newModule.set(identifier, ResourceType.GIT, git_data)
 
-    lyt = oldModule.layout.resource()
-    vis = oldModule.visibility.resource()
-
-    textures = set()
-    lightmaps = set()
     newLightmaps = {}
     newTextures = {}
-
     for room in lyt.rooms:
         oldModelName = room.model
         newModelName = oldModelName.lower().replace(oldIdentifier, identifier)
@@ -161,14 +172,6 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
         newModule.set(newModelName, ResourceType.MDL, mdlData)
         newModule.set(newModelName, ResourceType.MDX, mdxData)
         newModule.set(newModelName, ResourceType.WOK, wokData)
-
-    lyt_data = bytearray()
-    write_lyt(lyt, lyt_data)
-    newModule.set(identifier, ResourceType.LYT, lyt_data)
-
-    vis_data = bytearray()
-    write_vis(vis, vis_data)
-    newModule.set(identifier, ResourceType.VIS, vis_data)
 
     filepath = installation.module_path() + identifier + ".mod"
     write_erf(newModule, filepath)
