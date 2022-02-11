@@ -477,6 +477,8 @@ class Installation:
             for resource in self._chitin:
                 if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TGA:
                     return load_tpc(resource.data())
+                if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
+                    return load_tpc(resource.data())
 
         # 7 - Check modules files in installation modules folder
         if not skip_modules:
