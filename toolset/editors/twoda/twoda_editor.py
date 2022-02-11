@@ -2,7 +2,7 @@ from typing import Optional
 
 import pyperclip as pyperclip
 from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.twoda import TwoDA, write_2da, load_2da
@@ -21,6 +21,10 @@ class TwoDAEditor(Editor):
         self.ui.setupUi(self)
         self._setup_menus()
         self.ui.filterBox.setVisible(False)
+
+        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.model = QStandardItemModel(self)
         self.ui.twodaTable.setModel(self.model)

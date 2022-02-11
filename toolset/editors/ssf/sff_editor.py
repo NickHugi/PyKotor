@@ -1,5 +1,6 @@
 from typing import Optional
 
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QWidget
 from pykotor.extract.installation import Installation
 from pykotor.extract.talktable import TalkTable
@@ -20,6 +21,10 @@ class SSFEditor(Editor):
         self.ui = sff_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+
+        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/soundset.png".format(iconVersion)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.ui.battlecry1StrrefSpin.valueChanged.connect(self.updateTextBoxes)
         self.ui.battlecry2StrrefSpin.valueChanged.connect(self.updateTextBoxes)

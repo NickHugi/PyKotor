@@ -1,6 +1,7 @@
 from typing import Optional
 
 import chardet
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
@@ -18,6 +19,10 @@ class TXTEditor(Editor):
         self.ui = txt_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+
+        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.new()
 

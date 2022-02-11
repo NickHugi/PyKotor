@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="images">
+    <file>icons/k1/soundset.png</file>
+    <file>icons/k2/soundset.png</file>
+    <file>icons/kx/soundset.png</file>
+    <file>icons/k1/none.png</file>
+    <file>icons/k2/none.png</file>
+    <file>icons/kx/none.png</file>
     <file>icons/k1/2da.png</file>
     <file>icons/k1/blank.png</file>
     <file>icons/k1/creature.png</file>

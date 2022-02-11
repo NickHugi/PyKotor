@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread, QItemSelection
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QShortcut, QDialog, QProgressBar, QVBoxLayout, QWidget
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
@@ -23,6 +23,10 @@ class TLKEditor(Editor):
         self._setup_menus()
         self.ui.searchBox.setVisible(False)
         self.ui.jumpBox.setVisible(False)
+
+        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.model = QStandardItemModel(self)
         self.proxyModel = QSortFilterProxyModel(self)

@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor, QIcon, QPixmap
 from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget, QFileDialog
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString, Language, Gender
@@ -38,6 +38,10 @@ class GFFEditor(Editor):
         self.ui = gff_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+
+        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 

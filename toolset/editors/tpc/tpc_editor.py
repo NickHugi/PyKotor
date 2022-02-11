@@ -1,6 +1,6 @@
 from typing import Optional
 
-from PyQt5.QtGui import QPixmap, QImage, QTransform
+from PyQt5.QtGui import QPixmap, QImage, QTransform, QIcon
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import load_tpc, TPCTextureFormat, TPC, write_tpc
@@ -17,6 +17,10 @@ class TPCEditor(Editor):
         self.ui = tpc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+
+        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self._tpc: TPC = TPC()
         self._tpc.set_single(256, 256, bytes([0 for i in range(256*256*4)]), TPCTextureFormat.RGBA)

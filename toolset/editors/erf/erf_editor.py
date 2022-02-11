@@ -3,7 +3,7 @@ from typing import Optional, Callable, List
 
 from PyQt5 import QtGui
 from PyQt5.QtCore import QItemSelection, QThread
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
@@ -26,6 +26,10 @@ class ERFEditor(Editor):
         self.ui = erf_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+
+        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.model = QStandardItemModel(self)
         self.ui.tableView.setModel(self.model)
