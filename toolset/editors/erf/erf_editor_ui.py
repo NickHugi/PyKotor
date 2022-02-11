@@ -19,8 +19,11 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.tableView = QtWidgets.QTableView(self.centralwidget)
+        self.tableView = ERFEditorTable(self.centralwidget)
+        self.tableView.setAcceptDrops(True)
         self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableView.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+        self.tableView.setDefaultDropAction(QtCore.Qt.CopyAction)
         self.tableView.setAlternatingRowColors(True)
         self.tableView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.tableView.setGridStyle(QtCore.Qt.NoPen)
@@ -99,3 +102,4 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
+from toolset.editors.erf.erf_editor import ERFEditorTable

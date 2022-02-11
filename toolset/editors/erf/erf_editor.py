@@ -1,10 +1,10 @@
 import os
 from typing import Optional, Callable, List
 
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import QItemSelection, QThread
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import load_erf, ERF, ERFType, write_erf, ERFResource
@@ -35,11 +35,12 @@ class ERFEditor(Editor):
         self.ui.tableView.setModel(self.model)
 
         self.ui.extractButton.clicked.connect(self.extractSelected)
-        self.ui.loadButton.clicked.connect(self.add)
+        self.ui.loadButton.clicked.connect(self.selectFilesToAdd)
         self.ui.unloadButton.clicked.connect(self.removeSelected)
         self.ui.openButton.clicked.connect(self.openSelected)
         self.ui.refreshButton.clicked.connect(self.refresh)
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
+        self.ui.tableView.resourceDropped.connect(self.addResources)
 
         self._externalHandlers: List[ExternalUpdateEventHandler] = []
         self._externalOpened: bool = False
@@ -139,22 +140,27 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             self.model.removeRow(item.row())
 
-    def add(self) -> None:
-        filepaths = QFileDialog.getOpenFileNames(self, "Load files into module")[:-1][0]
-
+    def addResources(self, filepaths: List[str]) -> None:
         for filepath in filepaths:
-            with open(filepath, 'rb') as file:
-                resref, restype_ext = os.path.basename(filepath).split('.', 1)
-                restype = ResourceType.from_extension(restype_ext)
-                data = file.read()
+            try:
+                with open(filepath, 'rb') as file:
+                    resref, restype_ext = os.path.basename(filepath).split('.', 1)
+                    restype = ResourceType.from_extension(restype_ext)
+                    data = file.read()
 
-                resource = ERFResource(ResRef(resref), restype, data)
+                    resource = ERFResource(ResRef(resref), restype, data)
 
-                resrefItem = QStandardItem(resource.resref.get())
-                resrefItem.setData(resource)
-                restypeItem = QStandardItem(resource.restype.extension.upper())
-                sizeItem = QStandardItem(str(len(resource.data)))
-                self.model.appendRow([resrefItem, restypeItem, sizeItem])
+                    resrefItem = QStandardItem(resource.resref.get())
+                    resrefItem.setData(resource)
+                    restypeItem = QStandardItem(resource.restype.extension.upper())
+                    sizeItem = QStandardItem(str(len(resource.data)))
+                    self.model.appendRow([resrefItem, restypeItem, sizeItem])
+            except Exception as e:
+                QMessageBox(QMessageBox.Critical, "Failed to add resource", "Could not add resource at {}.".format(filepath)).exec_()
+
+    def selectFilesToAdd(self) -> None:
+        filepaths = QFileDialog.getOpenFileNames(self, "Load files into module")[:-1][0]
+        self.addResources(filepaths)
 
     def openSelected(self) -> None:
         if self._filepath is None:
@@ -215,6 +221,37 @@ class ERFEditor(Editor):
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         for handler in self._externalHandlers:
             handler.stop()
+
+
+class ERFEditorTable(QTableView):
+    resourceDropped = QtCore.pyqtSignal(object)
+
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.accept()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls:
+            event.setDropAction(QtCore.Qt.CopyAction)
+            event.accept()
+            links = []
+            for url in event.mimeData().urls():
+                links.append(str(url.toLocalFile()))
+            self.resourceDropped.emit(links)
+        else:
+            event.ignore()
 
 
 class ExternalUpdateEventHandler(FileSystemEventHandler, QThread):
