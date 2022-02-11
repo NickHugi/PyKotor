@@ -3,6 +3,7 @@ from typing import Callable, Optional, Any, List
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
+from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QDialog, QWidget, QProgressBar, QMessageBox, QVBoxLayout, QLabel
 
 
@@ -36,6 +37,9 @@ class AsyncLoader(QDialog):
         self._worker.successful.connect(self._onSuccessful)
         self._worker.failed.connect(self._onFailed)
         self._worker.start()
+
+    def closeEvent(self, e: QCloseEvent) -> None:
+        self._worker.terminate()
 
     def updateInfo(self, text: str):
         self._infoText.setText(text)
@@ -112,6 +116,9 @@ class AsyncBatchLoader(QDialog):
         self._worker.failed.connect(self._onFailed)
         self._worker.completed.connect(self._onAllCompleted)
         self._worker.start()
+
+    def closeEvent(self, e: QCloseEvent) -> None:
+        self._worker.terminate()
 
     def updateInfo(self, text: str):
         self._infoText.setText(text)
