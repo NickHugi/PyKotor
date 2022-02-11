@@ -1,6 +1,7 @@
 from typing import Optional
 
 import pyperclip as pyperclip
+from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget
@@ -27,7 +28,6 @@ class TwoDAEditor(Editor):
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.model = QStandardItemModel(self)
-        self.ui.twodaTable.setModel(self.model)
         self.proxyModel = SortFilterProxyModel(self)
         self.proxyModel.setSourceModel(self.model)
 
@@ -50,8 +50,9 @@ class TwoDAEditor(Editor):
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
-        self.model.clear()
-        self.model.setRowCount(0)
+        self.model = QStandardItemModel(self)
+        self.proxyModel = SortFilterProxyModel(self)
+        self.proxyModel.setSourceModel(self.model)
 
         try:
             twoda = load_2da(data)
@@ -76,6 +77,7 @@ class TwoDAEditor(Editor):
                 self.ui.twodaTable.resizeColumnToContents(i)
 
             self.model.setVerticalHeaderLabels(["   " for i in range(twoda.get_height())])
+            self.ui.twodaTable.setModel(self.proxyModel)
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
             self.new()
@@ -105,13 +107,7 @@ class TwoDAEditor(Editor):
     def doFilter(self, text: str) -> None:
         self.proxyModel.setFilterFixedString(text)
 
-    def isFiltered(self) -> None:
-        return self.proxyModel is self.ui.twodaTable.model()
-
     def toggleFilter(self) -> None:
-        if not self.isFiltered():
-            self.ui.twodaTable.setModel(self.proxyModel)
-
         visible = not self.ui.filterBox.isVisible()
         self.ui.filterBox.setVisible(visible)
         if visible:
@@ -126,7 +122,7 @@ class TwoDAEditor(Editor):
         right = -1
 
         for index in self.ui.twodaTable.selectedIndexes():
-            index = self.proxyModel.mapToSource(index) if self.isFiltered() else index
+            index = self.proxyModel.mapToSource(index)
 
             top = min([top, index.row()])
             bottom = max([bottom, index.row()])
@@ -147,7 +143,7 @@ class TwoDAEditor(Editor):
     def pasteSelection(self) -> None:
         rows = pyperclip.paste().split("\n")
 
-        topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0]) if self.isFiltered() else self.ui.twodaTable.selectedIndexes()[0]
+        topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
         topLeftItem = self.model.itemFromIndex(topLeftIndex)
 
         top, left = y, x = topLeftItem.row(), topLeftItem.column()
