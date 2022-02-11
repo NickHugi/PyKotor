@@ -184,7 +184,6 @@ class ToolWindow(QMainWindow):
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
-
     def reloadSettings(self) -> None:
         self.ui.mdlDecompileCheckbox.setVisible(self.settings.value('mdlDecompile', False, bool))
         self.reloadInstallations()
@@ -382,6 +381,8 @@ class ToolWindow(QMainWindow):
         for resource in self.active.module_resources(module):
             self.modulesModel.addResource(resource)
 
+        self.resizeColumns()
+
     def refreshModuleList(self, reload: bool = True) -> None:
         """
         Refreshes the list of modules in the modulesCombo combobox.
@@ -447,6 +448,8 @@ class ToolWindow(QMainWindow):
         self.overrideModel.clear()
         for resource in self.active.override_resources(folder):
             self.overrideModel.addResource(resource)
+
+        self.resizeColumns()
 
     def currentDataView(self) -> QAbstractItemView:
         """
