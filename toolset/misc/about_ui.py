@@ -18,7 +18,7 @@ class Ui_Dialog(object):
         self.image = QtWidgets.QLabel(Dialog)
         self.image.setGeometry(QtCore.QRect(20, 20, 128, 128))
         self.image.setText("")
-        self.image.setPixmap(QtGui.QPixmap(":/icons/sith.png"))
+        self.image.setPixmap(QtGui.QPixmap(":/images/icons/sith.png"))
         self.image.setScaledContents(True)
         self.image.setObjectName("image")
         self.closeButton = QtWidgets.QPushButton(Dialog)
