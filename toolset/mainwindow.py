@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import traceback
 from contextlib import suppress
 from copy import copy
 from distutils.version import Version, StrictVersion
@@ -14,7 +15,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel, QMargins, QRect, \
     QSize, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QShowEvent, QWheelEvent, QImage, QColor, \
-    QBrush, QCloseEvent
+    QBrush, QCloseEvent, QTransform
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
     QLabel, QWidget, QMessageBox, QHeaderView, QLayout, QSizePolicy, QScrollArea, QStyle, QGridLayout, QTableWidget, \
     QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QListView
@@ -152,6 +153,7 @@ class ToolWindow(QMainWindow):
         self.ui.texturesList.stopWorker()
 
     def refreshTexturePackList(self):
+        self.ui.texturesCombo.clear()
         for texturepack in self.active.texturepacks_list():
             self.ui.texturesCombo.addItem(texturepack)
 
