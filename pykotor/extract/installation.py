@@ -108,8 +108,9 @@ class Installation:
         self._chitin = [resource for resource in chitin]
 
     def load_modules(self) -> None:
+        modules_path = self.module_path()
         self._modules = {}
-        module_files = [file for file in os.listdir(self.module_path()) if file.endswith('.mod') or file.endswith('.rim') or file.endswith('.erf')]
+        module_files = [file for file in os.listdir(modules_path) if file.endswith('.mod') or file.endswith('.rim') or file.endswith('.erf')]
         for module in module_files:
             with suppress(Exception):
                 self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
@@ -147,13 +148,16 @@ class Installation:
                     self._override[directory][file] = resource
 
     def reload_override(self, directory):
+        override_path = self.override_path()
+
         self._override[directory] = {}
-        files = os.listdir(self.override_path() + directory)
+        files = os.listdir(override_path + directory)
+
         for file in files:
             with suppress(Exception):
                 name, ext = file.split('.', 1)
-                size = os.path.getsize(self.override_path() + directory + file)
-                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, self.override_path() + directory + file)
+                size = os.path.getsize(override_path + directory + file)
+                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, override_path + directory + file)
                 self._override[directory][file] = resource
     # endregion
 
