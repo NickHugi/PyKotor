@@ -74,6 +74,10 @@ class CloneModuleDialog(QDialog):
                                         copyLightmaps=copyLightmaps, keepDoors=keepDoors, keepPlaceables=keepPlaceables,
                                         keepSounds=keepSounds, keepPathing=keepPathing)
 
+        if copyTextures:
+            QMessageBox(QMessageBox.Information, "This may take a while", "You have selected to create copies of the "
+                        "texture. This process may add a few extra minutes to the waiting time.").exec_()
+
         AsyncLoader(self, "Creating module", l, "Failed to create module").exec_()
 
     def loadModules(self) -> None:
