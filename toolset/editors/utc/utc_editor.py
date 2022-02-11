@@ -319,7 +319,7 @@ class UTCEditor(Editor):
         for feat in feats:
             stringref = feat.get_integer("name", 0)
             text = installation.string(stringref) if stringref != 0 else feat.get_string("label")
-            text = "[Unused]" if text == "" else text
+            text = "[Unused Feat ID: {}]".format(feat.label()) if text == "" else text
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, feat.label())
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
@@ -333,7 +333,7 @@ class UTCEditor(Editor):
             stringref = power.get_integer("name", 0)
             text = installation.string(stringref) if stringref != 0 else power.get_string("label")
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
-            text = "[Unused]" if text == "" else text
+            text = "[Unused Power ID: {}]".format(power.label()) if text == "" else text
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, power.label())
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
