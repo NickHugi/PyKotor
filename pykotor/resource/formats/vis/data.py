@@ -58,11 +58,11 @@ class VIS:
             self._rooms.remove(model)
 
     def rename_room(self, old: str, new: str):
-        if old == new:
-            return
-
         old = old.lower()
         new = new.lower()
+
+        if old == new:
+            return
 
         self._rooms.remove(old)
         self._rooms.add(new)
