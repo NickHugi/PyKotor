@@ -172,11 +172,12 @@ class ToolWindow(QMainWindow):
         icon = QIcon(QPixmap.fromImage(image))
 
         for texture in self.active.texturepack_resources(texturepack):
-            item = QStandardItem(icon, texture.resname())
-            item.setToolTip(texture.resname())
-            item.resource = texture
-            item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
-            self.texturesModel.appendRow(item)
+            if texture.restype() in [ResourceType.TPC, ResourceType.TGA]:
+                item = QStandardItem(icon, texture.resname())
+                item.setToolTip(texture.resname())
+                item.resource = texture
+                item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
+                self.texturesModel.appendRow(item)
         self.ui.texturesList.startWorker(self.active)
 
     def updateMenus(self) -> None:
