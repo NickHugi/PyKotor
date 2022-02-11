@@ -378,7 +378,7 @@ class UTCEditor(Editor):
     def portraitChanged(self, index: int) -> None:
         if index == 0:
             image = QImage(bytes([0 for _ in range(64 * 64 * 4)]), 64, 64, QImage.Format_RGBA8888)
-            pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+            pixmap = QPixmap.fromImage(image)
             self.ui.portraitPicture.setPixmap(pixmap)
         else:
             alignment = self.ui.alignmentSlider.value()
@@ -398,7 +398,7 @@ class UTCEditor(Editor):
             if texture is not None:
                 width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
                 image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                pixmap = QPixmap.fromImage(image)
+                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
                 self.ui.portraitPicture.setPixmap(pixmap)
             else:
                 image = QImage(bytes([0 for _ in range(64 * 64 * 4)]), 128, 128, QImage.Format_RGBA8888)
@@ -425,7 +425,6 @@ class UTCEditor(Editor):
             writer.write_bytes(data)
             writer.close()
 
-        print(filepath)
         self.parent().openResourceEditor(filepath, resname, ResourceType.DLG, data)
 
     def openInventory(self) -> None:
