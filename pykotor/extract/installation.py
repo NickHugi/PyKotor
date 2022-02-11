@@ -111,7 +111,8 @@ class Installation:
         self._modules = {}
         module_files = [file for file in os.listdir(self.module_path()) if file.endswith('.mod') or file.endswith('.rim') or file.endswith('.erf')]
         for module in module_files:
-            self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
+            with suppress(Exception):
+                self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
 
     def reload_module(self, module) -> None:
         self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
