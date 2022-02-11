@@ -22,6 +22,7 @@ class Ui_MainWindow(object):
         self.tableView = ERFEditorTable(self.centralwidget)
         self.tableView.setAcceptDrops(True)
         self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.tableView.setDragEnabled(True)
         self.tableView.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
         self.tableView.setDefaultDropAction(QtCore.Qt.CopyAction)
         self.tableView.setAlternatingRowColors(True)

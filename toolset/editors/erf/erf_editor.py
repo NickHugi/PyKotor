@@ -1,9 +1,9 @@
 import os
-from typing import Optional, Callable, List
+from typing import Optional, Callable, List, Union
 
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import QItemSelection, QThread
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon
+from PyQt5.QtCore import QItemSelection, QThread, QMimeData, QSettings
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon, QDragLeaveEvent
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
@@ -252,6 +252,27 @@ class ERFEditorTable(QTableView):
             self.resourceDropped.emit(links)
         else:
             event.ignore()
+
+    def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
+        settings = QSettings('cortisol', 'holocrontoolset')
+        tempDir = settings.value('tempDir', None)
+
+        if not tempDir or not os.path.exists(tempDir) or not os.path.isdir(tempDir):
+            return
+
+        urls = []
+        for index in [index for index in self.selectedIndexes() if index.column() == 0]:
+            resource = self.model().itemData(index)[QtCore.Qt.UserRole+1]
+            filepath = "{}/{}.{}".format(tempDir, resource.resref.get(), resource.restype.extension)
+            with open(filepath, 'wb') as file:
+                file.write(resource.data)
+            urls.append(QtCore.QUrl.fromLocalFile(filepath))
+
+        mimeData = QMimeData()
+        mimeData.setUrls(urls)
+        drag = QtGui.QDrag(self)
+        drag.setMimeData(mimeData)
+        drag.exec_(QtCore.Qt.CopyAction, QtCore.Qt.CopyAction)
 
 
 class ExternalUpdateEventHandler(FileSystemEventHandler, QThread):
