@@ -181,7 +181,7 @@ class UTCEditor(Editor):
         utc.not_reorienting = self.ui.noReorientateCheckbox.isChecked()
         utc.ignore_cre_path = self.ui.noBlockCheckbox.isChecked()
         utc.hologram = self.ui.hologramCheckbox.isChecked()
-        utc.race_id = self.ui.raceSelect.currentIndex()
+        utc.race_id = self.ui.raceSelect.currentIndex() + 5
         utc.subrace_id = self.ui.subraceSelect.currentIndex()
         utc.walkrate_id = self.ui.speedSelect.currentIndex()
         utc.faction_id = self.ui.factionSelect.currentIndex()
