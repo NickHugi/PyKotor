@@ -128,6 +128,7 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
                     newTextures[texture] = newTextureName
 
                     tpc = installation.texture(texture)
+                    tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
@@ -145,6 +146,7 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
                     newLightmaps[lightmap] = newLightmapName
 
                     tpc = installation.texture(lightmap, skip_chitin=False)
+                    tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
