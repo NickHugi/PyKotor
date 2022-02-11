@@ -36,10 +36,10 @@ class TPC:
     BINARY_TYPE = ResourceType.TPC
 
     def __init__(self):
-        self._texture_format: TPCTextureFormat = TPCTextureFormat.Invalid
-        self._mipmaps: List[bytes] = []
-        self._width: int = 0
-        self._height: int = 0
+        self._texture_format: TPCTextureFormat = TPCTextureFormat.RGB
+        self._mipmaps: List[bytes] = [bytes([0 for i in range(4 * 4 * 3)])]
+        self._width: int = 4
+        self._height: int = 4
         self.txi: str = ""
 
         # TODO: cube maps
