@@ -83,7 +83,7 @@
          <bool>false</bool>
         </property>
         <property name="text">
-         <string>Refresh</string>
+         <string>Reload</string>
         </property>
        </widget>
       </item>

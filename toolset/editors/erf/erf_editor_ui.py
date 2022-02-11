@@ -91,7 +91,7 @@ class Ui_MainWindow(object):
         self.openButton.setText(_translate("MainWindow", "Open"))
         self.loadButton.setText(_translate("MainWindow", "Add"))
         self.unloadButton.setText(_translate("MainWindow", "Remove"))
-        self.refreshButton.setText(_translate("MainWindow", "Refresh"))
+        self.refreshButton.setText(_translate("MainWindow", "Reload"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionNew.setText(_translate("MainWindow", "New"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
