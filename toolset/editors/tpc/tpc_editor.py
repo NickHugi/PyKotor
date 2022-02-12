@@ -31,9 +31,9 @@ class TPCEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         self._tpc = load_tpc(data)
-        width, height, rgba = self._tpc.convert(TPCTextureFormat.RGBA, 0)
+        width, height, rgba = self._tpc.convert(TPCTextureFormat.RGB, 0)
 
-        image = QImage(rgba, width, height, QImage.Format_RGBA8888)
+        image = QImage(rgba, width, height, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         self.ui.textureImage.setPixmap(pixmap)

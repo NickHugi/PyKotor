@@ -387,7 +387,7 @@ class UTCEditor(Editor):
 
     def portraitChanged(self, index: int) -> None:
         if index == 0:
-            image = QImage(bytes([0 for _ in range(64 * 64 * 4)]), 64, 64, QImage.Format_RGBA8888)
+            image = QImage(bytes([0 for _ in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(image)
             self.ui.portraitPicture.setPixmap(pixmap)
         else:
@@ -406,8 +406,8 @@ class UTCEditor(Editor):
             texture = self._installation.texture(portrait, skip_chitin=True, skip_modules=True, skip_gui=False)
 
             if texture is not None:
-                width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
-                image = QImage(rgba, width, height, QImage.Format_RGBA8888)
+                width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)
+                image = QImage(rgba, width, height, QImage.Format_RGB888)
                 pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
                 self.ui.portraitPicture.setPixmap(pixmap)
             else:
