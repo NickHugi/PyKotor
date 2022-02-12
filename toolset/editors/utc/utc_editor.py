@@ -411,7 +411,7 @@ class UTCEditor(Editor):
                 pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
                 self.ui.portraitPicture.setPixmap(pixmap)
             else:
-                image = QImage(bytes([0 for _ in range(64 * 64 * 4)]), 128, 128, QImage.Format_RGBA8888)
+                image = QImage(bytes([0 for _ in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
                 pixmap = QPixmap.fromImage(image)
                 self.ui.portraitPicture.setPixmap(pixmap)
 
