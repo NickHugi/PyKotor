@@ -1,3 +1,4 @@
+from contextlib import suppress
 from typing import Optional
 
 import chardet
@@ -439,10 +440,12 @@ class UTCEditor(Editor):
 
     def openInventory(self) -> None:
         droid = self.ui.raceSelect.currentIndex() == 0
+        capsules = []
 
-        root = Module.get_root(self._filepath)
-        capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
-        capsules = [Capsule(self._installation.module_path() + path) for path in capsulesPaths]
+        with suppress(Exception):
+            root = Module.get_root(self._filepath)
+            capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
+            capsules.extend([Capsule(self._installation.module_path() + path) for path in capsulesPaths])
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
         if inventoryEditor.exec_():
