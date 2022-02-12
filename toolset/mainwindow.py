@@ -50,7 +50,7 @@ from misc.clone_module import CloneModuleDialog
 import resources_rc
 
 
-PROGRAM_VERSION = "1.2.0"
+PROGRAM_VERSION = "1.2.1"
 
 
 class ToolWindow(QMainWindow):
