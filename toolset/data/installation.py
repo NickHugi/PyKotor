@@ -28,6 +28,7 @@ class HTInstallation(Installation):
     TwoDA_DOORS = "genericdoors"
     TwoDA_CURSORS = "cursors"
     TwoDA_TRAPS = "traps"
+    TwoDA_ENC_DIFFICULTIES = "encdifficulty"
 
     def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
         super().__init__(path, name, tsl)

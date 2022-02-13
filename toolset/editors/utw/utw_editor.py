@@ -95,4 +95,4 @@ class UTWEditor(Editor):
         if self._resref is not None and self._resref != "":
             self.ui.resrefEdit.setText(self._resref)
         else:
-            self.ui.resrefEdit.setText("m00xx_plc_000")
+            self.ui.resrefEdit.setText("m00xx_way_000")

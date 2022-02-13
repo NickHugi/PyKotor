@@ -508,6 +508,7 @@
      <addaction name="actionNewUTD"/>
      <addaction name="actionNewUTT"/>
      <addaction name="actionNewUTW"/>
+     <addaction name="actionNewUTE"/>
      <addaction name="separator"/>
      <addaction name="actionCloneModule"/>
      <addaction name="separator"/>
@@ -731,6 +732,18 @@
    </property>
    <property name="text">
     <string>Trigger</string>
+   </property>
+  </action>
+  <action name="actionNewUTE">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/encounter.png</normaloff>:/images/icons/kx/encounter.png</iconset>
+   </property>
+   <property name="text">
+    <string>Encounter</string>
    </property>
   </action>
  </widget>
