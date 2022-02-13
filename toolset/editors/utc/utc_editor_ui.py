@@ -136,6 +136,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
         self.conversationEdit = QtWidgets.QLineEdit(self.groupBox)
+        self.conversationEdit.setMaxLength(16)
         self.conversationEdit.setObjectName("conversationEdit")
         self.horizontalLayout_5.addWidget(self.conversationEdit)
         self.conversationModifyButton = QtWidgets.QPushButton(self.groupBox)
