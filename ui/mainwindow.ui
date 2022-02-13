@@ -504,6 +504,7 @@
       <string>New</string>
      </property>
      <addaction name="actionNewUTC"/>
+     <addaction name="actionNewUTP"/>
      <addaction name="separator"/>
      <addaction name="actionCloneModule"/>
      <addaction name="separator"/>
@@ -679,6 +680,18 @@
    </property>
    <property name="text">
     <string>Clone Module</string>
+   </property>
+  </action>
+  <action name="actionNewUTP">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/placeable.png</normaloff>:/images/icons/kx/placeable.png</iconset>
+   </property>
+   <property name="text">
+    <string>Placeable</string>
    </property>
   </action>
  </widget>

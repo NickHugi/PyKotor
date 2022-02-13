@@ -291,7 +291,14 @@ class Ui_MainWindow(object):
         self.actionCloneModule = QtWidgets.QAction(MainWindow)
         self.actionCloneModule.setEnabled(False)
         self.actionCloneModule.setObjectName("actionCloneModule")
+        self.actionNewUTP = QtWidgets.QAction(MainWindow)
+        self.actionNewUTP.setEnabled(False)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(":/images/icons/kx/placeable.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionNewUTP.setIcon(icon1)
+        self.actionNewUTP.setObjectName("actionNewUTP")
         self.menuNew.addAction(self.actionNewUTC)
+        self.menuNew.addAction(self.actionNewUTP)
         self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionCloneModule)
         self.menuNew.addSeparator()
@@ -373,5 +380,6 @@ class Ui_MainWindow(object):
         self.actionNewSSF.setText(_translate("MainWindow", "SSF"))
         self.actionNewUTC.setText(_translate("MainWindow", "Creature"))
         self.actionCloneModule.setText(_translate("MainWindow", "Clone Module"))
+        self.actionNewUTP.setText(_translate("MainWindow", "Placeable"))
 from toolset.mainwindow import TexturesView
 import resources_rc

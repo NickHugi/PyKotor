@@ -24,6 +24,7 @@ class HTInstallation(Installation):
     TwoDA_FEATS = "feat"
     TwoDA_POWERS = "spells"
     TwoDA_BASEITEMS = "baseitems"
+    TwoDA_PLACEABLES = "placeables"
 
     def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
         super().__init__(path, name, tsl)
