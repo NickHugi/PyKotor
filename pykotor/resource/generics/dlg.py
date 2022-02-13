@@ -42,7 +42,13 @@ class DLG:
     BINARY_TYPE = ResourceType.DLG
 
     def __init__(self):
-        self.starters: List[DLGLink] = []
+        # Add bare minimum to be openable by DLGEditor
+        starter = DLGLink()
+        entry = DLGEntry()
+        entry.text.set(Language.ENGLISH, Gender.MALE, "")
+        starter.node = entry
+
+        self.starters: List[DLGLink] = [starter]
         self.stunts: List[DLGStunt] = []
 
         self.ambient_track: ResRef = ResRef.from_blank()
