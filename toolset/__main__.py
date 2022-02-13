@@ -2,6 +2,7 @@ import sys
 import traceback
 from types import TracebackType
 
+from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
 from mainwindow import ToolWindow
@@ -16,6 +17,7 @@ def onAppCrash(e: BaseException, value: str, tback: TracebackType):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.thread().setPriority(QThread.HighestPriority)
     sys.excepthook = onAppCrash
     window = ToolWindow()
     window.show()
