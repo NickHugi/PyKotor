@@ -162,7 +162,7 @@ class ToolWindow(QMainWindow):
 
     def refreshTexturePackList(self):
         self.ui.texturesCombo.clear()
-        for texturepack in self.active.texturepacks_list():
+        for texturepack in reversed(self.active.texturepacks_list()):
             self.ui.texturesCombo.addItem(texturepack)
 
     def changeTexturePack(self, texturepack: str):
