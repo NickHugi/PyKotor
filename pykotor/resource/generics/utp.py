@@ -144,6 +144,7 @@ class UTP:
         self.trap_one_shot: bool = False
         self.trap_type: int = 0
         self.will: int = 0
+        self.reflex: int = 0
         self.on_disarm: ResRef = ResRef.from_blank()
         self.on_trap_triggered: ResRef = ResRef.from_blank()
         self.bodybag_id: int = 0
@@ -216,6 +217,7 @@ def construct_utp(gff: GFF) -> UTP:
     utp.trap_one_shot = root.acquire("TrapOneShot", 0)
     utp.trap_type = root.acquire("TrapType", 0)
     utp.will = root.acquire("Will", 0)
+    utp.reflex = root.acquire("Ref", 0)
     utp.on_disarm = root.acquire("OnDisarm", ResRef.from_blank())
     utp.on_trap_triggered = root.acquire("OnTrapTriggered", ResRef.from_blank())
     utp.bodybag_id = root.acquire("BodyBag", 0)
@@ -297,6 +299,7 @@ def dismantle_utp(utp: UTP, game: Game = Game.K2, *, use_deprecated: bool = True
         root.set_uint8("TrapOneShot", utp.trap_one_shot)
         root.set_uint8("TrapType", utp.trap_type)
         root.set_uint8("Will", utp.will)
+        root.set_uint8("Ref", utp.reflex)
         root.set_resref("OnDisarm", utp.on_disarm)
         root.set_resref("OnTrapTriggered", utp.on_trap_triggered)
         root.set_uint8("BodyBag", utp.bodybag_id)
