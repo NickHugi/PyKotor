@@ -43,6 +43,7 @@ from editors.twoda.twoda_editor import TwoDAEditor
 from editors.txt.txt_editor import TXTEditor
 from editors.utc.utc_editor import UTCEditor
 from editors.utd.utd_editor import UTDEditor
+from editors.ute.ute_editor import UTEEditor
 from editors.utp.utp_editor import UTPEditor
 from editors.utt.utt_editor import UTTEditor
 from editors.utw.utw_editor import UTWEditor
@@ -116,6 +117,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewUTD.triggered.connect(lambda: UTDEditor(self, self.active).show())
         self.ui.actionNewUTT.triggered.connect(lambda: UTTEditor(self, self.active).show())
         self.ui.actionNewUTW.triggered.connect(lambda: UTWEditor(self, self.active).show())
+        self.ui.actionNewUTE.triggered.connect(lambda: UTEEditor(self, self.active).show())
         self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self, self.active).show())
         self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self, self.active).show())
         self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
@@ -158,7 +160,7 @@ class ToolWindow(QMainWindow):
         self.checkForUpdates(True)
 
     def closeEvent(self, e: QCloseEvent) -> None:
-        self.ui.texturesList.stopWorker()
+        self.ui.texturesList.terminateWorker()
 
     def refreshTexturePackList(self):
         self.ui.texturesCombo.clear()
@@ -207,6 +209,10 @@ class ToolWindow(QMainWindow):
         waypointIconPath = ":/images/icons/k{}/waypoint.png".format(version)
         self.ui.actionNewUTW.setIcon(QIcon(QPixmap(waypointIconPath)))
         self.ui.actionNewUTW.setEnabled(self.active is not None)
+
+        encounterIconPath = ":/images/icons/k{}/encounter.png".format(version)
+        self.ui.actionNewUTE.setIcon(QIcon(QPixmap(encounterIconPath)))
+        self.ui.actionNewUTE.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
@@ -730,8 +736,14 @@ class ToolWindow(QMainWindow):
             else:
                 editor = UTWEditor(self, self.active)
 
+        if restype in [ResourceType.UTE]:
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = UTEEditor(self, self.active)
+
         if restype in [ResourceType.GFF, ResourceType.UTI, ResourceType.ITP,
-                       ResourceType.UTM, ResourceType.UTE, ResourceType.UTS,
+                       ResourceType.UTM, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
             editor, external = useGFFEditor()
 
@@ -920,6 +932,10 @@ class TexturesView(QListView):
     def stopWorker(self):
         if self._worker is not None:
             self._worker.stop()
+
+    def terminateWorker(self):
+        if self._worker is not None:
+            self._worker.terminate()
 
     def loadedTexture(self, item: QListWidgetItem, icon: QIcon) -> None:
         with suppress(Exception):
