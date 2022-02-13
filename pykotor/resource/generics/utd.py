@@ -45,7 +45,7 @@ class UTD:
         on_open_failed: "OnFailToOpen" field.
         comment: "Comment" field.
 
-        unlock_diff_mod: "OpenLockDiff" field. KotOR 2 Only.
+        unlock_diff: "OpenLockDiff" field. KotOR 2 Only.
         unlock_diff_mod: "OpenLockDiffMod" field. KotOR 2 Only.
         open_state: "OpenState" field. KotOR 2 Only.
         not_blastable: "NotBlastable" field. KotOR 2 Only.
@@ -186,7 +186,7 @@ def construct_utd(gff: GFF) -> UTD:
     utd.on_click = root.acquire("OnClick", ResRef.from_blank())
     utd.on_open_failed = root.acquire("OnFailToOpen", ResRef.from_blank())
     utd.comment = root.acquire("Comment", "")
-    utd.unlock_diff_mod = root.acquire("OpenLockDiff", 0)
+    utd.unlock_diff = root.acquire("OpenLockDiff", 0)
     utd.unlock_diff_mod = root.acquire("OpenLockDiffMod", 0)
     utd.description = root.acquire("Description", LocalizedString.from_invalid())
     utd.lock_dc = root.acquire("CloseLockDC", 0)
@@ -250,7 +250,7 @@ def dismantle_utd(utd: UTD, game: Game = Game.K2, *, use_deprecated: bool = True
     root.set_string("Comment", utd.comment)
 
     if game == Game.K2:
-        root.set_uint8("OpenLockDiff", utd.unlock_diff_mod)
+        root.set_uint8("OpenLockDiff", utd.unlock_diff)
         root.set_int8("OpenLockDiffMod", utd.unlock_diff_mod)
         root.set_uint8("OpenState", utd.open_state)
         root.set_uint8("NotBlastable", utd.not_blastable)
