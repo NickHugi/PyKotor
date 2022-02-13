@@ -44,6 +44,7 @@ from editors.txt.txt_editor import TXTEditor
 from editors.utc.utc_editor import UTCEditor
 from editors.utd.utd_editor import UTDEditor
 from editors.utp.utp_editor import UTPEditor
+from editors.utt.utt_editor import UTTEditor
 from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
@@ -113,6 +114,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
         self.ui.actionNewUTP.triggered.connect(lambda: UTPEditor(self, self.active).show())
         self.ui.actionNewUTD.triggered.connect(lambda: UTDEditor(self, self.active).show())
+        self.ui.actionNewUTT.triggered.connect(lambda: UTTEditor(self, self.active).show())
         self.ui.actionNewUTW.triggered.connect(lambda: UTWEditor(self, self.active).show())
         self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self, self.active).show())
         self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self, self.active).show())
@@ -197,6 +199,10 @@ class ToolWindow(QMainWindow):
         doorIconPath = ":/images/icons/k{}/door.png".format(version)
         self.ui.actionNewUTD.setIcon(QIcon(QPixmap(doorIconPath)))
         self.ui.actionNewUTD.setEnabled(self.active is not None)
+
+        triggerIconPath = ":/images/icons/k{}/trigger.png".format(version)
+        self.ui.actionNewUTT.setIcon(QIcon(QPixmap(triggerIconPath)))
+        self.ui.actionNewUTT.setEnabled(self.active is not None)
 
         waypointIconPath = ":/images/icons/k{}/waypoint.png".format(version)
         self.ui.actionNewUTW.setIcon(QIcon(QPixmap(waypointIconPath)))
@@ -712,6 +718,12 @@ class ToolWindow(QMainWindow):
             else:
                 editor = UTDEditor(self, self.active)
 
+        if restype in [ResourceType.UTT]:
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = UTTEditor(self, self.active)
+
         if restype in [ResourceType.UTW]:
             if self.active is None or not self.config.gffSpecializedEditors:
                 editor, external = useGFFEditor()
@@ -719,7 +731,7 @@ class ToolWindow(QMainWindow):
                 editor = UTWEditor(self, self.active)
 
         if restype in [ResourceType.GFF, ResourceType.UTI, ResourceType.ITP,
-                       ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTS,
+                       ResourceType.UTM, ResourceType.UTE, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
             editor, external = useGFFEditor()
 

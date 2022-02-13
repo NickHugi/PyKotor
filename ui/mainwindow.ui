@@ -506,6 +506,7 @@
      <addaction name="actionNewUTC"/>
      <addaction name="actionNewUTP"/>
      <addaction name="actionNewUTD"/>
+     <addaction name="actionNewUTT"/>
      <addaction name="actionNewUTW"/>
      <addaction name="separator"/>
      <addaction name="actionCloneModule"/>
@@ -718,6 +719,18 @@
    </property>
    <property name="text">
     <string>Waypoint</string>
+   </property>
+  </action>
+  <action name="actionNewUTT">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/trigger.png</normaloff>:/images/icons/kx/trigger.png</iconset>
+   </property>
+   <property name="text">
+    <string>Trigger</string>
    </property>
   </action>
  </widget>

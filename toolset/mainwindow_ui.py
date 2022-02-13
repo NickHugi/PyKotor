@@ -309,9 +309,16 @@ class Ui_MainWindow(object):
         icon3.addPixmap(QtGui.QPixmap(":/images/icons/kx/waypoint.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionNewUTW.setIcon(icon3)
         self.actionNewUTW.setObjectName("actionNewUTW")
+        self.actionNewUTT = QtWidgets.QAction(MainWindow)
+        self.actionNewUTT.setEnabled(False)
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap(":/images/icons/kx/trigger.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionNewUTT.setIcon(icon4)
+        self.actionNewUTT.setObjectName("actionNewUTT")
         self.menuNew.addAction(self.actionNewUTC)
         self.menuNew.addAction(self.actionNewUTP)
         self.menuNew.addAction(self.actionNewUTD)
+        self.menuNew.addAction(self.actionNewUTT)
         self.menuNew.addAction(self.actionNewUTW)
         self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionCloneModule)
@@ -397,5 +404,6 @@ class Ui_MainWindow(object):
         self.actionNewUTP.setText(_translate("MainWindow", "Placeable"))
         self.actionNewUTD.setText(_translate("MainWindow", "Door"))
         self.actionNewUTW.setText(_translate("MainWindow", "Waypoint"))
+        self.actionNewUTT.setText(_translate("MainWindow", "Trigger"))
 from toolset.mainwindow import TexturesView
 import resources_rc
