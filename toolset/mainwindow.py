@@ -865,7 +865,7 @@ class TexturesView(QListView):
 
         self._worker = TextureListWorker(self, installation)
         self._worker.loadedTexture.connect(self.loadedTexture)
-        self._worker.start()
+        self._worker.start(QThread.LowestPriority)
 
         self.loadVisibleTextures()
 
@@ -891,7 +891,6 @@ class TexturesView(QListView):
 
         scanWidth = self.window().width()
         scanHeight = self.window().height()
-
 
         proxyModel: QSortFilterProxyModel = self.model()
         model: QStandardItemModel = self.model().sourceModel()
