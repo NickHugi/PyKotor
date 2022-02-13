@@ -297,8 +297,15 @@ class Ui_MainWindow(object):
         icon1.addPixmap(QtGui.QPixmap(":/images/icons/kx/placeable.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionNewUTP.setIcon(icon1)
         self.actionNewUTP.setObjectName("actionNewUTP")
+        self.actionNewUTD = QtWidgets.QAction(MainWindow)
+        self.actionNewUTD.setEnabled(False)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap(":/images/icons/kx/door.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionNewUTD.setIcon(icon2)
+        self.actionNewUTD.setObjectName("actionNewUTD")
         self.menuNew.addAction(self.actionNewUTC)
         self.menuNew.addAction(self.actionNewUTP)
+        self.menuNew.addAction(self.actionNewUTD)
         self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionCloneModule)
         self.menuNew.addSeparator()
@@ -381,5 +388,6 @@ class Ui_MainWindow(object):
         self.actionNewUTC.setText(_translate("MainWindow", "Creature"))
         self.actionCloneModule.setText(_translate("MainWindow", "Clone Module"))
         self.actionNewUTP.setText(_translate("MainWindow", "Placeable"))
+        self.actionNewUTD.setText(_translate("MainWindow", "Door"))
 from toolset.mainwindow import TexturesView
 import resources_rc

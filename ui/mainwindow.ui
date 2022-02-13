@@ -505,6 +505,7 @@
      </property>
      <addaction name="actionNewUTC"/>
      <addaction name="actionNewUTP"/>
+     <addaction name="actionNewUTD"/>
      <addaction name="separator"/>
      <addaction name="actionCloneModule"/>
      <addaction name="separator"/>
@@ -692,6 +693,18 @@
    </property>
    <property name="text">
     <string>Placeable</string>
+   </property>
+  </action>
+  <action name="actionNewUTD">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/door.png</normaloff>:/images/icons/kx/door.png</iconset>
+   </property>
+   <property name="text">
+    <string>Door</string>
    </property>
   </action>
  </widget>
