@@ -506,6 +506,7 @@
      <addaction name="actionNewUTC"/>
      <addaction name="actionNewUTP"/>
      <addaction name="actionNewUTD"/>
+     <addaction name="actionNewUTW"/>
      <addaction name="separator"/>
      <addaction name="actionCloneModule"/>
      <addaction name="separator"/>
@@ -705,6 +706,18 @@
    </property>
    <property name="text">
     <string>Door</string>
+   </property>
+  </action>
+  <action name="actionNewUTW">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/waypoint.png</normaloff>:/images/icons/kx/waypoint.png</iconset>
+   </property>
+   <property name="text">
+    <string>Waypoint</string>
    </property>
   </action>
  </widget>
