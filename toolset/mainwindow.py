@@ -16,7 +16,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel, QMargins, QRect, \
     QSize, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QShowEvent, QWheelEvent, QImage, QColor, \
-    QBrush, QCloseEvent, QTransform
+    QBrush, QCloseEvent, QTransform, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
     QLabel, QWidget, QMessageBox, QHeaderView, QLayout, QSizePolicy, QScrollArea, QStyle, QGridLayout, QTableWidget, \
     QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QListView
@@ -853,6 +853,10 @@ class TexturesView(QListView):
         self._installation: Optional[HTInstallation] = None
         self._worker: Optional[TextureListWorker] = None
 
+    def resizeEvent(self, e: QResizeEvent) -> None:
+        super(TexturesView, self).resizeEvent(e)
+        self.loadVisibleTextures()
+
     def startWorker(self, installation: HTInstallation):
         self._installation = installation
 
@@ -885,17 +889,33 @@ class TexturesView(QListView):
         if self.model().rowCount() == 0:
             return []
 
-        items = []
+        scanWidth = self.window().width()
+        scanHeight = self.window().height()
 
-        for y in range(4, self.viewport().rect().height(), 64):
-            for x in range(4, self.viewport().rect().width(), 64):
+
+        proxyModel: QSortFilterProxyModel = self.model()
+        model: QStandardItemModel = self.model().sourceModel()
+
+        firstItem = None
+
+        for y in range(2, 92, 2):
+            for x in range(2, 92, 2):
                 proxyIndex = self.indexAt(QPoint(x, y))
-                proxyModel: QSortFilterProxyModel = self.model()
-                model: QStandardItemModel = self.model().sourceModel()
                 index = proxyModel.mapToSource(proxyIndex)
                 item = model.itemFromIndex(index)
-                if item is not None and item not in items:
-                    items.append(item)
+                if not firstItem and item:
+                    firstItem = item
+                    break
+
+        items = []
+        startRow = firstItem.row()
+        widthCount = scanWidth // 92
+        heightCount = scanHeight // 92
+        numVisible = min(proxyModel.rowCount(), widthCount * heightCount)
+
+        for i in range(numVisible):
+            item = model.item(startRow + i)
+            items.append(item)
 
         return items[::-1]
 
