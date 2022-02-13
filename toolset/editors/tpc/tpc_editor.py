@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPixmap, QImage, QTransform, QIcon
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import load_tpc, TPCTextureFormat, TPC, write_tpc
-from pykotor.resource.type import ResourceType, FileFormat
+from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
 from editors.tpc import tpc_editor_ui
@@ -55,9 +55,6 @@ class TPCEditor(Editor):
         self._tpc.txi = self.ui.txiEdit.toPlainText()
 
         data = bytearray()
-        fileFormat = FileFormat.BINARY
-        if self._restype == ResourceType.TGA:
-            fileFormat = FileFormat.TGA
 
-        write_tpc(self._tpc, data, fileFormat)
+        write_tpc(self._tpc, data, self._restype)
         return data

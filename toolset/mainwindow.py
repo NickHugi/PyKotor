@@ -26,7 +26,7 @@ from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
 from pykotor.resource.formats.mdl import load_mdl, write_mdl
 from pykotor.resource.formats.rim import write_rim, load_rim
 from pykotor.resource.formats.tpc import load_tpc, write_tpc, TPCTextureFormat, TPC
-from pykotor.resource.type import ResourceType, FileFormat
+from pykotor.resource.type import ResourceType
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
 
@@ -548,16 +548,16 @@ class ToolWindow(QMainWindow):
 
                 if decompileTPC:
                     data = bytearray()
-                    write_tpc(tpc, data, FileFormat.TGA)
+                    write_tpc(tpc, data, ResourceType.TGA)
                     filepath = filepath.replace(".tpc", ".tga")
 
             if resource.restype() == ResourceType.MDL and manipulateMDL:
                 mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
-                mdl = load_mdl(data, 0, mdxData)
+                mdl = load_mdl(data, 0, 0, mdxData, 0, 0)
 
                 if decompileMDL:
                     data = bytearray()
-                    write_mdl(mdl, data, FileFormat.ASCII)
+                    write_mdl(mdl, data, ResourceType.MDL_ASCII)
                     filepath = filepath.replace(".mdl", ".ascii.mdl")
 
                 if extractTexturesMDL:
@@ -567,8 +567,8 @@ class ToolWindow(QMainWindow):
                             if extractTXI:
                                 with open(folderpath + texture + ".txi", 'wb') as file:
                                     file.write(tpc.txi.encode('ascii'))
-                            file_format = FileFormat.TGA if decompileTPC else FileFormat.BINARY
-                            extension = "tga" if file_format == FileFormat.TGA else "tpc"
+                            file_format = ResourceType.TGA if decompileTPC else ResourceType.TPC
+                            extension = "tga" if file_format == ResourceType.TGA else "tpc"
                             write_tpc(tpc, "{}{}.{}".format(folderpath, texture, extension), file_format)
                         except Exception as e:
                             self.error.emit("Could not find or extract tpc: " + texture)

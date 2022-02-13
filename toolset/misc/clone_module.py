@@ -1,29 +1,8 @@
-import time
-from typing import List, Dict, Set, NamedTuple
+from typing import List, Dict, NamedTuple
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QStandardItem
 from PyQt5.QtWidgets import QDialog, QWidget, QMessageBox
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
-from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import FileQuery
-from pykotor.resource.formats.erf import ERF, ERFType, write_erf
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.formats.lyt.auto import load_lyt, write_lyt
-from pykotor.resource.formats.mdl import load_mdl
-from pykotor.resource.formats.rim import RIM, write_rim
-from pykotor.resource.formats.tpc import write_tpc, TPC, TPCTextureFormat
-from pykotor.resource.formats.vis import write_vis, VIS
-from pykotor.resource.generics.are import dismantle_are
-from pykotor.resource.generics.git import dismantle_git
-from pykotor.resource.generics.ifo import dismantle_ifo
-from pykotor.resource.generics.utd import dismantle_utd
-from pykotor.resource.generics.utp import dismantle_utp
-from pykotor.resource.generics.uts import dismantle_uts
-from pykotor.resource.type import ResourceType, FileFormat
-from pykotor.tools import model, module
+from pykotor.tools import module
 
 from data.installation import HTInstallation
 from misc import clone_module_ui
