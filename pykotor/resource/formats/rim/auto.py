@@ -1,13 +1,14 @@
 from typing import Union
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, RIMBinaryWriter
-from pykotor.resource.type import FileFormat
 
 
 def load_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0) -> RIM:
     """
-    Returns an RIM instance from the source. The file format (binary or xml) is automatically determined before parsing
+    Returns an RIM instance from the source. The file format (RIM) is automatically determined before parsing
     the data.
 
     Args:
@@ -26,9 +27,9 @@ def load_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         raise ValueError("Tried to load an unsupported or corrupted RIM file.")
 
 
-def write_rim(rim: RIM, target: Union[str, bytearray, BinaryReader], file_format: FileFormat = FileFormat.BINARY) -> None:
+def write_rim(rim: RIM, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.RIM) -> None:
     """
-    Writes the RIM data to the target location with the specified format (binary only).
+    Writes the RIM data to the target location with the specified format (RIM only).
 
     Args:
         rim: The RIM file being written.
@@ -36,9 +37,9 @@ def write_rim(rim: RIM, target: Union[str, bytearray, BinaryReader], file_format
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported FileFormat is passed.
+        ValueError: If an unsupported file format was given.
     """
-    if file_format == FileFormat.BINARY:
+    if file_format == ResourceType.RIM:
         RIMBinaryWriter(rim, target).write()
     else:
-        raise ValueError("Unsupported format specified; use BINARY or XML.")
+        raise ValueError("Unsupported format specified; use RIM.")

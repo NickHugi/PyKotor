@@ -14,19 +14,6 @@ SOURCE_TYPES = Union[str, bytes, bytearray, BinaryReader]
 TARGET_TYPES = Union[str, bytearray, BinaryWriter]
 
 
-class FileFormat(Enum):
-    INVALID = "invalid"
-
-    BINARY = "binary"
-    ASCII = "ascii"
-    XML = "xml"
-    CSV = "csv"
-    JSON = "json"
-
-    TGA = "tga"
-    BMP = "bmp"
-
-
 class ResourceReader(ABC):
     @overload
     def __init__(self, filepath: str, offset: int = 0, size: int = 0):

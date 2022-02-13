@@ -1,9 +1,10 @@
 from unittest import TestCase
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.lyt import LYTAsciiReader, LYTRoom, LYTTrack, LYT, LYTObstacle, LYTDoorHook
 from pykotor.resource.formats.lyt.auto import write_lyt, load_lyt
-from pykotor.resource.type import FileFormat
 
 ASCII_TEST_FILE = "../../files/test.lyt"
 
@@ -14,7 +15,7 @@ class TestLYT(TestCase):
         self.validate_io(lyt)
 
         data = bytearray()
-        write_lyt(lyt, data, FileFormat.ASCII)
+        write_lyt(lyt, data, ResourceType.LYT)
         lyt = load_lyt(data)
         self.validate_io(lyt)
 

@@ -1,19 +1,20 @@
 from unittest import TestCase
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.resource.formats.vis import VISAsciiReader, VIS
 from pykotor.resource.formats.vis.auto import write_vis, load_vis
-from pykotor.resource.type import FileFormat
 
 ASCII_TEST_FILE = "../../files/test.vis"
 
 
-class TestLIP(TestCase):
+class TestVIS(TestCase):
     def test_binary_io(self):
         vis = VISAsciiReader(ASCII_TEST_FILE).load()
         self.validate_io(vis)
 
         data = bytearray()
-        write_vis(vis, data, FileFormat.ASCII)
+        write_vis(vis, data, ResourceType.VIS)
         vis = load_vis(data)
         self.validate_io(vis)
 

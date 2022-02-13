@@ -1,9 +1,10 @@
 from unittest import TestCase
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryReader, write_tlk, load_tlk
-from pykotor.resource.type import FileFormat
 
 BINARY_TEST_FILE = "../../files/test.tlk"
 XML_TEST_FILE = "../../files/test.tlk.xml"
@@ -11,13 +12,13 @@ XML_TEST_FILE = "../../files/test.tlk.xml"
 
 class TestTLK(TestCase):
     def test_binary_io(self):
-        self.assertEqual(detect_tlk(BINARY_TEST_FILE), FileFormat.BINARY)
+        self.assertEqual(detect_tlk(BINARY_TEST_FILE), ResourceType.TLK)
 
         tlk = TLKBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(tlk)
 
         data = bytearray()
-        write_tlk(tlk, data, FileFormat.BINARY)
+        write_tlk(tlk, data, ResourceType.TLK)
         tlk = load_tlk(data)
         self.validate_io(tlk)
 

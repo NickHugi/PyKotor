@@ -1,13 +1,14 @@
 from typing import Union
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lyt import LYT, LYTAsciiWriter, LYTAsciiReader
-from pykotor.resource.type import FileFormat
 
 
 def load_lyt(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0) -> LYT:
     """
-    Returns an LYT instance from the source. The file format (binary or xml) is automatically determined before parsing
+    Returns an LYT instance from the source. The file format (LYT only) is automatically determined before parsing
     the data.
 
     Args:
@@ -26,9 +27,9 @@ def load_lyt(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         raise ValueError("Tried to load an unsupported or corrupted LYT file.")
 
 
-def write_lyt(lyt: LYT, target: Union[str, bytearray, BinaryReader], file_format: FileFormat = FileFormat.ASCII) -> None:
+def write_lyt(lyt: LYT, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.LYT) -> None:
     """
-    Writes the LYT data to the target location with the specified format (ascii only).
+    Writes the LYT data to the target location with the specified format (LYT only).
 
     Args:
         lyt: The LYT file being written.
@@ -36,9 +37,9 @@ def write_lyt(lyt: LYT, target: Union[str, bytearray, BinaryReader], file_format
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported FileFormat is passed.
+        ValueError: If an unsupported file format was given.
     """
-    if file_format == FileFormat.ASCII:
+    if file_format == ResourceType.LYT:
         LYTAsciiWriter(lyt, target).write()
     else:
-        raise ValueError("Unsupported format specified; use BINARY or XML.")
+        raise ValueError("Unsupported format specified; use LYT.")

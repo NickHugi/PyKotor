@@ -97,7 +97,7 @@ class RIM:
         Returns:
             A new ERF object.
         """
-        from pykotor.resource.formats.ssf import ERF  # Prevent circular imports
+        from pykotor.resource.formats.erf import ERF  # Prevent circular imports
         erf = ERF()
         for resource in self._resources:
             erf.set(resource.resref.get(), resource.restype, resource.data)

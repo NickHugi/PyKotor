@@ -2,12 +2,12 @@ from typing import Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
-from pykotor.resource.type import FileFormat
+from pykotor.resource.type import ResourceType
 
 
 def load_erf(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0) -> ERF:
     """
-    Returns an ERF instance from the source. The file format (binary or xml) is automatically determined before parsing
+    Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
     the data.
 
     Args:
@@ -26,9 +26,9 @@ def load_erf(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         raise ValueError("Tried to load an unsupported or corrupted ERF file.")
 
 
-def write_erf(erf: ERF, target: Union[str, bytearray, BinaryReader], file_format: FileFormat = FileFormat.BINARY) -> None:
+def write_erf(erf: ERF, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.ERF) -> None:
     """
-    Writes the ERF data to the target location with the specified format (binary only).
+    Writes the ERF data to the target location with the specified format (ERF or MOD).
 
     Args:
         erf: The ERF file being written.
@@ -36,9 +36,9 @@ def write_erf(erf: ERF, target: Union[str, bytearray, BinaryReader], file_format
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported FileFormat is passed.
+        ValueError: If an unsupported file format was given.
     """
-    if file_format == FileFormat.BINARY:
+    if file_format == ResourceType.ERF or file_format == ResourceType.MOD:
         ERFBinaryWriter(erf, target).write()
     else:
-        raise ValueError("Unsupported format specified; use BINARY or XML.")
+        raise ValueError("Unsupported format specified; use ERF or MOD.")

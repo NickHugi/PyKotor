@@ -12,7 +12,7 @@ from pykotor.resource.generics.utd import dismantle_utd
 from pykotor.resource.generics.are import dismantle_are
 from pykotor.resource.generics.ifo import dismantle_ifo
 
-from pykotor.resource.type import ResourceType, FileFormat
+from pykotor.resource.type import ResourceType
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
@@ -146,7 +146,7 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
                     tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
-                    write_tpc(tga, tga_data, FileFormat.TGA)
+                    write_tpc(tga, tga_data, ResourceType.TGA)
                     newModule.set(newTextureName, ResourceType.TGA, tga_data)
             mdlData = model.change_textures(mdlData, newTextures)
 
@@ -164,7 +164,7 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
                     tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
-                    write_tpc(tga, tga_data, FileFormat.TGA)
+                    write_tpc(tga, tga_data, ResourceType.TGA)
                     newModule.set(newLightmapName, ResourceType.TGA, tga_data)
             mdlData = model.change_lightmaps(mdlData, newLightmaps)
 

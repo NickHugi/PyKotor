@@ -1,13 +1,14 @@
 from typing import Union
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.vis import VIS, VISAsciiWriter, VISAsciiReader
-from pykotor.resource.type import FileFormat
 
 
 def load_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0) -> VIS:
     """
-    Returns an VIS instance from the source. The file format (ascii only) is automatically determined before parsing
+    Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
     the data.
 
     Args:
@@ -26,9 +27,9 @@ def load_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         raise ValueError("Tried to load an unsupported or corrupted VIS file.")
 
 
-def write_vis(vis: VIS, target: Union[str, bytearray, BinaryReader], file_format: FileFormat = FileFormat.ASCII) -> None:
+def write_vis(vis: VIS, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.VIS) -> None:
     """
-    Writes the VIS data to the target location with the specified format (ascii only).
+    Writes the VIS data to the target location with the specified format (VIS only).
 
     Args:
         vis: The VIS file being written.
@@ -36,9 +37,9 @@ def write_vis(vis: VIS, target: Union[str, bytearray, BinaryReader], file_format
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported FileFormat is passed.
+        ValueError: If an unsupported file format was given.
     """
-    if file_format == FileFormat.ASCII:
+    if file_format == ResourceType.VIS:
         VISAsciiWriter(vis, target).write()
     else:
-        raise ValueError("Unsupported format specified; use ASCII.")
+        raise ValueError("Unsupported format specified; use VIS.")

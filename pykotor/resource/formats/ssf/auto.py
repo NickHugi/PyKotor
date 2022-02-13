@@ -1,32 +1,10 @@
-from typing import overload, Union
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFXMLReader, SSFBinaryWriter
-from pykotor.resource.formats.ssf.io_xml import SSFXMLWriter
-from pykotor.resource.type import FileFormat, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-@overload
-def detect_ssf(source: str, offset: int = 0):
-    ...
-
-
-@overload
-def detect_ssf(source: bytes, offset: int = 0):
-    ...
-
-
-@overload
-def detect_ssf(source: bytearray, offset: int = 0):
-    ...
-
-
-@overload
-def detect_ssf(source: BinaryReader, offset: int = 0):
-    ...
-
-
-def detect_ssf(source: SOURCE_TYPES, offset: int = 0) -> FileFormat:
+def detect_ssf(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     """
     Returns what format the SSF data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -41,23 +19,23 @@ def detect_ssf(source: SOURCE_TYPES, offset: int = 0) -> FileFormat:
     try:
         if isinstance(source, str):
             with BinaryReader.from_file(source, offset) as reader:
-                file_format = FileFormat.BINARY if reader.read_string(4) == "SSF " else FileFormat.XML
+                file_format = ResourceType.SSF if reader.read_string(4) == "SSF " else ResourceType.SSF_XML
         elif isinstance(source, bytes) or isinstance(source, bytearray):
-            file_format = FileFormat.BINARY if source[:4].decode('ascii', 'ignore') == "SSF " else FileFormat.XML
+            file_format = ResourceType.SSF if source[:4].decode('ascii', 'ignore') == "SSF " else ResourceType.SSF_XML
         elif isinstance(source, BinaryReader):
-            file_format = FileFormat.BINARY if source.read_string(4) == "SSF " else FileFormat.XML
+            file_format = ResourceType.SSF if source.read_string(4) == "SSF " else ResourceType.SSF_XML
             source.skip(-4)
         else:
-            file_format = FileFormat.INVALID
+            file_format = ResourceType.INVALID
     except IOError:
-        file_format = FileFormat.INVALID
+        file_format = ResourceType.INVALID
 
     return file_format
 
 
 def load_ssf(source: SOURCE_TYPES, offset: int = 0) -> SSF:
     """
-    Returns an SSF instance from the source. The file format (binary or xml) is automatically determined before parsing
+    Returns an SSF instance from the source. The file format (SSF or SSF_XML) is automatically determined before parsing
     the data.
 
     Args:
@@ -73,9 +51,9 @@ def load_ssf(source: SOURCE_TYPES, offset: int = 0) -> SSF:
     file_format = detect_ssf(source, offset)
 
     try:
-        if file_format == FileFormat.BINARY:
+        if file_format == ResourceType.SSF:
             return SSFBinaryReader(source, offset).load()
-        elif file_format == FileFormat.XML:
+        elif file_format == ResourceType.SSF_XML:
             return SSFXMLReader(source).load()
         else:
             raise ValueError
@@ -83,9 +61,9 @@ def load_ssf(source: SOURCE_TYPES, offset: int = 0) -> SSF:
         raise ValueError("Tried to load an unsupported or corrupted SSF file.")
 
 
-def write_ssf(ssf: SSF, target: TARGET_TYPES, file_format: FileFormat = FileFormat.BINARY) -> None:
+def write_ssf(ssf: SSF, target: TARGET_TYPES, file_format: ResourceType = ResourceType.SSF) -> None:
     """
-    Writes the SSF data to the target location with the specified format (binary or xml).
+    Writes the SSF data to the target location with the specified format (SSF or SSF_XML).
 
     Args:
         ssf: The SSF file being written.
@@ -93,11 +71,11 @@ def write_ssf(ssf: SSF, target: TARGET_TYPES, file_format: FileFormat = FileForm
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported FileFormat is passed.
+        ValueError: If an unsupported file format was given.
     """
-    if file_format == FileFormat.BINARY:
+    if file_format == ResourceType.SSF:
         SSFBinaryWriter(ssf, target).write()
-    elif file_format == FileFormat.XML:
+    elif file_format == ResourceType.SSF_XML:
         SSFXMLWriter(ssf, target).write()
     else:
-        raise ValueError("Unsupported format specified; use BINARY or XML.")
+        raise ValueError("Unsupported format specified; use SSF or SSF_XML.")

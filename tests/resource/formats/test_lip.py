@@ -1,7 +1,8 @@
 from unittest import TestCase
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.resource.formats.lip import LIP, LIPShape, LIPBinaryReader, detect_lip, write_lip, LIPXMLReader
-from pykotor.resource.type import FileFormat
 
 BINARY_TEST_FILE = "../../files/test.lip"
 XML_TEST_FILE = "../../files/test.lip.xml"
@@ -9,24 +10,24 @@ XML_TEST_FILE = "../../files/test.lip.xml"
 
 class TestLIP(TestCase):
     def test_binary_io(self):
-        self.assertEqual(detect_lip(BINARY_TEST_FILE), FileFormat.BINARY)
+        self.assertEqual(detect_lip(BINARY_TEST_FILE), ResourceType.LIP)
 
         lip = LIPBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(lip)
 
         data = bytearray()
-        write_lip(lip, data, FileFormat.BINARY)
+        write_lip(lip, data, ResourceType.LIP)
         lip = LIPBinaryReader(data).load()
         self.validate_io(lip)
 
     def test_xml_io(self):
-        self.assertEqual(detect_lip(XML_TEST_FILE), FileFormat.XML)
+        self.assertEqual(detect_lip(XML_TEST_FILE), ResourceType.LIP_XML)
 
         lip = LIPXMLReader(XML_TEST_FILE).load()
         self.validate_io(lip)
 
         data = bytearray()
-        write_lip(lip, data, FileFormat.XML)
+        write_lip(lip, data, ResourceType.LIP_XML)
         lip = LIPXMLReader(data).load()
         self.validate_io(lip)
 

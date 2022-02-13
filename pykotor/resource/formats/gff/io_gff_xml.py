@@ -5,6 +5,8 @@ import io
 from typing import Optional, Any
 from xml.etree import ElementTree
 
+from pykotor.common.misc import ResRef
+
 from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import LocalizedString
 from pykotor.resource.formats.gff.data import GFF, GFFStruct, GFFFieldType, GFFList
@@ -20,7 +22,7 @@ class GFFXMLReader(ResourceReader):
     def load(self, auto_close: bool = True) -> GFF:
         self._gff = GFF()
 
-        xml_root: ET.Element = self._xml_root.find('struct')
+        xml_root: ElementTree.Element = self._xml_root.find('struct')
         self._load_struct(self._gff.root, xml_root)
         
         if auto_close:
@@ -28,13 +30,13 @@ class GFFXMLReader(ResourceReader):
 
         return self._gff
 
-    def _load_struct(self, gff_struct: GFFStruct, xml_struct: ET.Element):
+    def _load_struct(self, gff_struct: GFFStruct, xml_struct: ElementTree.Element):
         gff_struct.struct_id = int(xml_struct.get("id"))
 
         for xml_field in xml_struct:
             self._load_field(gff_struct, xml_field)
 
-    def _load_field(self, gff_struct: GFFStruct, xml_field: ET.Element):
+    def _load_field(self, gff_struct: GFFStruct, xml_field: ElementTree.Element):
         label = xml_field.get("label")
 
         if xml_field.tag == "byte":
@@ -60,7 +62,7 @@ class GFFXMLReader(ResourceReader):
         elif xml_field.tag == "exostring":
             gff_struct.set_string(label, xml_field.text)
         elif xml_field.tag == "resref":
-            gff_struct.set_resref(label, xml_field.text)
+            gff_struct.set_resref(label, ResRef(xml_field.text))
         elif xml_field.tag == "locstring":
             locstring = LocalizedString(-1)
             locstring.stringref = -1 if xml_field.get("strref") == "4294967295" else int(xml_field.get("strref"))
@@ -111,13 +113,13 @@ class GFFXMLWriter(ResourceWriter):
         if auto_close:
             self._writer.close()
 
-    def _build_struct(self, gff_struct: GFFStruct, xml_struct: ET.Element):
+    def _build_struct(self, gff_struct: GFFStruct, xml_struct: ElementTree.Element):
         xml_struct.set('id', str(gff_struct.struct_id))
 
         for label, field_type, value in gff_struct:
             self._build_field(label, value, field_type, xml_struct)
 
-    def _build_field(self, label: str, value: Any, field_type: GFFFieldType, xml_struct: ET.Element):
+    def _build_field(self, label: str, value: Any, field_type: GFFFieldType, xml_struct: ElementTree.Element):
         xml_field = ElementTree.Element("")
         xml_field.set("label", label)
         xml_struct.append(xml_field)

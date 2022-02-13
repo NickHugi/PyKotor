@@ -1,10 +1,11 @@
 from unittest import TestCase
 
+from pykotor.resource.type import ResourceType
+
 from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import Language, Gender
 from pykotor.resource.formats.gff import GFFBinaryReader, GFF, GFFXMLReader
 from pykotor.resource.formats.gff.auto import write_gff, load_gff
-from pykotor.resource.type import FileFormat
 
 BINARY_TEST_FILE = "../../files/test.gff"
 XML_TEST_FILE = "../../files/test.gff.xml"
@@ -16,7 +17,7 @@ class TestGFF(TestCase):
         self.validate_io(gff)
 
         data = bytearray()
-        write_gff(gff, data, FileFormat.BINARY)
+        write_gff(gff, data, ResourceType.GFF)
         gff = load_gff(data)
         self.validate_io(gff)
 
@@ -25,7 +26,7 @@ class TestGFF(TestCase):
         self.validate_io(gff)
 
         data = bytearray()
-        write_gff(gff, data, FileFormat.XML)
+        write_gff(gff, data, ResourceType.GFF_XML)
         gff = load_gff(data)
         self.validate_io(gff)
 

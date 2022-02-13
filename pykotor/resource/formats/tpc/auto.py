@@ -2,10 +2,10 @@ from typing import overload, Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCBinaryReader, TPCBinaryWriter, TPCTGAWriter, TPCBMPWriter, TPCTGAReader
-from pykotor.resource.type import FileFormat, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> FileFormat:
+def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     """
     Returns what format the TPC data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -17,14 +17,14 @@ def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> FileFormat:
     Returns:
         The format of the TPC data.
     """
-    def do_check(first100: bytes) -> FileFormat:
-        file_format = FileFormat.BINARY
+    def do_check(first100: bytes) -> ResourceType:
+        file_format = ResourceType.TPC
         if len(first100) < 100:
-            file_format = FileFormat.TGA
+            file_format = ResourceType.TGA
         else:
             for i in range(15, 100):
                 if first100[i] != 0:
-                    file_format = FileFormat.TGA
+                    file_format = ResourceType.TGA
         return file_format
 
     try:
@@ -37,16 +37,16 @@ def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> FileFormat:
             file_format = do_check(source.read_bytes(100))
             source.skip(-100)
         else:
-            file_format = FileFormat.INVALID
+            file_format = ResourceType.INVALID
     except IOError:
-        file_format = FileFormat.INVALID
+        file_format = ResourceType.INVALID
 
     return file_format
 
 
 def load_tpc(source: SOURCE_TYPES, offset: int = 0) -> TPC:
     """
-    Returns an TPC instance from the source. The file format (tpc or tga) is automatically determined before
+    Returns an TPC instance from the source. The file format (TPC or TGA) is automatically determined before
     parsing the data.
 
     Args:
@@ -62,9 +62,9 @@ def load_tpc(source: SOURCE_TYPES, offset: int = 0) -> TPC:
     file_format = detect_tpc(source, offset)
 
     try:
-        if file_format == FileFormat.BINARY:
+        if file_format == ResourceType.TPC:
             return TPCBinaryReader(source, offset).load()
-        elif file_format == FileFormat.TGA:
+        elif file_format == ResourceType.TGA:
             return TPCTGAReader(source).load()
         else:
             raise ValueError
@@ -72,9 +72,9 @@ def load_tpc(source: SOURCE_TYPES, offset: int = 0) -> TPC:
         raise ValueError("Tried to load an unsupported or corrupted TPC file.")
 
 
-def write_tpc(tpc: TPC, target: TARGET_TYPES, file_format: FileFormat = FileFormat.BINARY) -> None:
+def write_tpc(tpc: TPC, target: TARGET_TYPES, file_format: ResourceType = ResourceType.TPC) -> None:
     """
-    Writes the TPC data to the target location with the specified format (tpc, tga, bmp).
+    Writes the TPC data to the target location with the specified format (TPC, TGA or BMP).
 
     Args:
         tpc: The TPC file being written.
@@ -82,14 +82,14 @@ def write_tpc(tpc: TPC, target: TARGET_TYPES, file_format: FileFormat = FileForm
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported FileFormat is passed.
+        ValueError: If an unsupported file format was given.
     """
-    if file_format == FileFormat.TGA:
+    if file_format == ResourceType.TGA:
         TPCTGAWriter(tpc, target).write()
-    elif file_format == FileFormat.BMP:
+    elif file_format == ResourceType.BMP:
         TPCBMPWriter(tpc, target).write()
-    elif file_format == FileFormat.BINARY:
+    elif file_format == ResourceType.TPC:
         TPCBinaryWriter(tpc, target).write()
     else:
-        raise ValueError("Unsupported format specified; use BINARY or XML.")
+        raise ValueError("Unsupported format specified; use TPC, TGA or BMP.")
 

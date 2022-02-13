@@ -1,6 +1,6 @@
 from pykotor.resource.formats.ltr.data import LTR
-from pykotor.resource.formats.ltr.io_binary import LTRBinaryReader, LTRBinaryWriter
-from pykotor.resource.type import SOURCE_TYPES, FileFormat, TARGET_TYPES
+from pykotor.resource.formats.ltr.io_ltr import LTRBinaryReader, LTRBinaryWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def load_ltr(source: SOURCE_TYPES, offset: int = 0) -> LTR:
@@ -23,9 +23,9 @@ def load_ltr(source: SOURCE_TYPES, offset: int = 0) -> LTR:
         raise ValueError("Tried to load an unsupported or corrupted LTR file.")
 
 
-def write_ltr(ltr: LTR, target: TARGET_TYPES, file_format: FileFormat = FileFormat.BINARY) -> None:
+def write_ltr(ltr: LTR, target: TARGET_TYPES, file_format: ResourceType = ResourceType.LTR) -> None:
     """
-    Writes the LTR data to the target location with the specified format (binary only).
+    Writes the LTR data to the target location with the specified format (LTR only).
 
     Args:
         ltr: The LTR file being written.
@@ -33,9 +33,9 @@ def write_ltr(ltr: LTR, target: TARGET_TYPES, file_format: FileFormat = FileForm
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported FileFormat is passed.
+        ValueError: If an unsupported file format was given.
     """
-    if file_format == FileFormat.BINARY:
+    if file_format == ResourceType.LTR:
         LTRBinaryWriter(ltr, target).write()
     else:
-        raise ValueError("Unsupported format specified; use BINARY or XML.")
+        raise ValueError("Unsupported format specified; use LTR.")
