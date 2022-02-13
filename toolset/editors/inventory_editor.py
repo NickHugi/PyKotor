@@ -41,7 +41,8 @@ class SlotMapping(NamedTuple):
 
 class InventoryEditor(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule], folders: List[str],
-                 inventory: List[InventoryItem], equipment: Dict[EquipmentSlot, InventoryItem], droid: bool = False):
+                 inventory: List[InventoryItem], equipment: Dict[EquipmentSlot, InventoryItem], droid: bool = False,
+                 hide_equipment: bool = False):
         super().__init__(parent)
 
         self.ui = inventory_editor_ui.Ui_Dialog()
@@ -134,6 +135,8 @@ class InventoryEditor(QDialog):
 
         for item in self.inventory:
             self.ui.contentsTable.addItem(item.resref.get(), item.droppable)
+
+        self.ui.tabWidget_2.setVisible(not hide_equipment)
 
         self.buildItems()
 
