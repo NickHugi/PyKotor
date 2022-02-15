@@ -327,7 +327,7 @@ class Installation:
         def check_texturepack(texturepack: str):
             for resource in self.texturepack_resources(texturepack):
                 if resource.resname().lower() == resname.lower() and resource.restype() == ResourceType.TPC:
-                    return load_tpc(resource.data())
+                    return ResourceResult(resource.filepath(), resource.resname(), resource.data())
 
         def check_music():
             streammusic_path = self.streammusic_path()
@@ -420,27 +420,18 @@ class Installation:
 
         return result
 
-    def resource_batch(self, queries: List[FileQuery], *, capsules: List[Capsule] = None, folders: List[str] = None,
-                 skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False) -> List[ResourceResult]:
+    def resource_batch(self, queries: List[FileQuery], search_order: List[SearchLocation] = None, *,
+                       capsules: List[Capsule] = None, folders: List[str] = None) -> List[ResourceResult]:
         results: List[ResourceResult] = []
+
+        if search_order is None:
+            search_order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
+                            SearchLocation.MODULES, SearchLocation.CHITIN]
 
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        # 1 - Check user provided folders
-        for folder in folders:
-            folder = folder + '/' if not folder.endswith('/') else folder
-            for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
-                filepath = folder + file
-                with suppress(Exception):
-                    f_resref, f_restype = ResourceIdentifier.from_path(file)
-                    for query in copy(queries):
-                        if query.resname.lower() == f_resref and query.restype == f_restype:
-                            queries.remove(query)
-                            results.append(ResourceResult(filepath, query.resname, BinaryReader.load_file(filepath)))
-
-        # 2 - Check installation override
-        if not skip_override:
+        def check_override():
             override_path = self.override_path()
             for subfolder, directory in self._override.items():
                 for filename, resource in directory.items():
@@ -450,59 +441,141 @@ class Installation:
                             queries.remove(query)
                             results.append(ResourceResult(filepath, query.resname, resource.data()))
 
-        # 3 - Check user provided modules
-        for capsule in capsules:
-            for query in copy(queries):
-                if capsule.exists(query.resname, query.restype):
-                    results.append(ResourceResult(capsule.path(), query.resname, capsule.resource(query.resname, query.restype)))
-
-        # 4 - Check installation modules
-        if not skip_modules:
-            modules_path = self.module_path()
+        def check_modules():
             for module_name, resources in self._modules.items():
-                filepath = modules_path + module_name
                 for resource in resources:
                     for query in copy(queries):
                         if resource == query:
-                            results.append(ResourceResult(filepath, query.resname, resource.data()))
+                            queries.remove(query)
+                            results.append(ResourceResult(resource.filepath(), query.resname, resource.data()))
 
-        # 5 - Check installation chitin
-        if not skip_chitin:
+        def check_chitin():
             handles = {}
             for resource in self._chitin:
                 for query in copy(queries):
                     if resource == query:
+                        queries.remove(query)
                         if resource.filepath() not in handles:
                             handles[resource.filepath()] = BinaryReader.from_file(resource.filepath())
                         handles[resource.filepath()].seek(resource.offset())
                         data = handles[resource.filepath()].read_bytes(resource.size())
                         results.append(ResourceResult(resource.filepath(), query.resname, data))
+            for handle in handles:
+                handles[handle].close()
+
+        def check_texturepack(texturepack: str):
+            for resource in self.texturepack_resources(texturepack):
+                for query in copy(queries):
+                    if resource == query:
+                        queries.remove(query)
+                        results.append(ResourceResult(resource.filepath(), resource.resname(), resource.data()))
+
+        def check_music():
+            streammusic_path = self.streammusic_path()
+            sound_files = [file for file in os.listdir(streammusic_path)]
+            for sound_file in sound_files:
+                for query in copy(queries):
+                    filepath = streammusic_path + sound_file
+                    f_resname, f_restype = ResourceIdentifier.from_path(filepath)
+                    if f_resname == query.resname and f_restype == query.restype:
+                        queries.remove(query)
+                        size = os.path.getsize(filepath)
+                        resource = FileResource(f_resname, f_restype, size, 0, filepath)
+                        results.append(ResourceResult(resource.filepath(), resource.resname(), resource.data()))
+
+        def check_sound():
+            streamsound_path = self.streamsounds_path()
+            sound_files = [file for file in os.listdir(streamsound_path)]
+            for sound_file in sound_files:
+                for query in copy(queries):
+                    filepath = streamsound_path + sound_file
+                    f_resname, f_restype = ResourceIdentifier.from_path(filepath)
+                    if f_resname == query.resname and f_restype == query.restype:
+                        queries.remove(query)
+                        size = os.path.getsize(filepath)
+                        resource = FileResource(f_resname, f_restype, size, 0, filepath)
+                        results.append(ResourceResult(resource.filepath(), resource.resname(), resource.data()))
+
+        def check_voice():
+            for path, subdirs, files in os.walk(self.streamvoice_path()):
+                path = (path if path.endswith("/") else path + "/").replace("\\", "/")
+                for file in files:
+                    for query in copy(queries):
+                        with suppress(Exception):
+                            f_resname, f_restype = ResourceIdentifier.from_path(file)
+                            if f_resname == query.resname and f_restype == query.restype:
+                                queries.remove(query)
+                                size = os.path.getsize(path + file)
+                                resource = FileResource(f_resname, f_restype, size, 0, path + file)
+                                results.append(ResourceResult(resource.filepath(), resource.resname(), resource.data()))
+
+        def check_lips():
+            for module_name, resources in self._lips.items():
+                for resource in resources:
+                    for query in copy(queries):
+                        if resource == query:
+                            queries.remove(query)
+                            results.append(ResourceResult(resource.filepath(), resource.resname(), resource.data()))
+
+        def check_rims():
+            rims_path = self.rims_path()
+            rim_files = [file for file in os.listdir(rims_path)]
+            for rim_file in rim_files:
+                capsule = Capsule(rims_path + rim_file)
+                filepath = capsule.path()
+                for resource in Capsule(filepath):
+                    for query in copy(queries):
+                        if resource == query:
+                            results.append(ResourceResult(resource.filepath(), resource.resname(), resource.data()))
+
+        def check_custom_modules():
+            for capsule in capsules:
+                for query in copy(queries):
+                    if capsule.exists(query.resname, query.restype):
+                        results.append(ResourceResult(capsule.path(), query.resname, capsule.resource(query.resname, query.restype)))
+
+        def check_custom_folders():
+            for folder in folders:
+                folder = folder + '/' if not folder.endswith('/') else folder
+                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                    filepath = folder + file
+                    with suppress(Exception):
+                        f_resref, f_restype = ResourceIdentifier.from_path(file)
+                        for query in copy(queries):
+                            if query.resname.lower() == f_resref and query.restype == f_restype:
+                                queries.remove(query)
+                                results.append(ResourceResult(filepath, query.resname, BinaryReader.load_file(filepath)))
+
+        function_map = {
+            SearchLocation.OVERRIDE: check_override,
+            SearchLocation.CHITIN: check_chitin,
+            SearchLocation.MODULES: check_modules,
+            SearchLocation.VOICE: check_voice,
+            SearchLocation.SOUND: check_sound,
+            SearchLocation.MUSIC: check_music,
+            SearchLocation.LIPS: check_lips,
+            SearchLocation.RIMS: check_rims,
+            SearchLocation.TEXTURES_TPA: lambda: check_texturepack("swpc_tex_tpa.erf"),
+            SearchLocation.TEXTURES_TPB: lambda: check_texturepack("swpc_tex_tpb.erf"),
+            SearchLocation.TEXTURES_TPC: lambda: check_texturepack("swpc_tex_tpc.erf"),
+            SearchLocation.TEXTURES_GUI: lambda: check_texturepack("swpc_tex_gui.erf"),
+            SearchLocation.CUSTOM_MODULES: check_custom_modules,
+            SearchLocation.CUSTOM_FOLDERS: check_custom_folders
+        }
+
+        for item in search_order:
+            function_map[item]()
 
         return results
 
-    def locate(self, resname: str, restype: ResourceType, *, capsules: List[Capsule] = None, folders: List[str] = None,
-               skip_modules: bool = False, skip_chitin: bool = False, skip_override: bool = False,
-               skip_textures: bool = False) -> List[LocationResult]:
+    def locate(self, resname: str, restype: ResourceType, search_order: List[SearchLocation] = None, *,
+               capsules: List[Capsule] = None, folders: List[str] = None) -> List[LocationResult]:
         """
         Returns a list filepaths for where a particular resource matching the given resref and restype are located.
 
-        Texture is search for in the following order:
-            1. "folders" parameter.
-            2. Installation override folder.
-            3. "capsules" parameter.
-            4. Installation module files in modules folder.
-            5. Normal texture pack.
-            6. Installation Chitin.
-
         Args:
-            resname: The ResRef string.
-            restype: The resource type.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
-            skip_chitin: If true, skips searching chitin files.
-            skip_modules: If true, skips searching through module files.
-            skip_override: If true, skips searching through override files.
-            skip_textures: If true, skips searching through the texturepack.
 
         Returns:
             A list of filepaths.
@@ -510,53 +583,122 @@ class Installation:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        query = FileQuery(resname, restype)
         locations: List[LocationResult] = []
+        query: FileQuery = FileQuery(resname, restype)
 
-        # 1 - Check user provided folders
-        for folder in folders:
-            folder = folder + '/' if not folder.endswith('/') else folder
-            for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
-                with suppress(Exception):
-                    f_resref, f_restype = ResourceIdentifier.from_path(file)
-                    f_filepath = folder + file
-                    f_size = os.path.getsize(f_filepath)
-                    if resname.lower() == f_resref and restype == f_restype:
-                        locations.append(LocationResult(f_filepath, 0, f_size))
-
-        # 2 - Check installation override
-        if not skip_override:
-            override_path = self.override_path()
-            for subfolder, files in self._override.items():
-                for filename, resource in files.items():
+        def check_override():
+            for subfolder, directory in self._override.items():
+                for filename, resource in directory.items():
                     if resource == query:
-                        filepath = override_path + subfolder + filename
-                        size = os.path.getsize(filepath)
-                        locations.append(LocationResult(filepath, 0, size))
+                        locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
 
-        # 3 - Check user provided modules
-        for capsule in capsules:
-            locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
-                              for resource in capsule if resource == query])
+        def check_modules():
+            for module_name, resources in self._modules.items():
+                for resource in resources:
+                    if resource == query:
+                        locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
 
-        # 4 - Check installation modules
-        if not skip_modules:
-            for modules in self._modules.values():
-                resources = modules
-                locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
-                                  for resource in resources if resource == query])
+        def check_chitin():
+            handles = {}
+            for resource in self._chitin:
+                if resource == query:
+                    if resource.filepath() not in handles:
+                        handles[resource.filepath()] = BinaryReader.from_file(resource.filepath())
+                    handles[resource.filepath()].seek(resource.offset())
+                    locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+            for handle in handles:
+                handles[handle].close()
 
-        # 5 - Check installation texturepack
-        if not skip_textures:
-            resources = self.texturepack_resources("swpc_tex_tpa.erf")
-            locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
-                              for resource in resources if resource == query])
+        def check_texturepack(texturepack: str):
+            for resource in self.texturepack_resources(texturepack):
+                if resource == query:
+                    locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
 
-        # 6 - Check installation chitin
-        if not skip_chitin:
-            resources = self._chitin
-            locations.extend([LocationResult(resource.filepath(), resource.offset(), resource.size())
-                              for resource in resources if resource == query])
+        def check_music():
+            streammusic_path = self.streammusic_path()
+            sound_files = [file for file in os.listdir(streammusic_path)]
+            for sound_file in sound_files:
+                filepath = streammusic_path + sound_file
+                f_resname, f_restype = ResourceIdentifier.from_path(filepath)
+                if f_resname == query.resname and f_restype == query.restype:
+                    size = os.path.getsize(filepath)
+                    resource = FileResource(f_resname, f_restype, size, 0, filepath)
+                    locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+
+        def check_sound():
+            streamsound_path = self.streamsounds_path()
+            sound_files = [file for file in os.listdir(streamsound_path)]
+            for sound_file in sound_files:
+                filepath = streamsound_path + sound_file
+                f_resname, f_restype = ResourceIdentifier.from_path(filepath)
+                if f_resname == query.resname and f_restype == query.restype:
+                    size = os.path.getsize(filepath)
+                    resource = FileResource(f_resname, f_restype, size, 0, filepath)
+                    locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+
+        def check_voice():
+            for path, subdirs, files in os.walk(self.streamvoice_path()):
+                path = (path if path.endswith("/") else path + "/").replace("\\", "/")
+                for file in files:
+                    with suppress(Exception):
+                        f_resname, f_restype = ResourceIdentifier.from_path(file)
+                        if f_resname == query.resname and f_restype == query.restype:
+                            size = os.path.getsize(path + file)
+                            resource = FileResource(f_resname, f_restype, size, 0, path + file)
+                            locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+
+        def check_lips():
+            for module_name, resources in self._lips.items():
+                for resource in resources:
+                    if resource == query:
+                        locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+
+        def check_rims():
+            rims_path = self.rims_path()
+            rim_files = [file for file in os.listdir(rims_path)]
+            for rim_file in rim_files:
+                capsule = Capsule(rims_path + rim_file)
+                filepath = capsule.path()
+                for resource in Capsule(filepath):
+                    if resource == query:
+                        locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+
+        def check_custom_modules():
+            for capsule in capsules:
+                if capsule.exists(query.resname, query.restype):
+                    resource = FileResource(query.resname, query.restype, 0, 0, capsule.path())
+                    locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+
+        def check_custom_folders():
+            for folder in folders:
+                folder = folder + '/' if not folder.endswith('/') else folder
+                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                    filepath = folder + file
+                    with suppress(Exception):
+                        f_resref, f_restype = ResourceIdentifier.from_path(file)
+                        if query.resname.lower() == f_resref and query.restype == f_restype:
+                            resource = FileResource(query.resname, query.restype, 0, 0, filepath)
+                            locations.append(LocationResult(resource.filepath(), resource.offset(), resource.size()))
+
+        function_map = {
+            SearchLocation.OVERRIDE: check_override,
+            SearchLocation.CHITIN: check_chitin,
+            SearchLocation.MODULES: check_modules,
+            SearchLocation.VOICE: check_voice,
+            SearchLocation.SOUND: check_sound,
+            SearchLocation.MUSIC: check_music,
+            SearchLocation.LIPS: check_lips,
+            SearchLocation.RIMS: check_rims,
+            SearchLocation.TEXTURES_TPA: lambda: check_texturepack("swpc_tex_tpa.erf"),
+            SearchLocation.TEXTURES_TPB: lambda: check_texturepack("swpc_tex_tpb.erf"),
+            SearchLocation.TEXTURES_TPC: lambda: check_texturepack("swpc_tex_tpc.erf"),
+            SearchLocation.TEXTURES_GUI: lambda: check_texturepack("swpc_tex_gui.erf"),
+            SearchLocation.CUSTOM_MODULES: check_custom_modules,
+            SearchLocation.CUSTOM_FOLDERS: check_custom_folders
+        }
+
+        for item in search_order:
+            function_map[item]()
 
         return locations
 
