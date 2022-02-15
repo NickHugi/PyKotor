@@ -1,3 +1,4 @@
+import os
 import sys
 import traceback
 from types import TracebackType
@@ -6,6 +7,9 @@ from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
 from mainwindow import ToolWindow
+
+
+os.environ['QT_MULTIMEDIA_PREFERRED_PLUGINS'] = 'windowsmediafoundation'
 
 
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):

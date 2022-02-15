@@ -49,6 +49,7 @@ from editors.utt.utt_editor import UTTEditor
 from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
+from misc.audio_player import AudioPlayer
 from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 
@@ -746,6 +747,9 @@ class ToolWindow(QMainWindow):
                        ResourceType.UTM, ResourceType.UTS,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
             editor, external = useGFFEditor()
+
+        if restype in [ResourceType.WAV, ResourceType.MP3]:
+            editor = AudioPlayer(self)
 
         if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
             editor = ERFEditor(self, self.active)
