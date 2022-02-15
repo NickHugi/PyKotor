@@ -32,7 +32,7 @@ from pykotor.extract.capsule import Capsule
 
 from pykotor.resource.formats.lyt.auto import load_lyt
 
-from pykotor.extract.installation import Installation
+from pykotor.extract.installation import Installation, SearchLocation
 
 from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.generics.utc import UTC, construct_utc
@@ -249,7 +249,7 @@ class ModuleResource(Generic[T]):
             data = capsule.resource(self.resname, self.restype)
             return conversions[self.restype](data)
         elif self.active.endswith("bif"):
-            data = self._installation.resource(self.resname, self.restype, skip_modules=True, skip_override=True).data
+            data = self._installation.resource(self.resname, self.restype, [SearchLocation.CHITIN]).data
             return conversions[self.restype](data)
         else:
             data = BinaryReader.load_file(self.active)

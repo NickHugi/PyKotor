@@ -64,7 +64,7 @@ class FileQuery:
     will return True if the resref and restype values match.
     """
     def __init__(self, resname: str, restype: ResourceType):
-        self.resname: str = resname
+        self.resname: str = resname.lower()
         self.restype: ResourceType = restype
 
 
@@ -88,4 +88,5 @@ class ResourceIdentifier(NamedTuple):
     def from_path(filepath: str) -> ResourceIdentifier:
         filename = os.path.basename(filepath)
         resname, restype_ext = filename.split(".", 1)
+        resname = resname.lower()
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))
