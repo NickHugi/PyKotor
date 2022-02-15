@@ -90,3 +90,6 @@ class ResourceIdentifier(NamedTuple):
         resname, restype_ext = filename.split(".", 1)
         resname = resname.lower()
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))
+
+    def __hash__(self):
+        return hash(self.resname + "." + self.restype.extension)
