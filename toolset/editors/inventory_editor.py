@@ -14,7 +14,7 @@ from pykotor.common.misc import InventoryItem, EquipmentSlot, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import FileQuery
-from pykotor.extract.installation import Installation
+from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.gff import load_gff
 from pykotor.resource.formats.tlk import TLK, load_tlk
 from pykotor.resource.formats.tpc import TPCTextureFormat, TPC
@@ -199,7 +199,7 @@ class InventoryEditor(QDialog):
             uti = construct_uti(load_gff(Capsule(filepath).resource(resname, ResourceType.UTI)))
             name = uti.name.determine(self._installation.talktable(), "[No Name]")
         elif filepath.endswith(".bif"):
-            uti = construct_uti(load_gff(self._installation.resource(resname, ResourceType.UTI, skip_modules=True, skip_override=True).data))
+            uti = construct_uti(load_gff(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data))
             name = uti.name.determine(self._installation.talktable(), "[No Name]")
         else:
             uti = construct_uti(load_gff(BinaryReader.load_file(filepath)))
