@@ -508,6 +508,7 @@
      <addaction name="actionNewUTD"/>
      <addaction name="actionNewUTS"/>
      <addaction name="actionNewUTT"/>
+     <addaction name="actionNewUTM"/>
      <addaction name="actionNewUTW"/>
      <addaction name="actionNewUTE"/>
      <addaction name="separator"/>
@@ -757,6 +758,18 @@
    </property>
    <property name="text">
     <string>Sound</string>
+   </property>
+  </action>
+  <action name="actionNewUTM">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/merchant.png</normaloff>:/images/icons/kx/merchant.png</iconset>
+   </property>
+   <property name="text">
+    <string>Merchant</string>
    </property>
   </action>
  </widget>

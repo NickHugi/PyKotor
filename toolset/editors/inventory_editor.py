@@ -42,11 +42,13 @@ class SlotMapping(NamedTuple):
 class InventoryEditor(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule], folders: List[str],
                  inventory: List[InventoryItem], equipment: Dict[EquipmentSlot, InventoryItem], droid: bool = False,
-                 hide_equipment: bool = False):
+                 hide_equipment: bool = False, is_store: bool = False):
         super().__init__(parent)
 
         self.ui = inventory_editor_ui.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.ui.contentsTable.is_store = is_store
 
         self.ui.coreTree.setSortingEnabled(True)
         self.ui.coreTree.sortByColumn(0, QtCore.Qt.DescendingOrder)
@@ -78,6 +80,7 @@ class InventoryEditor(QDialog):
         self._droid = droid
         self.inventory: List[InventoryItem] = inventory
         self.equipment: Dict[EquipmentSlot, InventoryItem] = equipment
+        self.is_store: bool = is_store
 
         self.ui.implantFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.IMPLANT, resname, filepath, name))
         self.ui.headFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.HEAD, resname, filepath, name))
@@ -93,7 +96,7 @@ class InventoryEditor(QDialog):
         self.ui.claw2Frame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW2, resname, filepath, name))
         self.ui.claw3Frame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW3, resname, filepath, name))
 
-        self.ui.implantFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.implantPicture, point))
+        self.ui.implantFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.implantFrame, point))
         self.ui.headFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.headFrame, point))
         self.ui.gauntletFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.gauntletFrame, point))
         self.ui.armlFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.armlFrame, point))
@@ -134,7 +137,7 @@ class InventoryEditor(QDialog):
             self.setEquipment(slot, item.resref.get())
 
         for item in self.inventory:
-            self.ui.contentsTable.addItem(item.resref.get(), item.droppable)
+            self.ui.contentsTable.addItem(item.resref.get(), item.droppable, item.infinite)
 
         self.ui.tabWidget_2.setVisible(not hide_equipment)
 
@@ -145,13 +148,13 @@ class InventoryEditor(QDialog):
         self.inventory = []
         for i in range(self.ui.contentsTable.rowCount()):
             tableItem: ItemContainer = self.ui.contentsTable.item(i, 1)
-            self.inventory.append(InventoryItem(ResRef(tableItem.resname), tableItem.droppable))
+            self.inventory.append(InventoryItem(ResRef(tableItem.resname), tableItem.droppable, tableItem.infinite))
 
         self.equipment = {}
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():
             # Very hacky, but isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             if 'DropFrame' in str(type(widget)):
-                self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable)
+                self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
 
     def buildItems(self) -> None:
         itemBuilderDialog = ItemBuilderDialog(self, self._installation, self._capsules)
@@ -214,7 +217,7 @@ class InventoryEditor(QDialog):
 
             slotPicture.setToolTip("{}\n{}\n{}".format(resname, filepath, name))
             slotPicture.setPixmap(self.getItemImage(uti))
-            slotFrame.setItem(resname, filepath, name)
+            slotFrame.setItem(resname, filepath, name, False, False)
         else:
             image = self._slotMap[slot].emptyImage.format("droid" if self._droid else "human")
             slotPicture.setToolTip("")
@@ -232,14 +235,22 @@ class InventoryEditor(QDialog):
         menu = QMenu(self)
 
         if widget.hasItem:
-            droppableAction = QAction("Droppable")
-            droppableAction.setCheckable(True)
-            droppableAction.setChecked(widget.droppable)
-            droppableAction.triggered.connect(widget.toggleDroppable)
+            if self.is_store:
+                infiniteAction = QAction("Infinite")
+                infiniteAction.setCheckable(True)
+                infiniteAction.setChecked(widget.infinite)
+                infiniteAction.triggered.connect(widget.toggleInfinite)
+                menu.addAction(infiniteAction)
+            else:
+                droppableAction = QAction("Droppable")
+                droppableAction.setCheckable(True)
+                droppableAction.setChecked(widget.droppable)
+                droppableAction.triggered.connect(widget.toggleDroppable)
+                menu.addAction(droppableAction)
+
             removeAction = QAction("Remove Item")
             removeAction.triggered.connect(widget.removeItem)
 
-            menu.addAction(droppableAction)
             menu.addSeparator()
             menu.addAction(removeAction)
         else:
@@ -251,29 +262,35 @@ class InventoryEditor(QDialog):
 
 
 class ItemContainer:
-    def __init__(self):
+    def __init__(self, droppable: bool = False, infinite: bool = False):
         self.resname: str = ""
         self.filepath: str = ""
         self.name: str = ""
         self.hasItem: bool = False
-        self.droppable: bool = False
+        self.droppable: bool = droppable
+        self.infinite: bool = infinite
 
     def removeItem(self):
-        self.resname: str = ""
-        self.filepath: str = ""
-        self.name: str = ""
-        self.hasItem: bool = False
-        self.droppable: bool = False
+        self.resname = ""
+        self.filepath = ""
+        self.name = ""
+        self.hasItem = False
+        self.droppable = False
+        self.infinite = False
 
-    def setItem(self, resname: str, filepath: str, name: str):
-        self.resname: str = resname
-        self.filepath: str = filepath
-        self.name: str = name
-        self.hasItem: bool = True
-        self.droppable: bool = False
+    def setItem(self, resname: str, filepath: str, name: str, droppable: bool, infinite: bool):
+        self.resname = resname
+        self.filepath = filepath
+        self.name = name
+        self.hasItem = True
+        self.droppable = droppable
+        self.infinite = infinite
 
     def toggleDroppable(self):
         self.droppable = not self.droppable
+
+    def toggleInfinite(self):
+        self.infinite = not self.infinite
 
 
 class DropFrame(ItemContainer, QFrame):
@@ -317,7 +334,7 @@ class DropFrame(ItemContainer, QFrame):
             item = model.itemFromIndex(index)
             if item.data(_SLOTS_ROLE) & self.slot.value:
                 e.accept()
-                self.setItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text())
+                self.setItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
                 self.itemDropped.emit(self.filepath, self.resname, self.name)
 
     def removeItem(self):
@@ -333,8 +350,9 @@ class InventoryTable(QTableWidget):
         super().__init__(parent)
         self.itemChanged.connect(self.resnameChanged)
         self.customContextMenuRequested.connect(self.openContextMenu)
+        self.is_store: bool = False
 
-    def addItem(self, resname: str, droppable: bool):
+    def addItem(self, resname: str, droppable: bool, infinite: bool):
         rowID = self.rowCount()
         self.insertRow(rowID)
         filepath, name, uti = self.window().getItem(resname, "")
@@ -344,11 +362,11 @@ class InventoryTable(QTableWidget):
         iconItem.setFlags(iconItem.flags() ^ QtCore.Qt.ItemIsEditable)
         nameItem = QTableWidgetItem(name)
         nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
-        resnameItem = InventoryTableResnameItem(resname, filepath, name)
-        resnameItem.droppable = droppable
+        resnameItem = InventoryTableResnameItem(resname, filepath, name, droppable, infinite)
         self.setItem(rowID, 0, iconItem)
         self.setItem(rowID, 1, resnameItem)
         self.setItem(rowID, 2, nameItem)
+        print(resname, droppable, resnameItem.droppable)
 
     def dropEvent(self, e: QDropEvent) -> None:
         if isinstance(e.source(), QTreeView):
@@ -379,7 +397,7 @@ class InventoryTable(QTableWidget):
             filepath, name, uti = self.window().getItem(tableItem.text(), "")
             icon = QIcon(self.window().getItemImage(uti))
 
-            tableItem.setItem(tableItem.text(), filepath, name)
+            tableItem.setItem(tableItem.text(), filepath, name, tableItem.droppable, tableItem.infinite)
             self.item(tableItem.row(), 0).setIcon(icon)
             nameItem = QTableWidgetItem(name)
             nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
@@ -392,15 +410,22 @@ class InventoryTable(QTableWidget):
         itemContainer = self.item(self.selectionModel().selectedRows(1)[0].row(), 1)
         if isinstance(itemContainer, ItemContainer):
             menu = QMenu(self)
+            if self.is_store:
+                infiniteAction = QAction("Infinite")
+                infiniteAction.setCheckable(True)
+                infiniteAction.setChecked(itemContainer.infinite)
+                infiniteAction.triggered.connect(itemContainer.toggleInfinite)
+                menu.addAction(infiniteAction)
+            else:
+                droppableAction = QAction("Droppable")
+                droppableAction.setCheckable(True)
+                droppableAction.setChecked(itemContainer.droppable)
+                droppableAction.triggered.connect(itemContainer.toggleDroppable)
+                menu.addAction(droppableAction)
 
-            droppableAction = QAction("Droppable")
-            droppableAction.setCheckable(True)
-            droppableAction.setChecked(itemContainer.droppable)
-            droppableAction.triggered.connect(itemContainer.toggleDroppable)
             removeAction = QAction("Remove Item")
             removeAction.triggered.connect(itemContainer.removeItem)
 
-            menu.addAction(droppableAction)
             menu.addSeparator()
             menu.addAction(removeAction)
 
@@ -408,10 +433,10 @@ class InventoryTable(QTableWidget):
 
 
 class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
-    def __init__(self, resname: str, filepath: str, name: str):
-        ItemContainer.__init__(self)
+    def __init__(self, resname: str, filepath: str, name: str, droppable: bool, infinite: bool):
+        ItemContainer.__init__(self, droppable, infinite)
         QTableWidgetItem.__init__(self, resname)
-        self.setItem(resname, filepath, name)
+        self.setItem(resname, filepath, name, droppable, infinite)
 
     def removeItem(self):
         self.tableWidget().removeRow(self.row())
@@ -526,7 +551,8 @@ class ItemBuilderWorker(QThread):
                 if resource.restype() == ResourceType.UTI:
                     queries.append(FileQuery(resource.resname(), resource.restype()))
 
-        results = self._installation.resource_batch(queries, capsules=self._capsules, skip_modules=True)
+        results = self._installation.resource_batch(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
+                                                    capsules=self._capsules)
         for result in results:
             uti = None
             with suppress(Exception):
