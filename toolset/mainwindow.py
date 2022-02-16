@@ -45,6 +45,7 @@ from editors.utc.utc_editor import UTCEditor
 from editors.utd.utd_editor import UTDEditor
 from editors.ute.ute_editor import UTEEditor
 from editors.utp.utp_editor import UTPEditor
+from editors.uts.uts_editor import UTSEditor
 from editors.utt.utt_editor import UTTEditor
 from editors.utw.utw_editor import UTWEditor
 from misc.about import About
@@ -119,6 +120,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewUTT.triggered.connect(lambda: UTTEditor(self, self.active).show())
         self.ui.actionNewUTW.triggered.connect(lambda: UTWEditor(self, self.active).show())
         self.ui.actionNewUTE.triggered.connect(lambda: UTEEditor(self, self.active).show())
+        self.ui.actionNewUTS.triggered.connect(lambda: UTSEditor(self, self.active).show())
         self.ui.actionNewGFF.triggered.connect(lambda: GFFEditor(self, self.active).show())
         self.ui.actionNewERF.triggered.connect(lambda: ERFEditor(self, self.active).show())
         self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
@@ -202,6 +204,10 @@ class ToolWindow(QMainWindow):
         doorIconPath = ":/images/icons/k{}/door.png".format(version)
         self.ui.actionNewUTD.setIcon(QIcon(QPixmap(doorIconPath)))
         self.ui.actionNewUTD.setEnabled(self.active is not None)
+
+        soundIconPath = ":/images/icons/k{}/sound.png".format(version)
+        self.ui.actionNewUTS.setIcon(QIcon(QPixmap(soundIconPath)))
+        self.ui.actionNewUTS.setEnabled(self.active is not None)
 
         triggerIconPath = ":/images/icons/k{}/trigger.png".format(version)
         self.ui.actionNewUTT.setIcon(QIcon(QPixmap(triggerIconPath)))
@@ -725,6 +731,12 @@ class ToolWindow(QMainWindow):
             else:
                 editor = UTDEditor(self, self.active)
 
+        if restype in [ResourceType.UTS]:
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = UTSEditor(self, self.active)
+
         if restype in [ResourceType.UTT]:
             if self.active is None or not self.config.gffSpecializedEditors:
                 editor, external = useGFFEditor()
@@ -744,7 +756,7 @@ class ToolWindow(QMainWindow):
                 editor = UTEEditor(self, self.active)
 
         if restype in [ResourceType.GFF, ResourceType.UTI, ResourceType.ITP,
-                       ResourceType.UTM, ResourceType.UTS,
+                       ResourceType.UTM,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
             editor, external = useGFFEditor()
 

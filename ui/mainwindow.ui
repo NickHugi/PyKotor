@@ -506,6 +506,7 @@
      <addaction name="actionNewUTC"/>
      <addaction name="actionNewUTP"/>
      <addaction name="actionNewUTD"/>
+     <addaction name="actionNewUTS"/>
      <addaction name="actionNewUTT"/>
      <addaction name="actionNewUTW"/>
      <addaction name="actionNewUTE"/>
@@ -744,6 +745,18 @@
    </property>
    <property name="text">
     <string>Encounter</string>
+   </property>
+  </action>
+  <action name="actionNewUTS">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/sound.png</normaloff>:/images/icons/kx/sound.png</iconset>
+   </property>
+   <property name="text">
+    <string>Sound</string>
    </property>
   </action>
  </widget>

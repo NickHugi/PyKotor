@@ -321,9 +321,16 @@ class Ui_MainWindow(object):
         icon5.addPixmap(QtGui.QPixmap(":/images/icons/kx/encounter.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionNewUTE.setIcon(icon5)
         self.actionNewUTE.setObjectName("actionNewUTE")
+        self.actionNewUTS = QtWidgets.QAction(MainWindow)
+        self.actionNewUTS.setEnabled(False)
+        icon6 = QtGui.QIcon()
+        icon6.addPixmap(QtGui.QPixmap(":/images/icons/kx/sound.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionNewUTS.setIcon(icon6)
+        self.actionNewUTS.setObjectName("actionNewUTS")
         self.menuNew.addAction(self.actionNewUTC)
         self.menuNew.addAction(self.actionNewUTP)
         self.menuNew.addAction(self.actionNewUTD)
+        self.menuNew.addAction(self.actionNewUTS)
         self.menuNew.addAction(self.actionNewUTT)
         self.menuNew.addAction(self.actionNewUTW)
         self.menuNew.addAction(self.actionNewUTE)
@@ -413,5 +420,6 @@ class Ui_MainWindow(object):
         self.actionNewUTW.setText(_translate("MainWindow", "Waypoint"))
         self.actionNewUTT.setText(_translate("MainWindow", "Trigger"))
         self.actionNewUTE.setText(_translate("MainWindow", "Encounter"))
+        self.actionNewUTS.setText(_translate("MainWindow", "Sound"))
 from toolset.mainwindow import TexturesView
 import resources_rc
