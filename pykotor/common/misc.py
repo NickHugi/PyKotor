@@ -272,9 +272,10 @@ class WrappedInt:
 
 
 class InventoryItem:
-    def __init__(self, resref: ResRef, droppable: bool = False):
+    def __init__(self, resref: ResRef, droppable: bool = False, infinite: bool = False):
         self.resref: ResRef = resref
         self.droppable: bool = droppable
+        self.infinite: bool = infinite
 
     def __str__(self):
         return self.resref.get()

@@ -5,7 +5,7 @@ from typing import List
 from pykotor.resource.type import ResourceType
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef, Game
+from pykotor.common.misc import ResRef, Game, InventoryItem
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
 
 
@@ -42,24 +42,10 @@ class UTM:
 
         self.on_open: ResRef = ResRef.from_blank()
 
-        self.inventory: List[UTMItem] = []
+        self.inventory: List[InventoryItem] = []
 
         # Deprecated:
         self.id: int = 0
-
-
-class UTMItem:
-    """
-    Stores the data for items that can be bought from a merchant.
-
-    Attributes:
-        resref: "InventoryRes" field.
-        infinite: "Infinite" field.
-    """
-
-    def __init__(self):
-        self.resref: ResRef = ResRef.from_blank()
-        self.infinite: bool = False
 
 
 def construct_utm(gff: GFF) -> UTM:
@@ -79,7 +65,7 @@ def construct_utm(gff: GFF) -> UTM:
 
     item_list = root.acquire("ItemList", GFFList())
     for item_struct in item_list:
-        item = UTMItem()
+        item = InventoryItem(ResRef.from_blank())
         utm.inventory.append(item)
         item.resref = item_struct.acquire("InventoryRes", ResRef.from_blank())
         item.infinite = bool(item_struct.acquire("Infinite", 0))
