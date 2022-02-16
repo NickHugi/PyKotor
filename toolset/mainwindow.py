@@ -44,6 +44,7 @@ from editors.txt.txt_editor import TXTEditor
 from editors.utc.utc_editor import UTCEditor
 from editors.utd.utd_editor import UTDEditor
 from editors.ute.ute_editor import UTEEditor
+from editors.uti.uti_editor import UTIEditor
 from editors.utm.utm_editor import UTMEditor
 from editors.utp.utp_editor import UTPEditor
 from editors.uts.uts_editor import UTSEditor
@@ -118,6 +119,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
         self.ui.actionNewUTP.triggered.connect(lambda: UTPEditor(self, self.active).show())
         self.ui.actionNewUTD.triggered.connect(lambda: UTDEditor(self, self.active).show())
+        self.ui.actionNewUTI.triggered.connect(lambda: UTIEditor(self, self.active).show())
         self.ui.actionNewUTT.triggered.connect(lambda: UTTEditor(self, self.active).show())
         self.ui.actionNewUTM.triggered.connect(lambda: UTMEditor(self, self.active).show())
         self.ui.actionNewUTW.triggered.connect(lambda: UTWEditor(self, self.active).show())
@@ -206,6 +208,10 @@ class ToolWindow(QMainWindow):
         doorIconPath = ":/images/icons/k{}/door.png".format(version)
         self.ui.actionNewUTD.setIcon(QIcon(QPixmap(doorIconPath)))
         self.ui.actionNewUTD.setEnabled(self.active is not None)
+
+        itemIconPath = ":/images/icons/k{}/item.png".format(version)
+        self.ui.actionNewUTI.setIcon(QIcon(QPixmap(itemIconPath)))
+        self.ui.actionNewUTI.setEnabled(self.active is not None)
 
         soundIconPath = ":/images/icons/k{}/sound.png".format(version)
         self.ui.actionNewUTS.setIcon(QIcon(QPixmap(soundIconPath)))
@@ -767,7 +773,13 @@ class ToolWindow(QMainWindow):
             else:
                 editor = UTEEditor(self, self.active)
 
-        if restype in [ResourceType.GFF, ResourceType.UTI, ResourceType.ITP,
+        if restype in [ResourceType.UTI]:
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = UTIEditor(self, self.active)
+
+        if restype in [ResourceType.GFF, ResourceType.ITP,
                        ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
             editor, external = useGFFEditor()
 

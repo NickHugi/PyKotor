@@ -333,9 +333,16 @@ class Ui_MainWindow(object):
         icon7.addPixmap(QtGui.QPixmap(":/images/icons/kx/merchant.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionNewUTM.setIcon(icon7)
         self.actionNewUTM.setObjectName("actionNewUTM")
+        self.actionNewUTI = QtWidgets.QAction(MainWindow)
+        self.actionNewUTI.setEnabled(False)
+        icon8 = QtGui.QIcon()
+        icon8.addPixmap(QtGui.QPixmap(":/images/icons/kx/item.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionNewUTI.setIcon(icon8)
+        self.actionNewUTI.setObjectName("actionNewUTI")
         self.menuNew.addAction(self.actionNewUTC)
         self.menuNew.addAction(self.actionNewUTP)
         self.menuNew.addAction(self.actionNewUTD)
+        self.menuNew.addAction(self.actionNewUTI)
         self.menuNew.addAction(self.actionNewUTS)
         self.menuNew.addAction(self.actionNewUTT)
         self.menuNew.addAction(self.actionNewUTM)
@@ -429,5 +436,6 @@ class Ui_MainWindow(object):
         self.actionNewUTE.setText(_translate("MainWindow", "Encounter"))
         self.actionNewUTS.setText(_translate("MainWindow", "Sound"))
         self.actionNewUTM.setText(_translate("MainWindow", "Merchant"))
+        self.actionNewUTI.setText(_translate("MainWindow", "Item"))
 from toolset.mainwindow import TexturesView
 import resources_rc

@@ -506,6 +506,7 @@
      <addaction name="actionNewUTC"/>
      <addaction name="actionNewUTP"/>
      <addaction name="actionNewUTD"/>
+     <addaction name="actionNewUTI"/>
      <addaction name="actionNewUTS"/>
      <addaction name="actionNewUTT"/>
      <addaction name="actionNewUTM"/>
@@ -770,6 +771,18 @@
    </property>
    <property name="text">
     <string>Merchant</string>
+   </property>
+  </action>
+  <action name="actionNewUTI">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/item.png</normaloff>:/images/icons/kx/item.png</iconset>
+   </property>
+   <property name="text">
+    <string>Item</string>
    </property>
   </action>
  </widget>
