@@ -45,7 +45,7 @@ class UTM:
         self.inventory: List[InventoryItem] = []
 
         # Deprecated:
-        self.id: int = 0
+        self.id: int = 5
 
 
 def construct_utm(gff: GFF) -> UTM:
