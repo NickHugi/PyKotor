@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import multiprocessing
 import os
 import subprocess
 import traceback
@@ -167,11 +168,11 @@ class ToolWindow(QMainWindow):
         self.checkForUpdates(True)
 
     def closeEvent(self, e: QCloseEvent) -> None:
-        self.ui.texturesList.terminateWorker()
+        self.ui.texturesList.stop()
 
     def refreshTexturePackList(self):
         self.ui.texturesCombo.clear()
-        for texturepack in reversed(self.active.texturepacks_list()):
+        for texturepack in self.active.texturepacks_list():
             self.ui.texturesCombo.addItem(texturepack)
 
     def changeTexturePack(self, texturepack: str):
@@ -192,7 +193,7 @@ class ToolWindow(QMainWindow):
                 item.resource = texture
                 item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
                 self.texturesModel.appendRow(item)
-        self.ui.texturesList.startWorker(self.active)
+        self.ui.texturesList.setInstallation(self.active)
 
     def updateMenus(self) -> None:
         version = "x" if self.active is None else "2" if self.active.tsl else "1"
@@ -944,37 +945,52 @@ class ProcessCloseListener(QThread):
 
 
 class TexturesView(QListView):
-    textureRequest = QtCore.pyqtSignal(object, object)
+    iconUpdate = QtCore.pyqtSignal(object, object)
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.verticalScrollBar().valueChanged.connect(self.loadVisibleTextures)
         self._installation: Optional[HTInstallation] = None
-        self._worker: Optional[TextureListWorker] = None
+
+        self._taskQueue = multiprocessing.JoinableQueue()
+        self._resultQueue = multiprocessing.Queue()
+        self._consumers: List[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for i in range(multiprocessing.cpu_count())]
+        [consumer.start() for consumer in self._consumers]
+        self.iconUpdate.connect(self.onIconUpdate)
+
+        self._scanner = QThread(self)
+        self._scanner.run = self.scan
+        self._scanner.start()
+
+    def onIconUpdate(self, item, icon):
+        item.setIcon(icon)
+
+    def scan(self) -> None:
+        while True:
+            for row, resname, width, height, data in iter(self._resultQueue.get, None):
+                image = QImage(data, width, height, QImage.Format_RGB888)
+                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                proxyModel: QSortFilterProxyModel = self.model()
+                sourceModel: QStandardItemModel = proxyModel.sourceModel()
+                index = proxyModel.mapToSource(proxyModel.index(row, 0))
+                item = sourceModel.itemFromIndex(index)
+                if item.text() == resname:
+                    self.iconUpdate.emit(item, QIcon(pixmap))
+
+            sleep(0.1)
 
     def resizeEvent(self, e: QResizeEvent) -> None:
         super(TexturesView, self).resizeEvent(e)
         self.loadVisibleTextures()
 
-    def startWorker(self, installation: HTInstallation):
+    def stop(self):
+        self._scanner.terminate()
+        [consumer.terminate() for consumer in self._consumers]
+
+    def setInstallation(self, installation: HTInstallation):
         self._installation = installation
 
-        if self._worker is not None:
-            self._worker.stop()
-
-        self._worker = TextureListWorker(self, installation)
-        self._worker.loadedTexture.connect(self.loadedTexture)
-        self._worker.start(QThread.LowestPriority)
-
         self.loadVisibleTextures()
-
-    def stopWorker(self):
-        if self._worker is not None:
-            self._worker.stop()
-
-    def terminateWorker(self):
-        if self._worker is not None:
-            self._worker.terminate()
 
     def loadedTexture(self, item: QListWidgetItem, icon: QIcon) -> None:
         with suppress(Exception):
@@ -983,17 +999,22 @@ class TexturesView(QListView):
 
     def loadVisibleTextures(self) -> None:
         for item in self.getVisibleItems():
-            if item.data(QtCore.Qt.UserRole):
+            if item is None or item.data(QtCore.Qt.UserRole):
                 continue
 
-            self.textureRequest.emit(item, item.text())
+            tpc = self._installation.texture(item.text(), skip_modules=True, skip_gui=False, skip_override=True)
+            tpc = TPC() if tpc is None else tpc
+
+            task = TextureListTask(item.row(), tpc, item.text())
+            self._taskQueue.put(task)
+            item.setData(True, QtCore.Qt.UserRole)
 
     def getVisibleItems(self):
         if self.model().rowCount() == 0:
             return []
 
-        scanWidth = self.window().width()
-        scanHeight = self.window().height()
+        scanWidth = self.parent().parent().width() if self.viewport().width() < 100 else self.viewport().width()
+        scanHeight = self.parent().parent().height() if self.viewport().height() < 100 else self.viewport().height()
 
         proxyModel: QSortFilterProxyModel = self.model()
         model: QStandardItemModel = self.model().sourceModel()
@@ -1012,14 +1033,14 @@ class TexturesView(QListView):
         items = []
         startRow = firstItem.row()
         widthCount = scanWidth // 92
-        heightCount = scanHeight // 92
+        heightCount = scanHeight // 92 + 2
         numVisible = min(proxyModel.rowCount(), widthCount * heightCount)
 
         for i in range(numVisible):
             item = model.item(startRow + i)
             items.append(item)
 
-        return items[::-1]
+        return items
 
 
 class TextureListModel(QStandardItemModel):
@@ -1043,34 +1064,34 @@ class TextureListModel(QStandardItemModel):
         return [item.resource for item in items if hasattr(item, 'resource')]
 
 
-class TextureListWorker(QThread):
-    loadedTexture = QtCore.pyqtSignal(object, object)
-
-    def __init__(self, parent: TexturesView, installation: HTInstallation):
-        super().__init__(parent)
-        self._buffer: List[Tuple[int, str]] = []
-        self.x = []
-        self._installation: HTInstallation = installation
-        self._stop: bool = False
-        parent.textureRequest.connect(self.textureRequest)
+class TextureListConsumer(multiprocessing.Process):
+    def __init__(self, taskQueue, resultQueue):
+        multiprocessing.Process.__init__(self)
+        self.taskQueue: multiprocessing.JoinableQueue = taskQueue
+        self.resultQueue: multiprocessing.Queue = resultQueue
 
     def run(self):
-        while not self._stop:
-            if not self._buffer:
-                sleep(1)
-                continue
+        proc_name = self.name
+        while True:
+            next_task = self.taskQueue.get()
 
-            item, resname = self._buffer.pop()
-            tpc = self._installation.texture(resname, skip_modules=True, skip_gui=False, skip_override=True)
-            tpc = TPC() if tpc is None else tpc
-            width, height, rgba = tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(tpc))
-            image = QImage(rgba, width, height, QImage.Format_RGB888)
-            pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+            answer = next_task()
+            self.taskQueue.task_done()
+            self.resultQueue.put(answer)
 
-            icon = QIcon(pixmap)
 
-            if not self._stop:
-                self.loadedTexture.emit(item, icon)
+class TextureListTask:
+    def __init__(self, row, tpc, resname):
+        self.row = row
+        self.tpc = tpc
+        self.resname = resname
+
+    def __repr__(self):
+        return str(self.row)
+
+    def __call__(self, *args, **kwargs):
+        width, height, data = self.tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(self.tpc))
+        return self.row, self.resname, width, height, data
 
     def bestMipmap(self, tpc: TPC) -> int:
         for i in range(tpc.mipmap_count()):
@@ -1078,13 +1099,3 @@ class TextureListWorker(QThread):
             if size <= 64:
                 return i
         return 0
-
-    def textureRequest(self, item: QListWidgetItem, resname: str):
-        for i, bufferItem in enumerate(self._buffer):
-            if bufferItem[1] == resname:
-                self._buffer.pop(i)
-                break
-        self._buffer.append((item, resname))
-
-    def stop(self):
-        self._stop = True
