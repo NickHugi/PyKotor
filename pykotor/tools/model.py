@@ -212,3 +212,71 @@ def change_lightmaps(data: bytes, textures: Dict[str, str]) -> bytes:
 def detect_version(data: bytes) -> Game:
     pointer = struct.unpack("I", data[12:16])[0]
     return Game.K1 if pointer == _GEOM_ROOT_FP0_K1 else Game.K2
+
+
+
+
+def convert_to_k1(data: bytes) -> bytes:
+    if detect_version(data) == Game.K1:
+        return data
+
+    trim = []
+
+    with BinaryReader.from_bytes(data, 12) as reader:
+        reader.seek(168)
+        root_offset = reader.read_uint32()
+
+        nodes = [root_offset]
+        while nodes:
+            node_offset = nodes.pop()
+            reader.seek(node_offset)
+            node_type = reader.read_uint16()
+
+            if node_type & 32:
+                trim.append((node_type, node_offset))
+
+            reader.seek(node_offset + 44)
+            child_offsets_offset = reader.read_uint32()
+            child_offsets_count = reader.read_uint32()
+
+            reader.seek(child_offsets_offset)
+            for i in range(child_offsets_count):
+                nodes.append(reader.read_uint32())
+
+    start = data[:12]
+    data = bytearray(data[12:])
+
+    data[0:4] = struct.pack("I", _GEOM_ROOT_FP0_K1)
+    data[4:8] = struct.pack("I", _GEOM_ROOT_FP1_K1)
+
+    for node_type, node_offset in trim:
+        mesh_start = node_offset + 80  # Start of mesh header
+
+        offset_start = node_offset + 80 + 332  # Location of start of bytes to be shifted
+        offset_size = 8  # How many bytes we have to shift
+
+        if node_type & _NODE_TYPE_SKIN:
+            offset_size += _SKIN_HEADER_SIZE
+            data[mesh_start:mesh_start + 4] = struct.pack("I", _MESH_FP0_K1)
+            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _MESH_FP1_K1)
+
+        if node_type & _NODE_TYPE_DANGLY:
+            offset_size += _DANGLY_HEADER_SIZE
+            data[mesh_start:mesh_start + 4] = struct.pack("I", _DANGLY_FP0_K1)
+            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _DANGLY_FP1_K1)
+
+        if node_type & _NODE_TYPE_SABER:
+            offset_size += _SABER_HEADER_SIZE
+            data[mesh_start:mesh_start + 4] = struct.pack("I", _SABER_FP0_K1)
+            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _SABER_FP1_K1)
+
+        if node_type & _NODE_TYPE_AABB:
+            offset_size += _AABB_HEADER_SIZE
+            data[mesh_start:mesh_start + 4] = struct.pack("I", _AABB_FP0_K1)
+            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _AABB_FP1_K1)
+
+        shifting = data[offset_start:offset_start+offset_size]
+        data[offset_start-8:offset_start-8+offset_size] = shifting
+
+    return bytes(start + data)
+
