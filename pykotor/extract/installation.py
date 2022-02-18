@@ -250,19 +250,21 @@ class Installation:
         self._streammusic = []
         streammusic_path = self.streammusic_path()
         for filename in [file for file in os.listdir(streammusic_path)]:
-            filepath = streammusic_path + filename
-            identifier = ResourceIdentifier.from_path(filepath)
-            resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
-            self._streammusic.append(resource)
+            with suppress(Exception):
+                filepath = streammusic_path + filename
+                identifier = ResourceIdentifier.from_path(filepath)
+                resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                self._streammusic.append(resource)
 
     def load_streamsounds(self) -> None:
         self._streamsounds = []
         streamsounds_path = self.streamsounds_path()
         for filename in [file for file in os.listdir(streamsounds_path)]:
-            filepath = streamsounds_path + filename
-            identifier = ResourceIdentifier.from_path(filepath)
-            resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
-            self._streamsounds.append(resource)
+            with suppress(Exception):
+                filepath = streamsounds_path + filename
+                identifier = ResourceIdentifier.from_path(filepath)
+                resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                self._streamsounds.append(resource)
 
     def load_streamvoices(self) -> None:
         self._streamvoices = []
@@ -270,20 +272,22 @@ class Installation:
 
         for path, subdirs, files in os.walk(streamvoices_path):
             for filename in files:
-                folderpath = path.replace("\\", "/")
-                if not folderpath.endswith("/"):
-                    folderpath += "/"
-                filepath = folderpath + filename
-                identifier = ResourceIdentifier.from_path(filepath)
-                resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
-                self._streamvoices.append(resource)
+                with suppress(Exception):
+                    folderpath = path.replace("\\", "/")
+                    if not folderpath.endswith("/"):
+                        folderpath += "/"
+                    filepath = folderpath + filename
+                    identifier = ResourceIdentifier.from_path(filepath)
+                    resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                    self._streamvoices.append(resource)
 
     def load_rims(self) -> None:
         self._rims = {}
-        rims_path = self.rims_path()
-        filenames = [file for file in os.listdir(rims_path) if file.endswith('.rim')]
-        for filename in filenames:
-            self._rims[filename] = [resource for resource in Capsule(rims_path + filename)]
+        with suppress(ValueError):
+            rims_path = self.rims_path()
+            filenames = [file for file in os.listdir(rims_path) if file.endswith('.rim')]
+            for filename in filenames:
+                self._rims[filename] = [resource for resource in Capsule(rims_path + filename)]
     # endregion
 
     # region Get FileResources
