@@ -4,11 +4,14 @@ This module holds various unrelated classes.
 from __future__ import annotations
 import os
 from enum import IntEnum, Enum
-from typing import Tuple
+from typing import Tuple, TypeVar, Generic, Dict
 
 from pykotor.resource.type import ResourceType
 
 from pykotor.common.geometry import Vector3
+
+
+T = TypeVar("T")
 
 
 class ResRef:
@@ -298,3 +301,42 @@ class EquipmentSlot(Enum):
     CLAW2       = 32768
     CLAW3       = 65536
     HIDE        = 131072
+
+
+class CaseInsensitiveDict(Generic[T]):
+    def __init__(self):
+        self._dictionary: Dict[str, T] = {}
+        self._case_map: Dict[str, str] = {}
+
+    def __getitem__(self, key: str):
+        return self._dictionary[key.lower()]
+
+    def __setitem__(self, key: str, value: T):
+        self._dictionary[key.lower()] = value
+        self._case_map[key.lower()] = key
+
+    def __delitem__(self, key: str):
+        del self._dictionary[key.lower()]
+        del self._case_map[key.lower()]
+
+    def __contains__(self, key: str):
+        return key.lower() in self._dictionary
+
+    def __len__(self):
+        return len(self._dictionary)
+
+    def pop(self, key: str):
+        self._dictionary.pop(key.lower())
+        self._case_map.pop(key.lower())
+
+    def get(self, key: str):
+        return self._dictionary[key.lower()]
+
+    def items(self):
+        return [(self._case_map[key], value) for key, value in self._dictionary.items()]
+
+    def values(self):
+        return self._dictionary.values()
+
+    def keys(self):
+        return [self._case_map[key] for key in self._dictionary.keys()]
