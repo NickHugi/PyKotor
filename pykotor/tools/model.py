@@ -2,7 +2,55 @@ import io
 import struct
 from typing import Dict, List
 
+from pykotor.common.misc import Game
+
 from pykotor.common.stream import BinaryReader, BinaryWriter
+
+_GEOM_ROOT_FP0_K1 = 4273776
+_GEOM_ROOT_FP1_K1 = 4216096
+_GEOM_ROOT_FP0_K2 = ...
+_GEOM_ROOT_FP1_K2 = ...
+
+_GEOM_ANIM_FP0_K1 = 4273392
+_GEOM_ANIM_FP1_K1 = 4451552
+_GEOM_ANIM_FP0_K2 = 4284816
+_GEOM_ANIM_FP1_K2 = 4522928
+
+_NODE_TYPE_MESH = 32
+_MESH_HEADER_SIZE_K1 = 332
+_MESH_HEADER_SIZE_K2 = 340
+_MESH_FP0_K1 = 4216656
+_MESH_FP1_K1 = 4216672
+_MESH_FP0_K2 = 4216880
+_MESH_FP1_K2 = 4216896
+
+_NODE_TYPE_SKIN = 64
+_SKIN_HEADER_SIZE = 108
+_SKIN_FP0_K1 = 4216592
+_SKIN_FP1_K1 = 4216608
+_SKIN_FP0_K2 = 4216816
+_SKIN_FP1_K2 = 4216832
+
+_NODE_TYPE_DANGLY = 256
+_DANGLY_HEADER_SIZE = 28
+_DANGLY_FP0_K1 = 4216640
+_DANGLY_FP1_K1 = 4216624
+_DANGLY_FP0_K2 = 4216864
+_DANGLY_FP1_K2 = 4216848
+
+_NODE_TYPE_SABER = 2048
+_SABER_HEADER_SIZE = 20
+_SABER_FP0_K1 = 4216656
+_SABER_FP1_K1 = 4216672
+_SABER_FP0_K2 = 4216880
+_SABER_FP1_K2 = 4216896
+
+_NODE_TYPE_AABB = 512
+_AABB_HEADER_SIZE = 4
+_AABB_FP0_K1 = 4216656
+_AABB_FP1_K1 = 4216672
+_AABB_FP0_K2 = 4216880
+_AABB_FP1_K2 = 4216896
 
 
 def rename(data: bytes, name: str) -> bytes:
@@ -160,3 +208,7 @@ def change_lightmaps(data: bytes, textures: Dict[str, str]) -> bytes:
 
     return bytes(data)
 
+
+def detect_version(data: bytes) -> Game:
+    pointer = struct.unpack("I", data[12:16])[0]
+    return Game.K1 if pointer == _GEOM_ROOT_FP0_K1 else Game.K2
