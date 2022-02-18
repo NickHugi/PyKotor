@@ -1,7 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, FileQuery, ResourceResult
+from pykotor.extract.file import FileResource, ResourceResult, ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
 
@@ -41,25 +41,26 @@ class Capsule:
         if reload:
             self.reload()
 
-        query = FileQuery(resref, restype)
+        query = ResourceIdentifier(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return None if resource is None else resource.data()
 
-    def batch(self, queries: List[FileQuery], reload: bool = False) -> List[ResourceResult]:
+    def batch(self, queries: List[ResourceIdentifier], reload: bool = False) -> Dict[ResourceIdentifier, Optional[ResourceResult]]:
         if reload:
             self.reload()
 
-        results = []
+        results = {}
         reader = BinaryReader.from_file(self.path())
+
         for query in queries:
+            results[query] = None
             if self.exists(query.resname, query.restype):
                 resource = next((resource for resource in self._resources if resource == query), None)
-                if resource is None:
-                    data = None
-                else:
+                if resource is not None:
                     reader.seek(resource.offset())
                     data = reader.read_bytes(resource.size())
-                results.append(ResourceResult(self.path(), query.resname, data))
+                    results[query] = ResourceResult(query.resname, query.restype, self.path(), data)
+
         reader.close()
         return results
 
@@ -67,7 +68,7 @@ class Capsule:
         if reload:
             self.reload()
 
-        query = FileQuery(resref, restype)
+        query = ResourceIdentifier(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource is not None
 
@@ -75,7 +76,7 @@ class Capsule:
         if reload:
             self.reload()
 
-        query = FileQuery(resref, restype)
+        query = ResourceIdentifier(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource
 

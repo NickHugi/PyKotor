@@ -26,13 +26,13 @@ class FileResource:
     def __eq__(self, other: FileResource):
         if isinstance(other, FileResource):
             return other._resname.lower() == self._resname.lower() and other._restype == self._restype
-        elif isinstance(other, FileQuery):
+        elif isinstance(other, ResourceIdentifier):
             return other.resname.lower() == self._resname.lower() and other.restype == self._restype
         else:
             return NotImplemented
 
     def resname(self) -> str:
-        return self._resname
+        return self._resname.lower()
 
     def restype(self) -> ResourceType:
         return self._restype
@@ -57,20 +57,14 @@ class FileResource:
             file.seek(self._offset)
             return file.read(self._size)
 
-
-class FileQuery:
-    """
-    Stores a ResRef and resource type value. If a FileQuery object is compared (equality) to a FileResource object it
-    will return True if the resref and restype values match.
-    """
-    def __init__(self, resname: str, restype: ResourceType):
-        self.resname: str = resname.lower()
-        self.restype: ResourceType = restype
+    def identifier(self) -> ResourceIdentifier:
+        return ResourceIdentifier(self.resname(), self.restype())
 
 
 class ResourceResult(NamedTuple):
-    filepath: str
     resname: str
+    restype: ResourceType
+    filepath: str
     data: Optional[bytes]
 
 
@@ -84,12 +78,23 @@ class ResourceIdentifier(NamedTuple):
     resname: str
     restype: ResourceType
 
+    def __hash__(self):
+        return hash(self.resname.lower() + "." + self.restype.extension)
+
+    def __repr__(self):
+        return "ResourceIdentifier({}, ResourceType.{})".format(self.resname, self.restype)
+
+    def __str__(self):
+        return self.resname.lower() + "." + self.restype.extension
+
+    def __eq__(self, other):
+        if isinstance(other, ResourceIdentifier):
+            return self.resname.lower() == other.resname.lower() and self.restype == other.restype
+        else:
+            return NotImplemented
+
     @staticmethod
     def from_path(filepath: str) -> ResourceIdentifier:
         filename = os.path.basename(filepath)
         resname, restype_ext = filename.split(".", 1)
-        resname = resname.lower()
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))
-
-    def __hash__(self):
-        return hash(self.resname + "." + self.restype.extension)

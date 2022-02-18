@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, FileQuery
+from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
 
@@ -92,11 +92,11 @@ class Chitin:
         Returns:
             None or bytes data of resource.
         """
-        query = FileQuery(resref, restype)
+        query = ResourceIdentifier(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return None if resource is None else resource.data()
 
     def exists(self, resref: str, restype: ResourceType) -> bool:
-        query = FileQuery(resref, restype)
+        query = ResourceIdentifier(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource is not None

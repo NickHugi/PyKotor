@@ -325,6 +325,9 @@ class CaseInsensitiveDict(Generic[T]):
     def __len__(self):
         return len(self._dictionary)
 
+    def __repr__(self):
+        return repr(self._dictionary)
+
     def pop(self, key: str):
         self._dictionary.pop(key.lower())
         self._case_map.pop(key.lower())
