@@ -22,11 +22,12 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFi
     QLabel, QWidget, QMessageBox, QHeaderView, QLayout, QSizePolicy, QScrollArea, QStyle, QGridLayout, QTableWidget, \
     QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QListView
 from pykotor.extract.file import FileResource, ResourceIdentifier
-from pykotor.extract.installation import Installation
+from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
 from pykotor.resource.formats.mdl import load_mdl, write_mdl
 from pykotor.resource.formats.rim import write_rim, load_rim
 from pykotor.resource.formats.tpc import load_tpc, write_tpc, TPCTextureFormat, TPC
+from pykotor.resource.formats.tpc.auto import detect_tpc
 from pykotor.resource.type import ResourceType
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
@@ -972,9 +973,8 @@ class TexturesView(QListView):
                 pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
                 proxyModel: QSortFilterProxyModel = self.model()
                 sourceModel: QStandardItemModel = proxyModel.sourceModel()
-                index = proxyModel.mapToSource(proxyModel.index(row, 0))
-                item = sourceModel.itemFromIndex(index)
-                if item.text() == resname:
+                item = sourceModel.item(row, 0)
+                if item is not None:
                     self.iconUpdate.emit(item, QIcon(pixmap))
 
             sleep(0.1)
@@ -992,17 +992,12 @@ class TexturesView(QListView):
 
         self.loadVisibleTextures()
 
-    def loadedTexture(self, item: QListWidgetItem, icon: QIcon) -> None:
-        with suppress(Exception):
-            item.setIcon(icon)
-            item.setData(True, QtCore.Qt.UserRole)
-
     def loadVisibleTextures(self) -> None:
         for item in self.getVisibleItems():
             if item is None or item.data(QtCore.Qt.UserRole):
                 continue
 
-            tpc = self._installation.texture(item.text(), skip_modules=True, skip_gui=False, skip_override=True)
+            tpc = self._installation.texture(item.text(), [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA])
             tpc = TPC() if tpc is None else tpc
 
             task = TextureListTask(item.row(), tpc, item.text())
@@ -1020,6 +1015,7 @@ class TexturesView(QListView):
         model: QStandardItemModel = self.model().sourceModel()
 
         firstItem = None
+        firstIndex = None
 
         for y in range(2, 92, 2):
             for x in range(2, 92, 2):
@@ -1028,17 +1024,22 @@ class TexturesView(QListView):
                 item = model.itemFromIndex(index)
                 if not firstItem and item:
                     firstItem = item
+                    firstIndex = proxyIndex
                     break
 
         items = []
-        startRow = firstItem.row()
-        widthCount = scanWidth // 92
-        heightCount = scanHeight // 92 + 2
-        numVisible = min(proxyModel.rowCount(), widthCount * heightCount)
 
-        for i in range(numVisible):
-            item = model.item(startRow + i)
-            items.append(item)
+        if firstItem:
+            startRow = firstItem.row()
+            widthCount = scanWidth // 92
+            heightCount = scanHeight // 92 + 2
+            numVisible = min(proxyModel.rowCount(), widthCount * heightCount)
+
+            for i in range(numVisible):
+                proxyIndex = proxyModel.index(firstIndex.row() + i, 0)
+                sourceIndex = proxyModel.mapToSource(proxyIndex)
+                item = model.itemFromIndex(sourceIndex)
+                items.append(item)
 
         return items
 

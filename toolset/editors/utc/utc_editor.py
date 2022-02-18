@@ -10,7 +10,7 @@ from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.installation import Installation
+from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.gff import load_gff, GFF, write_gff
 from pykotor.resource.formats.ltr import load_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
@@ -404,7 +404,7 @@ class UTCEditor(Editor):
             elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve") != "":
                 portrait = portraits.get_cell(index, "baseresrefvvve")
 
-            texture = self._installation.texture(portrait, skip_chitin=True, skip_modules=True, skip_gui=False)
+            texture = self._installation.texture(portrait, [SearchLocation.TEXTURES_GUI])
 
             if texture is not None:
                 width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)

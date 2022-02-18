@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QProgressBar, QVBoxLayout,
 from pykotor.common.misc import InventoryItem, EquipmentSlot, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import FileQuery
+from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.gff import load_gff
 from pykotor.resource.formats.tlk import TLK, load_tlk
@@ -194,7 +194,7 @@ class InventoryEditor(QDialog):
         name = ""
         if filepath == "":
             result = self._installation.resource(resname, ResourceType.UTI)
-            if result.data is not None:
+            if result is not None:
                 uti = construct_uti(load_gff(result.data))
                 filepath = result.filepath
                 name = uti.name.determine(self._installation.talktable(), "[No Name]")
@@ -366,7 +366,6 @@ class InventoryTable(QTableWidget):
         self.setItem(rowID, 0, iconItem)
         self.setItem(rowID, 1, resnameItem)
         self.setItem(rowID, 2, nameItem)
-        print(resname, droppable, resnameItem.droppable)
 
     def dropEvent(self, e: QDropEvent) -> None:
         if isinstance(e.source(), QTreeView):
@@ -387,7 +386,7 @@ class InventoryTable(QTableWidget):
             iconItem.setFlags(iconItem.flags() ^ QtCore.Qt.ItemIsEditable)
             nameItem = QTableWidgetItem(item.text())
             nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
-            resnameItem = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text())
+            resnameItem = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
             self.setItem(rowID, 0, iconItem)
             self.setItem(rowID, 1, resnameItem)
             self.setItem(rowID, 2, nameItem)
@@ -473,7 +472,7 @@ class ItemBuilderDialog(QDialog):
         self._worker.finished.connect(self.finished)
         self._worker.start()
 
-    def utiLoaded(self, uti: UTI, result: SearchResult) -> None:
+    def utiLoaded(self, uti: UTI, result: ResourceResult) -> None:
         baseitems = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
         name = uti.name.determine(self._tlk, "") if uti is not None else result.resname
 
@@ -540,20 +539,20 @@ class ItemBuilderWorker(QThread):
     def run(self) -> None:
         queries = []
         if self._installation.cacheCoreItems is None:
-            queries.extend([FileQuery(resource.resname(), resource.restype())
+            queries.extend([ResourceIdentifier(resource.resname(), resource.restype())
                             for resource in self._installation.chitin_resources()
                             if resource.restype() == ResourceType.UTI])
         for resource in self._installation.override_resources(""):
             if resource.restype() == ResourceType.UTI:
-                queries.append(FileQuery(resource.resname(), resource.restype()))
+                queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
         for capsule in self._capsules:
             for resource in capsule:
                 if resource.restype() == ResourceType.UTI:
-                    queries.append(FileQuery(resource.resname(), resource.restype()))
+                    queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-        results = self._installation.resource_batch(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
-                                                    capsules=self._capsules)
-        for result in results:
+        results = self._installation.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
+                                               capsules=self._capsules)
+        for result in results.values():
             uti = None
             with suppress(Exception):
                 uti = construct_uti(load_gff(result.data))

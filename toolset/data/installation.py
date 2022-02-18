@@ -2,7 +2,7 @@ from typing import List, Optional, Dict
 
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtWidgets import QWidget
-from pykotor.extract.file import FileQuery
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import TwoDA, load_2da
@@ -62,21 +62,22 @@ class HTInstallation(Installation):
     def htGetCache2DA(self, resname: str):
         resname = resname.lower()
         if resname not in self._cache2da:
-            self._cache2da[resname] = self.twoda(resname)
+            data = self.resource(resname, ResourceType.TwoDA, [SearchLocation.CHITIN, SearchLocation.OVERRIDE]).data
+            self._cache2da[resname] = load_2da(data)
         return self._cache2da[resname]
 
     def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
         if reload:
-            queries = [FileQuery(resname, ResourceType.TwoDA) for resname in resnames]
+            queries = [ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames]
         else:
-            queries = [FileQuery(resname, ResourceType.TwoDA) for resname in resnames if resname not in self._cache2da]
+            queries = [ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames if resname not in self._cache2da]
 
         if not queries:
             return
 
-        resources = self.resource_batch(queries, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
-        for resource in resources:
-            self._cache2da[resource.resname.lower()] = load_2da(resource.data)
+        resources = self.resources(queries, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+        for iden, resource in resources.items():
+            self._cache2da[iden.resname] = load_2da(resource.data)
 
     def htClearCache2DA(self):
         self._cache2da = {}
@@ -85,7 +86,7 @@ class HTInstallation(Installation):
     # region Cache TPC
     def htGetCacheTPC(self, resname: str) -> Optional[TPC]:
         if resname not in self._cacheTpc:
-            self._cacheTpc[resname] = self.texture(resname, skip_modules=True, skip_chitin=True, skip_gui=False)
+            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
         return self._cacheTpc[resname] if resname in self._cacheTpc else None
 
     def htBatchCacheTPC(self, names: List[str], reload: bool = False):
@@ -98,7 +99,7 @@ class HTInstallation(Installation):
             return
 
         for resname in queries:
-            self._cacheTpc[resname] = self.texture(resname, skip_modules=True, skip_chitin=True, skip_gui=False)
+            self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
 
     def htClearCacheTPC(self):
         self._cacheTpc = {}
