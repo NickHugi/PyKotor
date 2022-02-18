@@ -19,7 +19,7 @@ class TestUTS(TestCase):
     def validate_io(self, uts):
         self.assertEqual("3Csounds", uts.tag)
         self.assertEqual(128551, uts.name.stringref)
-        self.assertEqual("3csounds", uts.template_resref)
+        self.assertEqual("3csounds", uts.resref)
         self.assertEqual(1, uts.active)
         self.assertEqual(1, uts.continuous)
         self.assertEqual(1, uts.looping)

@@ -14,7 +14,7 @@ class UTC:
     Stores creature data.
 
     Attributes:
-        template_resref: "TemplateResRef" field.
+        resref: "TemplateResRef" field.
         tag: "Tag" field.
         comment: "Comment" field.
         conversation: "Conversation" field.
@@ -90,7 +90,7 @@ class UTC:
     BINARY_TYPE = ResourceType.UTC
 
     def __init__(self):
-        self.template_resref: ResRef = ResRef.from_blank()
+        self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -200,7 +200,7 @@ def construct_utc(gff: GFF) -> UTC:
     utc = UTC()
 
     root = gff.root
-    utc.template_resref = root.acquire("TemplateResRef", ResRef.from_blank())
+    utc.resref = root.acquire("TemplateResRef", ResRef.from_blank())
     utc.tag = root.acquire("Tag", "", str)
     utc.comment = root.acquire("Comment", "", str)
     utc.conversation = root.acquire("Conversation", ResRef.from_blank())
@@ -317,7 +317,7 @@ def dismantle_utc(utc: UTC, game: Game = Game.K2, *, use_deprecated: bool = True
     gff = GFF(GFFContent.UTC)
 
     root = gff.root
-    root.set_resref("TemplateResRef", utc.template_resref)
+    root.set_resref("TemplateResRef", utc.resref)
     root.set_string("Tag", utc.tag)
     root.set_string("Comment", utc.comment)
     root.set_resref("Conversation", utc.conversation)

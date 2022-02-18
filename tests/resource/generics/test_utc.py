@@ -71,7 +71,7 @@ class TestUTC(TestCase):
         self.assertEqual(10, utc.strength)
         self.assertEqual(1, utc.subrace_id)
         self.assertEqual("Coorta", utc.tag)
-        self.assertEqual("n_minecoorta", utc.template_resref)
+        self.assertEqual("n_minecoorta", utc.resref)
         self.assertEqual(1, utc.texture_variation)
         self.assertEqual(7, utc.walkrate_id)
         self.assertEqual(10, utc.wisdom)

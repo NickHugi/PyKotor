@@ -19,7 +19,7 @@ class TestUTE(TestCase):
     def validate_io(self, ute):
         self.assertEqual("G_KATAARNGROUP01", ute.tag)
         self.assertEqual(31918, ute.name.stringref)
-        self.assertEqual("g_kataarngroup01", ute.template_resref)
+        self.assertEqual("g_kataarngroup01", ute.resref)
         self.assertEqual(1, ute.active)
         self.assertEqual(1, ute.unused_difficulty)
         self.assertEqual(2, ute.difficulty_id)

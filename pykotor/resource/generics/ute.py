@@ -13,7 +13,7 @@ class UTE:
 
     Attributes:
         tag: "Tag" field.
-        template_resref: "TemplateResRef" field.
+        resref: "TemplateResRef" field.
         active: "Active" field.
         difficulty_id: "DifficultyIndex" field.
         faction_id: "Faction" field.
@@ -40,7 +40,7 @@ class UTE:
     BINARY_TYPE = ResourceType.UTE
 
     def __init__(self):
-        self.template_resref: ResRef = ResRef.from_blank()
+        self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
     
@@ -104,7 +104,7 @@ def construct_ute(gff: GFF) -> UTE:
 
     root = gff.root
     ute.tag = root.acquire("Tag", "")
-    ute.template_resref = root.acquire("TemplateResRef", ResRef.from_blank())
+    ute.resref = root.acquire("TemplateResRef", ResRef.from_blank())
     ute.active = bool(root.acquire("Active", 0))
     ute.difficulty_id = root.acquire("DifficultyIndex", 0)
     ute.unused_difficulty = root.acquire("Difficulty", 0)
@@ -144,7 +144,7 @@ def dismantle_ute(ute: UTE, game: Game = Game.K2, *, use_deprecated: bool = True
     root = gff.root
 
     root.set_string("Tag", ute.tag)
-    root.set_resref("TemplateResRef", ute.template_resref)
+    root.set_resref("TemplateResRef", ute.resref)
     root.set_uint8("Active", ute.active)
     root.set_int32("DifficultyIndex", ute.difficulty_id)
     root.set_uint32("Faction", ute.faction_id)

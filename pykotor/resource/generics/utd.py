@@ -14,7 +14,7 @@ class UTD:
     Attributes:
         tag: "Tag" field.
         name: "LocName" field.
-        template_resref: "TemplateResRef" field.
+        resref: "TemplateResRef" field.
         auto_remove_key: "AutoRemoveKey" field.
         conversation: "Conversation" field.
         faction_id: "Faction" field.
@@ -75,7 +75,7 @@ class UTD:
     BINARY_TYPE = ResourceType.UTD
 
     def __init__(self):
-        self.template_resref: ResRef = ResRef.from_blank()
+        self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -155,7 +155,7 @@ def construct_utd(gff: GFF) -> UTD:
     root = gff.root
     utd.tag = root.acquire("Tag", "")
     utd.name = root.acquire("LocName", LocalizedString.from_invalid())
-    utd.template_resref = root.acquire("TemplateResRef", ResRef.from_blank())
+    utd.resref = root.acquire("TemplateResRef", ResRef.from_blank())
     utd.auto_remove_key = bool(root.acquire("AutoRemoveKey", 0))
     utd.conversation = root.acquire("Conversation", ResRef.from_blank())
     utd.faction_id = root.acquire("Faction", 0)
@@ -218,7 +218,7 @@ def dismantle_utd(utd: UTD, game: Game = Game.K2, *, use_deprecated: bool = True
     root = gff.root
     root.set_string("Tag", utd.tag)
     root.set_locstring("LocName", utd.name)
-    root.set_resref("TemplateResRef", utd.template_resref)
+    root.set_resref("TemplateResRef", utd.resref)
     root.set_uint8("AutoRemoveKey", utd.auto_remove_key)
     root.set_resref("Conversation", utd.conversation)
     root.set_uint32("Faction", utd.faction_id)

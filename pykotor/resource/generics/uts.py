@@ -15,7 +15,7 @@ class UTS:
 
     Attributes:
         tag: "Tag" field.
-        template_resref: "TemplateResRef" field.
+        resref: "TemplateResRef" field.
         active: "Active" field.
         continuous: "Continuous" field.
         looping: "Looping" field.
@@ -45,7 +45,7 @@ class UTS:
     BINARY_TYPE = ResourceType.UTS
 
     def __init__(self):
-        self.template_resref: ResRef = ResRef.from_blank()
+        self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
 
@@ -85,7 +85,7 @@ def construct_uts(gff: GFF) -> UTS:
 
     root = gff.root
     uts.tag = root.acquire("Tag", "")
-    uts.template_resref = root.acquire("TemplateResRef", ResRef.from_blank())
+    uts.resref = root.acquire("TemplateResRef", ResRef.from_blank())
     uts.active = root.acquire("Active", 0)
     uts.continuous = root.acquire("Continuous", 0)
     uts.looping = root.acquire("Looping", 0)
@@ -121,7 +121,7 @@ def dismantle_uts(uts: UTS, game: Game = Game.K2, *, use_deprecated: bool = True
 
     root = gff.root
     root.set_string("Tag", uts.tag)
-    root.set_resref("TemplateResRef", uts.template_resref)
+    root.set_resref("TemplateResRef", uts.resref)
     root.set_uint8("Active", uts.active)
     root.set_uint8("Continuous", uts.continuous)
     root.set_uint8("Looping", uts.looping)

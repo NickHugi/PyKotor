@@ -19,7 +19,7 @@ class Test(TestCase):
     def validate_io(self, utp: UTP):
         self.assertEqual("SecLoc", utp.tag)
         self.assertEqual(74450, utp.name.stringref)
-        self.assertEqual("lockerlg002", utp.template_resref)
+        self.assertEqual("lockerlg002", utp.resref)
         self.assertEqual(1, utp.auto_remove_key)
         self.assertEqual(13, utp.lock_dc)
         self.assertEqual("conversation", utp.conversation)
@@ -40,7 +40,7 @@ class Test(TestCase):
         self.assertEqual(15, utp.current_hp)
         self.assertEqual(5, utp.hardness)
         self.assertEqual(16, utp.fortitude)
-        self.assertEqual("lockerlg002", utp.template_resref)
+        self.assertEqual("lockerlg002", utp.resref)
         self.assertEqual("onclosed", utp.on_closed)
         self.assertEqual("ondamaged", utp.on_damaged)
         self.assertEqual("ondeath", utp.on_death)

@@ -16,7 +16,7 @@ class UTP:
     Attributes:
         tag: "Tag" field.
         name: "LocName" field.
-        template_resref: "TemplateResRef" field.
+        resref: "TemplateResRef" field.
         auto_remove_key: "AutoRemoveKey" field.
         conversation: "Conversation" field.
         faction_id: "Faction" field.
@@ -81,7 +81,7 @@ class UTP:
     BINARY_TYPE = ResourceType.UTP
 
     def __init__(self):
-        self.template_resref: ResRef = ResRef.from_blank()
+        self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -159,7 +159,7 @@ def construct_utp(gff: GFF) -> UTP:
     root = gff.root
     utp.tag = root.acquire("Tag", "")
     utp.name = root.acquire("LocName", LocalizedString.from_invalid())
-    utp.template_resref = root.acquire("TemplateResRef", ResRef.from_blank())
+    utp.resref = root.acquire("TemplateResRef", ResRef.from_blank())
     utp.auto_remove_key = bool(root.acquire("AutoRemoveKey", 0))
     utp.lock_dc = root.acquire("CloseLockDC", 0)
     utp.conversation = root.acquire("Conversation", ResRef.from_blank())
@@ -233,7 +233,7 @@ def dismantle_utp(utp: UTP, game: Game = Game.K2, *, use_deprecated: bool = True
     root = gff.root
     root.set_string("Tag", utp.tag)
     root.set_locstring("LocName", utp.name)
-    root.set_resref("TemplateResRef", utp.template_resref)
+    root.set_resref("TemplateResRef", utp.resref)
     root.set_uint8("AutoRemoveKey", utp.auto_remove_key)
     root.set_resref("Conversation", utp.conversation)
     root.set_uint32("Faction", utp.faction_id)
