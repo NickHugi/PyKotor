@@ -30,6 +30,10 @@ class VISAsciiReader(ResourceReader):
                 pairs.append((when_inside, show))
 
         for when_inside, show in pairs:
+            if when_inside not in self._vis.all_rooms():
+                self._vis.add_room(when_inside)
+            if show not in self._vis.all_rooms():
+                self._vis.add_room(show)
             self._vis.set_visible(when_inside, show, True)
 
         if auto_close:
@@ -48,6 +52,6 @@ class VISAsciiWriter(ResourceWriter):
             self._writer.write_string("{} {}\r\n".format(observer, str(len(observed))))
             for room in observed:
                 self._writer.write_string("  {}\r\n".format(room))
-        
+
         if auto_close:
             self._writer.close()
