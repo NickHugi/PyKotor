@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 from copy import copy
 from typing import Dict, List
@@ -5,7 +7,7 @@ from typing import Dict, List
 import glm
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT
-from glm import mat4, vec3, quat
+from glm import mat4, vec3, quat, vec4
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation, SearchLocation
@@ -38,6 +40,8 @@ class Scene:
 
         self.table_doors = load_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = load_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_heads = load_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
         self.module: Module = Module(module_root, self.installation)
         for room in self.module.layout.resource().rooms:
@@ -57,6 +61,23 @@ class Scene:
             position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
             rotation = vec3(0, 0, placeable.bearing)
             self.objects.append(RenderObject(model_name, position, rotation))
+
+        for creature in self.module.dynamic.resource().creatures:
+            utc = self.module.creatures[creature.resref.get()].resource()
+            position = vec3(creature.position.x, creature.position.y, creature.position.z)
+            rotation = vec3(0, 0, creature.bearing)
+            body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
+
+            obj = RenderObject(body_model, position, rotation)
+            self.objects.append(obj)
+
+            head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
+            if head_str:
+                head_id = int(head_str)
+                head_model = self.table_heads.get_row(head_id).get_string("head")
+                head_obj = RenderObject(head_model)
+                head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
+                obj.children.append(head_obj)
 
     def render(self) -> None:
         glClearColor(0.5, 0.5, 1, 1.0)
