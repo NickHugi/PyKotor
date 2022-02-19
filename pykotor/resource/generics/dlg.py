@@ -205,7 +205,7 @@ class DLGNode:
         script2_param6: "ActionParamStrB" field. KotOR 2 Only.
         script2: "Script2" field. KotOR 2 Only.
         alien_race_node: "AlienRaceNode" field. KotOR 2 Only.
-        emotion: "Emotion" field. KotOR 2 Only.
+        emotion_id: "Emotion" field. KotOR 2 Only.
         facial_id: "FacialAnim" field. KotOR 2 Only.
         node_id: "NodeID" field. KotOR 2 Only.
         unskippable: "NodeUnskippable" field. KotOR 2 Only.
@@ -263,7 +263,7 @@ class DLGNode:
         self.script2_param6: str = ""
 
         self.alien_race_node: int = 0
-        self.emotion: int = 0
+        self.emotion_id: int = 0
         self.facial_id: int = 0
         self.unskippable: bool = False
         self.node_id: int = 0
@@ -309,7 +309,7 @@ class DLGLink:
     Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
     Attributes:
-        active: "Active" field.
+        active1: "Active" field.
         index: "Index" field.
 
         comment: "LinkComment" field. Only used in links stored in nodes.
@@ -317,24 +317,24 @@ class DLGLink:
 
         active2: "Active2" field. KotOR 2 Only.
         logic: "Logic" field. KotOR 2 Only.
-        not1: "Not" field. KotOR 2 Only.
-        not2: "Not2" field. KotOR 2 Only.
-        script1_param1: "Param1" field. KotOR 2 Only.
-        script1_param2: "Param2" field. KotOR 2 Only.
-        script1_param3: "Param3" field. KotOR 2 Only.
-        script1_param4: "Param4" field. KotOR 2 Only.
-        script1_param5: "Param5" field. KotOR 2 Only.
-        script1_param6: "ParamStrA" field. KotOR 2 Only.
-        script2_param1: "Param1b" field. KotOR 2 Only.
-        script2_param2: "Param2b" field. KotOR 2 Only.
-        script2_param3: "Param3b" field. KotOR 2 Only.
-        script2_param4: "Param4b" field. KotOR 2 Only.
-        script2_param5: "Param5b" field. KotOR 2 Only.
-        script2_param6: "ParamStrB" field. KotOR 2 Only.
+        active1_not: "Not" field. KotOR 2 Only.
+        active2_not: "Not2" field. KotOR 2 Only.
+        active1_param1: "Param1" field. KotOR 2 Only.
+        active1_param2: "Param2" field. KotOR 2 Only.
+        active1_param3: "Param3" field. KotOR 2 Only.
+        active1_param4: "Param4" field. KotOR 2 Only.
+        active1_param5: "Param5" field. KotOR 2 Only.
+        active1_param6: "ParamStrA" field. KotOR 2 Only.
+        active2_param1: "Param1b" field. KotOR 2 Only.
+        active2_param2: "Param2b" field. KotOR 2 Only.
+        active2_param3: "Param3b" field. KotOR 2 Only.
+        active2_param4: "Param4b" field. KotOR 2 Only.
+        active2_param5: "Param5b" field. KotOR 2 Only.
+        active2_param6: "ParamStrB" field. KotOR 2 Only.
     """
 
     def __init__(self, node: DLGNode = DLGNode):
-        self.active: ResRef = ResRef.from_blank()
+        self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode = node
 
         # not in StartingList
@@ -343,23 +343,23 @@ class DLGLink:
 
         # KotOR 2 Only:
         self.active2: ResRef = ResRef.from_blank()
-        self.not1: bool = False
-        self.not2: bool = False
+        self.active1_not: bool = False
+        self.active2_not: bool = False
         self.logic: bool = False
 
-        self.script1_param1: int = 0
-        self.script1_param2: int = 0
-        self.script1_param3: int = 0
-        self.script1_param4: int = 0
-        self.script1_param5: int = 0
-        self.script1_param6: str = ""
-        self.script2_param1: int = 0
+        self.active1_param1: int = 0
+        self.active1_param2: int = 0
+        self.active1_param3: int = 0
+        self.active1_param4: int = 0
+        self.active1_param5: int = 0
+        self.active1_param6: str = ""
 
-        self.script2_param2: int = 0
-        self.script2_param3: int = 0
-        self.script2_param4: int = 0
-        self.script2_param5: int = 0
-        self.script2_param6: str = ""
+        self.active2_param1: int = 0
+        self.active2_param2: int = 0
+        self.active2_param3: int = 0
+        self.active2_param4: int = 0
+        self.active2_param5: int = 0
+        self.active2_param6: str = ""
 
 
 class DLGStunt:
@@ -381,7 +381,7 @@ def construct_dlg(gff: GFF) -> DLG:
         node.listener = gff_struct.acquire("Listener", "")
         node.vo_resref = gff_struct.acquire("VO_ResRef", ResRef.from_blank())
         node.script1 = gff_struct.acquire("Script", ResRef.from_blank())
-        node.delay = gff_struct.acquire("Delay", 0)
+        node.delay = -1 if gff_struct.acquire("Delay", 0) == 0xFFFFFFFF else gff_struct.acquire("Delay", 0)
         node.comment = gff_struct.acquire("Comment", "")
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
         node.quest = gff_struct.acquire("Quest", "")
@@ -413,7 +413,7 @@ def construct_dlg(gff: GFF) -> DLG:
         node.script2_param6 = gff_struct.acquire("ActionParamStrB", "")
         node.script2 = gff_struct.acquire("Script2", ResRef.from_blank())
         node.alien_race_node = gff_struct.acquire("AlienRaceNode", 0)
-        node.emotion = gff_struct.acquire("Emotion", 0)
+        node.emotion_id = gff_struct.acquire("Emotion", 0)
         node.facial_id = gff_struct.acquire("FacialAnim", 0)
         node.node_id = gff_struct.acquire("NodeID", 0)
         node.unskippable = gff_struct.acquire("NodeUnskippable", 0)
@@ -438,20 +438,20 @@ def construct_dlg(gff: GFF) -> DLG:
         link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
         link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
         link.logic = gff_struct.acquire("Logic", 0)
-        link.not1 = gff_struct.acquire("Not", 0)
-        link.not2 = gff_struct.acquire("Not2", 0)
-        link.script1_param1 = gff_struct.acquire("Param1", 0)
-        link.script1_param2 = gff_struct.acquire("Param2", 0)
-        link.script1_param3 = gff_struct.acquire("Param3", 0)
-        link.script1_param4 = gff_struct.acquire("Param4", 0)
-        link.script1_param5 = gff_struct.acquire("Param5", 0)
-        link.script1_param6 = gff_struct.acquire("ParamStrA", "")
-        link.script2_param1 = gff_struct.acquire("Param1b", 0)
-        link.script2_param2 = gff_struct.acquire("Param2b", 0)
-        link.script2_param3 = gff_struct.acquire("Param3b", 0)
-        link.script2_param4 = gff_struct.acquire("Param4b", 0)
-        link.script2_param5 = gff_struct.acquire("Param5b", 0)
-        link.script2_param6 = gff_struct.acquire("ParamStrB", "")
+        link.active1_not = gff_struct.acquire("Not", 0)
+        link.active2_not = gff_struct.acquire("Not2", 0)
+        link.active1_param1 = gff_struct.acquire("Param1", 0)
+        link.active1_param2 = gff_struct.acquire("Param2", 0)
+        link.active1_param3 = gff_struct.acquire("Param3", 0)
+        link.active1_param4 = gff_struct.acquire("Param4", 0)
+        link.active1_param5 = gff_struct.acquire("Param5", 0)
+        link.active1_param6 = gff_struct.acquire("ParamStrA", "")
+        link.active2_param1 = gff_struct.acquire("Param1b", 0)
+        link.active2_param2 = gff_struct.acquire("Param2b", 0)
+        link.active2_param3 = gff_struct.acquire("Param3b", 0)
+        link.active2_param4 = gff_struct.acquire("Param4b", 0)
+        link.active2_param5 = gff_struct.acquire("Param5b", 0)
+        link.active2_param6 = gff_struct.acquire("ParamStrB", "")
 
     dlg = DLG(False)
 
@@ -525,25 +525,25 @@ def construct_dlg(gff: GFF) -> DLG:
 
 def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
     def dismantle_link(gff_struct: GFFStruct, link: DLGLink, nodes: List):
-        gff_struct.set_resref("Active", link.active)
+        gff_struct.set_resref("Active", link.active1)
         gff_struct.set_uint32("Index", nodes.index(link.node))
         if game == Game.K2:
             gff_struct.set_resref("Active2", link.active2)
             gff_struct.set_int32("Logic", link.logic)
-            gff_struct.set_uint8("Not", link.not1)
-            gff_struct.set_uint8("Not2", link.not2)
-            gff_struct.set_int32("Param1", link.script1_param1)
-            gff_struct.set_int32("Param2", link.script1_param2)
-            gff_struct.set_int32("Param3", link.script1_param3)
-            gff_struct.set_int32("Param4", link.script1_param4)
-            gff_struct.set_int32("Param5", link.script1_param5)
-            gff_struct.set_string("ParamStrA", link.script1_param6)
-            gff_struct.set_int32("Param1b", link.script2_param1)
-            gff_struct.set_int32("Param2b", link.script2_param2)
-            gff_struct.set_int32("Param3b", link.script2_param3)
-            gff_struct.set_int32("Param4b", link.script2_param4)
-            gff_struct.set_int32("Param5b", link.script2_param5)
-            gff_struct.set_string("ParamStrB", link.script2_param6)
+            gff_struct.set_uint8("Not", link.active1_not)
+            gff_struct.set_uint8("Not2", link.active2_not)
+            gff_struct.set_int32("Param1", link.active1_param1)
+            gff_struct.set_int32("Param2", link.active1_param2)
+            gff_struct.set_int32("Param3", link.active1_param3)
+            gff_struct.set_int32("Param4", link.active1_param4)
+            gff_struct.set_int32("Param5", link.active1_param5)
+            gff_struct.set_string("ParamStrA", link.active1_param6)
+            gff_struct.set_int32("Param1b", link.active2_param1)
+            gff_struct.set_int32("Param2b", link.active2_param2)
+            gff_struct.set_int32("Param3b", link.active2_param3)
+            gff_struct.set_int32("Param4b", link.active2_param4)
+            gff_struct.set_int32("Param5b", link.active2_param5)
+            gff_struct.set_string("ParamStrB", link.active2_param6)
 
     def dismantle_node(gff_struct: GFFStruct, node: DLGNode, nodes: List, list_name: str):
         gff_struct.set_locstring("Text", node.text)
@@ -594,7 +594,7 @@ def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True
             gff_struct.set_string("ActionParamStrB", node.script2_param6)
             gff_struct.set_resref("Script2", node.script2)
             gff_struct.set_int32("AlienRaceNode", node.alien_race_node)
-            gff_struct.set_int32("Emotion", node.emotion)
+            gff_struct.set_int32("Emotion", node.emotion_id)
             gff_struct.set_int32("FacialAnim", node.facial_id)
             gff_struct.set_int32("NodeID", node.node_id)
             gff_struct.set_int32("NodeUnskippable", node.unskippable)
