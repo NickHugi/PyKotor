@@ -16,7 +16,7 @@ from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, glBindBuffer, glBuffer
     GL_STATIC_DRAW
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
-from glm import mat4, vec3, quat
+from glm import mat4, vec3, quat, vec4
 
 from pykotor.gl.shader import Texture, Shader
 from typing import TYPE_CHECKING
@@ -66,6 +66,34 @@ class Node:
             ancestors.append(ancestor)
             ancestor = ancestor._parent
         return list(reversed(ancestors))
+
+    def global_position(self) -> vec3:
+        ancestors = self.ancestors() + [self]
+        transform = mat4()
+        for ancestor in ancestors:
+            transform = glm.translate(transform, ancestor.position)
+            transform = transform * glm.mat4_cast(ancestor.rotation)
+        position = vec3()
+        glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
+        return position
+
+    def global_rotation(self) -> quat:
+        ancestors = self.ancestors() + [self]
+        transform = mat4()
+        for ancestor in ancestors:
+            transform = glm.translate(transform, ancestor.position)
+            transform = transform * glm.mat4_cast(ancestor.rotation)
+        rotation = quat()
+        glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
+        return rotation
+
+    def global_transform(self) -> mat4:
+        ancestors = self.ancestors() + [self]
+        transform = mat4()
+        for ancestor in ancestors:
+            transform = glm.translate(transform, ancestor.position)
+            transform = transform * glm.mat4_cast(ancestor.rotation)
+        return transform
 
     def draw(self, shader: Shader, transform: mat4):
         transform = glm.translate(transform, self.position)
