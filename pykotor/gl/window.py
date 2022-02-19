@@ -1,4 +1,6 @@
 import math
+import os
+import sys
 import time
 from typing import Optional
 
@@ -105,3 +107,12 @@ class PyKotorWindow:
 
     def mouse_click(self, window, button, action, mods):
         ...
+
+
+if __name__ == "__main__":
+    kotor_path = str(sys.argv[1])
+    is_tsl = bool(sys.argv[2])
+    module = str(sys.argv[3])
+
+    installation = Installation(kotor_path, "KotOR", is_tsl)
+    PyKotorWindow().open(module, installation)
