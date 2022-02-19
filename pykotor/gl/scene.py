@@ -15,6 +15,9 @@ from pykotor.gl.model import Model
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture
 
 
+SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+
+
 class Scene:
     def __init__(self, module_root: str, installation: Installation):
         glEnable(GL_TEXTURE_2D)
@@ -36,7 +39,6 @@ class Scene:
 
             mdl = BinaryReader.from_bytes(self.installation.resource(model_name, ResourceType.MDL).data, 12)
             mdx = BinaryReader.from_bytes(self.installation.resource(model_name, ResourceType.MDX).data)
-            self.models[room.model] = gl_load_mdl(self, mdl, mdx)
 
             position = vec3(room.position.x, room.position.y, room.position.z)
             self.objects.append(RenderObject(room.model, position))
@@ -49,7 +51,7 @@ class Scene:
         self.shader.set_matrix4("projection", self.camera.projection())
 
         for obj in self.objects:
-            model = self.models[obj.model]
+            model = self.model(obj.model)
             model.draw(self.shader, obj.transform())
 
     def texture(self, name: str) -> Texture:
@@ -57,6 +59,14 @@ class Scene:
             tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(255, 255, 255)
         return self.textures[name]
+
+    def model(self, name: str) -> Model:
+        if name not in self.models:
+            mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER).data
+            mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER).data
+            model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
+            self.models[name] = model
+        return self.models[name]
 
 
 class RenderObject:
