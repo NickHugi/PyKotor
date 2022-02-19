@@ -8,6 +8,7 @@ from glm import mat4, vec3, quat
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.resource.formats.twoda import load_2da
 from pykotor.resource.type import ResourceType
 
 from pykotor.gl.modelreader import gl_load_mdl
@@ -15,6 +16,7 @@ from pykotor.gl.model import Model
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture
 
 
+SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
@@ -33,6 +35,8 @@ class Scene:
 
         self.camera: Camera = Camera()
 
+        self.table_doors = load_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+
         self.module: Module = Module(module_root, self.installation)
         for room in self.module.layout.resource().rooms:
             model_name = room.model
@@ -42,6 +46,13 @@ class Scene:
 
             position = vec3(room.position.x, room.position.y, room.position.z)
             self.objects.append(RenderObject(room.model, position))
+
+        for door in self.module.dynamic.resource().doors:
+            utd = self.module.doors[door.resref.get()].resource()
+            model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
+            position = vec3(door.position.x, door.position.y, door.position.z)
+            rotation = vec3(0, 0, door.bearing)
+            self.objects.append(RenderObject(model_name, position, rotation))
 
     def render(self) -> None:
         glClearColor(0.5, 0.5, 1, 1.0)
