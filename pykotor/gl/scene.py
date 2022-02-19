@@ -49,11 +49,8 @@ class Scene:
         self.shader.set_matrix4("projection", self.camera.projection())
 
         for obj in self.objects:
-            transform = mat4()
-            transform = glm.translate(transform, obj.position)
-
             model = self.models[obj.model]
-            model.draw(self.shader, transform)
+            model.draw(self.shader, obj.transform())
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
@@ -65,7 +62,17 @@ class Scene:
 class RenderObject:
     def __init__(self, model: str, position: vec3):
         self.model: str = model
-        self.position: vec3 = position
+        self._transform: mat4 = mat4()
+        self._position: vec3 = position
+
+        self._transform = glm.translate(mat4(), self._position)
+
+    def transform(self) -> mat4:
+        return self._transform
+
+    def set_position(self, x, y, z) -> None:
+        self._position = vec3(x, y, z)
+        self._transform = glm.translate(mat4(), self._position)
 
 
 class Camera:
