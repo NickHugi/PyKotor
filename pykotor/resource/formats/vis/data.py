@@ -25,7 +25,7 @@ class VIS:
             yield observer, deepcopy(observed)
 
     def all_rooms(self) -> Set[str]:
-        return self._rooms
+        return copy(self._rooms)
 
     def add_room(self, model: str) -> None:
         """
