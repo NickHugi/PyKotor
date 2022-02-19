@@ -1,14 +1,18 @@
+from typing import List
+
 import glm
 from pykotor.common.stream import BinaryReader
 
 from pykotor.gl.model import Node, Mesh, Model
 
 
-def _load_node(scene, mdl: BinaryReader, mdx: BinaryReader, offset: int) -> Node:
+def _load_node(scene, mdl: BinaryReader, mdx: BinaryReader, offset: int, names: List[str]) -> Node:
     mdl.seek(offset)
-    node = Node(scene)
     node_type = mdl.read_uint16()
-    index_number = mdl.read_uint16()
+    supernode_id = mdl.read_uint16()
+    name_id = mdl.read_uint16()
+    node = Node(scene, names[name_id])
+
     mdl.seek(offset + 16)
     node.position = glm.vec3(mdl.read_single(), mdl.read_single(), mdl.read_single())
     node.rotation = glm.quat(mdl.read_single(), mdl.read_single(), mdl.read_single(), mdl.read_single())
@@ -72,7 +76,7 @@ def _load_node(scene, mdl: BinaryReader, mdx: BinaryReader, offset: int) -> Node
     for i in range(child_count):
         mdl.seek(child_offsets + i * 4)
         offset_to_child = mdl.read_uint32()
-        new_node = _load_node(scene, mdl, mdx, offset_to_child)
+        new_node = _load_node(scene, mdl, mdx, offset_to_child, names)
         node.children.append(new_node)
 
     return node
@@ -82,5 +86,19 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     mdl.seek(40)
     offset = mdl.read_uint32()
 
-    model = Model(scene, _load_node(scene, mdl, mdx, offset))
+    mdl.seek(184)
+    offset_to_name_offsets = mdl.read_uint32()
+    name_count = mdl.read_uint32()
+
+    name_offsets = []
+    mdl.seek(offset_to_name_offsets)
+    for i in range(name_count):
+        name_offsets.append(mdl.read_uint32())
+
+    names = []
+    for name_offset in name_offsets:
+        mdl.seek(name_offset)
+        names.append(mdl.read_terminated_string("\0"))
+
+    model = Model(scene, _load_node(scene, mdl, mdx, offset, names))
     return model
