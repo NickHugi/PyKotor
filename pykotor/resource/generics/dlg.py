@@ -41,15 +41,17 @@ class DLG:
 
     BINARY_TYPE = ResourceType.DLG
 
-    def __init__(self):
-        # Add bare minimum to be openable by DLGEditor
-        starter = DLGLink()
-        entry = DLGEntry()
-        entry.text.set(Language.ENGLISH, Gender.MALE, "")
-        starter.node = entry
-
-        self.starters: List[DLGLink] = [starter]
+    def __init__(self, blank_node: bool = True):
+        self.starters: List[DLGLink] = []
         self.stunts: List[DLGStunt] = []
+
+        if blank_node:
+            # Add bare minimum to be openable by DLGEditor
+            starter = DLGLink()
+            entry = DLGEntry()
+            entry.text.set(Language.ENGLISH, Gender.MALE, "")
+            starter.node = entry
+            self.starters.append(starter)
 
         self.ambient_track: ResRef = ResRef.from_blank()
         self.animated_cut: int = 0
@@ -451,7 +453,7 @@ def construct_dlg(gff: GFF) -> DLG:
         link.script2_param5 = gff_struct.acquire("Param5b", 0)
         link.script2_param6 = gff_struct.acquire("ParamStrB", "")
 
-    dlg = DLG()
+    dlg = DLG(False)
 
     root = gff.root
 
