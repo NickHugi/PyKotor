@@ -1,4 +1,5 @@
 import math
+from copy import copy
 from typing import Dict, List
 
 import glm
@@ -105,9 +106,15 @@ class RenderObject:
         self._transform = glm.translate(mat4(), self._position)
         self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
 
+    def position(self) -> vec3:
+        return copy(self._position)
+
     def set_position(self, x: float, y: float, z: float) -> None:
         self._position = vec3(x, y, z)
         self._recalc_transform()
+
+    def rotation(self) -> vec3:
+        return copy(self._rotation)
 
     def set_rotation(self, x: float, y: float, z: float) -> None:
         self._rotation = glm.quat()
