@@ -40,11 +40,6 @@ class Scene:
 
         self.module: Module = Module(module_root, self.installation)
         for room in self.module.layout.resource().rooms:
-            model_name = room.model
-
-            mdl = BinaryReader.from_bytes(self.installation.resource(model_name, ResourceType.MDL).data, 12)
-            mdx = BinaryReader.from_bytes(self.installation.resource(model_name, ResourceType.MDX).data)
-
             position = vec3(room.position.x, room.position.y, room.position.z)
             self.objects.append(RenderObject(room.model, position))
 
