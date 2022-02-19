@@ -7,7 +7,7 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST,
 from glm import mat4, vec3
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import Installation
+from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 
 from pykotor.gl.modelreader import gl_load_mdl
@@ -57,7 +57,7 @@ class Scene:
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
-            tpc = self.installation.texture(name, skip_chitin=False, skip_gui=True)
+            tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
             self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(255, 255, 255)
         return self.textures[name]
 
