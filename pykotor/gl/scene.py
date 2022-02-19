@@ -102,6 +102,12 @@ class RenderObject:
     def transform(self) -> mat4:
         return self._transform
 
+    def set_transform(self, transform: mat4) -> None:
+        self._transform = transform
+        rotation = quat()
+        glm.decompose(transform, vec3(), rotation, self._position, vec3(), vec4())
+        self._rotation = glm.eulerAngles(rotation)
+
     def _recalc_transform(self) -> None:
         self._transform = glm.translate(mat4(), self._position)
         self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
