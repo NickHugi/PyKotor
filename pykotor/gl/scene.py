@@ -4,7 +4,7 @@ from typing import Dict, List
 import glm
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT
-from glm import mat4, vec3
+from glm import mat4, vec3, quat
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation, SearchLocation
@@ -70,19 +70,28 @@ class Scene:
 
 
 class RenderObject:
-    def __init__(self, model: str, position: vec3):
+    def __init__(self, model: str, position: vec3, rotation: vec3 = None):
         self.model: str = model
         self._transform: mat4 = mat4()
         self._position: vec3 = position
+        self._rotation: vec3 = rotation if rotation is not None else vec3()
 
-        self._transform = glm.translate(mat4(), self._position)
+        self._recalc_transform()
 
     def transform(self) -> mat4:
         return self._transform
 
-    def set_position(self, x, y, z) -> None:
-        self._position = vec3(x, y, z)
+    def _recalc_transform(self) -> None:
         self._transform = glm.translate(mat4(), self._position)
+        self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
+
+    def set_position(self, x: float, y: float, z: float) -> None:
+        self._position = vec3(x, y, z)
+        self._recalc_transform()
+
+    def set_rotation(self, x: float, y: float, z: float) -> None:
+        self._rotation = glm.quat()
+        self._recalc_transform()
 
 
 class Camera:
