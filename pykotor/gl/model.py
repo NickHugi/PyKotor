@@ -32,6 +32,15 @@ class Model:
     def draw(self, shader: Shader, transform: mat4):
         self.root.draw(shader, transform)
 
+    def find(self, name: str) -> Optional[Node]:
+        nodes = [self.root]
+        while nodes:
+            node = nodes.pop()
+            if node.name == name:
+                return node
+            nodes.extend(node.children)
+        return None
+
 
 class Node:
     def __init__(self, scene: Scene, parent: Optional[Node], name: str):
