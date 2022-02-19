@@ -53,6 +53,20 @@ class Node:
         self.render: bool = True
         self.mesh: Optional[Mesh] = None
 
+    def root(self) -> Node:
+        ancestor = self._parent
+        while ancestor:
+            ancestor = ancestor._parent
+        return ancestor
+
+    def ancestors(self) -> List[Node]:
+        ancestors = []
+        ancestor = self._parent
+        while ancestor:
+            ancestors.append(ancestor)
+            ancestor = ancestor._parent
+        return list(reversed(ancestors))
+
     def draw(self, shader: Shader, transform: mat4):
         transform = glm.translate(transform, self.position)
         transform = transform * glm.mat4_cast(self.rotation)
