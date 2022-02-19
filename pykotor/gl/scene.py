@@ -89,11 +89,11 @@ class Scene:
 
 
 class RenderObject:
-    def __init__(self, model: str, position: vec3, rotation: vec3 = None):
+    def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None):
         self.model: str = model
         self.children: List[RenderObject] = []
         self._transform: mat4 = mat4()
-        self._position: vec3 = position
+        self._position: vec3 = position if position is not None else vec3()
         self._rotation: vec3 = rotation if rotation is not None else vec3()
 
         self._recalc_transform()
