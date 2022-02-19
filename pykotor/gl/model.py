@@ -34,8 +34,9 @@ class Model:
 
 
 class Node:
-    def __init__(self, scene, name: str):
+    def __init__(self, scene: Scene, parent: Optional[Node], name: str):
         self._scene: Scene = scene
+        self._parent: Optional[Node] = parent
         self.name: str = name
         self.position: vec3 = glm.vec3()
         self.rotation: quat = glm.quat()

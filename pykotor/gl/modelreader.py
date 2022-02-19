@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import glm
 from pykotor.common.stream import BinaryReader
@@ -6,12 +6,12 @@ from pykotor.common.stream import BinaryReader
 from pykotor.gl.model import Node, Mesh, Model
 
 
-def _load_node(scene, mdl: BinaryReader, mdx: BinaryReader, offset: int, names: List[str]) -> Node:
+def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: List[str]) -> Node:
     mdl.seek(offset)
     node_type = mdl.read_uint16()
     supernode_id = mdl.read_uint16()
     name_id = mdl.read_uint16()
-    node = Node(scene, names[name_id])
+    node = Node(scene, node, names[name_id])
 
     mdl.seek(offset + 16)
     node.position = glm.vec3(mdl.read_single(), mdl.read_single(), mdl.read_single())
@@ -76,7 +76,7 @@ def _load_node(scene, mdl: BinaryReader, mdx: BinaryReader, offset: int, names: 
     for i in range(child_count):
         mdl.seek(child_offsets + i * 4)
         offset_to_child = mdl.read_uint32()
-        new_node = _load_node(scene, mdl, mdx, offset_to_child, names)
+        new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
         node.children.append(new_node)
 
     return node
@@ -100,5 +100,5 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
         mdl.seek(name_offset)
         names.append(mdl.read_terminated_string("\0"))
 
-    model = Model(scene, _load_node(scene, mdl, mdx, offset, names))
+    model = Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
     return model
