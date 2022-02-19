@@ -65,8 +65,13 @@ class Scene:
         self.shader.set_matrix4("projection", self.camera.projection())
 
         for obj in self.objects:
-            model = self.model(obj.model)
-            model.draw(self.shader, obj.transform())
+            self._render_object(obj, mat4())
+
+    def _render_object(self, obj: RenderObject, transform: mat4) -> None:
+        model = self.model(obj.model)
+        model.draw(self.shader, transform * obj.transform())
+        for child in obj.children:
+            self._render_object(child, obj.transform())
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
@@ -86,6 +91,7 @@ class Scene:
 class RenderObject:
     def __init__(self, model: str, position: vec3, rotation: vec3 = None):
         self.model: str = model
+        self.children: List[RenderObject] = []
         self._transform: mat4 = mat4()
         self._position: vec3 = position
         self._rotation: vec3 = rotation if rotation is not None else vec3()
