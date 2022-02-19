@@ -38,6 +38,7 @@ from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.generics.utc import UTC, construct_utc
 
 T = TypeVar('T')
+SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES, SearchLocation.CHITIN]
 
 
 class Module:
@@ -144,63 +145,63 @@ class Module:
                     uts_list = uts_list.union(set([sound.resref.get() for sound in git.sounds]))
 
         for utc_resname in utc_list:
-            search = self._installation.location(utc_resname, ResourceType.UTC, skip_modules=True, skip_textures=True)
+            search = self._installation.location(utc_resname, ResourceType.UTC, SEARCH_ORDER)
             self.add_locations(utc_resname, ResourceType.UTC, [result.filepath for result in search])
 
         for utp_resname in utp_list:
-            search = self._installation.location(utp_resname, ResourceType.UTP, skip_modules=True, skip_textures=True)
+            search = self._installation.location(utp_resname, ResourceType.UTP, SEARCH_ORDER)
             self.add_locations(utp_resname, ResourceType.UTP, [result.filepath for result in search])
 
         for utd_resname in utd_list:
-            search = self._installation.location(utd_resname, ResourceType.UTD, skip_modules=True, skip_textures=True)
+            search = self._installation.location(utd_resname, ResourceType.UTD, SEARCH_ORDER)
             self.add_locations(utd_resname, ResourceType.UTD, [result.filepath for result in search])
 
         for uti_resname in uti_list:
-            search = self._installation.location(uti_resname, ResourceType.UTI, skip_modules=True, skip_textures=True)
+            search = self._installation.location(uti_resname, ResourceType.UTI, SEARCH_ORDER)
             self.add_locations(uti_resname, ResourceType.UTI, [result.filepath for result in search])
 
         for utm_resname in utm_list:
-            search = self._installation.location(utm_resname, ResourceType.UTM, skip_modules=True, skip_textures=True)
+            search = self._installation.location(utm_resname, ResourceType.UTM, SEARCH_ORDER)
             self.add_locations(utm_resname, ResourceType.UTM, [result.filepath for result in search])
 
         for ute_resname in ute_list:
-            search = self._installation.location(ute_resname, ResourceType.UTE, skip_modules=True, skip_textures=True)
+            search = self._installation.location(ute_resname, ResourceType.UTE, SEARCH_ORDER)
             self.add_locations(ute_resname, ResourceType.UTE, [result.filepath for result in search])
 
         for utt_resname in utt_list:
-            search = self._installation.location(utt_resname, ResourceType.UTT, skip_modules=True, skip_textures=True)
+            search = self._installation.location(utt_resname, ResourceType.UTT, SEARCH_ORDER)
             self.add_locations(utt_resname, ResourceType.UTT, [result.filepath for result in search])
 
         for utw_resname in utw_list:
-            search = self._installation.location(utw_resname, ResourceType.UTW, skip_modules=True, skip_textures=True)
+            search = self._installation.location(utw_resname, ResourceType.UTW, SEARCH_ORDER)
             self.add_locations(utw_resname, ResourceType.UTW, [result.filepath for result in search])
 
         for uts_resname in uts_list:
-            search = self._installation.location(uts_resname, ResourceType.UTS, skip_modules=True, skip_textures=True)
+            search = self._installation.location(uts_resname, ResourceType.UTS, SEARCH_ORDER)
             self.add_locations(uts_resname, ResourceType.UTS, [result.filepath for result in search])
 
         self.info = ModuleResource("module", ResourceType.IFO, self._installation, [])
-        search = self._installation.location("module", ResourceType.IFO, capsules=self._capsules, skip_modules=True, skip_textures=True)
+        search = self._installation.location("module", ResourceType.IFO, SEARCH_ORDER, capsules=self._capsules)
         self.info.add_locations([result.filepath for result in search])
 
         self.static = ModuleResource(self._id, ResourceType.ARE, self._installation, [])
-        search = self._installation.location(self._id, ResourceType.ARE, capsules=self._capsules, skip_modules=True, skip_textures=True)
+        search = self._installation.location(self._id, ResourceType.ARE, SEARCH_ORDER, capsules=self._capsules)
         self.static.add_locations([result.filepath for result in search])
 
         self.dynamic = ModuleResource(self._id, ResourceType.GIT, self._installation, [])
-        search = self._installation.location(self._id, ResourceType.GIT, capsules=self._capsules, skip_modules=True, skip_textures=True)
+        search = self._installation.location(self._id, ResourceType.GIT, SEARCH_ORDER, capsules=self._capsules)
         self.dynamic.add_locations([result.filepath for result in search])
 
         self.path = ModuleResource(self._id, ResourceType.PTH, self._installation, [])
-        search = self._installation.location(self._id, ResourceType.PTH, capsules=self._capsules, skip_modules=True, skip_textures=True)
+        search = self._installation.location(self._id, ResourceType.PTH, SEARCH_ORDER, capsules=self._capsules)
         self.path.add_locations([result.filepath for result in search])
 
         self.layout = ModuleResource(self._id, ResourceType.LYT, self._installation, [])
-        search = self._installation.location(self._id, ResourceType.LYT, capsules=self._capsules, skip_modules=True, skip_textures=True)
+        search = self._installation.location(self._id, ResourceType.LYT, SEARCH_ORDER, capsules=self._capsules)
         self.layout.add_locations([result.filepath for result in search])
 
         self.visibility = ModuleResource(self._id, ResourceType.VIS, self._installation, [])
-        search = self._installation.location(self._id, ResourceType.VIS, capsules=self._capsules, skip_modules=True, skip_textures=True)
+        search = self._installation.location(self._id, ResourceType.VIS, SEARCH_ORDER, capsules=self._capsules)
         self.visibility.add_locations([result.filepath for result in search])
 
     def add_locations(self, resname: str, restype: ResourceType, locations: List[str]):

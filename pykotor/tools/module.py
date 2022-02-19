@@ -17,7 +17,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 
-from pykotor.extract.installation import Installation
+from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.vis import write_vis
@@ -156,7 +156,7 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
                     newLightmapName = "{}_lm_{}".format(identifier, len(newLightmaps.keys()))
                     newLightmaps[lightmap] = newLightmapName
 
-                    tpc = installation.texture(lightmap, skip_chitin=False)
+                    tpc = installation.texture(lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
                     tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
