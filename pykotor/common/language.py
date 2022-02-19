@@ -194,7 +194,7 @@ class LocalizedString:
         elif isinstance(tlk, TalkTable) and 0 < self.stringref < tlk.size():
             return tlk.string(self.stringref)
         elif len(self) > 0:
-            for substring_id, text in self:
+            for language, gender, text in self:
                 return text
         else:
             return no_name
