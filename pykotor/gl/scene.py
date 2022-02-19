@@ -36,6 +36,7 @@ class Scene:
         self.camera: Camera = Camera()
 
         self.table_doors = load_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_placeables = load_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
         self.module: Module = Module(module_root, self.installation)
         for room in self.module.layout.resource().rooms:
@@ -52,6 +53,13 @@ class Scene:
             model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
             position = vec3(door.position.x, door.position.y, door.position.z)
             rotation = vec3(0, 0, door.bearing)
+            self.objects.append(RenderObject(model_name, position, rotation))
+
+        for placeable in self.module.dynamic.resource().placeables:
+            utp = self.module.placeables[placeable.resref.get()].resource()
+            model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
+            position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
+            rotation = vec3(0, 0, placeable.bearing)
             self.objects.append(RenderObject(model_name, position, rotation))
 
     def render(self) -> None:
