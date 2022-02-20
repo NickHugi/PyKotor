@@ -3,12 +3,13 @@ from __future__ import annotations
 import math
 import random
 from copy import copy
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 import glm
 from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
-    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_RGBA
+    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_RGBA, GL_BLEND, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
+    glDisable
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
 from pykotor.common.module import Module
@@ -17,9 +18,11 @@ from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.twoda import load_2da
 from pykotor.resource.type import ResourceType
 
+from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
+    SELECT_VSHADER, SELECT_FSHADER
 from pykotor.gl.modelreader import gl_load_mdl
-from pykotor.gl.model import Model
-from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER
+from pykotor.gl.model import Model, Cube
+
 
 SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -29,13 +32,16 @@ class Scene:
     def __init__(self, module_root: str, installation: Installation):
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         self.installation: Installation = installation
         self.textures: Dict[str, Texture] = { "NULL": Texture.from_color() }
         self.models: Dict[str, Model] = {}
         self.objects: List[RenderObject] = []
+        self.selection: List[RenderObject] = []
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
+        self.select_shader: Shader = Shader(SELECT_VSHADER, SELECT_FSHADER)
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
 
         self.camera: Camera = Camera()
@@ -85,12 +91,21 @@ class Scene:
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        glDisable(GL_BLEND)
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
-
         for obj in self.objects:
             self._render_object(obj, mat4())
+
+        self.select_shader.use()
+        self.select_shader.set_matrix4("view", self.camera.view())
+        self.select_shader.set_matrix4("projection", self.camera.projection())
+        glEnable(GL_BLEND)
+        for obj in self.selection:
+            transform = glm.translate(mat4(), obj.position())
+            transform = transform * glm.mat4_cast(quat(obj.rotation()))
+            obj.cube(self).draw(self.select_shader, transform)
 
     def _render_object(self, obj: RenderObject, transform: mat4) -> None:
         model = self.model(obj.model)
@@ -129,6 +144,11 @@ class Scene:
         self.render()  # Stop screen from blinking when picking
         return self.objects[pixel] if pixel != 0xFFFFFF else None
 
+    def select(self, obj: RenderObject, clear_existing: bool = True):
+        if clear_existing:
+            self.selection.clear()
+        self.selection.append(obj)
+
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
             tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
@@ -151,6 +171,7 @@ class RenderObject:
         self._transform: mat4 = mat4()
         self._position: vec3 = position if position is not None else vec3()
         self._rotation: vec3 = rotation if rotation is not None else vec3()
+        self._cube: Optional[Cube] = None
         self.data: Any = data
 
         self._recalc_transform()
@@ -181,6 +202,27 @@ class RenderObject:
     def set_rotation(self, x: float, y: float, z: float) -> None:
         self._rotation = glm.quat()
         self._recalc_transform()
+
+    def cube(self, scene: Scene) -> Cube:
+        if not self._cube:
+            min_point = vec3(10000, 10000, 10000)
+            max_point = vec3(-10000, -10000, -10000)
+            self._cube_rec(scene, mat4(), self, min_point, max_point)
+            self._cube = Cube(scene, min_point, max_point)
+        return self._cube
+
+    def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3) -> None:
+        obj_min, obj_max = scene.model(obj.model).box()
+        obj_min = transform * obj_min
+        obj_max = transform * obj_max
+        min_point.x = min(min_point.x, obj_min.x, obj_max.x)
+        min_point.y = min(min_point.y, obj_min.y, obj_max.y)
+        min_point.z = min(min_point.z, obj_min.z, obj_max.z)
+        max_point.x = max(max_point.x, obj_min.x, obj_max.x)
+        max_point.y = max(max_point.y, obj_min.y, obj_max.y)
+        max_point.z = max(max_point.z, obj_min.z, obj_max.z)
+        for child in obj.children:
+            self._cube_rec(scene, transform * child.transform(), child, min_point, max_point)
 
 
 class Camera:

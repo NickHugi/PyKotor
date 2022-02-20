@@ -18,6 +18,9 @@ class PyKotorWindow:
         self.scene: Optional[Scene] = None
         self.delta: float = 0.0
 
+        self.mouse_x: int = 0
+        self.mouse_y: int = 0
+
         self.key_turn_up: bool = False
         self.key_turn_down: bool = False
         self.key_turn_right: bool = False
@@ -103,10 +106,15 @@ class PyKotorWindow:
             self.key_move_boost = action != 0
 
     def mouse_move(self, window, x, y):
-        ...
+        self.mouse_x = int(x)
+        self.mouse_y = int(y)
 
     def mouse_click(self, window, button, action, mods):
-        ...
+        if button == 0 and action == 1:
+            height = glfw.get_window_size(window)[1]
+            obj = self.scene.pick(self.mouse_x, height - self.mouse_y)
+            if obj is not None:
+                self.scene.select(obj)
 
 
 if __name__ == "__main__":

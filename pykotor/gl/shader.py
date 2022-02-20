@@ -88,6 +88,33 @@ void main()
 """
 
 
+SELECT_VSHADER = """
+#version 330 core
+
+layout (location = 1) in vec3 position;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+    gl_Position = projection * view * model *  vec4(position, 1.0);
+}
+"""
+
+
+SELECT_FSHADER = """
+#version 330
+
+out vec4 FragColor;
+
+void main()
+{
+    FragColor = vec4(1.0, 0.0, 0.0, 0.5);
+}
+"""
+
 
 class Shader:
     def __init__(self, vshader: str, fshader: str):

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import ctypes
-from typing import Optional, List
+import struct
+from typing import Optional, List, Tuple
 
 import glm
+import numpy
 from OpenGL.GL import glVertexAttribPointer, glGenVertexArrays, glGenBuffers
 from OpenGL.GL.shaders import GL_FALSE
 from OpenGL.raw.GL.ARB.internalformat_query2 import GL_TEXTURE_2D
@@ -40,6 +42,50 @@ class Model:
                 return node
             nodes.extend(node.children)
         return None
+
+    def all(self) -> List[Node]:
+        all_nodes = []
+        search = [self.root]
+        while search:
+            node = search.pop()
+            search.extend(node.children)
+            all_nodes.append(node)
+        return all_nodes
+
+    def box(self) -> Tuple[vec3, vec3]:
+        min_point = vec3(100000, 100000, 100000)
+        max_point = vec3(-100000, -100000, -100000)
+        self._box_rec(self.root, mat4(), min_point, max_point)
+
+        min_point.x -= 0.1
+        min_point.y -= 0.1
+        min_point.z -= 0.1
+        max_point.x += 0.1
+        max_point.y += 0.1
+        max_point.z += 0.1
+
+        return min_point, max_point
+
+    def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3) -> None:
+        transform = glm.translate(transform, node.position)
+        transform = transform * glm.mat4_cast(node.rotation)
+
+        if node.mesh and node.render:
+            vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
+            for i in range(vertex_count):
+                index = i * node.mesh.mdx_size + node.mesh.mdx_vertex
+                data = node.mesh.vertex_data[index:index+12]
+                x, y, z = struct.unpack("fff", data)
+                position = transform * vec3(x, y, z)
+                min_point.x = min(min_point.x, position.x)
+                min_point.y = min(min_point.y, position.y)
+                min_point.z = min(min_point.z, position.z)
+                max_point.x = max(max_point.x, position.x)
+                max_point.y = max(max_point.y, position.y)
+                max_point.z = max(max_point.z, position.z)
+
+        for child in node.children:
+            self._box_rec(child, transform, min_point, max_point)
 
 
 class Node:
@@ -115,6 +161,10 @@ class Mesh:
         self.texture: str = "NULL"
         self.lightmap: str = "NULL"
 
+        self.vertex_data = vertex_data
+        self.mdx_size = block_size
+        self.mdx_vertex = vertex_offset
+
         self._vao = glGenVertexArrays(1)
         self._vbo = glGenBuffers(1)
         self._ebo = glGenBuffers(1)
@@ -153,5 +203,62 @@ class Mesh:
         glActiveTexture(GL_TEXTURE1)
         self._scene.texture(self.lightmap).use()
 
+        glBindVertexArray(self._vao)
+        glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
+
+
+class Cube:
+    def __init__(self, scene: Scene, min_point: vec3 = None, max_point: vec3 = None):
+        self._scene = scene
+
+        min_point = vec3(-1.0, -1.0, -1.0) if min_point is None else min_point
+        max_point = vec3(1.0, 1.0, 1.0) if max_point is None else max_point
+
+        vertices = numpy.array([
+            min_point.x, min_point.y, max_point.z,
+            max_point.x, min_point.y, max_point.z,
+            max_point.x, max_point.y, max_point.z,
+            min_point.x, max_point.y, max_point.z,
+            min_point.x, min_point.y, min_point.z,
+            max_point.x, min_point.y, min_point.z,
+            max_point.x, max_point.y, min_point.z,
+            min_point.x, max_point.y, min_point.z
+        ], dtype='float32')
+
+        elements = numpy.array([
+            0, 1, 2,
+            2, 3, 0,
+            1, 5, 6,
+            6, 2, 1,
+            7, 6, 5,
+            5, 4, 7,
+            4, 0, 3,
+            3, 7, 4,
+            4, 5, 1,
+            1, 0, 4,
+            3, 2, 6,
+            6, 7, 3
+        ], dtype='int16')
+
+        self._vao = glGenVertexArrays(1)
+        self._vbo = glGenBuffers(1)
+        self._ebo = glGenBuffers(1)
+        glBindVertexArray(self._vao)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
+        glBufferData(GL_ARRAY_BUFFER, len(vertices)*4, vertices, GL_STATIC_DRAW)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements)*4, elements, GL_STATIC_DRAW)
+        self._face_count = len(elements)
+
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glBindVertexArray(0)
+
+    def draw(self, shader: Shader, transform: mat4):
+        shader.set_matrix4("model", transform)
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
