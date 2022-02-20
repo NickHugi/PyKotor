@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import math
+import random
 from copy import copy
 from typing import Dict, List
 
 import glm
+from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
-    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT
+    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_RGBA
+from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
@@ -16,8 +19,7 @@ from pykotor.resource.type import ResourceType
 
 from pykotor.gl.modelreader import gl_load_mdl
 from pykotor.gl.model import Model
-from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture
-
+from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER
 
 SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -33,8 +35,8 @@ class Scene:
         self.models: Dict[str, Model] = {}
         self.objects: List[RenderObject] = []
 
+        self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
-        self.shader.use()
 
         self.camera: Camera = Camera()
 
@@ -83,6 +85,7 @@ class Scene:
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
 
@@ -94,6 +97,37 @@ class Scene:
         model.draw(self.shader, transform * obj.transform())
         for child in obj.children:
             self._render_object(child, obj.transform())
+
+    def picker_render(self) -> None:
+        self.picker_shader.use()
+
+        glClearColor(1.0, 1.0, 1, 1.0)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        self.picker_shader.set_matrix4("view", self.camera.view())
+        self.picker_shader.set_matrix4("projection", self.camera.projection())
+
+        for obj in self.objects:
+            int_rgb = self.objects.index(obj)
+            r = int_rgb & 0xFF
+            g = (int_rgb >> 8) & 0xFF
+            b = (int_rgb >> 16) & 0xFF
+            color = vec3(r/255, g/255, b/255)
+            self.picker_shader.set_vector3("colorId", color)
+
+            self._picker_render_object(obj, mat4())
+
+    def _picker_render_object(self, obj: RenderObject, transform: mat4) -> None:
+        model = self.model(obj.model)
+        model.draw(self.picker_shader, transform * obj.transform())
+        for child in obj.children:
+            self._picker_render_object(child, obj.transform())
+
+    def pick(self, x, y) -> RenderObject:
+        self.picker_render()
+        pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8
+        self.render()  # Stop screen from blinking when picking
+        return self.objects[pixel] if pixel != 0xFFFFFF else None
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:

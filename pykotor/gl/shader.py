@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import glm
-from OpenGL.GL import shaders, glGenTextures, glTexImage2D, glGetUniformLocation, glUniformMatrix4fv
+from OpenGL.GL import shaders, glGenTextures, glTexImage2D, glGetUniformLocation, glUniformMatrix4fv, glUniform4fv, \
+    glUniform3fv
 from OpenGL.GL.shaders import GL_FALSE
 from OpenGL.raw.GL.EXT.texture_compression_s3tc import GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
 from OpenGL.raw.GL.VERSION.GL_1_0 import GL_TEXTURE_2D, glTexParameteri, GL_RGB, GL_UNSIGNED_BYTE, \
@@ -10,10 +11,10 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import GL_TEXTURE_2D, glTexParameteri, GL_RGB,
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
 from OpenGL.raw.GL.VERSION.GL_2_0 import GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, glUseProgram
-from glm import mat4
+from glm import mat4, vec4, vec3
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 
-KOTOR_VSHADER =  """
+KOTOR_VSHADER = """
 #version 330 core
 
 layout (location = 0) in vec3 flags;
@@ -48,7 +49,8 @@ out vec4 FragColor;
 layout(binding = 0) uniform sampler2D diffuse;
 layout(binding = 1) uniform sampler2D lightmap;
 
-void main() {
+void main()
+{
     vec4 diffuseColor = texture(diffuse, diffuse_uv);
     vec4 lightmapColor = texture(lightmap, lightmap_uv);
     FragColor = mix(diffuseColor, lightmapColor, 0.5);
@@ -56,12 +58,15 @@ void main() {
 """
 
 
-PICKER_VSHADER =  """
+PICKER_VSHADER = """
 #version 330 core
+
 layout (location = 1) in vec3 position;
+
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+
 void main()
 {
     gl_Position = projection * view * model *  vec4(position, 1.0);
@@ -71,9 +76,13 @@ void main()
 
 PICKER_FSHADER = """
 #version 330
-out vec4 FragColor;
+
 uniform vec3 colorId;
-void main() {
+
+out vec4 FragColor;
+
+void main()
+{
     FragColor = vec4(colorId, 1.0);
 }
 """
@@ -94,6 +103,12 @@ class Shader:
 
     def set_matrix4(self, uniform: str, matrix: mat4):
         glUniformMatrix4fv(self.uniform(uniform), 1, GL_FALSE, glm.value_ptr(matrix))
+
+    def set_vector4(self, uniform: str, vector: vec4):
+        glUniform4fv(self.uniform(uniform), 1, glm.value_ptr(vector))
+
+    def set_vector3(self, uniform: str, vector: vec3):
+        glUniform3fv(self.uniform(uniform), 1, glm.value_ptr(vector))
 
 
 class Texture:
