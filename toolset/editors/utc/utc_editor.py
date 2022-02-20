@@ -48,6 +48,7 @@ class UTCEditor(Editor):
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
+        self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
 
         self.setInstallation(installation)
 
@@ -480,3 +481,11 @@ class UTCEditor(Editor):
             if item.checkState() == QtCore.Qt.Checked:
                 summary += item.text() + "\n"
         self.ui.featSummaryEdit.setPlainText(summary)
+
+    def updatePowerSummary(self) -> None:
+        summary = ""
+        for i in range(self.ui.powerList.count()):
+            item = self.ui.powerList.item(i)
+            if item.checkState() == QtCore.Qt.Checked:
+                summary += item.text() + "\n"
+        self.ui.powerSummaryEdit.setPlainText(summary)
