@@ -2,7 +2,7 @@ from contextlib import suppress
 from typing import Any, Optional
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QItemSelectionRange
+from PyQt5.QtCore import QItemSelectionRange, QSortFilterProxyModel, QModelIndex
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor, QIcon, QPixmap
 from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget, QFileDialog
 from pykotor.common.geometry import Vector3, Vector4
@@ -46,7 +46,9 @@ class GFFEditor(Editor):
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
         self.model: QStandardItemModel = QStandardItemModel(self)
-        self.ui.treeView.setModel(self.model)
+        self.proxyModel: QSortFilterProxyModel = GFFSortFilterProxyModel(self)
+        self.proxyModel.setSourceModel(self.model)
+        self.ui.treeView.setModel(self.proxyModel)
 
         self.ui.treeView.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.ui.intSpin.editingFinished.connect(self.updateData)
@@ -74,6 +76,9 @@ class GFFEditor(Editor):
         self.ui.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.treeView.customContextMenuRequested.connect(self.requestContextMenu)
 
+        self.ui.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.treeView.setSortingEnabled(True)
+
         self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
@@ -87,7 +92,11 @@ class GFFEditor(Editor):
         rootNode.setForeground(QBrush(QColor(0x660000)))
         self.model.appendRow(rootNode)
         self._load_struct(rootNode, gff.root)
-        self.ui.treeView.expand(self.model.indexFromItem(rootNode))
+
+        sourceIndex = self.model.indexFromItem(rootNode)
+        proxyIndex = self.proxyModel.mapFromSource(sourceIndex)
+        self.ui.treeView.expand(proxyIndex)
+
 
     def _load_struct(self, node: QStandardItem, gffStruct: GFFStruct) -> None:
         for label, ftype, value in gffStruct:
@@ -182,8 +191,9 @@ class GFFEditor(Editor):
         self.model.appendRow(rootNode)
 
     def selectionChanged(self, selected: QItemSelectionRange) -> None:
-        index = selected.indexes()[0]
-        item = self.model.itemFromIndex(index)
+        proxyIndex = selected.indexes()[0]
+        sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        item = self.model.itemFromIndex(sourceIndex)
         self.loadItem(item)
 
     def loadItem(self, item: QListWidgetItem):
@@ -277,8 +287,9 @@ class GFFEditor(Editor):
         if len(self.ui.treeView.selectedIndexes()) == 0:
             return
 
-        index = self.ui.treeView.selectedIndexes()[0]
-        item = self.model.itemFromIndex(index)
+        proxyIndex = self.ui.treeView.selectedIndexes()[0]
+        sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        item = self.model.itemFromIndex(sourceIndex)
 
         item.setData(self.ui.labelEdit.text(), _LABEL_NODE_ROLE)
 
@@ -382,7 +393,8 @@ class GFFEditor(Editor):
 
     def typeChanged(self, ftypeId) -> None:
         ftype = GFFFieldType(ftypeId)
-        index = self.ui.treeView.selectedIndexes()[0]
+        proxyIndex = self.ui.treeView.selectedIndexes()[0]
+        sourceIndex = self.proxyModel.mapToSource(proxyIndex)
         item = self.model.itemFromIndex(index)
         item.setData(ftype, _TYPE_NODE_ROLE)
 
@@ -425,8 +437,9 @@ class GFFEditor(Editor):
         item.parent().removeRow(item.row())
 
     def requestContextMenu(self, point):
-        index = self.ui.treeView.indexAt(point)
-        item = self.model.itemFromIndex(index)
+        proxyIndex = self.ui.treeView.indexAt(point)
+        sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+        item = self.model.itemFromIndex(sourceIndex)
 
         if item is not None:
             menu = QMenu(self)
@@ -473,3 +486,22 @@ class GFFEditor(Editor):
             self.ui.tlkTextEdit.setPlainText(text)
         else:
             self.ui.tlkTextEdit.setPlainText("")
+
+
+class GFFSortFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+
+    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
+        leftText: str = self.sourceModel().itemFromIndex(left).data(_LABEL_NODE_ROLE)
+        rightText: str = self.sourceModel().itemFromIndex(right).data(_LABEL_NODE_ROLE)
+
+        leftText = str(self.sourceModel().itemFromIndex(left).data(_VALUE_NODE_ROLE)) if not leftText else leftText
+        rightText = str(self.sourceModel().itemFromIndex(right).data(_VALUE_NODE_ROLE)) if not rightText else rightText
+
+        if leftText.isdigit() and rightText.isdigit():
+            leftInt = int(leftText)
+            rightInt = int(rightText)
+            return leftInt < rightInt
+        else:
+            return leftText < rightText
