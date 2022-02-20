@@ -9,7 +9,7 @@ import glm
 from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_RGBA, GL_BLEND, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
-    glDisable
+    glDisable, GL_CULL_FACE, GL_CW, GL_BACK, glCullFace
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
 from pykotor.common.module import Module
@@ -33,6 +33,9 @@ class Scene:
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        glEnable(GL_CULL_FACE)
+        glCullFace(GL_BACK)
 
         self.installation: Installation = installation
         self.textures: Dict[str, Texture] = { "NULL": Texture.from_color() }
