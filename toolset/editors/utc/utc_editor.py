@@ -47,6 +47,7 @@ class UTCEditor(Editor):
         self.ui.portraitSelect.currentIndexChanged.connect(self.portraitChanged)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
+        self.ui.featList.itemChanged.connect(self.updateFeatSummary)
 
         self.setInstallation(installation)
 
@@ -69,7 +70,7 @@ class UTCEditor(Editor):
         self._loadLocstring(self.ui.firstnameEdit, utc.first_name)
         self._loadLocstring(self.ui.lastnameEdit, utc.last_name)
         self.ui.tagEdit.setText(utc.tag)
-        self.ui.resrefEdit.setText(utc.template_resref.get())
+        self.ui.resrefEdit.setText(utc.resref.get())
         self.ui.appearanceSelect.setCurrentIndex(utc.appearance_id)
         self.ui.soundsetSelect.setCurrentIndex(utc.soundset_id)
         self.ui.conversationEdit.setText(utc.conversation.get())
@@ -471,3 +472,11 @@ class UTCEditor(Editor):
                 return item
         else:
             return None
+
+    def updateFeatSummary(self) -> None:
+        summary = ""
+        for i in range(self.ui.featList.count()):
+            item = self.ui.featList.item(i)
+            if item.checkState() == QtCore.Qt.Checked:
+                summary += item.text() + "\n"
+        self.ui.featSummaryEdit.setPlainText(summary)
