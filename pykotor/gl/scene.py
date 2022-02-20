@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import random
 from copy import copy
-from typing import Dict, List
+from typing import Dict, List, Any
 
 import glm
 from OpenGL.GL import glReadPixels
@@ -48,21 +48,21 @@ class Scene:
         self.module: Module = Module(module_root, self.installation)
         for room in self.module.layout.resource().rooms:
             position = vec3(room.position.x, room.position.y, room.position.z)
-            self.objects.append(RenderObject(room.model, position))
+            self.objects.append(RenderObject(room.model, position, data=room))
 
         for door in self.module.dynamic.resource().doors:
             utd = self.module.doors[door.resref.get()].resource()
             model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
             position = vec3(door.position.x, door.position.y, door.position.z)
             rotation = vec3(0, 0, door.bearing)
-            self.objects.append(RenderObject(model_name, position, rotation))
+            self.objects.append(RenderObject(model_name, position, rotation, data=door))
 
         for placeable in self.module.dynamic.resource().placeables:
             utp = self.module.placeables[placeable.resref.get()].resource()
             model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
             position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
             rotation = vec3(0, 0, placeable.bearing)
-            self.objects.append(RenderObject(model_name, position, rotation))
+            self.objects.append(RenderObject(model_name, position, rotation, data=placeable))
 
         for creature in self.module.dynamic.resource().creatures:
             utc = self.module.creatures[creature.resref.get()].resource()
@@ -70,7 +70,7 @@ class Scene:
             rotation = vec3(0, 0, creature.bearing)
             body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
 
-            obj = RenderObject(body_model, position, rotation)
+            obj = RenderObject(body_model, position, rotation, data=creature)
             self.objects.append(obj)
 
             head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
@@ -145,12 +145,13 @@ class Scene:
 
 
 class RenderObject:
-    def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None):
+    def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None, *, data=None):
         self.model: str = model
         self.children: List[RenderObject] = []
         self._transform: mat4 = mat4()
         self._position: vec3 = position if position is not None else vec3()
         self._rotation: vec3 = rotation if rotation is not None else vec3()
+        self.data: Any = data
 
         self._recalc_transform()
 
