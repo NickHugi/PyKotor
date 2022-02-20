@@ -257,6 +257,11 @@ class Camera:
         self.pitch += pitch
         self.yaw += yaw
 
+        if self.pitch > math.pi/2 - 0.01:
+            self.pitch = math.pi/2 - 0.01
+        elif self.pitch < -math.pi/2 + 0.01:
+            self.pitch = -math.pi/2 + 0.01
+
     def forward(self) -> vec3:
         eye_x = math.cos(self.pitch) * math.sin(self.yaw)
         eye_y = math.cos(self.yaw) * math.cos(self.pitch)
