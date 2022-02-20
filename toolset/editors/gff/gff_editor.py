@@ -4,7 +4,7 @@ from typing import Any, Optional
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange, QSortFilterProxyModel, QModelIndex
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor, QIcon, QPixmap
-from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget, QFileDialog
+from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget, QFileDialog, QShortcut
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.common.misc import ResRef
@@ -79,6 +79,8 @@ class GFFEditor(Editor):
         self.ui.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.ui.treeView.setSortingEnabled(True)
 
+        QShortcut("Del", self).activated.connect(self.removeSelectedNodes)
+
         self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
@@ -96,7 +98,6 @@ class GFFEditor(Editor):
         sourceIndex = self.model.indexFromItem(rootNode)
         proxyIndex = self.proxyModel.mapFromSource(sourceIndex)
         self.ui.treeView.expand(proxyIndex)
-
 
     def _load_struct(self, node: QStandardItem, gffStruct: GFFStruct) -> None:
         for label, ftype, value in gffStruct:
@@ -435,6 +436,12 @@ class GFFEditor(Editor):
 
     def removeNode(self, item: QStandardItem) -> None:
         item.parent().removeRow(item.row())
+
+    def removeSelectedNodes(self) -> None:
+        for proxyIndex in self.ui.treeView.selectedIndexes():
+            sourceIndex = self.proxyModel.mapToSource(proxyIndex)
+            item = self.model.itemFromIndex(sourceIndex)
+            self.removeNode(item)
 
     def requestContextMenu(self, point):
         proxyIndex = self.ui.treeView.indexAt(point)
