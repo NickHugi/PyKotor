@@ -81,12 +81,9 @@ class Installation:
     """
     TEXTURES_TYPES = [ResourceType.TPC, ResourceType.TGA, ResourceType.DDS]
 
-    def __init__(self, path: str, name: str = "KotOR", tsl: bool = False):
+    def __init__(self, path: str):
         self._path: str = path.replace('\\', '/')
         if not self._path.endswith('/'): self._path += '/'
-
-        self.name: str = name
-        self.tsl: bool = tsl
 
         self._talktable: Optional[TalkTable] = TalkTable(self._path + "dialog.tlk")
 
