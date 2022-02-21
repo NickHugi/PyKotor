@@ -17,7 +17,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel, QMargins, QRect, \
     QSize, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QShowEvent, QWheelEvent, QImage, QColor, \
-    QBrush, QCloseEvent, QTransform, QResizeEvent
+    QBrush, QCloseEvent, QTransform, QResizeEvent, QDropEvent
 from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
     QLabel, QWidget, QMessageBox, QHeaderView, QLayout, QSizePolicy, QScrollArea, QStyle, QGridLayout, QTableWidget, \
     QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QListView
@@ -826,6 +826,23 @@ class ToolWindow(QMainWindow):
         QMessageBox(QMessageBox.Critical, "Could not saved resource to ERF/MOD/RIM",
                     "Tried to save a resource '{}' into ".format(tempFilepath) +
                     "'{}' using an external editor.".format(modFilepath), QMessageBox.Ok, self).exec_()
+
+    def dropEvent(self, e: QtGui.QDropEvent) -> None:
+        if e.mimeData().hasUrls():
+            for url in e.mimeData().urls():
+                filepath = url.toLocalFile()
+                with open(filepath, 'rb') as file:
+                    resref, restype = ResourceIdentifier.from_path(filepath)
+                    data = file.read()
+                    self.openResourceEditor(filepath, resref, restype, data)
+
+    def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
+        if e.mimeData().hasUrls():
+            for url in e.mimeData().urls():
+                with suppress(Exception):
+                    # Call from_path method as it will throw an error if the file extension is not recognized.
+                    ResourceIdentifier.from_path(url.toLocalFile())
+                    e.accept()
 
 
 class ResourceModel(QStandardItemModel):
