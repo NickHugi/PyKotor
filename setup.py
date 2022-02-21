@@ -10,7 +10,7 @@ DESCRIPTION = "Read, modify and write files used by KotOR's game engine."
 PACKAGES = find_namespace_packages(exclude=["tests"])
 URL = "https://github.com/NickHugi/PyKotor"
 
-README = (HERE / "README.rd").read_text()
+README = (HERE / "README.md").read_text()
 REQUIREMENTS = (HERE / "requirements.txt").read_text()
 
 setup(
@@ -21,5 +21,6 @@ setup(
     install_requires=REQUIREMENTS,
     long_description=README,
     packages=PACKAGES,
-    url=URL
+    url=URL,
+    long_description_content_type='text/markdown'
 )
