@@ -319,7 +319,7 @@ class Installation:
     def talktable(self) -> TalkTable:
         return self._talktable
 
-    def resource(self, resname: str, restype: ResourceType, search_order: List[SearchLocation] = None, *,
+    def resource(self, resname: str, restype: ResourceType, order: List[SearchLocation] = None, *,
                  capsules: List[Capsule] = None, folders: List[str] = None) -> Optional[ResourceResult]:
         """
         Returns a resource matching the specified resref and restype. If no resource is found then None is returned
@@ -333,22 +333,22 @@ class Installation:
             restype: The resource type.
             capsules: An extra list of capsules to search in.
             folders: An extra list of folders to search in.
-            search_order: What locations to look in and in which order.
+            order: What locations to look in and in which order.
 
         Returns:
             A ResourceResult tuple if a resource is found otherwise None.
         """
 
         query = ResourceIdentifier(resname, restype)
-        batch = self.resources([query], search_order, capsules=capsules, folders=folders)
+        batch = self.resources([query], order, capsules=capsules, folders=folders)
 
         return batch[query] if batch[query] else None
 
-    def resources(self, queries: List[ResourceIdentifier], search_order: List[SearchLocation] = None, *,
+    def resources(self, queries: List[ResourceIdentifier], order: List[SearchLocation] = None, *,
                   capsules: List[Capsule] = None, folders: List[str] = None) -> Dict[ResourceIdentifier, Optional[ResourceResult]]:
 
         results: Dict[ResourceIdentifier, Optional[ResourceResult]] = {}
-        locations = self.locations(queries, search_order, capsules=capsules, folders=folders)
+        locations = self.locations(queries, order, capsules=capsules, folders=folders)
         handles = {}
 
         for query in queries:
@@ -367,7 +367,7 @@ class Installation:
 
         return results
 
-    def location(self, resname: str, restype: ResourceType, search_order: List[SearchLocation] = None, *,
+    def location(self, resname: str, restype: ResourceType, order: List[SearchLocation] = None, *,
                  capsules: List[Capsule] = None, folders: List[str] = None) -> List[LocationResult]:
         """
         Returns a list filepaths for where a particular resource matching the given resref and restype are located.
@@ -384,17 +384,17 @@ class Installation:
 
         query: ResourceIdentifier = ResourceIdentifier(resname, restype)
 
-        locations = self.locations([query], search_order, capsules=capsules, folders=folders)[query]
+        locations = self.locations([query], order, capsules=capsules, folders=folders)[query]
 
         return locations
 
-    def locations(self, queries: List[ResourceIdentifier], search_order: List[SearchLocation] = None, *,
+    def locations(self, queries: List[ResourceIdentifier], order: List[SearchLocation] = None, *,
                   capsules: List[Capsule] = None, folders: List[str] = None) -> Dict[ResourceIdentifier, List[LocationResult]]:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        search_order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
-                        SearchLocation.MODULES, SearchLocation.CHITIN] if search_order is None else search_order
+        order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
+                 SearchLocation.MODULES, SearchLocation.CHITIN] if order is None else order
 
         locations: Dict[ResourceIdentifier, List[LocationResult]] = {}
         for qinden in queries:
@@ -451,13 +451,13 @@ class Installation:
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders)
         }
 
-        for item in search_order:
+        for item in order:
             function_map[item]()
 
         return locations
 
-    def texture(self, resname: str, search_order: List[SearchLocation] = None, *,
-                      capsules: List[Capsule] = None, folders: List[str] = None) -> Optional[TPC]:
+    def texture(self, resname: str, order: List[SearchLocation] = None, *,
+                capsules: List[Capsule] = None, folders: List[str] = None) -> Optional[TPC]:
         """
         Returns a TPC object loaded from a resource with the specified ResRef.
 
@@ -484,17 +484,16 @@ class Installation:
             TPC object or None.
         """
 
-        batch = self.textures([resname], search_order, capsules=capsules, folders=folders)
-
+        batch = self.textures([resname], order, capsules=capsules, folders=folders)
         return batch[resname] if batch else None
 
-    def textures(self, resnames: List[str], search_order: List[SearchLocation] = None, *,
+    def textures(self, resnames: List[str], order: List[SearchLocation] = None, *,
                  capsules: List[Capsule] = None, folders: List[str] = None) -> CaseInsensitiveDict[Optional[TPC]]:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        search_order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
-                        SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN] if search_order is None else search_order
+        order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
+                 SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN] if order is None else order
 
         textures: CaseInsensitiveDict[Optional[TPC]] = CaseInsensitiveDict[Optional[TPC]]()
         texture_types = [ResourceType.TPC, ResourceType.TGA]
@@ -554,25 +553,87 @@ class Installation:
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders)
         }
 
-        for item in search_order:
+        for item in order:
             function_map[item]()
 
         return textures
 
-    def sound(self, resname: str, search_order: List[SearchLocation] = None) -> Optional[bytes]:
-        if not search_order:
-            search_order = [SearchLocation.OVERRIDE, SearchLocation.SOUND, SearchLocation.CHITIN]
+    def sound(self, resname: str, order: List[SearchLocation] = None, *, capsules: List[Capsule] = None,
+              folders: List[str] = None) -> Optional[Optional[bytes]]:
+        batch = self.sounds([resname], order, capsules=capsules, folders=folders)
+        return batch[resname] if batch else None
 
-        result = self.resource(resname, ResourceType.WAV, search_order)
+    def sounds(self, resnames: List[str], order: List[SearchLocation] = None, *, capsules: List[Capsule] = None,
+               folders: List[str] = None) -> CaseInsensitiveDict[Optional[bytes]]:
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
 
-        if result:
-            return sound.fix_audio(result.data)
+        order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
+                 SearchLocation.SOUND, SearchLocation.CHITIN] if not order else order
 
-        result = self.resource(resname, ResourceType.MP3, search_order)
-        if result:
-            return sound.fix_audio(result.data)
+        sounds: CaseInsensitiveDict[Optional[bytes]] = CaseInsensitiveDict[Optional[bytes]]()
+        texture_types = [ResourceType.WAV, ResourceType.MP3]
+        resnames = [resname.lower() for resname in resnames]
 
-        return None
+        for resname in resnames:
+            sounds[resname] = None
+
+        def check_dict(values):
+            for resources in values.values():
+                for resource in resources:
+                    if resource.resname() in copy(resnames) and resource.restype() in texture_types:
+                        resnames.remove(resource.resname())
+                        sounds[resource.resname()] = resource.data()
+
+        def check_list(values):
+            for resource in values:
+                if resource.resname() in copy(resnames) and resource.restype() in texture_types:
+                    resnames.remove(resource.resname())
+                    sounds[resource.resname()] = resource.data()
+
+        def check_capsules(values):
+            for capsule in values:
+                for resname in resnames:
+                    if capsule.exists(resname, ResourceType.WAV):
+                        resnames.remove(resname)
+                        sounds[resname] = capsule.resource(resname, ResourceType.TPC)
+                    if capsule.exists(resname, ResourceType.MP3):
+                        resnames.remove(resname)
+                        sounds[resname] = capsule.resource(resname, ResourceType.TGA)
+
+        def check_folders(values):
+            for folder in values:
+                folder = folder + '/' if not folder.endswith('/') else folder
+                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
+                    filepath = folder + file
+                    identifier = ResourceIdentifier.from_path(file)
+                    for resname in resnames:
+                        if identifier.resname == resname and identifier.restype in texture_types:
+                            data = BinaryReader.load_file(filepath)
+                            sounds[resname] = data
+
+        function_map = {
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
+            SearchLocation.MODULES: lambda: check_dict(self._modules),
+            SearchLocation.LIPS: lambda: check_dict(self._lips),
+            SearchLocation.RIMS: lambda: check_dict(self._rims),
+            SearchLocation.TEXTURES_TPA: lambda: check_list(self._texturepacks["swpc_tex_tpa.erf"]),
+            SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks["swpc_tex_tpb.erf"]),
+            SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks["swpc_tex_tpc.erf"]),
+            SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks["swpc_tex_gui.erf"]),
+            SearchLocation.CHITIN: lambda: check_list(self._chitin),
+            SearchLocation.MUSIC: lambda: check_list(self._streammusic),
+            SearchLocation.SOUND: lambda: check_list(self._streamsounds),
+            SearchLocation.VOICE: lambda: check_list(self._streamvoices),
+            SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders)
+        }
+
+        for item in order:
+            function_map[item]()
+
+        return sounds
+
 
     def string(self, stringref: int) -> str:
         return self._talktable.string(stringref)

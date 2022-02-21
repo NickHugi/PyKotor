@@ -317,3 +317,31 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(gui_results["bluearrow"])
         self.assertIsNone(gui_results["x"])
         self.assertEqual(2, len(gui_results))
+
+    def test_sounds(self):
+        installation = self.installation
+
+        chitin_sounds = ["as_an_dantext_01", "x"]
+        chitin_results = installation.sounds(chitin_sounds, [SearchLocation.CHITIN])
+        self.assertIsNotNone(chitin_results["as_an_dantext_01"])
+        self.assertIsNone(chitin_results["x"])
+
+        rim_sounds = ["FS_metal1", "x"]
+        rim_results = installation.sounds(rim_sounds, [SearchLocation.RIMS])
+        self.assertIsNotNone(rim_results["FS_metal1"])
+        self.assertIsNone(rim_results["x"])
+
+        sound_sounds = ["al_an_flybuzz_01", "x"]
+        sound_results = installation.sounds(sound_sounds, [SearchLocation.SOUND])
+        self.assertIsNotNone(sound_results["al_an_flybuzz_01"])
+        self.assertIsNone(sound_results["x"])
+
+        music_sounds = ["al_en_cityext", "x"]
+        music_results = installation.sounds(music_sounds, [SearchLocation.MUSIC])
+        self.assertIsNotNone(music_results["al_en_cityext"])
+        self.assertIsNone(music_results["x"])
+
+        voice_sounds = ["n_gengamm_scrm", "x"]
+        voice_results = installation.sounds(voice_sounds, [SearchLocation.VOICE])
+        self.assertIsNotNone(voice_results["n_gengamm_scrm"])
+        self.assertIsNone(voice_results["x"])
