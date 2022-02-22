@@ -20,6 +20,8 @@ def onAppCrash(e: BaseException, value: str, tback: TracebackType):
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
+
     app = QApplication(sys.argv)
     app.thread().setPriority(QThread.HighestPriority)
     sys.excepthook = onAppCrash
