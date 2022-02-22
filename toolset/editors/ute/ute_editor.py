@@ -50,7 +50,7 @@ class UTEEditor(Editor):
         # Basic
         self._loadLocstring(self.ui.nameEdit, ute.name)
         self.ui.tagEdit.setText(ute.tag)
-        self.ui.resrefEdit.setText(ute.template_resref.get())
+        self.ui.resrefEdit.setText(ute.resref.get())
         self.ui.difficultySelect.setCurrentIndex(ute.difficulty_id)
         self.ui.spawnSelect.setCurrentIndex(int(ute.single_shot))
         self.ui.minCreatureSpin.setValue(ute.rec_creatures)
@@ -86,7 +86,7 @@ class UTEEditor(Editor):
         # Basic
         ute.name = self.ui.nameEdit.locstring
         ute.tag = self.ui.tagEdit.text()
-        ute.template_resref = ResRef(self.ui.resrefEdit.text())
+        ute.resref = ResRef(self.ui.resrefEdit.text())
         ute.difficulty_id = self.ui.difficultySelect.currentIndex()
         ute.single_shot = bool(self.ui.spawnSelect.currentIndex())
         ute.rec_creatures = self.ui.minCreatureSpin.value()

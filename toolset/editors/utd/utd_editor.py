@@ -48,7 +48,7 @@ class UTDEditor(Editor):
         # Basic
         self._loadLocstring(self.ui.nameEdit, utd.name)
         self.ui.tagEdit.setText(utd.tag)
-        self.ui.resrefEdit.setText(utd.template_resref.get())
+        self.ui.resrefEdit.setText(utd.resref.get())
         self.ui.appearanceSelect.setCurrentIndex(utd.appearance_id)
         self.ui.conversationEdit.setText(utd.conversation.get())
 
@@ -97,7 +97,7 @@ class UTDEditor(Editor):
         # Basic
         utd.name = self.ui.nameEdit.locstring
         utd.tag = self.ui.tagEdit.text()
-        utd.template_resref = ResRef(self.ui.resrefEdit.text())
+        utd.resref = ResRef(self.ui.resrefEdit.text())
         utd.appearance_id = self.ui.appearanceSelect.currentIndex()
         utd.conversation = ResRef(self.ui.conversationEdit.text())
 

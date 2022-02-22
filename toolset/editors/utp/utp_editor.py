@@ -56,7 +56,7 @@ class UTPEditor(Editor):
         # Basic
         self._loadLocstring(self.ui.nameEdit, utp.name)
         self.ui.tagEdit.setText(utp.tag)
-        self.ui.resrefEdit.setText(utp.template_resref.get())
+        self.ui.resrefEdit.setText(utp.resref.get())
         self.ui.appearanceSelect.setCurrentIndex(utp.appearance_id)
         self.ui.conversationEdit.setText(utp.conversation.get())
 
@@ -113,7 +113,7 @@ class UTPEditor(Editor):
         # Basic
         utp.name = self.ui.nameEdit.locstring
         utp.tag = self.ui.tagEdit.text()
-        utp.template_resref = ResRef(self.ui.resrefEdit.text())
+        utp.resref = ResRef(self.ui.resrefEdit.text())
         utp.appearance_id = self.ui.appearanceSelect.currentIndex()
         utp.conversation = ResRef(self.ui.conversationEdit.text())
         utp.has_inventory = self.ui.hasInventoryCheckbox.isChecked()

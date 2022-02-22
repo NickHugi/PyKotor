@@ -182,7 +182,7 @@ class UTCEditor(Editor):
         utc.first_name = self.ui.firstnameEdit.locstring
         utc.last_name = self.ui.lastnameEdit.locstring
         utc.tag = self.ui.tagEdit.text()
-        utc.template_resref = ResRef(self.ui.resrefEdit.text())
+        utc.resref = ResRef(self.ui.resrefEdit.text())
         utc.appearance_id = self.ui.appearanceSelect.currentIndex()
         utc.soundset_id = self.ui.soundsetSelect.currentIndex()
         utc.conversation = ResRef(self.ui.conversationEdit.text())
@@ -331,7 +331,7 @@ class UTCEditor(Editor):
         self.ui.featList.clear()
         for feat in feats:
             stringref = feat.get_integer("name", 0)
-            text = installation.string(stringref) if stringref != 0 else feat.get_string("label")
+            text = installation.talktable().string(stringref) if stringref != 0 else feat.get_string("label")
             text = "[Unused Feat ID: {}]".format(feat.label()) if text == "" else text
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, feat.label())
@@ -344,7 +344,7 @@ class UTCEditor(Editor):
         self.ui.powerList.clear()
         for power in powers:
             stringref = power.get_integer("name", 0)
-            text = installation.string(stringref) if stringref != 0 else power.get_string("label")
+            text = installation.talktable().string(stringref) if stringref != 0 else power.get_string("label")
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
             text = "[Unused Power ID: {}]".format(power.label()) if text == "" else text
             item = QListWidgetItem(text)

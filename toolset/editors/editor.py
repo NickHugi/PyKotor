@@ -301,7 +301,7 @@ class LocalizedStringDialog(QDialog):
             text = self.locstring.get(language, gender) if self.locstring.get(language, gender) is not None else ""
             self.ui.stringEdit.setPlainText(text)
         else:
-            self.ui.stringEdit.setPlainText(self._installation.string(stringref))
+            self.ui.stringEdit.setPlainText(self._installation.talktable().string(stringref))
 
     def newTlkString(self):
         self.ui.stringrefSpin.setValue(self._installation.talktable().size())

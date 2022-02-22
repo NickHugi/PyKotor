@@ -223,7 +223,7 @@ class UTIEditor(Editor):
     def propertyName(installation: HTInstallation, prop: int):
         properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         stringref = properties.get_row(prop).get_integer("name")
-        name = installation.string(stringref)
+        name = installation.talktable().string(stringref)
         return name
 
     @staticmethod
@@ -235,7 +235,7 @@ class UTIEditor(Editor):
         subproperties = installation.htGetCache2DA(subtypeResname)
         headerStrref = "name" if "name" in subproperties.get_headers() else "string_ref"
         nameStrref = subproperties.get_row(subprop).get_integer(headerStrref)
-        name = installation.string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
+        name = installation.talktable().string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
         return name
 
     @staticmethod
@@ -244,7 +244,7 @@ class UTIEditor(Editor):
             costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
             costtable = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
             stringref = costtable.get_row(value).get_integer("name")
-            name = installation.string(stringref)
+            name = installation.talktable().string(stringref)
             return name
         return None
 
@@ -254,7 +254,7 @@ class UTIEditor(Editor):
             paramtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
             paramtable = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
             stringref = paramtable.get_row(param).get_integer("name")
-            name = installation.string(stringref)
+            name = installation.talktable().string(stringref)
             return name
         return None
 

@@ -67,7 +67,7 @@ class UTSEditor(Editor):
         # Basic
         self._loadLocstring(self.ui.nameEdit, uts.name)
         self.ui.tagEdit.setText(uts.tag)
-        self.ui.resrefEdit.setText(uts.template_resref.get())
+        self.ui.resrefEdit.setText(uts.resref.get())
         self.ui.volumeSlider.setValue(uts.volume)
         self.ui.activeCheckbox.setChecked(uts.active)
 
@@ -123,7 +123,7 @@ class UTSEditor(Editor):
         # Basic
         uts.name = self.ui.nameEdit.locstring
         uts.tag = self.ui.tagEdit.text()
-        uts.template_resref = ResRef(self.ui.resrefEdit.text())
+        uts.resref = ResRef(self.ui.resrefEdit.text())
         uts.volume = self.ui.volumeSlider.value()
         uts.active = self.ui.activeCheckbox.isChecked()
 

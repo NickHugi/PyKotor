@@ -197,13 +197,13 @@ class InventoryEditor(QDialog):
             if result is not None:
                 uti = construct_uti(load_gff(result.data))
                 filepath = result.filepath
-                name = uti.name.determine(self._installation.talktable(), "[No Name]")
+                name = self._installation.string(uti.name, "[No Name]")
         elif filepath.endswith(".rim") or filepath.endswith(".mod") or filepath.endswith(".erf"):
             uti = construct_uti(load_gff(Capsule(filepath).resource(resname, ResourceType.UTI)))
-            name = uti.name.determine(self._installation.talktable(), "[No Name]")
+            name = self._installation.string(uti.name, "[No Name]")
         elif filepath.endswith(".bif"):
             uti = construct_uti(load_gff(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data))
-            name = uti.name.determine(self._installation.talktable(), "[No Name]")
+            name = self._installation.string(uti.name, "[No Name]")
         else:
             uti = construct_uti(load_gff(BinaryReader.load_file(filepath)))
         return filepath, name, uti
@@ -474,7 +474,7 @@ class ItemBuilderDialog(QDialog):
 
     def utiLoaded(self, uti: UTI, result: ResourceResult) -> None:
         baseitems = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        name = uti.name.determine(self._tlk, "") if uti is not None else result.resname
+        name = self._installation.string(uti.name, result.resname) if uti is not None else result.resname
 
         # Split category by base item:
         #  categoryNameID = baseitems.get_row(uti.base_item).get_integer("name")
