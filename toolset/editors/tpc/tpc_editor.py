@@ -14,8 +14,8 @@ from editors.tpc import tpc_editor_ui
 
 class TPCEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
-        super().__init__(parent, "Texture Viewer", [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP],
-                         [ResourceType.TPC, ResourceType.TGA], installation)
+        supported = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
+        super().__init__(parent, "Texture Viewer", supported, supported, installation)
 
         self.ui = tpc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -67,5 +67,23 @@ class TPCEditor(Editor):
 
         data = bytearray()
 
-        write_tpc(self._tpc, data, self._restype)
+        if self._restype in [ResourceType.TPC, ResourceType.TGA]:
+            write_tpc(self._tpc, data, self._restype)
+        elif self._restype in [ResourceType.PNG, ResourceType.BMP]:
+            width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGBA, 0)
+            image = Image.frombuffer("RGBA", (width, height), pixeldata)
+            image = ImageOps.flip(image)
+
+            dataIO = io.BytesIO()
+            image.save(dataIO, "PNG" if self._restype == ResourceType.PNG else "BMP")
+            data = dataIO.getvalue()
+        elif self._restype in [ResourceType.JPG]:
+            width, height, pixeldata = self._tpc.convert(TPCTextureFormat.RGB, 0)
+            image = Image.frombuffer("RGB", (width, height), bytes(pixeldata))
+            image = ImageOps.flip(image)
+
+            dataIO = io.BytesIO()
+            image.save(dataIO, "JPEG", quality=80)
+            data = dataIO.getvalue()
+
         return data
