@@ -252,7 +252,7 @@ class Ui_Dialog(object):
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollArea_2.setObjectName("scrollArea_2")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 439, 228))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 374, 228))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.scrollAreaWidgetContents_2)
         self.verticalLayout_3.setObjectName("verticalLayout_3")
@@ -305,7 +305,7 @@ class Ui_Dialog(object):
         self.verticalLayout.addLayout(self.horizontalLayout_9)
 
         self.retranslateUi(Dialog)
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
@@ -324,7 +324,7 @@ class Ui_Dialog(object):
         self.twodaToolCombo.setItemText(0, _translate("Dialog", "Internal"))
         self.twodaToolCombo.setItemText(1, _translate("Dialog", "External"))
         self.label_8.setText(_translate("Dialog", "DLG Editor:"))
-        self.dlgToolCombo.setItemText(0, _translate("Dialog", "GFF Editor"))
+        self.dlgToolCombo.setItemText(0, _translate("Dialog", "Internal"))
         self.dlgToolCombo.setItemText(1, _translate("Dialog", "External"))
         self.label_9.setText(_translate("Dialog", "TLK Editor:"))
         self.tlkToolCombo.setItemText(0, _translate("Dialog", "Internal"))

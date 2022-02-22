@@ -35,6 +35,7 @@ from watchdog.observers import Observer
 import mainwindow_ui
 from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
+from editors.dlg.dlg_editor import DLGEditor
 from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
@@ -118,6 +119,7 @@ class ToolWindow(QMainWindow):
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
+        self.ui.actionNewUTC.triggered.connect(lambda: DLGEditor(self, self.active).show())
         self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
         self.ui.actionNewUTP.triggered.connect(lambda: UTPEditor(self, self.active).show())
         self.ui.actionNewUTD.triggered.connect(lambda: UTDEditor(self, self.active).show())
@@ -198,6 +200,10 @@ class ToolWindow(QMainWindow):
 
     def updateMenus(self) -> None:
         version = "x" if self.active is None else "2" if self.active.tsl else "1"
+
+        dialogIconPath = ":/images/icons/k{}/dialog.png".format(version)
+        self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))
+        self.ui.actionNewDLG.setEnabled(self.active is not None)
 
         creatureIconPath = ":/images/icons/k{}/creature.png".format(version)
         self.ui.actionNewUTC.setIcon(QIcon(QPixmap(creatureIconPath)))
@@ -725,7 +731,7 @@ class ToolWindow(QMainWindow):
             if self.config.dlgEditorPath and not noExternal:
                 external = self.config.dlgEditorPath
             else:
-                editor = GFFEditor(self, self.active)
+                editor = DLGEditor(self, self.active)
 
         if restype in [ResourceType.UTC]:
             if self.active is None or not self.config.gffSpecializedEditors:

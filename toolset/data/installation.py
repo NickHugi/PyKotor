@@ -11,7 +11,6 @@ from pykotor.resource.type import ResourceType
 
 
 class HTInstallation(Installation):
-
     TwoDA_PORTRAITS = "portraits"
     TwoDA_APPEARANCES = "appearance"
     TwoDA_SUBRACES = "subrace"
@@ -48,6 +47,10 @@ class HTInstallation(Installation):
     TwoDA_IPRP_AMMOTYPE = "iprp_ammotype"
     TwoDA_IPRP_MONSTERHIT = "iprp_mosterhit"
     TwoDA_IPRP_WALK = "iprp_walk"
+    TwoDA_EMOTIONS = "emotion"
+    TwoDA_EXPRESSIONS = "facialanim"
+    TwoDA_VIDEO_EFFECTS = "videoeffects"
+    TwoDA_DIALOG_ANIMS = "dialoganimations"
 
     def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
         super().__init__(path)
@@ -80,7 +83,8 @@ class HTInstallation(Installation):
 
         resources = self.resources(queries, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
         for iden, resource in resources.items():
-            self._cache2da[iden.resname] = load_2da(resource.data)
+            if resource:
+                self._cache2da[iden.resname] = load_2da(resource.data)
 
     def htClearCache2DA(self):
         self._cache2da = {}

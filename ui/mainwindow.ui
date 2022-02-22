@@ -506,6 +506,7 @@
      <property name="title">
       <string>New</string>
      </property>
+     <addaction name="actionNewDLG"/>
      <addaction name="actionNewUTC"/>
      <addaction name="actionNewUTP"/>
      <addaction name="actionNewUTD"/>
@@ -786,6 +787,18 @@
    </property>
    <property name="text">
     <string>Item</string>
+   </property>
+  </action>
+  <action name="actionNewDLG">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../resources/resources.qrc">
+     <normaloff>:/images/icons/kx/dialog.png</normaloff>:/images/icons/kx/dialog.png</iconset>
+   </property>
+   <property name="text">
+    <string>Dialog</string>
    </property>
   </action>
  </widget>
