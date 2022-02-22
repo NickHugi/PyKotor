@@ -1,5 +1,7 @@
+import io
 from typing import Optional
 
+from PIL import Image, ImageOps
 from PyQt5.QtGui import QPixmap, QImage, QTransform, QIcon
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.installation import Installation
@@ -12,7 +14,8 @@ from editors.tpc import tpc_editor_ui
 
 class TPCEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
-        super().__init__(parent, "Texture Viewer", [ResourceType.TPC, ResourceType.TGA], [ResourceType.TPC, ResourceType.TGA], installation)
+        super().__init__(parent, "Texture Viewer", [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP],
+                         [ResourceType.TPC, ResourceType.TGA], installation)
 
         self.ui = tpc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -30,7 +33,15 @@ class TPCEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        self._tpc = load_tpc(data)
+        if restype in [ResourceType.TPC, ResourceType.TGA]:
+            self._tpc = load_tpc(data)
+        else:
+            pillow = Image.open(io.BytesIO(data))
+            pillow = pillow.convert('RGBA')
+            pillow = ImageOps.flip(pillow)
+            self._tpc = TPC()
+            self._tpc.set_single(pillow.width, pillow.height, pillow.tobytes(), TPCTextureFormat.RGBA)
+
         width, height, rgba = self._tpc.convert(TPCTextureFormat.RGB, 0)
 
         image = QImage(rgba, width, height, QImage.Format_RGB888)

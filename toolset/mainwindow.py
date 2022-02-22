@@ -706,7 +706,7 @@ class ToolWindow(QMainWindow):
             else:
                 editor = TLKEditor(self, self.active)
 
-        if restype in [ResourceType.TPC, ResourceType.TGA]:
+        if restype in [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.BMP, ResourceType.PNG]:
             editor = TPCEditor(self, self.active)
 
         if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
