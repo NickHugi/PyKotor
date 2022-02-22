@@ -103,7 +103,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.moduleSearchEdit.textEdited.connect(self.filterDataModel)
         self.ui.moduleReloadButton.clicked.connect(self.reloadModule)
-        self.ui.moduleRefreshButton.clicked.connect(self.refreshModuleList)
+        self.ui.moduleRefreshButton.clicked.connect(lambda: self.refreshModuleList(True))
         self.ui.modulesCombo.currentIndexChanged.connect(lambda index: self.changeModule(self._modules_list[self.active.name].index(index, 0).data(QtCore.Qt.UserRole)))
 
         self.ui.overrideSearchEdit.textEdited.connect(self.filterDataModel)
