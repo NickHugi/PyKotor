@@ -583,23 +583,23 @@ class Installation:
                 for resource in resources:
                     if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                         resnames.remove(resource.resname())
-                        sounds[resource.resname()] = resource.data()
+                        sounds[resource.resname()] = sound.fix_audio(resource.data())
 
         def check_list(values):
             for resource in values:
                 if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                     resnames.remove(resource.resname())
-                    sounds[resource.resname()] = resource.data()
+                    sounds[resource.resname()] = sound.fix_audio(resource.data())
 
         def check_capsules(values):
             for capsule in values:
                 for resname in resnames:
                     if capsule.exists(resname, ResourceType.WAV):
                         resnames.remove(resname)
-                        sounds[resname] = capsule.resource(resname, ResourceType.TPC)
+                        sounds[resname] = sound.fix_audio(capsule.resource(resname, ResourceType.TPC))
                     if capsule.exists(resname, ResourceType.MP3):
                         resnames.remove(resname)
-                        sounds[resname] = capsule.resource(resname, ResourceType.TGA)
+                        sounds[resname] = sound.fix_audio(capsule.resource(resname, ResourceType.TGA))
 
         def check_folders(values):
             for folder in values:
@@ -610,7 +610,7 @@ class Installation:
                     for resname in resnames:
                         if identifier.resname == resname and identifier.restype in texture_types:
                             data = BinaryReader.load_file(filepath)
-                            sounds[resname] = data
+                            sounds[resname] = sound.fix_audio(data)
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
