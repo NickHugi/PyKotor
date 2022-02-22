@@ -6,7 +6,6 @@ from PyQt5.QtCore import QItemSelection, QThread, QMimeData
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon, QDragLeaveEvent
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
 from pykotor.common.misc import ResRef
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import load_erf, ERF, ERFType, write_erf, ERFResource
 from pykotor.resource.formats.rim import load_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
@@ -14,12 +13,13 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from data.configuration import Configuration
+from data.installation import HTInstallation
 from editors.editor import Editor
 from editors.erf import erf_editor_ui
 
 
 class ERFEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
         supported = [ResourceType.ERF, ResourceType.MOD, ResourceType.RIM]
         super().__init__(parent, "ERF Editor", supported, supported, installation)
         self.resize(400, 250)
@@ -42,6 +42,7 @@ class ERFEditor(Editor):
         self.ui.refreshButton.clicked.connect(self.refresh)
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.ui.tableView.resourceDropped.connect(self.addResources)
+        self.ui.tableView.doubleClicked.connect(self.openSelected)
 
         self._externalHandlers: List[ExternalUpdateEventHandler] = []
         self._externalOpened: bool = False
