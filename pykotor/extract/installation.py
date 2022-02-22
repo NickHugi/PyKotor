@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, NamedTuple
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
 
-from pykotor.common.language import Language, Gender
+from pykotor.common.language import Language, Gender, LocalizedString
 from pykotor.extract.file import FileResource, ResourceResult, LocationResult, ResourceIdentifier
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
@@ -634,9 +634,26 @@ class Installation:
 
         return sounds
 
+    def string(self, locstring: LocalizedString, default: str = "") -> str:
+        batch = self.strings([locstring], default)
+        return batch[locstring]
 
-    def string(self, stringref: int) -> str:
-        return self._talktable.string(stringref)
+    def strings(self, locstrings: List[LocalizedString], default: str = "") -> Dict[LocalizedString, str]:
+        stringrefs = [locstring.stringref for locstring in locstrings]
+        batch = self.talktable().batch(stringrefs)
+
+        results = {}
+        for locstring in locstrings:
+            if locstring.stringref in batch and locstring.stringref != -1:
+                results[locstring] = batch[locstring.stringref].text
+            elif len(locstring):
+                for language, gender, text in locstring:
+                    results[locstring] = text
+                    break
+            else:
+                results[locstring] = default
+
+        return results
 
     def module_name(self, module_filename: str) -> str:
         """

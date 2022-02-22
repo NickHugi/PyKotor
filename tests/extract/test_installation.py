@@ -1,6 +1,8 @@
 import os
 from unittest import TestCase
 
+from pykotor.common.language import LocalizedString
+
 from pykotor.extract.file import ResourceIdentifier
 
 from pykotor.extract.capsule import Capsule
@@ -345,3 +347,26 @@ class TestInstallation(TestCase):
         voice_results = installation.sounds(voice_sounds, [SearchLocation.VOICE])
         self.assertIsNotNone(voice_results["n_gengamm_scrm"])
         self.assertIsNone(voice_results["x"])
+
+    def test_string(self):
+        installation = self.installation
+
+        locstring1 = LocalizedString.from_invalid()
+        locstring2 = LocalizedString.from_english("Some text.")
+        locstring3 = LocalizedString(2)
+
+        self.assertEqual("default text", installation.string(locstring1, "default text"))
+        self.assertEqual("Some text.", installation.string(locstring2, "default text"))
+        self.assertEqual("ERROR: FATAL COMPILER ERROR", installation.string(locstring3, "default text"))
+
+    def test_strings(self):
+        installation = self.installation
+
+        locstring1 = LocalizedString.from_invalid()
+        locstring2 = LocalizedString.from_english("Some text.")
+        locstring3 = LocalizedString(2)
+
+        results = installation.strings([locstring1, locstring2, locstring3], "default text")
+        self.assertEqual("default text", results[locstring1])
+        self.assertEqual("Some text.", results[locstring2])
+        self.assertEqual("ERROR: FATAL COMPILER ERROR", results[locstring3])

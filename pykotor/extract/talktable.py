@@ -1,9 +1,14 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, NamedTuple
 
 from pykotor.common.language import Language, Gender
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
+
+
+class StringResult(NamedTuple):
+    text: str
+    sound: ResRef
 
 
 class TalkTable:
@@ -80,7 +85,7 @@ class TalkTable:
 
         return ResRef(sound_resref)
 
-    def batch(self, stringrefs: List[int]) -> Dict[int, Tuple[str, ResRef]]:
+    def batch(self, stringrefs: List[int]) -> Dict[int, StringResult]:
         """
         Loads a list of strings and sound ResRefs from the specified list. This is all performed using a single file
         handle and should be used if loading multiple strings from the tlk file.
@@ -100,7 +105,7 @@ class TalkTable:
 
         for stringref in stringrefs:
             if stringref == -1 or stringref >= entries_count:
-                batch[stringref] = ("", ResRef.from_blank())
+                batch[stringref] = StringResult("", ResRef.from_blank())
                 continue
 
             reader.seek(20 + 40 * stringref)
@@ -116,7 +121,7 @@ class TalkTable:
             string = reader.read_string(text_length)
             sound = ResRef(sound_resref)
 
-            batch[stringref] = (string, sound)
+            batch[stringref] = StringResult(string, sound)
 
         reader.close()
 
