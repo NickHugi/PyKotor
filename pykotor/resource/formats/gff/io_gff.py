@@ -282,15 +282,15 @@ class GFFBinaryWriter(ResourceWriter):
             self._build_list(value)
         else:
             if field_type is GFFFieldType.UInt8:
-                self._field_writer.write_uint32(value)
+                self._field_writer.write_uint32(value, max_neg1=True)
             elif field_type is GFFFieldType.Int8:
                 self._field_writer.write_int32(value)
             elif field_type is GFFFieldType.UInt16:
-                self._field_writer.write_uint32(value)
+                self._field_writer.write_uint32(value, max_neg1=True)
             elif field_type is GFFFieldType.Int16:
                 self._field_writer.write_int32(value)
             elif field_type is GFFFieldType.UInt32:
-                self._field_writer.write_uint32(value)
+                self._field_writer.write_uint32(value, max_neg1=True)
             elif field_type is GFFFieldType.Int32:
                 self._field_writer.write_int32(value)
             elif field_type is GFFFieldType.Single:
