@@ -17,8 +17,8 @@ class DLG:
 
     Attributes:
         word_count: "NumWords" field.
-        on_aborted: "EndConverAbort" field.
-        on_ended: "EndConversation" field.
+        on_abort: "EndConverAbort" field.
+        on_end: "EndConversation" field.
         skippable: "Skippable" field.
         ambient_track: "AmbientTrack" field.
         animated_cut: "AnimatedCut" field.
@@ -58,8 +58,8 @@ class DLG:
         self.camera_model: ResRef = ResRef.from_blank()
         self.computer_type: DLGComputerType = DLGComputerType.Modern
         self.conversation_type: DLGConversationType = DLGConversationType.Human
-        self.on_aborted: ResRef = ResRef.from_blank()
-        self.on_ended: ResRef = ResRef.from_blank()
+        self.on_abort: ResRef = ResRef.from_blank()
+        self.on_end: ResRef = ResRef.from_blank()
         self.word_count: int = 0
         self.old_hit_check: bool = False
         self.skippable: bool = False
@@ -461,8 +461,8 @@ def construct_dlg(gff: GFF) -> DLG:
     all_replies = [DLGReply() for _ in range(len(root.acquire("ReplyList", GFFList())))]
 
     dlg.word_count = root.acquire("NumWords", 0)
-    dlg.on_aborted = root.acquire("EndConverAbort", ResRef.from_blank())
-    dlg.on_ended = root.acquire("EndConversation", ResRef.from_blank())
+    dlg.on_abort = root.acquire("EndConverAbort", ResRef.from_blank())
+    dlg.on_end = root.acquire("EndConversation", ResRef.from_blank())
     dlg.skippable = bool(root.acquire("Skippable", 0))
     dlg.ambient_track = root.acquire("AmbientTrack", ResRef.from_blank())
     dlg.animated_cut = root.acquire("AnimatedCut", 0)
@@ -615,8 +615,8 @@ def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True
 
     root = gff.root
     root.set_uint32("NumWords", dlg.word_count)
-    root.set_resref("EndConverAbort", dlg.on_aborted)
-    root.set_resref("EndConversation", dlg.on_ended)
+    root.set_resref("EndConverAbort", dlg.on_abort)
+    root.set_resref("EndConversation", dlg.on_end)
     root.set_uint8("Skippable", dlg.skippable)
     root.set_resref("AmbientTrack", dlg.ambient_track)
     root.set_uint8("AnimatedCut", dlg.animated_cut)
