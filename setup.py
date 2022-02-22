@@ -4,10 +4,10 @@ from setuptools import setup, find_packages, find_namespace_packages
 HERE = pathlib.Path(__file__).parent
 
 NAME = "PyKotor"
-VERSION = "0.21"
+VERSION = "0.22"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "Read, modify and write files used by KotOR's game engine."
-PACKAGES = find_namespace_packages(exclude=["tests"])
+PACKAGES = find_namespace_packages(exclude=["tests", "docs"])
 URL = "https://github.com/NickHugi/PyKotor"
 
 README = (HERE / "README.md").read_text()
