@@ -50,14 +50,8 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
     newModule.set(identifier, ResourceType.ARE, are_data)
 
     lyt = oldModule.layout.resource()
-    lyt_data = bytearray()
-    write_lyt(lyt, lyt_data)
-    newModule.set(identifier, ResourceType.LYT, lyt_data)
-
     vis = oldModule.visibility.resource()
-    vis_data = bytearray()
-    write_vis(vis, vis_data)
-    newModule.set(identifier, ResourceType.VIS, vis_data)
+
 
     if keepPathing:
         pth = oldModule.path.resource()
@@ -172,6 +166,14 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
         newModule.set(newModelName, ResourceType.MDL, mdlData)
         newModule.set(newModelName, ResourceType.MDX, mdxData)
         newModule.set(newModelName, ResourceType.WOK, wokData)
+
+    vis_data = bytearray()
+    write_vis(vis, vis_data)
+    newModule.set(identifier, ResourceType.VIS, vis_data)
+
+    lyt_data = bytearray()
+    write_lyt(lyt, lyt_data)
+    newModule.set(identifier, ResourceType.LYT, lyt_data)
 
     filepath = installation.module_path() + identifier + ".mod"
     write_erf(newModule, filepath)
