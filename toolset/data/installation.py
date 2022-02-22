@@ -50,7 +50,10 @@ class HTInstallation(Installation):
     TwoDA_IPRP_WALK = "iprp_walk"
 
     def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
-        super().__init__(path, name, tsl)
+        super().__init__(path)
+
+        self.name = name
+        self.tsl = tsl
 
         self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: Optional[QStandardItemModel] = None
