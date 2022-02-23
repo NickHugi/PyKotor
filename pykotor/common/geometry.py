@@ -4,6 +4,7 @@ This module holds classes relating to geometry.
 from __future__ import annotations
 import math
 from enum import IntEnum
+from typing import List
 
 
 class Vector2:
@@ -40,7 +41,7 @@ class Vector2:
 
         isclose_x = math.isclose(self.x, other.x)
         isclose_y = math.isclose(self.y, other.y)
-        return isclose_x, isclose_y
+        return isclose_x and isclose_y
 
     def __add__(self, other):
         """
@@ -191,7 +192,7 @@ class Vector3:
         isclose_x = math.isclose(self.x, other.x)
         isclose_y = math.isclose(self.y, other.y)
         isclose_z = math.isclose(self.z, other.z)
-        return isclose_x, isclose_y, isclose_z
+        return isclose_x and isclose_y and isclose_z
 
     def __add__(self, other):
         """
@@ -327,7 +328,7 @@ class Vector4:
         isclose_y = math.isclose(self.y, other.y)
         isclose_z = math.isclose(self.z, other.z)
         isclose_w = math.isclose(self.w, other.w)
-        return isclose_x, isclose_y, isclose_z, isclose_w
+        return isclose_x and isclose_y and isclose_z and isclose_w
 
     def __add__(self, other):
         """
