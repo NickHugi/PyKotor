@@ -107,7 +107,7 @@ class TLKBinaryWriter(ResourceWriter):
         text_offset = previous_offset.get()
         text_length = len(entry.text)
 
-        self._writer.write_uint32(0)  # unused - entry flags
+        self._writer.write_uint32(7)  # entry flags
         self._writer.write_string(sound_resref, string_length=16)
         self._writer.write_uint32(0)  # unused - volume variance
         self._writer.write_uint32(0)  # unused - pitch variance
