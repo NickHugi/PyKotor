@@ -39,6 +39,7 @@ from editors.dlg.dlg_editor import DLGEditor
 from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
+from editors.nss.nss_editor import NSSEditor
 from editors.ssf.sff_editor import SSFEditor
 from editors.tlk.tlk_editor import TLKEditor
 from editors.tpc.tpc_editor import TPCEditor
@@ -120,6 +121,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionNewUTC.triggered.connect(lambda: DLGEditor(self, self.active).show())
+        self.ui.actionNewNSS.triggered.connect(lambda: NSSEditor(self, self.active).show())
         self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
         self.ui.actionNewUTP.triggered.connect(lambda: UTPEditor(self, self.active).show())
         self.ui.actionNewUTD.triggered.connect(lambda: UTDEditor(self, self.active).show())
@@ -204,6 +206,10 @@ class ToolWindow(QMainWindow):
         dialogIconPath = ":/images/icons/k{}/dialog.png".format(version)
         self.ui.actionNewDLG.setIcon(QIcon(QPixmap(dialogIconPath)))
         self.ui.actionNewDLG.setEnabled(self.active is not None)
+
+        scriptIconPath = ":/images/icons/k{}/script.png".format(version)
+        self.ui.actionNewNSS.setIcon(QIcon(QPixmap(scriptIconPath)))
+        self.ui.actionNewNSS.setEnabled(self.active is not None)
 
         creatureIconPath = ":/images/icons/k{}/creature.png".format(version)
         self.ui.actionNewUTC.setIcon(QIcon(QPixmap(creatureIconPath)))
@@ -722,10 +728,14 @@ class ToolWindow(QMainWindow):
                 editor = TXTEditor(self)
 
         if restype in [ResourceType.NSS]:
-            if self.config.nssEditorPath and not noExternal:
-                external = self.config.nssEditorPath
+            if self.active:
+                editor = NSSEditor(self, self.active)
             else:
                 editor = TXTEditor(self, self.active)
+
+        if restype in [ResourceType.NCS]:
+            if self.active:
+                editor = NSSEditor(self, self.active)
 
         if restype in [ResourceType.DLG]:
             if self.config.dlgEditorPath and not noExternal:

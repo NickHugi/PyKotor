@@ -17,6 +17,9 @@ class Configuration:
         self.nssEditorPath: str = ""
         self.gffSpecializedEditors: bool = True
 
+        self.nssCompilerPath: str = ""
+        self.ncsDecompilerPath: str = ""
+
         self.extractPath: str = ""
         self.showModuleNames: bool = False
         self.mdlAllowDecompile: bool = False
@@ -43,6 +46,9 @@ class Configuration:
         self.nssEditorPath = settings.value('nssEditor', "")
         self.gffSpecializedEditors = settings.value('gffSpecialized', True, bool)
 
+        self.nssCompilerPath = settings.value('nssCompilerPath', "")
+        self.ncsDecompilerPath = settings.value('ncsDecompilerPath', "")
+
         self.extractPath = settings.value('tempDir', "")
         self.showModuleNames = settings.value('showModuleNames', True, bool)
         self.mdlAllowDecompile = settings.value('mdlDecompile', False, bool)
@@ -67,6 +73,9 @@ class Configuration:
         settings.setValue('nssEditor', self.nssEditorPath)
         settings.setValue('gffSpecialized', self.gffSpecializedEditors)
 
+        settings.setValue('nssCompilerPath', self.nssCompilerPath)
+        settings.setValue('ncsDecompilerPath', self.ncsDecompilerPath)
+
         settings.setValue('tempDir', self.extractPath)
         settings.setValue('showModuleNames', self.showModuleNames)
         settings.setValue('mdlDecompile', self.mdlAllowDecompile)
@@ -85,3 +94,7 @@ class InstallationConfig:
         self.name: str = name
         self.path: str = path
         self.tsl: bool = tsl
+
+
+class NoConfigurationSetError(Exception):
+    ...

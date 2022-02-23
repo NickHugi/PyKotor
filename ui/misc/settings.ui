@@ -121,7 +121,7 @@
           <property name="geometry">
            <rect>
             <x>0</x>
-            <y>0</y>
+            <y>-110</y>
             <width>439</width>
             <height>296</height>
            </rect>
@@ -333,7 +333,7 @@
              <item>
               <widget class="QLineEdit" name="nssCompToolEdit">
                <property name="enabled">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -369,7 +369,7 @@
              <item>
               <widget class="QLineEdit" name="ncsToolEdit">
                <property name="enabled">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
               </widget>
              </item>

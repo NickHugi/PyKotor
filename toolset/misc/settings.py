@@ -63,8 +63,10 @@ class Settings(QDialog):
         self.config.nssEditorPath = self.ui.nssToolEdit.text()
         self.config.gffSpecializedEditors = self.ui.utxToolCombo.currentIndex() == 1
 
-        extractPath = self.ui.tempMiscEdit.text().replace('\\', '/')
-        self.config.extractPath = extractPath if extractPath.endswith('/') else extractPath + '/'
+        self.config.nssCompilerPath = self.ui.nssCompToolEdit.text()
+        self.config.ncsDecompilerPath = self.ui.ncsToolEdit.text()
+
+        self.config.extractPath = self.ui.tempMiscEdit.text()
         self.config.mdlAllowDecompile = self.ui.experimentalMdlCheckbox.isChecked()
         self.config.erfExternalEditors = self.ui.experimentalExternalCheckbox.isChecked()
         self.config.showModuleNames = self.ui.showModuleNameCheckbox.isChecked()
@@ -188,6 +190,9 @@ class Settings(QDialog):
             self.ui.utxToolCombo.setCurrentIndex(1)
         else:
             self.ui.utxToolCombo.setCurrentIndex(0)
+
+        self.ui.nssCompToolEdit.setText(self.config.nssCompilerPath)
+        self.ui.ncsToolEdit.setText(self.config.ncsDecompilerPath)
 
     def loadMisc(self) -> None:
         self.ui.tempMiscEdit.setText(self.config.extractPath)

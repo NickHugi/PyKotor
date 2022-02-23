@@ -346,7 +346,14 @@ class Ui_MainWindow(object):
         icon9.addPixmap(QtGui.QPixmap(":/images/icons/kx/dialog.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionNewDLG.setIcon(icon9)
         self.actionNewDLG.setObjectName("actionNewDLG")
+        self.actionNewNSS = QtWidgets.QAction(MainWindow)
+        self.actionNewNSS.setEnabled(False)
+        icon10 = QtGui.QIcon()
+        icon10.addPixmap(QtGui.QPixmap(":/images/icons/kx/script.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionNewNSS.setIcon(icon10)
+        self.actionNewNSS.setObjectName("actionNewNSS")
         self.menuNew.addAction(self.actionNewDLG)
+        self.menuNew.addAction(self.actionNewNSS)
         self.menuNew.addAction(self.actionNewUTC)
         self.menuNew.addAction(self.actionNewUTP)
         self.menuNew.addAction(self.actionNewUTD)
@@ -446,5 +453,6 @@ class Ui_MainWindow(object):
         self.actionNewUTM.setText(_translate("MainWindow", "Merchant"))
         self.actionNewUTI.setText(_translate("MainWindow", "Item"))
         self.actionNewDLG.setText(_translate("MainWindow", "Dialog"))
+        self.actionNewNSS.setText(_translate("MainWindow", "Script"))
 from toolset.mainwindow import TexturesView
 import resources_rc
