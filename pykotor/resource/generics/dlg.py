@@ -300,7 +300,7 @@ class DLGAnimation:
     Represents a unit of animation executed during a node.
     """
     def __init__(self):
-        self.animation_id: int = 0
+        self.animation_id: int = 6
         self.participant: str = ""
 
 
@@ -385,7 +385,7 @@ def construct_dlg(gff: GFF) -> DLG:
         node.comment = gff_struct.acquire("Comment", "")
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
         node.quest = gff_struct.acquire("Quest", "")
-        node.plot_index = gff_struct.acquire("PlotIndex", 0)
+        node.plot_index = gff_struct.acquire("PlotIndex", -1)
         node.plot_xp_percentage = gff_struct.acquire("PlotXPPercentage", 0.0)
         node.wait_flags = gff_struct.acquire("WaitFlags", 0)
         node.camera_angle = gff_struct.acquire("CameraAngle", 0)
