@@ -5,7 +5,7 @@ from copy import copy
 from typing import List, TypeVar, Generic, Optional, Dict, Type, Any
 
 from pykotor.resource.formats.vis import load_vis
-from pykotor.resource.formats.vis.data import VIS
+from pykotor.resource.formats.vis.vis_data import VIS
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, load_tpc
@@ -30,7 +30,7 @@ from pykotor.resource.type import ResourceType
 
 from pykotor.extract.capsule import Capsule
 
-from pykotor.resource.formats.lyt.auto import load_lyt
+from pykotor.resource.formats.lyt.lyt_auto import load_lyt
 
 from pykotor.extract.installation import Installation, SearchLocation
 

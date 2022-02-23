@@ -4,7 +4,7 @@ from pykotor.resource.type import ResourceType
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.lyt import LYTAsciiReader, LYTRoom, LYTTrack, LYT, LYTObstacle, LYTDoorHook
-from pykotor.resource.formats.lyt.auto import write_lyt, load_lyt
+from pykotor.resource.formats.lyt.lyt_auto import write_lyt, load_lyt
 
 ASCII_TEST_FILE = "../../files/test.lyt"
 

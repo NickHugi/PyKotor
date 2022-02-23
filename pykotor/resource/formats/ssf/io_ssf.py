@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pykotor.resource.formats.ssf.data import SSF, SSFSound
+from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
 from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
 
 

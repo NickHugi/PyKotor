@@ -254,6 +254,8 @@ def convert_to_k1(data: bytes) -> bytes:
     data[0:4] = struct.pack("I", _GEOM_ROOT_FP0_K1)
     data[4:8] = struct.pack("I", _GEOM_ROOT_FP1_K1)
 
+    # TODO Animations
+
     for node_type, node_offset in trim:
         mesh_start = node_offset + 80  # Start of mesh header
 

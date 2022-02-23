@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pykotor.resource.formats.twoda.data import TwoDA
+from pykotor.resource.formats.twoda.vis_data import TwoDA
 from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
 
 

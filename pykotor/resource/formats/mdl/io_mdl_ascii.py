@@ -3,7 +3,7 @@ from typing import Optional, List
 from pykotor.common.geometry import AxisAngle, Vector4
 from pykotor.common.stream import BinaryWriter, BinaryReader
 from pykotor.resource.formats.mdl import MDL
-from pykotor.resource.formats.mdl.data import MDLControllerType, MDLNode, MDLController
+from pykotor.resource.formats.mdl.mdl_data import MDLControllerType, MDLNode, MDLController
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 

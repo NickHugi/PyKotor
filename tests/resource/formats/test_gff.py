@@ -5,7 +5,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import Language, Gender
 from pykotor.resource.formats.gff import GFFBinaryReader, GFF, GFFXMLReader
-from pykotor.resource.formats.gff.auto import write_gff, load_gff
+from pykotor.resource.formats.gff.gff_auto import write_gff, load_gff
 
 BINARY_TEST_FILE = "../../files/test.gff"
 XML_TEST_FILE = "../../files/test.gff.xml"

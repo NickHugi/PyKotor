@@ -1,6 +1,6 @@
 from pykotor.resource.generics.pth import dismantle_pth
 
-from pykotor.resource.formats.lyt.auto import write_lyt
+from pykotor.resource.formats.lyt.lyt_auto import write_lyt
 
 from pykotor.tools import model
 

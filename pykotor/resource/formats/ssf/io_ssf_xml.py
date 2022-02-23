@@ -4,7 +4,7 @@ import io
 from typing import Optional
 from xml.etree import ElementTree
 
-from pykotor.resource.formats.ssf.data import SSF, SSFSound
+from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 
 

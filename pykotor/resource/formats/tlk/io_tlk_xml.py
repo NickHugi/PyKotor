@@ -4,7 +4,7 @@ import io
 from typing import Optional
 from xml.etree import ElementTree
 
-from pykotor.resource.formats.tlk.data import TLK
+from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 
 

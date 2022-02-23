@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.type import ResourceType
 
 from pykotor.resource.formats.vis import VISAsciiReader, VIS
-from pykotor.resource.formats.vis.auto import write_vis, load_vis
+from pykotor.resource.formats.vis.vis_auto import write_vis, load_vis
 
 ASCII_TEST_FILE = "../../files/test.vis"
 

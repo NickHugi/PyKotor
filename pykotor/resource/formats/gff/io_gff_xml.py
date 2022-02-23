@@ -9,7 +9,7 @@ from pykotor.common.misc import ResRef
 
 from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import LocalizedString
-from pykotor.resource.formats.gff.data import GFF, GFFStruct, GFFFieldType, GFFList
+from pykotor.resource.formats.gff.gff_data import GFF, GFFStruct, GFFFieldType, GFFList
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 
 

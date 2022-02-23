@@ -8,7 +8,7 @@ from pykotor.common.geometry import Vector3, Vector4, Vector2, SurfaceMaterial
 from pykotor.common.misc import Game, Color
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.mdl import MDL
-from pykotor.resource.formats.mdl.data import MDLNode, MDLAnimation, MDLEvent, MDLController, MDLControllerRow, \
+from pykotor.resource.formats.mdl.mdl_data import MDLNode, MDLAnimation, MDLEvent, MDLController, MDLControllerRow, \
     MDLControllerType, MDLNodeFlags, MDLMesh, MDLFace, MDLSkin, MDLBoneVertex
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
