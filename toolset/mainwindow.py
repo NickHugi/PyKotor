@@ -6,28 +6,22 @@ import os
 import subprocess
 import traceback
 from contextlib import suppress
-from copy import copy
-from distutils.version import Version, StrictVersion
+from distutils.version import StrictVersion
 from time import sleep
 from typing import Optional, List, Union, Tuple, Dict
 
 
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSettings, QSortFilterProxyModel, QModelIndex, QThread, QStringListModel, QMargins, QRect, \
-    QSize, QPoint
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QShowEvent, QWheelEvent, QImage, QColor, \
-    QBrush, QCloseEvent, QTransform, QResizeEvent, QDropEvent
-from PyQt5.QtWidgets import QMainWindow, QDialog, QProgressBar, QVBoxLayout, QFileDialog, QTreeView, \
-    QLabel, QWidget, QMessageBox, QHeaderView, QLayout, QSizePolicy, QScrollArea, QStyle, QGridLayout, QTableWidget, \
-    QTableWidgetItem, QAbstractItemView, QListWidget, QListWidgetItem, QListView
+from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
+from PyQt5.QtWidgets import QMainWindow, QFileDialog,QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView
 from pykotor.extract.file import FileResource, ResourceIdentifier
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
 from pykotor.resource.formats.mdl import load_mdl, write_mdl
 from pykotor.resource.formats.rim import write_rim, load_rim
 from pykotor.resource.formats.tpc import load_tpc, write_tpc, TPCTextureFormat, TPC
-from pykotor.resource.formats.tpc.auto import detect_tpc
 from pykotor.resource.type import ResourceType
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
@@ -35,6 +29,7 @@ from watchdog.observers import Observer
 import mainwindow_ui
 from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
+from editors.bwm.bwm_editor import BWMEditor
 from editors.dlg.dlg_editor import DLGEditor
 from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
@@ -717,6 +712,9 @@ class ToolWindow(QMainWindow):
                 external = self.config.tlkEditorPath
             else:
                 editor = TLKEditor(self, self.active)
+
+        if restype in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]:
+            editor = BWMEditor(self, self.active)
 
         if restype in [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.BMP, ResourceType.PNG]:
             editor = TPCEditor(self, self.active)

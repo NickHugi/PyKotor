@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="images">
+    <file>icons/k1/walkmesh.png</file>
+    <file>icons/k2/walkmesh.png</file>
+    <file>icons/kx/walkmesh.png</file>
     <file>icons/k1/soundset.png</file>
     <file>icons/k2/soundset.png</file>
     <file>icons/kx/soundset.png</file>
