@@ -224,14 +224,46 @@ class Vector3:
         """
         Multiplies the components by a scalar integer.
         """
-        if not isinstance(other, int):
+        if isinstance(other, int) or isinstance(other, float):
+            new = Vector3.from_vector3(self)
+            new.x *= other
+            new.y *= other
+            new.z *= other
+            return new
+        else:
             return NotImplemented
 
-        new = Vector3.from_vector3(self)
-        new.x *= other
-        new.y *= other
-        new.z *= other
-        return new
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            new = Vector3.from_vector3(self)
+            new.x /= other
+            new.y /= other
+            new.z /= other
+            return new
+        else:
+            return NotImplemented
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            if item == 0:
+                return self.x
+            elif item == 1:
+                return self.y
+            elif item == 2:
+                return self.z
+        else:
+            return NotImplemented
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int) and (isinstance(value, float) or isinstance(value, int)):
+            if key == 0:
+                self.x = value
+            elif key == 1:
+                self.y = value
+            elif key == 2:
+                self.z = value
+        else:
+            return NotImplemented
 
     @classmethod
     def from_vector3(cls, other: Vector3) -> Vector3:
@@ -274,6 +306,12 @@ class Vector3:
         self.y /= magnitude
         self.z /= magnitude
 
+    def dot(self, other: Vector3):
+        a = self.x * other.x
+        b = self.y * other.y
+        c = self.z * other.z
+        return a + b + c
+
     def set(self, x: float, y: float, z: float) -> None:
         """
         Sets the components of the vector.
@@ -286,6 +324,18 @@ class Vector3:
         self.x = x
         self.y = y
         self.z = z
+
+    def distance(self, other: Vector3) -> float:
+        a = (self.x - other.x) ** 2
+        b = (self.y - other.y) ** 2
+        c = (self.z - other.z) ** 2
+        return math.sqrt(a + b + c)
+
+    def within(self, container: List) -> bool:
+        for item in container:
+            if item is self:
+                return True
+        return False
 
 
 class Vector4:
