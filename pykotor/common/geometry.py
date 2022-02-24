@@ -579,6 +579,12 @@ class SurfaceMaterial(IntEnum):
     NON_WALK_GRASS = 19
     TRIGGER = 30
 
+    def walkable(self) -> bool:
+        return self in [SurfaceMaterial.DIRT, SurfaceMaterial.GRASS, SurfaceMaterial.STONE, SurfaceMaterial.WOOD,
+                        SurfaceMaterial.WATER, SurfaceMaterial.CARPET, SurfaceMaterial.METAL, SurfaceMaterial.PUDDLES,
+                        SurfaceMaterial.SWAMP, SurfaceMaterial.MUD, SurfaceMaterial.LEAVES, SurfaceMaterial.DOOR,
+                        SurfaceMaterial.TRIGGER]
+
 
 class Face:
     """
@@ -611,5 +617,18 @@ class Face:
         normal.x = (u.y * v.z) - (u.z * v.y)
         normal.y = (u.z * v.x) - (u.x * v.z)
         normal.z = (u.x * v.y) - (u.y * v.x)
+        normal.normalize()
 
         return normal
+
+    def area(self) -> float:
+        a = self.v1.distance(self.v2)
+        b = self.v1.distance(self.v3)
+        c = self.v2.distance(self.v3)
+        return 0.25 * math.sqrt((a + b + c) * (-a + b + c) * (a - b + c) * (a + b - c))
+
+    def planar_distance(self) -> float:
+        return -1.0 * (self.normal().dot(self.v1))
+
+    def centre(self) -> Vector3:
+        return (self.v1 + self.v2 + self.v3) / 3
