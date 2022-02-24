@@ -35,6 +35,7 @@ class DLGEditor(Editor):
         iconPath = ":/images/icons/k{}/dialog.png".format(iconVersion)
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
+        self._focused: bool = False
         self._dlg: DLG = DLG()
         self._copy: Optional[DLGNode] = None
         self.model: QStandardItemModel = QStandardItemModel(self)
@@ -143,6 +144,7 @@ class DLGEditor(Editor):
 
     def _loadDLG(self, dlg: DLG):
         self.ui.dialogTree.setStyleSheet("")
+        self._focused = False
 
         self._dlg = dlg
         self.model.clear()
@@ -285,7 +287,7 @@ class DLGEditor(Editor):
             textbox.setPlainText(text)
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
-    def addNode(self, item: QStandardItem, node: DLGNode) -> None:
+    def addNode(self, item: Optional[QStandardItem], node: DLGNode) -> None:
         # Update DLG
         newNode = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
         newLink = DLGLink(newNode)
@@ -298,6 +300,18 @@ class DLGEditor(Editor):
 
         self.refreshItem(newItem)
         item.appendRow(newItem)
+
+    def addRootNode(self) -> None:
+        newNode = DLGEntry()
+        newLink = DLGLink(newNode)
+        self._dlg.starters.append(newLink)
+
+        newItem = QStandardItem()
+        newItem.setData(newLink, _LINK_ROLE)
+        newItem.setData(False, _COPY_ROLE)
+
+        self.refreshItem(newItem)
+        self.model.appendRow(newItem)
 
     def addCopyLink(self, item: QStandardItem, target: DLGNode, source: DLGNode):
         newLink = DLGLink(source)
@@ -399,6 +413,7 @@ class DLGEditor(Editor):
     def focusOnNode(self, link: DLGLink) -> None:
         self.ui.dialogTree.setStyleSheet("QTreeView { background: #FFFFEE; }")
         self.model.clear()
+        self._focused = True
 
         item = QStandardItem()
         self._loadDLGRec(item, link, [], [])
@@ -439,6 +454,12 @@ class DLGEditor(Editor):
             elif isinstance(node, DLGEntry):
                 menu.addAction("Copy Entry").triggered.connect(lambda: self.copyNode(node))
                 menu.addAction("Delete Entry").triggered.connect(lambda: self.deleteNode(item))
+
+            menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
+        elif not self._focused:
+            menu = QMenu(self)
+
+            menu.addAction("Add Entry").triggered.connect(lambda: self.addRootNode())
 
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 

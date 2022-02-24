@@ -115,7 +115,7 @@ class ToolWindow(QMainWindow):
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
         self.ui.actionExit.triggered.connect(self.close)
-        self.ui.actionNewUTC.triggered.connect(lambda: DLGEditor(self, self.active).show())
+        self.ui.actionNewDLG.triggered.connect(lambda: DLGEditor(self, self.active).show())
         self.ui.actionNewNSS.triggered.connect(lambda: NSSEditor(self, self.active).show())
         self.ui.actionNewUTC.triggered.connect(lambda: UTCEditor(self, self.active).show())
         self.ui.actionNewUTP.triggered.connect(lambda: UTPEditor(self, self.active).show())
