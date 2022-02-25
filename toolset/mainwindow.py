@@ -242,6 +242,8 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewUTE.setIcon(QIcon(QPixmap(encounterIconPath)))
         self.ui.actionNewUTE.setEnabled(self.active is not None)
 
+        self.ui.actionEditTLK.setEnabled(self.active is not None)
+
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def reloadSettings(self) -> None:
@@ -294,14 +296,10 @@ class ToolWindow(QMainWindow):
         Opens the talktable for the active (currently selected) installation. If there is no active information, show
         a message box instead.
         """
-        if self.active:
-            filepath = self.active._path + "dialog.tlk"
-            with open(filepath, 'rb') as file:
-                data = file.read()
-            self.openResourceEditor(filepath, "dialog", ResourceType.TLK, data)
-        else:
-            QMessageBox(QMessageBox.Critical, "Could not open TLK file", "Must have a game selected first.",
-                        QMessageBox.Ok, self).exec_()
+        filepath = self.active.path() + "dialog.tlk"
+        data = BinaryReader.load_file(filepath)
+        self.openResourceEditor(filepath, "dialog", ResourceType.TLK, data)
+
 
     def resizeColumns(self) -> None:
         self.ui.coreTree.setColumnWidth(1, 10)
