@@ -204,9 +204,9 @@ class Color:
         Returns:
             A integer representing a color.
         """
-        red = int(self.r * 255) >> 0
-        green = int(self.g * 255) >> 8
-        blue = int(self.b * 255) >> 16
+        red = int(self.r * 255) << 0
+        green = int(self.g * 255) << 8
+        blue = int(self.b * 255) << 16
         return red + green + blue
 
     def bgr_integer(self) -> int:
