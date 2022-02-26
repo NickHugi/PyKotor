@@ -466,7 +466,7 @@ class ToolWindow(QMainWindow):
         if self.config.showModuleNames:
             areaNames = self.active.module_names()
             for module in self.active.modules_list():
-                item = QStandardItem("[{}] {}".format(areaNames[module], module))
+                item = QStandardItem("{} [{}]".format(areaNames[module], module))
                 item.setData(module, QtCore.Qt.UserRole)
                 self._modules_list[self.active.name].appendRow(item)
         else:
