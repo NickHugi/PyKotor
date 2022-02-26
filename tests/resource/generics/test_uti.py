@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game
 from pykotor.resource.formats.gff import load_gff
-from pykotor.resource.generics.uti import construct_uti, dismantle_uti
+from pykotor.resource.generics.uti import construct_uti, dismantle_uti, UTI
 
 TEST_FILE = "../../files/test.uti"
 
@@ -18,11 +18,11 @@ class TestUTI(TestCase):
         uti = construct_uti(gff)
         self.validate_io(uti)
 
-    def validate_io(self, uti):
+    def validate_io(self, uti: UTI):
         self.assertEqual("g_a_class4001", uti.resref)
         self.assertEqual(38, uti.base_item)
         self.assertEqual(5632, uti.name.stringref)
-        self.assertEqual(456, uti.description.stringref)
+        self.assertEqual(5633, uti.description.stringref)
         self.assertEqual("G_A_CLASS4001", uti.tag)
         self.assertEqual(13, uti.charges)
         self.assertEqual(50, uti.cost)
@@ -30,7 +30,9 @@ class TestUTI(TestCase):
         self.assertEqual(1, uti.stack_size)
         self.assertEqual(1, uti.plot)
         self.assertEqual(50, uti.add_cost)
-        self.assertEqual(3, uti.model_variation)
+        self.assertEqual(1, uti.texture_variation)
+        self.assertEqual(2, uti.model_variation)
+        self.assertEqual(3, uti.body_variation)
         self.assertEqual(1, uti.texture_variation)
         self.assertEqual(1, uti.palette_id)
         self.assertEqual("itemo", uti.comment)
