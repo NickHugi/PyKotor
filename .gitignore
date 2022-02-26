@@ -10,3 +10,6 @@ build
 *.exe
 *.spec
 *.zip
+dist-mac
+dist-lin
+dist-win
