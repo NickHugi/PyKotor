@@ -3,7 +3,8 @@ from PyQt5.QtWidgets import QAbstractSpinBox
 
 class LongSpinBox(QAbstractSpinBox):
     """
-    Abstract spin box that can handle integers larger than 32 bits which Qt's inbuilt QSpinBox does not support.
+    Implementation of QAbstractSpinBox that allows for values that exceed a signed 32-bit integer of which QSpinBox is
+    restrected to.
     """
     def __init__(self, parent):
         super().__init__(parent)
