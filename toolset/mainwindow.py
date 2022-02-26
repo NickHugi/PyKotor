@@ -745,7 +745,10 @@ class ToolWindow(QMainWindow):
             if self.config.dlgEditorPath and not noExternal:
                 external = self.config.dlgEditorPath
             else:
-                editor = DLGEditor(self, self.active)
+                if self.active is None:
+                    editor, external = useGFFEditor()
+                else:
+                    editor = DLGEditor(self, self.active)
 
         if restype in [ResourceType.UTC]:
             if self.active is None or not self.config.gffSpecializedEditors:
