@@ -1,10 +1,12 @@
 from unittest import TestCase
 
 from pykotor.resource.formats.twoda import TwoDA, write_2da, TwoDABinaryReader, load_2da, detect_2da, TwoDACSVReader
+from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader, TwoDAJSONWriter
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.2da"
 CSV_TEST_FILE = "../../files/test.2da.csv"
+JSON_TEST_FILE = "../../files/test.2da.json"
 
 
 class TestTwoDA(TestCase):
@@ -26,6 +28,17 @@ class TestTwoDA(TestCase):
 
         data = bytearray()
         write_2da(twoda, data, ResourceType.TwoDA_CSV)
+        twoda = load_2da(data)
+        self.validate_io(twoda)
+
+    def test_json_io(self):
+        self.assertEqual(detect_2da(JSON_TEST_FILE), ResourceType.TwoDA_JSON)
+
+        twoda = TwoDAJSONReader(JSON_TEST_FILE).load()
+        self.validate_io(twoda)
+
+        data = bytearray()
+        write_2da(twoda, data, ResourceType.TwoDA_JSON)
         twoda = load_2da(data)
         self.validate_io(twoda)
 

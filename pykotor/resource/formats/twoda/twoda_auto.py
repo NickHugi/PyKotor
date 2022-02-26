@@ -1,5 +1,6 @@
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.twoda import TwoDA, TwoDABinaryReader, TwoDABinaryWriter, TwoDACSVWriter, TwoDACSVReader
+from pykotor.resource.formats.twoda import TwoDA, TwoDABinaryReader, TwoDABinaryWriter, TwoDACSVWriter, TwoDACSVReader, \
+    TwoDAJSONReader, TwoDAJSONWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
@@ -12,57 +13,69 @@ def detect_2da(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
         source: Source of the TwoDA data.
         offset: Offset into the data.
 
+    Raises:
+        IOError: If an error occured reading the file.
+
     Returns:
         The format of the TwoDA data.
     """
-    try:
-        if isinstance(source, str):
-            with BinaryReader.from_file(source, offset) as reader:
-                file_format = ResourceType.TwoDA if reader.read_string(4) == "2DA " else ResourceType.TwoDA_CSV
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
-            file_format = ResourceType.TwoDA if source[:4].decode('ascii', 'ignore') == "2DA " else ResourceType.TwoDA_CSV
-        elif isinstance(source, BinaryReader):
-            file_format = ResourceType.TwoDA if source.read_string(4) == "2DA " else ResourceType.TwoDA_CSV
-            source.skip(-4)
+    def check(first4):
+        if first4 == "2DA ":
+            return ResourceType.TwoDA
+        elif "{" in first4:
+            return ResourceType.TwoDA_JSON
+        elif "," in first4:
+            return ResourceType.TwoDA_CSV
         else:
-            file_format = ResourceType.INVALID
-    except IOError:
-        file_format = ResourceType.INVALID
+            return ResourceType.INVALID
+
+    if isinstance(source, str):
+        with BinaryReader.from_file(source, offset) as reader:
+            file_format = check(reader.read_string(4))
+    elif isinstance(source, bytes) or isinstance(source, bytearray):
+        file_format = check(source[:4].decode('ascii', 'ignore'))
+    elif isinstance(source, BinaryReader):
+        file_format = check(source.read_string(4))
+        source.skip(-4)
+    else:
+        raise TypeError("Invalid type passed to 'source' argument.")
 
     return file_format
 
 
 def load_2da(source: SOURCE_TYPES, offset: int = 0) -> TwoDA:
     """
-    Returns an TwoDA instance from the source. The file format (TwoDA or TwoDA_CSV) is automatically determined before
-    parsing the data.
+    Returns an TwoDA instance from the source. The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically
+    determined before parsing the data.
 
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
+        IOError: If an error occured reading the file.
+        ValueError: If unable to determine the file format or the file data was corrupted.
 
     Returns:
         An TwoDA instance.
     """
     file_format = detect_2da(source, offset)
 
-    try:
-        if file_format == ResourceType.TwoDA:
-            return TwoDABinaryReader(source, offset).load()
-        elif file_format == ResourceType.TwoDA_CSV:
-            return TwoDACSVReader(source).load()
-        else:
-            raise ValueError
-    except (IOError, ValueError):
-        raise ValueError("Tried to load an unsupported or corrupted 2DA file.")
+    if file_format == ResourceType.TwoDA:
+        return TwoDABinaryReader(source, offset).load()
+    elif file_format == ResourceType.TwoDA_CSV:
+        return TwoDACSVReader(source, offset).load()
+    elif file_format == ResourceType.TwoDA_JSON:
+        return TwoDAJSONReader(source, offset).load()
+    else:
+        raise ValueError("Unable to determine the file format.")
 
 
 def write_2da(twoda: TwoDA, target: TARGET_TYPES, file_format: ResourceType = ResourceType.TwoDA) -> None:
     """
-    Writes the TwoDA data to the target location with the specified format (TwoDA or TwoDA_CSV).
+    Writes the TwoDA data to the target location with the specified format.
+
+    Currently, the supported formats are: TwoDA, TwoDA_CSV and TwoDA_JSON.
 
     Args:
         twoda: The TwoDA file being written.
@@ -70,11 +83,14 @@ def write_2da(twoda: TwoDA, target: TARGET_TYPES, file_format: ResourceType = Re
         file_format: The file format.
 
     Raises:
+        IOEroor: If an error occured writing to the file.
         ValueError: If an unsupported file format was given.
     """
     if file_format == ResourceType.TwoDA:
         TwoDABinaryWriter(twoda, target).write()
     elif file_format == ResourceType.TwoDA_CSV:
         TwoDACSVWriter(twoda, target).write()
+    elif file_format == ResourceType.TwoDA_JSON:
+        TwoDAJSONWriter(twoda, target).write()
     else:
-        raise ValueError("Unsupported format specified; use TwoDA or TwoDA_CSV.")
+        raise ValueError("Unsupported format specified; use TwoDA, TwoDA_CSV or TwoDA_JSON.")
