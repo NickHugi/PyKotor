@@ -2,7 +2,7 @@ from copy import deepcopy, copy
 from typing import Optional, List
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QItemSelection, QBuffer, QIODevice, QPoint
+from PyQt5.QtCore import QItemSelection, QBuffer, QIODevice, QPoint, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmap, QStandardItemModel, QStandardItem, QColor, QBrush
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QPlainTextEdit, QMenu, QMessageBox, QShortcut, QDialog
@@ -424,6 +424,23 @@ class DLGEditor(Editor):
         self._loadDLGRec(item, link, [], [])
         self.model.appendRow(item)
 
+    def shiftItem(self, item: QStandardItem, amount: int) -> None:
+        oldRow = item.row()
+        parent = self.model if item.parent() is None else item.parent()
+        newRow = oldRow + amount
+
+        if newRow >= parent.rowCount() or newRow < 0:
+            return  # Already at the start/end of the branch
+
+        item = parent.takeRow(oldRow)[0]
+        parent.insertRow(newRow, item)
+        self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
+
+        # Sync DLG to tree changes
+        links = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
+        link = links.pop(oldRow)
+        links.insert(newRow, link)
+
     def onTreeContextMenu(self, point: QPoint):
         index = self.ui.dialogTree.indexAt(point)
         item = self.model.itemFromIndex(index)
@@ -436,6 +453,10 @@ class DLGEditor(Editor):
             menu = QMenu(self)
 
             menu.addAction("Focus").triggered.connect(lambda: self.focusOnNode(link))
+            menu.addSeparator()
+            menu.addAction("Move Up").triggered.connect(lambda: self.shiftItem(item, -1))
+            menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
+            menu.addSeparator()
 
             if not isCopy:
                 if isinstance(node, DLGReply):
