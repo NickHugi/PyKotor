@@ -33,7 +33,7 @@ def detect_ssf(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_ssf(source: SOURCE_TYPES, offset: int = 0) -> SSF:
+def load_ssf(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> SSF:
     """
     Returns an SSF instance from the source. The file format (SSF or SSF_XML) is automatically determined before parsing
     the data.
@@ -41,6 +41,7 @@ def load_ssf(source: SOURCE_TYPES, offset: int = 0) -> SSF:
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         ValueError: If the file was corrupted or in an unsupported format.
@@ -52,9 +53,9 @@ def load_ssf(source: SOURCE_TYPES, offset: int = 0) -> SSF:
 
     try:
         if file_format == ResourceType.SSF:
-            return SSFBinaryReader(source, offset).load()
+            return SSFBinaryReader(source, offset, size).load()
         elif file_format == ResourceType.SSF_XML:
-            return SSFXMLReader(source).load()
+            return SSFXMLReader(source, offset, size).load()
         else:
             raise ValueError
     except (IOError, ValueError):

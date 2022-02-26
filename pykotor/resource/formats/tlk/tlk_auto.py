@@ -44,7 +44,7 @@ def detect_tlk(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_tlk(source: SOURCE_TYPES, offset: int = 0) -> TLK:
+def load_tlk(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TLK:
     """
     Returns an TLK instance from the source. The file format (TLK, TLK_XML or TLK_JSON) is automatically determined
     before parsing the data.
@@ -52,6 +52,7 @@ def load_tlk(source: SOURCE_TYPES, offset: int = 0) -> TLK:
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         IOError: If an error occured reading the file.
@@ -63,11 +64,11 @@ def load_tlk(source: SOURCE_TYPES, offset: int = 0) -> TLK:
     file_format = detect_tlk(source, offset)
 
     if file_format == ResourceType.TLK:
-        return TLKBinaryReader(source, offset).load()
+        return TLKBinaryReader(source, offset, size).load()
     elif file_format == ResourceType.TLK_XML:
-        return TLKXMLReader(source, offset).load()
+        return TLKXMLReader(source, offset, size).load()
     elif file_format == ResourceType.TLK_JSON:
-        return TLKJSONReader(source, offset).load()
+        return TLKJSONReader(source, offset, size).load()
     else:
         raise ValueError("Unable to determine the file format.")
 

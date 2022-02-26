@@ -14,9 +14,10 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class GFFXMLReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = None):
         super().__init__(source, offset, size)
-        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(data)).getroot()
         self._gff: Optional[GFF] = None
 
     def load(self, auto_close: bool = True) -> GFF:

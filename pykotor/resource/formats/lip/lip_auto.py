@@ -33,7 +33,7 @@ def detect_lip(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_lip(source: SOURCE_TYPES, offset: int = 0) -> LIP:
+def load_lip(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LIP:
     """
     Returns an LIP instance from the source. The file format (LIP or LIP_XML) is automatically determined before parsing
     the data.
@@ -41,6 +41,7 @@ def load_lip(source: SOURCE_TYPES, offset: int = 0) -> LIP:
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         ValueError: If the file was corrupted or in an unsupported format.
@@ -52,9 +53,9 @@ def load_lip(source: SOURCE_TYPES, offset: int = 0) -> LIP:
 
     try:
         if file_format == ResourceType.LIP:
-            return LIPBinaryReader(source, offset).load()
+            return LIPBinaryReader(source, offset, size).load()
         elif file_format == ResourceType.LIP_XML:
-            return LIPXMLReader(source).load()
+            return LIPXMLReader(source, offset, size).load()
         else:
             raise ValueError
     except (IOError, ValueError):

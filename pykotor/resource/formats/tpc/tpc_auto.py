@@ -44,7 +44,7 @@ def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_tpc(source: SOURCE_TYPES, offset: int = 0) -> TPC:
+def load_tpc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TPC:
     """
     Returns an TPC instance from the source. The file format (TPC or TGA) is automatically determined before
     parsing the data.
@@ -52,6 +52,7 @@ def load_tpc(source: SOURCE_TYPES, offset: int = 0) -> TPC:
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         ValueError: If the file was corrupted or in an unsupported format.
@@ -63,9 +64,9 @@ def load_tpc(source: SOURCE_TYPES, offset: int = 0) -> TPC:
 
     try:
         if file_format == ResourceType.TPC:
-            return TPCBinaryReader(source, offset).load()
+            return TPCBinaryReader(source, offset, size).load()
         elif file_format == ResourceType.TGA:
-            return TPCTGAReader(source).load()
+            return TPCTGAReader(source, offset, size).load()
         else:
             raise ValueError
     except (IOError, ValueError):

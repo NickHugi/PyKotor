@@ -13,10 +13,10 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class TLKXMLReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = None):
         super().__init__(source, offset, size)
-        size = size if size != 0 else self._reader.size()
-        self._xml: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_bytes(size).decode())).getroot()
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        self._xml: ElementTree.Element = ElementTree.parse(io.StringIO(data)).getroot()
         self._tlk: Optional[TLK] = None
 
     def load(self, auto_close: bool = True) -> TLK:

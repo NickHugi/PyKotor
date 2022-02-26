@@ -6,7 +6,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, RIMBinaryWriter
 
 
-def load_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0) -> RIM:
+def load_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> RIM:
     """
     Returns an RIM instance from the source. The file format (RIM) is automatically determined before parsing
     the data.
@@ -14,6 +14,7 @@ def load_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         ValueError: If the file was corrupted or in an unsupported format.
@@ -22,7 +23,7 @@ def load_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         An RIM instance.
     """
     try:
-        return RIMBinaryReader(source, offset).load()
+        return RIMBinaryReader(source, offset, size).load()
     except IOError:
         raise ValueError("Tried to load an unsupported or corrupted RIM file.")
 

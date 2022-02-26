@@ -12,7 +12,8 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 class TwoDAJSONReader(ResourceReader):
     def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
-        self._json = json.loads(self._reader.read_bytes(self._size).decode())
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        self._json = json.loads(data)
         self._twoda: Optional[TwoDA] = None
 
     def load(self, auto_close: bool = True) -> TwoDA:

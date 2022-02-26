@@ -34,7 +34,7 @@ def detect_gff(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_gff(source: SOURCE_TYPES, offset: int = 0) -> GFF:
+def load_gff(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> GFF:
     """
     Returns an GFF instance from the source. The file format (binary or xml) is automatically determined before parsing
     the data.
@@ -42,6 +42,7 @@ def load_gff(source: SOURCE_TYPES, offset: int = 0) -> GFF:
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         ValueError: If the file was corrupted or in an unsupported format.
@@ -53,9 +54,9 @@ def load_gff(source: SOURCE_TYPES, offset: int = 0) -> GFF:
 
     try:
         if file_format == ResourceType.GFF:
-            return GFFBinaryReader(source, offset).load()
+            return GFFBinaryReader(source, offset, size).load()
         elif file_format == ResourceType.GFF_XML:
-            return GFFXMLReader(source).load()
+            return GFFXMLReader(source, offset, size).load()
         else:
             raise ValueError
     except (IOError, ValueError):

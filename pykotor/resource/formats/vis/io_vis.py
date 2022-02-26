@@ -10,7 +10,7 @@ class VISAsciiReader(ResourceReader):
     def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
         self._vis: Optional[VIS] = None
-        self._lines: List[str] = self._reader.read_string(self._size).splitlines()
+        self._lines: List[str] = self._reader.read_string(self._reader.size()).splitlines()
 
     def load(self, auto_close: bool = True) -> VIS:
         self._vis = VIS()

@@ -43,7 +43,7 @@ def detect_2da(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_2da(source: SOURCE_TYPES, offset: int = 0) -> TwoDA:
+def load_2da(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TwoDA:
     """
     Returns an TwoDA instance from the source. The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically
     determined before parsing the data.
@@ -51,6 +51,7 @@ def load_2da(source: SOURCE_TYPES, offset: int = 0) -> TwoDA:
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         IOError: If an error occured reading the file.
@@ -62,11 +63,11 @@ def load_2da(source: SOURCE_TYPES, offset: int = 0) -> TwoDA:
     file_format = detect_2da(source, offset)
 
     if file_format == ResourceType.TwoDA:
-        return TwoDABinaryReader(source, offset).load()
+        return TwoDABinaryReader(source, offset, size).load()
     elif file_format == ResourceType.TwoDA_CSV:
-        return TwoDACSVReader(source, offset).load()
+        return TwoDACSVReader(source, offset, size).load()
     elif file_format == ResourceType.TwoDA_JSON:
-        return TwoDAJSONReader(source, offset).load()
+        return TwoDAJSONReader(source, offset, size).load()
     else:
         raise ValueError("Unable to determine the file format.")
 

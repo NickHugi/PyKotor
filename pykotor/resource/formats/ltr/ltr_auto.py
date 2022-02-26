@@ -3,13 +3,14 @@ from pykotor.resource.formats.ltr.io_ltr import LTRBinaryReader, LTRBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def load_ltr(source: SOURCE_TYPES, offset: int = 0) -> LTR:
+def load_ltr(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LTR:
     """
     Returns an LTR instance from the source.
 
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         ValueError: If the file was corrupted or in an unsupported format.
@@ -18,7 +19,7 @@ def load_ltr(source: SOURCE_TYPES, offset: int = 0) -> LTR:
         An LTR instance.
     """
     try:
-        return LTRBinaryReader(source, offset).load()
+        return LTRBinaryReader(source, offset, size).load()
     except (IOError, ValueError):
         raise ValueError("Tried to load an unsupported or corrupted LTR file.")
 

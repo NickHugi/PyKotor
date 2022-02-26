@@ -6,7 +6,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.vis import VIS, VISAsciiWriter, VISAsciiReader
 
 
-def load_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0) -> VIS:
+def load_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> VIS:
     """
     Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
     the data.
@@ -14,6 +14,7 @@ def load_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
     Args:
         source: The source of the data.
         offset: The byte offset of the file inside the data.
+        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
         ValueError: If the file was corrupted or in an unsupported format.
@@ -22,7 +23,7 @@ def load_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         An VIS instance.
     """
     try:
-        return VISAsciiReader(source, offset).load()
+        return VISAsciiReader(source, offset, size).load()
     except IOError:
         raise ValueError("Tried to load an unsupported or corrupted VIS file.")
 

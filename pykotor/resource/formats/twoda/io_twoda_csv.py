@@ -11,7 +11,8 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 class TwoDACSVReader(ResourceReader):
     def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
-        self._csv: csv.reader = csv.reader(io.StringIO(self._reader.read_bytes(self._size).decode()))
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        self._csv: csv.reader = csv.reader(io.StringIO(data))
         self._twoda: Optional[TwoDA] = None
 
     def load(self, auto_close: bool = True) -> TwoDA:
@@ -22,7 +23,7 @@ class TwoDACSVReader(ResourceReader):
             self._twoda.add_column(header)
 
         for row in self._csv:
-            label = int(row[:1][0])
+            label = row[:1][0]
             cells = dict(zip(headers, row[1:]))
             self._twoda.add_row(label, cells)
 
