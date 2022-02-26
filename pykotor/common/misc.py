@@ -144,9 +144,9 @@ class Color:
         Returns:
             A new Color instance.
         """
-        red = ((0x000000FF & integer) >> 16) / 255
+        red = (0x000000FF & integer) / 255
         green = ((0x0000FF00 & integer) >> 8) / 255
-        blue = (0x00FF0000 & integer) / 255
+        blue = ((0x00FF0000 & integer) >> 16) / 255
         return Color(red, green, blue)
 
     @classmethod
