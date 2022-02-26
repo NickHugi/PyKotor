@@ -5,17 +5,18 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.twoda import TwoDA, write_2da, load_2da
 from pykotor.resource.type import ResourceType
 
+from data.installation import HTInstallation
 from editors.editor import Editor
 from editors.twoda import twoda_editor_ui
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
-        super().__init__(parent, "2DA Editor", [ResourceType.TwoDA], [ResourceType.TwoDA], installation)
+    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+        supported = [ResourceType.TwoDA, ResourceType.TwoDA_CSV]
+        super().__init__(parent, "2DA Editor", supported, supported, installation)
         self.resize(400, 250)
 
         self.ui = twoda_editor_ui.Ui_MainWindow()
@@ -94,8 +95,9 @@ class TwoDAEditor(Editor):
             for j, header in enumerate(twoda.get_headers()):
                 twoda.set_cell(i, header, self.model.item(i, j+1).text())
 
+        print(self._restype)
         data = bytearray()
-        write_2da(twoda, data)
+        write_2da(twoda, data, self._restype)
         return data
 
     def new(self) -> None:
