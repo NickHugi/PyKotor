@@ -74,11 +74,11 @@ class TwoDAEditor(Editor):
                     else:
                         self.model.setItem(i, j, QStandardItem(row.get_string(header)))
 
-            for i in range(twoda.get_height()):
-                self.ui.twodaTable.resizeColumnToContents(i)
-
             self.model.setVerticalHeaderLabels(["   " for i in range(twoda.get_height())])
             self.ui.twodaTable.setModel(self.proxyModel)
+
+            for i in range(twoda.get_height()):
+                self.ui.twodaTable.resizeColumnToContents(i)
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
             self.new()
