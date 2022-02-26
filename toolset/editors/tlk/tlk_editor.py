@@ -6,17 +6,18 @@ from PyQt5.QtCore import QSortFilterProxyModel, QThread, QItemSelection
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QShortcut, QDialog, QProgressBar, QVBoxLayout, QWidget
 from pykotor.common.misc import ResRef
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tlk import load_tlk, TLK, TLKEntry, write_tlk
 from pykotor.resource.type import ResourceType
 
+from data.installation import HTInstallation
 from editors.editor import Editor
 from editors.tlk import tlk_editor_ui
 
 
 class TLKEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
-        super().__init__(parent, "TLK Editor", [ResourceType.TLK], [ResourceType.TLK], installation)
+    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+        supported = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
+        super().__init__(parent, "TLK Editor", supported, supported, installation)
 
         self.ui = tlk_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -84,7 +85,7 @@ class TLKEditor(Editor):
             tlk.entries.append(TLKEntry(text, sound))
 
         data = bytearray()
-        write_tlk(tlk, data)
+        write_tlk(tlk, data, self._restype)
         return data
 
     def insert(self) -> None:
