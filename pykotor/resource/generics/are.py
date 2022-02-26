@@ -8,7 +8,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct
 
 
 class ARE:
@@ -165,7 +165,7 @@ class ARE:
         self.world_point_2: Vector2 = Vector2.from_null()
         self.map_res_x: int = 0
         self.map_zoom: int = 0
-        self.north_axis: ARENorthAxis = ARENorthAxis.North
+        self.north_axis: ARENorthAxis = ARENorthAxis.PositiveX
 
         self.rooms: List[ARERoom] = []
 
@@ -210,16 +210,23 @@ class AREWindPower(IntEnum):
 
 
 class ARENorthAxis(IntEnum):
-    North = 0
-    South = 1
-    East = 2
-    West = 3
+    PositiveY = 0
+    NegativeY = 1
+    PositiveX = 2
+    NegativeX = 3
 
 
 def construct_are(gff: GFF) -> ARE:
     are = ARE()
 
     root = gff.root
+    are.north_axis = ARENorthAxis(root.acquire("Map", GFFStruct()).acquire("NorthAxis", 0))
+    are.map_zoom = root.acquire("Map", GFFStruct()).acquire("MapZoom", 0)
+    are.map_res_x = root.acquire("Map", GFFStruct()).acquire("MapResX", 0)
+    are.map_point_1 = Vector2(root.acquire("Map", GFFStruct()).acquire("MapPt1X", 0.0), root.acquire("Map", GFFStruct()).acquire("MapPt1Y", 0.0))
+    are.map_point_2 = Vector2(root.acquire("Map", GFFStruct()).acquire("MapPt2X", 0.0), root.acquire("Map", GFFStruct()).acquire("MapPt2Y", 0.0))
+    are.world_point_1 = Vector2(root.acquire("Map", GFFStruct()).acquire("WorldPt1X", 0.0), root.acquire("Map", GFFStruct()).acquire("WorldPt1Y", 0.0))
+    are.world_point_2 = Vector2(root.acquire("Map", GFFStruct()).acquire("WorldPt2X", 0.0), root.acquire("Map", GFFStruct()).acquire("WorldPt2Y", 0.0))
     are.version = root.acquire("Version", 0)
     are.tag = root.acquire("Tag", "")
     are.name = root.acquire("Name", LocalizedString.from_invalid())
@@ -301,6 +308,20 @@ def dismantle_are(are: ARE, game: Game = Game.K2, *, use_deprecated: bool = True
     gff = GFF(GFFContent.ARE)
 
     root = gff.root
+
+    map_struct = root.set_struct("Map", GFFStruct())
+    map_struct.set_int32("MapZoom", are.map_zoom)
+    map_struct.set_int32("MapResX", are.map_res_x)
+    map_struct.set_int32("NorthAxis", are.north_axis.value)
+    map_struct.set_single("MapPt1X", are.map_point_1.x)
+    map_struct.set_single("MapPt1Y", are.map_point_1.y)
+    map_struct.set_single("MapPt2X", are.map_point_2.x)
+    map_struct.set_single("MapPt2Y", are.map_point_2.y)
+    map_struct.set_single("WorldPt1X", are.world_point_1.x)
+    map_struct.set_single("WorldPt1Y", are.world_point_1.y)
+    map_struct.set_single("WorldPt2X", are.world_point_2.x)
+    map_struct.set_single("WorldPt2Y", are.world_point_2.y)
+
     root.set_uint32("Version", are.version)
 
     root.set_uint32("SunAmbientColor", are.sun_ambient.bgr_integer())
