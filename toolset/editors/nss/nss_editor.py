@@ -9,7 +9,7 @@ import numpy as numpy
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSize, QRect
 from PyQt5.QtGui import QIcon, QPixmap, QFontMetrics, QPaintEvent, QResizeEvent, QColor, QTextFormat, QPainter, \
-    QTextBlock, QFontMetricsF
+    QTextBlock, QFontMetricsF, QSyntaxHighlighter, QTextDocument, QTextCharFormat, QFont
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QTextEdit, QListWidgetItem, QMessageBox, QShortcut
 from pykotor.common.script import TSL_CONSTANTS, KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_FUNCTIONS, ScriptFunction
 from pykotor.common.stream import BinaryWriter, BinaryReader
@@ -122,10 +122,12 @@ class NSSEditor(Editor):
 
             filepath = self._filepath if self._filepath is not None else ""
             if filepath.endswith(".erf") or filepath.endswith(".mod"):
+                savePath = filepath
                 erf = load_erf(filepath)
                 erf.set(self._resref, ResourceType.NCS, data)
                 write_erf(erf, filepath)
             elif filepath.endswith(".rim"):
+                savePath = filepath
                 rim = load_rim(filepath)
                 rim.set(self._resref, ResourceType.NCS, data)
                 write_rim(rim, filepath)
@@ -321,3 +323,61 @@ class CodeEditor(QPlainTextEdit):
 
         if rect.contains(self.viewport().rect()):
             self._updateLineNumberAreaWidth(0)
+
+
+def style_format(color, style=''):
+    _color = QColor()
+    _color.setNamedColor(color)
+
+    _format = QTextCharFormat()
+    _format.setForeground(_color)
+    if 'bold' in style:
+        _format.setFontWeight(QFont.Bold)
+    if 'italic' in style:
+        _format.setFontItalic(True)
+
+    return _format
+
+
+class SyntaxHightlighter(QSyntaxHighlighter):
+    STYLES = {
+        'keyword': style_format('blue'),
+        'operator': style_format('red'),
+        'numbers': style_format('brown'),
+        'comment': style_format('darkGreen', 'italic'),
+        'string': style_format('magenta'),
+    }
+
+    KEYWORDS = ["return"]
+    OPERATORS = ["=", "=="]
+
+    def __init__(self, parent: QTextDocument):
+        super().__init__(parent)
+
+        rules = []
+        rules += [(r'\b%s\b' % w, 0, SyntaxHightlighter.STYLES['keyword']) for w in SyntaxHightlighter.keywords]
+        rules += [(r'%s' % o, 0, SyntaxHightlighter.STYLES['operator']) for o in SyntaxHightlighter.operators]
+
+        rules += [
+            (r'\b[+-]?[0-9]+[lL]?\b', 0, SyntaxHightlighter.STYLES['numbers']),
+            (r'\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\b', 0, SyntaxHightlighter.STYLES['numbers']),
+            (r'\b[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\b', 0, SyntaxHightlighter.STYLES['numbers']),
+            (r"'[^'\\]*(\\.[^'\\]*)*'", 0, SyntaxHightlighter.STYLES['string']),
+            (r'#[^\n]*', 0, SyntaxHightlighter.STYLES['comment']),
+        ]
+
+        self.rules = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
+
+    def highlightBlock(self, text: str) -> None:
+        for expression, nth, format in self.rules:
+            index = expression.indexIn(text, 0)
+            if index >= 0:
+                ...
+
+            while index >= 0:
+                index = expression.pos(nth)
+                length = len(expression.cap(nth))
+                self.setFormat(index, length, format)
+                index = expression.indexIn(text, index + length)
+
+        self.currentBlockState(0)
