@@ -340,15 +340,20 @@ class DLGEditor(Editor):
         link: DLGLink = item.data(_LINK_ROLE)
         node: DLGNode = link.node
 
-        parentItem = item.parent()
-        parentLink: DLGLink = parentItem.data(_LINK_ROLE)
-        parentNode: DLGNode = parentLink.node
+        if item.parent() is None:
+            for link in copy(self._dlg.starters):
+                if link.node is node:
+                    self._dlg.starters.remove(link)
+            self.model.removeRow(item.row())
+        else:
+            parentItem = item.parent()
+            parentLink: DLGLink = parentItem.data(_LINK_ROLE)
+            parentNode: DLGNode = parentLink.node
 
-        for link in copy(parentNode.links):
-            if link.node is node:
-                print("byby")
-                parentNode.links.remove(link)
-        parentItem.removeRow(item.row())
+            for link in copy(parentNode.links):
+                if link.node is node:
+                    parentNode.links.remove(link)
+            parentItem.removeRow(item.row())
 
     def deleteSelectedNode(self) -> None:
         if self.ui.dialogTree.selectedIndexes():
