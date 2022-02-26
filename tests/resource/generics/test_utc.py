@@ -1,9 +1,8 @@
 from unittest import TestCase
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import EquipmentSlot, Game
+from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.gff import load_gff
-from pykotor.resource.generics.utc import construct_utc, dismantle_utc
+from pykotor.resource.generics.utc import construct_utc, dismantle_utc, UTC
 
 TEST_FILE = "../../files/test.utc"
 
@@ -18,10 +17,10 @@ class TestUTC(TestCase):
         utc = construct_utc(gff)
         self.validate_io(utc)
 
-    def validate_io(self, utc):
+    def validate_io(self, utc: UTC):
         self.assertEqual(636, utc.appearance_id)
+        self.assertEqual(1, utc.body_variation)
         self.assertEqual(120.0, utc.blindspot)
-        self.assertEqual(1, utc.model_variation)
         self.assertEqual(10, utc.charisma)
         self.assertEqual(1.0, utc.challenge_rating)
         self.assertEqual("comment", utc.comment)
