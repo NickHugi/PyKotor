@@ -1,3 +1,4 @@
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QAbstractSpinBox
 
 
@@ -6,6 +7,8 @@ class LongSpinBox(QAbstractSpinBox):
     Implementation of QAbstractSpinBox that allows for values that exceed a signed 32-bit integer of which QSpinBox is
     restrected to.
     """
+    valueChanged = QtCore.pyqtSignal(object)
+
     def __init__(self, parent):
         super().__init__(parent)
         self._min = 0
@@ -46,6 +49,7 @@ class LongSpinBox(QAbstractSpinBox):
         else:
             value = max(self._min, min(self._max, value))
             self.lineEdit().setText(str(value))
+        self.valueChanged.emit(self.value())
 
     def value(self) -> int:
         try:
