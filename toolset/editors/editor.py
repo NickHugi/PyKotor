@@ -7,8 +7,9 @@ from typing import List, Union, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QKeyEvent, QMouseEvent
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMenu, QMessageBox, QMenuBar, QListWidgetItem, QAction, \
-    QShortcut, QLineEdit, QWidget
+    QShortcut, QLineEdit, QWidget, QPlainTextEdit
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import Installation
@@ -198,16 +199,18 @@ class Editor(QMainWindow):
         if self._revert is not None:
             self.load(self._filepath, self._resref, self._restype, self._revert)
 
-    def _loadLocstring(self, textbox: QLineEdit, locstring: LocalizedString) -> None:
+    def _loadLocstring(self, textbox: Union[QLineEdit, QPlainTextEdit], locstring: LocalizedString) -> None:
+        setText = textbox.setPlainText if isinstance(textbox, QPlainTextEdit) else textbox.setText
+        className = "QLineEdit" if isinstance(textbox, QLineEdit) else "QPlainTextEdit"
+
         textbox.locstring = locstring
         if locstring.stringref == -1:
             text = str(locstring)
-            textbox.setText(text if text != "-1" else "")
-            textbox.setStyleSheet("QLineEdit {background-color: white;}")
+            setText(text if text != "-1" else "")
+            textbox.setStyleSheet(className + " {background-color: white;}")
         else:
-            text = self._installation.talktable().string(locstring.stringref)
-            textbox.setText(self._installation.talktable().string(locstring.stringref))
-            textbox.setStyleSheet("QLineEdit {background-color: #fffded;}")
+            setText(self._installation.talktable().string(locstring.stringref))
+            textbox.setStyleSheet(className + " {background-color: #fffded;}")
 
 
 class SaveToModuleDialog(QDialog):
@@ -320,3 +323,16 @@ class LocalizedStringDialog(QDialog):
             language = Language(self.ui.languageSelect.currentIndex())
             gender = Gender(int(self.ui.femaleRadio.isChecked()))
             self.locstring.set(language, gender, self.ui.stringEdit.toPlainText())
+
+
+class HTPlainTextEdit(QPlainTextEdit):
+    keyReleased = QtCore.pyqtSignal()
+    doubleClicked = QtCore.pyqtSignal()
+
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        super().keyReleaseEvent(e)
+        self.keyReleased.emit()
+
+    def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
+        super().mouseDoubleClickEvent(e)
+        self.doubleClicked.emit()

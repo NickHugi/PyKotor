@@ -16,6 +16,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QFileDialog,QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView
+from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
@@ -34,6 +35,7 @@ from editors.dlg.dlg_editor import DLGEditor
 from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
+from editors.jrl.jrl_editor import JRLEditor
 from editors.nss.nss_editor import NSSEditor
 from editors.ssf.sff_editor import SSFEditor
 from editors.tlk.tlk_editor import TLKEditor
@@ -132,6 +134,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
         self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
+        self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
 
@@ -243,6 +246,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewUTE.setEnabled(self.active is not None)
 
         self.ui.actionEditTLK.setEnabled(self.active is not None)
+        self.ui.actionEditJRL.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
@@ -300,6 +304,9 @@ class ToolWindow(QMainWindow):
         data = BinaryReader.load_file(filepath)
         self.openResourceEditor(filepath, "dialog", ResourceType.TLK, data)
 
+    def openActiveJournal(self) -> None:
+        res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+        self.openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data)
 
     def resizeColumns(self) -> None:
         self.ui.coreTree.setColumnWidth(1, 10)
@@ -793,8 +800,14 @@ class ToolWindow(QMainWindow):
             else:
                 editor = UTIEditor(self, self.active)
 
+        if restype in [ResourceType.JRL]:
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = JRLEditor(self, self.active)
+
         if restype in [ResourceType.GFF, ResourceType.ITP,
-                       ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT, ResourceType.JRL]:
+                       ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT]:
             editor, external = useGFFEditor()
 
         if restype in [ResourceType.WAV, ResourceType.MP3]:

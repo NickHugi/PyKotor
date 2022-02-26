@@ -537,6 +537,7 @@
      <string>Tools</string>
     </property>
     <addaction name="actionEditTLK"/>
+    <addaction name="actionEditJRL"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -654,8 +655,11 @@
    </property>
   </action>
   <action name="actionEditTLK">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
-    <string>Edit TLK</string>
+    <string>Edit Talk Table</string>
    </property>
   </action>
   <action name="actionHelpUpdates">
@@ -812,6 +816,14 @@
    </property>
    <property name="text">
     <string>Script</string>
+   </property>
+  </action>
+  <action name="actionEditJRL">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Edit Journal</string>
    </property>
   </action>
  </widget>
