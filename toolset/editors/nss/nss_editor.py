@@ -122,12 +122,12 @@ class NSSEditor(Editor):
 
             filepath = self._filepath if self._filepath is not None else ""
             if filepath.endswith(".erf") or filepath.endswith(".mod"):
-                savePath = filepath
+                savePath = "{}/{}.{}".format(filepath, self._resref, self._restype.extension)
                 erf = load_erf(filepath)
                 erf.set(self._resref, ResourceType.NCS, data)
                 write_erf(erf, filepath)
             elif filepath.endswith(".rim"):
-                savePath = filepath
+                savePath = "{}/{}.{}".format(filepath, self._resref, self._restype.extension)
                 rim = load_rim(filepath)
                 rim.set(self._resref, ResourceType.NCS, data)
                 write_rim(rim, filepath)
