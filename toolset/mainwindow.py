@@ -30,6 +30,7 @@ from watchdog.observers import Observer
 import mainwindow_ui
 from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
+from editors.are.are_editor import AREEditor
 from editors.bwm.bwm_editor import BWMEditor
 from editors.dlg.dlg_editor import DLGEditor
 from editors.editor import Editor
@@ -806,8 +807,14 @@ class ToolWindow(QMainWindow):
             else:
                 editor = JRLEditor(self, self.active)
 
+        if restype in [ResourceType.ARE]:
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = AREEditor(self, self.active)
+
         if restype in [ResourceType.GFF, ResourceType.ITP,
-                       ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT]:
+                       ResourceType.GUI, ResourceType.IFO, ResourceType.GIT]:
             editor, external = useGFFEditor()
 
         if restype in [ResourceType.WAV, ResourceType.MP3]:

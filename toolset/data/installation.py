@@ -53,6 +53,7 @@ class HTInstallation(Installation):
     TwoDA_DIALOG_ANIMS = "dialoganimations"
     TwoDA_PLANETS = "planetary"
     TwoDA_PLOT = "plot"
+    TwoDA_CAMERAS = "camerastyle"
 
     def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
         super().__init__(path)
