@@ -53,7 +53,6 @@ class TwoDAEditor(Editor):
         super().load(filepath, resref, restype, data)
         self.model = QStandardItemModel(self)
         self.proxyModel = SortFilterProxyModel(self)
-        self.proxyModel.setSourceModel(self.model)
 
         try:
             twoda = load_2da(data)
@@ -77,10 +76,12 @@ class TwoDAEditor(Editor):
             self.model.setVerticalHeaderLabels(["   " for i in range(twoda.get_height())])
             self.ui.twodaTable.setModel(self.proxyModel)
 
+            self.proxyModel.setSourceModel(self.model)
             for i in range(twoda.get_height()):
                 self.ui.twodaTable.resizeColumnToContents(i)
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
+            self.proxyModel.setSourceModel(self.model)
             self.new()
 
     def build(self) -> bytes:
