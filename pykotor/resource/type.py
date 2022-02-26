@@ -153,6 +153,7 @@ class ResourceType:
     LIP_XML: ResourceType
     SSF_XML: ResourceType
     TwoDA_JSON: ResourceType
+    TLK_JSON: ResourceType
 
 
     def __init__(self, type_id: int, extension: str, category: str, contents: str):
@@ -320,3 +321,4 @@ ResourceType.PTH_XML    = ResourceType(50021,   "pth.xml",    "Models",       "b
 ResourceType.LIP_XML    = ResourceType(50022,   "lip.xml",    "Models",       "binary")
 ResourceType.SSF_XML    = ResourceType(50023,   "ssf.xml",    "Models",       "binary")
 ResourceType.TwoDA_JSON = ResourceType(50024,   "2da.json",   "2D Arrays",    "plaintext")
+ResourceType.TLK_JSON   = ResourceType(50024,   "tlk.json",   "Talk Tables",  "plaintext")

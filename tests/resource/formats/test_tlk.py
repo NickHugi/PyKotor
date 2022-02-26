@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader
 from pykotor.resource.type import ResourceType
 
 from pykotor.common.language import Language
@@ -8,6 +9,7 @@ from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryRea
 
 BINARY_TEST_FILE = "../../files/test.tlk"
 XML_TEST_FILE = "../../files/test.tlk.xml"
+JSON_TEST_FILE = "../../files/test.tlk.json"
 
 
 class TestTLK(TestCase):
@@ -19,6 +21,17 @@ class TestTLK(TestCase):
 
         data = bytearray()
         write_tlk(tlk, data, ResourceType.TLK)
+        tlk = load_tlk(data)
+        self.validate_io(tlk)
+
+    def test_json_io(self):
+        self.assertEqual(detect_tlk(JSON_TEST_FILE), ResourceType.TLK_JSON)
+
+        tlk = TLKJSONReader(JSON_TEST_FILE).load()
+        self.validate_io(tlk)
+
+        data = bytearray()
+        write_tlk(tlk, data, ResourceType.TLK_JSON)
         tlk = load_tlk(data)
         self.validate_io(tlk)
 
