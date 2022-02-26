@@ -144,7 +144,7 @@ class BWM:
                 next_edge = j
                 while next_face != -1:
                     adj_edge = adjacencies[next_face][next_edge]
-                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.index if adj_edge is not None else -1
+                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
                     if adj_edge is None:
                         edge_index = 3 * next_face + next_edge
                         if edge_index not in visited:
