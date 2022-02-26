@@ -38,7 +38,7 @@ class TwoDABinaryReader(ResourceReader):
         cell_count = row_count * column_count
         for i in range(row_count):
             row_header = self._reader.read_terminated_string("\t")
-            row_label = int(row_header)
+            row_label = row_header
             self._twoda.add_row(row_label)
 
         cell_offsets = [0] * cell_count

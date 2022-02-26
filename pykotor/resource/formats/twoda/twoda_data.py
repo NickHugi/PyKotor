@@ -22,7 +22,7 @@ class TwoDA:
     def __init__(self):
         self._rows: List[Dict[str, str]] = []
         self._headers: List[str] = []  # for columns
-        self._labels: List[int] = []  # for rows
+        self._labels: List[str] = []  # for rows
 
     def __iter__(self):
         """
@@ -99,7 +99,7 @@ class TwoDA:
         """
         return copy(self._labels)
 
-    def get_label(self, row_index: int) -> int:
+    def get_label(self, row_index: int) -> str:
         """
         Returns the row label for the given row.
 
@@ -111,7 +111,7 @@ class TwoDA:
         """
         return self._labels[row_index]
 
-    def set_label(self, row_index: int, value: int) -> None:
+    def set_label(self, row_index: int, value: str) -> None:
         """
         Sets the row label at the given index.
 
@@ -136,7 +136,7 @@ class TwoDA:
         """
         return TwoDARow(self.get_label(row_index), self._rows[row_index])
 
-    def add_row(self, row_label: Optional[int] = None, cells: Dict[str, Any] = None) -> int:
+    def add_row(self, row_label: Optional[str] = None, cells: Dict[str, Any] = None) -> int:
         """
         Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
         itself will be ignored, headers that are not specified in the cells parameter but do exist in the table will
@@ -150,7 +150,7 @@ class TwoDA:
             The id of the new row.
         """
         self._rows.append({})
-        self._labels.append(len(self._rows) if row_label is None else row_label)
+        self._labels.append(str(len(self._rows)) if row_label is None else row_label)
 
         if cells is None:
             cells = {}
@@ -241,11 +241,11 @@ class TwoDA:
 
 
 class TwoDARow:
-    def __init__(self, row_label: int, row_data: Dict[str, str]):
-        self._row_label: int = row_label
+    def __init__(self, row_label: str, row_data: Dict[str, str]):
+        self._row_label: str = row_label
         self._data: Dict[str, str] = row_data
 
-    def label(self) -> int:
+    def label(self) -> str:
         """
         Returns the row label.
 
