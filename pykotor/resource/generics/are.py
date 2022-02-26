@@ -212,8 +212,8 @@ class AREWindPower(IntEnum):
 class ARENorthAxis(IntEnum):
     North = 0
     South = 1
-    East = 1
-    West = 2
+    East = 2
+    West = 3
 
 
 def construct_are(gff: GFF) -> ARE:
