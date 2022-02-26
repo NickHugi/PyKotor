@@ -15,7 +15,7 @@ from editors.twoda import twoda_editor_ui
 
 class TwoDAEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
-        supported = [ResourceType.TwoDA, ResourceType.TwoDA_CSV]
+        supported = [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]
         super().__init__(parent, "2DA Editor", supported, supported, installation)
         self.resize(400, 250)
 
@@ -92,7 +92,7 @@ class TwoDAEditor(Editor):
 
         for i in range(self.model.rowCount()):
             twoda.add_row()
-            twoda.set_label(i, int(self.model.item(i, 0).text()))
+            twoda.set_label(i, self.model.item(i, 0).text())
             for j, header in enumerate(twoda.get_headers()):
                 twoda.set_cell(i, header, self.model.item(i, j+1).text())
 
