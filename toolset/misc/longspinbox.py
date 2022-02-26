@@ -8,7 +8,7 @@ class LongSpinBox(QAbstractSpinBox):
     def __init__(self, parent):
         super().__init__(parent)
         self._min = 0
-        self._max = 0
+        self._max = 4294967295
 
         self.lineEdit().editingFinished.connect(self.clampLineEdit)
 
