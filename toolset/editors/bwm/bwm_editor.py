@@ -151,6 +151,7 @@ class WalkmeshRenderer(QWidget):
         self._bbmax: Vector3 = Vector3.from_null()
         self._mousePressed: bool = False
         self._hightlight = None
+        self.hideEdges: bool = False
 
         self.cursor().setShape(QtCore.Qt.CrossCursor)
 
@@ -196,7 +197,7 @@ class WalkmeshRenderer(QWidget):
     def _drawFace(self, face: BWMFace) -> None:
         painter = QPainter(self)
 
-        pen = QPen(QColor(0x111111), 1, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap)
+        pen = QPen(QColor(0x111111), 1, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap) if not self.hideEdges else QPen(QtCore.Qt.NoPen)
         painter.setPen(pen)
 
         color = QColor(self.materialColors[face.material])
