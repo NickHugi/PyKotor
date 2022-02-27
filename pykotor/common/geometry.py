@@ -79,6 +79,33 @@ class Vector2:
         new.y *= other
         return new
 
+    def __truediv__(self, other):
+        if isinstance(other, int):
+            new = Vector2.from_vector2(self)
+            new.x /= other
+            new.y /= other
+            return new
+        else:
+            return NotImplemented
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            if item == 0:
+                return self.x
+            elif item == 1:
+                return self.y
+        else:
+            return NotImplemented
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int) and (isinstance(value, float) or isinstance(value, int)):
+            if key == 0:
+                self.x = value
+            elif key == 1:
+                self.y = value
+        else:
+            return NotImplemented
+
     @classmethod
     def from_vector2(cls, other: Vector2) -> Vector2:
         """
@@ -117,32 +144,6 @@ class Vector2:
         y = math.sin(math.radians(angle))
         return Vector2(x, y)
 
-    def magnitude(self) -> float:
-        """
-        Returns the magnitude of the vector.
-
-        Returns:
-            The magnitude of the vector.
-        """
-        return math.sqrt(self.x ** 2 + self.y ** 2)
-
-    def angle(self) -> float:
-        """
-        Returns the angle of the vector.
-
-        Returns:
-            The angle of the vector.
-        """
-        return math.degrees(math.atan2(self.y, self.x))
-
-    def normalize(self) -> None:
-        """
-        Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
-        """
-        magnitude = self.magnitude()
-        self.x /= magnitude
-        self.y /= magnitude
-
     def set(self, x: float, y: float) -> None:
         """
         Sets the components of the vector.
@@ -153,6 +154,83 @@ class Vector2:
         """
         self.x = x
         self.y = y
+
+    def normalize(self) -> None:
+        """
+        Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
+        """
+        magnitude = self.magnitude()
+        self.x /= magnitude
+        self.y /= magnitude
+
+    def magnitude(self) -> float:
+        """
+        Returns the magnitude of the vector.
+
+        Returns:
+            The magnitude of the vector.
+        """
+        return math.sqrt(self.x ** 2 + self.y ** 2)
+
+    def normal(self) -> Vector2:
+        vec2 = Vector2.from_vector2(self)
+        magnitude = self.magnitude()
+        vec2.x /= magnitude
+        vec2.y /= magnitude
+        return vec2
+
+    def dot(self, other: Vector2) -> float:
+        """
+        Returns the dot product between the two specified vectors.
+
+        Args:
+            other: The other vector.
+
+        Returns:
+            The dot product.
+        """
+        a = self.x * other.x
+        b = self.y * other.y
+        return a + b
+
+    def distance(self, other: Vector2) -> float:
+        """
+        Returns the distance between two vectors.
+
+        Args:
+            other: The other vector.
+
+        Returns:
+            The distance between the vectors.
+        """
+        a = (self.x - other.x) ** 2
+        b = (self.y - other.y) ** 2
+        return math.sqrt(a + b)
+
+    def within(self, container: List) -> bool:
+        """
+        Checks to see if the same Vector2 object in located in the specified list. This differs from using the 'in'
+        keyword as that will return True for Vector2 objects that have simular coordinates.
+
+        Args:
+            container: The list to search in.
+
+        Returns:
+            True if the Vector2 exists in the container.
+        """
+        for item in container:
+            if item is self:
+                return True
+        return False
+
+    def angle(self) -> float:
+        """
+        Returns the angle of the vector.
+
+        Returns:
+            The angle of the vector.
+        """
+        return math.degrees(math.atan2(self.y, self.x))
 
 
 class Vector3:
@@ -288,30 +366,6 @@ class Vector3:
         """
         return Vector3(0.0, 0.0, 0.0)
 
-    def magnitude(self) -> float:
-        """
-        Returns the magnitude of the vector.
-
-        Returns:
-            The magnitude of the vector.
-        """
-        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
-
-    def normalize(self) -> None:
-        """
-        Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
-        """
-        magnitude = self.magnitude()
-        self.x /= magnitude
-        self.y /= magnitude
-        self.z /= magnitude
-
-    def dot(self, other: Vector3):
-        a = self.x * other.x
-        b = self.y * other.y
-        c = self.z * other.z
-        return a + b + c
-
     def set(self, x: float, y: float, z: float) -> None:
         """
         Sets the components of the vector.
@@ -325,13 +379,73 @@ class Vector3:
         self.y = y
         self.z = z
 
+    def normalize(self) -> None:
+        """
+        Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
+        """
+        magnitude = self.magnitude()
+        self.x /= magnitude
+        self.y /= magnitude
+        self.z /= magnitude
+
+    def magnitude(self) -> float:
+        """
+        Returns the magnitude of the vector.
+
+        Returns:
+            The magnitude of the vector.
+        """
+        return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
+
+    def normal(self) -> Vector3:
+        vec3 = Vector3.from_vector3(self)
+        magnitude = self.magnitude()
+        vec3.x /= magnitude
+        vec3.y /= magnitude
+        vec3.z /= magnitude
+        return vec3
+
+    def dot(self, other: Vector3) -> float:
+        """
+        Returns the dot product between the two specified vectors.
+
+        Args:
+            other: The other vector.
+
+        Returns:
+            The dot product.
+        """
+        a = self.x * other.x
+        b = self.y * other.y
+        c = self.z * other.z
+        return a + b + c
+
     def distance(self, other: Vector3) -> float:
+        """
+        Returns the distance between two vectors.
+
+        Args:
+            other: The other vector.
+
+        Returns:
+            The distance between the vectors.
+        """
         a = (self.x - other.x) ** 2
         b = (self.y - other.y) ** 2
         c = (self.z - other.z) ** 2
         return math.sqrt(a + b + c)
 
     def within(self, container: List) -> bool:
+        """
+        Checks to see if the same Vector3 object in located in the specified list. This differs from using the 'in'
+        keyword as that will return True for Vector3 objects that have simular coordinates.
+
+        Args:
+            container: The list to search in.
+
+        Returns:
+            True if the Vector3 exists in the container.
+        """
         for item in container:
             if item is self:
                 return True
