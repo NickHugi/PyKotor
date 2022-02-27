@@ -73,16 +73,17 @@ class FileSearcher(QDialog):
             [searchIn.extend(installation.override_resources(folder)) for folder in installation.override_list()]
 
         def search(resource):
-            if caseSensitive and text in resource.resname():
-                results.append(resource)
-            elif caseSensitive and text.lower() in resource.resname().lower():
-                results.append(resource)
-            elif not filenamesOnly:
-                decoded = resource.data().decode(errors='ignore')
-                if caseSensitive and text in decoded:
+            if resource.restype() in checkTypes:
+                if caseSensitive and text in resource.resname():
                     results.append(resource)
-                elif not caseSensitive and text.lower() in decoded.lower():
+                elif caseSensitive and text.lower() in resource.resname().lower():
                     results.append(resource)
+                elif not filenamesOnly:
+                    decoded = resource.data().decode(errors='ignore')
+                    if caseSensitive and text in decoded:
+                        results.append(resource)
+                    elif not caseSensitive and text.lower() in decoded.lower():
+                        results.append(resource)
 
         searches = [lambda resource=resource: search(resource) for resource in searchIn]
         AsyncBatchLoader(self, "Searching...", searches, "An error occured during the search").exec_()
