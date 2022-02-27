@@ -1,6 +1,6 @@
 import math
 import struct
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, List
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap, QPaintEvent, QPainter, QPen, QColor, QPainterPath, QBrush, QMouseEvent, QImage, \
@@ -83,7 +83,7 @@ class BWMEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         self._bwm = load_bwm(data)
-        self.ui.drawArea.setWalkmesh(self._bwm)
+        self.ui.drawArea.setWalkmeshes([self._bwm])
 
         def addTransItem(face, edge, transition):
             if transition is not None:
@@ -142,7 +142,8 @@ class WalkmeshRenderer(QWidget):
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
-        self._bwm: Optional[BWM] = None
+        self._walkmeshes: List[BWM] = []
+        self._positions: List[Vector3] = []
         self._painter: QPainter = QPainter(self)
         self._width: int = 0
         self._height: int = 0
@@ -163,9 +164,25 @@ class WalkmeshRenderer(QWidget):
         self._hightlight = face
         self.repaint()
 
-    def setWalkmesh(self, bwm: BWM):
-        self._bwm = bwm
-        self._bbmin, self._bbmax = self._bwm.box()
+    def setWalkmeshes(self, walkmeshes: List[BWM], positions: List[Vector3] = None):
+        self._walkmeshes = walkmeshes
+        self._bbmin = Vector3(1000000, 1000000, 1000000)
+        self._bbmax = Vector3(-1000000, -1000000, -1000000)
+
+        positions = [] if positions is None else positions
+        while len(positions) < len(walkmeshes):
+            positions.append(Vector3.from_null())
+
+        for i, walkmesh in enumerate(walkmeshes):
+            bbmin, bbmax = walkmesh.box()
+            bbmin += positions[i]
+            bbmax += positions[i]
+            self._bbmin.x = min(bbmin.x, self._bbmin.x)
+            self._bbmin.y = min(bbmin.y, self._bbmin.y)
+            self._bbmin.z = min(bbmin.z, self._bbmin.z)
+            self._bbmax.x = max(bbmax.x, self._bbmax.x)
+            self._bbmax.y = max(bbmax.y, self._bbmax.y)
+            self._bbmax.z = max(bbmax.z, self._bbmax.z)
 
         width, height = self.zoomedSize()
         self.setMinimumWidth(width)
@@ -190,8 +207,8 @@ class WalkmeshRenderer(QWidget):
         painter.setBrush(QBrush(QColor(0)))
         painter.drawRect(0, 0, self.width(), self.height())
 
-        if self._bwm:
-            for face in self._bwm.faces:
+        for walkmesh in self._walkmeshes:
+            for face in walkmesh.faces:
                 self._drawFace(face)
 
     def _drawFace(self, face: BWMFace) -> None:
