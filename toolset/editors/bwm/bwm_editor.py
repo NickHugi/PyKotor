@@ -6,8 +6,9 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap, QPaintEvent, QPainter, QPen, QColor, QPainterPath, QBrush, QMouseEvent, QImage, \
     QWheelEvent
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QShortcut
-from pykotor.common.geometry import Vector3, SurfaceMaterial
+from pykotor.common.geometry import Vector3, SurfaceMaterial, Vector2
 from pykotor.resource.formats.bwm import load_bwm, BWM, BWMFace, write_bwm
+from pykotor.resource.generics.git import GITTrigger, GIT
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -106,9 +107,9 @@ class BWMEditor(Editor):
     def new(self) -> None:
         super().new()
 
-    def mouseMoved(self, e: QMouseEvent) -> None:
-        coords = self.ui.drawArea.toWalkmeshCoords(e, e)
-        text = "(x: {0:.2f}, y: {0:.2f})".format(*coords)
+    def mouseMoved(self, x: float, y: float) -> None:
+        coords = self.ui.drawArea.toWalkmeshCoords(x, y)
+        text = "(x: {0:.2f}, y: {0:.2f})".format(coords.x, coords.y)
         self.statusBar().showMessage(text + " Zoom: {}".format(self.ui.drawArea.currentZoom()))
 
     def changeFace(self, face: BWMFace):
@@ -144,6 +145,7 @@ class WalkmeshRenderer(QWidget):
         super().__init__(parent)
         self._walkmeshes: List[BWM] = []
         self._positions: List[Vector3] = []
+        self._git: Optional[GIT] = None
         self._painter: QPainter = QPainter(self)
         self._width: int = 0
         self._height: int = 0
@@ -195,6 +197,9 @@ class WalkmeshRenderer(QWidget):
         zoom = min(self.window().width() / sizeX, self.window().height() / sizeY) if sizeX != 0 and sizeY != 0 else 6
         self.setZoom(zoom - 5)
 
+    def setGit(self, git: GIT) -> None:
+        self._git = git
+
     def zoomedSize(self) -> Tuple[int, int]:
         bbmin = self._bbmin * self._zoom
         bbmax = self._bbmax * self._zoom
@@ -211,6 +216,10 @@ class WalkmeshRenderer(QWidget):
             for face in walkmesh.faces:
                 self._drawFace(face)
 
+        if self._git is not None:
+            for trigger in self._git.triggers:
+                self._drawTrigger(trigger)
+
     def _drawFace(self, face: BWMFace) -> None:
         painter = QPainter(self)
 
@@ -220,15 +229,9 @@ class WalkmeshRenderer(QWidget):
         color = QColor(self.materialColors[face.material])
         painter.setBrush(QBrush(color))
 
-        v1 = face.v1 * self._zoom
-        v2 = face.v2 * self._zoom
-        v3 = face.v3 * self._zoom
-        v1.x -= math.fabs(self._bbmin.x * self._zoom)
-        v1.y -= math.fabs(self._bbmin.y * self._zoom)
-        v2.x -= math.fabs(self._bbmin.x * self._zoom)
-        v2.y -= math.fabs(self._bbmin.y * self._zoom)
-        v3.x -= math.fabs(self._bbmin.x * self._zoom)
-        v3.y -= math.fabs(self._bbmin.y * self._zoom)
+        v1 = self.toRenderCoords(face.v1.x, face.v1.y)
+        v2 = self.toRenderCoords(face.v2.x, face.v2.y)
+        v3 = self.toRenderCoords(face.v3.x, face.v3.y)
 
         path = QPainterPath()
         path.moveTo(v1.x, v1.y)
@@ -246,7 +249,7 @@ class WalkmeshRenderer(QWidget):
         if face.trans3 is not None:
             self._drawTransition(v3, v1, self._hightlight == face)
 
-    def _drawTransition(self, v1: Vector3, v2: Vector3, highlight: bool):
+    def _drawTransition(self, v1: Vector2, v2: Vector2, highlight: bool):
         painter = QPainter(self)
 
         if highlight:
@@ -264,10 +267,43 @@ class WalkmeshRenderer(QWidget):
         path.closeSubpath()
         painter.drawPath(path)
 
-    def toWalkmeshCoords(self, x, y) -> Tuple[float, float]:
+    def _drawTrigger(self, trigger: GITTrigger):
+        path = QPainterPath()
+        if trigger.geometry:
+            offset = trigger.position
+            start = self.toRenderCoords(trigger.geometry[0].x + offset.x, trigger.geometry[0].y + offset.y)
+            path.moveTo(start.x, start.y)
+            for point in trigger.geometry[1:]:
+                move = self.toRenderCoords(point.x + offset.x, point.y + offset.y)
+                path.lineTo(move.x, move.y)
+        path.closeSubpath()
+
+        painter = QPainter(self)
+        # Draw trigger zone
+        painter.setBrush(QBrush(QColor(255, 255, 0, 30)))
+        painter.setPen(QPen(QColor(0xFFFF00), 1))
+        painter.drawPath(path)
+
+        # Draw trigger vertices
+        painter.setPen(QPen(QtCore.Qt.NoPen))
+        painter.setBrush(QBrush(QColor(0xAAAA66)))
+        if trigger.geometry:
+            offset = trigger.position
+            for point in trigger.geometry:
+                move = self.toRenderCoords(point.x + offset.x, point.y + offset.y)
+                painter.drawEllipse(move.x-3, move.y-3, 6, 6)
+
+    def toRenderCoords(self, x, y) -> Vector2:
+        x *= self._zoom
+        y *= self._zoom
+        x -= math.fabs(self._bbmin.x * self._zoom)
+        y -= math.fabs(self._bbmin.y * self._zoom)
+        return Vector2(x, y)
+
+    def toWalkmeshCoords(self, x, y) -> Vector2:
         x = (x + math.fabs(self._bbmin.x * self._zoom)) / self._zoom
         y = (y + math.fabs(self._bbmin.y * self._zoom)) / self._zoom
-        return x, y
+        return Vector2(x, y)
 
     def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
         x, y = self.toWalkmeshCoords(e.x(), e.y())
@@ -275,9 +311,9 @@ class WalkmeshRenderer(QWidget):
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         coords = self.toWalkmeshCoords(e.x(), e.y())
-        self.mouseMoved.emit(*coords)
+        self.mouseMoved.emit(coords.x, coords.y)
         if self._mousePressed:
-            self.mouseDragged.emit(*coords)
+            self.mouseDragged.emit(coords.x, coords.y)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         self._mousePressed = True
