@@ -139,9 +139,13 @@ class WalkmeshRenderer(QWidget):
        was pressed."""
 
     mouseScrolled = QtCore.pyqtSignal(object)
-    """Emiitted when mouse has been scrolled."""
+    """Emitted when mouse has been scrolled over the widget."""
 
     mouseReleased = QtCore.pyqtSignal()
+    """Emitted when the mouse button has been released off the widget."""
+
+    mousePressed = QtCore.pyqtSignal()
+    """Emitted when the mouse has been pressed on the widget."""
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -324,6 +328,7 @@ class WalkmeshRenderer(QWidget):
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         self._mousePressed = True
+        self.mousePressed.emit()
 
     def mouseReleaseEvent(self, e: QMouseEvent) -> None:
         self._mousePressed = False
