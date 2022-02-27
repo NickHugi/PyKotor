@@ -746,3 +746,169 @@ class Face:
 
     def centre(self) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
+
+
+class Polygon2:
+    def __init__(self, points: List[Vector2] = None):
+        self.points: List[Vector2] = [] if points is None else points
+
+    def __iter__(self):
+        for point in self.points:
+            yield point
+
+    def __len__(self):
+        return len(self.points)
+
+    def __repr__(self):
+        return "Polygon3({})".format(self.points)
+
+    def __getitem__(self, item: int):
+        if isinstance(item, int):
+            return self.points[item]
+        elif isinstance(item, slice):
+            return self.points[item.start:item.stop:item.step]
+        else:
+            return NotImplemented
+
+    def __setitem__(self, key: int, value: Vector2):
+        if isinstance(key, int) and isinstance(value, Vector2):
+            self.points[key] = value
+        else:
+            return NotImplemented
+
+    @classmethod
+    def from_polygon3(cls, poly3: Polygon3) -> Polygon2:
+        """
+        Converts a Polygon3 object into a Polygon2 object. The Z-axis is removed.
+
+        Args:
+            poly3: The polygon3 object to flatten.
+
+        Returns:
+            A Polygon2 object.
+        """
+        poly2 = Polygon2()
+        for point in poly3:
+            poly2.points.append(Vector2(point.x, point.y))
+        return poly2
+
+    def inside(self, point: Vector2, include_edges: bool = True) -> bool:
+        """
+        Returns if the specified point is inside the polygon.
+
+        Args:
+            point: The point.
+            include_edges: If True, a points on edges are considered inside the polygon.
+
+        Returns:
+            True if the point is inside the polygon.
+        """
+        # Code was adapted from this stackoverflow post:
+        # https://stackoverflow.com/a/42306732
+
+        n = len(self.points)
+        inside = False
+
+        p1 = self.points[0]
+        for i in range(1, n+1):
+            p2 = self.points[i % n]
+            if p1.y == p2.y:
+                if point.y == p2.y:
+                    if min(p1.x, p2.x) <= point.x <= max(p1.x, p2.x):
+                        inside = include_edges
+                        break
+                    elif point.x < min(p1.x, p2.x):
+                        inside = not inside
+            else:
+                if min(p1.y, p2.y) <= point.y <= max(p1.y, p2.y):
+                    xinters = (point.y - p1.y) * (p2.x - p1.x) / float(p2.y - p1.y) + p1.x
+
+                    if point.x == xinters:
+                        inside = include_edges
+                        break
+
+                    if point.x < xinters:
+                        inside = not inside
+            p1 = p2
+        return inside
+
+    def area(self) -> float:
+        # Code was adapted from this stackoverflow post:
+        # https://stackoverflow.com/a/34327761
+
+        n = len(self.points)
+        area = 0.0
+        for i in range(0, n - 1):
+            area += -self.points[i].y * self.points[i+1].x + self.points[i].x * self.points[i+1].y
+        area += -self.points[n - 1].y * self.points[0].x + self.points[n - 1].x * self.points[0].y
+        area = 0.5 * math.fabs(area)
+        return area
+
+    def append(self, point: Vector2) -> None:
+        self.points.append(point)
+
+    def extend(self, points: List[Vector2]) -> None:
+        self.points.extend(points)
+
+    def remove(self, point: Vector2) -> None:
+        self.points.remove(point)
+
+    def index(self, point: Vector2) -> int:
+        return self.points.index(point)
+
+
+class Polygon3:
+    def __init__(self, points: List[Vector3] = None):
+        self.points: List[Vector3] = [] if points is None else points
+
+    def __iter__(self):
+        for point in self.points:
+            yield point
+
+    def __len__(self):
+        return len(self.points)
+
+    def __repr__(self):
+        return "Polygon3({})".format(self.points)
+
+    def __getitem__(self, item: int):
+        if isinstance(item, int):
+            return self.points[item]
+        elif isinstance(item, slice):
+            return self.points[item.start:item.stop:item.step]
+        else:
+            return NotImplemented
+
+    def __setitem__(self, key: int, value: Vector3):
+        if isinstance(key, int) and isinstance(value, Vector3):
+            self.points[key] = value
+        else:
+            return NotImplemented
+
+    @classmethod
+    def from_polygon2(cls, poly2: Polygon2) -> Polygon3:
+        """
+        Converts a Polygon3 object into a Polygon2 object. Points have their Z-axis set to 0.
+
+        Args:
+            poly2: The polygon3 object to copy.
+
+        Returns:
+            A Polygon2 object.
+        """
+        poly3 = Polygon3()
+        for point in poly3:
+            poly3.points.append(Vector3(point.x, point.y, point.z))
+        return poly3
+
+    def append(self, point: Vector3) -> None:
+        self.points.append(point)
+
+    def extend(self, points: List[Vector3]) -> None:
+        self.points.extend(points)
+
+    def remove(self, point: Vector3) -> None:
+        self.points.remove(point)
+
+    def index(self, point: Vector3) -> int:
+        return self.points.index(point)
