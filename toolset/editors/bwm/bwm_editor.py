@@ -121,9 +121,9 @@ class BWMEditor(Editor):
     def onTransitionSelect(self) -> None:
         if self.ui.transList.currentItem():
             item = self.ui.transList.currentItem()
-            self.ui.drawArea.setHighlighted(item.data(_TRANS_FACE_ROLE))
+            self.ui.drawArea.setHighlightedTrans(item.data(_TRANS_FACE_ROLE))
         else:
-            self.ui.drawArea.setHighlighted(None)
+            self.ui.drawArea.setHighlightedTrans(None)
 
 
 class WalkmeshRenderer(QWidget):
@@ -155,7 +155,8 @@ class WalkmeshRenderer(QWidget):
         self._bbmin: Vector3 = Vector3.from_null()
         self._bbmax: Vector3 = Vector3.from_null()
         self._mousePressed: bool = False
-        self._hightlight = None
+        self._highlightTrans: Optional[BWMFace] = None
+        self._highlightTrigger: Optional[GITTrigger] = None
         self.hideEdges: bool = False
 
         self.cursor().setShape(QtCore.Qt.CrossCursor)
@@ -164,8 +165,12 @@ class WalkmeshRenderer(QWidget):
         for material in SurfaceMaterial._member_names_:
             self.materialColors[material] = QColor(0xFFFFFF)
 
-    def setHighlighted(self, face: BWMFace):
-        self._hightlight = face
+    def setHighlightedTrans(self, face: Optional[BWMFace]) -> None:
+        self._highlightTrans = face
+        self.repaint()
+
+    def setHighlightedTrigger(self, trigger: Optional[GITTrigger]) -> None:
+        self._highlightTrigger = trigger
         self.repaint()
 
     def setWalkmeshes(self, walkmeshes: List[BWM], positions: List[Vector3] = None):
@@ -245,11 +250,11 @@ class WalkmeshRenderer(QWidget):
         painter.drawPath(path)
 
         if face.trans1 is not None:
-            self._drawTransition(v1, v2, self._hightlight == face)
+            self._drawTransition(v1, v2, self._highlightTrans == face)
         if face.trans2 is not None:
-            self._drawTransition(v2, v3, self._hightlight == face)
+            self._drawTransition(v2, v3, self._highlightTrans == face)
         if face.trans3 is not None:
-            self._drawTransition(v3, v1, self._hightlight == face)
+            self._drawTransition(v3, v1, self._highlightTrans == face)
 
     def _drawTransition(self, v1: Vector2, v2: Vector2, highlight: bool):
         painter = QPainter(self)
@@ -282,8 +287,8 @@ class WalkmeshRenderer(QWidget):
 
         painter = QPainter(self)
         # Draw trigger zone
-        painter.setBrush(QBrush(QColor(255, 255, 0, 30)))
-        painter.setPen(QPen(QColor(0xFFFF00), 1))
+        painter.setBrush(QBrush(QColor(255, 255, 210, 60) if trigger is self._highlightTrigger else QColor(255, 255, 0, 30)))
+        painter.setPen(QPen(QColor(0xFFFFCC) if trigger is self._highlightTrigger else QColor(0xFFFF00), 1))
         painter.drawPath(path)
 
         # Draw trigger vertices
