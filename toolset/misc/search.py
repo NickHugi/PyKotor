@@ -1,3 +1,4 @@
+import operator
 from typing import Dict, List, Optional
 
 from PyQt5 import QtCore
@@ -109,6 +110,8 @@ class FileResults(QDialog):
             item.setData(QtCore.Qt.UserRole, result)
             item.setToolTip(result.filepath())
             self.ui.resultList.addItem(item)
+
+        self.ui.resultList.sortItems(QtCore.Qt.AscendingOrder)
 
     def accept(self) -> None:
         item = self.ui.resultList.currentItem()
