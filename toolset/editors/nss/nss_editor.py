@@ -3,11 +3,11 @@ from __future__ import annotations
 import os
 import subprocess
 from operator import attrgetter
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as numpy
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSize, QRect
+from PyQt5.QtCore import QSize, QRect, QRegExp, QRegularExpressionMatch
 from PyQt5.QtGui import QIcon, QPixmap, QFontMetrics, QPaintEvent, QResizeEvent, QColor, QTextFormat, QPainter, \
     QTextBlock, QFontMetricsF, QSyntaxHighlighter, QTextDocument, QTextCharFormat, QFont
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QTextEdit, QListWidgetItem, QMessageBox, QShortcut
@@ -42,7 +42,7 @@ class NSSEditor(Editor):
 
         self._length: int = 0
         self._config: Configuration = Configuration()
-        self._installation: HTInstallation = installation
+        self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)
         self.setInstallation(self._installation)
 
         self.ui.actionCompile.triggered.connect(self.compileCurrentScript)
@@ -340,45 +340,48 @@ class CodeEditor(QPlainTextEdit):
             self._updateLineNumberAreaWidth(0)
 
 
-def style_format(color, style=''):
-    _color = QColor()
-    _color.setNamedColor(color)
+class SyntaxHighlighter(QSyntaxHighlighter):
+    KEYWORDS = ["return", "float", "int", "object", "location", "void", "effect", "action", "string", "vector",
+                "talent", "if", "for", "while", "#include", "TRUE", "FALSE"]
 
-    _format = QTextCharFormat()
-    _format.setForeground(_color)
-    if 'bold' in style:
-        _format.setFontWeight(QFont.Bold)
-    if 'italic' in style:
-        _format.setFontItalic(True)
+    OPERATORS = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\+", "-", "/", "<<", ">>", "\&", "\|"]
 
-    return _format
+    COMMENT_BLOCK_START = QRegExp("/\\*")
+    COMMENT_BLOCK_END = QRegExp("\\*/")
 
+    BRACES = ["\{", "\}", "\(", "\)", "\[", "\]"]
 
-class SyntaxHightlighter(QSyntaxHighlighter):
-    STYLES = {
-        'keyword': style_format('blue'),
-        'operator': style_format('red'),
-        'numbers': style_format('brown'),
-        'comment': style_format('darkGreen', 'italic'),
-        'string': style_format('magenta'),
-    }
-
-    KEYWORDS = ["return"]
-    OPERATORS = ["=", "=="]
-
-    def __init__(self, parent: QTextDocument):
+    def __init__(self, parent: QTextDocument, installation: HTInstallation):
         super().__init__(parent)
 
+        self.styles = {
+            "keyword": self.getCharFormat("blue"),
+            "operator": self.getCharFormat("darkRed"),
+            "numbers": self.getCharFormat("brown"),
+            "comment": self.getCharFormat("gray", False, True),
+            "string": self.getCharFormat("darkMagenta"),
+            "brace": self.getCharFormat("darkRed"),
+            "function": self.getCharFormat("darkGreen"),
+            "constant": self.getCharFormat("darkBlue")
+        }
+
+        functions = [function.name for function in (TSL_FUNCTIONS if installation.tsl else KOTOR_FUNCTIONS)]
+        constants = [function.name for function in (TSL_CONSTANTS if installation.tsl else TSL_CONSTANTS)]
+
         rules = []
-        rules += [(r'\b%s\b' % w, 0, SyntaxHightlighter.STYLES['keyword']) for w in SyntaxHightlighter.keywords]
-        rules += [(r'%s' % o, 0, SyntaxHightlighter.STYLES['operator']) for o in SyntaxHightlighter.operators]
+        rules += [(r'\b%s\b' % w, 0, self.styles['keyword']) for w in SyntaxHighlighter.KEYWORDS]
+        rules += [(r'\b%s\b' % w, 0, self.styles['function']) for w in functions]
+        rules += [(r'\b%s\b' % w, 0, self.styles['constant']) for w in constants]
+        rules += [(r'%s' % o, 0, self.styles['operator']) for o in SyntaxHighlighter.OPERATORS]
+        rules += [(r'%s' % o, 0, self.styles['brace']) for o in SyntaxHighlighter.BRACES]
 
         rules += [
-            (r'\b[+-]?[0-9]+[lL]?\b', 0, SyntaxHightlighter.STYLES['numbers']),
-            (r'\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\b', 0, SyntaxHightlighter.STYLES['numbers']),
-            (r'\b[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\b', 0, SyntaxHightlighter.STYLES['numbers']),
-            (r"'[^'\\]*(\\.[^'\\]*)*'", 0, SyntaxHightlighter.STYLES['string']),
-            (r'#[^\n]*', 0, SyntaxHightlighter.STYLES['comment']),
+            (r'\b[+-]?[0-9]+[lL]?\b', 0, self.styles['numbers']),
+            (r'\b[+-]?0[xX][0-9A-Fa-f]+[lL]?\b', 0, self.styles['numbers']),
+            (r'\b[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\b', 0, self.styles['numbers']),
+            (r"'[^'\\]*(\\.[^'\\]*)*'", 0, self.styles['string']),
+            (r'"[^"\\]*(\\.[^"\\]*)*"', 0, self.styles['string']),
+            (r'//[^\n]*', 0, self.styles['comment']),
         ]
 
         self.rules = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
@@ -386,8 +389,6 @@ class SyntaxHightlighter(QSyntaxHighlighter):
     def highlightBlock(self, text: str) -> None:
         for expression, nth, format in self.rules:
             index = expression.indexIn(text, 0)
-            if index >= 0:
-                ...
 
             while index >= 0:
                 index = expression.pos(nth)
@@ -395,4 +396,26 @@ class SyntaxHightlighter(QSyntaxHighlighter):
                 self.setFormat(index, length, format)
                 index = expression.indexIn(text, index + length)
 
-        self.currentBlockState(0)
+        self.setCurrentBlockState(0)
+
+        startIndex = 0
+        if self.previousBlockState() != 1:
+            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex)
+
+        while startIndex >= 0:
+            endIndex = SyntaxHighlighter.COMMENT_BLOCK_END.indexIn(text, startIndex)
+            if endIndex == -1:
+                self.setCurrentBlockState(1)
+                commentLength = len(text) - startIndex
+            else:
+                commentLength = endIndex - startIndex + 2
+            self.setFormat(startIndex, commentLength, self.styles['comment'])
+            startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
+
+    def getCharFormat(self, color: Union[str, int], bold: bool = False, italic: bool = False) -> QTextCharFormat:
+        color = QColor(color)
+        textFormat = QTextCharFormat()
+        textFormat.setForeground(color)
+        textFormat.setFontWeight(QFont.Bold if bold else QFont.Normal)
+        textFormat.setFontItalic(italic)
+        return textFormat
