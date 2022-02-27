@@ -356,6 +356,8 @@ class Ui_MainWindow(object):
         self.actionEditJRL = QtWidgets.QAction(MainWindow)
         self.actionEditJRL.setEnabled(False)
         self.actionEditJRL.setObjectName("actionEditJRL")
+        self.actionFileSearch = QtWidgets.QAction(MainWindow)
+        self.actionFileSearch.setObjectName("actionFileSearch")
         self.menuNew.addAction(self.actionNewDLG)
         self.menuNew.addAction(self.actionNewNSS)
         self.menuNew.addAction(self.actionNewUTC)
@@ -382,6 +384,8 @@ class Ui_MainWindow(object):
         self.menuFile.addAction(self.actionExit)
         self.menuTools.addAction(self.actionEditTLK)
         self.menuTools.addAction(self.actionEditJRL)
+        self.menuTools.addSeparator()
+        self.menuTools.addAction(self.actionFileSearch)
         self.menuHelp.addAction(self.actionHelpUpdates)
         self.menuHelp.addAction(self.actionHelpAbout)
         self.menubar.addAction(self.menuFile.menuAction())
@@ -460,5 +464,6 @@ class Ui_MainWindow(object):
         self.actionNewDLG.setText(_translate("MainWindow", "Dialog"))
         self.actionNewNSS.setText(_translate("MainWindow", "Script"))
         self.actionEditJRL.setText(_translate("MainWindow", "Edit Journal"))
+        self.actionFileSearch.setText(_translate("MainWindow", "File Search"))
 from toolset.mainwindow import TexturesView
 import resources_rc

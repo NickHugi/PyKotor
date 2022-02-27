@@ -13,9 +13,10 @@ from typing import Optional, List, Union, Tuple, Dict
 
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint
+from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
-from PyQt5.QtWidgets import QMainWindow, QFileDialog,QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
+    QTreeView
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
@@ -55,6 +56,7 @@ from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.audio_player import AudioPlayer
+from misc.search import FileSearcher, FileResults
 from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 
@@ -136,6 +138,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
+        self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
 
@@ -248,6 +251,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.actionEditTLK.setEnabled(self.active is not None)
         self.ui.actionEditJRL.setEnabled(self.active is not None)
+        self.ui.actionFileSearch.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
@@ -268,6 +272,62 @@ class ToolWindow(QMainWindow):
         Opens the about dialog.
         """
         About(self, PROGRAM_VERSION).exec_()
+
+    def openFileSearchDialog(self) -> None:
+        """
+        Opens the FileSearcher dialog. If a search is conducted then a FileResults dialog displays the results
+        where the user can then select a resource and the selected resouce will then be shown in the main window.
+        """
+        searchDialog = FileSearcher(self, self.installations)
+        if searchDialog.exec_():
+            resultsDialog = FileResults(self, searchDialog.results, searchDialog.installation)
+            if resultsDialog.exec_() and resultsDialog.selection:
+                selection = resultsDialog.selection
+
+                # Open the installation of the resource
+                index = 0
+                for i, installation in enumerate(self.installations.values()):
+                    if installation is searchDialog.installation:
+                        index = i + 1
+                self.changeActiveInstallation(index)
+
+                # Open relevant tab then select resource in the tree
+                if self.active.module_path() in selection.filepath():
+                    self.ui.resourceTabs.setCurrentIndex(1)
+                    self.selectResource(self.ui.modulesTree, selection)
+                elif self.active.override_path() in selection.filepath():
+                    self.ui.resourceTabs.setCurrentIndex(2)
+                    self.selectResource(self.ui.overrideTree, selection)
+                elif selection.filepath().endswith(".bif"):
+                    self.selectResource(self.ui.coreTree, selection)
+
+    def selectResource(self, tree: QTreeView, resource: FileResource) -> None:
+        model: ResourceModel = tree.model().sourceModel()
+
+        def select(parent, child):
+            tree.expand(parent)
+            tree.scrollTo(child)
+            tree.setCurrentIndex(child)
+
+        if tree == self.ui.coreTree:
+            self.ui.resourceTabs.setCurrentIndex(0)
+        elif tree == self.ui.modulesTree:
+            self.ui.resourceTabs.setCurrentIndex(1)
+            filename = os.path.basename(resource.filepath())
+            self.changeModule(filename)
+        elif tree == self.ui.overrideTree:
+            self.ui.resourceTabs.setCurrentIndex(2)
+            subfolder = ""
+            for folder in self.active.override_list():
+                if folder in resource.filepath() and len(subfolder) < len(folder):
+                    subfolder = folder
+            self.changeOverrideFolder(subfolder)
+
+        for item in model.allResourcesItems():
+            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
+                parentIndex = model.proxyModel().mapFromSource(item.parent().index())
+                itemIndex = model.proxyModel().mapFromSource(item.index())
+                QTimer.singleShot(0, lambda: select(parentIndex, itemIndex))
 
     def checkForUpdates(self, silent: bool = False) -> None:
         """
@@ -888,7 +948,7 @@ class ResourceModel(QStandardItemModel):
 
     def __init__(self):
         super().__init__()
-        self._categoryItems = {}
+        self._categoryItems: Dict[str, QStandardItem] = {}
         self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
         self._proxyModel.setRecursiveFilteringEnabled(True)
@@ -929,6 +989,16 @@ class ResourceModel(QStandardItemModel):
 
     def resourceFromItems(self, items: List[QStandardItem]) -> List[FileResource]:
         return [item.resource for item in items if hasattr(item, 'resource')]
+
+    def allResourcesItems(self) -> List[QStandardItem]:
+        """
+        Returns a list of all QStandardItem objects in the model that represents resource files.
+        """
+        resources = []
+        for category in self._categoryItems.values():
+            for i in range(category.rowCount()):
+                resources.append(category.child(i, 0))
+        return resources
 
 
 class EncapsulatedExternalUpdateHandler(FileSystemEventHandler, QThread):

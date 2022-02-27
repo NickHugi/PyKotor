@@ -538,6 +538,8 @@
     </property>
     <addaction name="actionEditTLK"/>
     <addaction name="actionEditJRL"/>
+    <addaction name="separator"/>
+    <addaction name="actionFileSearch"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -824,6 +826,11 @@
    </property>
    <property name="text">
     <string>Edit Journal</string>
+   </property>
+  </action>
+  <action name="actionFileSearch">
+   <property name="text">
+    <string>File Search</string>
    </property>
   </action>
  </widget>
