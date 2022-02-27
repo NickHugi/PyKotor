@@ -55,6 +55,9 @@ class NSSEditor(Editor):
         self.ui.codeEdit.setTabStopDistance(QFontMetricsF(self.ui.codeEdit.font()).horizontalAdvance(' ') * NSSEditor.TAB_SIZE)
         self.ui.codeEdit.textChanged.connect(self.onTextChanged)
 
+        self.ui.functionSearchEdit.textChanged.connect(self.onFunctionSearch)
+        self.ui.constantSearchEdit.textChanged.connect(self.onConstantSearch)
+
         QShortcut("Ctrl+Shift+S", self).activated.connect(self.compileCurrentScript)
         QShortcut("Ctrl+I", self).activated.connect(self.onInsertShortcut)
 
@@ -229,6 +232,18 @@ class NSSEditor(Editor):
             self.insertSelectedFunction()
         elif self.ui.tabWidget.currentIndex() == 1:
             self.insertSelectedConstant()
+
+    def onFunctionSearch(self) -> None:
+        string = self.ui.functionSearchEdit.text()
+        for i in range(self.ui.functionList.count()):
+            item = self.ui.functionList.item(i)
+            item.setHidden(string not in item.text())
+
+    def onConstantSearch(self) -> None:
+        string = self.ui.constantSearchEdit.text()
+        for i in range(self.ui.constantList.count()):
+            item = self.ui.constantList.item(i)
+            item.setHidden(string not in item.text())
 
 
 class LineNumberArea(QWidget):
