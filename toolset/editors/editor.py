@@ -247,13 +247,13 @@ class LoadFromModuleDialog(QDialog):
         for resource in capsule:
             if resource.restype() not in supported:
                 continue
-            filename = resource.resref() + "." + resource.restype().extension
+            filename = resource.resname() + "." + resource.restype().extension
             item = QListWidgetItem(filename)
             item.resource = resource
             self.ui.resourceList.addItem(item)
 
     def resref(self) -> str:
-        return self.ui.resourceList.currentItem().resource.resref()
+        return self.ui.resourceList.currentItem().resource.resname()
 
     def restype(self) -> ResourceType:
         return self.ui.resourceList.currentItem().resource.restype()
