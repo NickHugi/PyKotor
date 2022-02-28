@@ -56,6 +56,7 @@ class GeometryEditor(Editor):
             SurfaceMaterial.DIRT:           QColor(0x444444),
             SurfaceMaterial.GRASS:          QColor(0x444444),
             SurfaceMaterial.STONE:          QColor(0x444444),
+            SurfaceMaterial.WOOD:           QColor(0x444444),
             SurfaceMaterial.WATER:          QColor(0x444444),
             SurfaceMaterial.NON_WALK:       QColor(0x222222),
             SurfaceMaterial.TRANSPARENT:    QColor(0x222222),

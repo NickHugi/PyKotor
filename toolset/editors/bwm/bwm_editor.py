@@ -42,6 +42,7 @@ class BWMEditor(Editor):
             SurfaceMaterial.DIRT:           QColor(0x800000),
             SurfaceMaterial.GRASS:          QColor(0x33cc33),
             SurfaceMaterial.STONE:          QColor(0x808080),
+            SurfaceMaterial.WOOD:           QColor(0x5e260c),
             SurfaceMaterial.WATER:          QColor(0x0066ff),
             SurfaceMaterial.NON_WALK:       QColor(0xff00ff),
             SurfaceMaterial.TRANSPARENT:    QColor(0xb3ffff),
@@ -250,7 +251,7 @@ class WalkmeshRenderer(QWidget):
         pen = QPen(QColor(0x111111), 1, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap) if not self.hideEdges else QPen(QtCore.Qt.NoPen)
         painter.setPen(pen)
 
-        color = QColor(self.materialColors[face.material])
+        color = QColor(self.materialColor(face.material))
         painter.setBrush(QBrush(color))
 
         v1 = self.toRenderCoords(face.v1.x, face.v1.y)
@@ -370,3 +371,5 @@ class WalkmeshRenderer(QWidget):
     def zoom(self, amount: float) -> None:
         self.setZoom(self._zoom + amount)
 
+    def materialColor(self, material: SurfaceMaterial) -> QColor:
+        return self.materialColors[material] if material in self.materialColors else QColor(255, 0, 255)
