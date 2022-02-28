@@ -123,7 +123,6 @@ class ToolWindow(QMainWindow):
         self.texturesModel = TextureListModel()
         self.ui.texturesList.setModel(self.texturesModel.proxyModel())
 
-        self._clearModels()
         self.reloadSettings()
 
         self.checkForUpdates(True)
@@ -431,7 +430,8 @@ class ToolWindow(QMainWindow):
         """
         self.ui.gameCombo.setCurrentIndex(index)
 
-        self._clearModels()
+        self.ui.modulesCombo.setModel(QStandardItemModel())
+        self.ui.overrideFolderCombo.clear()
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
         self.active = None
