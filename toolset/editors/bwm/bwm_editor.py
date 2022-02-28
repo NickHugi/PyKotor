@@ -59,7 +59,6 @@ class BWMEditor(Editor):
         self.ui.drawArea.materialColors = self.materialColors
         self.rebuildMaterials()
 
-
         self.new()
 
     def _setupSignals(self) -> None:

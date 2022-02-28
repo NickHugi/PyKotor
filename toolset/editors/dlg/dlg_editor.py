@@ -31,6 +31,7 @@ class DLGEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+        self._setupInstallation(installation)
 
         self._focused: bool = False
         self._dlg: DLG = DLG()
@@ -47,8 +48,6 @@ class DLGEditor(Editor):
 
         # This boolean is used to prevent events firing onNodeUpdate() when values are changed programatically
         self.acceptUpdates: bool = False
-
-        self.setInstallation(installation)
 
         self.new()
 
@@ -197,7 +196,7 @@ class DLGEditor(Editor):
         super().new()
         self._loadDLG(DLG())
 
-    def setInstallation(self, installation: HTInstallation):
+    def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
 
         self.ui.script1Param1Spin.setEnabled(installation.tsl)

@@ -35,8 +35,7 @@ class UTCEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        self.setInstallation(installation)
+        self._setupInstallation(installation)
 
         self._utc = UTC()
 
@@ -54,6 +53,93 @@ class UTCEditor(Editor):
         self.ui.inventoryButton.clicked.connect(self.openInventory)
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
+
+    def _setupInstallation(self, installation: HTInstallation):
+        self._installation = installation
+
+        # Load required 2da files if they have not been loaded already
+        required = [HTInstallation.TwoDA_APPEARANCES, HTInstallation.TwoDA_SOUNDSETS, HTInstallation.TwoDA_PORTRAITS,
+                    HTInstallation.TwoDA_SUBRACES, HTInstallation.TwoDA_SPEEDS, HTInstallation.TwoDA_FACTIONS,
+                    HTInstallation.TwoDA_GENDERS, HTInstallation.TwoDA_PERCEPTIONS, HTInstallation.TwoDA_CLASSES,
+                    HTInstallation.TwoDA_FEATS, HTInstallation.TwoDA_POWERS]
+        installation.htBatchCache2DA(required)
+
+        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_APPEARANCES)
+        soundsets = installation.htGetCache2DA(HTInstallation.TwoDA_SOUNDSETS)
+        portraits = installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
+        subraces = installation.htGetCache2DA(HTInstallation.TwoDA_SUBRACES)
+        speeds = installation.htGetCache2DA(HTInstallation.TwoDA_SPEEDS)
+        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        genders = installation.htGetCache2DA(HTInstallation.TwoDA_GENDERS)
+        perceptions = installation.htGetCache2DA(HTInstallation.TwoDA_PERCEPTIONS)
+        classes = installation.htGetCache2DA(HTInstallation.TwoDA_CLASSES)
+        feats = installation.htGetCache2DA(HTInstallation.TwoDA_FEATS)
+        powers = installation.htGetCache2DA(HTInstallation.TwoDA_POWERS)
+
+        self.ui.appearanceSelect.clear()
+        [self.ui.appearanceSelect.addItem(label.replace("_", " ")) for label in appearances.get_column("label")]
+
+        self.ui.soundsetSelect.clear()
+        [self.ui.soundsetSelect.addItem(label.replace("_", " ")) for label in soundsets.get_column("label")]
+
+        self.ui.portraitSelect.clear()
+        [self.ui.portraitSelect.addItem(baseresref) for baseresref in portraits.get_column("baseresref")]
+
+        self.ui.raceSelect.addItems(["Droid", "Human"])
+
+        self.ui.subraceSelect.clear()
+        [self.ui.subraceSelect.addItem(label) for label in subraces.get_column("label")]
+
+        self.ui.speedSelect.clear()
+        [self.ui.speedSelect.addItem(label) for label in speeds.get_column("label")]
+
+        self.ui.factionSelect.clear()
+        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
+
+        self.ui.genderSelect.clear()
+        [self.ui.genderSelect.addItem(label.replace("_", " ").title().replace("Gender ", "")) for label in genders.get_column("constant")]
+
+        self.ui.perceptionSelect.clear()
+        [self.ui.perceptionSelect.addItem(label) for label in perceptions.get_column("label")]
+
+        self.ui.class1Select.clear()
+        [self.ui.class1Select.addItem(label) for label in classes.get_column("label")]
+
+        self.ui.class2Select.clear()
+        self.ui.class2Select.addItem("[None]")
+        [self.ui.class2Select.addItem(label) for label in classes.get_column("label")]
+
+        self.ui.featList.clear()
+        for feat in feats:
+            stringref = feat.get_integer("name", 0)
+            text = installation.talktable().string(stringref) if stringref != 0 else feat.get_string("label")
+            text = "[Unused Feat ID: {}]".format(feat.label()) if text == "" else text
+            item = QListWidgetItem(text)
+            item.setData(QtCore.Qt.UserRole, feat.label())
+            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            item.setCheckState(QtCore.Qt.Unchecked)
+            self.ui.featList.addItem(item)
+        self.ui.featList.setSortingEnabled(True)
+        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
+
+        self.ui.powerList.clear()
+        for power in powers:
+            stringref = power.get_integer("name", 0)
+            text = installation.talktable().string(stringref) if stringref != 0 else power.get_string("label")
+            text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
+            text = "[Unused Power ID: {}]".format(power.label()) if text == "" else text
+            item = QListWidgetItem(text)
+            item.setData(QtCore.Qt.UserRole, power.label())
+            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            item.setCheckState(QtCore.Qt.Unchecked)
+            self.ui.powerList.addItem(item)
+        self.ui.powerList.setSortingEnabled(True)
+        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
+
+        self.ui.noReorientateCheckbox.setVisible(installation.tsl)
+        self.ui.noBlockCheckbox.setVisible(installation.tsl)
+        self.ui.hologramCheckbox.setVisible(installation.tsl)
+        self.ui.k2onlyBox.setVisible(installation.tsl)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -271,93 +357,6 @@ class UTCEditor(Editor):
         super().new()
         self._loadUTC(UTC())
         self.updateItemCount()
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
-
-        # Load required 2da files if they have not been loaded already
-        required = [HTInstallation.TwoDA_APPEARANCES, HTInstallation.TwoDA_SOUNDSETS, HTInstallation.TwoDA_PORTRAITS,
-                    HTInstallation.TwoDA_SUBRACES, HTInstallation.TwoDA_SPEEDS, HTInstallation.TwoDA_FACTIONS,
-                    HTInstallation.TwoDA_GENDERS, HTInstallation.TwoDA_PERCEPTIONS, HTInstallation.TwoDA_CLASSES,
-                    HTInstallation.TwoDA_FEATS, HTInstallation.TwoDA_POWERS]
-        installation.htBatchCache2DA(required)
-
-        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_APPEARANCES)
-        soundsets = installation.htGetCache2DA(HTInstallation.TwoDA_SOUNDSETS)
-        portraits = installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-        subraces = installation.htGetCache2DA(HTInstallation.TwoDA_SUBRACES)
-        speeds = installation.htGetCache2DA(HTInstallation.TwoDA_SPEEDS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        genders = installation.htGetCache2DA(HTInstallation.TwoDA_GENDERS)
-        perceptions = installation.htGetCache2DA(HTInstallation.TwoDA_PERCEPTIONS)
-        classes = installation.htGetCache2DA(HTInstallation.TwoDA_CLASSES)
-        feats = installation.htGetCache2DA(HTInstallation.TwoDA_FEATS)
-        powers = installation.htGetCache2DA(HTInstallation.TwoDA_POWERS)
-
-        self.ui.appearanceSelect.clear()
-        [self.ui.appearanceSelect.addItem(label.replace("_", " ")) for label in appearances.get_column("label")]
-
-        self.ui.soundsetSelect.clear()
-        [self.ui.soundsetSelect.addItem(label.replace("_", " ")) for label in soundsets.get_column("label")]
-
-        self.ui.portraitSelect.clear()
-        [self.ui.portraitSelect.addItem(baseresref) for baseresref in portraits.get_column("baseresref")]
-
-        self.ui.raceSelect.addItems(["Droid", "Human"])
-
-        self.ui.subraceSelect.clear()
-        [self.ui.subraceSelect.addItem(label) for label in subraces.get_column("label")]
-
-        self.ui.speedSelect.clear()
-        [self.ui.speedSelect.addItem(label) for label in speeds.get_column("label")]
-
-        self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
-
-        self.ui.genderSelect.clear()
-        [self.ui.genderSelect.addItem(label.replace("_", " ").title().replace("Gender ", "")) for label in genders.get_column("constant")]
-
-        self.ui.perceptionSelect.clear()
-        [self.ui.perceptionSelect.addItem(label) for label in perceptions.get_column("label")]
-
-        self.ui.class1Select.clear()
-        [self.ui.class1Select.addItem(label) for label in classes.get_column("label")]
-
-        self.ui.class2Select.clear()
-        self.ui.class2Select.addItem("[None]")
-        [self.ui.class2Select.addItem(label) for label in classes.get_column("label")]
-
-        self.ui.featList.clear()
-        for feat in feats:
-            stringref = feat.get_integer("name", 0)
-            text = installation.talktable().string(stringref) if stringref != 0 else feat.get_string("label")
-            text = "[Unused Feat ID: {}]".format(feat.label()) if text == "" else text
-            item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, feat.label())
-            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(QtCore.Qt.Unchecked)
-            self.ui.featList.addItem(item)
-        self.ui.featList.setSortingEnabled(True)
-        self.ui.featList.sortItems(QtCore.Qt.AscendingOrder)
-
-        self.ui.powerList.clear()
-        for power in powers:
-            stringref = power.get_integer("name", 0)
-            text = installation.talktable().string(stringref) if stringref != 0 else power.get_string("label")
-            text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
-            text = "[Unused Power ID: {}]".format(power.label()) if text == "" else text
-            item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, power.label())
-            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
-            item.setCheckState(QtCore.Qt.Unchecked)
-            self.ui.powerList.addItem(item)
-        self.ui.powerList.setSortingEnabled(True)
-        self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
-
-        self.ui.noReorientateCheckbox.setVisible(installation.tsl)
-        self.ui.noBlockCheckbox.setVisible(installation.tsl)
-        self.ui.hologramCheckbox.setVisible(installation.tsl)
-        self.ui.k2onlyBox.setVisible(installation.tsl)
 
     def randomizeFirstname(self) -> None:
         ltr_resname = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"

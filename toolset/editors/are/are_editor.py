@@ -25,7 +25,8 @@ class AREEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self.setInstallation(installation)
+        self._setupInstallation(installation)
+
         self._are: ARE = ARE()
 
         self.new()
@@ -55,7 +56,7 @@ class AREEditor(Editor):
         self.ui.dirtColor3Button.clicked.connect(lambda: self.changeColor(self.ui.dirtColor3Spin))
         self.ui.dirtColor3Spin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.dirtColor3))
 
-    def setInstallation(self, installation: HTInstallation) -> None:
+    def _setupInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
 
         cameras = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)

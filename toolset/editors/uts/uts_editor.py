@@ -24,11 +24,10 @@ class UTSEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+        self._setupInstallation(installation)
 
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
-
-        self.setInstallation(installation)
 
         self._uts = UTS()
 
@@ -53,6 +52,9 @@ class UTSEditor(Editor):
         self.ui.playRandomRadio.toggled.connect(self.changePlay)
         self.ui.playSpecificRadio.toggled.connect(self.changePlay)
         self.ui.playEverywhereRadio.toggled.connect(self.changePlay)
+
+    def _setupInstallation(self, installation: HTInstallation) -> None:
+        self._installation = installation
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -163,9 +165,6 @@ class UTSEditor(Editor):
     def new(self) -> None:
         super().new()
         self._loadUTS(UTS())
-
-    def setInstallation(self, installation: HTInstallation) -> None:
-        self._installation = installation
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)

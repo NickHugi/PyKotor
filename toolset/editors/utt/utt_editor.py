@@ -21,8 +21,7 @@ class UTTEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        self.setInstallation(installation)
+        self._setupInstallation(installation)
 
         self._utt = UTT()
 
@@ -32,6 +31,22 @@ class UTTEditor(Editor):
         self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+
+    def _setupInstallation(self, installation: HTInstallation):
+        self._installation = installation
+
+        cursors = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
+        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        traps = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
+
+        self.ui.cursorSelect.clear()
+        [self.ui.cursorSelect.addItem(label) for label in cursors.get_column("label")]
+
+        self.ui.factionSelect.clear()
+        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
+
+        self.ui.trapSelect.clear()
+        [self.ui.trapSelect.addItem(label.replace("TRAP_", "").replace("_", " ").title()) for label in traps.get_column("label")]
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -122,22 +137,6 @@ class UTTEditor(Editor):
     def new(self) -> None:
         super().new()
         self._loadUTT(UTT())
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
-
-        cursors = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        traps = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
-
-        self.ui.cursorSelect.clear()
-        [self.ui.cursorSelect.addItem(label) for label in cursors.get_column("label")]
-
-        self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
-
-        self.ui.trapSelect.clear()
-        [self.ui.trapSelect.addItem(label.replace("TRAP_", "").replace("_", " ").title()) for label in traps.get_column("label")]
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)

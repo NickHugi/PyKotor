@@ -38,10 +38,10 @@ class JRLEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+        self._setupInstallation(installation)
 
         self._jrl: JRL = JRL()
         self._model: QStandardItemModel = QStandardItemModel(self)
-        self.setInstallation(installation)
 
         self.ui.journalTree.setModel(self._model)
 
@@ -95,7 +95,7 @@ class JRLEditor(Editor):
         self._jrl = JRL()
         self._model.clear()
 
-    def setInstallation(self, installation: HTInstallation) -> None:
+    def _setupInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
 
         planets = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)

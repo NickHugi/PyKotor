@@ -25,8 +25,7 @@ class UTMEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        self.setInstallation(installation)
+        self._setupInstallation(installation)
 
         self._utm = UTM()
 
@@ -37,6 +36,9 @@ class UTMEditor(Editor):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
+
+    def _setupInstallation(self, installation: HTInstallation):
+        self._installation = installation
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -86,9 +88,6 @@ class UTMEditor(Editor):
     def new(self) -> None:
         super().new()
         self._loadUTM(UTM())
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)

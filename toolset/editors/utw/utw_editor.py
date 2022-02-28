@@ -20,7 +20,7 @@ class UTWEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-        self.setInstallation(installation)
+        self._setupInstallation(installation)
 
         self._utw = UTW()
 
@@ -31,6 +31,9 @@ class UTWEditor(Editor):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.noteChangeButton.clicked.connect(self.changeNote)
+
+    def _setupInstallation(self, installation: HTInstallation):
+        self._installation = installation
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -70,9 +73,6 @@ class UTWEditor(Editor):
         write_gff(gff, data)
 
         return data
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)

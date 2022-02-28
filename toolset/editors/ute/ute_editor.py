@@ -21,8 +21,7 @@ class UTEEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        self.setInstallation(installation)
+        self._setupInstallation(installation)
 
         self._ute = UTE()
 
@@ -36,6 +35,18 @@ class UTEEditor(Editor):
         self.ui.spawnSelect.currentIndexChanged.connect(self.setContinuous)
         self.ui.addCreatureButton.clicked.connect(self.addCreature)
         self.ui.removeCreatureButton.clicked.connect(self.removeSelectedCreature)
+
+    def _setupInstallation(self, installation: HTInstallation):
+        self._installation = installation
+
+        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+        difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
+
+        self.ui.difficultySelect.clear()
+        [self.ui.difficultySelect.addItem(label) for label in difficulties.get_column("label")]
+
+        self.ui.factionSelect.clear()
+        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -132,18 +143,6 @@ class UTEEditor(Editor):
     def new(self) -> None:
         super().new()
         self._loadUTE(UTE())
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
-
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-        difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
-
-        self.ui.difficultySelect.clear()
-        [self.ui.difficultySelect.addItem(label) for label in difficulties.get_column("label")]
-
-        self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)

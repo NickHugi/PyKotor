@@ -26,8 +26,7 @@ class UTIEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        self.setInstallation(installation)
+        self._setupInstallation(installation)
 
         self._uti = UTI()
 
@@ -40,6 +39,36 @@ class UTIEditor(Editor):
         self.ui.editPropertyButton.clicked.connect(self.editProperty)
         self.ui.removePropertyButton.clicked.connect(self.removeSelectedProperty)
         self.ui.addPropertyButton.clicked.connect(self.addSelectedProperty)
+
+    def _setupInstallation(self, installation: HTInstallation):
+        self._installation = installation
+
+        required = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
+        installation.htBatchCache2DA(required)
+
+        baseitems = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+        itemProperties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+
+        self.ui.baseSelect.clear()
+        [self.ui.baseSelect.addItem(label.replace("_", " ")) for label in baseitems.get_column("label")]
+
+        self.ui.availablePropertyList.clear()
+        for i in range(itemProperties.get_height()):
+            item = QTreeWidgetItem([UTIEditor.propertyName(installation, i)])
+            self.ui.availablePropertyList.addTopLevelItem(item)
+
+            subtypeResname = itemProperties.get_cell(i, "subtyperesref")
+            if subtypeResname == "":
+                item.setData(0, QtCore.Qt.UserRole, i)
+                continue
+
+            subtype = installation.htGetCache2DA(subtypeResname)
+            for j in range(subtype.get_height()):
+                name = UTIEditor.subpropertyName(installation, i, j)
+                child = QTreeWidgetItem([name])
+                child.setData(0, QtCore.Qt.UserRole, i)
+                child.setData(0, QtCore.Qt.UserRole + 1, j)
+                item.addChild(child)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -113,36 +142,6 @@ class UTIEditor(Editor):
     def new(self) -> None:
         super().new()
         self._loadUTI(UTI())
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
-
-        required = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
-        installation.htBatchCache2DA(required)
-
-        baseitems = installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-        itemProperties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
-
-        self.ui.baseSelect.clear()
-        [self.ui.baseSelect.addItem(label.replace("_", " ")) for label in baseitems.get_column("label")]
-
-        self.ui.availablePropertyList.clear()
-        for i in range(itemProperties.get_height()):
-            item = QTreeWidgetItem([UTIEditor.propertyName(installation, i)])
-            self.ui.availablePropertyList.addTopLevelItem(item)
-
-            subtypeResname = itemProperties.get_cell(i, "subtyperesref")
-            if subtypeResname == "":
-                item.setData(0, QtCore.Qt.UserRole, i)
-                continue
-
-            subtype = installation.htGetCache2DA(subtypeResname)
-            for j in range(subtype.get_height()):
-                name = UTIEditor.subpropertyName(installation, i, j)
-                child = QTreeWidgetItem([name])
-                child.setData(0, QtCore.Qt.UserRole, i)
-                child.setData(0, QtCore.Qt.UserRole + 1, j)
-                item.addChild(child)
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)

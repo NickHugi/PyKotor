@@ -23,8 +23,8 @@ class UTDEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+        self._setupInstallation(installation)
 
-        self.setInstallation(installation)
         self._utd = UTD()
 
         self.new()
@@ -34,6 +34,28 @@ class UTDEditor(Editor):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
+
+    def _setupInstallation(self, installation: HTInstallation):
+        self._installation = installation
+
+        # Load required 2da files if they have not been loaded already
+        required = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
+        installation.htBatchCache2DA(required)
+
+        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
+        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
+
+        self.ui.appearanceSelect.clear()
+        [self.ui.appearanceSelect.addItem(label.replace("_", " ")) for label in appearances.get_column("label")]
+
+        self.ui.factionSelect.clear()
+        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
+
+        self.ui.notBlastableCheckbox.setVisible(installation.tsl)
+        self.ui.difficultyModSpin.setVisible(installation.tsl)
+        self.ui.difficultySpin.setVisible(installation.tsl)
+        self.ui.difficultyLabel.setVisible(installation.tsl)
+        self.ui.difficultyModLabel.setVisible(installation.tsl)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -150,28 +172,6 @@ class UTDEditor(Editor):
     def new(self) -> None:
         super().new()
         self._loadUTD(UTD())
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
-
-        # Load required 2da files if they have not been loaded already
-        required = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
-        installation.htBatchCache2DA(required)
-
-        appearances = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
-        factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
-
-        self.ui.appearanceSelect.clear()
-        [self.ui.appearanceSelect.addItem(label.replace("_", " ")) for label in appearances.get_column("label")]
-
-        self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
-
-        self.ui.notBlastableCheckbox.setVisible(installation.tsl)
-        self.ui.difficultyModSpin.setVisible(installation.tsl)
-        self.ui.difficultySpin.setVisible(installation.tsl)
-        self.ui.difficultyLabel.setVisible(installation.tsl)
-        self.ui.difficultyModLabel.setVisible(installation.tsl)
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
