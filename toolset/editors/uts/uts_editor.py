@@ -22,7 +22,7 @@ class UTSEditor(Editor):
 
         self.ui = uts_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setup_menus()
+        self._setupMenus()
         self._setupSignals()
 
         self.player = QMediaPlayer(self)

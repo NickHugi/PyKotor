@@ -32,7 +32,7 @@ class Editor(QMainWindow):
     savedFile = QtCore.pyqtSignal(object, object, object, object)
     loadedFile = QtCore.pyqtSignal(object, object, object, object)
 
-    def __init__(self, parent, title: str, read_supported: List[ResourceType], write_supported: List[ResourceType],
+    def __init__(self, parent, title: str, readSupported: List[ResourceType], writeSupported: List[ResourceType],
                  installation: Optional[Installation] = None):
         super().__init__(parent)
 
@@ -40,31 +40,31 @@ class Editor(QMainWindow):
         self._resref: Optional[str] = None
         self._restype: Optional[ResourceType] = None
         self._revert: Optional[bytes] = None
-        self._read_supported: List[ResourceType] = read_supported
-        self._write_supported: List[ResourceType] = write_supported
+        self._readSupported: List[ResourceType] = readSupported
+        self._writeSupported: List[ResourceType] = writeSupported
         self._config: Configuration = Configuration()
         self._installation: Optional[Installation] = installation
 
-        self._editor_title = title
+        self._editorTitle = title
         self.setWindowTitle(title)
 
         self._saveFilter: str = "All valid files ("
-        for resource in write_supported:
-            self._saveFilter += "*.{}{}".format(resource.extension, "" if write_supported[-1] == resource else " ")
+        for resource in writeSupported:
+            self._saveFilter += "*.{}{}".format(resource.extension, "" if writeSupported[-1] == resource else " ")
         self._saveFilter += " *.erf *.mod *.rim);;"
-        for resource in write_supported:
+        for resource in writeSupported:
             self._saveFilter += "{} File (*.{});;".format(resource.category, resource.extension)
         self._saveFilter += "Save into module (*.erf *.mod *.rim)"
 
         self._openFilter: str = "All valid files ("
-        for resource in read_supported:
-            self._openFilter += "*.{}{}".format(resource.extension, "" if read_supported[-1] == resource else " ")
+        for resource in readSupported:
+            self._openFilter += "*.{}{}".format(resource.extension, "" if readSupported[-1] == resource else " ")
         self._openFilter += " *.erf *.mod *.rim);;"
-        for resource in read_supported:
+        for resource in readSupported:
             self._openFilter += "{} File (*.{});;".format(resource.category, resource.extension)
         self._openFilter += "Load from module (*.erf *.mod *.rim)"
 
-    def _setup_menus(self) -> None:
+    def _setupMenus(self) -> None:
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "New": action.triggered.connect(self.new)
             if action.text() == "Open": action.triggered.connect(self.open)
@@ -87,11 +87,11 @@ class Editor(QMainWindow):
         installationName = "No Installation" if self._installation is None else self._installation.name
 
         if self._filepath is None:
-            self.setWindowTitle(self._editor_title)
+            self.setWindowTitle(self._editorTitle)
         elif self.encapsulated():
-            self.setWindowTitle("{}/{}.{} - {} - {}".format(os.path.basename(self._filepath), self._resref, self._restype.extension, installationName, self._editor_title))
+            self.setWindowTitle("{}/{}.{} - {} - {}".format(os.path.basename(self._filepath), self._resref, self._restype.extension, installationName, self._editorTitle))
         else:
-            self.setWindowTitle("{}.{} - {} - {}".format(self._resref, self._restype.extension, installationName, self._editor_title))
+            self.setWindowTitle("{}.{} - {} - {}".format(self._resref, self._restype.extension, installationName, self._editorTitle))
 
     def saveAs(self) -> None:
         filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
@@ -101,9 +101,9 @@ class Editor(QMainWindow):
             if encapsulated:
                 if self._resref is None:
                     self._resref = "new"
-                    self._restype = self._write_supported[0]
+                    self._restype = self._writeSupported[0]
 
-                dialog2 = SaveToModuleDialog(self._resref, self._restype, self._write_supported)
+                dialog2 = SaveToModuleDialog(self._resref, self._restype, self._writeSupported)
                 if dialog2.exec_():
                     self._resref = dialog2.resref()
                     self._restype = dialog2.restype()
@@ -159,7 +159,7 @@ class Editor(QMainWindow):
             encapsulated = filepath.endswith(".erf") or filepath.endswith(".mod") or filepath.endswith(".rim")
             encapsulated = encapsulated and "Load from module (*.erf *.mod *.rim)" in self._openFilter
             if encapsulated:
-                dialog = LoadFromModuleDialog(Capsule(filepath), self._read_supported)
+                dialog = LoadFromModuleDialog(Capsule(filepath), self._readSupported)
                 if dialog.exec_():
                     self.load(filepath, dialog.resref(), dialog.restype(), dialog.data())
             else:

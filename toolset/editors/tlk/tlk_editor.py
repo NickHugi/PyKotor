@@ -21,7 +21,7 @@ class TLKEditor(Editor):
 
         self.ui = tlk_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setup_menus()
+        self._setupMenus()
         self._setupSignals()
 
         self.ui.searchBox.setVisible(False)

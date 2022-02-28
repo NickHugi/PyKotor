@@ -18,7 +18,7 @@ class UTWEditor(Editor):
 
         self.ui = utw_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setup_menus()
+        self._setupMenus()
         self._setupSignals()
 
         iconPath = ":/images/icons/k2/waypoint.png" if self._installation.tsl else ":/images/icons/k1/waypoint.png"

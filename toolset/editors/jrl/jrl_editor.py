@@ -36,7 +36,7 @@ class JRLEditor(Editor):
 
         self.ui = jrl_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setup_menus()
+        self._setupMenus()
         self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"

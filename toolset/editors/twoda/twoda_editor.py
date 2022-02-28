@@ -21,7 +21,7 @@ class TwoDAEditor(Editor):
 
         self.ui = twoda_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
-        self._setup_menus()
+        self._setupMenus()
         self._setupSignals()
 
         self.ui.filterBox.setVisible(False)
