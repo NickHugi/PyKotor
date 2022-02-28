@@ -14,16 +14,12 @@ from editors.utw import utw_editor_ui
 class UTWEditor(Editor):
     def __init__(self, parent: QWidget, installation: HTInstallation = None):
         supported = [ResourceType.UTW]
-        super().__init__(parent, "Waypoint Editor", supported, supported, installation)
+        super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
         self.ui = utw_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconPath = ":/images/icons/k2/waypoint.png" if self._installation.tsl else ":/images/icons/k1/waypoint.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
-
         self.setInstallation(installation)
 
         self._utw = UTW()

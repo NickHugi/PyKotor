@@ -30,7 +30,7 @@ class GFFEditor(Editor):
                      ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                      ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,
                      ResourceType.JRL, ResourceType.ITP]
-        super().__init__(parent, "GFF Editor", supported, supported, installation)
+        super().__init__(parent, "GFF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
         self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
@@ -39,10 +39,6 @@ class GFFEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.ui.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 

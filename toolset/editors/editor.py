@@ -1,4 +1,3 @@
-import io
 import os
 import traceback
 from abc import abstractmethod
@@ -6,19 +5,19 @@ from copy import deepcopy
 from typing import List, Union, Optional
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QKeyEvent, QMouseEvent
-from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMenu, QMessageBox, QMenuBar, QListWidgetItem, QAction, \
+from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPixmap, QIcon
+from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QListWidgetItem, \
     QShortcut, QLineEdit, QWidget, QPlainTextEdit
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.erf import write_erf, load_erf, ERFType, ERF
-from pykotor.resource.formats.rim import load_rim, write_rim, RIM
+from pykotor.resource.formats.erf import write_erf, load_erf, ERFType
+from pykotor.resource.formats.rim import load_rim, write_rim
 from pykotor.resource.formats.tlk import load_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
 from data.configuration import Configuration
+from data.installation import HTInstallation
 from editors import savetomodule_ui, loadfrommodule_ui, locstring_ui
 
 
@@ -32,8 +31,8 @@ class Editor(QMainWindow):
     savedFile = QtCore.pyqtSignal(object, object, object, object)
     loadedFile = QtCore.pyqtSignal(object, object, object, object)
 
-    def __init__(self, parent, title: str, readSupported: List[ResourceType], writeSupported: List[ResourceType],
-                 installation: Optional[Installation] = None):
+    def __init__(self, parent, title: str, iconName: str, readSupported: List[ResourceType],
+                 writeSupported: List[ResourceType], installation: Optional[HTInstallation] = None):
         super().__init__(parent)
 
         self._filepath: Optional[str] = None
@@ -47,6 +46,7 @@ class Editor(QMainWindow):
 
         self._editorTitle = title
         self.setWindowTitle(title)
+        self._setupIcon(iconName)
 
         self._saveFilter: str = "All valid files ("
         for resource in writeSupported:
@@ -79,6 +79,11 @@ class Editor(QMainWindow):
         QShortcut("Ctrl+Shift+S", self).activated.connect(self.saveAs)
         QShortcut("Ctrl+R", self).activated.connect(self.revert)
         QShortcut("Ctrl+Q", self).activated.connect(self.exit)
+
+    def _setupIcon(self, iconName: str) -> None:
+        iconVersion = "x" if self._installation is None else "2" if self._installation.tsl else "1"
+        iconPath = ":/images/icons/k{}/{}.png".format(iconVersion, iconName)
+        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
     def encapsulated(self) -> bool:
         return self._filepath.endswith(".rim") or self._filepath.endswith(".erf") or self._filepath.endswith(".mod")

@@ -15,15 +15,12 @@ from editors.ute import ute_editor_ui
 class UTEEditor(Editor):
     def __init__(self, parent: QWidget, installation: HTInstallation = None):
         supported = [ResourceType.UTE]
-        super().__init__(parent, "Trigger Editor", supported, supported, installation)
+        super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         self.ui = ute_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconPath = ":/images/icons/k2/trigger.png" if self._installation.tsl else ":/images/icons/k1/trigger.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.setInstallation(installation)
 

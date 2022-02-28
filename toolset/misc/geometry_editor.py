@@ -33,16 +33,12 @@ class VertexSelection(NamedTuple):
 class GeometryEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
         supported = [ResourceType.GIT]
-        super().__init__(parent, "Geometry Editor", supported, supported, installation)
+        super().__init__(parent, "Geometry Editor", "trigger", supported, supported, installation)
 
         self.ui = geometry_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/trigger.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self._bwm: Optional[BWM] = None
         self._git: Optional[GIT] = None

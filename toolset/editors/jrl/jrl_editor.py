@@ -31,17 +31,13 @@ class JRLEditor(Editor):
 
     def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
         supported = [ResourceType.JRL]
-        super().__init__(parent, "Journal Editor", supported, supported, installation)
+        super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
         self.ui = jrl_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/journal.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self._jrl: JRL = JRL()
         self._model: QStandardItemModel = QStandardItemModel(self)

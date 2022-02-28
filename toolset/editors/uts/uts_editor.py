@@ -18,7 +18,7 @@ from editors.uts import uts_editor_ui
 class UTSEditor(Editor):
     def __init__(self, parent: QWidget, installation: HTInstallation = None):
         supported = [ResourceType.UTS]
-        super().__init__(parent, "Sound Editor", supported, supported, installation)
+        super().__init__(parent, "Sound Editor", "sound", supported, supported, installation)
 
         self.ui = uts_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -27,9 +27,6 @@ class UTSEditor(Editor):
 
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
-
-        iconPath = ":/images/icons/k2/sound.png" if self._installation.tsl else ":/images/icons/k1/sound.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.setInstallation(installation)
 

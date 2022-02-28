@@ -21,17 +21,13 @@ from editors.erf import erf_editor_ui
 class ERFEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
         supported = [ResourceType.ERF, ResourceType.MOD, ResourceType.RIM]
-        super().__init__(parent, "ERF Editor", supported, supported, installation)
+        super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
         self.ui = erf_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.model = QStandardItemModel(self)
         self.ui.tableView.setModel(self.model)

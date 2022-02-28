@@ -24,16 +24,12 @@ _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2
 class BWMEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
-        super().__init__(parent, "Walkmesh Painter", supported, supported, installation)
+        super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
         self.ui = bwm_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/walkmesh.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self._bwm: Optional[BWM] = None
 

@@ -13,17 +13,13 @@ from editors.txt import txt_editor_ui
 class TXTEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
         supported = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
-        super().__init__(parent, "Text Editor", supported, supported, installation)
+        super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
         self.ui = txt_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.new()
 

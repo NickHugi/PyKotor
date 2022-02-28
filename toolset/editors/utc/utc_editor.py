@@ -29,15 +29,12 @@ from editors.utc import utc_editor_ui
 class UTCEditor(Editor):
     def __init__(self, parent: QWidget, installation: HTInstallation = None):
         supported = [ResourceType.UTC]
-        super().__init__(parent, "Creature Editor", supported, supported, installation)
+        super().__init__(parent, "Creature Editor", "creature", supported, supported, installation)
 
         self.ui = utc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconPath = ":/images/icons/k2/creature.png" if self._installation.tsl else ":/images/icons/k1/creature.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.setInstallation(installation)
 

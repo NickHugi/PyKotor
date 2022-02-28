@@ -17,15 +17,12 @@ from editors.utd import utd_editor_ui
 class UTDEditor(Editor):
     def __init__(self, parent: QWidget, installation: HTInstallation = None):
         supported = [ResourceType.UTD]
-        super().__init__(parent, "Door Editor", supported, supported, installation)
+        super().__init__(parent, "Door Editor", "door", supported, supported, installation)
 
         self.ui = utd_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconPath = ":/images/icons/k2/door.png" if self._installation.tsl else ":/images/icons/k1/door.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.setInstallation(installation)
         self._utd = UTD()

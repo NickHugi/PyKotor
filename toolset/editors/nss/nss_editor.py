@@ -30,16 +30,12 @@ class NSSEditor(Editor):
 
     def __init__(self, parent: QWidget, installation: Optional[HTInstallation]):
         supported = [ResourceType.NSS, ResourceType.NCS]
-        super().__init__(parent, "Script Editor", supported, supported, installation)
+        super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
         self.ui = nss_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/script.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self._length: int = 0
         self._config: Configuration = Configuration()

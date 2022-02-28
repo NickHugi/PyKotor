@@ -14,7 +14,7 @@ from editors.ssf import sff_editor_ui
 class SSFEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
         supported = [ResourceType.SSF]
-        super().__init__(parent, "Soundset Editor", supported, supported, installation)
+        super().__init__(parent, "Soundset Editor", "soundset", supported, supported, installation)
 
         self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
 
@@ -22,10 +22,6 @@ class SSFEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/soundset.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.new()
 

@@ -19,15 +19,12 @@ from editors.utm import utm_editor_ui
 class UTMEditor(Editor):
     def __init__(self, parent: QWidget, installation: HTInstallation = None):
         supported = [ResourceType.UTM]
-        super().__init__(parent, "Merchant Editor", supported, supported, installation)
+        super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
         self.ui = utm_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconPath = ":/images/icons/k2/merchant.png" if self._installation.tsl else ":/images/icons/k1/merchant.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.setInstallation(installation)
 

@@ -15,16 +15,12 @@ from editors.tpc import tpc_editor_ui
 class TPCEditor(Editor):
     def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
         supported = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
-        super().__init__(parent, "Texture Viewer", supported, supported, installation)
+        super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
         self.ui = tpc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
-        iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self._tpc: TPC = TPC()
         self._tpc.set_single(256, 256, bytes([0 for i in range(256*256*4)]), TPCTextureFormat.RGBA)

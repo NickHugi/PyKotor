@@ -21,15 +21,12 @@ from editors.utp import utp_editor_ui
 class UTPEditor(Editor):
     def __init__(self, parent: QWidget, installation: HTInstallation = None):
         supported = [ResourceType.UTP]
-        super().__init__(parent, "Placeable Editor", supported, supported, installation)
+        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
 
         self.ui = utp_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
-
-        iconPath = ":/images/icons/k2/placeable.png" if self._installation.tsl else ":/images/icons/k1/placeable.png"
-        self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.setInstallation(installation)
 
