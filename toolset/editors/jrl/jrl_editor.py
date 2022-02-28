@@ -37,6 +37,7 @@ class JRLEditor(Editor):
         self.ui = jrl_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/journal.png".format(iconVersion)
@@ -44,12 +45,18 @@ class JRLEditor(Editor):
 
         self._jrl: JRL = JRL()
         self._model: QStandardItemModel = QStandardItemModel(self)
-
         self.setInstallation(installation)
 
         self.ui.journalTree.setModel(self._model)
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.journalTree.selectionModel().selectionChanged.connect(self.onSelectionChanged)
         self.ui.journalTree.customContextMenuRequested.connect(self.onContextMenuRequested)
+
+        self.ui.categoryNameButton.clicked.connect(self.changeQuestName)
+        self.ui.entryTextEdit.doubleClicked.connect(self.changeEntryText)
 
         # Make sure all these signals are excusively fired through user interaction NOT when values change
         # programmatically, otherwise values bleed into other items when onSelectionChanged() fires.
@@ -62,12 +69,7 @@ class JRLEditor(Editor):
         self.ui.entryXpSpin.editingFinished.connect(self.onValueUpdated)
         self.ui.entryEndCheck.clicked.connect(self.onValueUpdated)
 
-        self.ui.categoryNameButton.clicked.connect(self.changeQuestName)
-        self.ui.entryTextEdit.doubleClicked.connect(self.changeEntryText)
-
         QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

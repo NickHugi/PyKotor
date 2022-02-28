@@ -22,6 +22,8 @@ class TwoDAEditor(Editor):
         self.ui = twoda_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
+
         self.ui.filterBox.setVisible(False)
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
@@ -32,6 +34,9 @@ class TwoDAEditor(Editor):
         self.proxyModel = SortFilterProxyModel(self)
         self.proxyModel.setSourceModel(self.model)
 
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.filterEdit.textEdited.connect(self.doFilter)
         self.ui.actionToggleFilter.triggered.connect(self.toggleFilter)
         self.ui.actionCopy.triggered.connect(self.copySelection)
@@ -46,8 +51,6 @@ class TwoDAEditor(Editor):
         QShortcut("Ctrl+V", self).activated.connect(self.pasteSelection)
         QShortcut("Ctrl+I", self).activated.connect(self.insertRow)
         QShortcut("Ctrl+D", self).activated.connect(self.removeSelectedRows)
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

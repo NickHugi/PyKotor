@@ -30,6 +30,7 @@ class DLGEditor(Editor):
         self.ui = dlg_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/dialog.png".format(iconVersion)
@@ -47,22 +48,15 @@ class DLGEditor(Editor):
 
         self.buffer: QBuffer = QBuffer()
         self.player: QMediaPlayer = QMediaPlayer(self)
-        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()))
-        self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()))
-
-        self.ui.actionReloadTree.triggered.connect(lambda: self._loadDLG(self._dlg))
-
-        self.ui.addStuntButton.clicked.connect(self.onAddStuntClicked)
-        self.ui.removeStuntButton.clicked.connect(self.onRemoveStuntClicked)
-        self.ui.editStuntButton.clicked.connect(self.onEditStuntClicked)
-
-        self.ui.addAnimButton.clicked.connect(self.onAddAnimClicked)
-        self.ui.removeAnimButton.clicked.connect(self.onRemoveAnimClicked)
-        self.ui.editAnimButton.clicked.connect(self.onEditAnimClicked)
 
         # This boolean is used to prevent events firing onNodeUpdate() when values are changed programatically
         self.acceptUpdates: bool = False
 
+        self.setInstallation(installation)
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         # Events to update link/nodes connected to its respective tree view item
         self.ui.script1ResrefEdit.textEdited.connect(self.onNodeUpdate)
         self.ui.script1Param1Spin.valueChanged.connect(self.onNodeUpdate)
@@ -114,11 +108,20 @@ class DLGEditor(Editor):
         self.ui.fadeTypeSpin.valueChanged.connect(self.onNodeUpdate)
         self.ui.commentsEdit.textChanged.connect(self.onNodeUpdate)
 
+        self.ui.soundButton.clicked.connect(lambda: self.playSound(self.ui.soundEdit.text()))
+        self.ui.voiceButton.clicked.connect(lambda: self.playSound(self.ui.voiceEdit.text()))
+
+        self.ui.actionReloadTree.triggered.connect(lambda: self._loadDLG(self._dlg))
+
+        self.ui.addStuntButton.clicked.connect(self.onAddStuntClicked)
+        self.ui.removeStuntButton.clicked.connect(self.onRemoveStuntClicked)
+        self.ui.editStuntButton.clicked.connect(self.onEditStuntClicked)
+
+        self.ui.addAnimButton.clicked.connect(self.onAddAnimClicked)
+        self.ui.removeAnimButton.clicked.connect(self.onRemoveAnimClicked)
+        self.ui.editAnimButton.clicked.connect(self.onEditAnimClicked)
+
         QShortcut("Del", self).activated.connect(self.deleteSelectedNode)
-
-        self.setInstallation(installation)
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

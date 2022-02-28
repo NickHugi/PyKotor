@@ -20,10 +20,18 @@ class UTEEditor(Editor):
         self.ui = ute_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconPath = ":/images/icons/k2/trigger.png" if self._installation.tsl else ":/images/icons/k1/trigger.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
+        self.setInstallation(installation)
+
+        self._ute = UTE()
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
@@ -31,12 +39,6 @@ class UTEEditor(Editor):
         self.ui.spawnSelect.currentIndexChanged.connect(self.setContinuous)
         self.ui.addCreatureButton.clicked.connect(self.addCreature)
         self.ui.removeCreatureButton.clicked.connect(self.removeSelectedCreature)
-
-        self.setInstallation(installation)
-
-        self._ute = UTE()
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

@@ -23,6 +23,7 @@ class UTSEditor(Editor):
         self.ui = uts_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         self.player = QMediaPlayer(self)
         self.buffer = QBuffer(self)
@@ -30,6 +31,13 @@ class UTSEditor(Editor):
         iconPath = ":/images/icons/k2/sound.png" if self._installation.tsl else ":/images/icons/k1/sound.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
+        self.setInstallation(installation)
+
+        self._uts = UTS()
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.addSoundButton.clicked.connect(self.addSound)
         self.ui.removeSoundButton.clicked.connect(self.removeSound)
         self.ui.playSoundButton.clicked.connect(self.playSound)
@@ -48,12 +56,6 @@ class UTSEditor(Editor):
         self.ui.playRandomRadio.toggled.connect(self.changePlay)
         self.ui.playSpecificRadio.toggled.connect(self.changePlay)
         self.ui.playEverywhereRadio.toggled.connect(self.changePlay)
-
-        self.setInstallation(installation)
-
-        self._uts = UTS()
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

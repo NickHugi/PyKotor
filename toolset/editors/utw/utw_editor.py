@@ -19,20 +19,22 @@ class UTWEditor(Editor):
         self.ui = utw_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconPath = ":/images/icons/k2/waypoint.png" if self._installation.tsl else ":/images/icons/k1/waypoint.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
-
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
-        self.ui.noteChangeButton.clicked.connect(self.changeNote)
 
         self.setInstallation(installation)
 
         self._utw = UTW()
 
         self.new()
+
+    def _setupSignals(self) -> None:
+        self.ui.nameChangeButton.clicked.connect(self.changeName)
+        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.noteChangeButton.clicked.connect(self.changeNote)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

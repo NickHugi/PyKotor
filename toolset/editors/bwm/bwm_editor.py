@@ -29,6 +29,7 @@ class BWMEditor(Editor):
         self.ui = bwm_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/walkmesh.png".format(iconVersion)
@@ -62,14 +63,15 @@ class BWMEditor(Editor):
         self.ui.drawArea.materialColors = self.materialColors
         self.rebuildMaterials()
 
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.transList.itemSelectionChanged.connect(self.onTransitionSelect)
         self.ui.drawArea.mouseDragged.connect(lambda x, y: self.changeFace(self._bwm.faceAt(x, y)))
         self.ui.drawArea.mouseMoved.connect(self.mouseMoved)
-        # self.ui.drawArea.mouseScrolled.connect(lambda scroll: self.ui.drawArea.zoom(scroll//50))
         QShortcut("+", self).activated.connect(lambda: self.ui.drawArea.zoom(2))
         QShortcut("-", self).activated.connect(lambda: self.ui.drawArea.zoom(-2))
-
-        self.new()
 
     def rebuildMaterials(self) -> None:
         self.ui.materialList.clear()

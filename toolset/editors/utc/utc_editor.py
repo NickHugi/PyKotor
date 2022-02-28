@@ -34,10 +34,18 @@ class UTCEditor(Editor):
         self.ui = utc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconPath = ":/images/icons/k2/creature.png" if self._installation.tsl else ":/images/icons/k1/creature.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
+        self.setInstallation(installation)
+
+        self._utc = UTC()
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.firstnameRandomButton.clicked.connect(self.randomizeFirstname)
         self.ui.firstnameChangeButton.clicked.connect(self.changeFirstname)
         self.ui.lastnameRandomButton.clicked.connect(self.randomizeLastname)
@@ -49,12 +57,6 @@ class UTCEditor(Editor):
         self.ui.inventoryButton.clicked.connect(self.openInventory)
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
-
-        self.setInstallation(installation)
-
-        self._utc = UTC()
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

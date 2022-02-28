@@ -21,11 +21,15 @@ class SSFEditor(Editor):
         self.ui = sff_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/soundset.png".format(iconVersion)
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.battlecry1StrrefSpin.valueChanged.connect(self.updateTextBoxes)
         self.ui.battlecry2StrrefSpin.valueChanged.connect(self.updateTextBoxes)
         self.ui.battlecry3StrrefSpin.valueChanged.connect(self.updateTextBoxes)
@@ -56,8 +60,6 @@ class SSFEditor(Editor):
         self.ui.poisonedStrrefSpin.valueChanged.connect(self.updateTextBoxes)
 
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

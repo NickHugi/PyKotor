@@ -24,12 +24,18 @@ class AREEditor(Editor):
         self.ui = are_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
         self.setInstallation(installation)
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
+        self._are: ARE = ARE()
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
 
@@ -40,23 +46,19 @@ class AREEditor(Editor):
         self.ui.lightDiffuseButton.clicked.connect(lambda: self.changeColor(self.ui.lightDiffuseSpin))
         self.ui.lightDiffuseSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.lightDiffuseColor))
         self.ui.lightDynamicButton.clicked.connect(lambda: self.changeColor(self.ui.lightDynamicSpin))
-        self.ui.lightDynamicSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.lightDynamicColor))
+        self.ui.lightDynamicSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.lightDynamicColor))
         self.ui.grassAmbientButton.clicked.connect(lambda: self.changeColor(self.ui.grassAmbientSpin))
-        self.ui.grassAmbientSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.grassAmbientColor))
+        self.ui.grassAmbientSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.grassAmbientColor))
         self.ui.grassDiffuseButton.clicked.connect(lambda: self.changeColor(self.ui.grassDiffuseSpin))
-        self.ui.grassDiffuseSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.grassDiffuseColor))
+        self.ui.grassDiffuseSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.grassDiffuseColor))
         self.ui.grassEmissiveButton.clicked.connect(lambda: self.changeColor(self.ui.grassEmissiveSpin))
-        self.ui.grassEmissiveSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.grassEmissiveColor))
+        self.ui.grassEmissiveSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.grassEmissiveColor))
         self.ui.dirtColor1Button.clicked.connect(lambda: self.changeColor(self.ui.dirtColor1Spin))
         self.ui.dirtColor1Spin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.dirtColor1))
         self.ui.dirtColor2Button.clicked.connect(lambda: self.changeColor(self.ui.dirtColor2Spin))
         self.ui.dirtColor2Spin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.dirtColor2))
         self.ui.dirtColor3Button.clicked.connect(lambda: self.changeColor(self.ui.dirtColor3Spin))
         self.ui.dirtColor3Spin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.dirtColor3))
-
-        self._are: ARE = ARE()
-
-        self.new()
 
     def setInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation

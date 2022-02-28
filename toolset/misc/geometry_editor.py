@@ -38,6 +38,7 @@ class GeometryEditor(Editor):
         self.ui = geometry_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/trigger.png".format(iconVersion)
@@ -76,11 +77,9 @@ class GeometryEditor(Editor):
         self.ui.drawArea.materialColors = self.materialColors
         self.ui.drawArea.hideEdges = True
 
-        self.setupSignals()
-
         self.new()
 
-    def setupSignals(self) -> None:
+    def _setupSignals(self) -> None:
         self.ui.actionSelectLayout.triggered.connect(self.openLayout)
 
         self.ui.drawArea.mousePressed.connect(self.onWalkmeshMousePressed)

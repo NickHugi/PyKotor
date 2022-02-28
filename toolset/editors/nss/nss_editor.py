@@ -35,6 +35,7 @@ class NSSEditor(Editor):
         self.ui = nss_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/script.png".format(iconVersion)
@@ -45,6 +46,11 @@ class NSSEditor(Editor):
         self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)
         self.setInstallation(self._installation)
 
+        self.ui.codeEdit.setTabStopDistance(QFontMetricsF(self.ui.codeEdit.font()).horizontalAdvance(' ') * NSSEditor.TAB_SIZE)
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.actionCompile.triggered.connect(self.compileCurrentScript)
         self.ui.tabWidget.currentChanged.connect(self.changeDescription)
         self.ui.constantList.itemSelectionChanged.connect(self.changeDescription)
@@ -52,16 +58,13 @@ class NSSEditor(Editor):
         self.ui.constantList.doubleClicked.connect(self.insertSelectedConstant)
         self.ui.functionList.doubleClicked.connect(self.insertSelectedFunction)
 
-        self.ui.codeEdit.setTabStopDistance(QFontMetricsF(self.ui.codeEdit.font()).horizontalAdvance(' ') * NSSEditor.TAB_SIZE)
-        self.ui.codeEdit.textChanged.connect(self.onTextChanged)
-
         self.ui.functionSearchEdit.textChanged.connect(self.onFunctionSearch)
         self.ui.constantSearchEdit.textChanged.connect(self.onConstantSearch)
 
+        self.ui.codeEdit.textChanged.connect(self.onTextChanged)
+
         QShortcut("Ctrl+Shift+S", self).activated.connect(self.compileCurrentScript)
         QShortcut("Ctrl+I", self).activated.connect(self.onInsertShortcut)
-
-        self.new()
 
     def setInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation

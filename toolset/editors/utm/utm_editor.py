@@ -24,20 +24,22 @@ class UTMEditor(Editor):
         self.ui = utm_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconPath = ":/images/icons/k2/merchant.png" if self._installation.tsl else ":/images/icons/k1/merchant.png"
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
-
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
-        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
-        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
-        self.ui.inventoryButton.clicked.connect(self.openInventory)
 
         self.setInstallation(installation)
 
         self._utm = UTM()
 
         self.new()
+
+    def _setupSignals(self) -> None:
+        self.ui.nameChangeButton.clicked.connect(self.changeName)
+        self.ui.tagGenerateButton.clicked.connect(self.generateTag)
+        self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
+        self.ui.inventoryButton.clicked.connect(self.openInventory)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

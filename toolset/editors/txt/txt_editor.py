@@ -19,12 +19,16 @@ class TXTEditor(Editor):
         self.ui = txt_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
         self.new()
+
+    def _setupSignals(self) -> None:
+        ...
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

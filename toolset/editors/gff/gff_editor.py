@@ -38,11 +38,20 @@ class GFFEditor(Editor):
         self.ui = gff_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
+        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+
+        self.ui.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self.ui.treeView.setSortingEnabled(True)
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
         self.model: QStandardItemModel = QStandardItemModel(self)
@@ -71,17 +80,11 @@ class GFFEditor(Editor):
         self.ui.removeSubstringButton.clicked.connect(self.removeSubstring)
         self.ui.substringEdit.textChanged.connect(self.substringEdited)
 
-        self.ui.typeCombo.activated.connect(self.typeChanged)
-
-        self.ui.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.treeView.customContextMenuRequested.connect(self.requestContextMenu)
 
-        self.ui.treeView.sortByColumn(0, QtCore.Qt.AscendingOrder)
-        self.ui.treeView.setSortingEnabled(True)
+        self.ui.typeCombo.activated.connect(self.typeChanged)
 
         QShortcut("Del", self).activated.connect(self.removeSelectedNodes)
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

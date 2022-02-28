@@ -22,6 +22,8 @@ class TLKEditor(Editor):
         self.ui = tlk_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
+
         self.ui.searchBox.setVisible(False)
         self.ui.jumpBox.setVisible(False)
 
@@ -34,6 +36,9 @@ class TLKEditor(Editor):
         self.proxyModel.setSourceModel(self.model)
         self.ui.talkTable.setModel(self.proxyModel)
 
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.actionGoTo.triggered.connect(self.toggleGotoBox)
         self.ui.jumpButton.clicked.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
         self.ui.actionFind.triggered.connect(self.toggleFilterBox)
@@ -43,8 +48,6 @@ class TLKEditor(Editor):
         self.ui.talkTable.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
         self.ui.soundEdit.textChanged.connect(self.updateEntry)
-
-        self.new()
 
         QShortcut("Ctrl+F", self).activated.connect(self.toggleFilterBox)
         QShortcut("Ctrl+G", self).activated.connect(self.toggleGotoBox)

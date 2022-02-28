@@ -73,6 +73,8 @@ class ToolWindow(QMainWindow):
 
         self.ui = mainwindow_ui.Ui_MainWindow()
         self.ui.setupUi(self)
+        self._setupSignals()
+
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
 
         self.active: Optional[HTInstallation] = None
@@ -97,6 +99,36 @@ class ToolWindow(QMainWindow):
 
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
+
+        self._core_models: Dict[str, ResourceModel] = {}
+        self.ui.coreTree.setModel(ResourceModel())
+        self.ui.coreTree.header().resizeSection(1, 40)
+        self.ui.coreTree.setSortingEnabled(True)
+        self.ui.coreTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+        self.modulesModel = ResourceModel()
+        self.ui.modulesTree.setModel(self.modulesModel.proxyModel())
+        self.ui.modulesTree.header().resizeSection(1, 40)
+        self.ui.modulesTree.setSortingEnabled(True)
+        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+        self._modules_list: Dict[str, QStandardItemModel] = {}
+        self.ui.modulesCombo.setModel(QStandardItemModel())
+
+        self.overrideModel = ResourceModel()
+        self.ui.overrideTree.setModel(self.overrideModel.proxyModel())
+        self.ui.overrideTree.header().resizeSection(1, 40)
+        self.ui.overrideTree.setSortingEnabled(True)
+        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+        self.texturesModel = TextureListModel()
+        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
+
+        self._clearModels()
+        self.reloadSettings()
+
+        self.checkForUpdates(True)
+
+    def _setupSignals(self) -> None:
         self.ui.resourceTabs.currentChanged.connect(self.resizeColumns)
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
         self.ui.extractButton.clicked.connect(self.extractFromSelected)
@@ -144,37 +176,10 @@ class ToolWindow(QMainWindow):
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
 
-        self._core_models: Dict[str, ResourceModel] = {}
-        self.ui.coreTree.setModel(ResourceModel())
-        self.ui.coreTree.header().resizeSection(1, 40)
-        self.ui.coreTree.setSortingEnabled(True)
-        self.ui.coreTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.ui.coreTree.doubleClicked.connect(self.openFromSelected)
-
-        self.modulesModel = ResourceModel()
-        self.ui.modulesTree.setModel(self.modulesModel.proxyModel())
-        self.ui.modulesTree.header().resizeSection(1, 40)
-        self.ui.modulesTree.setSortingEnabled(True)
-        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.ui.modulesTree.doubleClicked.connect(self.openFromSelected)
-        self._modules_list: Dict[str, QStandardItemModel] = {}
-        self.ui.modulesCombo.setModel(QStandardItemModel())
-
-        self.overrideModel = ResourceModel()
-        self.ui.overrideTree.setModel(self.overrideModel.proxyModel())
-        self.ui.overrideTree.header().resizeSection(1, 40)
-        self.ui.overrideTree.setSortingEnabled(True)
-        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
         self.ui.overrideTree.doubleClicked.connect(self.openFromSelected)
-
-        self.texturesModel = TextureListModel()
-        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
         self.ui.texturesList.doubleClicked.connect(self.openFromSelected)
-
-        self._clearModels()
-        self.reloadSettings()
-
-        self.checkForUpdates(True)
 
     def closeEvent(self, e: QCloseEvent) -> None:
         self.ui.texturesList.stop()

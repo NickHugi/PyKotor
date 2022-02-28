@@ -27,6 +27,7 @@ class ERFEditor(Editor):
         self.ui = erf_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setup_menus()
+        self._setupSignals()
 
         iconVersion = "x" if installation is None else "2" if installation.tsl else "1"
         iconPath = ":/images/icons/k{}/none.png".format(iconVersion)
@@ -35,6 +36,16 @@ class ERFEditor(Editor):
         self.model = QStandardItemModel(self)
         self.ui.tableView.setModel(self.model)
 
+        self._externalHandlers: List[ExternalUpdateEventHandler] = []
+        self._externalOpened: bool = False
+
+        # Disable saving file into module
+        self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim)", "")
+        self._openFilter = self._openFilter.replace(";;Load from module (*.erf *.mod *.rim)", "")
+
+        self.new()
+
+    def _setupSignals(self) -> None:
         self.ui.extractButton.clicked.connect(self.extractSelected)
         self.ui.loadButton.clicked.connect(self.selectFilesToAdd)
         self.ui.unloadButton.clicked.connect(self.removeSelected)
@@ -44,16 +55,7 @@ class ERFEditor(Editor):
         self.ui.tableView.resourceDropped.connect(self.addResources)
         self.ui.tableView.doubleClicked.connect(self.openSelected)
 
-        self._externalHandlers: List[ExternalUpdateEventHandler] = []
-        self._externalOpened: bool = False
-
         QShortcut("Del", self).activated.connect(self.removeSelected)
-
-        # Disable saving file into module
-        self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim)", "")
-        self._openFilter = self._openFilter.replace(";;Load from module (*.erf *.mod *.rim)", "")
-
-        self.new()
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
