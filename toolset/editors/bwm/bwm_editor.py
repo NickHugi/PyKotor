@@ -3,6 +3,7 @@ import struct
 from typing import Optional, Tuple, Dict, List
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon, QPixmap, QPaintEvent, QPainter, QPen, QColor, QPainterPath, QBrush, QMouseEvent, QImage, \
     QWheelEvent
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QShortcut
@@ -111,12 +112,12 @@ class BWMEditor(Editor):
         coords = self.ui.drawArea.toWalkmeshCoords(x, y)
         text = "(x: {0:.2f}, y: {0:.2f})".format(coords.x, coords.y)
         self.statusBar().showMessage(text + " Zoom: {}".format(self.ui.drawArea.currentZoom()))
+        self.ui.drawArea.invalidateCache()
 
     def changeFace(self, face: BWMFace):
         newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)
         if face and face.material != newMaterial:
             face.material = newMaterial
-            self.ui.drawArea.repaint()
 
     def onTransitionSelect(self) -> None:
         if self.ui.transList.currentItem():
@@ -161,6 +162,7 @@ class WalkmeshRenderer(QWidget):
         self._mousePressed: bool = False
         self._highlightTrans: Optional[BWMFace] = None
         self._highlightTrigger: Optional[GITTrigger] = None
+        self._walkmeshCache: Optional[QPixmap] = None
         self.hideEdges: bool = False
 
         self.cursor().setShape(QtCore.Qt.CrossCursor)
@@ -169,13 +171,20 @@ class WalkmeshRenderer(QWidget):
         for material in SurfaceMaterial._member_names_:
             self.materialColors[material] = QColor(0xFFFFFF)
 
+        self.repaintLoop()
+
+    def repaintLoop(self) -> None:
+        self.repaint()
+        QTimer.singleShot(33, self.repaintLoop)
+
+    def invalidateCache(self) -> None:
+        self._walkmeshCache = None
+
     def setHighlightedTrans(self, face: Optional[BWMFace]) -> None:
         self._highlightTrans = face
-        self.repaint()
 
     def setHighlightedTrigger(self, trigger: Optional[GITTrigger]) -> None:
         self._highlightTrigger = trigger
-        self.repaint()
 
     def setWalkmeshes(self, walkmeshes: List[BWM], positions: List[Vector3] = None):
         self._walkmeshes = walkmeshes
@@ -200,13 +209,14 @@ class WalkmeshRenderer(QWidget):
         width, height = self.zoomedSize()
         self.setMinimumWidth(width)
         self.setMinimumHeight(height)
-        self.repaint()
 
         # Fit all to screen
         sizeX = math.fabs(self._bbmax.x - self._bbmin.x)
         sizeY = math.fabs(self._bbmax.y - self._bbmin.y)
         zoom = min(self.window().width() / sizeX, self.window().height() / sizeY) if sizeX != 0 and sizeY != 0 else 6
         self.setZoom(zoom - 5)
+
+        self.invalidateCache()
 
     def setGit(self, git: GIT) -> None:
         self._git = git
@@ -219,21 +229,24 @@ class WalkmeshRenderer(QWidget):
         return int(width), int(height)
 
     def paintEvent(self, e: QPaintEvent) -> None:
-        painter = QPainter(self)
-        painter.setBrush(QBrush(QColor(0)))
-        painter.drawRect(0, 0, self.width(), self.height())
+        if self._walkmeshCache is None:
+            width, height = self.zoomedSize()
+            self._walkmeshCache = QPixmap(width, height)
+            painter = QPainter(self._walkmeshCache)
+            painter.setBrush(QColor(0, 0, 0))
+            painter.drawRect(0, 0, width, height)
+            for walkmesh in self._walkmeshes:
+                for face in walkmesh.faces:
+                    self._drawFace(painter, face)
 
-        for walkmesh in self._walkmeshes:
-            for face in walkmesh.faces:
-                self._drawFace(face)
+        painter = QPainter(self)
+        painter.drawPixmap(0, 0, self._walkmeshCache)
 
         if self._git is not None:
             for trigger in self._git.triggers:
                 self._drawTrigger(trigger)
 
-    def _drawFace(self, face: BWMFace) -> None:
-        painter = QPainter(self)
-
+    def _drawFace(self, painter: QPainter, face: BWMFace) -> None:
         pen = QPen(QColor(0x111111), 1, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap) if not self.hideEdges else QPen(QtCore.Qt.NoPen)
         painter.setPen(pen)
 
@@ -352,19 +365,8 @@ class WalkmeshRenderer(QWidget):
         self.setMinimumWidth(width)
         self.setMinimumHeight(height)
 
-        self.repaint()
+        self.invalidateCache()
 
     def zoom(self, amount: float) -> None:
-        self._zoom += amount
-        if self._zoom < 1:
-            self._zoom = 1
-        if self._zoom > 100:
-            self._zoom = 100
-
-        width, height = self.zoomedSize()
-        self.setMinimumWidth(width)
-        self.setMinimumHeight(height)
-
-        self.repaint()
-
+        self.setZoom(self._zoom + amount)
 
