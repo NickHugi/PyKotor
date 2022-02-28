@@ -539,6 +539,7 @@
     <addaction name="actionEditTLK"/>
     <addaction name="actionEditJRL"/>
     <addaction name="separator"/>
+    <addaction name="actionGeometryEditor"/>
     <addaction name="actionFileSearch"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -829,8 +830,19 @@
    </property>
   </action>
   <action name="actionFileSearch">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>File Search</string>
+   </property>
+  </action>
+  <action name="actionGeometryEditor">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Geometry Editor</string>
    </property>
   </action>
  </widget>

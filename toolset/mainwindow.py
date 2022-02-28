@@ -56,6 +56,7 @@ from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.audio_player import AudioPlayer
+from misc.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
 from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
@@ -138,6 +139,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
+        self.ui.actionGeometryEditor.triggered.connect(self.openGeometryEditor)
         self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
@@ -251,6 +253,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.actionEditTLK.setEnabled(self.active is not None)
         self.ui.actionEditJRL.setEnabled(self.active is not None)
+        self.ui.actionGeometryEditor.setEnabled(self.active is not None)
         self.ui.actionFileSearch.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
@@ -272,6 +275,10 @@ class ToolWindow(QMainWindow):
         Opens the about dialog.
         """
         About(self, PROGRAM_VERSION).exec_()
+
+    def openGeometryEditor(self) -> None:
+        editor = GeometryEditor(self, self.active)
+        editor.show()
 
     def openFileSearchDialog(self) -> None:
         """
