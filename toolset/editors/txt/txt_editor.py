@@ -30,7 +30,7 @@ class TXTEditor(Editor):
         super().load(filepath, resref, restype, data)
         try:
             # Try UTF-8 First - KotOR files typically do not use UTF8
-            self.ui.textEdit.setPlainText(data.decode('utf-8'))
+            self.ui.textEdit.setPlainText(data.decode("windows-1252"))
         except:
             # Slower, auto detect encoding
             encoding = chardet.detect(data)['encoding']

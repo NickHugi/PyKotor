@@ -86,7 +86,7 @@ class NSSEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         if restype == ResourceType.NSS:
-            self.ui.codeEdit.setPlainText(data.decode())
+            self.ui.codeEdit.setPlainText(data.decode("windows-1252"))
         elif restype == ResourceType.NCS:
             try:
                 source = decompileScript(data, self._installation.tsl)
