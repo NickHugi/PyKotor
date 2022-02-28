@@ -389,19 +389,20 @@ class BinaryReader:
         self.exceed_check(length)
         return self._stream.read(length)
 
-    def read_string(self, length: int) -> str:
+    def read_string(self, length: int, encoding: str = "windows-1252") -> str:
         """
         Reads a string from the stream with the specified length. Any null bytes and characters proceeding a null byte
         are trimmed from the final value and any unknown characters are ignored.
 
         Args:
             length: Amount of character to read.
+            encoding: Encoding of string to read.
 
         Returns:
             A string read from the stream.
         """
         self.exceed_check(length)
-        string = self._stream.read(length).decode('ascii', errors='ignore')
+        string = self._stream.read(length).decode(encoding, errors='ignore')
         if '\0' in string:
             string = string[:string.index('\0')].rstrip('\0')
             string = string.replace('\0', '')
@@ -982,14 +983,15 @@ class BinaryWriterFile(BinaryWriter):
         """
         self._stream.write(value)
 
-    def write_string(self, value: str, *, big: bool = False, prefix_length: int = 0, string_length: int = -1,
-                     padding: str = '\0') -> None:
+    def write_string(self, value: str, encoding: str = "windows-1252", *, big: bool = False, prefix_length: int = 0,
+                     string_length: int = -1, padding: str = '\0') -> None:
         """
         Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
         strings length.
 
         Args:
             value: The string to be written.
+            encoding: The encoding of the string to be written.
             prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
             big: Write the prefix length integer as big endian.
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
@@ -1015,7 +1017,7 @@ class BinaryWriterFile(BinaryWriter):
                 value += padding
             value = value[:string_length]
 
-        self._stream.write(value.encode('ascii'))
+        self._stream.write(value.encode(encoding))
 
     def write_line(self, indent: int, *args) -> None:
         """
