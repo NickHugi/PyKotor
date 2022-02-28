@@ -40,9 +40,9 @@ class BinaryReader:
         self.auto_close: bool = True
         self._stream.seek(offset)
 
-        true_size = self.true_size()
-        self._size: int = true_size if size is None else size
-        if true_size < self._size+offset:
+        available = self.true_size() - offset
+        self._size: int = available if size is None else size
+        if available > self.true_size():
             raise IOError("Specified size is greater than the number of available bytes.")
 
     def __enter__(self):
