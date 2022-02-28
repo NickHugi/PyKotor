@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from pykotor.resource.type import ResourceType
 
-from pykotor.common.geometry import Vector2, Vector3, Vector4
+from pykotor.common.geometry import Vector2, Vector3, Vector4, Polygon3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
 from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent
@@ -129,7 +129,7 @@ class GITTrigger:
     def __init__(self):
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
-        self.geometry: List[Vector3] = []
+        self.geometry: Polygon3 = Polygon3()
         self.tag: str = ""
         self.linked_to: str = ""
         self.linked_to_flags: GITModuleLink = GITModuleLink.NoLink
