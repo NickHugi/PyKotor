@@ -180,34 +180,32 @@ class ToolWindow(QMainWindow):
         self.ui.overrideTree.doubleClicked.connect(self.openFromSelected)
         self.ui.texturesList.doubleClicked.connect(self.openFromSelected)
 
+    # Overriden methods
     def closeEvent(self, e: QCloseEvent) -> None:
         self.ui.texturesList.stop()
 
-    def refreshTexturePackList(self):
-        self.ui.texturesCombo.clear()
-        for texturepack in self.active.texturepacks_list():
-            self.ui.texturesCombo.addItem(texturepack)
+    def resizeEvent(self, size: QtGui.QResizeEvent) -> None:
+        super().resizeEvent(size)
+        self.resizeColumns()
 
-    def changeTexturePack(self, texturepack: str):
-        self.texturesModel = TextureListModel()
-        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
+    def dropEvent(self, e: QtGui.QDropEvent) -> None:
+        if e.mimeData().hasUrls():
+            for url in e.mimeData().urls():
+                filepath = url.toLocalFile()
+                with open(filepath, 'rb') as file:
+                    resref, restype = ResourceIdentifier.from_path(filepath)
+                    data = file.read()
+                    self.openResourceEditor(filepath, resref, restype, data)
 
-        if texturepack == "":
-            return
+    def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
+        if e.mimeData().hasUrls():
+            for url in e.mimeData().urls():
+                with suppress(Exception):
+                    # Call from_path method as it will throw an error if the file extension is not recognized.
+                    ResourceIdentifier.from_path(url.toLocalFile())
+                    e.accept()
 
-        self.texturesModel.proxyModel().setFilterFixedString(self.ui.textureSearchEdit.text())
-        image = QImage(bytes([0 for i in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
-        icon = QIcon(QPixmap.fromImage(image))
-
-        for texture in self.active.texturepack_resources(texturepack):
-            if texture.restype() in [ResourceType.TPC, ResourceType.TGA]:
-                item = QStandardItem(icon, texture.resname())
-                item.setToolTip(texture.resname())
-                item.resource = texture
-                item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
-                self.texturesModel.appendRow(item)
-        self.ui.texturesList.setInstallation(self.active)
-
+    # Menu Bar
     def updateMenus(self) -> None:
         version = "x" if self.active is None else "2" if self.active.tsl else "1"
 
@@ -262,11 +260,6 @@ class ToolWindow(QMainWindow):
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
-    def reloadSettings(self) -> None:
-        self.config.reload()
-        self.ui.mdlDecompileCheckbox.setVisible(self.config.mdlAllowDecompile)
-        self.reloadInstallations()
-
     def openSettingsDialog(self) -> None:
         """
         Opens the Settings dialog and refresh installation combo list if changes.
@@ -274,11 +267,18 @@ class ToolWindow(QMainWindow):
         if Settings().exec_():
             self.reloadSettings()
 
-    def openAboutDialog(self) -> None:
+    def openActiveTalktable(self) -> None:
         """
-        Opens the about dialog.
+        Opens the talktable for the active (currently selected) installation. If there is no active information, show
+        a message box instead.
         """
-        About(self, PROGRAM_VERSION).exec_()
+        filepath = self.active.path() + "dialog.tlk"
+        data = BinaryReader.load_file(filepath)
+        self.openResourceEditor(filepath, "dialog", ResourceType.TLK, data)
+
+    def openActiveJournal(self) -> None:
+        res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+        self.openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data)
 
     def openGeometryEditor(self) -> None:
         editor = GeometryEditor(self, self.active)
@@ -312,33 +312,11 @@ class ToolWindow(QMainWindow):
                 elif selection.filepath().endswith(".bif"):
                     self.selectResource(self.ui.coreTree, selection)
 
-    def selectResource(self, tree: QTreeView, resource: FileResource) -> None:
-        model: ResourceModel = tree.model().sourceModel()
-
-        def select(parent, child):
-            tree.expand(parent)
-            tree.scrollTo(child)
-            tree.setCurrentIndex(child)
-
-        if tree == self.ui.coreTree:
-            self.ui.resourceTabs.setCurrentIndex(0)
-        elif tree == self.ui.modulesTree:
-            self.ui.resourceTabs.setCurrentIndex(1)
-            filename = os.path.basename(resource.filepath())
-            self.changeModule(filename)
-        elif tree == self.ui.overrideTree:
-            self.ui.resourceTabs.setCurrentIndex(2)
-            subfolder = ""
-            for folder in self.active.override_list():
-                if folder in resource.filepath() and len(subfolder) < len(folder):
-                    subfolder = folder
-            self.changeOverrideFolder(subfolder)
-
-        for item in model.allResourcesItems():
-            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
-                parentIndex = model.proxyModel().mapFromSource(item.parent().index())
-                itemIndex = model.proxyModel().mapFromSource(item.index())
-                QTimer.singleShot(0, lambda: select(parentIndex, itemIndex))
+    def openAboutDialog(self) -> None:
+        """
+        Opens the about dialog.
+        """
+        About(self, PROGRAM_VERSION).exec_()
 
     def checkForUpdates(self, silent: bool = False) -> None:
         """
@@ -367,18 +345,165 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Information, "Unable to fetch latest version.",
                             "Check if you are connected to the internet.", QMessageBox.Ok, self).exec_()
 
-    def openActiveTalktable(self) -> None:
+    # Modules Tab
+    def changeModule(self, module: str) -> None:
         """
-        Opens the talktable for the active (currently selected) installation. If there is no active information, show
-        a message box instead.
+        Updates the items in the module tree to the module specified.
         """
-        filepath = self.active.path() + "dialog.tlk"
-        data = BinaryReader.load_file(filepath)
-        self.openResourceEditor(filepath, "dialog", ResourceType.TLK, data)
 
-    def openActiveJournal(self) -> None:
-        res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-        self.openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data)
+        self.modulesModel.clear()
+        self.ui.moduleReloadButton.setEnabled(True)
+
+        if self.active is None or module is None or module == "" or module == "[None]":
+            self.ui.moduleReloadButton.setEnabled(False)
+            return
+
+        for resource in self.active.module_resources(module):
+            self.modulesModel.addResource(resource)
+
+        self.resizeColumns()
+
+    def reloadModule(self) -> None:
+        """
+        Reloads the files stored in the currently selected module and updates the data model.
+        """
+        module = self.ui.modulesCombo.currentData()
+        self.active.reload_module(module)
+
+        self.modulesModel.clear()
+        for resource in self.active.module_resources(module):
+            self.modulesModel.addResource(resource)
+
+        self.resizeColumns()
+
+    def refreshModuleList(self, reload: bool = True) -> None:
+        """
+        Refreshes the list of modules in the modulesCombo combobox.
+        """
+        if self.active is None:
+            return
+
+        if reload:
+            self.active.load_modules()
+
+        self._modules_list[self.active.name] = QStandardItemModel(self)
+        self._modules_list[self.active.name].appendRow(QStandardItem("[None]"))
+
+        if self.config.showModuleNames:
+            areaNames = self.active.module_names()
+            for module in self.active.modules_list():
+                item = QStandardItem("{} [{}]".format(areaNames[module], module))
+                item.setData(module, QtCore.Qt.UserRole)
+                self._modules_list[self.active.name].appendRow(item)
+        else:
+            for module in self.active.modules_list():
+                item = QStandardItem(module)
+                item.setData(module, QtCore.Qt.UserRole)
+                self._modules_list[self.active.name].appendRow()
+
+        self.ui.modulesCombo.setModel(self._modules_list[self.active.name])
+
+    # Override Tab
+    def changeOverrideFolder(self, folder: str) -> None:
+        self.overrideModel.clear()
+
+        if self.active is None:
+            return
+
+        folder = "" if folder == "[Root]" else folder
+
+        for resource in self.active.override_resources(folder):
+            self.overrideModel.addResource(resource)
+
+        self.resizeColumns()
+
+    def refreshOverrideList(self) -> None:
+        """
+        Refreshes the list of override directories in the overrideFolderCombo combobox.
+        """
+        self.active.load_override()
+
+        self.ui.overrideFolderCombo.clear()
+        self.ui.overrideFolderCombo.addItem("[Root]")
+        for directory in self.active.override_list():
+            if directory == "":
+                continue
+            self.ui.overrideFolderCombo.addItem(directory)
+
+    def reloadOverride(self) -> None:
+        """
+        Reloads the files stored in the active installation's override folder and updates the respective data model.
+        """
+        folder = self.ui.overrideFolderCombo.currentText()
+        folder = "" if folder == "[Root]" else folder
+
+        self.active.reload_override(folder)
+
+        self.overrideModel.clear()
+        for resource in self.active.override_resources(folder):
+            self.overrideModel.addResource(resource)
+
+        self.resizeColumns()
+
+    # Textures Tab
+    def refreshTexturePackList(self):
+        self.ui.texturesCombo.clear()
+        for texturepack in self.active.texturepacks_list():
+            self.ui.texturesCombo.addItem(texturepack)
+
+    def changeTexturePack(self, texturepack: str):
+        self.texturesModel = TextureListModel()
+        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
+
+        if texturepack == "":
+            return
+
+        self.texturesModel.proxyModel().setFilterFixedString(self.ui.textureSearchEdit.text())
+        image = QImage(bytes([0 for i in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
+        icon = QIcon(QPixmap.fromImage(image))
+
+        for texture in self.active.texturepack_resources(texturepack):
+            if texture.restype() in [ResourceType.TPC, ResourceType.TGA]:
+                item = QStandardItem(icon, texture.resname())
+                item.setToolTip(texture.resname())
+                item.resource = texture
+                item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
+                self.texturesModel.appendRow(item)
+        self.ui.texturesList.setInstallation(self.active)
+
+    # Other
+    def reloadSettings(self) -> None:
+        self.config.reload()
+        self.ui.mdlDecompileCheckbox.setVisible(self.config.mdlAllowDecompile)
+        self.reloadInstallations()
+
+    def selectResource(self, tree: QTreeView, resource: FileResource) -> None:
+        model: ResourceModel = tree.model().sourceModel()
+
+        def select(parent, child):
+            tree.expand(parent)
+            tree.scrollTo(child)
+            tree.setCurrentIndex(child)
+
+        if tree == self.ui.coreTree:
+            self.ui.resourceTabs.setCurrentIndex(0)
+        elif tree == self.ui.modulesTree:
+            self.ui.resourceTabs.setCurrentIndex(1)
+            filename = os.path.basename(resource.filepath())
+            self.changeModule(filename)
+        elif tree == self.ui.overrideTree:
+            self.ui.resourceTabs.setCurrentIndex(2)
+            subfolder = ""
+            for folder in self.active.override_list():
+                if folder in resource.filepath() and len(subfolder) < len(folder):
+                    subfolder = folder
+            self.changeOverrideFolder(subfolder)
+
+        for item in model.allResourcesItems():
+            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
+                parentIndex = model.proxyModel().mapFromSource(item.parent().index())
+                itemIndex = model.proxyModel().mapFromSource(item.index())
+                QTimer.singleShot(0, lambda: select(parentIndex, itemIndex))
 
     def resizeColumns(self) -> None:
         self.ui.coreTree.setColumnWidth(1, 10)
@@ -390,24 +515,6 @@ class ToolWindow(QMainWindow):
         self.ui.overrideTree.setColumnWidth(1, 10)
         self.ui.overrideTree.setColumnWidth(0, self.ui.overrideTree.width() - 80)
         self.ui.overrideTree.header().setSectionResizeMode(QHeaderView.Fixed)
-
-    def resizeEvent(self, size: QtGui.QResizeEvent) -> None:
-        super().resizeEvent(size)
-        self.resizeColumns()
-
-    def _clearModels(self) -> None:
-        """
-        Clears all data models for the different tabs.
-        """
-
-        self.ui.modulesCombo.setModel(QStandardItemModel())
-        self.ui.overrideFolderCombo.clear()
-        self.ui.overrideFolderCombo.addItem("[Root]")
-
-        self.modulesModel.clear()
-        self.overrideModel.clear()
-
-        self.resizeColumns()
 
     def reloadInstallations(self) -> None:
         """
@@ -491,104 +598,6 @@ class ToolWindow(QMainWindow):
                 self.updateMenus()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
-
-    def changeModule(self, module: str) -> None:
-        """
-        Updates the items in the module tree to the module specified.
-        """
-
-        self.modulesModel.clear()
-        self.ui.moduleReloadButton.setEnabled(True)
-
-        if self.active is None or module is None or module == "" or module == "[None]":
-            self.ui.moduleReloadButton.setEnabled(False)
-            return
-
-        for resource in self.active.module_resources(module):
-            self.modulesModel.addResource(resource)
-
-        self.resizeColumns()
-
-    def reloadModule(self) -> None:
-        """
-        Reloads the files stored in the currently selected module and updates the data model.
-        """
-        module = self.ui.modulesCombo.currentData()
-        self.active.reload_module(module)
-
-        self.modulesModel.clear()
-        for resource in self.active.module_resources(module):
-            self.modulesModel.addResource(resource)
-
-        self.resizeColumns()
-
-    def refreshModuleList(self, reload: bool = True) -> None:
-        """
-        Refreshes the list of modules in the modulesCombo combobox.
-        """
-        if self.active is None:
-            return
-
-        if reload:
-            self.active.load_modules()
-
-        self._modules_list[self.active.name] = QStandardItemModel(self)
-        self._modules_list[self.active.name].appendRow(QStandardItem("[None]"))
-
-        if self.config.showModuleNames:
-            areaNames = self.active.module_names()
-            for module in self.active.modules_list():
-                item = QStandardItem("{} [{}]".format(areaNames[module], module))
-                item.setData(module, QtCore.Qt.UserRole)
-                self._modules_list[self.active.name].appendRow(item)
-        else:
-            for module in self.active.modules_list():
-                item = QStandardItem(module)
-                item.setData(module, QtCore.Qt.UserRole)
-                self._modules_list[self.active.name].appendRow()
-
-        self.ui.modulesCombo.setModel(self._modules_list[self.active.name])
-
-    def changeOverrideFolder(self, folder: str) -> None:
-        self.overrideModel.clear()
-
-        if self.active is None:
-            return
-
-        folder = "" if folder == "[Root]" else folder
-
-        for resource in self.active.override_resources(folder):
-            self.overrideModel.addResource(resource)
-
-        self.resizeColumns()
-
-    def refreshOverrideList(self) -> None:
-        """
-        Refreshes the list of override directories in the overrideFolderCombo combobox.
-        """
-        self.active.load_override()
-
-        self.ui.overrideFolderCombo.clear()
-        self.ui.overrideFolderCombo.addItem("[Root]")
-        for directory in self.active.override_list():
-            if directory == "":
-                continue
-            self.ui.overrideFolderCombo.addItem(directory)
-
-    def reloadOverride(self) -> None:
-        """
-        Reloads the files stored in the active installation's override folder and updates the respective data model.
-        """
-        folder = self.ui.overrideFolderCombo.currentText()
-        folder = "" if folder == "[Root]" else folder
-
-        self.active.reload_override(folder)
-
-        self.overrideModel.clear()
-        for resource in self.active.override_resources(folder):
-            self.overrideModel.addResource(resource)
-
-        self.resizeColumns()
 
     def currentDataView(self) -> QAbstractItemView:
         """
@@ -933,23 +942,6 @@ class ToolWindow(QMainWindow):
         QMessageBox(QMessageBox.Critical, "Could not saved resource to ERF/MOD/RIM",
                     "Tried to save a resource '{}' into ".format(tempFilepath) +
                     "'{}' using an external editor.".format(modFilepath), QMessageBox.Ok, self).exec_()
-
-    def dropEvent(self, e: QtGui.QDropEvent) -> None:
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                filepath = url.toLocalFile()
-                with open(filepath, 'rb') as file:
-                    resref, restype = ResourceIdentifier.from_path(filepath)
-                    data = file.read()
-                    self.openResourceEditor(filepath, resref, restype, data)
-
-    def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
-        if e.mimeData().hasUrls():
-            for url in e.mimeData().urls():
-                with suppress(Exception):
-                    # Call from_path method as it will throw an error if the file extension is not recognized.
-                    ResourceIdentifier.from_path(url.toLocalFile())
-                    e.accept()
 
 
 class ResourceModel(QStandardItemModel):
