@@ -23,13 +23,12 @@ from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PIC
 from pykotor.gl.modelreader import gl_load_mdl
 from pykotor.gl.model import Model, Cube
 
-
 SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
 class Scene:
-    def __init__(self, module_root: str, installation: Installation):
+    def __init__(self, module: Module, installation: Installation):
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -38,23 +37,22 @@ class Scene:
         glCullFace(GL_BACK)
 
         self.installation: Installation = installation
-        self.textures: Dict[str, Texture] = { "NULL": Texture.from_color() }
+        self.textures: Dict[str, Texture] = {"NULL": Texture.from_color()}
         self.models: Dict[str, Model] = {}
         self.objects: List[RenderObject] = []
         self.selection: List[RenderObject] = []
+        self.module: Module = module
+        self.camera: Camera = Camera()
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
         self.select_shader: Shader = Shader(SELECT_VSHADER, SELECT_FSHADER)
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
-
-        self.camera: Camera = Camera()
 
         self.table_doors = load_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = load_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = load_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-        self.module: Module = Module(module_root, self.installation)
         for room in self.module.layout.resource().rooms:
             position = vec3(room.position.x, room.position.y, room.position.z)
             self.objects.append(RenderObject(room.model, position, data=room))
@@ -130,7 +128,7 @@ class Scene:
             r = int_rgb & 0xFF
             g = (int_rgb >> 8) & 0xFF
             b = (int_rgb >> 16) & 0xFF
-            color = vec3(r/255, g/255, b/255)
+            color = vec3(r / 255, g / 255, b / 255)
             self.picker_shader.set_vector3("colorId", color)
 
             self._picker_render_object(obj, mat4())
@@ -154,7 +152,8 @@ class Scene:
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
-            tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+            tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA,
+                                                   SearchLocation.CHITIN])
             self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(255, 255, 255)
         return self.textures[name]
 
@@ -236,7 +235,7 @@ class Camera:
         self.pitch: float = 0.0
         self.yaw: float = 0.0
         self.fov: float = 90.0
-        self.aspect: float = 16/9
+        self.aspect: float = 16 / 9
 
     def view(self) -> mat4:
         forward = self.forward()
@@ -257,10 +256,10 @@ class Camera:
         self.pitch += pitch
         self.yaw += yaw
 
-        if self.pitch > math.pi/2 - 0.01:
-            self.pitch = math.pi/2 - 0.01
-        elif self.pitch < -math.pi/2 + 0.01:
-            self.pitch = -math.pi/2 + 0.01
+        if self.pitch > math.pi / 2 - 0.01:
+            self.pitch = math.pi / 2 - 0.01
+        elif self.pitch < -math.pi / 2 + 0.01:
+            self.pitch = -math.pi / 2 + 0.01
 
     def forward(self) -> vec3:
         eye_x = math.cos(self.pitch) * math.sin(self.yaw)
@@ -279,4 +278,3 @@ class Camera:
         eye_x = math.cos(self.yaw) * math.cos(self.pitch)
         eye_z = math.sin(self.pitch)
         return vec3(0, 0, 1)
-

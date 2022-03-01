@@ -1,4 +1,4 @@
 glfw==2.5.0
 PyGLM==2.5.7
-PyKotor==0.22
+PyKotor==0.26
 PyOpenGL==3.1.5

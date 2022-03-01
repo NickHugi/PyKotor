@@ -7,6 +7,7 @@ from typing import Optional, List
 import glfw
 import glm
 from glm import vec3
+from pykotor.common.module import Module
 from pykotor.extract.installation import Installation
 
 from pykotor.gl.scene import Scene
@@ -36,7 +37,7 @@ class PyKotorWindow:
         self.key_move_down: bool = False
         self.key_move_boost: bool = False
 
-    def open(self, module_root: str, installation: Installation):
+    def open(self, module: Module):
         window = glfw.create_window(1280, 720, "PyKotorGL", None, None)
         if not window:
             glfw.terminate()
@@ -44,7 +45,7 @@ class PyKotorWindow:
 
         glfw.make_context_current(window)
 
-        self.scene = Scene(module_root, installation)
+        self.scene = Scene(module, module.installation())
         last = time.process_time()
 
         while not glfw.window_should_close(window):
@@ -162,7 +163,7 @@ class PyKotorWindow:
 if __name__ == "__main__":
     kotor_path = str(sys.argv[1])
     is_tsl = bool(sys.argv[2])
-    module = str(sys.argv[3])
+    module_root = str(sys.argv[3])
 
-    installation = Installation(kotor_path, "KotOR", is_tsl)
-    PyKotorWindow().open(module, installation)
+    installation = Installation(kotor_path)
+    PyKotorWindow().open(Module(module_root, installation))
