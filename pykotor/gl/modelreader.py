@@ -47,9 +47,10 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
         offset_to_vertices = mdl.read_uint32()
 
         element_data = []
-        mdl.seek(offset + 80 + 188)
+        mdl.seek(offset + 80 + 184)
+        element_offsets_count = mdl.read_uint32()
         offset_to_element_offsets = mdl.read_int32()
-        if offset_to_element_offsets != -1:
+        if offset_to_element_offsets != -1 and element_offsets_count > 0:
             mdl.seek(offset_to_element_offsets)
             offset_to_elements = mdl.read_uint32()
             mdl.seek(offset_to_elements)
@@ -67,7 +68,7 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
         mdl.seek(offset + 80 + 313)
         render = mdl.read_uint8()
 
-        if render and not walkmesh:
+        if render and not walkmesh and element_offsets_count > 0:
             mdx.seek(mdx_offset)
             vertex_data = mdx.read_bytes(mdx_block_size * vertex_count)
             node.mesh = Mesh(scene, node, texture, lightmap, vertex_data, element_data, mdx_block_size, mdx_data_bitflags,
