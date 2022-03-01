@@ -61,35 +61,27 @@ class PyKotorWindow:
             speed = 8 if self.key_move_boost else 3
             if self.key_move_forward:
                 xy_forward = self.scene.camera.forward() * delta * speed
-                xy_forward.z = 0
-                xy_forward = glm.normalize(xy_forward) * delta * speed
                 self.scene.camera.translate(xy_forward)
             elif self.key_move_backward:
                 xy_forward = self.scene.camera.forward() * delta * speed
-                xy_forward.z = 0
-                xy_forward = glm.normalize(xy_forward) * delta * speed
                 self.scene.camera.translate(-xy_forward)
             if self.key_move_right:
-                xy_sideward = self.scene.camera.sideward()
-                xy_sideward.z = 0
-                xy_sideward = glm.normalize(xy_sideward) * delta * speed
-                self.scene.camera.translate(-xy_sideward)
-            elif self.key_move_left:
-                xy_sideward = self.scene.camera.sideward()
-                xy_sideward.z = 0
-                xy_sideward = glm.normalize(xy_sideward) * delta * speed
+                xy_sideward = self.scene.camera.sideward() * delta * speed
                 self.scene.camera.translate(xy_sideward)
+            elif self.key_move_left:
+                xy_sideward = self.scene.camera.sideward() * delta * speed
+                self.scene.camera.translate(-xy_sideward)
             if self.key_move_up:
-                z_upward = vec3(0, 0, delta * speed)
+                z_upward = vec3(0, 0, delta * speed) * delta * speed
                 self.scene.camera.translate(z_upward)
             elif self.key_move_down:
-                z_upward = vec3(0, 0, delta*speed)
+                z_upward = vec3(0, 0, delta*speed) * delta * speed
                 self.scene.camera.translate(-z_upward)
 
             if self.key_turn_right:
-                self.scene.camera.rotate(math.pi*2*delta, 0)
-            elif self.key_turn_left:
                 self.scene.camera.rotate(-math.pi*2*delta, 0)
+            elif self.key_turn_left:
+                self.scene.camera.rotate(math.pi*2*delta, 0)
             if self.key_turn_up:
                 self.scene.camera.rotate(0, math.pi/2*delta)
             elif self.key_turn_down:

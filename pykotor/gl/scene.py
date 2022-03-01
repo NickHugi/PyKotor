@@ -232,16 +232,76 @@ class Camera:
         self.x: float = 40.0
         self.y: float = 130.0
         self.z: float = 0.5
-        self.pitch: float = 0.0
+        self.pitch: float = math.pi /2
         self.yaw: float = 0.0
         self.fov: float = 90.0
         self.aspect: float = 16 / 9
 
     def view(self) -> mat4:
-        forward = self.forward()
-        eye = vec3(self.x - forward.x, self.y - forward.y, self.z - forward.z)
-        centre = vec3(self.x, self.y, self.z)
+        up = vec3(0, 0, 1)
+        camera = glm.translate(mat4(), vec3(self.x, self.y, self.z))
+        camera = glm.rotate(camera, self.yaw, up)
+        pitch = glm.vec3(1, 0, 0)
+        camera = glm.rotate(camera, self.pitch, pitch)
+        view = glm.inverse(camera)
+        return view
 
+    def projection(self) -> mat4:
+        return glm.perspective(90, 16 / 9, 0.1, 5000)
+
+    def translate(self, translation: vec3) -> None:
+        self.x += translation.x
+        self.y += translation.y
+        self.z += translation.z
+
+    def rotate(self, yaw: float, pitch: float):
+        self.pitch += pitch
+        self.yaw += yaw
+
+        if self.pitch > math.pi:
+            self.pitch = math.pi
+        elif self.pitch < 0:
+            self.pitch = 0
+
+    def forward(self, ignoreZ: bool = True) -> vec3:
+        eye_x = math.sin(self.yaw) * math.sin(self.pitch)
+        eye_y = math.cos(self.yaw) * math.sin(self.pitch)
+        eye_z = 0 if ignoreZ else math.sin(self.pitch)
+        return glm.normalize(vec3(-eye_x, eye_y, eye_z))
+
+    def sideward(self, ignoreZ: bool = True) -> vec3:
+        eye_x = math.cos(self.yaw) * math.cos(self.pitch)
+        eye_y = math.sin(self.yaw) * math.cos(self.pitch)
+        eye_z = 0 if ignoreZ else math.sin(self.pitch)
+        return glm.normalize(-vec3(eye_x, eye_y, eye_z))
+
+    def upward(self, ignoreXY: bool = True) -> vec3:
+        if not ignoreXY:
+            raise NotImplementedError
+        eye_y = 0 if ignoreXY else math.cos(self.pitch) * math.sin(self.yaw)
+        eye_x = 0 if ignoreXY else math.cos(self.yaw) * math.cos(self.pitch)
+        eye_z = 1
+        return glm.normalize(vec3(eye_y, eye_x, eye_z))
+
+
+class FocusedCamera:
+    def __init__(self):
+        self.x: float = 40.0
+        self.y: float = 130.0
+        self.z: float = 0.5
+        self.pitch: float = math.pi / 2
+        self.yaw: float = 0.0
+        self.distance: float = 2.0
+        self.fov: float = 90.0
+        self.aspect: float = 16 / 9
+
+    def view(self) -> mat4:
+        eye_x = self.x + math.cos(self.yaw) * math.sin(self.pitch)
+        eye_y = self.y + math.sin(self.yaw) * math.sin(self.pitch)
+        eye_z = self.z + math.cos(self.pitch)
+
+        eye = vec3(eye_x, eye_y, eye_z)
+        centre = vec3(self.x, self.y, self.z)
         return glm.lookAt(eye, centre, vec3(0, 0, 1))
 
     def projection(self) -> mat4:
@@ -256,25 +316,27 @@ class Camera:
         self.pitch += pitch
         self.yaw += yaw
 
-        if self.pitch > math.pi / 2 - 0.01:
-            self.pitch = math.pi / 2 - 0.01
-        elif self.pitch < -math.pi / 2 + 0.01:
-            self.pitch = -math.pi / 2 + 0.01
+        if self.pitch > math.pi - 0.001:
+            self.pitch = math.pi - 0.001
+        elif self.pitch < 0.001:
+            self.pitch = 0.001
 
-    def forward(self) -> vec3:
-        eye_x = math.cos(self.pitch) * math.sin(self.yaw)
-        eye_y = math.cos(self.yaw) * math.cos(self.pitch)
-        eye_z = math.sin(self.pitch)
-        return vec3(eye_x, eye_y, eye_z)
+    def forward(self, ignoreZ: bool = True) -> vec3:
+        eye_x = -math.cos(self.yaw) * math.sin(self.pitch)
+        eye_y = -math.sin(self.yaw) * math.sin(self.pitch)
+        eye_z = 0 if ignoreZ else math.sin(self.pitch)
+        return glm.normalize(vec3(eye_x, eye_y, eye_z))
 
-    def sideward(self) -> vec3:
-        eye_y = math.cos(self.pitch) * math.sin(self.yaw)
-        eye_x = math.cos(self.yaw) * math.cos(self.pitch)
-        eye_z = math.sin(self.pitch)
-        return vec3(eye_x, -eye_y, -eye_z)
+    def sideward(self, ignoreZ: bool = True) -> vec3:
+        eye_x = math.sin(self.yaw) * math.sin(self.pitch)
+        eye_y = -math.cos(self.yaw) * math.sin(self.pitch)
+        eye_z = 0 if ignoreZ else math.sin(self.pitch)
+        return glm.normalize(vec3(eye_x, eye_y, eye_z))
 
-    def upward(self) -> vec3:
-        eye_y = math.cos(self.pitch) * math.sin(self.yaw)
-        eye_x = math.cos(self.yaw) * math.cos(self.pitch)
-        eye_z = math.sin(self.pitch)
-        return vec3(0, 0, 1)
+    def upward(self, ignoreXY: bool = True) -> vec3:
+        if not ignoreXY:
+            raise NotImplementedError
+        eye_y = 0 if ignoreXY else math.cos(self.pitch) * math.sin(self.yaw)
+        eye_x = 0 if ignoreXY else math.cos(self.yaw) * math.cos(self.pitch)
+        eye_z = 1
+        return glm.normalize(vec3(eye_y, eye_x, eye_z))
