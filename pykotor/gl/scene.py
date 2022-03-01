@@ -55,26 +55,26 @@ class Scene:
         self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = load_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-        for room in self.module.layout.resource().rooms:
+        for room in self.module.layout().resource().rooms:
             position = vec3(room.position.x, room.position.y, room.position.z)
             self.objects.append(RenderObject(room.model, position, data=room))
 
-        for door in self.module.dynamic.resource().doors:
-            utd = self.module.doors[door.resref.get()].resource()
+        for door in self.module.git().resource().doors:
+            utd = self.module.door(door.resref.get()).resource()
             model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
             position = vec3(door.position.x, door.position.y, door.position.z)
             rotation = vec3(0, 0, door.bearing)
             self.objects.append(RenderObject(model_name, position, rotation, data=door))
 
-        for placeable in self.module.dynamic.resource().placeables:
-            utp = self.module.placeables[placeable.resref.get()].resource()
+        for placeable in self.module.git().resource().placeables:
+            utp = self.module.placeable(placeable.resref.get()).resource()
             model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
             position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
             rotation = vec3(0, 0, placeable.bearing)
             self.objects.append(RenderObject(model_name, position, rotation, data=placeable))
 
-        for creature in self.module.dynamic.resource().creatures:
-            utc = self.module.creatures[creature.resref.get()].resource()
+        for creature in self.module.git().resource().creatures:
+            utc = self.module.creature(creature.resref.get()).resource()
             position = vec3(creature.position.x, creature.position.y, creature.position.z)
             rotation = vec3(0, 0, creature.bearing)
             body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
@@ -117,14 +117,12 @@ class Scene:
             self._render_object(child, obj.transform())
 
     def picker_render(self) -> None:
-        self.picker_shader.use()
-
         glClearColor(1.0, 1.0, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        self.picker_shader.use()
         self.picker_shader.set_matrix4("view", self.camera.view())
         self.picker_shader.set_matrix4("projection", self.camera.projection())
-
         for obj in self.objects:
             int_rgb = self.objects.index(obj)
             r = int_rgb & 0xFF
@@ -144,7 +142,6 @@ class Scene:
     def pick(self, x, y) -> RenderObject:
         self.picker_render()
         pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8
-        self.render()  # Stop screen from blinking when picking
         return self.objects[pixel] if pixel != 0xFFFFFF else None
 
     def select(self, obj: RenderObject, clear_existing: bool = True):
@@ -172,6 +169,7 @@ class Scene:
         self.camera.x = point.x
         self.camera.y = point.y
         self.camera.z = point.z
+
 
 class RenderObject:
     def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None, *, data=None):
