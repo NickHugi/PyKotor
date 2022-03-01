@@ -221,6 +221,17 @@ class ModuleResource(Generic[T]):
         self.active: Optional[str] = locations[0] if len(locations) > 0 else None
         self.locations: List[str] = locations
 
+    def data(self) -> bytes:
+        if self.active is None:
+            ...
+        elif self.active.endswith(".erf") or self.active.endswith(".mod") or self.active.endswith(".rim"):
+            capsule = Capsule(self.active)
+            return capsule.resource(self.resname, self.restype)
+        elif self.active.endswith("bif"):
+            return self._installation.resource(self.resname, self.restype, [SearchLocation.CHITIN]).data
+        else:
+            return BinaryReader.load_file(self.active)
+
     def resource(self) -> T:
         conversions = {
             ResourceType.UTC: (lambda data: construct_utc(load_gff(data))),
