@@ -48,6 +48,8 @@ class Scene:
         self.select_shader: Shader = Shader(SELECT_VSHADER, SELECT_FSHADER)
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
 
+        self.jumpToEntryLocation()
+
         self.table_doors = load_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_placeables = load_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -165,6 +167,11 @@ class Scene:
             self.models[name] = model
         return self.models[name]
 
+    def jumpToEntryLocation(self) -> None:
+        point = self.module.info().resource().entry_position
+        self.camera.x = point.x
+        self.camera.y = point.y
+        self.camera.z = point.z
 
 class RenderObject:
     def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None, *, data=None):
