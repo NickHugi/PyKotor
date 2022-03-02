@@ -14,8 +14,11 @@ from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.formats.twoda import load_2da
+from pykotor.resource.generics.git import GIT
 from pykotor.resource.type import ResourceType
 
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
@@ -44,6 +47,10 @@ class Scene:
         self.module: Module = module
         self.camera: Camera = Camera()
 
+        self.git: Optional[GIT] = None
+        self.layout: Optional[LYT] = None
+        self.objects: Dict[ResourceIdentifier, RenderObject] = {}
+
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
         self.select_shader: Shader = Shader(SELECT_VSHADER, SELECT_FSHADER)
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
@@ -55,42 +62,62 @@ class Scene:
         self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = load_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-        for room in self.module.layout().resource().rooms:
-            position = vec3(room.position.x, room.position.y, room.position.z)
-            self.objects.append(RenderObject(room.model, position, data=room))
+    def buildCache(self, clearCache: bool = False) -> None:
+        if clearCache:
+            self.objects = {}
 
-        for door in self.module.git().resource().doors:
-            utd = self.module.door(door.resref.get()).resource()
-            model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
-            position = vec3(door.position.x, door.position.y, door.position.z)
-            rotation = vec3(0, 0, door.bearing)
-            self.objects.append(RenderObject(model_name, position, rotation, data=door))
+        if self.git is None:
+            self.git = self.module.git().resource()
+
+        if self.layout is None:
+            self.layout = self.module.layout().resource()
+
+        for room in self.layout.rooms:
+            iden = ResourceIdentifier(room.model, ResourceType.MDL)
+            if iden not in self.objects:
+                position = vec3(room.position.x, room.position.y, room.position.z)
+                self.objects[iden] = RenderObject(room.model, position)
+
+        for door in self.git.doors:
+            iden = ResourceIdentifier(door.resref.get(), ResourceType.UTD)
+            if iden not in self.objects:
+                utd = self.module.door(door.resref.get()).resource()
+                model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
+                position = vec3(door.position.x, door.position.y, door.position.z)
+                rotation = vec3(0, 0, door.bearing)
+                self.objects[iden] = RenderObject(model_name, position, rotation, data=door)
 
         for placeable in self.module.git().resource().placeables:
-            utp = self.module.placeable(placeable.resref.get()).resource()
-            model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
-            position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
-            rotation = vec3(0, 0, placeable.bearing)
-            self.objects.append(RenderObject(model_name, position, rotation, data=placeable))
+            iden = ResourceIdentifier(placeable.resref.get(), ResourceType.UTD)
+            if iden not in self.objects:
+                utp = self.module.placeable(placeable.resref.get()).resource()
+                model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
+                position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
+                rotation = vec3(0, 0, placeable.bearing)
+                self.objects[iden] = RenderObject(model_name, position, rotation, data=placeable)
 
         for creature in self.module.git().resource().creatures:
-            utc = self.module.creature(creature.resref.get()).resource()
-            position = vec3(creature.position.x, creature.position.y, creature.position.z)
-            rotation = vec3(0, 0, creature.bearing)
-            body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
+            iden = ResourceIdentifier(creature.resref.get(), ResourceType.UTD)
+            if iden not in self.objects:
+                utc = self.module.creature(creature.resref.get()).resource()
+                position = vec3(creature.position.x, creature.position.y, creature.position.z)
+                rotation = vec3(0, 0, creature.bearing)
+                body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
 
-            obj = RenderObject(body_model, position, rotation, data=creature)
-            self.objects.append(obj)
+                obj = RenderObject(body_model, position, rotation, data=creature)
+                self.objects[iden] = obj
 
-            head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
-            if head_str:
-                head_id = int(head_str)
-                head_model = self.table_heads.get_row(head_id).get_string("head")
-                head_obj = RenderObject(head_model)
-                head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
-                obj.children.append(head_obj)
+                head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
+                if head_str:
+                    head_id = int(head_str)
+                    head_model = self.table_heads.get_row(head_id).get_string("head")
+                    head_obj = RenderObject(head_model)
+                    head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
+                    obj.children.append(head_obj)
 
     def render(self) -> None:
+        self.buildCache()
+
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -98,7 +125,8 @@ class Scene:
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
-        for obj in self.objects:
+
+        for obj in self.objects.values():
             self._render_object(obj, mat4())
 
         self.select_shader.use()
@@ -117,14 +145,15 @@ class Scene:
             self._render_object(child, obj.transform())
 
     def picker_render(self) -> None:
-        glClearColor(1.0, 1.0, 1, 1.0)
+        glClearColor(1.0, 1.0, 1.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         self.picker_shader.use()
         self.picker_shader.set_matrix4("view", self.camera.view())
         self.picker_shader.set_matrix4("projection", self.camera.projection())
-        for obj in self.objects:
-            int_rgb = self.objects.index(obj)
+        instances = list(self.objects.values())
+        for i, obj in enumerate(instances):
+            int_rgb = instances.index(obj)
             r = int_rgb & 0xFF
             g = (int_rgb >> 8) & 0xFF
             b = (int_rgb >> 16) & 0xFF
@@ -142,7 +171,8 @@ class Scene:
     def pick(self, x, y) -> RenderObject:
         self.picker_render()
         pixel = glReadPixels(x, y, 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8)[0][0] >> 8
-        return self.objects[pixel] if pixel != 0xFFFFFF else None
+        instances = list(self.objects.values())
+        return instances[pixel] if pixel != 0xFFFFFF else None
 
     def select(self, obj: RenderObject, clear_existing: bool = True):
         if clear_existing:
