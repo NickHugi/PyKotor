@@ -62,6 +62,8 @@ class Scene:
         self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = load_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
+
+
     def buildCache(self, clearCache: bool = False) -> None:
         if clearCache:
             self.objects = {}
@@ -87,7 +89,7 @@ class Scene:
                 rotation = vec3(0, 0, door.bearing)
                 self.objects[iden] = RenderObject(model_name, position, rotation, data=door)
 
-        for placeable in self.module.git().resource().placeables:
+        for placeable in self.git.placeables:
             iden = ResourceIdentifier(placeable.resref.get(), ResourceType.UTD)
             if iden not in self.objects:
                 utp = self.module.placeable(placeable.resref.get()).resource()
@@ -96,7 +98,7 @@ class Scene:
                 rotation = vec3(0, 0, placeable.bearing)
                 self.objects[iden] = RenderObject(model_name, position, rotation, data=placeable)
 
-        for creature in self.module.git().resource().creatures:
+        for creature in self.git.creatures:
             iden = ResourceIdentifier(creature.resref.get(), ResourceType.UTD)
             if iden not in self.objects:
                 utc = self.module.creature(creature.resref.get()).resource()

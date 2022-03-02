@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes
 import struct
+from copy import copy
 from typing import Optional, List, Tuple
 
 import glm
@@ -67,8 +68,8 @@ class Model:
         return min_point, max_point
 
     def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3) -> None:
-        transform = glm.translate(transform, node.position)
-        transform = transform * glm.mat4_cast(node.rotation)
+        transform = glm.translate(transform, node._position)
+        transform = transform * glm.mat4_cast(node._rotation)
 
         if node.mesh and node.render:
             vertex_count = len(node.mesh.vertex_data) // node.mesh.mdx_size
@@ -93,11 +94,14 @@ class Node:
         self._scene: Scene = scene
         self._parent: Optional[Node] = parent
         self.name: str = name
-        self.position: vec3 = glm.vec3()
-        self.rotation: quat = glm.quat()
+        self._transform: mat4 = mat4()
+        self._position: vec3 = glm.vec3()
+        self._rotation: quat = glm.quat()
         self.children: List[Node] = []
         self.render: bool = True
         self.mesh: Optional[Mesh] = None
+
+        self._recalc_transform()
 
     def root(self) -> Node:
         ancestor = self._parent
@@ -117,8 +121,8 @@ class Node:
         ancestors = self.ancestors() + [self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = glm.translate(transform, ancestor.position)
-            transform = transform * glm.mat4_cast(ancestor.rotation)
+            transform = glm.translate(transform, ancestor._position)
+            transform = transform * glm.mat4_cast(ancestor._rotation)
         position = vec3()
         glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
         return position
@@ -127,8 +131,8 @@ class Node:
         ancestors = self.ancestors() + [self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = glm.translate(transform, ancestor.position)
-            transform = transform * glm.mat4_cast(ancestor.rotation)
+            transform = glm.translate(transform, ancestor._position)
+            transform = transform * glm.mat4_cast(ancestor._rotation)
         rotation = quat()
         glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
         return rotation
@@ -137,13 +141,33 @@ class Node:
         ancestors = self.ancestors() + [self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = glm.translate(transform, ancestor.position)
-            transform = transform * glm.mat4_cast(ancestor.rotation)
+            transform = glm.translate(transform, ancestor._position)
+            transform = transform * glm.mat4_cast(ancestor._rotation)
         return transform
 
+    def transform(self) -> mat4:
+        return copy(self._transform)
+
+    def _recalc_transform(self) -> None:
+        self._transform = glm.translate(mat4(), self._position)
+        self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
+
+    def position(self) -> vec3:
+        return copy(self._position)
+
+    def set_position(self, x: float, y: float, z: float) -> None:
+        self._position = vec3(x, y, z)
+        self._recalc_transform()
+
+    def rotation(self) -> quat:
+        return copy(self._rotation)
+
+    def set_rotation(self, pitch: float, yaw: float, roll: float) -> None:
+        self._rotation = quat(vec3(pitch, yaw, roll))
+        self._recalc_transform()
+
     def draw(self, shader: Shader, transform: mat4):
-        transform = glm.translate(transform, self.position)
-        transform = transform * glm.mat4_cast(self.rotation)
+        transform = transform * self._transform
 
         if self.mesh and self.render:
             self.mesh.draw(shader, transform)

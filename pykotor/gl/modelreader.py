@@ -14,8 +14,9 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
     node = Node(scene, node, names[name_id])
 
     mdl.seek(offset + 16)
-    node.position = glm.vec3(mdl.read_single(), mdl.read_single(), mdl.read_single())
-    node.rotation = glm.quat(mdl.read_single(), mdl.read_single(), mdl.read_single(), mdl.read_single())
+    node._position = glm.vec3(mdl.read_single(), mdl.read_single(), mdl.read_single())
+    node._rotation = glm.quat(mdl.read_single(), mdl.read_single(), mdl.read_single(), mdl.read_single())
+    node._recalc_transform()
     child_offsets = mdl.read_uint32()
     child_count = mdl.read_uint32()
 
