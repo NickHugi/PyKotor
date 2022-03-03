@@ -23,7 +23,7 @@ from pykotor.resource.type import ResourceType
 
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
     PLAIN_VSHADER, PLAIN_FSHADER
-from pykotor.gl.modelreader import gl_load_mdl
+from pykotor.gl.modelreader import gl_load_mdl, gl_load_stitched_model
 from pykotor.gl.model import Model, Cube, STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDX_DATA, WAYPOINT_MDL_DATA, \
     SOUND_MDX_DATA, SOUND_MDL_DATA, ENTRY_MDX_DATA, ENTRY_MDL_DATA
 
@@ -240,7 +240,8 @@ class Scene:
                 mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER).data
                 mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER).data
 
-            model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
+            # model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
+            model = gl_load_stitched_model(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
             self.models[name] = model
         return self.models[name]
 
