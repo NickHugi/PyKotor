@@ -88,7 +88,7 @@ void main()
 """
 
 
-SELECT_VSHADER = """
+PLAIN_VSHADER = """
 #version 330 core
 
 layout (location = 1) in vec3 position;
@@ -104,14 +104,16 @@ void main()
 """
 
 
-SELECT_FSHADER = """
+PLAIN_FSHADER = """
 #version 330
+
+uniform vec4 color;
 
 out vec4 FragColor;
 
 void main()
 {
-    FragColor = vec4(1.0, 0.0, 0.0, 0.5);
+    FragColor = color;
 }
 """
 

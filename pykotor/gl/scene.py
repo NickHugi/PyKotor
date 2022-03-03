@@ -22,9 +22,10 @@ from pykotor.resource.generics.git import GIT
 from pykotor.resource.type import ResourceType
 
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
-    SELECT_VSHADER, SELECT_FSHADER
+    PLAIN_VSHADER, PLAIN_FSHADER
 from pykotor.gl.modelreader import gl_load_mdl
-from pykotor.gl.model import Model, Cube
+from pykotor.gl.model import Model, Cube, STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDX_DATA, WAYPOINT_MDL_DATA, \
+    SOUND_MDX_DATA, SOUND_MDL_DATA, ENTRY_MDX_DATA, ENTRY_MDL_DATA
 
 SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -49,10 +50,11 @@ class Scene:
 
         self.git: Optional[GIT] = None
         self.layout: Optional[LYT] = None
-        self.objects: Dict[ResourceIdentifier, RenderObject] = {}
+        self.objects: Dict[Any, RenderObject] = {}
+        self.clearCacheBuffer: List[ResourceIdentifier] = []
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
-        self.select_shader: Shader = Shader(SELECT_VSHADER, SELECT_FSHADER)
+        self.plain_shader: Shader = Shader(PLAIN_VSHADER, PLAIN_FSHADER)
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
 
         self.jumpToEntryLocation()
@@ -62,11 +64,21 @@ class Scene:
         self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = load_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
-
-
     def buildCache(self, clearCache: bool = False) -> None:
         if clearCache:
             self.objects = {}
+
+        for identifier in self.clearCacheBuffer:
+            for creature in copy(self.git.creatures):
+                if identifier.resname == creature.resref and identifier.restype == ResourceType.UTC:
+                    del self.objects[creature]
+            for placeable in copy(self.git.creatures):
+                if identifier.resname == placeable.resref and identifier.restype == ResourceType.UTP:
+                    del self.objects[placeable]
+            for door in copy(self.git.doors):
+                if door.resref.get() == identifier.resname and identifier.restype == ResourceType.UTD:
+                    del self.objects[door]
+        self.clearCacheBuffer = []
 
         if self.git is None:
             self.git = self.module.git().resource()
@@ -75,39 +87,35 @@ class Scene:
             self.layout = self.module.layout().resource()
 
         for room in self.layout.rooms:
-            iden = ResourceIdentifier(room.model, ResourceType.MDL)
-            if iden not in self.objects:
+            if room not in self.objects:
                 position = vec3(room.position.x, room.position.y, room.position.z)
-                self.objects[iden] = RenderObject(room.model, position)
+                self.objects[room] = RenderObject(room.model, position)
 
         for door in self.git.doors:
-            iden = ResourceIdentifier(door.resref.get(), ResourceType.UTD)
-            if iden not in self.objects:
+            if door not in self.objects:
                 utd = self.module.door(door.resref.get()).resource()
                 model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 position = vec3(door.position.x, door.position.y, door.position.z)
                 rotation = vec3(0, 0, door.bearing)
-                self.objects[iden] = RenderObject(model_name, position, rotation, data=door)
+                self.objects[door] = RenderObject(model_name, position, rotation, data=door)
 
         for placeable in self.git.placeables:
-            iden = ResourceIdentifier(placeable.resref.get(), ResourceType.UTD)
-            if iden not in self.objects:
+            if placeable not in self.objects:
                 utp = self.module.placeable(placeable.resref.get()).resource()
                 model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
                 position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
                 rotation = vec3(0, 0, placeable.bearing)
-                self.objects[iden] = RenderObject(model_name, position, rotation, data=placeable)
+                self.objects[placeable] = RenderObject(model_name, position, rotation, data=placeable)
 
         for creature in self.git.creatures:
-            iden = ResourceIdentifier(creature.resref.get(), ResourceType.UTD)
-            if iden not in self.objects:
+            if creature not in self.objects:
                 utc = self.module.creature(creature.resref.get()).resource()
                 position = vec3(creature.position.x, creature.position.y, creature.position.z)
                 rotation = vec3(0, 0, creature.bearing)
                 body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
 
                 obj = RenderObject(body_model, position, rotation, data=creature)
-                self.objects[iden] = obj
+                self.objects[creature] = obj
 
                 head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
                 if head_str:
@@ -116,6 +124,27 @@ class Scene:
                     head_obj = RenderObject(head_model)
                     head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
                     obj.children.append(head_obj)
+
+        for waypoint in self.git.waypoints:
+            if waypoint not in self.objects:
+                position = vec3(waypoint.position.x, waypoint.position.y, waypoint.position.z)
+                rotation = vec3(0, 0, waypoint.bearing)
+                obj = RenderObject("waypoint", position, rotation, data=waypoint)
+                self.objects[waypoint] = obj
+
+        for store in self.git.stores:
+            if store not in self.objects:
+                position = vec3(store.position.x, store.position.y, store.position.z)
+                rotation = vec3(0, 0, store.bearing)
+                obj = RenderObject("store", position, rotation, data=store)
+                self.objects[store] = obj
+
+        for sound in self.git.sounds:
+            if sound not in self.objects:
+                position = vec3(sound.position.x, sound.position.y, sound.position.z)
+                rotation = vec3(0, 0, 0)
+                obj = RenderObject("sound", position, rotation, data=sound)
+                self.objects[sound] = obj
 
     def render(self) -> None:
         self.buildCache()
@@ -127,24 +156,29 @@ class Scene:
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
+        group1 = [obj for obj in self.objects.values() if obj.model not in ["waypoint", "store", "sound"]]
+        for obj in group1:
+            self._render_object(self.shader, obj, mat4())
 
-        for obj in self.objects.values():
-            self._render_object(obj, mat4())
-
-        self.select_shader.use()
-        self.select_shader.set_matrix4("view", self.camera.view())
-        self.select_shader.set_matrix4("projection", self.camera.projection())
         glEnable(GL_BLEND)
+        self.plain_shader.use()
+        self.plain_shader.set_matrix4("view", self.camera.view())
+        self.plain_shader.set_matrix4("projection", self.camera.projection())
+        self.plain_shader.set_vector4("color", vec4(0.0, 0.0, 1.0, 0.4))
+        group2 = [obj for obj in self.objects.values() if obj.model in ["waypoint", "store", "sound"]]
+        for obj in group2:
+            self._render_object(self.plain_shader, obj, mat4())
+        self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
         for obj in self.selection:
             transform = glm.translate(mat4(), obj.position())
             transform = transform * glm.mat4_cast(quat(obj.rotation()))
-            obj.cube(self).draw(self.select_shader, transform)
+            obj.cube(self).draw(self.plain_shader, transform)
 
-    def _render_object(self, obj: RenderObject, transform: mat4) -> None:
+    def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
         model = self.model(obj.model)
-        model.draw(self.shader, transform * obj.transform())
+        model.draw(shader, transform * obj.transform())
         for child in obj.children:
-            self._render_object(child, obj.transform())
+            self._render_object(shader, child, obj.transform())
 
     def picker_render(self) -> None:
         glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -190,8 +224,22 @@ class Scene:
 
     def model(self, name: str) -> Model:
         if name not in self.models:
-            mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER).data
-            mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER).data
+            if name == "waypoint":
+                mdl_data = WAYPOINT_MDL_DATA
+                mdx_data = WAYPOINT_MDX_DATA
+            elif name == "sound":
+                mdl_data = SOUND_MDL_DATA
+                mdx_data = SOUND_MDX_DATA
+            elif name == "store":
+                mdl_data = STORE_MDL_DATA
+                mdx_data = STORE_MDX_DATA
+            elif name == "entry":
+                mdl_data = ENTRY_MDL_DATA
+                mdx_data = ENTRY_MDX_DATA
+            else:
+                mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER).data
+                mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER).data
+
             model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
             self.models[name] = model
         return self.models[name]
@@ -239,7 +287,7 @@ class RenderObject:
         return copy(self._rotation)
 
     def set_rotation(self, x: float, y: float, z: float) -> None:
-        self._rotation = glm.quat()
+        self._rotation = vec3(x, y, z)
         self._recalc_transform()
 
     def cube(self, scene: Scene) -> Cube:
@@ -284,7 +332,7 @@ class Camera:
         return view
 
     def projection(self) -> mat4:
-        return glm.perspective(90, 16 / 9, 0.1, 5000)
+        return glm.perspective(90, self.aspect, 0.1, 5000)
 
     def translate(self, translation: vec3) -> None:
         self.x += translation.x
