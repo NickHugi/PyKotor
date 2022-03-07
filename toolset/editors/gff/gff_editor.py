@@ -471,7 +471,7 @@ class GFFEditor(Editor):
                 menu.addAction("Add Vector4").triggered.connect(lambda: self.insertNode(item, "New Vector4", GFFFieldType.Vector4, Vector3.from_null()))
                 menu.addSeparator()
                 menu.addAction("Add Struct").triggered.connect(lambda: self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct()))
-                menu.addAction("Add List").triggered.connect(lambda: self.insertNode(item, "New List", GFFFieldType.Struct, GFFList()))
+                menu.addAction("Add List").triggered.connect(lambda: self.insertNode(item, "New List", GFFFieldType.List, GFFList()))
                 menu.addSeparator()
             else:
                 ...
