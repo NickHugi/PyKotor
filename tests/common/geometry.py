@@ -22,5 +22,5 @@ class TestPolygon2(TestCase):
     def test_area(self):
         poly = Polygon2([Vector2(0.0, 0.0), Vector2(0, 6), Vector2(6, 6), Vector2(6, 0), Vector2(3, 3)])
 
-        self.assertEqual(27.0)
+        self.assertEqual(27.0, poly.area())
 
