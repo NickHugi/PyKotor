@@ -345,11 +345,8 @@ class DLGLink:
 
     Attributes:
         active1: "Active" field.
-        index: "Index" field.
-
         comment: "LinkComment" field. Only used in links stored in nodes.
         is_child: "IsChild" field. Only used in links stored in nodes.
-
         active2: "Active2" field. KotOR 2 Only.
         logic: "Logic" field. KotOR 2 Only.
         active1_not: "Not" field. KotOR 2 Only.

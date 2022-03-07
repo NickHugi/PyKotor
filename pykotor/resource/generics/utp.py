@@ -75,7 +75,7 @@ class UTP:
         on_trap_triggered: "OnTrapTriggered" field. Not used by the game engine.
         bodybag_id: "BodyBag" field. Not used by the game engine.
         type_id: "Type" field. Not used by the game engine.
-        close_dc: "CloseLockDC" field. Not used by the game engine.
+        lock_dc: "CloseLockDC" field. Not used by the game engine.
     """
 
     BINARY_TYPE = ResourceType.UTP

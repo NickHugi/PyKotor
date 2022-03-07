@@ -164,9 +164,8 @@ class MDLNode:
 
     Attributes:
         children: List of children linked to the node.
-        controller: List of controllers linked to the node.
+        controllers: List of controllers linked to the node.
         name: Name of the node.
-        supernode: Fixes the node index to this value unless the index is equal to -1.
         position: The position of the node.
         orientation: The orientation of the node.
         light: Light data associated with the node.
@@ -231,7 +230,6 @@ class MDLLight:
         shadow:
         flare:
         fading_light:
-        flares:
     """
 
     def __init__(

@@ -21,8 +21,8 @@ class IFO:
         entry_position.x: "Mod_Entry_X" field.
         entry_position.y: "Mod_Entry_Y" field.
         entry_position.z: "Mod_Entry_Z" field.
-        x: "Mod_Entry_Dir_X" field.
-        y: "Mod_Entry_Dir_Y" field.
+        entry_direction.x: "Mod_Entry_Dir_X" field.
+        entry_direction.y: "Mod_Entry_Dir_Y" field.
         on_heartbeat: "Mod_OnHeartbeat" field.
         on_load: "Mod_OnModLoad" field.
         on_start: "Mod_OnModStart" field.
