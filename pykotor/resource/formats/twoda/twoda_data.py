@@ -107,7 +107,7 @@ class TwoDA:
 
     def get_labels(
             self
-    ) -> List[int]:
+    ) -> List[str]:
         """
         Returns a copy of the set of row labels.
 
