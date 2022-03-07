@@ -81,3 +81,24 @@ def write_gff(gff: GFF, target: TARGET_TYPES, file_format: ResourceType = Resour
         GFFXMLWriter(gff, target).write()
     else:
         raise ValueError("Unsupported format specified; use GFF or GFF_XML.")
+
+
+def bytes_gff(gff: GFF, file_format: ResourceType = ResourceType.GFF) -> bytes:
+    """
+    Returns the GFF data in the specified format (GFF or GFF_XML) as a bytes object.
+
+    This is a convience method that wraps the write_gff() method.
+
+    Args:
+        gff: The target GFF object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The GFF data.
+    """
+    data = bytearray()
+    write_gff(gff, data, file_format)
+    return data

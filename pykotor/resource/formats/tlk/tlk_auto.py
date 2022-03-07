@@ -94,3 +94,24 @@ def write_tlk(tlk: TLK, target: TARGET_TYPES, file_format: ResourceType = Resour
         TLKJSONWriter(tlk, target).write()
     else:
         raise ValueError("Unsupported format specified; use TLK or TLK_XML.")
+
+
+def bytes_tlk(tlk: TLK, file_format: ResourceType = ResourceType.TLK) -> bytes:
+    """
+    Returns the TLK data in the specified format (TLK or TLK_XML or TLK_JSON) as a bytes object.
+
+    This is a convience method that wraps the write_tlk() method.
+
+    Args:
+        tlk: The target TLK object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The TLK data.
+    """
+    data = bytearray()
+    write_tlk(tlk, data, file_format)
+    return data

@@ -80,3 +80,24 @@ def write_ssf(ssf: SSF, target: TARGET_TYPES, file_format: ResourceType = Resour
         SSFXMLWriter(ssf, target).write()
     else:
         raise ValueError("Unsupported format specified; use SSF or SSF_XML.")
+
+
+def bytes_ssf(ssf: SSF, file_format: ResourceType = ResourceType.SSF) -> bytes:
+    """
+    Returns the SSF data in the specified format (SSF or SSF_XML) as a bytes object.
+
+    This is a convience method that wraps the write_ssf() method.
+
+    Args:
+        ssf: The target SSF object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The SSF data.
+    """
+    data = bytearray()
+    write_ssf(ssf, data, file_format)
+    return data

@@ -95,3 +95,24 @@ def write_2da(twoda: TwoDA, target: TARGET_TYPES, file_format: ResourceType = Re
         TwoDAJSONWriter(twoda, target).write()
     else:
         raise ValueError("Unsupported format specified; use TwoDA, TwoDA_CSV or TwoDA_JSON.")
+
+
+def bytes_2da(twoda: TwoDA, file_format: ResourceType = ResourceType.TwoDA) -> bytes:
+    """
+    Returns the TwoDA data in the specified format (TwoDA, TwoDA_CSV or TwoDA_JSON) as a bytes object.
+
+    This is a convience method that wraps the write_2da() method.
+
+    Args:
+        twoda: The target TwoDA object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The TwoDA data.
+    """
+    data = bytearray()
+    write_2da(twoda, data, file_format)
+    return data

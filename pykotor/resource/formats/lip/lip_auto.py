@@ -80,3 +80,24 @@ def write_lip(lip: LIP, target: TARGET_TYPES, file_format: ResourceType = Resour
         LIPXMLWriter(lip, target).write()
     else:
         raise ValueError("Unsupported format specified; use LIP or LIP_XML.")
+
+
+def bytes_lip(lip: LIP, file_format: ResourceType = ResourceType.LIP) -> bytes:
+    """
+    Returns the LIP data in the specified format (LIP or LIP_XML) as a bytes object.
+
+    This is a convience method that wraps the write_lip() method.
+
+    Args:
+        lip: The target LIP object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The LIP data.
+    """
+    data = bytearray()
+    write_lip(lip, data, file_format)
+    return data

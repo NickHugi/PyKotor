@@ -40,3 +40,24 @@ def write_ltr(ltr: LTR, target: TARGET_TYPES, file_format: ResourceType = Resour
         LTRBinaryWriter(ltr, target).write()
     else:
         raise ValueError("Unsupported format specified; use LTR.")
+
+
+def bytes_ltr(ltr: LTR, file_format: ResourceType = ResourceType.LTR) -> bytes:
+    """
+    Returns the LTR data in the specified format (LTR only) as a bytes object.
+
+    This is a convience method that wraps the write_ltr() method.
+
+    Args:
+        ltr: The target LTR object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The LTR data.
+    """
+    data = bytearray()
+    write_ltr(ltr, data, file_format)
+    return data

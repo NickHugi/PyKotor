@@ -44,3 +44,24 @@ def write_rim(rim: RIM, target: Union[str, bytearray, BinaryReader], file_format
         RIMBinaryWriter(rim, target).write()
     else:
         raise ValueError("Unsupported format specified; use RIM.")
+
+
+def bytes_rim(rim: RIM, file_format: ResourceType = ResourceType.RIM) -> bytes:
+    """
+    Returns the RIM data in the specified format (RIM only) as a bytes object.
+
+    This is a convience method that wraps the write_rim() method.
+
+    Args:
+        rim: The target RIM object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The RIM data.
+    """
+    data = bytearray()
+    write_rim(rim, data, file_format)
+    return data

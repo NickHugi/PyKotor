@@ -45,3 +45,24 @@ def write_lyt(lyt: LYT, target: Union[str, bytearray, BinaryReader], file_format
         LYTAsciiWriter(lyt, target).write()
     else:
         raise ValueError("Unsupported format specified; use LYT.")
+
+
+def bytes_lyt(lyt: LYT, file_format: ResourceType = ResourceType.LYT) -> bytes:
+    """
+    Returns the LYT data in the specified format (LYT only) as a bytes object.
+
+    This is a convience method that wraps the write_lyt() method.
+
+    Args:
+        lyt: The target LYT.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The LYT data.
+    """
+    data = bytearray()
+    write_lyt(lyt, data, file_format)
+    return data

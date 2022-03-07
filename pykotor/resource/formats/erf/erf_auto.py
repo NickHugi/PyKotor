@@ -43,3 +43,24 @@ def write_erf(erf: ERF, target: Union[str, bytearray, BinaryReader], file_format
         ERFBinaryWriter(erf, target).write()
     else:
         raise ValueError("Unsupported format specified; use ERF or MOD.")
+
+
+def bytes_erf(erf: ERF, file_format: ResourceType = ResourceType.ERF) -> bytes:
+    """
+    Returns the ERF data in the specified format (ERF or MOD) as a bytes object.
+
+    This is a convience method that wraps the write_erf() method.
+
+    Args:
+        erf: The target ERF object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The ERF data.
+    """
+    data = bytearray()
+    write_erf(erf, data, file_format)
+    return data

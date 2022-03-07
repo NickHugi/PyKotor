@@ -94,3 +94,23 @@ def write_tpc(tpc: TPC, target: TARGET_TYPES, file_format: ResourceType = Resour
     else:
         raise ValueError("Unsupported format specified; use TPC, TGA or BMP.")
 
+
+def bytes_tpc(tpc: TPC, file_format: ResourceType = ResourceType.TPC) -> bytes:
+    """
+    Returns the TPC data in the specified format (TPC, TGA or BMP) as a bytes object.
+
+    This is a convience method that wraps the write_tpc() method.
+
+    Args:
+        tpc: The target TPC object.
+        file_format: The file format.
+
+    Raises:
+        ValueError: If an unsupported file format was given.
+
+    Returns:
+        The TPC data.
+    """
+    data = bytearray()
+    write_tpc(tpc, data, file_format)
+    return data
