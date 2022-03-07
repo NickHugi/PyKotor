@@ -11,9 +11,9 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QLis
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.erf import write_erf, load_erf, ERFType
-from pykotor.resource.formats.rim import load_rim, write_rim
-from pykotor.resource.formats.tlk import load_tlk, write_tlk
+from pykotor.resource.formats.erf import write_erf, read_erf, ERFType
+from pykotor.resource.formats.rim import read_rim, write_rim
+from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
 from data.configuration import Configuration
@@ -139,11 +139,11 @@ class Editor(QMainWindow):
                             "Cannot save resource into a .BIF file, select another destination instead.",
                             QMessageBox.Ok, self).show()
             elif self._filepath.endswith(".rim"):
-                rim = load_rim(self._filepath)
+                rim = read_rim(self._filepath)
                 rim.set(self._resref, self._restype, data)
                 write_rim(rim, self._filepath)
             elif self._filepath.endswith(".erf") or self._filepath.endswith(".mod"):
-                erf = load_erf(self._filepath)
+                erf = read_erf(self._filepath)
                 erf.erf_type = ERFType.ERF if self._filepath.endswith(".erf") else ERFType.MOD
                 erf.set(self._resref, self._restype, data)
                 write_erf(erf, self._filepath)
@@ -289,7 +289,7 @@ class LocalizedStringDialog(QDialog):
 
     def accept(self) -> None:
         if self.locstring.stringref != -1:
-            tlk = load_tlk(self._installation.path() + "dialog.tlk")
+            tlk = read_tlk(self._installation.path() + "dialog.tlk")
             if len(tlk) <= self.locstring.stringref:
                 tlk.resize(self.locstring.stringref + 1)
             tlk.get(self.locstring.stringref).text = self.ui.stringEdit.toPlainText()

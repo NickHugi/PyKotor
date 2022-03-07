@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-import os
-import subprocess
 from operator import attrgetter
 from typing import Optional, Union
 
-import numpy as numpy
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSize, QRect, QRegExp, QRegularExpressionMatch
-from PyQt5.QtGui import QIcon, QPixmap, QFontMetrics, QPaintEvent, QResizeEvent, QColor, QTextFormat, QPainter, \
-    QTextBlock, QFontMetricsF, QSyntaxHighlighter, QTextDocument, QTextCharFormat, QFont
+from PyQt5.QtCore import QSize, QRect, QRegExp
+from PyQt5.QtGui import QPaintEvent, QResizeEvent, QColor, QTextFormat, QPainter, \
+    QFontMetricsF, QSyntaxHighlighter, QTextDocument, QTextCharFormat, QFont
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QTextEdit, QListWidgetItem, QMessageBox, QShortcut
-from pykotor.common.script import TSL_CONSTANTS, KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_FUNCTIONS, ScriptFunction
-from pykotor.common.stream import BinaryWriter, BinaryReader
-from pykotor.resource.formats.erf import ERF, load_erf, write_erf
-from pykotor.resource.formats.rim import load_rim, write_rim
+from pykotor.common.script import ScriptFunction
+from pykotor.common.scriptdefs import TSL_FUNCTIONS, TSL_CONSTANTS, KOTOR_FUNCTIONS, KOTOR_CONSTANTS
+from pykotor.common.stream import BinaryWriter
+from pykotor.resource.formats.erf import read_erf, write_erf
+from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 
 from data.configuration import Configuration, NoConfigurationSetError
@@ -125,12 +123,12 @@ class NSSEditor(Editor):
             filepath = self._filepath if self._filepath is not None else ""
             if filepath.endswith(".erf") or filepath.endswith(".mod"):
                 savePath = "{}/{}.{}".format(filepath, self._resref, self._restype.extension)
-                erf = load_erf(filepath)
+                erf = read_erf(filepath)
                 erf.set(self._resref, ResourceType.NCS, data)
                 write_erf(erf, filepath)
             elif filepath.endswith(".rim"):
                 savePath = "{}/{}.{}".format(filepath, self._resref, self._restype.extension)
-                rim = load_rim(filepath)
+                rim = read_rim(filepath)
                 rim.set(self._resref, ResourceType.NCS, data)
                 write_rim(rim, filepath)
             else:

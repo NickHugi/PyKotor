@@ -1,10 +1,7 @@
-from typing import List
-
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.utt import construct_utt, UTT, dismantle_utt
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.utt import UTT, dismantle_utt, read_utt
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -51,7 +48,7 @@ class UTTEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        utt = construct_utt(load_gff(data))
+        utt = read_utt(data)
         self._loadUTT(utt)
 
     def _loadUTT(self, utt: UTT):

@@ -1,10 +1,7 @@
-from typing import List
-
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.ute import construct_ute, UTE, dismantle_ute, UTECreature
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.ute import UTE, dismantle_ute, UTECreature, read_ute
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -51,7 +48,7 @@ class UTEEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        ute = construct_ute(load_gff(data))
+        ute = read_ute(data)
         self._loadUTE(ute)
 
     def _loadUTE(self, ute: UTE):

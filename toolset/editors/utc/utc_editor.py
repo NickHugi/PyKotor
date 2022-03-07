@@ -1,28 +1,25 @@
 from contextlib import suppress
 from typing import Optional
 
-import chardet
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPixmap, QImage, QTransform, QIcon
-from PyQt5.QtWidgets import QWidget, QLineEdit, QListWidgetItem
-from pykotor.common.language import LocalizedString, Language, Gender
+from PyQt5.QtGui import QPixmap, QImage, QTransform
+from PyQt5.QtWidgets import QWidget, QListWidgetItem
+from pykotor.common.language import Language, Gender
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.gff import load_gff, GFF, write_gff
-from pykotor.resource.formats.ltr import load_ltr
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.formats.ltr import read_ltr
 from pykotor.resource.formats.tpc import TPCTextureFormat
-from pykotor.resource.formats.twoda import load_2da
-from pykotor.resource.generics.dlg import DLG, dismantle_dlg, DLGLink, DLGNode, DLGEntry
-from pykotor.resource.generics.utc import construct_utc, UTC, UTCClass, dismantle_utc
+from pykotor.resource.generics.dlg import DLG, dismantle_dlg, DLGLink, DLGEntry
+from pykotor.resource.generics.utc import UTC, UTCClass, dismantle_utc, read_utc
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
 from editors.inventory_editor import InventoryEditor
-from editors.txt import txt_editor_ui
 from editors.utc import utc_editor_ui
 
 
@@ -144,7 +141,7 @@ class UTCEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        utc = construct_utc(load_gff(data))
+        utc = read_utc(data)
         self._loadUTC(utc)
 
         self.updateItemCount()
@@ -361,7 +358,7 @@ class UTCEditor(Editor):
     def randomizeFirstname(self) -> None:
         ltr_resname = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
         locstring = self.ui.firstnameEdit.locstring
-        ltr = load_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
+        ltr = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
         self._loadLocstring(self.ui.firstnameEdit, locstring)
@@ -373,7 +370,7 @@ class UTCEditor(Editor):
 
     def randomizeLastname(self) -> None:
         locstring = self.ui.lastnameEdit.locstring
-        ltr = load_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
+        ltr = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
         self._loadLocstring(self.ui.lastnameEdit, locstring)

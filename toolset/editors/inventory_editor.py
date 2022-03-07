@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from contextlib import suppress
 from typing import Dict, List, NamedTuple, Optional, Union, Tuple
 
@@ -9,24 +8,19 @@ from PyQt5.QtCore import QThread, QSortFilterProxyModel, QPoint, QSize
 from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QStandardItem, QDropEvent, QDragEnterEvent, QDragMoveEvent, \
     QIcon, QTransform
 from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QProgressBar, QVBoxLayout, QFrame, QTreeView, QMenu, QAction, \
-    QTreeWidget, QTreeWidgetItem, QTableWidget, QTableWidgetItem
+    QTableWidget, QTableWidgetItem
 from pykotor.common.misc import InventoryItem, EquipmentSlot, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
-from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.gff import load_gff
-from pykotor.resource.formats.tlk import TLK, load_tlk
-from pykotor.resource.formats.tpc import TPCTextureFormat, TPC
-from pykotor.resource.formats.twoda import TwoDA
-from pykotor.resource.generics.uti import construct_uti, UTI
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.tlk import TLK, read_tlk
+from pykotor.resource.formats.tpc import TPCTextureFormat
+from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors import inventory_editor_ui
-
-import resources_rc
-
 
 _RESNAME_ROLE = QtCore.Qt.UserRole + 1
 _FILEPATH_ROLE = QtCore.Qt.UserRole + 2
@@ -195,17 +189,17 @@ class InventoryEditor(QDialog):
         if filepath == "":
             result = self._installation.resource(resname, ResourceType.UTI)
             if result is not None:
-                uti = construct_uti(load_gff(result.data))
+                uti = read_uti(result.data)
                 filepath = result.filepath
                 name = self._installation.string(uti.name, "[No Name]")
         elif filepath.endswith(".rim") or filepath.endswith(".mod") or filepath.endswith(".erf"):
-            uti = construct_uti(load_gff(Capsule(filepath).resource(resname, ResourceType.UTI)))
+            uti = read_uti(Capsule(filepath).resource(resname, ResourceType.UTI))
             name = self._installation.string(uti.name, "[No Name]")
         elif filepath.endswith(".bif"):
-            uti = construct_uti(load_gff(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data))
+            uti = read_uti(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data)
             name = self._installation.string(uti.name, "[No Name]")
         else:
-            uti = construct_uti(load_gff(BinaryReader.load_file(filepath)))
+            uti = read_uti(BinaryReader.load_file(filepath))
         return filepath, name, uti
 
     def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = "") -> None:
@@ -463,7 +457,7 @@ class ItemBuilderDialog(QDialog):
         self.coreModel = ItemModel(installation.mainWindow)
         self.modulesModel = ItemModel(self.parent())
         self.overrideModel = ItemModel(self.parent())
-        self._tlk: TLK = load_tlk(installation.path() + "dialog.tlk")
+        self._tlk: TLK = read_tlk(installation.path() + "dialog.tlk")
         self._installation: HTInstallation = installation
         self._capsules: List[Capsule] = capsules
 
@@ -555,7 +549,7 @@ class ItemBuilderWorker(QThread):
         for result in results.values():
             uti = None
             with suppress(Exception):
-                uti = construct_uti(load_gff(result.data))
+                uti = read_uti(result.data)
             self.utiLoaded.emit(uti, result)
         self.finished.emit()
 

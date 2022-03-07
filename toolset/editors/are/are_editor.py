@@ -1,17 +1,16 @@
 from typing import Optional
 
-import chardet
-from PyQt5.QtGui import QIcon, QPixmap, QColor, QImage
+from PyQt5.QtGui import QPixmap, QColor, QImage
 from PyQt5.QtWidgets import QWidget, QColorDialog, QLabel
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Color, ResRef
-from pykotor.resource.formats.gff import write_gff, load_gff
-from pykotor.resource.generics.are import ARE, dismantle_are, construct_are, ARENorthAxis, AREWindPower
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.are import ARE, dismantle_are, ARENorthAxis, AREWindPower, read_are
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from editors.editor import Editor, LocalizedStringDialog
 from editors.are import are_editor_ui
+from editors.editor import Editor, LocalizedStringDialog
 from misc.longspinbox import LongSpinBox
 
 
@@ -76,7 +75,7 @@ class AREEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        are = construct_are(load_gff(data))
+        are = read_are(data)
         self._loadARE(are)
 
     def _loadARE(self, are: ARE) -> None:

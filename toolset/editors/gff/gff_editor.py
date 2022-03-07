@@ -10,7 +10,7 @@ from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.formats.gff import load_gff, GFFStruct, GFFFieldType, GFFList, GFF, write_gff, GFFContent
+from pykotor.resource.formats.gff import read_gff, GFFStruct, GFFFieldType, GFFList, GFF, write_gff, GFFContent
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
@@ -84,7 +84,7 @@ class GFFEditor(Editor):
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
-        gff = load_gff(data)
+        gff = read_gff(data)
 
         self.model.clear()
         self.model.setColumnCount(1)

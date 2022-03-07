@@ -1,13 +1,11 @@
 from contextlib import suppress
-from typing import List
 
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.utm import construct_utm, UTM, dismantle_utm
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.utm import UTM, dismantle_utm, read_utm
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -43,7 +41,7 @@ class UTMEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        utm = construct_utm(load_gff(data))
+        utm = read_utm(data)
         self._loadUTM(utm)
 
     def _loadUTM(self, utm: UTM):

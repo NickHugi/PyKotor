@@ -6,8 +6,8 @@ from PyQt5.QtCore import QItemSelection, QThread, QMimeData
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon, QDragLeaveEvent
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.erf import load_erf, ERF, ERFType, write_erf, ERFResource
-from pykotor.resource.formats.rim import load_rim, write_rim, RIM
+from pykotor.resource.formats.erf import read_erf, ERF, ERFType, write_erf, ERFResource
+from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -62,7 +62,7 @@ class ERFEditor(Editor):
         self.ui.refreshButton.setEnabled(True)
 
         if restype in [ResourceType.ERF, ResourceType.MOD]:
-            erf = load_erf(data)
+            erf = read_erf(data)
             for resource in erf:
                 resrefItem = QStandardItem(resource.resref.get())
                 resrefItem.setData(resource)
@@ -70,7 +70,7 @@ class ERFEditor(Editor):
                 sizeItem = QStandardItem(str(len(resource.data)))
                 self.model.appendRow([resrefItem, restypeItem, sizeItem])
         elif restype in [ResourceType.RIM]:
-            rim = load_rim(data)
+            rim = read_rim(data)
             for resource in rim:
                 resrefItem = QStandardItem(resource.resref.get())
                 resrefItem.setData(resource)

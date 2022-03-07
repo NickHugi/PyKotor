@@ -1,23 +1,20 @@
 import math
-import struct
-from typing import Optional, Tuple, Dict, NamedTuple
+from typing import Optional, Dict, NamedTuple
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon, QPixmap, QPaintEvent, QPainter, QPen, QColor, QPainterPath, QBrush, QMouseEvent, QImage, \
-    QWheelEvent
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QShortcut, QFileDialog, QMessageBox, QDialog
 from pykotor.common.geometry import Vector3, SurfaceMaterial, Vector2, Polygon2
 from pykotor.common.misc import ResRef, Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.bwm import load_bwm, BWM, BWMFace, write_bwm
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.formats.lyt import load_lyt, LYT
+from pykotor.resource.formats.bwm import read_bwm, BWM
+from pykotor.resource.formats.gff import read_gff, write_gff
+from pykotor.resource.formats.lyt import read_lyt, LYT
 from pykotor.resource.generics.git import GIT, construct_git, GITTrigger, dismantle_git
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from editors.bwm import bwm_editor_ui
 from editors.editor import Editor
 from misc import geometry_editor_ui, edit_trigger_ui
 
@@ -106,9 +103,9 @@ class GeometryEditor(Editor):
                             "Would you like to load it?\n" + result.filepath,
                             QMessageBox.Yes | QMessageBox.No, self)
             if m.exec():
-                self.loadLayout(load_lyt(result.data))
+                self.loadLayout(read_lyt(result.data))
 
-        self._git = construct_git(load_gff(data))
+        self._git = construct_git(read_gff(data))
         self.ui.drawArea.setGit(self._git)
         self.reloadTriggerList()
 
@@ -144,7 +141,7 @@ class GeometryEditor(Editor):
         for room in layout.rooms:
             order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
             bwmData = self._installation.resource(room.model, ResourceType.WOK, order).data
-            walkmeshes.append(load_bwm(bwmData))
+            walkmeshes.append(read_bwm(bwmData))
 
         self.ui.drawArea.setWalkmeshes(walkmeshes)
 
@@ -152,7 +149,7 @@ class GeometryEditor(Editor):
         filepath, _ = QFileDialog.getOpenFileName(self, "Select a layout file", "", "Walkmesh (*.lyt)")
         if filepath:
             layoutData = BinaryReader.load_file(filepath)
-            layout = load_lyt(layoutData)
+            layout = read_lyt(layoutData)
             self.loadLayout(layout)
 
     def build(self) -> bytes:

@@ -8,7 +8,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QPaintEvent, QPainter, QPen, QColor, QPa
     QWheelEvent
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QShortcut
 from pykotor.common.geometry import Vector3, SurfaceMaterial, Vector2
-from pykotor.resource.formats.bwm import load_bwm, BWM, BWMFace, write_bwm
+from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace, write_bwm
 from pykotor.resource.generics.git import GITTrigger, GIT
 from pykotor.resource.type import ResourceType
 
@@ -82,7 +82,7 @@ class BWMEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        self._bwm = load_bwm(data)
+        self._bwm = read_bwm(data)
         self.ui.drawArea.setWalkmeshes([self._bwm])
 
         def addTransItem(face, edge, transition):

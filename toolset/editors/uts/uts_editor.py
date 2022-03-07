@@ -1,13 +1,11 @@
-from typing import List
-
 from PyQt5 import QtCore
 from PyQt5.QtCore import QIODevice, QBuffer
-from PyQt5.QtGui import QIcon, QPixmap, QCloseEvent
+from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QWidget, QMessageBox, QListWidgetItem
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.uts import construct_uts, UTS, dismantle_uts
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -59,7 +57,7 @@ class UTSEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        uts = construct_uts(load_gff(data))
+        uts = read_uts(data)
         self._loadUTS(uts)
 
     def _loadUTS(self, uts: UTS):

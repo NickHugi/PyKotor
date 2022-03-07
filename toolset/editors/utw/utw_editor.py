@@ -1,9 +1,6 @@
-from typing import List
-
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.utw import construct_utw, UTW, dismantle_utw
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.utw import UTW, dismantle_utw, read_utw
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -38,7 +35,7 @@ class UTWEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        utw = construct_utw(load_gff(data))
+        utw = read_utw(data)
         self._loadUTW(utw)
 
     def _loadUTW(self, utw: UTW):

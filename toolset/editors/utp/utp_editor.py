@@ -1,15 +1,13 @@
 from contextlib import suppress
-from typing import List
 
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.dlg import DLGLink, DLGEntry, dismantle_dlg, DLG
-from pykotor.resource.generics.utp import construct_utp, UTP, dismantle_utp
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.dlg import dismantle_dlg, DLG
+from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -65,7 +63,7 @@ class UTPEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        utp = construct_utp(load_gff(data))
+        utp = read_utp(data)
         self._loadUTP(utp)
 
         self.updateItemCount()

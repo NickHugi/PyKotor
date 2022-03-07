@@ -1,13 +1,11 @@
-from typing import Optional, Union
+from typing import Optional
 
-import chardet
 from PyQt5.QtCore import QItemSelection, QPoint
-from PyQt5.QtGui import QIcon, QPixmap, QStandardItemModel, QStandardItem, QColor
-from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QLineEdit, QMenu, QShortcut
-from pykotor.common.language import LocalizedString
-from pykotor.extract.installation import Installation
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.jrl import construct_jrl, JRL, JRLQuest, JRLEntry, dismantle_jrl, JRLQuestPriority
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
+from PyQt5.QtWidgets import QWidget, QMenu, QShortcut, QTreeView
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.jrl import JRL, JRLQuest, JRLEntry, dismantle_jrl, JRLQuestPriority, \
+    read_jrl
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -48,7 +46,8 @@ class JRLEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.journalTree.selectionModel().selectionChanged.connect(self.onSelectionChanged)
+        #self.ui.journalTree.selectionChanged.connect(self.onSelectionChanged)
+        self.ui.journalTree.selectionChanged = self.onSelectionChanged
         self.ui.journalTree.customContextMenuRequested.connect(self.onContextMenuRequested)
 
         self.ui.categoryNameButton.clicked.connect(self.changeQuestName)
@@ -70,7 +69,7 @@ class JRLEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        self._jrl = construct_jrl(load_gff(data))
+        self._jrl = read_jrl(data)
 
         self._model.clear()
         for quest in self._jrl.quests:
@@ -228,12 +227,13 @@ class JRLEditor(Editor):
             data.entry_id = self.ui.entryIdSpin.value()
             self.refreshEntryItem(item)
 
-    def onSelectionChanged(self, selection: QItemSelection) -> None:
+    def onSelectionChanged(self, selection: QItemSelection, deselected: QItemSelection) -> None:
         """
         This method should be connected to a signal that emits when selection changes for the journalTree widget. It
         will update the widget values that store data for either entries or quests, depending what has been selected
         in the tree.
         """
+        QTreeView.selectionChanged(self.ui.journalTree, selection, deselected)
         self.ui.categoryCommentEdit.blockSignals(True)
         self.ui.entryTextEdit.blockSignals(True)
 

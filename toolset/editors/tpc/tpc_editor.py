@@ -5,7 +5,7 @@ from PIL import Image, ImageOps
 from PyQt5.QtGui import QPixmap, QImage, QTransform, QIcon
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.tpc import load_tpc, TPCTextureFormat, TPC, write_tpc
+from pykotor.resource.formats.tpc import read_tpc, TPCTextureFormat, TPC, write_tpc
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
@@ -34,7 +34,7 @@ class TPCEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         if restype in [ResourceType.TPC, ResourceType.TGA]:
-            self._tpc = load_tpc(data)
+            self._tpc = read_tpc(data)
         else:
             pillow = Image.open(io.BytesIO(data))
             pillow = pillow.convert('RGBA')

@@ -5,8 +5,7 @@ from PyQt5.QtWidgets import QWidget
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC
-from pykotor.resource.formats.twoda import TwoDA, load_2da
-from pykotor.resource.generics.uti import UTI
+from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 
 
@@ -72,7 +71,7 @@ class HTInstallation(Installation):
         resname = resname.lower()
         if resname not in self._cache2da:
             data = self.resource(resname, ResourceType.TwoDA, [SearchLocation.CHITIN, SearchLocation.OVERRIDE]).data
-            self._cache2da[resname] = load_2da(data)
+            self._cache2da[resname] = read_2da(data)
         return self._cache2da[resname]
 
     def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
@@ -87,7 +86,7 @@ class HTInstallation(Installation):
         resources = self.resources(queries, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
         for iden, resource in resources.items():
             if resource:
-                self._cache2da[iden.resname] = load_2da(resource.data)
+                self._cache2da[iden.resname] = read_2da(resource.data)
 
     def htClearCache2DA(self):
         self._cache2da = {}

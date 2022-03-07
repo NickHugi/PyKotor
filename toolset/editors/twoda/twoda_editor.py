@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget
-from pykotor.resource.formats.twoda import TwoDA, write_2da, load_2da
+from pykotor.resource.formats.twoda import TwoDA, write_2da, read_2da
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -54,7 +54,7 @@ class TwoDAEditor(Editor):
         self.proxyModel = SortFilterProxyModel(self)
 
         try:
-            twoda = load_2da(data)
+            twoda = read_2da(data)
 
             headers = [""] + list(twoda.get_headers())
             self.model.setColumnCount(len(headers))

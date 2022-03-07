@@ -6,7 +6,7 @@ from PyQt5.QtCore import QSortFilterProxyModel, QThread, QItemSelection
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
 from PyQt5.QtWidgets import QShortcut, QDialog, QProgressBar, QVBoxLayout, QWidget
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.tlk import load_tlk, TLK, TLKEntry, write_tlk
+from pykotor.resource.formats.tlk import read_tlk, TLK, TLKEntry, write_tlk
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -184,7 +184,7 @@ class LoaderWorker(QThread):
         self._model: QStandardItemModel = model
 
     def run(self):
-        tlk = load_tlk(self._fileData)
+        tlk = read_tlk(self._fileData)
 
         self.entryCount.emit(len(tlk))
 

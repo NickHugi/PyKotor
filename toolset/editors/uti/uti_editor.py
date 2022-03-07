@@ -1,19 +1,14 @@
 from contextlib import suppress
-from typing import List
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog
 from pykotor.common.misc import ResRef
-from pykotor.common.module import Module
-from pykotor.extract.capsule import Capsule
-from pykotor.resource.formats.gff import load_gff, write_gff
-from pykotor.resource.generics.uti import construct_uti, UTI, dismantle_uti, UTIProperty
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.uti import UTI, dismantle_uti, UTIProperty, read_uti
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
-from editors.inventory_editor import InventoryEditor
 from editors.uti import uti_editor_ui, property_editor_ui
 
 
@@ -73,7 +68,7 @@ class UTIEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        uti = construct_uti(load_gff(data))
+        uti = read_uti(data)
         self._loadUTI(uti)
 
     def _loadUTI(self, uti: UTI):

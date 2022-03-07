@@ -20,10 +20,10 @@ from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHea
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.erf import load_erf, ERFType, write_erf
-from pykotor.resource.formats.mdl import load_mdl, write_mdl
-from pykotor.resource.formats.rim import write_rim, load_rim
-from pykotor.resource.formats.tpc import load_tpc, write_tpc, TPCTextureFormat, TPC
+from pykotor.resource.formats.erf import read_erf, ERFType, write_erf
+from pykotor.resource.formats.mdl import read_mdl, write_mdl
+from pykotor.resource.formats.rim import write_rim, read_rim
+from pykotor.resource.formats.tpc import read_tpc, write_tpc, TPCTextureFormat, TPC
 from pykotor.resource.type import ResourceType
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
@@ -684,7 +684,7 @@ class ToolWindow(QMainWindow):
                 return
 
             if resource.restype() == ResourceType.TPC and manipulateTPC:
-                tpc = load_tpc(data)
+                tpc = read_tpc(data)
 
                 if extractTXI:
                     txi_filename = filename.replace(".tpc", ".txi")
@@ -698,7 +698,7 @@ class ToolWindow(QMainWindow):
 
             if resource.restype() == ResourceType.MDL and manipulateMDL:
                 mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
-                mdl = load_mdl(data, 0, 0, mdxData, 0, 0)
+                mdl = read_mdl(data, 0, 0, mdxData, 0, 0)
 
                 if decompileMDL:
                     data = bytearray()
@@ -1041,13 +1041,13 @@ class EncapsulatedExternalUpdateHandler(FileSystemEventHandler, QThread):
                 with open(self._tempFilepath, 'rb') as file:
                     data = file.read()
                     if self._modFilepath.endswith(".erf") or self._modFilepath.endswith(".mod"):
-                        erf = load_erf(self._modFilepath)
+                        erf = read_erf(self._modFilepath)
                         erf.erf_type = ERFType.ERF if self._modFilepath.endswith(".erf") else ERFType.MOD
                         if erf.get(self._resref, self._restype) != data:
                             erf.set(self._resref, self._restype, data)
                             write_erf(erf, self._modFilepath)
                     elif self._modFilepath.endswith(".rim"):
-                        rim = load_rim(self._modFilepath)
+                        rim = read_rim(self._modFilepath)
                         if rim.get(self._resref, self._restype) != data:
                             rim.set(self._resref, self._restype, data)
                             write_rim(rim, self._modFilepath)

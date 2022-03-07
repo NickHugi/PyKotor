@@ -9,9 +9,9 @@ from PyQt5.QtWidgets import QWidget, QListWidgetItem, QPlainTextEdit, QMenu, QMe
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.gff import load_gff, write_gff
+from pykotor.resource.formats.gff import read_gff, write_gff
 from pykotor.resource.generics.dlg import DLG, construct_dlg, DLGLink, DLGNode, DLGReply, DLGEntry, dismantle_dlg, \
-    DLGConversationType, DLGComputerType, DLGAnimation, DLGStunt
+    DLGConversationType, DLGComputerType, DLGAnimation, DLGStunt, read_dlg
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -121,7 +121,7 @@ class DLGEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        dlg = construct_dlg(load_gff(data))
+        dlg = read_dlg(data)
         self._loadDLG(dlg)
         self.refreshStuntList()
 

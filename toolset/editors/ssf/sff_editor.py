@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QWidget
 from pykotor.extract.installation import Installation
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.formats.ssf import load_ssf, SSFSound, SSF, write_ssf
+from pykotor.resource.formats.ssf import read_ssf, SSFSound, SSF, write_ssf
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
@@ -59,7 +59,7 @@ class SSFEditor(Editor):
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
-        ssf = load_ssf(data)
+        ssf = read_ssf(data)
 
         self.ui.battlecry1StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_1))
         self.ui.battlecry2StrrefSpin.setValue(ssf.get(SSFSound.BATTLE_CRY_2))
