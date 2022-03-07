@@ -268,7 +268,7 @@ class TPC:
                         pixelc_code = dxt_pixels & 3
                         dxt_pixels >>= 2
 
-                        a = alpha_code[(dxt_alpha >> (3 * (4 * (y) + x))) & 7]
+                        a = alpha_code[(dxt_alpha >> (3 * (4 * y + x))) & 7]
 
                         index = ((ty - 4 + y) * width + (tx + x)) * 4
                         new_data[index + 0] = cc[pixelc_code][0]
@@ -492,7 +492,7 @@ class TPC:
         green = int(((1.0 - weight) * color0_greed) + (weight * color1_greed))
         red = int(((1.0 - weight) * color0_red) + (weight * color1_red))
 
-        return (blue) + (green << 8) + (red << 16)
+        return blue + (green << 8) + (red << 16)
 
     @staticmethod
     def _rgba565_to_rgb(
