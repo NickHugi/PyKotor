@@ -50,12 +50,18 @@ SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES, SearchLo
 
 
 class Module:
-    def __init__(self, root: str, installation: Installation, custom_capsule: Optional[Capsule] = None):
+    def __init__(
+            self,
+            root: str,
+            installation: Installation,
+            custom_capsule: Optional[Capsule] = None
+    ):
         self._installation = installation
         self._root = root
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
-        self._capsules.extend([Capsule(installation.module_path() + module) for module in installation.module_names() if root in module])
+        self._capsules.extend(
+            [Capsule(installation.module_path() + module) for module in installation.module_names() if root in module])
 
         for capsule in self._capsules:
             if capsule.exists("module", ResourceType.IFO):
@@ -69,7 +75,9 @@ class Module:
         self.reload_resources()
 
     @staticmethod
-    def get_root(filepath: str) -> str:
+    def get_root(
+            filepath: str
+    ) -> str:
         """
         Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
         become "danm13".
@@ -87,7 +95,9 @@ class Module:
             rootb = rootb[:rootb.index("_")]
         return roota + rootb
 
-    def reload_resources(self):
+    def reload_resources(
+            self
+    ):
         # Look in module files
         for capsule in self._capsules:
             for resource in capsule:
@@ -107,11 +117,13 @@ class Module:
             self.git().activate(location)
             git = self.git().resource()
             [look_for.append(ResourceIdentifier(creature.resref.get(), ResourceType.UTC)) for creature in git.creatures]
-            [look_for.append(ResourceIdentifier(placeable.resref.get(), ResourceType.UTP)) for placeable in git.placeables]
+            [look_for.append(ResourceIdentifier(placeable.resref.get(), ResourceType.UTP)) for placeable in
+             git.placeables]
             [look_for.append(ResourceIdentifier(door.resref.get(), ResourceType.UTD)) for door in git.doors]
             [look_for.append(ResourceIdentifier(sound.resref.get(), ResourceType.UTS)) for sound in git.sounds]
             [look_for.append(ResourceIdentifier(waypoint.resref.get(), ResourceType.UTW)) for waypoint in git.waypoints]
-            [look_for.append(ResourceIdentifier(encounter.resref.get(), ResourceType.UTE)) for encounter in git.encounters]
+            [look_for.append(ResourceIdentifier(encounter.resref.get(), ResourceType.UTE)) for encounter in
+             git.encounters]
             [look_for.append(ResourceIdentifier(trigger.resref.get(), ResourceType.UTT)) for trigger in git.triggers]
             [look_for.append(ResourceIdentifier(store.resref.get(), ResourceType.UTM)) for store in git.stores]
         self.git().active = original
@@ -139,7 +151,8 @@ class Module:
         for texture in textures:
             look_for.append(ResourceIdentifier(texture, ResourceType.TPC))
             look_for.append(ResourceIdentifier(texture, ResourceType.TGA))
-        search = self._installation.locations(look_for, [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.TEXTURES_TPA,
+        search = self._installation.locations(look_for, [SearchLocation.OVERRIDE, SearchLocation.CHITIN,
+                                                         SearchLocation.TEXTURES_TPA,
                                                          SearchLocation.TEXTURES_TPB, SearchLocation.TEXTURES_TPC])
         for identifier, locations in search.items():
             if len(locations) == 0:
@@ -149,7 +162,12 @@ class Module:
         for resource in self.resources.values():
             resource.activate()
 
-    def add_locations(self, resname: str, restype: ResourceType, locations: List[str]):
+    def add_locations(
+            self,
+            resname: str,
+            restype: ResourceType,
+            locations: List[str]
+    ):
         filename = "{}.{}".format(resname, restype)
         if filename in self.resources:
             self.resources[filename].add_locations(locations)
@@ -157,146 +175,204 @@ class Module:
             self.resources[filename] = ModuleResource(resname, restype, self._installation)
             self.resources[filename].add_locations(locations)
 
-    def installation(self) -> Installation:
+    def installation(
+            self
+    ) -> Installation:
         return self._installation
 
-    def layout(self) -> ModuleResource[LYT]:
+    def layout(
+            self
+    ) -> ModuleResource[LYT]:
         for filename, resource in self.resources.items():
             if resource.resname.lower() == self._id and resource.restype == ResourceType.LYT:
                 return resource
 
-    def are(self) -> ModuleResource[ARE]:
+    def are(
+            self
+    ) -> ModuleResource[ARE]:
         for filename, resource in self.resources.items():
             if resource.resname.lower() == self._id and resource.restype == ResourceType.ARE:
                 return resource
 
-    def git(self) -> ModuleResource[GIT]:
+    def git(
+            self
+    ) -> ModuleResource[GIT]:
         for filename, resource in self.resources.items():
             if resource.resname.lower() == self._id and resource.restype == ResourceType.GIT:
                 return resource
 
-    def info(self) -> ModuleResource[IFO]:
+    def info(
+            self
+    ) -> ModuleResource[IFO]:
         for filename, resource in self.resources.items():
             if resource.resname.lower() == "module" and resource.restype == ResourceType.IFO:
                 return resource
 
-    def creature(self, resname: str) -> Optional[ModuleResource[UTC]]:
+    def creature(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTC]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTC:
                 return resource
         return None
 
-    def creatures(self) -> List[ModuleResource[UTC]]:
+    def creatures(
+            self
+    ) -> List[ModuleResource[UTC]]:
         creatures = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTC:
                 creatures.append(resource)
         return creatures
 
-    def placeable(self, resname: str) -> Optional[ModuleResource[UTP]]:
+    def placeable(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTP]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTP:
                 return resource
         return None
 
-    def placeables(self) -> List[ModuleResource[UTP]]:
+    def placeables(
+            self
+    ) -> List[ModuleResource[UTP]]:
         placeables = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTP:
                 placeables.append(resource)
         return placeables
 
-    def door(self, resname: str) -> Optional[ModuleResource[UTD]]:
+    def door(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTD]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTD:
                 return resource
         return None
 
-    def doors(self) -> List[ModuleResource[UTD]]:
+    def doors(
+            self
+    ) -> List[ModuleResource[UTD]]:
         doors = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTD:
                 doors.append(resource)
         return doors
 
-    def item(self, resname: str) -> Optional[ModuleResource[UTI]]:
+    def item(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTI]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTI:
                 return resource
         return None
 
-    def items(self) -> List[ModuleResource[UTI]]:
+    def items(
+            self
+    ) -> List[ModuleResource[UTI]]:
         doors = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTD:
                 doors.append(resource)
         return doors
 
-    def encounter(self, resname: str) -> Optional[ModuleResource[UTE]]:
+    def encounter(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTE]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTE:
                 return resource
         return None
 
-    def encounters(self) -> List[ModuleResource[UTE]]:
+    def encounters(
+            self
+    ) -> List[ModuleResource[UTE]]:
         encounters = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTE:
                 encounters.append(resource)
         return encounters
 
-    def store(self, resname: str) -> Optional[ModuleResource[UTM]]:
+    def store(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTM]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTM:
                 return resource
         return None
 
-    def stores(self) -> List[ModuleResource[UTM]]:
+    def stores(
+            self
+    ) -> List[ModuleResource[UTM]]:
         stores = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTM:
                 stores.append(resource)
         return stores
 
-    def trigger(self, resname: str) -> Optional[ModuleResource[UTT]]:
+    def trigger(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTT]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTT:
                 return resource
         return None
 
-    def triggers(self) -> List[ModuleResource[UTT]]:
+    def triggers(
+            self
+    ) -> List[ModuleResource[UTT]]:
         triggers = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTT:
                 triggers.append(resource)
         return triggers
 
-    def waypoint(self, resname: str) -> Optional[ModuleResource[UTW]]:
+    def waypoint(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTW]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.UTW:
                 return resource
         return None
 
-    def waypoints(self) -> List[ModuleResource[UTW]]:
+    def waypoints(
+            self
+    ) -> List[ModuleResource[UTW]]:
         waypoints = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.UTW:
                 waypoints.append(resource)
         return waypoints
 
-    def model(self, resname: str) -> Optional[ModuleResource[MDL]]:
+    def model(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[MDL]]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.MDL:
                 return resource
         return None
 
-    def model_ext(self, resname: str) -> Optional[ModuleResource]:
+    def model_ext(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource]:
         for resource in self.resources.values():
             if resname == resource.resname and resource.restype == ResourceType.MDX:
                 return resource
         return None
 
-    def models(self) -> List[ModuleResource[MDL]]:
+    def models(
+            self
+    ) -> List[ModuleResource[MDL]]:
         models = []
         for resource in self.resources.values():
             if resource.restype == ResourceType.MDL:
@@ -305,7 +381,12 @@ class Module:
 
 
 class ModuleResource(Generic[T]):
-    def __init__(self, resname: str, restype: ResourceType, installation: Installation):
+    def __init__(
+            self,
+            resname: str,
+            restype: ResourceType,
+            installation: Installation
+    ):
         self.resname: str = resname
         self._installation = installation
         self.restype: ResourceType = restype
@@ -313,7 +394,9 @@ class ModuleResource(Generic[T]):
         self._resource: Any = None
         self.locations: List[str] = []
 
-    def data(self) -> bytes:
+    def data(
+            self
+    ) -> bytes:
         if self.active is None:
             ...
         elif self._active.endswith(".erf") or self._active.endswith(".mod") or self._active.endswith(".rim"):
@@ -324,27 +407,47 @@ class ModuleResource(Generic[T]):
         else:
             return BinaryReader.load_file(self._active)
 
-    def resource(self) -> T:
+    def resource(
+            self
+    ) -> T:
         if self._resource is None:
             conversions = {
-                ResourceType.UTC: (lambda data: construct_utc(read_gff(data))),
-                ResourceType.UTP: (lambda data: construct_utp(read_gff(data))),
-                ResourceType.UTD: (lambda data: construct_utd(read_gff(data))),
-                ResourceType.UTI: (lambda data: construct_uti(read_gff(data))),
-                ResourceType.UTM: (lambda data: construct_utm(read_gff(data))),
-                ResourceType.UTE: (lambda data: construct_ute(read_gff(data))),
-                ResourceType.UTT: (lambda data: construct_utt(read_gff(data))),
-                ResourceType.UTW: (lambda data: construct_utw(read_gff(data))),
-                ResourceType.UTS: (lambda data: construct_uts(read_gff(data))),
-                ResourceType.DLG: (lambda data: construct_dlg(read_gff(data))),
-                ResourceType.PTH: (lambda data: construct_pth(read_gff(data))),
-                ResourceType.NCS: (lambda data: data),
-                ResourceType.TPC: (lambda data: read_tpc(data)),
-                ResourceType.LYT: (lambda data: read_lyt(data)),
-                ResourceType.VIS: (lambda data: read_vis(data)),
-                ResourceType.IFO: (lambda data: construct_ifo(read_gff(data))),
-                ResourceType.ARE: (lambda data: construct_are(read_gff(data))),
-                ResourceType.GIT: (lambda data: construct_git(read_gff(data)))
+                ResourceType.UTC: (lambda
+                                           data: construct_utc(read_gff(data))),
+                ResourceType.UTP: (lambda
+                                           data: construct_utp(read_gff(data))),
+                ResourceType.UTD: (lambda
+                                           data: construct_utd(read_gff(data))),
+                ResourceType.UTI: (lambda
+                                           data: construct_uti(read_gff(data))),
+                ResourceType.UTM: (lambda
+                                           data: construct_utm(read_gff(data))),
+                ResourceType.UTE: (lambda
+                                           data: construct_ute(read_gff(data))),
+                ResourceType.UTT: (lambda
+                                           data: construct_utt(read_gff(data))),
+                ResourceType.UTW: (lambda
+                                           data: construct_utw(read_gff(data))),
+                ResourceType.UTS: (lambda
+                                           data: construct_uts(read_gff(data))),
+                ResourceType.DLG: (lambda
+                                           data: construct_dlg(read_gff(data))),
+                ResourceType.PTH: (lambda
+                                           data: construct_pth(read_gff(data))),
+                ResourceType.NCS: (lambda
+                                           data: data),
+                ResourceType.TPC: (lambda
+                                           data: read_tpc(data)),
+                ResourceType.LYT: (lambda
+                                           data: read_lyt(data)),
+                ResourceType.VIS: (lambda
+                                           data: read_vis(data)),
+                ResourceType.IFO: (lambda
+                                           data: construct_ifo(read_gff(data))),
+                ResourceType.ARE: (lambda
+                                           data: construct_are(read_gff(data))),
+                ResourceType.GIT: (lambda
+                                           data: construct_git(read_gff(data)))
             }
 
             if self._active is None:
@@ -360,18 +463,26 @@ class ModuleResource(Generic[T]):
                 self._resource = conversions[self.restype](data)
         return self._resource
 
-    def add_locations(self, filepaths: List[str]) -> None:
+    def add_locations(
+            self,
+            filepaths: List[str]
+    ) -> None:
         self.locations.extend([filepath for filepath in filepaths if filepath not in self.locations])
 
-    def activate(self, active: str = None) -> None:
+    def activate(
+            self,
+            active: str = None
+    ) -> None:
         self._resource = None
         if active is None:
             self._active = self.locations[0] if len(self.locations) > 0 else None
         elif active in self.locations:
             self._active = active
         else:
-            raise ValueError("The filepath '{}' for the resource you are trying to access does not exist.".format(active))
+            raise ValueError(
+                "The filepath '{}' for the resource you are trying to access does not exist.".format(active))
 
-    def active(self) -> str:
+    def active(
+            self
+    ) -> str:
         return self._active
-

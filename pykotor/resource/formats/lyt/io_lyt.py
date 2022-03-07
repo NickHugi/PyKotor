@@ -8,12 +8,20 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class LYTAsciiReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._lyt: Optional[LYT] = None
         self._lines: List[str] = self._reader.read_string(self._reader.size()).splitlines()
 
-    def load(self, auto_close: bool = True) -> LYT:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> LYT:
         self._lyt = LYT()
 
         iterator = iter(self._lines)
@@ -34,28 +42,44 @@ class LYTAsciiReader(ResourceReader):
 
         return self._lyt
 
-    def _load_rooms(self, iterator: Iterator[str], count: int):
+    def _load_rooms(
+            self,
+            iterator: Iterator[str],
+            count: int
+    ):
         for i in range(count):
             tokens = next(iterator).split()
             model = tokens[0]
             position = Vector3(float(tokens[1]), float(tokens[2]), float(tokens[3]))
             self._lyt.rooms.append(LYTRoom(model, position))
 
-    def _load_tracks(self, iterator: Iterator[str], count: int):
+    def _load_tracks(
+            self,
+            iterator: Iterator[str],
+            count: int
+    ):
         for i in range(count):
             tokens = next(iterator).split()
             model = tokens[0]
             position = Vector3(float(tokens[1]), float(tokens[2]), float(tokens[3]))
             self._lyt.tracks.append(LYTTrack(model, position))
 
-    def _load_obstacles(self, iterator: Iterator[str], count: int):
+    def _load_obstacles(
+            self,
+            iterator: Iterator[str],
+            count: int
+    ):
         for i in range(count):
             tokens = next(iterator).split()
             model = tokens[0]
             position = Vector3(float(tokens[1]), float(tokens[2]), float(tokens[3]))
             self._lyt.obstacles.append(LYTObstacle(model, position))
 
-    def _load_doorhooks(self, iterator: Iterator[str], count: int):
+    def _load_doorhooks(
+            self,
+            iterator: Iterator[str],
+            count: int
+    ):
         for i in range(count):
             tokens = next(iterator).split()
             room = tokens[0]
@@ -66,11 +90,18 @@ class LYTAsciiReader(ResourceReader):
 
 
 class LYTAsciiWriter(ResourceWriter):
-    def __init__(self, lyt: LYT, target: TARGET_TYPES):
+    def __init__(
+            self,
+            lyt: LYT,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._lyt: LYT = lyt
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         roomcount = len(self._lyt.rooms)
         trackcount = len(self._lyt.tracks)
         obstaclecount = len(self._lyt.obstacles)
@@ -81,19 +112,19 @@ class LYTAsciiWriter(ResourceWriter):
         self._writer.write_string("   roomcount {}\r\n".format(roomcount))
         for room in self._lyt.rooms:
             self._writer.write_string("      {} {} {} {}\r\n".format(room.model,
-                                                                   room.position.x, room.position.y, room.position.z))
+                                                                     room.position.x, room.position.y, room.position.z))
 
         self._writer.write_string("   trackcount {}\r\n".format(trackcount))
         for track in self._lyt.tracks:
             self._writer.write_string("      {} {} {} {}\r\n".format(track.model,
-                                                                   track.position.x, track.position.y,
-                                                                   track.position.z))
+                                                                     track.position.x, track.position.y,
+                                                                     track.position.z))
 
         self._writer.write_string("   obstaclecount {}\r\n".format(obstaclecount))
         for obstacle in self._lyt.obstacles:
             self._writer.write_string("      {} {} {} {}\r\n".format(obstacle.model,
-                                                                   obstacle.position.x, obstacle.position.y,
-                                                                   obstacle.position.z))
+                                                                     obstacle.position.x, obstacle.position.y,
+                                                                     obstacle.position.z))
 
         self._writer.write_string("   doorhookcount {}\r\n".format(doorhookcount))
         for doorhook in self._lyt.doorhooks:

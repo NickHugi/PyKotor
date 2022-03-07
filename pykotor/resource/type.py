@@ -16,44 +16,84 @@ TARGET_TYPES = Union[str, bytearray, BinaryWriter]
 
 class ResourceReader(ABC):
     @overload
-    def __init__(self, filepath: str, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            filepath: str,
+            offset: int = 0,
+            size: int = 0
+    ):
         ...
 
     @overload
-    def __init__(self, data: bytes, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            data: bytes,
+            offset: int = 0,
+            size: int = 0
+    ):
         ...
 
     @overload
-    def __init__(self, data: bytearray, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            data: bytearray,
+            offset: int = 0,
+            size: int = 0
+    ):
         ...
 
     @overload
-    def __init__(self, reader: BinaryReader, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            reader: BinaryReader,
+            offset: int = 0,
+            size: int = 0
+    ):
         ...
 
-    def __init__(self, source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: Union[str, bytes, bytearray, BinaryReader],
+            offset: int = 0,
+            size: int = 0
+    ):
         self._reader = BinaryReader.from_auto(source, offset)
         self._size = self._reader.remaining() if size == 0 else size
 
 
 class ResourceWriter(ABC):
     @overload
-    def __init__(self, filepath: str):
+    def __init__(
+            self,
+            filepath: str
+    ):
         ...
 
     @overload
-    def __init__(self, data: bytes):
+    def __init__(
+            self,
+            data: bytes
+    ):
         ...
 
     @overload
-    def __init__(self, data: bytearray):
+    def __init__(
+            self,
+            data: bytearray
+    ):
         ...
 
     @overload
-    def __init__(self, reader: BinaryWriter):
+    def __init__(
+            self,
+            reader: BinaryWriter
+    ):
         ...
 
-    def __init__(self, target: Union[str, bytearray, BinaryReader]):
+    def __init__(
+            self,
+            target: Union[str, bytearray, BinaryReader]
+    ):
         self._writer = BinaryWriter.to_auto(target)
 
 
@@ -155,14 +195,21 @@ class ResourceType:
     TwoDA_JSON: ResourceType
     TLK_JSON: ResourceType
 
-
-    def __init__(self, type_id: int, extension: str, category: str, contents: str):
+    def __init__(
+            self,
+            type_id: int,
+            extension: str,
+            category: str,
+            contents: str
+    ):
         self.type_id = type_id
         self.extension = extension
         self.category = category
         self.contents = contents
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         if self is ResourceType.TwoDA:
             return "ResourceType.TwoDA"
         elif self is ResourceType.INVALID:
@@ -170,19 +217,26 @@ class ResourceType:
         else:
             return "ResourceType.{}".format(self.extension.upper())
 
-    def __str__(self):
+    def __str__(
+            self
+    ):
         """
         Returns the extension in all caps.
         """
         return self.extension.upper()
 
-    def __int__(self):
+    def __int__(
+            self
+    ):
         """
         Returns the type_id.
         """
         return self.type_id
 
-    def __eq__(self, other: Union[ResourceType, str, int]):
+    def __eq__(
+            self,
+            other: Union[ResourceType, str, int]
+    ):
         """
         Two ResourceTypes are equal if they are the same.
         A ResourceType and a str are equal if the extension is equal to the string.
@@ -197,11 +251,16 @@ class ResourceType:
         else:
             return NotImplemented
 
-    def __hash__(self):
+    def __hash__(
+            self
+    ):
         return hash(str(self.extension))
 
     @classmethod
-    def from_id(cls, type_id: int) -> ResourceType:
+    def from_id(
+            cls,
+            type_id: int
+    ) -> ResourceType:
         """
         Returns the ResourceType for the specified id.
 
@@ -218,7 +277,10 @@ class ResourceType:
             raise ValueError("Could not find resource type with ID {}.".format(type_id))
 
     @classmethod
-    def from_extension(cls, extension: str) -> ResourceType:
+    def from_extension(
+            cls,
+            extension: str
+    ) -> ResourceType:
         """
         Returns the ResourceType for the specified extension.
 
@@ -237,88 +299,88 @@ class ResourceType:
             raise ValueError("Could not find resource with extension '{}'.".format(extension))
 
 
-ResourceType.INVALID = ResourceType(0,      "",     "Undefined",    "binary")
-ResourceType.BMP    = ResourceType(1,       "bmp",  "Images",       "binary")
-ResourceType.TGA    = ResourceType(3,       "tga",  "Textures",     "binary")
-ResourceType.WAV    = ResourceType(4,       "wav",  "Audio",        "binary")
-ResourceType.PLT    = ResourceType(6,       "plt",  "Other",        "binary")
-ResourceType.INI    = ResourceType(7,       "ini",  "Text Files",   "plaintext")
-ResourceType.TXT    = ResourceType(10,      "txt",  "Text Files",   "plaintext")
-ResourceType.MDL    = ResourceType(2002,    "mdl",  "Models",       "binary")
-ResourceType.NSS    = ResourceType(2009,    "nss",  "Scripts",      "plaintext")
-ResourceType.NCS    = ResourceType(2010,    "ncs",  "Scripts",      "binary")
-ResourceType.MOD    = ResourceType(2011,    "mod",  "Modules",      "binary")
-ResourceType.ARE    = ResourceType(2012,    "are",  "Module Data",  "gff")
-ResourceType.SET    = ResourceType(2013,    "set",  "Unused",       "binary")
-ResourceType.IFO    = ResourceType(2014,    "ifo",  "Module Data",  "gff")
-ResourceType.BIC    = ResourceType(2015,    "bic",  "Creatures",    "binary")
-ResourceType.WOK    = ResourceType(2016,    "wok",  "Walkmeshes",   "binary")
-ResourceType.TwoDA  = ResourceType(2017,    "2da",  "2D Arrays",    "binary")
-ResourceType.TLK    = ResourceType(2018,    "tlk",  "Talk Tables",   "binary")
-ResourceType.TXI    = ResourceType(2022,    "txi",  "Textures",     "plaintext")
-ResourceType.GIT    = ResourceType(2023,    "git",  "Module Data",  "gff")
-ResourceType.BTI    = ResourceType(2024,    "bti",  "Items",        "gff")
-ResourceType.UTI    = ResourceType(2025,    "uti",  "Items",        "gff")
-ResourceType.BTC    = ResourceType(2026,    "btc",  "Creatures",    "gff")
-ResourceType.UTC    = ResourceType(2027,    "utc",  "Creatures",    "gff")
-ResourceType.DLG    = ResourceType(2029,    "dlg",  "Dialogs",      "gff")
-ResourceType.ITP    = ResourceType(2030,    "itp",  "Palettes",     "binary")
-ResourceType.UTT    = ResourceType(2032,    "utt",  "Triggers",     "gff")
-ResourceType.DDS    = ResourceType(2033,    "dds",  "Textures",     "binary")
-ResourceType.UTS    = ResourceType(2035,    "uts",  "Sounds",       "gff")
-ResourceType.LTR    = ResourceType(2036,    "ltr",  "Other",        "binary")
-ResourceType.GFF    = ResourceType(2037,    "gff",  "Other",        "gff")
-ResourceType.FAC    = ResourceType(2038,    "fac",  "Factions",     "gff")
-ResourceType.UTE    = ResourceType(2040,    "ute",  "Encounters",   "gff")
-ResourceType.UTD    = ResourceType(2042,    "utd",  "Doors",        "gff")
-ResourceType.UTP    = ResourceType(2044,    "utp",  "Placeables",   "gff")
-ResourceType.DFT    = ResourceType(2045,    "dft",  "Other",        "binary")
-ResourceType.GIC    = ResourceType(2046,    "gic",  "Module Data",  "gff")
-ResourceType.GUI    = ResourceType(2047,    "gui",  "GUIs",         "gff")
-ResourceType.UTM    = ResourceType(2051,    "utm",  "Merchants",    "gff")
-ResourceType.DWK    = ResourceType(2052,    "dwk",  "Walkmeshes",   "binary")
-ResourceType.PWK    = ResourceType(2053,    "pwk",  "Walkmeshes",   "binary")
-ResourceType.JRL    = ResourceType(2056,    "jrl",  "Journals",     "gff")
-ResourceType.UTW    = ResourceType(2058,    "utw",  "Waypoints",    "gff")
-ResourceType.SSF    = ResourceType(2060,    "ssf",  "Soundsets",    "binary")
-ResourceType.NDB    = ResourceType(2064,    "ndb",  "Other",        "binary")
-ResourceType.PTM    = ResourceType(2065,    "ptm",  "Other",        "binary")
-ResourceType.PTT    = ResourceType(2066,    "ptt",  "Other",        "binary")
-ResourceType.JPG    = ResourceType(2076,    "jpg",  "Images",       "binary")
-ResourceType.PNG    = ResourceType(2110,    "png",  "Images",       "binary")
-ResourceType.LYT    = ResourceType(3000,    "lyt",  "Module Data",  "plaintext")
-ResourceType.VIS    = ResourceType(3001,    "vis",  "Module Data",  "plaintext")
-ResourceType.RIM    = ResourceType(3002,    "rim",  "Modules",      "binary")
-ResourceType.PTH    = ResourceType(3003,    "pth",  "Paths",        "gff")
-ResourceType.LIP    = ResourceType(3004,    "lip",  "Lips",         "lips")
-ResourceType.TPC    = ResourceType(3007,    "tpc",  "Textures",     "binary")
-ResourceType.MDX    = ResourceType(3008,    "mdx",  "Models",       "binary")
-ResourceType.ERF    = ResourceType(9997,    "erf",  "Modules",      "binary")
+ResourceType.INVALID = ResourceType(0, "", "Undefined", "binary")
+ResourceType.BMP = ResourceType(1, "bmp", "Images", "binary")
+ResourceType.TGA = ResourceType(3, "tga", "Textures", "binary")
+ResourceType.WAV = ResourceType(4, "wav", "Audio", "binary")
+ResourceType.PLT = ResourceType(6, "plt", "Other", "binary")
+ResourceType.INI = ResourceType(7, "ini", "Text Files", "plaintext")
+ResourceType.TXT = ResourceType(10, "txt", "Text Files", "plaintext")
+ResourceType.MDL = ResourceType(2002, "mdl", "Models", "binary")
+ResourceType.NSS = ResourceType(2009, "nss", "Scripts", "plaintext")
+ResourceType.NCS = ResourceType(2010, "ncs", "Scripts", "binary")
+ResourceType.MOD = ResourceType(2011, "mod", "Modules", "binary")
+ResourceType.ARE = ResourceType(2012, "are", "Module Data", "gff")
+ResourceType.SET = ResourceType(2013, "set", "Unused", "binary")
+ResourceType.IFO = ResourceType(2014, "ifo", "Module Data", "gff")
+ResourceType.BIC = ResourceType(2015, "bic", "Creatures", "binary")
+ResourceType.WOK = ResourceType(2016, "wok", "Walkmeshes", "binary")
+ResourceType.TwoDA = ResourceType(2017, "2da", "2D Arrays", "binary")
+ResourceType.TLK = ResourceType(2018, "tlk", "Talk Tables", "binary")
+ResourceType.TXI = ResourceType(2022, "txi", "Textures", "plaintext")
+ResourceType.GIT = ResourceType(2023, "git", "Module Data", "gff")
+ResourceType.BTI = ResourceType(2024, "bti", "Items", "gff")
+ResourceType.UTI = ResourceType(2025, "uti", "Items", "gff")
+ResourceType.BTC = ResourceType(2026, "btc", "Creatures", "gff")
+ResourceType.UTC = ResourceType(2027, "utc", "Creatures", "gff")
+ResourceType.DLG = ResourceType(2029, "dlg", "Dialogs", "gff")
+ResourceType.ITP = ResourceType(2030, "itp", "Palettes", "binary")
+ResourceType.UTT = ResourceType(2032, "utt", "Triggers", "gff")
+ResourceType.DDS = ResourceType(2033, "dds", "Textures", "binary")
+ResourceType.UTS = ResourceType(2035, "uts", "Sounds", "gff")
+ResourceType.LTR = ResourceType(2036, "ltr", "Other", "binary")
+ResourceType.GFF = ResourceType(2037, "gff", "Other", "gff")
+ResourceType.FAC = ResourceType(2038, "fac", "Factions", "gff")
+ResourceType.UTE = ResourceType(2040, "ute", "Encounters", "gff")
+ResourceType.UTD = ResourceType(2042, "utd", "Doors", "gff")
+ResourceType.UTP = ResourceType(2044, "utp", "Placeables", "gff")
+ResourceType.DFT = ResourceType(2045, "dft", "Other", "binary")
+ResourceType.GIC = ResourceType(2046, "gic", "Module Data", "gff")
+ResourceType.GUI = ResourceType(2047, "gui", "GUIs", "gff")
+ResourceType.UTM = ResourceType(2051, "utm", "Merchants", "gff")
+ResourceType.DWK = ResourceType(2052, "dwk", "Walkmeshes", "binary")
+ResourceType.PWK = ResourceType(2053, "pwk", "Walkmeshes", "binary")
+ResourceType.JRL = ResourceType(2056, "jrl", "Journals", "gff")
+ResourceType.UTW = ResourceType(2058, "utw", "Waypoints", "gff")
+ResourceType.SSF = ResourceType(2060, "ssf", "Soundsets", "binary")
+ResourceType.NDB = ResourceType(2064, "ndb", "Other", "binary")
+ResourceType.PTM = ResourceType(2065, "ptm", "Other", "binary")
+ResourceType.PTT = ResourceType(2066, "ptt", "Other", "binary")
+ResourceType.JPG = ResourceType(2076, "jpg", "Images", "binary")
+ResourceType.PNG = ResourceType(2110, "png", "Images", "binary")
+ResourceType.LYT = ResourceType(3000, "lyt", "Module Data", "plaintext")
+ResourceType.VIS = ResourceType(3001, "vis", "Module Data", "plaintext")
+ResourceType.RIM = ResourceType(3002, "rim", "Modules", "binary")
+ResourceType.PTH = ResourceType(3003, "pth", "Paths", "gff")
+ResourceType.LIP = ResourceType(3004, "lip", "Lips", "lips")
+ResourceType.TPC = ResourceType(3007, "tpc", "Textures", "binary")
+ResourceType.MDX = ResourceType(3008, "mdx", "Models", "binary")
+ResourceType.ERF = ResourceType(9997, "erf", "Modules", "binary")
 
 # For Toolset Use:
-ResourceType.MP3        = ResourceType(25014,   "mp3",          "Audio",        "binary")
-ResourceType.TLK_XML    = ResourceType(50001,   "tlk.xml",      "Talk Tables",  "binary")
-ResourceType.MDL_ASCII  = ResourceType(50002,   "mdl.ascii",    "Models",       "binary")
-ResourceType.TwoDA_CSV  = ResourceType(50003,   "2da.csv",    "Models",       "binary")
-ResourceType.GFF_XML    = ResourceType(50004,   "gff.xml",    "Models",       "binary")
-ResourceType.IFO_XML    = ResourceType(50005,   "ifo.xml",    "Models",       "binary")
-ResourceType.GIT_XML    = ResourceType(50006,   "git.xml",    "Models",       "binary")
-ResourceType.UTI_XML    = ResourceType(50007,   "uti.xml",    "Models",       "binary")
-ResourceType.UTC_XML    = ResourceType(50008,   "utc.xml",    "Models",       "binary")
-ResourceType.DLG_XML    = ResourceType(50009,   "dlg.xml",    "Models",       "binary")
-ResourceType.ITP_XML    = ResourceType(50010,   "itp.xml",    "Models",       "binary")
-ResourceType.UTT_XML    = ResourceType(50011,   "utt.xml",    "Models",       "binary")
-ResourceType.UTS_XML    = ResourceType(50012,   "uts.xml",    "Models",       "binary")
-ResourceType.FAC_XML    = ResourceType(50013,   "fac.xml",    "Models",       "binary")
-ResourceType.UTE_XML    = ResourceType(50014,   "ute.xml",    "Models",       "binary")
-ResourceType.UTD_XML    = ResourceType(50015,   "utd.xml",    "Models",       "binary")
-ResourceType.UTP_XML    = ResourceType(50016,   "utp.xml",    "Models",       "binary")
-ResourceType.GUI_XML    = ResourceType(50017,   "gui.xml",    "Models",       "binary")
-ResourceType.UTM_XML    = ResourceType(50018,   "utm.xml",    "Models",       "binary")
-ResourceType.JRL_XML    = ResourceType(50019,   "jrl.xml",    "Models",       "binary")
-ResourceType.UTW_XML    = ResourceType(50020,   "utw.xml",    "Models",       "binary")
-ResourceType.PTH_XML    = ResourceType(50021,   "pth.xml",    "Models",       "binary")
-ResourceType.LIP_XML    = ResourceType(50022,   "lip.xml",    "Models",       "binary")
-ResourceType.SSF_XML    = ResourceType(50023,   "ssf.xml",    "Models",       "binary")
-ResourceType.TwoDA_JSON = ResourceType(50024,   "2da.json",   "2D Arrays",    "plaintext")
-ResourceType.TLK_JSON   = ResourceType(50024,   "tlk.json",   "Talk Tables",  "plaintext")
+ResourceType.MP3 = ResourceType(25014, "mp3", "Audio", "binary")
+ResourceType.TLK_XML = ResourceType(50001, "tlk.xml", "Talk Tables", "binary")
+ResourceType.MDL_ASCII = ResourceType(50002, "mdl.ascii", "Models", "binary")
+ResourceType.TwoDA_CSV = ResourceType(50003, "2da.csv", "Models", "binary")
+ResourceType.GFF_XML = ResourceType(50004, "gff.xml", "Models", "binary")
+ResourceType.IFO_XML = ResourceType(50005, "ifo.xml", "Models", "binary")
+ResourceType.GIT_XML = ResourceType(50006, "git.xml", "Models", "binary")
+ResourceType.UTI_XML = ResourceType(50007, "uti.xml", "Models", "binary")
+ResourceType.UTC_XML = ResourceType(50008, "utc.xml", "Models", "binary")
+ResourceType.DLG_XML = ResourceType(50009, "dlg.xml", "Models", "binary")
+ResourceType.ITP_XML = ResourceType(50010, "itp.xml", "Models", "binary")
+ResourceType.UTT_XML = ResourceType(50011, "utt.xml", "Models", "binary")
+ResourceType.UTS_XML = ResourceType(50012, "uts.xml", "Models", "binary")
+ResourceType.FAC_XML = ResourceType(50013, "fac.xml", "Models", "binary")
+ResourceType.UTE_XML = ResourceType(50014, "ute.xml", "Models", "binary")
+ResourceType.UTD_XML = ResourceType(50015, "utd.xml", "Models", "binary")
+ResourceType.UTP_XML = ResourceType(50016, "utp.xml", "Models", "binary")
+ResourceType.GUI_XML = ResourceType(50017, "gui.xml", "Models", "binary")
+ResourceType.UTM_XML = ResourceType(50018, "utm.xml", "Models", "binary")
+ResourceType.JRL_XML = ResourceType(50019, "jrl.xml", "Models", "binary")
+ResourceType.UTW_XML = ResourceType(50020, "utw.xml", "Models", "binary")
+ResourceType.PTH_XML = ResourceType(50021, "pth.xml", "Models", "binary")
+ResourceType.LIP_XML = ResourceType(50022, "lip.xml", "Models", "binary")
+ResourceType.SSF_XML = ResourceType(50023, "ssf.xml", "Models", "binary")
+ResourceType.TwoDA_JSON = ResourceType(50024, "2da.json", "2D Arrays", "plaintext")
+ResourceType.TLK_JSON = ResourceType(50024, "tlk.json", "Talk Tables", "plaintext")

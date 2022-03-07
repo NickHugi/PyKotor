@@ -14,30 +14,46 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class GFFXMLReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = None):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = None
+    ):
         super().__init__(source, offset, size)
         data = self._reader.read_bytes(self._reader.size()).decode()
         self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(data)).getroot()
         self._gff: Optional[GFF] = None
 
-    def load(self, auto_close: bool = True) -> GFF:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> GFF:
         self._gff = GFF()
 
         xml_root: ElementTree.Element = self._xml_root.find('struct')
         self._load_struct(self._gff.root, xml_root)
-        
+
         if auto_close:
             self._reader.close()
 
         return self._gff
 
-    def _load_struct(self, gff_struct: GFFStruct, xml_struct: ElementTree.Element):
+    def _load_struct(
+            self,
+            gff_struct: GFFStruct,
+            xml_struct: ElementTree.Element
+    ):
         gff_struct.struct_id = int(xml_struct.get("id"))
 
         for xml_field in xml_struct:
             self._load_field(gff_struct, xml_field)
 
-    def _load_field(self, gff_struct: GFFStruct, xml_field: ElementTree.Element):
+    def _load_field(
+            self,
+            gff_struct: GFFStruct,
+            xml_field: ElementTree.Element
+    ):
         label = xml_field.get("label")
 
         if xml_field.tag == "byte":
@@ -96,12 +112,19 @@ class GFFXMLReader(ResourceReader):
 
 
 class GFFXMLWriter(ResourceWriter):
-    def __init__(self, gff: GFF, target: TARGET_TYPES):
+    def __init__(
+            self,
+            gff: GFF,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self.xml_root: ElementTree.Element = ElementTree.Element("xml")
         self.gff: GFF = gff
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self.xml_root.tag = "gff3"
 
         xml_struct = ElementTree.Element("struct")
@@ -114,13 +137,23 @@ class GFFXMLWriter(ResourceWriter):
         if auto_close:
             self._writer.close()
 
-    def _build_struct(self, gff_struct: GFFStruct, xml_struct: ElementTree.Element):
+    def _build_struct(
+            self,
+            gff_struct: GFFStruct,
+            xml_struct: ElementTree.Element
+    ):
         xml_struct.set('id', str(gff_struct.struct_id))
 
         for label, field_type, value in gff_struct:
             self._build_field(label, value, field_type, xml_struct)
 
-    def _build_field(self, label: str, value: Any, field_type: GFFFieldType, xml_struct: ElementTree.Element):
+    def _build_field(
+            self,
+            label: str,
+            value: Any,
+            field_type: GFFFieldType,
+            xml_struct: ElementTree.Element
+    ):
         xml_field = ElementTree.Element("")
         xml_field.set("label", label)
         xml_struct.append(xml_field)

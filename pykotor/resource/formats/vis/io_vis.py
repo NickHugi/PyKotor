@@ -7,12 +7,20 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class VISAsciiReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._vis: Optional[VIS] = None
         self._lines: List[str] = self._reader.read_string(self._reader.size()).splitlines()
 
-    def load(self, auto_close: bool = True) -> VIS:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> VIS:
         self._vis = VIS()
 
         pairs = []
@@ -43,11 +51,18 @@ class VISAsciiReader(ResourceReader):
 
 
 class VISAsciiWriter(ResourceWriter):
-    def __init__(self, vis: VIS, target: TARGET_TYPES):
+    def __init__(
+            self,
+            vis: VIS,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._vis: VIS = vis
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         for observer, observed in self._vis:
             self._writer.write_string("{} {}\r\n".format(observer, str(len(observed))))
             for room in observed:

@@ -9,12 +9,21 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class SSFXMLReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
-        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
+        self._xml_root: ElementTree.Element = ElementTree.parse(
+            io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
         self._ssf: Optional[SSF] = None
 
-    def load(self, auto_close: bool = True) -> SSF:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> SSF:
         self._ssf = SSF()
 
         for child in self._xml_root:
@@ -32,12 +41,19 @@ class SSFXMLReader(ResourceReader):
 
 
 class SSFXMLWriter(ResourceWriter):
-    def __init__(self, ssf: SSF, target: TARGET_TYPES):
+    def __init__(
+            self,
+            ssf: SSF,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self.xml_root: ElementTree.Element = ElementTree.Element("xml")
         self.ssf: SSF = ssf
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         for sound_name, sound in SSFSound.__members__.items():
             ElementTree.SubElement(self.xml_root, "sound", {
                 "id": str(sound.value),

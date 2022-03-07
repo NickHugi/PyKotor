@@ -75,7 +75,9 @@ class UTD:
 
     BINARY_TYPE = ResourceType.UTD
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -143,14 +145,18 @@ class UTD:
         self.loadscreen_id: int = 0
 
 
-def utd_version(gff: GFF) -> Game:
+def utd_version(
+        gff: GFF
+) -> Game:
     for label in ("NotBlastable", "OpenLockDiff", "OpenLockDiffMod", "OpenState"):
         if gff.root.exists(label):
             return Game.K2
     return Game.K1
 
 
-def construct_utd(gff: GFF) -> UTD:
+def construct_utd(
+        gff: GFF
+) -> UTD:
     utd = UTD()
 
     root = gff.root
@@ -213,7 +219,12 @@ def construct_utd(gff: GFF) -> UTD:
     return utd
 
 
-def dismantle_utd(utd: UTD, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_utd(
+        utd: UTD,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTD)
 
     root = gff.root
@@ -280,19 +291,34 @@ def dismantle_utd(utd: UTD, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_utd(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTD:
+def read_utd(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTD:
     gff = read_gff(source, offset, size)
     utd = construct_utd(gff)
     return utd
 
 
-def write_utd(utd: UTD, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_utd(
+        utd: UTD,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_utd(utd, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_utd(utd: UTD, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_utd(
+        utd: UTD,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_utd(utd, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

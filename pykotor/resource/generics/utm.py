@@ -28,7 +28,9 @@ class UTM:
 
     BINARY_TYPE = ResourceType.UTM
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""
@@ -49,7 +51,9 @@ class UTM:
         self.id: int = 5
 
 
-def construct_utm(gff: GFF) -> UTM:
+def construct_utm(
+        gff: GFF
+) -> UTM:
     utm = UTM()
 
     root = gff.root
@@ -72,9 +76,14 @@ def construct_utm(gff: GFF) -> UTM:
         item.infinite = bool(item_struct.acquire("Infinite", 0))
 
     return utm
-    
-    
-def dismantle_utm(utm: UTM, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+
+
+def dismantle_utm(
+        utm: UTM,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTM)
 
     root = gff.root
@@ -102,19 +111,34 @@ def dismantle_utm(utm: UTM, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_utm(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTM:
+def read_utm(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTM:
     gff = read_gff(source, offset, size)
     utm = construct_utm(gff)
     return utm
 
 
-def write_utm(utm: UTM, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_utm(
+        utm: UTM,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_utm(utm, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_utm(utm: UTM, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_utm(
+        utm: UTM,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_utm(utm, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

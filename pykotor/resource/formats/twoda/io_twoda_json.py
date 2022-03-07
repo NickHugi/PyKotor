@@ -10,13 +10,21 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 
 
 class TwoDAJSONReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         data = self._reader.read_bytes(self._reader.size()).decode()
         self._json = json.loads(data)
         self._twoda: Optional[TwoDA] = None
 
-    def load(self, auto_close: bool = True) -> TwoDA:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> TwoDA:
         self._twoda = TwoDA()
 
         for row in self._json['rows']:
@@ -36,12 +44,19 @@ class TwoDAJSONReader(ResourceReader):
 
 
 class TwoDAJSONWriter(ResourceWriter):
-    def __init__(self, twoda: TwoDA, target: TARGET_TYPES):
+    def __init__(
+            self,
+            twoda: TwoDA,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._twoda: TwoDA = twoda
         self._json = {"rows": []}
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         for row in self._twoda:
             json_row = {"_id": row.label()}
             self._json["rows"].append(json_row)

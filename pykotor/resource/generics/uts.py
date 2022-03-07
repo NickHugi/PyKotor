@@ -45,7 +45,9 @@ class UTS:
 
     BINARY_TYPE = ResourceType.UTS
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
@@ -81,7 +83,9 @@ class UTS:
         self.palette_id: int = 0
 
 
-def construct_uts(gff: GFF) -> UTS:
+def construct_uts(
+        gff: GFF
+) -> UTS:
     uts = UTS()
 
     root = gff.root
@@ -117,7 +121,12 @@ def construct_uts(gff: GFF) -> UTS:
     return uts
 
 
-def dismantle_uts(uts: UTS, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_uts(
+        uts: UTS,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTS)
 
     root = gff.root
@@ -156,19 +165,34 @@ def dismantle_uts(uts: UTS, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_uts(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTS:
+def read_uts(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTS:
     gff = read_gff(source, offset, size)
     uts = construct_uts(gff)
     return uts
 
 
-def write_uts(uts: UTS, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_uts(
+        uts: UTS,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_uts(uts: UTS, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_uts(
+        uts: UTS,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_uts(uts, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

@@ -6,7 +6,11 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader
 
 
-def _get_size(width: int, height: int, tpc_format: TPCTextureFormat) -> int:
+def _get_size(
+        width: int,
+        height: int,
+        tpc_format: TPCTextureFormat
+) -> int:
     if tpc_format is TPCTextureFormat.Greyscale:
         return width * height * 1
     elif tpc_format is TPCTextureFormat.RGB:
@@ -20,11 +24,19 @@ def _get_size(width: int, height: int, tpc_format: TPCTextureFormat) -> int:
 
 
 class TPCBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._tpc: Optional[TPC] = None
 
-    def load(self, auto_close: bool = True) -> TPC:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> TPC:
         self._tpc = TPC()
 
         size = self._reader.read_uint32()
@@ -85,11 +97,18 @@ class TPCBinaryReader(ResourceReader):
 
 
 class TPCBinaryWriter(ResourceWriter):
-    def __init__(self, tpc: TPC, target: TARGET_TYPES):
+    def __init__(
+            self,
+            tpc: TPC,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._tpc = tpc
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
 
         data = bytearray()
         size = 0

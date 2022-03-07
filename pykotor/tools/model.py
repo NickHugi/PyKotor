@@ -60,11 +60,16 @@ _NODE_TYPE_EMITTER = 4
 _EMITTER_HEADER_SIZE = 224
 
 
-def rename(data: bytes, name: str) -> bytes:
+def rename(
+        data: bytes,
+        name: str
+) -> bytes:
     return data[:20] + name.ljust(32, '\0').encode('ascii') + data[52:]
 
 
-def list_textures(data: bytes) -> List[str]:
+def list_textures(
+        data: bytes
+) -> List[str]:
     textures = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
@@ -95,7 +100,9 @@ def list_textures(data: bytes) -> List[str]:
     return textures
 
 
-def list_lightmaps(data: bytes) -> List[str]:
+def list_lightmaps(
+        data: bytes
+) -> List[str]:
     lightmaps = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
@@ -126,7 +133,10 @@ def list_lightmaps(data: bytes) -> List[str]:
     return lightmaps
 
 
-def change_textures(data: bytes, textures: Dict[str, str]) -> bytes:
+def change_textures(
+        data: bytes,
+        textures: Dict[str, str]
+) -> bytes:
     data = bytearray(data)
     offsets = {}
 
@@ -166,12 +176,16 @@ def change_textures(data: bytes, textures: Dict[str, str]) -> bytes:
         for texture, offsets in offsets.items():
             for offset in offsets:
                 offset += 12
-                data = data[:offset] + struct.pack('32s', textures[texture].ljust(32, '\0').encode('ascii')) + data[offset+32:]
+                data = data[:offset] + struct.pack('32s', textures[texture].ljust(32, '\0').encode('ascii')) + data[
+                                                                                                               offset + 32:]
 
     return bytes(data)
 
 
-def change_lightmaps(data: bytes, textures: Dict[str, str]) -> bytes:
+def change_lightmaps(
+        data: bytes,
+        textures: Dict[str, str]
+) -> bytes:
     data = bytearray(data)
     offsets = {}
 
@@ -211,17 +225,22 @@ def change_lightmaps(data: bytes, textures: Dict[str, str]) -> bytes:
         for texture, offsets in offsets.items():
             for offset in offsets:
                 offset += 12
-                data = data[:offset] + struct.pack('32s', textures[texture].ljust(32, '\0').encode('ascii')) + data[offset+32:]
+                data = data[:offset] + struct.pack('32s', textures[texture].ljust(32, '\0').encode('ascii')) + data[
+                                                                                                               offset + 32:]
 
     return bytes(data)
 
 
-def detect_version(data: bytes) -> Game:
+def detect_version(
+        data: bytes
+) -> Game:
     pointer = struct.unpack("I", data[12:16])[0]
     return Game.K1 if pointer == _GEOM_ROOT_FP0_K1 else Game.K2
 
 
-def convert_to_k1(data: bytes) -> bytes:
+def convert_to_k1(
+        data: bytes
+) -> bytes:
     if detect_version(data) == Game.K1:
         return data
 
@@ -282,13 +301,15 @@ def convert_to_k1(data: bytes) -> bytes:
             data[mesh_start:mesh_start + 4] = struct.pack("I", _AABB_FP0_K1)
             data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _AABB_FP1_K1)
 
-        shifting = data[offset_start:offset_start+offset_size]
-        data[offset_start-8:offset_start-8+offset_size] = shifting
+        shifting = data[offset_start:offset_start + offset_size]
+        data[offset_start - 8:offset_start - 8 + offset_size] = shifting
 
     return bytes(start + data)
 
 
-def convert_to_k2(data: bytes) -> bytes:
+def convert_to_k2(
+        data: bytes
+) -> bytes:
     if detect_version(data) == Game.K2:
         return data
 
@@ -298,13 +319,16 @@ def convert_to_k2(data: bytes) -> bytes:
 
     # First, we build a dictionary of every offset in the file plus a list of the mesh nodes
     with BinaryReader.from_bytes(data, 12) as reader:
-        def node_recursive(offset_to_root_offset):
+        def node_recursive(
+                offset_to_root_offset
+        ):
             nodes = [offset_to_root_offset]
             while nodes:
                 offset_to_node_offset = nodes.pop()
                 reader.seek(offset_to_node_offset)
                 node_offset = reader.read_uint32()
-                offsets[offset_to_node_offset] = node_offset  # Geometry header/Node children offsets array -> Node offset
+                offsets[
+                    offset_to_node_offset] = node_offset  # Geometry header/Node children offsets array -> Node offset
 
                 reader.seek(node_offset)
                 node_type = reader.read_uint16()
@@ -325,7 +349,8 @@ def convert_to_k2(data: bytes) -> bytes:
                     if indicies_array_count == 1:
                         indices_locations_offset = offsets[base_offset + 188]
                         reader.seek(indices_locations_offset)
-                        offsets[indices_locations_offset] = reader.read_uint32()  # Vertex indices locations array -> Vertex indices array
+                        offsets[
+                            indices_locations_offset] = reader.read_uint32()  # Vertex indices locations array -> Vertex indices array
 
                     reader.seek(base_offset + 200)
                     offsets[base_offset + 200] = reader.read_uint32()  # Node header -> Inverted counter array
@@ -487,8 +512,8 @@ def convert_to_k2(data: bytes) -> bytes:
     data[4:8] = struct.pack("I", _GEOM_ROOT_FP1_K2)
 
     for anim_offset in anim_offsets:
-        data[anim_offset:anim_offset+4] = struct.pack("I", _GEOM_ANIM_FP0_K2)
-        data[anim_offset+4:anim_offset+8] = struct.pack("I", _GEOM_ANIM_FP1_K2)
+        data[anim_offset:anim_offset + 4] = struct.pack("I", _GEOM_ANIM_FP0_K2)
+        data[anim_offset + 4:anim_offset + 8] = struct.pack("I", _GEOM_ANIM_FP1_K2)
 
     for node_offset, node_type in mesh_offsets:
         mesh_start = node_offset + 80  # Start of mesh header
@@ -537,7 +562,6 @@ def convert_to_k2(data: bytes) -> bytes:
 
     # Finally, we update the offsets in the bytes with the offsets in our dictionary
     for offset_location, offset_value in offsets.items():
-        data[offset_location:offset_location+4] = struct.pack("I", offset_value)
+        data[offset_location:offset_location + 4] = struct.pack("I", offset_value)
 
     return bytes([0 for i in range(4)]) + struct.pack("I", len(data)) + mdx_size + data
-

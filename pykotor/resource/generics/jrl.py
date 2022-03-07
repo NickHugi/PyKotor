@@ -18,7 +18,9 @@ class JRL:
 
     BINARY_TYPE = ResourceType.JRL
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.quests: List[JRLQuest] = []
 
 
@@ -36,7 +38,9 @@ class JRLQuest:
         comment: "Comment" field. Used in toolset only.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.comment: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.planet_id: int = 0
@@ -57,7 +61,9 @@ class JRLEntry:
         xp_percentage: "XP_Percentage" field.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.end: bool = False
         self.entry_id: int = 0
         self.text: LocalizedString = LocalizedString.from_invalid()
@@ -72,7 +78,9 @@ class JRLQuestPriority(IntEnum):
     LOWEST = 4
 
 
-def construct_jrl(gff: GFF) -> JRL:
+def construct_jrl(
+        gff: GFF
+) -> JRL:
     jrl = JRL()
 
     for category_struct in gff.root.acquire("Categories", GFFList()):
@@ -96,7 +104,12 @@ def construct_jrl(gff: GFF) -> JRL:
     return jrl
 
 
-def dismantle_jrl(jrl: JRL, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_jrl(
+        jrl: JRL,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.JRL)
 
     category_list = gff.root.set_list("Categories", GFFList())
@@ -120,19 +133,34 @@ def dismantle_jrl(jrl: JRL, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_jrl(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> JRL:
+def read_jrl(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> JRL:
     gff = read_gff(source, offset, size)
     jrl = construct_jrl(gff)
     return jrl
 
 
-def write_jrl(jrl: JRL, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_jrl(
+        jrl: JRL,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_jrl(jrl, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_jrl(jrl: JRL, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_jrl(
+        jrl: JRL,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_jrl(jrl, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

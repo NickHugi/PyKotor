@@ -10,12 +10,20 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 
 
 class TLKJSONReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._json = json.loads(self._reader.read_bytes(self._reader.size()).decode())
         self._tlk: Optional[TLK] = None
 
-    def load(self, auto_close: bool = True) -> TLK:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> TLK:
         self._tlk = TLK()
 
         self._tlk.resize(len(self._json["strings"]))
@@ -31,12 +39,19 @@ class TLKJSONReader(ResourceReader):
 
 
 class TLKJSONWriter(ResourceWriter):
-    def __init__(self, twoda: TLK, target: TARGET_TYPES):
+    def __init__(
+            self,
+            twoda: TLK,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._tlk: TLK = twoda
         self._json = {"strings": []}
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
 
         for stringref, entry in self._tlk:
             string = {}

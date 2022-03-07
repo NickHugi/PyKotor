@@ -7,11 +7,19 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES, Reso
 
 
 class RIMBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._rim: Optional[RIM] = None
 
-    def load(self, auto_close: bool = True)  -> RIM:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> RIM:
         self._rim = RIM()
 
         file_type = self._reader.read_string(4)
@@ -55,11 +63,18 @@ class RIMBinaryWriter(ResourceWriter):
     FILE_HEADER_SIZE = 120
     KEY_ELEMENT_SIZE = 32
 
-    def __init__(self, rim: RIM, target: TARGET_TYPES):
+    def __init__(
+            self,
+            rim: RIM,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._rim = rim
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         entry_count = len(self._rim)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
 

@@ -9,12 +9,21 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class LIPXMLReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
-        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
+        self._xml_root: ElementTree.Element = ElementTree.parse(
+            io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
         self._lip: Optional[LIP] = None
 
-    def load(self, auto_close: bool = True) -> LIP:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> LIP:
         if self._xml_root.tag != "lip":
             raise TypeError("The XML file that was loaded was not a valid LIP.")
 
@@ -34,12 +43,19 @@ class LIPXMLReader(ResourceReader):
 
 
 class LIPXMLWriter(ResourceWriter):
-    def __init__(self, lip: LIP, target: TARGET_TYPES):
+    def __init__(
+            self,
+            lip: LIP,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._lip = lip
         self._xml_root: ElementTree.Element = ElementTree.Element("lip")
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self._xml_root.set("duration", str(self._lip.length))
 
         for keyframe in self._lip:

@@ -9,13 +9,21 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 
 
 class TwoDACSVReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         data = self._reader.read_bytes(self._reader.size()).decode()
         self._csv: csv.reader = csv.reader(io.StringIO(data))
         self._twoda: Optional[TwoDA] = None
 
-    def load(self, auto_close: bool = True) -> TwoDA:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> TwoDA:
         self._twoda = TwoDA()
 
         headers = next(self._csv)[1:]
@@ -34,13 +42,20 @@ class TwoDACSVReader(ResourceReader):
 
 
 class TwoDACSVWriter(ResourceWriter):
-    def __init__(self, twoda: TwoDA, target: TARGET_TYPES):
+    def __init__(
+            self,
+            twoda: TwoDA,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._twoda: TwoDA = twoda
         self._csv_string = io.StringIO("")
         self._csv_writer = csv.writer(self._csv_string)
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         headers = self._twoda.get_headers()
 
         insert = [""]

@@ -90,7 +90,9 @@ class UTC:
 
     BINARY_TYPE = ResourceType.UTC
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -188,16 +190,25 @@ class UTC:
 
 
 class UTCClass:
-    def __init__(self, class_id: int, class_level: int = 0):
+    def __init__(
+            self,
+            class_id: int,
+            class_level: int = 0
+    ):
         self.class_id: int = class_id
         self.class_level: int = class_level
         self.powers: List[int] = []
 
-    def __eq__(self, other: UTCClass):
+    def __eq__(
+            self,
+            other: UTCClass
+    ):
         return self.class_id == other.class_id and self.class_level == self.class_level
 
 
-def construct_utc(gff: GFF) -> UTC:
+def construct_utc(
+        gff: GFF
+) -> UTC:
     utc = UTC()
 
     root = gff.root
@@ -314,7 +325,12 @@ def construct_utc(gff: GFF) -> UTC:
     return utc
 
 
-def dismantle_utc(utc: UTC, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_utc(
+        utc: UTC,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTC)
 
     root = gff.root
@@ -448,19 +464,34 @@ def dismantle_utc(utc: UTC, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_utc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTC:
+def read_utc(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTC:
     gff = read_gff(source, offset, size)
     utc = construct_utc(gff)
     return utc
 
 
-def write_utc(utc: UTC, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_utc(
+        utc: UTC,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_utc(utc: UTC, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_utc(
+        utc: UTC,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

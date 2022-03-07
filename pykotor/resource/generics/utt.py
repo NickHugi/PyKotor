@@ -46,7 +46,9 @@ class UTT:
 
     BINARY_TYPE = ResourceType.UTT
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""
@@ -85,7 +87,9 @@ class UTT:
         self.name: LocalizedString = LocalizedString.from_invalid()
 
 
-def construct_utt(gff: GFF) -> UTT:
+def construct_utt(
+        gff: GFF
+) -> UTT:
     utt = UTT()
 
     root = gff.root
@@ -121,7 +125,12 @@ def construct_utt(gff: GFF) -> UTT:
     return utt
 
 
-def dismantle_utt(utt: UTT, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_utt(
+        utt: UTT,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTT)
 
     root = gff.root
@@ -159,19 +168,34 @@ def dismantle_utt(utt: UTT, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_utt(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTT:
+def read_utt(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTT:
     gff = read_gff(source, offset, size)
     utt = construct_utt(gff)
     return utt
 
 
-def write_utt(utt: UTT, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_utt(
+        utt: UTT,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_utt(utt: UTT, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_utt(
+        utt: UTT,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

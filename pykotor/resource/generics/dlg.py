@@ -42,7 +42,10 @@ class DLG:
 
     BINARY_TYPE = ResourceType.DLG
 
-    def __init__(self, blank_node: bool = True):
+    def __init__(
+            self,
+            blank_node: bool = True
+    ):
         self.starters: List[DLGLink] = []
         self.stunts: List[DLGStunt] = []
 
@@ -78,16 +81,24 @@ class DLG:
         self.delay_entry: int = 0
         self.delay_reply: int = 0
 
-    def print_tree(self) -> None:
+    def print_tree(
+            self
+    ) -> None:
         """
         Prints all the nodes (one per line) in the dialog tree with appropriate indentation.
         """
         self._print_tree(self.starters, 0, [], [])
 
-    def _print_tree(self, links: List[DLGLink], indent: int, seen_links: List[DLGLink], seen_nodes: List[DLGNode]):
+    def _print_tree(
+            self,
+            links: List[DLGLink],
+            indent: int,
+            seen_links: List[DLGLink],
+            seen_nodes: List[DLGNode]
+    ):
         for link in links:
             if link.node not in seen_nodes:
-                print("{}-> {}".format(" "*indent, link.node.text))
+                print("{}-> {}".format(" " * indent, link.node.text))
                 seen_links.append(link)
 
                 if link.node not in seen_nodes:
@@ -96,7 +107,9 @@ class DLG:
             else:
                 print("{}-> [LINK] {}".format(" " * indent, link.node.text))
 
-    def all_entries(self) -> List[DLGEntry]:
+    def all_entries(
+            self
+    ) -> List[DLGEntry]:
         """
         Returns a flat list of all entries in the dialog.
 
@@ -105,7 +118,11 @@ class DLG:
         """
         return self._all_entries()
 
-    def _all_entries(self, links: List[DLGLink] = None, seen_entries: List = None) -> List[DLGEntry]:
+    def _all_entries(
+            self,
+            links: List[DLGLink] = None,
+            seen_entries: List = None
+    ) -> List[DLGEntry]:
         entries = []
 
         links = self.starters if links is None else links
@@ -122,7 +139,9 @@ class DLG:
 
         return entries
 
-    def all_replies(self) -> List[DLGReply]:
+    def all_replies(
+            self
+    ) -> List[DLGReply]:
         """
         Returns a flat list of all replies in the dialog.
 
@@ -131,7 +150,11 @@ class DLG:
         """
         return self._all_replies()
 
-    def _all_replies(self, links: List[DLGLink] = None, seen_replies: List = None) -> List[DLGReply]:
+    def _all_replies(
+            self,
+            links: List[DLGLink] = None,
+            seen_replies: List = None
+    ) -> List[DLGReply]:
         replies = []
 
         links = [_ for link in self.starters for _ in link.node.links] if links is None else links
@@ -216,7 +239,9 @@ class DLGNode:
         vo_text_changed: "VOTextChanged" field. KotOR 2 Only.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.comment: str = ""
         self.links: List[DLGLink] = []
 
@@ -274,7 +299,9 @@ class DLGNode:
         self.record_vo: bool = False
         self.vo_text_changed: bool = False
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return str(self.text.get(Language.ENGLISH, Gender.MALE))
 
 
@@ -283,7 +310,9 @@ class DLGReply(DLGNode):
     Replies are nodes that are responses by the player.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         super().__init__()
 
 
@@ -291,7 +320,10 @@ class DLGEntry(DLGNode):
     """
     Entries are nodes that are responses by NPCs.
     """
-    def __init__(self):
+
+    def __init__(
+            self
+    ):
         super().__init__()
         self.speaker: str = ""
 
@@ -300,7 +332,10 @@ class DLGAnimation:
     """
     Represents a unit of animation executed during a node.
     """
-    def __init__(self):
+
+    def __init__(
+            self
+    ):
         self.animation_id: int = 6
         self.participant: str = ""
 
@@ -334,7 +369,10 @@ class DLGLink:
         active2_param6: "ParamStrB" field. KotOR 2 Only.
     """
 
-    def __init__(self, node: DLGNode = DLGNode):
+    def __init__(
+            self,
+            node: DLGNode = DLGNode
+    ):
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode = node
 
@@ -371,13 +409,20 @@ class DLGStunt:
         stunt_model: "StuntModel" field.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.participant: str = ""
         self.stunt_model: ResRef = ResRef.from_blank()
 
 
-def construct_dlg(gff: GFF) -> DLG:
-    def construct_node(gff_struct: GFFStruct, node: DLGNode):
+def construct_dlg(
+        gff: GFF
+) -> DLG:
+    def construct_node(
+            gff_struct: GFFStruct,
+            node: DLGNode
+    ):
         node.text = gff_struct.acquire("Text", LocalizedString.from_invalid())
         node.listener = gff_struct.acquire("Listener", "")
         node.vo_resref = gff_struct.acquire("VO_ResRef", ResRef.from_blank())
@@ -435,7 +480,10 @@ def construct_dlg(gff: GFF) -> DLG:
         if gff_struct.exists("FadeColor"):
             node.fade_color = Color.from_bgr_vector3(gff_struct.acquire("FadeColor", Vector3.from_null()))
 
-    def construct_link(gff_struct: GFFStruct, link: DLGLink):
+    def construct_link(
+            gff_struct: GFFStruct,
+            link: DLGLink
+    ):
         link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
         link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
         link.logic = gff_struct.acquire("Logic", 0)
@@ -524,8 +572,17 @@ def construct_dlg(gff: GFF) -> DLG:
     return dlg
 
 
-def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
-    def dismantle_link(gff_struct: GFFStruct, link: DLGLink, nodes: List):
+def dismantle_dlg(
+        dlg: DLG,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
+    def dismantle_link(
+            gff_struct: GFFStruct,
+            link: DLGLink,
+            nodes: List
+    ):
         gff_struct.set_resref("Active", link.active1)
         gff_struct.set_uint32("Index", nodes.index(link.node))
         if game == Game.K2:
@@ -546,7 +603,12 @@ def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True
             gff_struct.set_int32("Param5b", link.active2_param5)
             gff_struct.set_string("ParamStrB", link.active2_param6)
 
-    def dismantle_node(gff_struct: GFFStruct, node: DLGNode, nodes: List, list_name: str):
+    def dismantle_node(
+            gff_struct: GFFStruct,
+            node: DLGNode,
+            nodes: List,
+            list_name: str
+    ):
         gff_struct.set_locstring("Text", node.text)
         gff_struct.set_string("Listener", node.listener)
         gff_struct.set_resref("VO_ResRef", node.vo_resref)
@@ -662,19 +724,34 @@ def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_dlg(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> DLG:
+def read_dlg(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> DLG:
     gff = read_gff(source, offset, size)
     dlg = construct_dlg(gff)
     return dlg
 
 
-def write_dlg(dlg: DLG, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_dlg(
+        dlg: DLG,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_dlg(dlg: DLG, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_dlg(
+        dlg: DLG,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

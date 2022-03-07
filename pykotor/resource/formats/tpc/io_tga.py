@@ -20,11 +20,19 @@ class _DataTypes(IntEnum):
 
 
 class TPCTGAReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._tpc: Optional[TPC] = None
 
-    def load(self, auto_close: bool = True) -> TPC:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> TPC:
         self._tpc = TPC()
 
         id_length = self._reader.read_uint8()
@@ -81,11 +89,18 @@ class TPCTGAReader(ResourceReader):
 
 
 class TPCTGAWriter(ResourceWriter):
-    def __init__(self, tpc: TPC, target: TARGET_TYPES):
+    def __init__(
+            self,
+            tpc: TPC,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._tpc = tpc
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         width, height = self._tpc.dimensions()
 
         self._writer.write_uint8(0)

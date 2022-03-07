@@ -20,7 +20,9 @@ class UTI:
 
     BINARY_TYPE = ResourceType.UTI
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.base_item: int = 0
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -47,12 +49,16 @@ class UTI:
         self.stolen: int = 0
         self.identified: int = 0
 
-    def is_armor(self) -> bool:
+    def is_armor(
+            self
+    ) -> bool:
         return self.base_item in ARMOR_BASE_ITEMS
 
 
 class UTIProperty:
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.cost_table: int = 0
         self.cost_value: int = 0
         self.param1: int = 0
@@ -63,7 +69,9 @@ class UTIProperty:
         self.upgrade_type: Optional[int] = None
 
 
-def construct_uti(gff: GFF) -> UTI:
+def construct_uti(
+        gff: GFF
+) -> UTI:
     uti = UTI()
 
     root = gff.root
@@ -103,7 +111,12 @@ def construct_uti(gff: GFF) -> UTI:
     return uti
 
 
-def dismantle_uti(uti: UTI, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_uti(
+        uti: UTI,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTI)
 
     root = gff.root
@@ -149,19 +162,34 @@ def dismantle_uti(uti: UTI, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_uti(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTI:
+def read_uti(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTI:
     gff = read_gff(source, offset, size)
     uti = construct_uti(gff)
     return uti
 
 
-def write_uti(uti: UTI, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_uti(
+        uti: UTI,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_uti(uti: UTI, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_uti(
+        uti: UTI,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

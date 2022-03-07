@@ -7,11 +7,19 @@ from pykotor.resource.type import ResourceType, TARGET_TYPES, ResourceReader, SO
 
 
 class ERFBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._erf: Optional[ERF] = None
 
-    def load(self, auto_close: bool = True) -> ERF:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> ERF:
         self._erf = ERF()
 
         file_type = self._reader.read_string(4)
@@ -53,7 +61,7 @@ class ERFBinaryReader(ResourceReader):
 
         if auto_close:
             self._reader.close()
-        
+
         return self._erf
 
 
@@ -62,11 +70,18 @@ class ERFBinaryWriter(ResourceWriter):
     KEY_ELEMENT_SIZE = 24
     RESOURCE_ELEMENT_SIZE = 8
 
-    def __init__(self, erf: ERF, target: TARGET_TYPES):
+    def __init__(
+            self,
+            erf: ERF,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self.erf = erf
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
         offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count

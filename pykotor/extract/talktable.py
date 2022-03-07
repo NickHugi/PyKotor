@@ -17,10 +17,17 @@ class TalkTable:
     a stored string, this means that strings are always up to date at the time of access as opposed to TLK objects which
     may be out of date with its source file.
     """
-    def __init__(self, path: str):
+
+    def __init__(
+            self,
+            path: str
+    ):
         self._path: str = path
 
-    def string(self, stringref: int) -> str:
+    def string(
+            self,
+            stringref: int
+    ) -> str:
         """
         Access a string from the tlk file.
 
@@ -54,7 +61,10 @@ class TalkTable:
 
         return string
 
-    def sound(self, stringref: int) -> ResRef:
+    def sound(
+            self,
+            stringref: int
+    ) -> ResRef:
         """
         Access the sound ResRef from the tlk file.
 
@@ -85,7 +95,10 @@ class TalkTable:
 
         return ResRef(sound_resref)
 
-    def batch(self, stringrefs: List[int]) -> Dict[int, StringResult]:
+    def batch(
+            self,
+            stringrefs: List[int]
+    ) -> Dict[int, StringResult]:
         """
         Loads a list of strings and sound ResRefs from the specified list. This is all performed using a single file
         handle and should be used if loading multiple strings from the tlk file.
@@ -127,7 +140,9 @@ class TalkTable:
 
         return batch
 
-    def size(self) -> int:
+    def size(
+            self
+    ) -> int:
         """
         Returns the number of entries in the talk table.
 
@@ -140,7 +155,15 @@ class TalkTable:
         reader.close()
         return entries_count
 
-    def language(self) -> Language:
+    def language(
+            self
+    ) -> Language:
+        """
+        Returns the matching Language of the TLK file.
+
+        Returns:
+            The language of the TLK file.
+        """
         reader = BinaryReader.from_file(self._path)
         reader.seek(8)
         language_id = reader.read_uint32()

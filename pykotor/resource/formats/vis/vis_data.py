@@ -16,18 +16,27 @@ class VIS:
 
     BINARY_TYPE = ResourceType.VIS
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self._rooms: Set[str] = set()
         self._visibility: Dict[str, Set[str]] = {}
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         for observer, observed in self._visibility.items():
             yield observer, deepcopy(observed)
 
-    def all_rooms(self) -> Set[str]:
+    def all_rooms(
+            self
+    ) -> Set[str]:
         return copy(self._rooms)
 
-    def add_room(self, model: str) -> None:
+    def add_room(
+            self,
+            model: str
+    ) -> None:
         """
         Adds a room. If an room already exists, it is ignored; no error is thrown.
 
@@ -41,7 +50,10 @@ class VIS:
 
         self._rooms.add(model)
 
-    def remove_room(self, model: str) -> None:
+    def remove_room(
+            self,
+            model: str
+    ) -> None:
         """
         Removes a room. If a room does not exist, it is ignored; no error is thrown.
 
@@ -57,7 +69,11 @@ class VIS:
         if model in self._rooms:
             self._rooms.remove(model)
 
-    def rename_room(self, old: str, new: str):
+    def rename_room(
+            self,
+            old: str,
+            new: str
+    ):
         old = old.lower()
         new = new.lower()
 
@@ -75,7 +91,10 @@ class VIS:
                 self._visibility[other].remove(old)
                 self._visibility[other].add(new)
 
-    def room_exists(self, model: str) -> bool:
+    def room_exists(
+            self,
+            model: str
+    ) -> bool:
         """
         Returns true if the specified room exists.
 
@@ -85,7 +104,12 @@ class VIS:
         model.lower()
         return model in self._rooms
 
-    def set_visible(self, when_inside: str, show: str, visible: bool) -> None:
+    def set_visible(
+            self,
+            when_inside: str,
+            show: str,
+            visible: bool
+    ) -> None:
         """
         Sets the visibility of a specified room based off when viewing from another specified room.
 
@@ -105,7 +129,11 @@ class VIS:
         elif show in self._visibility[when_inside]:
             self._visibility[when_inside].remove(show)
 
-    def get_visible(self, when_inside: str, show: str) -> bool:
+    def get_visible(
+            self,
+            when_inside: str,
+            show: str
+    ) -> bool:
         """
         Returns true if the observed room is visible from the observing room.
 

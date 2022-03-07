@@ -57,7 +57,9 @@ class IFO:
 
     BINARY_TYPE = ResourceType.IFO
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.mod_id: bytes = bytes()
         self.mod_name: LocalizedString = LocalizedString.from_invalid()
         self.area_name: ResRef = ResRef.from_blank()
@@ -100,7 +102,9 @@ class IFO:
         self.start_movie: ResRef = ResRef.from_blank()
 
 
-def construct_ifo(gff: GFF) -> IFO:
+def construct_ifo(
+        gff: GFF
+) -> IFO:
     ifo = IFO()
 
     root = gff.root
@@ -150,7 +154,12 @@ def construct_ifo(gff: GFF) -> IFO:
     return ifo
 
 
-def dismantle_ifo(ifo: IFO, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_ifo(
+        ifo: IFO,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.IFO)
 
     root = gff.root
@@ -203,19 +212,34 @@ def dismantle_ifo(ifo: IFO, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_ifo(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> IFO:
+def read_ifo(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> IFO:
     gff = read_gff(source, offset, size)
     ifo = construct_ifo(gff)
     return ifo
 
 
-def write_ifo(ifo: IFO, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_ifo(
+        ifo: IFO,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_ifo(ifo, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_ifo(ifo: IFO, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_ifo(
+        ifo: IFO,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_ifo(ifo, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

@@ -4,7 +4,10 @@ from pykotor.resource.formats.lip.io_lip_xml import LIPXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def detect_lip(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
+def detect_lip(
+        source: SOURCE_TYPES,
+        offset: int = 0
+) -> ResourceType:
     """
     Returns what format the LIP data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -33,7 +36,11 @@ def detect_lip(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def read_lip(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LIP:
+def read_lip(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> LIP:
     """
     Returns an LIP instance from the source. The file format (LIP or LIP_XML) is automatically determined before parsing
     the data.
@@ -62,7 +69,11 @@ def read_lip(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LIP:
         raise ValueError("Tried to load an unsupported or corrupted LIP file.")
 
 
-def write_lip(lip: LIP, target: TARGET_TYPES, file_format: ResourceType = ResourceType.LIP) -> None:
+def write_lip(
+        lip: LIP,
+        target: TARGET_TYPES,
+        file_format: ResourceType = ResourceType.LIP
+) -> None:
     """
     Writes the LIP data to the target location with the specified format (LIP or LIP_XML).
 
@@ -82,7 +93,10 @@ def write_lip(lip: LIP, target: TARGET_TYPES, file_format: ResourceType = Resour
         raise ValueError("Unsupported format specified; use LIP or LIP_XML.")
 
 
-def bytes_lip(lip: LIP, file_format: ResourceType = ResourceType.LIP) -> bytes:
+def bytes_lip(
+        lip: LIP,
+        file_format: ResourceType = ResourceType.LIP
+) -> bytes:
     """
     Returns the LIP data in the specified format (LIP or LIP_XML) as a bytes object.
 

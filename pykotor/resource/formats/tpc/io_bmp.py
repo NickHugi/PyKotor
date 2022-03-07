@@ -6,11 +6,18 @@ from pykotor.resource.type import ResourceWriter, TARGET_TYPES
 
 
 class TPCBMPWriter(ResourceWriter):
-    def __init__(self, tpc: TPC, target: TARGET_TYPES):
+    def __init__(
+            self,
+            tpc: TPC,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._tpc = tpc
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         width, height, data = self._tpc.convert(TPCTextureFormat.RGB, 0)
         file_size = 14 + 40 + (width * height * 3)
 

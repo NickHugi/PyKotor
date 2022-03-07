@@ -10,7 +10,6 @@ from pykotor.resource.type import ResourceType
 
 from pykotor.common.geometry import Vector3
 
-
 T = TypeVar("T")
 
 
@@ -25,14 +24,22 @@ class ResRef:
     A string reference to a game resource. ResRefs can be a maximum of 16 characters in length.
     """
 
-    def __init__(self, text: str):
+    def __init__(
+            self,
+            text: str
+    ):
         self._value = ""
         self.set(text)
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         return len(self._value)
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         """
         A ResRef can be compared to another ResRef or a str.
         """
@@ -43,14 +50,20 @@ class ResRef:
         else:
             return NotImplemented
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "ResRef({})".format(self._value)
 
-    def __str__(self):
+    def __str__(
+            self
+    ):
         return self._value
 
     @classmethod
-    def from_blank(cls) -> ResRef:
+    def from_blank(
+            cls
+    ) -> ResRef:
         """
         Returns a blank ResRef.
 
@@ -60,7 +73,10 @@ class ResRef:
         return ResRef("")
 
     @classmethod
-    def from_path(cls, path: str) -> ResRef:
+    def from_path(
+            cls,
+            path: str
+    ) -> ResRef:
         """
         Returns a ResRef from the filename in the specified path.
 
@@ -72,7 +88,10 @@ class ResRef:
         """
         return ResRef(os.path.splitext(path)[0].replace('\\', '/').split('/')[-1])
 
-    def set(self, text: str) -> None:
+    def set(
+            self,
+            text: str
+    ) -> None:
         """
         Sets the ResRef.
 
@@ -89,7 +108,9 @@ class ResRef:
 
         self._value = text
 
-    def get(self) -> str:
+    def get(
+            self
+    ) -> str:
         return self._value
 
 
@@ -109,22 +130,35 @@ class Color:
     BLACK: Color
     WHITE: Color
 
-    def __init__(self, r: float, g: float, b: float, a: float = 1.0):
+    def __init__(
+            self,
+            r: float,
+            g: float,
+            b: float,
+            a: float = 1.0
+    ):
         self.r = r
         self.g = g
         self.b = b
         self.a = a
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "Color({}, {}, {}, {})".format(self.r, self.g, self.b, self.g)
 
-    def __str__(self):
+    def __str__(
+            self
+    ):
         """
         Returns a string of each color component separated by whitespace.
         """
         return "{} {} {} {}".format(self.r, self.g, self.b, self.a)
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         """
         Two Color instances are equal if their color components are equal.
         """
@@ -134,7 +168,10 @@ class Color:
         return other.r == self.r and other.g == self.g and other.b == self.b and other.a == self.a
 
     @classmethod
-    def from_rgb_integer(cls, integer: int) -> Color:
+    def from_rgb_integer(
+            cls,
+            integer: int
+    ) -> Color:
         """
         Returns a Color by decoding the specified integer.
 
@@ -150,7 +187,10 @@ class Color:
         return Color(red, green, blue)
 
     @classmethod
-    def from_bgr_integer(cls, integer: int) -> Color:
+    def from_bgr_integer(
+            cls,
+            integer: int
+    ) -> Color:
         """
         Returns a Color by decoding the specified integer.
 
@@ -166,7 +206,10 @@ class Color:
         return Color(red, green, blue)
 
     @classmethod
-    def from_rgb_vector3(cls, vector3: Vector3) -> Color:
+    def from_rgb_vector3(
+            cls,
+            vector3: Vector3
+    ) -> Color:
         """
         Returns a Color from the specified vector components.
 
@@ -182,7 +225,10 @@ class Color:
         return Color(red, green, blue)
 
     @classmethod
-    def from_bgr_vector3(cls, vector3: Vector3) -> Color:
+    def from_bgr_vector3(
+            cls,
+            vector3: Vector3
+    ) -> Color:
         """
         Returns a Color from the specified vector components.
 
@@ -197,7 +243,9 @@ class Color:
         blue = vector3.x
         return Color(red, green, blue)
 
-    def rgb_integer(self) -> int:
+    def rgb_integer(
+            self
+    ) -> int:
         """
         Returns a RGB integer encoded from the color components.
 
@@ -209,7 +257,9 @@ class Color:
         blue = int(self.b * 255) << 16
         return red + green + blue
 
-    def bgr_integer(self) -> int:
+    def bgr_integer(
+            self
+    ) -> int:
         """
         Returns a BGR integer encoded from the color components.
 
@@ -221,7 +271,9 @@ class Color:
         blue = int(self.b * 255)
         return red + green + blue
 
-    def rgb_vector3(self) -> Vector3:
+    def rgb_vector3(
+            self
+    ) -> Vector3:
         """
         Returns a Vector3 representing a color with its components.
 
@@ -230,7 +282,9 @@ class Color:
         """
         return Vector3(self.r, self.g, self.b)
 
-    def bgr_vector3(self) -> Vector3:
+    def bgr_vector3(
+            self
+    ) -> Vector3:
         """
         Returns a Vector3 representing a color with its components.
 
@@ -248,10 +302,16 @@ Color.WHITE = Color(1.0, 1.0, 1.0)
 
 
 class WrappedInt:
-    def __init__(self, value: int = 0):
+    def __init__(
+            self,
+            value: int = 0
+    ):
         self._value: int = value
 
-    def __add__(self, other):
+    def __add__(
+            self,
+            other
+    ):
         if isinstance(other, WrappedInt):
             self._value += other.get()
         elif isinstance(other, int):
@@ -259,7 +319,10 @@ class WrappedInt:
         else:
             return NotImplemented
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         if isinstance(other, WrappedInt):
             return self.get() == other.get()
         elif isinstance(other, int):
@@ -267,79 +330,125 @@ class WrappedInt:
         else:
             return NotImplemented
 
-    def set(self, value: int) -> None:
+    def set(
+            self,
+            value: int
+    ) -> None:
         self._value = value
 
-    def get(self) -> int:
+    def get(
+            self
+    ) -> int:
         return self._value
 
 
 class InventoryItem:
-    def __init__(self, resref: ResRef, droppable: bool = False, infinite: bool = False):
+    def __init__(
+            self,
+            resref: ResRef,
+            droppable: bool = False,
+            infinite: bool = False
+    ):
         self.resref: ResRef = resref
         self.droppable: bool = droppable
         self.infinite: bool = infinite
 
-    def __str__(self):
+    def __str__(
+            self
+    ):
         return self.resref.get()
 
-    def __eq__(self, other: InventoryItem):
+    def __eq__(
+            self,
+            other: InventoryItem
+    ):
         return self.resref == other.resref and self.droppable == other.droppable
 
 
 class EquipmentSlot(Enum):
-    HEAD        = 1
-    ARMOR       = 2
-    GAUNTLET    = 8
-    RIGHT_HAND  = 16
-    LEFT_HAND   = 32
-    RIGHT_ARM   = 128
-    LEFT_ARM    = 256
-    IMPLANT     = 512
-    BELT        = 1024
-    CLAW1       = 16384
-    CLAW2       = 32768
-    CLAW3       = 65536
-    HIDE        = 131072
+    HEAD = 1
+    ARMOR = 2
+    GAUNTLET = 8
+    RIGHT_HAND = 16
+    LEFT_HAND = 32
+    RIGHT_ARM = 128
+    LEFT_ARM = 256
+    IMPLANT = 512
+    BELT = 1024
+    CLAW1 = 16384
+    CLAW2 = 32768
+    CLAW3 = 65536
+    HIDE = 131072
 
 
 class CaseInsensitiveDict(Generic[T]):
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self._dictionary: Dict[str, T] = {}
         self._case_map: Dict[str, str] = {}
 
-    def __getitem__(self, key: str):
+    def __getitem__(
+            self,
+            key: str
+    ):
         return self._dictionary[key.lower()]
 
-    def __setitem__(self, key: str, value: T):
+    def __setitem__(
+            self,
+            key: str,
+            value: T
+    ):
         self._dictionary[key.lower()] = value
         self._case_map[key.lower()] = key
 
-    def __delitem__(self, key: str):
+    def __delitem__(
+            self,
+            key: str
+    ):
         del self._dictionary[key.lower()]
         del self._case_map[key.lower()]
 
-    def __contains__(self, key: str):
+    def __contains__(
+            self,
+            key: str
+    ):
         return key.lower() in self._dictionary
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         return len(self._dictionary)
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return repr(self._dictionary)
 
-    def pop(self, key: str):
+    def pop(
+            self,
+            key: str
+    ):
         self._dictionary.pop(key.lower())
         self._case_map.pop(key.lower())
 
-    def get(self, key: str):
+    def get(
+            self,
+            key: str
+    ):
         return self._dictionary[key.lower()]
 
-    def items(self):
+    def items(
+            self
+    ):
         return [(self._case_map[key], value) for key, value in self._dictionary.items()]
 
-    def values(self):
+    def values(
+            self
+    ):
         return self._dictionary.values()
 
-    def keys(self):
+    def keys(
+            self
+    ):
         return [self._case_map[key] for key in self._dictionary.keys()]

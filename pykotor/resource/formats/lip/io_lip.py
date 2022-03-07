@@ -7,11 +7,19 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class LIPBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._lip: Optional[LIP] = None
 
-    def load(self, auto_close: bool = True) -> LIP:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> LIP:
         self._lip = LIP()
 
         file_type = self._reader.read_string(4)
@@ -41,11 +49,18 @@ class LIPBinaryWriter(ResourceWriter):
     HEADER_SIZE = 16
     LIP_ENTRY_SIZE = 5
 
-    def __init__(self, lip: LIP, target: TARGET_TYPES):
+    def __init__(
+            self,
+            lip: LIP,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._lip: LIP = lip
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self._writer.write_string("LIP ")
         self._writer.write_string("V1.0")
         self._writer.write_single(self._lip.length)

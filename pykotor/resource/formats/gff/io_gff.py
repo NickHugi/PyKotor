@@ -11,7 +11,12 @@ _COMPLEX_FIELD = {GFFFieldType.UInt64, GFFFieldType.Int64, GFFFieldType.Double, 
 
 
 class GFFBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._gff: Optional[GFF] = None
 
@@ -22,7 +27,10 @@ class GFFBinaryReader(ResourceReader):
         self._struct_offset = 0
         self._field_offset = 0
 
-    def load(self, auto_close: bool = True) -> GFF:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> GFF:
         self._gff = GFF()
 
         file_type = self._reader.read_string(4)
@@ -58,8 +66,12 @@ class GFFBinaryReader(ResourceReader):
             self._reader.close()
 
         return self._gff
-    
-    def _load_struct(self, gff_struct: GFFStruct, struct_index: int):
+
+    def _load_struct(
+            self,
+            gff_struct: GFFStruct,
+            struct_index: int
+    ):
         self._reader.seek(self._struct_offset + struct_index * 12)
         struct_id, data, field_count = self._reader.read_uint32(), self._reader.read_uint32(), self._reader.read_uint32()
 
@@ -75,7 +87,11 @@ class GFFBinaryReader(ResourceReader):
             for index in indices:
                 self._load_field(gff_struct, index)
 
-    def _load_field(self, gff_struct: GFFStruct, field_index: int):
+    def _load_field(
+            self,
+            gff_struct: GFFStruct,
+            field_index: int
+    ):
         self._reader.seek(self._field_offset + field_index * 12)
         field_type_id = self._reader.read_uint32()
         label_id = self._reader.read_uint32()
@@ -145,7 +161,11 @@ class GFFBinaryReader(ResourceReader):
 
 
 class GFFBinaryWriter(ResourceWriter):
-    def __init__(self, gff: GFF, target: TARGET_TYPES):
+    def __init__(
+            self,
+            gff: GFF,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._gff = gff
 
@@ -160,7 +180,10 @@ class GFFBinaryWriter(ResourceWriter):
         self._struct_count: int = 0
         self._field_count: int = 0
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self._build_struct(self._gff.root)
 
         struct_offset = 56
@@ -202,7 +225,10 @@ class GFFBinaryWriter(ResourceWriter):
         if auto_close:
             self._writer.close()
 
-    def _build_struct(self, gff_struct: GFFStruct):
+    def _build_struct(
+            self,
+            gff_struct: GFFStruct
+    ):
         self._struct_count += 1
         struct_id = gff_struct.struct_id
         field_count = len(gff_struct)
@@ -233,7 +259,10 @@ class GFFBinaryWriter(ResourceWriter):
                 self._build_field(label, value, field_type)
                 i += 1
 
-    def _build_list(self, gff_list: GFFList):
+    def _build_list(
+            self,
+            gff_list: GFFList
+    ):
         self._list_indices_writer.end()
         self._list_indices_writer.write_uint32(len(gff_list))
         pos = self._list_indices_writer.position()
@@ -243,7 +272,12 @@ class GFFBinaryWriter(ResourceWriter):
             self._list_indices_writer.write_uint32(self._struct_count)
             self._build_struct(gff_struct)
 
-    def _build_field(self, label: str, value: Any, field_type: GFFFieldType):
+    def _build_field(
+            self,
+            label: str,
+            value: Any,
+            field_type: GFFFieldType
+    ):
         self._field_count += 1
         field_type_id = field_type.value
         label_index = self._label_index(label)
@@ -298,7 +332,10 @@ class GFFBinaryWriter(ResourceWriter):
             else:
                 raise ValueError("Unknown field type")
 
-    def _label_index(self, label: str) -> int:
+    def _label_index(
+            self,
+            label: str
+    ) -> int:
         if label in self._labels:
             return self._labels.index(label)
         else:

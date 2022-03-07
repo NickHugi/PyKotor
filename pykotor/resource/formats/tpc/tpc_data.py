@@ -35,7 +35,9 @@ class TPC:
 
     BINARY_TYPE = ResourceType.TPC
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self._texture_format: TPCTextureFormat = TPCTextureFormat.RGB
         self._mipmaps: List[bytes] = [bytes([0 for i in range(4 * 4 * 3)])]
         self._width: int = 4
@@ -44,7 +46,9 @@ class TPC:
 
         # TODO: cube maps
 
-    def mipmap_count(self) -> int:
+    def mipmap_count(
+            self
+    ) -> int:
         """
         Returns the number of mipmaps.
 
@@ -53,7 +57,9 @@ class TPC:
         """
         return len(self._mipmaps)
 
-    def format(self) -> TPCTextureFormat:
+    def format(
+            self
+    ) -> TPCTextureFormat:
         """
         Returns the format of the stored texture.
 
@@ -62,7 +68,9 @@ class TPC:
         """
         return self._texture_format
 
-    def dimensions(self) -> Tuple[int, int]:
+    def dimensions(
+            self
+    ) -> Tuple[int, int]:
         """
         Returns the width and height of the largest mipmap.
 
@@ -71,7 +79,10 @@ class TPC:
         """
         return self._width, self._height
 
-    def get(self, mipmap: int = 0) -> TPCGetResult:
+    def get(
+            self,
+            mipmap: int = 0
+    ) -> TPCGetResult:
         """
         Returns a tuple containing the width, height, texture format, and data of the specified mipmap.
 
@@ -84,7 +95,11 @@ class TPC:
         width, height = self._mipmap_size(mipmap)
         return TPCGetResult(width, height, self._texture_format, self._mipmaps[mipmap])
 
-    def convert(self, convert_format: TPCTextureFormat, mipmap: int = 0) -> TPCConvertResult:
+    def convert(
+            self,
+            convert_format: TPCTextureFormat,
+            mipmap: int = 0
+    ) -> TPCConvertResult:
         """
         Returns a tuple containing the width, height and data of the specified mipmap where the data returned is in
         the texture format specified.
@@ -133,7 +148,13 @@ class TPC:
 
         return TPCConvertResult(width, height, data)
 
-    def set_single(self, width: int, height: int, data: bytes, texture_format: TPCTextureFormat) -> None:
+    def set_single(
+            self,
+            width: int,
+            height: int,
+            data: bytes,
+            texture_format: TPCTextureFormat
+    ) -> None:
         """
         Sets the texture data but only for a single mipmap.
 
@@ -145,7 +166,13 @@ class TPC:
         """
         self.set(width, height, [data], texture_format)
 
-    def set(self, width: int, height: int, mipmaps: List[bytes], texture_format: TPCTextureFormat) -> None:
+    def set(
+            self,
+            width: int,
+            height: int,
+            mipmaps: List[bytes],
+            texture_format: TPCTextureFormat
+    ) -> None:
         """
         Sets the new texture data.
 
@@ -163,10 +190,15 @@ class TPC:
         self._width = width
         self._height = height
 
-    def is_compressed(self) -> bool:
+    def is_compressed(
+            self
+    ) -> bool:
         return self._texture_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]
 
-    def _mipmap_size(self, mipmap: int) -> Tuple[int, int]:
+    def _mipmap_size(
+            self,
+            mipmap: int
+    ) -> Tuple[int, int]:
         """
         Returns the size of the specified mipmap.
 
@@ -191,11 +223,15 @@ class TPC:
 
     # region Convert to RGBA
     @staticmethod
-    def _dxt5_to_rgba(data: bytes, width: int, height: int) -> bytearray:
+    def _dxt5_to_rgba(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 4)
 
-        for ty in range(4, height+4, 4):
+        for ty in range(4, height + 4, 4):
             for tx in range(0, width, 4):
                 alpha0 = dxt_reader.read_uint8()
                 alpha1 = dxt_reader.read_uint8()
@@ -237,19 +273,23 @@ class TPC:
                         a = alpha_code[(dxt_alpha >> (3 * (4 * (y) + x))) & 7]
 
                         index = ((ty - 4 + y) * width + (tx + x)) * 4
-                        new_data[index+0] = cc[pixelc_code][0]
-                        new_data[index+1] = cc[pixelc_code][1]
-                        new_data[index+2] = cc[pixelc_code][2]
-                        new_data[index+3] = a
+                        new_data[index + 0] = cc[pixelc_code][0]
+                        new_data[index + 1] = cc[pixelc_code][1]
+                        new_data[index + 2] = cc[pixelc_code][2]
+                        new_data[index + 3] = a
 
         return new_data
 
     @staticmethod
-    def _dxt1_to_rgba(data: bytes, width: int, height: int) -> bytearray:
+    def _dxt1_to_rgba(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         dxt_reader = BinaryReader.from_bytes(data)
-        new_data = bytearray(width*height*4)
+        new_data = bytearray(width * height * 4)
 
-        for ty in range(4, height+4, 4):
+        for ty in range(4, height + 4, 4):
             for tx in range(0, width, 4):
                 x = dxt_reader.read_int16()
                 y = dxt_reader.read_int16()
@@ -277,18 +317,26 @@ class TPC:
         return new_data
 
     @staticmethod
-    def _rgb_to_rgba(data: bytes, width: int, height: int) -> bytearray:
+    def _rgb_to_rgba(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
-        for ty in range(4, height+4, 4):
+        for ty in range(4, height + 4, 4):
             for x in range(width):
                 new_data.extend([rgb_reader.read_uint8(), rgb_reader.read_uint8(), rgb_reader.read_uint8(), 255])
 
         return new_data
 
     @staticmethod
-    def _grey_to_rgba(data: bytes, width: int, height: int) -> bytearray:
+    def _grey_to_rgba(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
@@ -298,11 +346,16 @@ class TPC:
                 new_data.extend([brightness, brightness, brightness, 255])
 
         return new_data
+
     # endregion
 
     # region Convert to Grey
     @staticmethod
-    def _rgba_to_grey(data: bytes, width: int, height: int) -> bytearray:
+    def _rgba_to_grey(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
@@ -320,15 +373,20 @@ class TPC:
                 new_data.extend([highest])
 
         return new_data
+
     # endregion
 
     # region Convert to RGB
     @staticmethod
-    def _dxt5_to_rgb(data: bytes, width: int, height: int) -> bytearray:
+    def _dxt5_to_rgb(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty in range(4, height+4, 4):
+        for ty in range(4, height + 4, 4):
             for tx in range(0, width, 4):
                 dxt_reader.skip(8)
 
@@ -357,11 +415,15 @@ class TPC:
         return new_data
 
     @staticmethod
-    def _dxt1_to_rgb(data: bytes, width: int, height: int) -> bytearray:
+    def _dxt1_to_rgb(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         dxt_reader = BinaryReader.from_bytes(data)
         new_data = bytearray(width * height * 3)
 
-        for ty in range(4, height+4, 4):
+        for ty in range(4, height + 4, 4):
             for tx in range(0, width, 4):
                 x = dxt_reader.read_int16()
                 y = dxt_reader.read_int16()
@@ -388,7 +450,11 @@ class TPC:
         return new_data
 
     @staticmethod
-    def _rgba_to_rgb(data: bytes, width: int, height: int) -> bytearray:
+    def _rgba_to_rgb(
+            data: bytes,
+            width: int,
+            height: int
+    ) -> bytearray:
         new_data = bytearray()
         rgb_reader = BinaryReader.from_bytes(data)
 
@@ -398,17 +464,24 @@ class TPC:
                 rgb_reader.skip(1)
 
         return new_data
+
     # endregion
 
     @staticmethod
-    def _rgba565_to_rgb888(color: int) -> int:
+    def _rgba565_to_rgb888(
+            color: int
+    ) -> int:
         blue = (color & 0x1F)
         green = (color >> 5) & 0x3F
         red = (color >> 11) & 0x1F
         return (blue << 3) + (green << 10) + (red << 19)
 
     @staticmethod
-    def _interpolate(weight: float, color0: int, color1: int) -> int:
+    def _interpolate(
+            weight: float,
+            color0: int,
+            color1: int
+    ) -> int:
         color0_blue = color0 & 255
         color0_greed = (color0 >> 8) & 255
         color0_red = (color0 >> 16) & 255
@@ -424,14 +497,20 @@ class TPC:
         return (blue) + (green << 8) + (red << 16)
 
     @staticmethod
-    def _rgba565_to_rgb(color: int):
+    def _rgba565_to_rgb(
+            color: int
+    ):
         blue = color & 0x1F
         green = (color >> 5) & 0x3F
         red = (color >> 11) & 0x1F
         return red << 3, green << 2, blue << 3
 
     @staticmethod
-    def _interpolate_rgb(weight: float, color0, color1):
+    def _interpolate_rgb(
+            weight: float,
+            color0,
+            color1
+    ):
         color0_blue = color0[2]
         color0_greed = color0[1]
         color0_red = color0[0]
@@ -447,7 +526,9 @@ class TPC:
         return red, green, blue
 
     @staticmethod
-    def _integer48(bytes48: bytes) -> int:
+    def _integer48(
+            bytes48: bytes
+    ) -> int:
         return bytes48[0] + (bytes48[1] << 8) + (bytes48[2] << 16) + (bytes48[3] << 24) + (bytes48[4] << 32) + (
                 bytes48[5] << 40)
 

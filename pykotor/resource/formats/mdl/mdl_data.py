@@ -23,14 +23,19 @@ class MDL:
 
     BINARY_TYPE = ResourceType.MDL
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.root: MDLNode = MDLNode()
         self.anims: List[MDLAnimation] = []
         self.name: str = ""
         self.fog: bool = False
         self.supermodel: str = ""
 
-    def get(self, node_name: str) -> Optional[MDLNode]:
+    def get(
+            self,
+            node_name: str
+    ) -> Optional[MDLNode]:
         pick = None
 
         nodes = [self.root]
@@ -43,7 +48,9 @@ class MDL:
 
         return pick
 
-    def all_nodes(self) -> List[MDLNode]:
+    def all_nodes(
+            self
+    ) -> List[MDLNode]:
         nodes = []
         scan = [self.root]
         while scan:
@@ -52,7 +59,10 @@ class MDL:
             scan.extend(node.children)
         return nodes
 
-    def find_parent(self, child: MDLNode) -> Optional[MDLNode]:
+    def find_parent(
+            self,
+            child: MDLNode
+    ) -> Optional[MDLNode]:
         all_nodes = self.all_nodes()
         parent = None
         for node in all_nodes:
@@ -60,7 +70,10 @@ class MDL:
                 parent = node
         return parent
 
-    def global_position(self, node: MDLNode) -> Vector3:
+    def global_position(
+            self,
+            node: MDLNode
+    ) -> Vector3:
         position = node.position
         parent = self.find_parent(node)
         while parent is not None:
@@ -68,20 +81,27 @@ class MDL:
             parent = self.find_parent(parent)
         return position
 
-    def get_by_node_id(self, node_id) -> MDLNode:
+    def get_by_node_id(
+            self,
+            node_id
+    ) -> MDLNode:
         for node in self.all_nodes():
             if node.node_id == node_id:
                 return node
         raise ValueError
 
-    def all_textures(self) -> Set[str]:
+    def all_textures(
+            self
+    ) -> Set[str]:
         textures = set()
         for node in self.all_nodes():
             if node.mesh and node.mesh.texture_1 != "NULL" and node.mesh.texture_1 != "":
                 textures.add(node.mesh.texture_1)
         return textures
 
-    def all_lightmaps(self) -> Set[str]:
+    def all_lightmaps(
+            self
+    ) -> Set[str]:
         lightmaps = set()
         for node in self.all_nodes():
             if node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2 != "":
@@ -91,7 +111,9 @@ class MDL:
 
 # region Animation Data
 class MDLAnimation:
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.name: str = ""
         self.root_model: str = ""
         self.anim_length: float = 0.0
@@ -99,7 +121,9 @@ class MDLAnimation:
         self.events: List[MDLEvent] = []
         self.root: MDLNode = MDLNode()
 
-    def all_nodes(self) -> List[MDLNode]:
+    def all_nodes(
+            self
+    ) -> List[MDLNode]:
         nodes = []
         scan = [self.root]
         while scan:
@@ -110,9 +134,13 @@ class MDLAnimation:
 
 
 class MDLEvent:
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.activation_time: float = 0.0
         self.name: str = ""
+
+
 # endregion
 
 
@@ -151,7 +179,9 @@ class MDLNode:
         saber: Sabermesh data associated with the node.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         # self.parent: Optional[MDLNode] = None
 
         self.children: List[MDLNode] = []
@@ -170,14 +200,19 @@ class MDLNode:
         self.aabb: Optional[MDLWalkmesh] = None
         self.saber: Optional[MDLSaber] = None
 
-    def descendants(self) -> List[MDLNode]:
+    def descendants(
+            self
+    ) -> List[MDLNode]:
         ancestors = []
         for child in self.children:
             ancestors.append(child)
             ancestors.extend(child.descendants())
         return ancestors
 
-    def child(self, name) -> MDLNode:
+    def child(
+            self,
+            name
+    ) -> MDLNode:
         for child in self.children:
             if child.name == name:
                 return child
@@ -200,7 +235,9 @@ class MDLLight:
         flares:
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         # TODO: Make enums, check if bools, docs, merge flare data into class
         self.flare_radius: float = 0.0
         self.light_priority: int = 0
@@ -240,7 +277,9 @@ class MDLEmitter:
         depth_texture:
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         # TODO: Make enums, check if bools, docs, seperate flags into booleans
         self.dead_space: float = 0.0
         self.blast_radius: float = 0.0
@@ -272,7 +311,9 @@ class MDLReference:
         reattachable:
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         # TODO: docs
         self.model: str = ""
         self.reattachable: bool = False
@@ -283,7 +324,9 @@ class MDLMesh:
     Mesh data that can be attached to a node.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         # TODO: look at mesh inverted counter array, rename boolean flags
         self.faces: List[MDLFace] = []
         self.diffuse: Color = Color.WHITE
@@ -323,8 +366,11 @@ class MDLSkin:
     Skin data that can be attached to a node.
     """
 
-    def __init__(self):
-        self.bone_indices: Tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int] = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    def __init__(
+            self
+    ):
+        self.bone_indices: Tuple[int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int] = (
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.qbones: List[Vector3] = []
         self.tbones: List[Vector3] = []
         self.bonemap: List[int] = []
@@ -348,18 +394,24 @@ class MDLSaber:
     """
     Saber data that can be attached to a node.
     """
-#endregion
+
+
+# endregion
 
 
 # region Geometry Data
 class MDLBoneVertex:
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.vertex_weights: Tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
         self.vertex_indices: Tuple[float, float, float, float] = (-1.0, -1.0, -1.0, -1.0)
 
 
 class MDLFace:
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.v1: int = 0
         self.v2: int = 0
         self.v3: int = 0
@@ -369,6 +421,8 @@ class MDLFace:
         self.a3: int = 0
         self.coefficient: int = 0
         self.normal: Vector3 = Vector3.from_null()
+
+
 # endregion
 
 
@@ -390,18 +444,30 @@ class MDLController:
     A controller is an object that gets attached to the node and influences some sort of change that is either static
     or animated.
     """
-    def __init__(self):
+
+    def __init__(
+            self
+    ):
         self.controller_type: MDLControllerType = MDLControllerType.INVALID
         self.rows: List[MDLControllerRow] = []
 
 
 class MDLControllerRow:
-    def __init__(self, time, data):
+    def __init__(
+            self,
+            time,
+            data
+    ):
         self.time: float = time
         self.data: List[float] = data
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "MDLControllerRow({}, {})".format(self.time, self.data)
-    def __str__(self):
+
+    def __str__(
+            self
+    ):
         return "{} {}".format(self.time, self.data).replace(',', '').replace('[', '').replace(']', '')
 # endregion

@@ -13,21 +13,31 @@ class Chitin:
 
     Chitin support is read-only and you cannot write your own key/bif files with this class.
     """
-    def __init__(self, kotor_path: str):
+
+    def __init__(
+            self,
+            kotor_path: str
+    ):
         self._kotor_path: str = kotor_path.replace('\\', '/')
         if not self._kotor_path.endswith('/'): self._kotor_path += '/'
 
         self._resources: List[FileResource] = []
         self.load()
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         for resource in self._resources:
             yield resource
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         return len(self._resources)
 
-    def load(self) -> None:
+    def load(
+            self
+    ) -> None:
         """
         Reload the list of resource info linked from the chitin.key file.
         """
@@ -81,7 +91,11 @@ class Chitin:
                     resource = FileResource(resref, restype, size, offset, self._kotor_path + bif)
                     self._resources.append(resource)
 
-    def resource(self, resref: str, restype: ResourceType) -> Optional[bytes]:
+    def resource(
+            self,
+            resref: str,
+            restype: ResourceType
+    ) -> Optional[bytes]:
         """
         Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
@@ -96,7 +110,11 @@ class Chitin:
         resource = next((resource for resource in self._resources if resource == query), None)
         return None if resource is None else resource.data()
 
-    def exists(self, resref: str, restype: ResourceType) -> bool:
+    def exists(
+            self,
+            resref: str,
+            restype: ResourceType
+    ) -> bool:
         query = ResourceIdentifier(resref, restype)
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource is not None

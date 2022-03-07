@@ -7,11 +7,19 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 
 
 class TwoDABinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._twoda: Optional[TwoDA] = None
 
-    def load(self, auto_close: bool = True) -> TwoDA:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> TwoDA:
         self._twoda = TwoDA()
 
         file_type = self._reader.read_string(4)
@@ -63,11 +71,18 @@ class TwoDABinaryReader(ResourceReader):
 
 
 class TwoDABinaryWriter(ResourceWriter):
-    def __init__(self, twoda: TwoDA, target: TARGET_TYPES):
+    def __init__(
+            self,
+            twoda: TwoDA,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._twoda: TwoDA = twoda
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         headers = self._twoda.get_headers()
 
         self._writer.write_string("2DA ")

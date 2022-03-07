@@ -4,7 +4,10 @@ from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def detect_ssf(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
+def detect_ssf(
+        source: SOURCE_TYPES,
+        offset: int = 0
+) -> ResourceType:
     """
     Returns what format the SSF data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -33,7 +36,11 @@ def detect_ssf(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def read_ssf(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> SSF:
+def read_ssf(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> SSF:
     """
     Returns an SSF instance from the source. The file format (SSF or SSF_XML) is automatically determined before parsing
     the data.
@@ -62,7 +69,11 @@ def read_ssf(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> SSF:
         raise ValueError("Tried to load an unsupported or corrupted SSF file.")
 
 
-def write_ssf(ssf: SSF, target: TARGET_TYPES, file_format: ResourceType = ResourceType.SSF) -> None:
+def write_ssf(
+        ssf: SSF,
+        target: TARGET_TYPES,
+        file_format: ResourceType = ResourceType.SSF
+) -> None:
     """
     Writes the SSF data to the target location with the specified format (SSF or SSF_XML).
 
@@ -82,7 +93,10 @@ def write_ssf(ssf: SSF, target: TARGET_TYPES, file_format: ResourceType = Resour
         raise ValueError("Unsupported format specified; use SSF or SSF_XML.")
 
 
-def bytes_ssf(ssf: SSF, file_format: ResourceType = ResourceType.SSF) -> bytes:
+def bytes_ssf(
+        ssf: SSF,
+        file_format: ResourceType = ResourceType.SSF
+) -> bytes:
     """
     Returns the SSF data in the specified format (SSF or SSF_XML) as a bytes object.
 

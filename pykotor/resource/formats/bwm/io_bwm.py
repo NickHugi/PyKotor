@@ -9,7 +9,12 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class BWMBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._wok: Optional[BWM] = None
         self.position: Vector3 = Vector3.from_null()
@@ -18,7 +23,10 @@ class BWMBinaryReader(ResourceReader):
         self.absolute_hook1: Vector3 = Vector3.from_null()
         self.absolute_hook2: Vector3 = Vector3.from_null()
 
-    def load(self, auto_close: bool = True) -> BWM:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> BWM:
         self._wok = BWM()
 
         file_type = self._reader.read_string(4)
@@ -97,11 +105,18 @@ class BWMBinaryReader(ResourceReader):
 class BWMBinaryWriter(ResourceWriter):
     HEADER_SIZE = 136
 
-    def __init__(self, wok: BWM, target: TARGET_TYPES):
+    def __init__(
+            self,
+            wok: BWM,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._wok: BWM = wok
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         vertices = self._wok.vertices()
 
         walkable = [face for face in self._wok.faces if face.material.walkable()]
@@ -206,4 +221,3 @@ class BWMBinaryWriter(ResourceWriter):
 
         if auto_close:
             self._writer.close()
-

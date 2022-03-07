@@ -6,7 +6,11 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lyt import LYT, LYTAsciiWriter, LYTAsciiReader
 
 
-def read_lyt(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> LYT:
+def read_lyt(
+        source: Union[str, bytes, bytearray, BinaryReader],
+        offset: int = 0,
+        size: int = None
+) -> LYT:
     """
     Returns an LYT instance from the source. The file format (LYT only) is automatically determined before parsing
     the data.
@@ -29,7 +33,11 @@ def read_lyt(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         raise ValueError("Tried to load an unsupported or corrupted LYT file.")
 
 
-def write_lyt(lyt: LYT, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.LYT) -> None:
+def write_lyt(
+        lyt: LYT,
+        target: Union[str, bytearray, BinaryReader],
+        file_format: ResourceType = ResourceType.LYT
+) -> None:
     """
     Writes the LYT data to the target location with the specified format (LYT only).
 
@@ -47,7 +55,10 @@ def write_lyt(lyt: LYT, target: Union[str, bytearray, BinaryReader], file_format
         raise ValueError("Unsupported format specified; use LYT.")
 
 
-def bytes_lyt(lyt: LYT, file_format: ResourceType = ResourceType.LYT) -> bytes:
+def bytes_lyt(
+        lyt: LYT,
+        file_format: ResourceType = ResourceType.LYT
+) -> bytes:
     """
     Returns the LYT data in the specified format (LYT only) as a bytes object.
 

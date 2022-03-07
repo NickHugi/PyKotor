@@ -4,7 +4,10 @@ from pykotor.resource.formats.twoda import TwoDA, TwoDABinaryReader, TwoDABinary
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def detect_2da(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
+def detect_2da(
+        source: SOURCE_TYPES,
+        offset: int = 0
+) -> ResourceType:
     """
     Returns what format the TwoDA data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -19,7 +22,10 @@ def detect_2da(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     Returns:
         The format of the TwoDA data.
     """
-    def check(first4):
+
+    def check(
+            first4
+    ):
         if first4 == "2DA ":
             return ResourceType.TwoDA
         elif "{" in first4:
@@ -43,7 +49,11 @@ def detect_2da(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def read_2da(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TwoDA:
+def read_2da(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> TwoDA:
     """
     Returns an TwoDA instance from the source. The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically
     determined before parsing the data.
@@ -72,7 +82,11 @@ def read_2da(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TwoDA:
         raise ValueError("Unable to determine the file format.")
 
 
-def write_2da(twoda: TwoDA, target: TARGET_TYPES, file_format: ResourceType = ResourceType.TwoDA) -> None:
+def write_2da(
+        twoda: TwoDA,
+        target: TARGET_TYPES,
+        file_format: ResourceType = ResourceType.TwoDA
+) -> None:
     """
     Writes the TwoDA data to the target location with the specified format.
 
@@ -97,7 +111,10 @@ def write_2da(twoda: TwoDA, target: TARGET_TYPES, file_format: ResourceType = Re
         raise ValueError("Unsupported format specified; use TwoDA, TwoDA_CSV or TwoDA_JSON.")
 
 
-def bytes_2da(twoda: TwoDA, file_format: ResourceType = ResourceType.TwoDA) -> bytes:
+def bytes_2da(
+        twoda: TwoDA,
+        file_format: ResourceType = ResourceType.TwoDA
+) -> bytes:
     """
     Returns the TwoDA data in the specified format (TwoDA, TwoDA_CSV or TwoDA_JSON) as a bytes object.
 

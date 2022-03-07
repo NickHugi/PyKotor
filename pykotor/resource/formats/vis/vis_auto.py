@@ -6,7 +6,11 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.vis import VIS, VISAsciiWriter, VISAsciiReader
 
 
-def read_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> VIS:
+def read_vis(
+        source: Union[str, bytes, bytearray, BinaryReader],
+        offset: int = 0,
+        size: int = None
+) -> VIS:
     """
     Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
     the data.
@@ -28,7 +32,11 @@ def read_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         raise ValueError("Tried to load an unsupported or corrupted VIS file.")
 
 
-def write_vis(vis: VIS, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.VIS) -> None:
+def write_vis(
+        vis: VIS,
+        target: Union[str, bytearray, BinaryReader],
+        file_format: ResourceType = ResourceType.VIS
+) -> None:
     """
     Writes the VIS data to the target location with the specified format (VIS only).
 
@@ -46,7 +54,10 @@ def write_vis(vis: VIS, target: Union[str, bytearray, BinaryReader], file_format
         raise ValueError("Unsupported format specified; use VIS.")
 
 
-def bytes_vis(vis: VIS, file_format: ResourceType = ResourceType.VIS) -> bytes:
+def bytes_vis(
+        vis: VIS,
+        file_format: ResourceType = ResourceType.VIS
+) -> bytes:
     """
     Returns the VIS data in the specified format (VIS only) as a bytes object.
 

@@ -7,11 +7,19 @@ from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, Re
 
 
 class SSFBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._ssf: Optional[SSF] = None
 
-    def load(self, auto_close: bool = True) -> SSF:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> SSF:
         self._ssf = SSF()
 
         file_type = self._reader.read_string(4)
@@ -62,11 +70,18 @@ class SSFBinaryReader(ResourceReader):
 
 
 class SSFBinaryWriter(ResourceWriter):
-    def __init__(self, ssf: SSF, target: TARGET_TYPES):
+    def __init__(
+            self,
+            ssf: SSF,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._ssf: SSF = ssf
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self._writer.write_string("SSF ")
         self._writer.write_string("V1.1")
         self._writer.write_uint32(12)

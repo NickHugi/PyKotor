@@ -12,27 +12,35 @@ from pykotor.common.misc import ResRef
 
 
 class TLK:
-
     BINARY_TYPE = ResourceType.TLK
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.entries: List[TLKEntry] = []
         self.language: Language = Language.ENGLISH
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         """
         Returns the number of stored entries.
         """
         return len(self.entries)
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         """
         Iterates through the stored entry with each iteration yielding a stringref and the corresponding entry data.
         """
         for stringref, entry in enumerate(self.entries):
             yield stringref, entry
 
-    def __getitem__(self, item):
+    def __getitem__(
+            self,
+            item
+    ):
         """
         Returns an entry for the specified stringref.
 
@@ -49,7 +57,10 @@ class TLK:
             return NotImplemented
         return self.entries[item]
 
-    def get(self, stringref: int) -> TLKEntry:
+    def get(
+            self,
+            stringref: int
+    ) -> TLKEntry:
         """
         Returns an entry for the specified stringref if it exists, otherwise returns None.
 
@@ -61,7 +72,10 @@ class TLK:
         """
         return self.entries[stringref] if 0 <= stringref < len(self) else None
 
-    def resize(self, size: int) -> None:
+    def resize(
+            self,
+            size: int
+    ) -> None:
         """
         Resizes the number of entries to the specified size.
 
@@ -75,11 +89,18 @@ class TLK:
 
 
 class TLKEntry:
-    def __init__(self, text: str, voiceover: ResRef):
+    def __init__(
+            self,
+            text: str,
+            voiceover: ResRef
+    ):
         self.text: str = text
         self.voiceover: ResRef = voiceover
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         """
         Returns True if the text and voiceover match.
         """

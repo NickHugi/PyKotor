@@ -13,7 +13,6 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 
-
 T = TypeVar("T")
 U = TypeVar("U")
 
@@ -44,7 +43,10 @@ class GFFContent(Enum):
     PTH = "PTH "
 
     @classmethod
-    def has_value(cls, value):
+    def has_value(
+            cls,
+            value
+    ):
         for gff_content in GFFContent:
             if gff_content.value == value:
                 return True
@@ -75,7 +77,9 @@ class GFFFieldType(IntEnum):
     Vector4 = 16
     Vector3 = 17
 
-    def return_type(self):
+    def return_type(
+            self
+    ):
         if self in [GFFFieldType.UInt8, GFFFieldType.Int8, GFFFieldType.UInt16, GFFFieldType.Int16,
                     GFFFieldType.UInt32, GFFFieldType.Int32, GFFFieldType.UInt16, GFFFieldType.UInt64]:
             return int
@@ -90,11 +94,19 @@ class GFF:
 
     BINARY_TYPE = ResourceType.GFF
 
-    def __init__(self, content: GFFContent = GFFContent.GFF):
+    def __init__(
+            self,
+            content: GFFContent = GFFContent.GFF
+    ):
         self.content: GFFContent = content
         self.root: GFFStruct = GFFStruct(-1)
 
-    def print_tree(self, root: Optional[GFFStruct] = None, indent: int = 0, column_len: int = 40):
+    def print_tree(
+            self,
+            root: Optional[GFFStruct] = None,
+            indent: int = 0,
+            column_len: int = 40
+    ):
         if root is None:
             root = self.root
 
@@ -105,13 +117,13 @@ class GFF:
             if field_type is GFFFieldType.List:
                 value_str = len(value)
 
-            print(("  "*indent + label).ljust(column_len), " ", value_str)
+            print(("  " * indent + label).ljust(column_len), " ", value_str)
 
             if field_type is GFFFieldType.Struct:
                 self.print_tree(value, indent + 1)
             if field_type is GFFFieldType.List:
                 for i, child_struct in enumerate(value):
-                    print("  {}[Struct {}]".format("  "*indent, i).ljust(column_len), " ", child_struct.struct_id)
+                    print("  {}[Struct {}]".format("  " * indent, i).ljust(column_len), " ", child_struct.struct_id)
                     self.print_tree(child_struct, indent + 2)
 
 
@@ -125,11 +137,17 @@ class _GFFField:
     STRING_TYPES = {GFFFieldType.String, GFFFieldType.ResRef}
     FLOAT_TYPES = {GFFFieldType.Single, GFFFieldType.Double}
 
-    def __init__(self, field_type: GFFFieldType, value: Any):
+    def __init__(
+            self,
+            field_type: GFFFieldType,
+            value: Any
+    ):
         self._field_type: GFFFieldType = field_type
         self._value: Any = value
 
-    def field_type(self) -> GFFFieldType:
+    def field_type(
+            self
+    ) -> GFFFieldType:
         """
         Returns the field type.
 
@@ -138,7 +156,9 @@ class _GFFField:
         """
         return self._field_type
 
-    def value(self) -> Any:
+    def value(
+            self
+    ) -> Any:
         """
         Returns the value.
 
@@ -156,24 +176,34 @@ class GFFStruct:
         struct_id: User defined id.
     """
 
-    def __init__(self, struct_id: int = 0):
+    def __init__(
+            self,
+            struct_id: int = 0
+    ):
         self.struct_id: int = struct_id
         self._fields: Dict[str, _GFFField] = {}
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         """
         Returns the number of fields.
         """
         return len(self._fields.values())
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         """
         Iterates through the stored fields yielding each field's (label, type, value)
         """
         for label, field in self._fields.items():
             yield label, field.field_type(), field.value()
 
-    def __getitem__(self, item):
+    def __getitem__(
+            self,
+            item
+    ):
         """
         Returns the value of the specified field.
         """
@@ -181,7 +211,10 @@ class GFFStruct:
             return NotImplemented
         return self._fields[item].value()
 
-    def remove(self, label: str) -> None:
+    def remove(
+            self,
+            label: str
+    ) -> None:
         """
         Removes the field with the specified label.
 
@@ -191,7 +224,10 @@ class GFFStruct:
         if label in self._fields:
             self._fields.pop(label)
 
-    def exists(self, label: str) -> bool:
+    def exists(
+            self,
+            label: str
+    ) -> bool:
         """
         Returns the type of the field with the specified label.
 
@@ -203,7 +239,12 @@ class GFFStruct:
         """
         return True if label in self._fields else None
 
-    def acquire(self, label: str, default: T, object_type: U = None) -> Union[T, U]:
+    def acquire(
+            self,
+            label: str,
+            default: T,
+            object_type: U = None
+    ) -> Union[T, U]:
         """
         Gets the value from the specified field. If the field does not exist or the value type does not match the
         specified type then the default is returned instead.
@@ -223,7 +264,11 @@ class GFFStruct:
             value = self[label]
         return value
 
-    def set_uint8(self, label: str, value: int) -> None:
+    def set_uint8(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -233,7 +278,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.UInt8, value)
 
-    def set_uint16(self, label: str, value: int) -> None:
+    def set_uint16(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -243,7 +292,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.UInt16, value)
 
-    def set_uint32(self, label: str, value: int) -> None:
+    def set_uint32(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -253,7 +306,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.UInt32, value)
 
-    def set_uint64(self, label: str, value: int) -> None:
+    def set_uint64(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -263,7 +320,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.UInt64, value)
 
-    def set_int8(self, label: str, value: int) -> None:
+    def set_int8(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -273,7 +334,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Int8, value)
 
-    def set_int16(self, label: str, value: int) -> None:
+    def set_int16(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -283,7 +348,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Int16, value)
 
-    def set_int32(self, label: str, value: int) -> None:
+    def set_int32(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -293,7 +362,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Int32, value)
 
-    def set_int64(self, label: str, value: int) -> None:
+    def set_int64(
+            self,
+            label: str,
+            value: int
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -303,7 +376,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Int64, value)
 
-    def set_single(self, label: str, value: float) -> None:
+    def set_single(
+            self,
+            label: str,
+            value: float
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -313,7 +390,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Single, value)
 
-    def set_double(self, label: str, value: float) -> None:
+    def set_double(
+            self,
+            label: str,
+            value: float
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -323,7 +404,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Double, value)
 
-    def set_resref(self, label: str, value: ResRef) -> None:
+    def set_resref(
+            self,
+            label: str,
+            value: ResRef
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -333,7 +418,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.ResRef, value)
 
-    def set_string(self, label: str, value: str) -> None:
+    def set_string(
+            self,
+            label: str,
+            value: str
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -343,7 +432,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.String, value)
 
-    def set_locstring(self, label: str, value: LocalizedString) -> None:
+    def set_locstring(
+            self,
+            label: str,
+            value: LocalizedString
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -353,7 +446,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.LocalizedString, value)
 
-    def set_binary(self, label: str, value: bytes) -> None:
+    def set_binary(
+            self,
+            label: str,
+            value: bytes
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -363,7 +460,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Binary, value)
 
-    def set_vector3(self, label: str, value: Vector3) -> None:
+    def set_vector3(
+            self,
+            label: str,
+            value: Vector3
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -373,7 +474,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Vector3, value)
 
-    def set_vector4(self, label: str, value: Vector4) -> None:
+    def set_vector4(
+            self,
+            label: str,
+            value: Vector4
+    ) -> None:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -383,7 +488,11 @@ class GFFStruct:
         """
         self._fields[label] = _GFFField(GFFFieldType.Vector4, value)
 
-    def set_struct(self, label: str, value: GFFStruct) -> GFFStruct:
+    def set_struct(
+            self,
+            label: str,
+            value: GFFStruct
+    ) -> GFFStruct:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -397,7 +506,11 @@ class GFFStruct:
         self._fields[label] = _GFFField(GFFFieldType.Struct, value)
         return value
 
-    def set_list(self, label: str, value: GFFList) -> GFFList:
+    def set_list(
+            self,
+            label: str,
+            value: GFFList
+    ) -> GFFList:
         """
         Sets the value and field type of the field with the specified label.
 
@@ -411,7 +524,10 @@ class GFFStruct:
         self._fields[label] = _GFFField(GFFFieldType.List, value)
         return value
 
-    def get_uint8(self, label: str) -> int:
+    def get_uint8(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -428,7 +544,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a UInt8 value.")
         return self._fields[label].value()
 
-    def get_uint16(self, label: str) -> int:
+    def get_uint16(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -446,7 +565,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a UInt16 value.")
         return self._fields[label].value()
 
-    def get_uint32(self, label: str) -> int:
+    def get_uint32(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -464,7 +586,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a UInt32 value.")
         return self._fields[label].value()
 
-    def get_uint64(self, label: str) -> int:
+    def get_uint64(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -482,7 +607,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a UInt64 value.")
         return self._fields[label].value()
 
-    def get_int8(self, label: str) -> int:
+    def get_int8(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -500,7 +628,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Int8 value.")
         return self._fields[label].value()
 
-    def get_int16(self, label: str) -> int:
+    def get_int16(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -518,7 +649,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Int16 value.")
         return self._fields[label].value()
 
-    def get_int32(self, label: str) -> int:
+    def get_int32(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -536,7 +670,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Int32 value.")
         return self._fields[label].value()
 
-    def get_int64(self, label: str) -> int:
+    def get_int64(
+            self,
+            label: str
+    ) -> int:
         """
         Returns the value of the field with the specified label.
 
@@ -554,7 +691,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Int64 value.")
         return self._fields[label].value()
 
-    def get_single(self, label: str) -> float:
+    def get_single(
+            self,
+            label: str
+    ) -> float:
         """
         Returns the value of the field with the specified label.
 
@@ -572,7 +712,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Single value.")
         return self._fields[label].value()
 
-    def get_double(self, label: str) -> float:
+    def get_double(
+            self,
+            label: str
+    ) -> float:
         """
         Returns the value of the field with the specified label.
 
@@ -590,7 +733,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Double value.")
         return self._fields[label].value()
 
-    def get_resref(self, label: str) -> ResRef:
+    def get_resref(
+            self,
+            label: str
+    ) -> ResRef:
         """
         Returns a copy of the value from the field with the specified label.
 
@@ -608,7 +754,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a ResRef value.")
         return deepcopy(self._fields[label].value())
 
-    def get_string(self, label: str) -> str:
+    def get_string(
+            self,
+            label: str
+    ) -> str:
         """
         Returns the value of the field with the specified label.
 
@@ -626,7 +775,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a String value.")
         return self._fields[label].value()
 
-    def get_locstring(self, label: str) -> LocalizedString:
+    def get_locstring(
+            self,
+            label: str
+    ) -> LocalizedString:
         """
         Returns a copy of the value from the field with the specified label.
 
@@ -644,7 +796,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a LocalizedString value.")
         return self._fields[label].value()
 
-    def get_vector3(self, label: str) -> Vector3:
+    def get_vector3(
+            self,
+            label: str
+    ) -> Vector3:
         """
         Returns a copy of the value from the field with the specified label.
 
@@ -662,7 +817,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Vector3 value.")
         return copy(self._fields[label].value())
 
-    def get_vector4(self, label: str) -> Vector4:
+    def get_vector4(
+            self,
+            label: str
+    ) -> Vector4:
         """
         Returns a copy of the value from the field with the specified label.
 
@@ -680,7 +838,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Vector4 value.")
         return copy(self._fields[label].value())
 
-    def get_binary(self, label: str) -> bytes:
+    def get_binary(
+            self,
+            label: str
+    ) -> bytes:
         """
         Returns the value of the field with the specified label.
 
@@ -698,7 +859,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Binary value.")
         return self._fields[label].value()
 
-    def get_struct(self, label: str) -> GFFStruct:
+    def get_struct(
+            self,
+            label: str
+    ) -> GFFStruct:
         """
         Returns a copy of the value from the field with the specified label.
 
@@ -716,7 +880,10 @@ class GFFStruct:
             raise TypeError("The specified field does not store a Struct value.")
         return copy(self._fields[label].value())
 
-    def get_list(self, label: str) -> GFFList:
+    def get_list(
+            self,
+            label: str
+    ) -> GFFList:
         """
         Returns a copy of the value from the field with the specified label.
 
@@ -740,23 +907,32 @@ class GFFList:
     A collection of GFFStructs.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self._structs: List[GFFStruct] = []
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         """
         Returns the number of elements in _structs.
         """
         return len(self._structs)
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         """
         Iterates through _structs yielding each element.
         """
         for struct in self._structs:
             yield struct
 
-    def __getitem__(self, item):
+    def __getitem__(
+            self,
+            item
+    ):
         """
         Returns the struct at the specified index.
         """
@@ -764,7 +940,10 @@ class GFFList:
             return NotImplemented
         return self._structs[item]
 
-    def add(self, struct_id: int) -> GFFStruct:
+    def add(
+            self,
+            struct_id: int
+    ) -> GFFStruct:
         """
         Adds a new struct into the list.
 
@@ -775,7 +954,10 @@ class GFFList:
         self._structs.append(gff_list)
         return gff_list
 
-    def at(self, index: int) -> Optional[GFFStruct]:
+    def at(
+            self,
+            index: int
+    ) -> Optional[GFFStruct]:
         """
         Returns the struct at the index if it exists, otherwise returns None.
 
@@ -787,7 +969,10 @@ class GFFList:
         """
         return self._structs[index] if index < len(self._structs) else None
 
-    def remove(self, index: int) -> None:
+    def remove(
+            self,
+            index: int
+    ) -> None:
         """
         Removes the struct at the specified index.
 

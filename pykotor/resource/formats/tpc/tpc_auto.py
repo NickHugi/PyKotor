@@ -5,7 +5,10 @@ from pykotor.resource.formats.tpc import TPC, TPCBinaryReader, TPCBinaryWriter, 
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
+def detect_tpc(
+        source: SOURCE_TYPES,
+        offset: int = 0
+) -> ResourceType:
     """
     Returns what format the TPC data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -17,7 +20,10 @@ def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     Returns:
         The format of the TPC data.
     """
-    def do_check(first100: bytes) -> ResourceType:
+
+    def do_check(
+            first100: bytes
+    ) -> ResourceType:
         file_format = ResourceType.TPC
         if len(first100) < 100:
             file_format = ResourceType.TGA
@@ -44,7 +50,11 @@ def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def read_tpc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TPC:
+def read_tpc(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> TPC:
     """
     Returns an TPC instance from the source. The file format (TPC or TGA) is automatically determined before
     parsing the data.
@@ -73,7 +83,11 @@ def read_tpc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TPC:
         raise ValueError("Tried to load an unsupported or corrupted TPC file.")
 
 
-def write_tpc(tpc: TPC, target: TARGET_TYPES, file_format: ResourceType = ResourceType.TPC) -> None:
+def write_tpc(
+        tpc: TPC,
+        target: TARGET_TYPES,
+        file_format: ResourceType = ResourceType.TPC
+) -> None:
     """
     Writes the TPC data to the target location with the specified format (TPC, TGA or BMP).
 
@@ -95,7 +109,10 @@ def write_tpc(tpc: TPC, target: TARGET_TYPES, file_format: ResourceType = Resour
         raise ValueError("Unsupported format specified; use TPC, TGA or BMP.")
 
 
-def bytes_tpc(tpc: TPC, file_format: ResourceType = ResourceType.TPC) -> bytes:
+def bytes_tpc(
+        tpc: TPC,
+        file_format: ResourceType = ResourceType.TPC
+) -> bytes:
     """
     Returns the TPC data in the specified format (TPC, TGA or BMP) as a bytes object.
 

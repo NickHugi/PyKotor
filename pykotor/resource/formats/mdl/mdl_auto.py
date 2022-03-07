@@ -3,7 +3,10 @@ from pykotor.resource.formats.mdl import MDL, MDLBinaryReader, MDLBinaryWriter, 
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def detect_mdl(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
+def detect_mdl(
+        source: SOURCE_TYPES,
+        offset: int = 0
+) -> ResourceType:
     """
     Returns what format the MDL data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -34,8 +37,14 @@ def detect_mdl(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def read_mdl(source: SOURCE_TYPES, offset: int = 0, size: int = 0,
-             source_ext: SOURCE_TYPES = None, offset_ext: int = 0, size_ext: int = 0) -> MDL:
+def read_mdl(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
+        source_ext: SOURCE_TYPES = None,
+        offset_ext: int = 0,
+        size_ext: int = 0
+) -> MDL:
     """
     Returns an MDL instance from the source. The file format (MDL or MDL_ASCII) is automatically determined before
     parsing the data.
@@ -67,8 +76,12 @@ def read_mdl(source: SOURCE_TYPES, offset: int = 0, size: int = 0,
         raise ValueError("Tried to load an unsupported or corrupted MDL file.")
 
 
-def write_mdl(mdl: MDL, target: TARGET_TYPES, file_format: ResourceType = ResourceType.MDL,
-              target_ext: TARGET_TYPES = None) -> None:
+def write_mdl(
+        mdl: MDL,
+        target: TARGET_TYPES,
+        file_format: ResourceType = ResourceType.MDL,
+        target_ext: TARGET_TYPES = None
+) -> None:
     """
     Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).
 

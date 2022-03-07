@@ -13,20 +13,32 @@ class Capsule:
 
     Capsule data is read-only, use ERF or RIM classes instead for creating and editing files.
     """
-    def __init__(self, path: str):
+    def __init__(
+            self,
+            path: str
+    ):
         self._path: str = path
         self._resources: List[FileResource] = []
 
         self.reload()
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         for resource in self._resources:
             yield resource
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         return len(self._resources)
 
-    def resource(self, resref: str, restype: ResourceType, reload: bool = False) -> Optional[bytes]:
+    def resource(
+            self,
+            resref: str,
+            restype: ResourceType,
+            reload: bool = False
+    ) -> Optional[bytes]:
         """
         Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
@@ -45,7 +57,11 @@ class Capsule:
         resource = next((resource for resource in self._resources if resource == query), None)
         return None if resource is None else resource.data()
 
-    def batch(self, queries: List[ResourceIdentifier], reload: bool = False) -> Dict[ResourceIdentifier, Optional[ResourceResult]]:
+    def batch(
+            self,
+            queries: List[ResourceIdentifier],
+            reload: bool = False
+    ) -> Dict[ResourceIdentifier, Optional[ResourceResult]]:
         if reload:
             self.reload()
 
@@ -64,7 +80,12 @@ class Capsule:
         reader.close()
         return results
 
-    def exists(self, resref: str, restype: ResourceType, reload: bool = False) -> bool:
+    def exists(
+            self,
+            resref: str,
+            restype: ResourceType,
+            reload: bool = False
+    ) -> bool:
         if reload:
             self.reload()
 
@@ -72,7 +93,12 @@ class Capsule:
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource is not None
 
-    def info(self, resref: str, restype: ResourceType, reload: bool = False) -> FileResource:
+    def info(
+            self,
+            resref: str,
+            restype: ResourceType,
+            reload: bool = False
+    ) -> FileResource:
         if reload:
             self.reload()
 
@@ -80,7 +106,9 @@ class Capsule:
         resource = next((resource for resource in self._resources if resource == query), None)
         return resource
 
-    def reload(self):
+    def reload(
+            self
+    ):
         """
         Reload the list of resource info linked from the module file.
         """
@@ -95,10 +123,15 @@ class Capsule:
             else:
                 raise ValueError("File '{}' was not an ERF/MOD/RIM.".format(self._path))
 
-    def path(self) -> str:
+    def path(
+            self
+    ) -> str:
         return self._path
 
-    def _load_erf(self, reader: BinaryReader):
+    def _load_erf(
+            self,
+            reader: BinaryReader
+    ):
         reader.skip(8)
         entry_count = reader.read_uint32()
         reader.skip(4)
@@ -121,7 +154,10 @@ class Capsule:
             res_size = reader.read_uint32()
             self._resources.append(FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path))
 
-    def _load_rim(self, reader: BinaryReader):
+    def _load_rim(
+            self,
+            reader: BinaryReader
+    ):
         reader.skip(4)
         entry_count = reader.read_uint32()
         offset_to_entries = reader.read_uint32()

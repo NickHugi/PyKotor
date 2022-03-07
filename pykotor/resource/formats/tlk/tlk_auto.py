@@ -5,7 +5,10 @@ from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def detect_tlk(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
+def detect_tlk(
+        source: SOURCE_TYPES,
+        offset: int = 0
+) -> ResourceType:
     """
     Returns what format the TLK data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -20,7 +23,10 @@ def detect_tlk(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     Returns:
         The format of the TLK data.
     """
-    def check(first4):
+
+    def check(
+            first4
+    ):
         if first4 == "TLK ":
             return ResourceType.TLK
         elif "{" in first4:
@@ -44,7 +50,11 @@ def detect_tlk(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def read_tlk(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TLK:
+def read_tlk(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> TLK:
     """
     Returns an TLK instance from the source. The file format (TLK, TLK_XML or TLK_JSON) is automatically determined
     before parsing the data.
@@ -73,7 +83,11 @@ def read_tlk(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TLK:
         raise ValueError("Unable to determine the file format.")
 
 
-def write_tlk(tlk: TLK, target: TARGET_TYPES, file_format: ResourceType = ResourceType.TLK) -> None:
+def write_tlk(
+        tlk: TLK,
+        target: TARGET_TYPES,
+        file_format: ResourceType = ResourceType.TLK
+) -> None:
     """
     Writes the TLK data to the target location with the specified format (TLK, TLK_XML or TLK_JSON).
 
@@ -96,7 +110,10 @@ def write_tlk(tlk: TLK, target: TARGET_TYPES, file_format: ResourceType = Resour
         raise ValueError("Unsupported format specified; use TLK or TLK_XML.")
 
 
-def bytes_tlk(tlk: TLK, file_format: ResourceType = ResourceType.TLK) -> bytes:
+def bytes_tlk(
+        tlk: TLK,
+        file_format: ResourceType = ResourceType.TLK
+) -> bytes:
     """
     Returns the TLK data in the specified format (TLK or TLK_XML or TLK_JSON) as a bytes object.
 

@@ -1,7 +1,9 @@
 import struct
 
 
-def fix_audio(data: bytes) -> bytes:
+def fix_audio(
+        data: bytes
+) -> bytes:
     b0x4 = struct.unpack('I', data[0:4])[0]
     b4x8 = struct.unpack('I', data[4:8])[0]
     b16x20 = struct.unpack('I', data[16:20])[0]

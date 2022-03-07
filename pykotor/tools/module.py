@@ -23,9 +23,20 @@ from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.vis import write_vis
 
 
-def clone_module(root: str, identifier: str, prefix: str, name: str, installation: Installation, *,
-                 copyTextures: bool = False, copyLightmaps: bool = False, keepDoors: bool = False,
-                 keepPlaceables: bool = False, keepSounds: bool = False, keepPathing: bool = False) -> None:
+def clone_module(
+        root: str,
+        identifier: str,
+        prefix: str,
+        name: str,
+        installation: Installation,
+        *,
+        copyTextures: bool = False,
+        copyLightmaps: bool = False,
+        keepDoors: bool = False,
+        keepPlaceables: bool = False,
+        keepSounds: bool = False,
+        keepPathing: bool = False
+) -> None:
     installation = installation
     root = root
     identifier = identifier
@@ -51,7 +62,6 @@ def clone_module(root: str, identifier: str, prefix: str, name: str, installatio
 
     lyt = oldModule.layout.resource()
     vis = oldModule.visibility.resource()
-
 
     if keepPathing:
         pth = oldModule.path.resource()

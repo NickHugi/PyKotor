@@ -40,38 +40,40 @@ class UTE:
 
     BINARY_TYPE = ResourceType.UTE
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.comment: str = ""
-    
+
         self.active: bool = False
         self.player_only: bool = False
         self.reset: bool = False
         self.single_shot: bool = False
-    
+
         self.difficulty_id: int = 0
         self.faction_id: int = 0
-    
+
         self.max_creatures: int = 0
         self.rec_creatures: int = 0
         self.reset_time: int = 0
         self.respawns: int = 0
-    
+
         self.on_exit: ResRef = ResRef.from_blank()
         self.on_exhausted: ResRef = ResRef.from_blank()
         self.on_heartbeat: ResRef = ResRef.from_blank()
         self.on_entered: ResRef = ResRef.from_blank()
         self.on_user_defined: ResRef = ResRef.from_blank()
-    
+
         self.creatures: List[UTECreature] = []
 
         # Deprecated:
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.palette_id: int = 0
         self.unused_difficulty: int = 0
-    
-    
+
+
 class UTECreature:
     """
     Stores data for a creature that can be spawned by an encounter.
@@ -84,7 +86,9 @@ class UTECreature:
         guaranteed_count: "GuaranteedCount" field. KotOR 2 only.
     """
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.appearance_id: int = 0
         self.challenge_rating: float = 0.0
         self.resref: ResRef = ResRef.from_blank()
@@ -92,7 +96,9 @@ class UTECreature:
         self.guaranteed_count: int = 0
 
 
-def utd_version(gff: GFF) -> Game:
+def utd_version(
+        gff: GFF
+) -> Game:
     for label in ("GuaranteedCount"):
         for creature_struct in gff.root.acquire("CreatureList", GFFList()):
             if creature_struct.exists(label):
@@ -100,7 +106,9 @@ def utd_version(gff: GFF) -> Game:
     return Game.K1
 
 
-def construct_ute(gff: GFF) -> UTE:
+def construct_ute(
+        gff: GFF
+) -> UTE:
     ute = UTE()
 
     root = gff.root
@@ -137,9 +145,14 @@ def construct_ute(gff: GFF) -> UTE:
         creature.guaranteed_count = creature_struct.acquire("GuaranteedCount", 0)
 
     return ute
-    
-    
-def dismantle_ute(ute: UTE, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+
+
+def dismantle_ute(
+        ute: UTE,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTE)
 
     root = gff.root
@@ -182,20 +195,34 @@ def dismantle_ute(ute: UTE, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_ute(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTE:
+def read_ute(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTE:
     gff = read_gff(source, offset, size)
     ute = construct_ute(gff)
     return ute
 
 
-def write_ute(ute: UTE, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_ute(
+        ute: UTE,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_ute(ute: UTE, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_ute(
+        ute: UTE,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)
-

@@ -20,24 +20,33 @@ class LIP:
 
     BINARY_TYPE = ResourceType.LIP
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.length: float = 0.0
         self.frames: List[LIPKeyFrame] = []
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         """
         Iterates through the stored list of keyframes yielding the LIPKeyFrame each iteration.
         """
         for frame in self.frames:
             yield frame
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         """
         Returns the number of stored keyframes.
         """
         return len(self.frames)
 
-    def __getitem__(self, item):
+    def __getitem__(
+            self,
+            item
+    ):
         """
         Returns a keyframe from the specified index.
 
@@ -54,7 +63,11 @@ class LIP:
             return NotImplemented
         return self.frames[item]
 
-    def add(self, time: float, shape: LIPShape) -> None:
+    def add(
+            self,
+            time: float,
+            shape: LIPShape
+    ) -> None:
         """
         Adds a new keyframe.
 
@@ -64,7 +77,10 @@ class LIP:
         """
         self.frames.append(LIPKeyFrame(time, shape))
 
-    def get(self, index: int) -> Optional[LIPKeyFrame]:
+    def get(
+            self,
+            index: int
+    ) -> Optional[LIPKeyFrame]:
         """
         Returns the keyframe at the specified index if it exists, otherwise returns None.
 
@@ -105,6 +121,10 @@ class LIPKeyFrame:
         shape: The mouth shape.
     """
 
-    def __init__(self, time: float, shape: LIPShape):
+    def __init__(
+            self,
+            time: float,
+            shape: LIPShape
+    ):
         self.time: float = time
         self.shape: LIPShape = shape

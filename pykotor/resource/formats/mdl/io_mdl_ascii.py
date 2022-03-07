@@ -8,11 +8,19 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 class MDLAsciiReader:
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         self._mdl: Optional[MDL] = None
         self._reader = BinaryReader.from_auto(source, offset)
 
-    def load(self, auto_close: bool = True) -> MDL:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> MDL:
         self._mdl = MDL()
 
         if auto_close:
@@ -22,11 +30,18 @@ class MDLAsciiReader:
 
 
 class MDLAsciiWriter:
-    def __init__(self, mdl: MDL, target: TARGET_TYPES):
+    def __init__(
+            self,
+            mdl: MDL,
+            target: TARGET_TYPES
+    ):
         self._mdl = mdl
         self._writer = BinaryWriter.to_auto(target)
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self._writer.write_line(0, "newmodel {}".format(self._mdl.name))
         self._writer.write_line(0, "setsupermodel {} {}".format(self._mdl.name, self._mdl.supermodel))
         self._writer.write_line(0, "ignorefog {}".format(int(not self._mdl.fog)))
@@ -56,7 +71,12 @@ class MDLAsciiWriter:
         if auto_close:
             self._writer.close()
 
-    def _write_node(self, node: MDLNode, anim: bool, indent: int):
+    def _write_node(
+            self,
+            node: MDLNode,
+            anim: bool,
+            indent: int
+    ):
         parent = self._mdl.find_parent(node)
 
         newline = self._writer.write_line
@@ -65,13 +85,17 @@ class MDLAsciiWriter:
         newline(indent + 1, "parent {}".format("NULL" if parent is None else parent.name))
 
         if parent is not None or not anim:
-            newline(indent + 1, "orientation {} {} {} {}".format(node.orientation.x, node.orientation.y, node.orientation.z, node.orientation.w))
+            newline(indent + 1,
+                    "orientation {} {} {} {}".format(node.orientation.x, node.orientation.y, node.orientation.z,
+                                                     node.orientation.w))
             newline(indent + 1, "position {} {} {}".format(node.position.x, node.position.y, node.position.z))
             self._write_controllers(node, node.controllers, indent + 1)
 
             if node.mesh:
-                newline(indent + 1, "diffuse {} {} {}".format(node.mesh.diffuse.r, node.mesh.diffuse.g, node.mesh.diffuse.b))
-                newline(indent + 1, "ambient {} {} {}".format(node.mesh.ambient.r, node.mesh.ambient.g, node.mesh.ambient.b))
+                newline(indent + 1,
+                        "diffuse {} {} {}".format(node.mesh.diffuse.r, node.mesh.diffuse.g, node.mesh.diffuse.b))
+                newline(indent + 1,
+                        "ambient {} {} {}".format(node.mesh.ambient.r, node.mesh.ambient.g, node.mesh.ambient.b))
                 newline(indent + 1, "bitmap {}".format(node.mesh.texture_1))
                 # newline(indent + 1, "texture2 {}".format(node.mesh.texture_2))
                 newline(indent + 1, "transparencyhint {}".format(node.mesh.transparency_hint))
@@ -104,7 +128,9 @@ class MDLAsciiWriter:
                 newline(indent + 1, "faces {}".format(len(node.mesh.faces)))
                 for face in node.mesh.faces:
                     # 4th value -> smoothing group
-                    newline(indent + 2, "{} {} {}  {}  {} {} {}  {}".format(face.v1, face.v2, face.v3, 0, face.v1, face.v2, face.v3, face.material.value))
+                    newline(indent + 2,
+                            "{} {} {}  {}  {} {} {}  {}".format(face.v1, face.v2, face.v3, 0, face.v1, face.v2, face.v3,
+                                                                face.material.value))
 
                 if node.skin:
                     newline(indent + 1, "weights {}".format(len(node.skin.vertex_bones)))
@@ -137,7 +163,12 @@ class MDLAsciiWriter:
 
         newline(indent + 0, "endnode")
 
-    def _write_controllers(self, node: MDLNode, controllers: List[MDLController], indent: int):
+    def _write_controllers(
+            self,
+            node: MDLNode,
+            controllers: List[MDLController],
+            indent: int
+    ):
         for controller in controllers:
             if controller.controller_type == MDLControllerType.ILLUM_COLOR:
                 red, green, blue = controller.rows[0].data[0], controller.rows[0].data[1], controller.rows[0].data[2]
@@ -149,7 +180,12 @@ class MDLAsciiWriter:
             if controller.controller_type == MDLControllerType.SCALE:
                 self._writer.write_line(indent, "scale {}".format(controller.rows[0].data[0]))
 
-    def _write_anim_controllers(self, node: MDLNode, controllers: List[MDLController], indent: int):
+    def _write_anim_controllers(
+            self,
+            node: MDLNode,
+            controllers: List[MDLController],
+            indent: int
+    ):
         for controller in controllers:
 
             if controller.controller_type == MDLControllerType.POSITION:
@@ -176,7 +212,10 @@ class MDLAsciiWriter:
             for row in controller.rows:
                 self._writer.write_line(indent + 1, "{}".format(row))
 
-    def _node_type(self, node: MDLNode) -> str:
+    def _node_type(
+            self,
+            node: MDLNode
+    ) -> str:
         if node.skin: return "skin"
         if node.dangly: return "dangly"
         if node.saber: return "saber"

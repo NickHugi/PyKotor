@@ -14,10 +14,11 @@ from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, re
 
 
 class GIT:
-
     BINARY_TYPE = ResourceType.GIT
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.ambient_sound_id: int = 0
         self.ambient_volume: int = 0
         self.env_audio: int = 0
@@ -38,18 +39,30 @@ class GIT:
 
 class GITInstance(ABC):
     @abstractmethod
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         ...
 
     @abstractmethod
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         ...
 
 
 class GITCamera(GITInstance):
     GFF_STRUCT_ID = 14
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.camera_id = 0
         self.fov: float = 0
         self.height: float = 0.0
@@ -58,29 +71,51 @@ class GITCamera(GITInstance):
         self.orientation: Vector4 = Vector4.from_null()
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         ...
 
 
 class GITCreature(GITInstance):
     GFF_STRUCT_ID = 4
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         self.bearing += yaw
 
 
@@ -93,7 +128,9 @@ class GITModuleLink(IntEnum):
 class GITDoor(GITInstance):
     GFF_STRUCT_ID = 8
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.tweak_color: Optional[Color] = Color.WHITE
@@ -104,26 +141,48 @@ class GITDoor(GITInstance):
         self.transition_destination: LocalizedString = LocalizedString.from_invalid()
         self.tag: str = ""
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         self.bearing += yaw
 
 
 class GITEncounterSpawnPoint(GITInstance):
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.orientation: float = 0.0
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         self.orientation += yaw
 
 
@@ -132,69 +191,117 @@ class GITEncounter(GITInstance):
     GFF_GEOMETRY_STRUCT_ID = 1
     GFF_SPAWN_STRUCT_ID = 2
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.geometry: List[Vector3] = []
         self.spawn_points: List[GITEncounterSpawnPoint] = []
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         raise ValueError("Encounters cannot be rotated.")
 
 
 class GITPlaceable(GITInstance):
     GFF_STRUCT_ID = 9
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.tweak_color: Optional[Color] = Color.WHITE
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         self.bearing += yaw
 
 
 class GITSound(GITInstance):
     GFF_STRUCT_ID = 6
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         raise ValueError("Sounds cannot be rotated.")
 
 
 class GITStore(GITInstance):
     GFF_STRUCT_ID = 11
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         self.bearing += yaw
 
 
@@ -202,7 +309,9 @@ class GITTrigger(GITInstance):
     GFF_STRUCT_ID = 1
     GFF_GEOMETRY_STRUCT_ID = 3
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
         self.geometry: Polygon3 = Polygon3()
@@ -212,17 +321,29 @@ class GITTrigger(GITInstance):
         self.linked_to_module: ResRef = ResRef.from_blank()
         self.transition_destination: LocalizedString = LocalizedString.from_invalid()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         raise ValueError("Triggers cannot be rotated.")
 
 
 class GITTransitionTrigger(GITTrigger):
-    def __init__(self):
+    def __init__(
+            self
+    ):
         super().__init__()
 
         self.linked_to: str = ""
@@ -235,7 +356,9 @@ class GITTransitionTrigger(GITTrigger):
 class GITWaypoint(GITInstance):
     GFF_STRUCT_ID = 5
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -244,16 +367,28 @@ class GITWaypoint(GITInstance):
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
 
-    def move(self, x: float, y: float, z: float) -> None:
+    def move(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         self.position.x += x
         self.position.y += y
         self.position.z += z
 
-    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+    def rotate(
+            self,
+            yaw: float,
+            pitch: float,
+            roll: float
+    ) -> None:
         self.bearing += yaw
 
 
-def construct_git(gff: GFF) -> GIT:
+def construct_git(
+        gff: GFF
+) -> GIT:
     git = GIT()
 
     root = gff.root
@@ -405,7 +540,12 @@ def construct_git(gff: GFF) -> GIT:
     return git
 
 
-def dismantle_git(git: GIT, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_git(
+        git: GIT,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.GIT)
 
     root = gff.root
@@ -557,24 +697,40 @@ def dismantle_git(git: GIT, game: Game = Game.K2, *, use_deprecated: bool = True
         waypoint_struct.set_single("YOrientation", bearing.y)
         waypoint_struct.set_uint8("MapNoteEnabled", waypoint.map_note_enabled)
         waypoint_struct.set_uint8("HasMapNote", 0 if waypoint.map_note is None else 1)
-        waypoint_struct.set_locstring("MapNote", LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note)
+        waypoint_struct.set_locstring("MapNote",
+                                      LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note)
 
     return gff
 
 
-def read_git(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> GIT:
+def read_git(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> GIT:
     gff = read_gff(source, offset, size)
     git = construct_git(gff)
     return git
 
 
-def write_git(git: GIT, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_git(
+        git: GIT,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_git(git, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_git(git: GIT, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_git(
+        git: GIT,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_git(git, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

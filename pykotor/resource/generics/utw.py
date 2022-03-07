@@ -29,7 +29,9 @@ class UTW:
 
     BINARY_TYPE = ResourceType.UTW
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
         self.tag: str = ""
@@ -48,7 +50,9 @@ class UTW:
         self.description: LocalizedString = LocalizedString.from_invalid()
 
 
-def construct_utw(gff: GFF) -> UTW:
+def construct_utw(
+        gff: GFF
+) -> UTW:
     utw = UTW()
 
     root = gff.root
@@ -67,7 +71,12 @@ def construct_utw(gff: GFF) -> UTW:
     return utw
 
 
-def dismantle_utw(utw: UTW, game: Game = Game.K2, *, use_deprecated: bool = True) -> GFF:
+def dismantle_utw(
+        utw: UTW,
+        game: Game = Game.K2,
+        *,
+        use_deprecated: bool = True
+) -> GFF:
     gff = GFF(GFFContent.UTW)
 
     root = gff.root
@@ -86,19 +95,34 @@ def dismantle_utw(utw: UTW, game: Game = Game.K2, *, use_deprecated: bool = True
     return gff
 
 
-def read_utw(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTW:
+def read_utw(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> UTW:
     gff = read_gff(source, offset, size)
     utw = construct_utw(gff)
     return utw
 
 
-def write_utw(utw: UTW, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> None:
+def write_utw(
+        utw: UTW,
+        target: TARGET_TYPES,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> None:
     gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
-def bytes_utw(utw: UTW, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
-              use_deprecated: bool = True) -> bytes:
+def bytes_utw(
+        utw: UTW,
+        game: Game = Game.K2,
+        file_format: ResourceType = ResourceType.GFF,
+        *,
+        use_deprecated: bool = True
+) -> bytes:
     gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

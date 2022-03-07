@@ -6,11 +6,19 @@ from pykotor.resource.type import SOURCE_TYPES, ResourceReader, TARGET_TYPES, Re
 
 
 class LTRBinaryReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = 0
+    ):
         super().__init__(source, offset, size)
         self._lip: Optional[LTR] = None
 
-    def load(self, auto_close: bool = True) -> LTR:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> LTR:
         self._ltr = LTR()
 
         file_type = self._reader.read_string(4)
@@ -40,7 +48,7 @@ class LTRBinaryReader(ResourceReader):
                 self._ltr._triples[i][j]._start = [self._reader.read_single() for k in range(28)]
                 self._ltr._triples[i][j]._middle = [self._reader.read_single() for k in range(28)]
                 self._ltr._triples[i][j]._end = [self._reader.read_single() for k in range(28)]
-                
+
         if auto_close:
             self._reader.close()
 
@@ -48,11 +56,18 @@ class LTRBinaryReader(ResourceReader):
 
 
 class LTRBinaryWriter(ResourceWriter):
-    def __init__(self, ltr: LTR, target: TARGET_TYPES):
+    def __init__(
+            self,
+            ltr: LTR,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._ltr: LTR = ltr
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self._writer.write_string("LTR V1.0")
         self._writer.write_uint8(28)
 

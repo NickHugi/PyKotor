@@ -19,19 +19,25 @@ class TwoDA:
 
     BINARY_TYPE = ResourceType.TwoDA
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self._rows: List[Dict[str, str]] = []
         self._headers: List[str] = []  # for columns
         self._labels: List[str] = []  # for rows
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         """
         Iterates through each row yielding a new linked TwoDARow instance.
         """
         for i, row in enumerate(self._rows):
             yield TwoDARow(self.get_label(i), row)
 
-    def get_headers(self) -> List[str]:
+    def get_headers(
+            self
+    ) -> List[str]:
         """
         Returns a copy of the set of column headers.
 
@@ -40,7 +46,10 @@ class TwoDA:
         """
         return copy(self._headers)
 
-    def get_column(self, header: str) -> List[str]:
+    def get_column(
+            self,
+            header: str
+    ) -> List[str]:
         """
         Returns every cell listed under the specified column header.
 
@@ -58,7 +67,10 @@ class TwoDA:
 
         return [self._rows[i][header] for i in range(self.get_height())]
 
-    def add_column(self, header: str) -> None:
+    def add_column(
+            self,
+            header: str
+    ) -> None:
         """
         Adds a new column with the specified header and populates it with blank cells for each row.
 
@@ -76,7 +88,10 @@ class TwoDA:
         for row in self._rows:
             row[header] = ""
 
-    def remove_column(self, header: str) -> None:
+    def remove_column(
+            self,
+            header: str
+    ) -> None:
         """
         Removes a column from the table with the specified column header. If no such column header exists it is ignored;
         no error is thrown.
@@ -90,7 +105,9 @@ class TwoDA:
 
         self._headers.remove(header)
 
-    def get_labels(self) -> List[int]:
+    def get_labels(
+            self
+    ) -> List[int]:
         """
         Returns a copy of the set of row labels.
 
@@ -99,7 +116,10 @@ class TwoDA:
         """
         return copy(self._labels)
 
-    def get_label(self, row_index: int) -> str:
+    def get_label(
+            self,
+            row_index: int
+    ) -> str:
         """
         Returns the row label for the given row.
 
@@ -111,7 +131,11 @@ class TwoDA:
         """
         return self._labels[row_index]
 
-    def set_label(self, row_index: int, value: str) -> None:
+    def set_label(
+            self,
+            row_index: int,
+            value: str
+    ) -> None:
         """
         Sets the row label at the given index.
 
@@ -121,7 +145,10 @@ class TwoDA:
         """
         self._labels[row_index] = value
 
-    def get_row(self, row_index: int) -> TwoDARow:
+    def get_row(
+            self,
+            row_index: int
+    ) -> TwoDARow:
         """
         Returns a TwoDARow instance which can update and retrieve the values of the cells for the specified row.
 
@@ -136,7 +163,11 @@ class TwoDA:
         """
         return TwoDARow(self.get_label(row_index), self._rows[row_index])
 
-    def add_row(self, row_label: Optional[str] = None, cells: Dict[str, Any] = None) -> int:
+    def add_row(
+            self,
+            row_label: Optional[str] = None,
+            cells: Dict[str, Any] = None
+    ) -> int:
         """
         Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
         itself will be ignored, headers that are not specified in the cells parameter but do exist in the table will
@@ -163,7 +194,11 @@ class TwoDA:
 
         return len(self._rows) - 1
 
-    def get_cell(self, row_index, column: str) -> str:
+    def get_cell(
+            self,
+            row_index,
+            column: str
+    ) -> str:
         """
         Returns the value of the cell at the specified row under the specified column.
 
@@ -180,7 +215,12 @@ class TwoDA:
         """
         return self._rows[row_index][column]
 
-    def set_cell(self, row_index: int, column: str, value: Any) -> None:
+    def set_cell(
+            self,
+            row_index: int,
+            column: str,
+            value: Any
+    ) -> None:
         """
         Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a
         blank string.
@@ -197,7 +237,9 @@ class TwoDA:
         value = "" if value is None else value
         self._rows[row_index][column] = str(value)
 
-    def get_height(self) -> int:
+    def get_height(
+            self
+    ) -> int:
         """
         Returns the number of rows in the table.
 
@@ -206,7 +248,9 @@ class TwoDA:
         """
         return len(self._rows)
 
-    def get_width(self) -> int:
+    def get_width(
+            self
+    ) -> int:
         """
         Returns the number of columns in the table.
 
@@ -215,7 +259,10 @@ class TwoDA:
         """
         return len(self._headers)
 
-    def resize(self, row_count: int) -> None:
+    def resize(
+            self,
+            row_count: int
+    ) -> None:
         """
         Sets the number of rows in the table. Use with caution; specifying a height less than the current height will
         result in a loss of data.
@@ -241,11 +288,17 @@ class TwoDA:
 
 
 class TwoDARow:
-    def __init__(self, row_label: str, row_data: Dict[str, str]):
+    def __init__(
+            self,
+            row_label: str,
+            row_data: Dict[str, str]
+    ):
         self._row_label: str = row_label
         self._data: Dict[str, str] = row_data
 
-    def label(self) -> str:
+    def label(
+            self
+    ) -> str:
         """
         Returns the row label.
 
@@ -254,7 +307,10 @@ class TwoDARow:
         """
         return self._row_label
 
-    def get_string(self, header: str) -> str:
+    def get_string(
+            self,
+            header: str
+    ) -> str:
         """
         Returns the string value for the cell under the specified header.
 
@@ -271,7 +327,11 @@ class TwoDARow:
             raise KeyError("The header '{}' does not exist.".format(header))
         return self._data[header]
 
-    def get_integer(self, header: str, default: Optional[int] = None) -> float:
+    def get_integer(
+            self,
+            header: str,
+            default: Optional[int] = None
+    ) -> float:
         """
         Returns the integer value for the cell under the specified header. If the value of the cell is an invalid
         integer then a default value is used instead.
@@ -298,7 +358,11 @@ class TwoDARow:
                 value = int(cell)
         return value
 
-    def get_float(self, header: str, default: Optional[int] = None) -> float:
+    def get_float(
+            self,
+            header: str,
+            default: Optional[int] = None
+    ) -> float:
         """
         Returns the float value for the cell under the specified header. If the value of the cell is an invalid float
         then a default value is used instead.
@@ -322,7 +386,12 @@ class TwoDARow:
             value = float(cell)
         return value
 
-    def get_enum(self, header: str, enum_type: Type[Enum], default: Optional[Enum]) -> Optional[Enum]:
+    def get_enum(
+            self,
+            header: str,
+            enum_type: Type[Enum],
+            default: Optional[Enum]
+    ) -> Optional[Enum]:
         """
         Returns the enum value for the cell under the specified header.
 
@@ -345,7 +414,11 @@ class TwoDARow:
             value = enum_type(self._data[header])
         return value
 
-    def set_string(self, header: str, value: Optional[str]) -> None:
+    def set_string(
+            self,
+            header: str,
+            value: Optional[str]
+    ) -> None:
         """
         Sets the value of a cell under the specified header. If the value is none it will default to a empty string.
 
@@ -362,7 +435,11 @@ class TwoDARow:
         value = "" if value is None else value
         self._data[header] = value
 
-    def set_integer(self, header: str, value: Optional[int]) -> None:
+    def set_integer(
+            self,
+            header: str,
+            value: Optional[int]
+    ) -> None:
         """
         Sets the value of a cell under the specified header, converting the integer into a string. If the value is none
         it will default to a empty string.
@@ -380,7 +457,11 @@ class TwoDARow:
         value = "" if value is None else value
         self._data[header] = str(value)
 
-    def set_float(self, header: str, value: Optional[float]) -> None:
+    def set_float(
+            self,
+            header: str,
+            value: Optional[float]
+    ) -> None:
         """
         Sets the value of a cell under the specified header, converting the float into a string. If the value is none
         it will default to a empty string.
@@ -398,7 +479,11 @@ class TwoDARow:
         value = "" if value is None else value
         self._data[header] = str(value)
 
-    def set_enum(self, header: str, value: Optional[Enum]):
+    def set_enum(
+            self,
+            header: str,
+            value: Optional[Enum]
+    ):
         """
         Sets the value of a cell under the specified header, converting the enum into a string. If the value is none
         it will default to a empty string.

@@ -3,7 +3,11 @@ from pykotor.resource.formats.ltr.io_ltr import LTRBinaryReader, LTRBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def read_ltr(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LTR:
+def read_ltr(
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = None
+) -> LTR:
     """
     Returns an LTR instance from the source.
 
@@ -24,7 +28,11 @@ def read_ltr(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LTR:
         raise ValueError("Tried to load an unsupported or corrupted LTR file.")
 
 
-def write_ltr(ltr: LTR, target: TARGET_TYPES, file_format: ResourceType = ResourceType.LTR) -> None:
+def write_ltr(
+        ltr: LTR,
+        target: TARGET_TYPES,
+        file_format: ResourceType = ResourceType.LTR
+) -> None:
     """
     Writes the LTR data to the target location with the specified format (LTR only).
 
@@ -42,7 +50,10 @@ def write_ltr(ltr: LTR, target: TARGET_TYPES, file_format: ResourceType = Resour
         raise ValueError("Unsupported format specified; use LTR.")
 
 
-def bytes_ltr(ltr: LTR, file_format: ResourceType = ResourceType.LTR) -> bytes:
+def bytes_ltr(
+        ltr: LTR,
+        file_format: ResourceType = ResourceType.LTR
+) -> bytes:
     """
     Returns the LTR data in the specified format (LTR only) as a bytes object.
 

@@ -16,23 +16,36 @@ class Vector2:
         y: The y component.
     """
 
-    def __init__(self, x: float, y: float):
+    def __init__(
+            self,
+            x: float,
+            y: float
+    ):
         self.x: float = x
         self.y: float = y
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         yield self.x, self.y
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "Vector2({}, {})".format(self.x, self.y)
 
-    def __str__(self):
+    def __str__(
+            self
+    ):
         """
         Returns the individual components separated by whitespace.
         """
         return "{} {}".format(self.x, self.y)
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         """
         Two Vector2 components are equal if their components are approximately the same.
         """
@@ -43,7 +56,10 @@ class Vector2:
         isclose_y = math.isclose(self.y, other.y)
         return isclose_x and isclose_y
 
-    def __add__(self, other):
+    def __add__(
+            self,
+            other
+    ):
         """
         Adds the components of two Vector2 objects.
         """
@@ -55,7 +71,10 @@ class Vector2:
         new.y += other.y
         return new
 
-    def __sub__(self, other):
+    def __sub__(
+            self,
+            other
+    ):
         """
         Subtracts the components of two Vector2 objects.
         """
@@ -67,7 +86,10 @@ class Vector2:
         new.y -= other.y
         return new
 
-    def __mul__(self, other):
+    def __mul__(
+            self,
+            other
+    ):
         """
         Multiplies the components by a scalar integer.
         """
@@ -79,7 +101,10 @@ class Vector2:
         new.y *= other
         return new
 
-    def __truediv__(self, other):
+    def __truediv__(
+            self,
+            other
+    ):
         if isinstance(other, int):
             new = Vector2.from_vector2(self)
             new.x /= other
@@ -88,7 +113,10 @@ class Vector2:
         else:
             return NotImplemented
 
-    def __getitem__(self, item):
+    def __getitem__(
+            self,
+            item
+    ):
         if isinstance(item, int):
             if item == 0:
                 return self.x
@@ -97,7 +125,11 @@ class Vector2:
         else:
             return NotImplemented
 
-    def __setitem__(self, key, value):
+    def __setitem__(
+            self,
+            key,
+            value
+    ):
         if isinstance(key, int) and (isinstance(value, float) or isinstance(value, int)):
             if key == 0:
                 self.x = value
@@ -107,7 +139,10 @@ class Vector2:
             return NotImplemented
 
     @classmethod
-    def from_vector2(cls, other: Vector2) -> Vector2:
+    def from_vector2(
+            cls,
+            other: Vector2
+    ) -> Vector2:
         """
         Returns a duplicate of the specified vector.
 
@@ -120,7 +155,9 @@ class Vector2:
         return Vector2(other.x, other.y)
 
     @classmethod
-    def from_null(cls) -> Vector2:
+    def from_null(
+            cls
+    ) -> Vector2:
         """
         Returns a new vector with a magnitude of zero.
 
@@ -130,7 +167,10 @@ class Vector2:
         return Vector2(0.0, 0.0)
 
     @classmethod
-    def from_angle(cls, angle: float) -> Vector2:
+    def from_angle(
+            cls,
+            angle: float
+    ) -> Vector2:
         """
         Returns a unit vector based on the specified angle.
 
@@ -144,7 +184,11 @@ class Vector2:
         y = math.sin(math.radians(angle))
         return Vector2(x, y)
 
-    def set(self, x: float, y: float) -> None:
+    def set(
+            self,
+            x: float,
+            y: float
+    ) -> None:
         """
         Sets the components of the vector.
 
@@ -155,7 +199,9 @@ class Vector2:
         self.x = x
         self.y = y
 
-    def normalize(self) -> None:
+    def normalize(
+            self
+    ) -> None:
         """
         Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
         """
@@ -163,7 +209,9 @@ class Vector2:
         self.x /= magnitude
         self.y /= magnitude
 
-    def magnitude(self) -> float:
+    def magnitude(
+            self
+    ) -> float:
         """
         Returns the magnitude of the vector.
 
@@ -172,14 +220,19 @@ class Vector2:
         """
         return math.sqrt(self.x ** 2 + self.y ** 2)
 
-    def normal(self) -> Vector2:
+    def normal(
+            self
+    ) -> Vector2:
         vec2 = Vector2.from_vector2(self)
         magnitude = self.magnitude()
         vec2.x /= magnitude
         vec2.y /= magnitude
         return vec2
 
-    def dot(self, other: Vector2) -> float:
+    def dot(
+            self,
+            other: Vector2
+    ) -> float:
         """
         Returns the dot product between the two specified vectors.
 
@@ -193,7 +246,10 @@ class Vector2:
         b = self.y * other.y
         return a + b
 
-    def distance(self, other: Vector2) -> float:
+    def distance(
+            self,
+            other: Vector2
+    ) -> float:
         """
         Returns the distance between two vectors.
 
@@ -207,7 +263,10 @@ class Vector2:
         b = (self.y - other.y) ** 2
         return math.sqrt(a + b)
 
-    def within(self, container: List) -> bool:
+    def within(
+            self,
+            container: List
+    ) -> bool:
         """
         Checks to see if the same Vector2 object in located in the specified list. This differs from using the 'in'
         keyword as that will return True for Vector2 objects that have simular coordinates.
@@ -223,7 +282,9 @@ class Vector2:
                 return True
         return False
 
-    def angle(self) -> float:
+    def angle(
+            self
+    ) -> float:
         """
         Returns the angle of the vector.
 
@@ -243,24 +304,38 @@ class Vector3:
         z: The z component.
     """
 
-    def __init__(self, x: float, y: float, z: float):
+    def __init__(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ):
         self.x: float = x
         self.y: float = y
         self.z: float = z
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         yield self.x, self.y, self.z
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "Vector3({}, {}, {})".format(self.x, self.y, self.z)
 
-    def __str__(self):
+    def __str__(
+            self
+    ):
         """
         Returns the individual components as a string separated by whitespace.
         """
         return "{} {} {}".format(self.x, self.y, self.z)
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         """
         Two Vector3 components are equal if their components are approximately the same.
         """
@@ -272,7 +347,10 @@ class Vector3:
         isclose_z = math.isclose(self.z, other.z)
         return isclose_x and isclose_y and isclose_z
 
-    def __add__(self, other):
+    def __add__(
+            self,
+            other
+    ):
         """
         Adds the components of two Vector3 objects.
         """
@@ -285,7 +363,10 @@ class Vector3:
         new.z += other.z
         return new
 
-    def __sub__(self, other):
+    def __sub__(
+            self,
+            other
+    ):
         """
         Subtracts the components of two Vector3 objects.
         """
@@ -298,7 +379,10 @@ class Vector3:
         new.z -= other.z
         return new
 
-    def __mul__(self, other):
+    def __mul__(
+            self,
+            other
+    ):
         """
         Multiplies the components by a scalar integer.
         """
@@ -311,7 +395,10 @@ class Vector3:
         else:
             return NotImplemented
 
-    def __truediv__(self, other):
+    def __truediv__(
+            self,
+            other
+    ):
         if isinstance(other, int):
             new = Vector3.from_vector3(self)
             new.x /= other
@@ -321,7 +408,10 @@ class Vector3:
         else:
             return NotImplemented
 
-    def __getitem__(self, item):
+    def __getitem__(
+            self,
+            item
+    ):
         if isinstance(item, int):
             if item == 0:
                 return self.x
@@ -332,7 +422,11 @@ class Vector3:
         else:
             return NotImplemented
 
-    def __setitem__(self, key, value):
+    def __setitem__(
+            self,
+            key,
+            value
+    ):
         if isinstance(key, int) and (isinstance(value, float) or isinstance(value, int)):
             if key == 0:
                 self.x = value
@@ -344,7 +438,10 @@ class Vector3:
             return NotImplemented
 
     @classmethod
-    def from_vector3(cls, other: Vector3) -> Vector3:
+    def from_vector3(
+            cls,
+            other: Vector3
+    ) -> Vector3:
         """
         Returns a duplicate of the specified vector.
 
@@ -357,7 +454,9 @@ class Vector3:
         return Vector3(other.x, other.y, other.z)
 
     @classmethod
-    def from_null(cls) -> Vector3:
+    def from_null(
+            cls
+    ) -> Vector3:
         """
         Returns a new vector with a magnitude of zero.
 
@@ -366,7 +465,12 @@ class Vector3:
         """
         return Vector3(0.0, 0.0, 0.0)
 
-    def set(self, x: float, y: float, z: float) -> None:
+    def set(
+            self,
+            x: float,
+            y: float,
+            z: float
+    ) -> None:
         """
         Sets the components of the vector.
 
@@ -379,7 +483,9 @@ class Vector3:
         self.y = y
         self.z = z
 
-    def normalize(self) -> None:
+    def normalize(
+            self
+    ) -> None:
         """
         Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
         """
@@ -388,7 +494,9 @@ class Vector3:
         self.y /= magnitude
         self.z /= magnitude
 
-    def magnitude(self) -> float:
+    def magnitude(
+            self
+    ) -> float:
         """
         Returns the magnitude of the vector.
 
@@ -397,7 +505,9 @@ class Vector3:
         """
         return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2)
 
-    def normal(self) -> Vector3:
+    def normal(
+            self
+    ) -> Vector3:
         vec3 = Vector3.from_vector3(self)
         magnitude = self.magnitude()
         vec3.x /= magnitude
@@ -405,7 +515,10 @@ class Vector3:
         vec3.z /= magnitude
         return vec3
 
-    def dot(self, other: Vector3) -> float:
+    def dot(
+            self,
+            other: Vector3
+    ) -> float:
         """
         Returns the dot product between the two specified vectors.
 
@@ -420,7 +533,10 @@ class Vector3:
         c = self.z * other.z
         return a + b + c
 
-    def distance(self, other: Vector3) -> float:
+    def distance(
+            self,
+            other: Vector3
+    ) -> float:
         """
         Returns the distance between two vectors.
 
@@ -435,7 +551,10 @@ class Vector3:
         c = (self.z - other.z) ** 2
         return math.sqrt(a + b + c)
 
-    def within(self, container: List) -> bool:
+    def within(
+            self,
+            container: List
+    ) -> bool:
         """
         Checks to see if the same Vector3 object in located in the specified list. This differs from using the 'in'
         keyword as that will return True for Vector3 objects that have simular coordinates.
@@ -463,25 +582,40 @@ class Vector4:
         w: The w component.
     """
 
-    def __init__(self, x: float, y: float, z: float, w: float):
+    def __init__(
+            self,
+            x: float,
+            y: float,
+            z: float,
+            w: float
+    ):
         self.x: float = x
         self.y: float = y
         self.z: float = z
         self.w: float = w
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         return iter((self.x, self.y, self.z, self.w))
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "Vector4({}, {}, {}, {})".format(self.x, self.y, self.z, self.w)
 
-    def __str__(self):
+    def __str__(
+            self
+    ):
         """
         Returns the individual components as a string separated by whitespace.
         """
         return "{} {} {} {}".format(self.x, self.y, self.z, self.w)
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         """
         Two Vector4 components are equal if their components are approximately the same.
         """
@@ -494,7 +628,10 @@ class Vector4:
         isclose_w = math.isclose(self.w, other.w)
         return isclose_x and isclose_y and isclose_z and isclose_w
 
-    def __add__(self, other):
+    def __add__(
+            self,
+            other
+    ):
         """
         Adds the components of two Vectorr objects.
         """
@@ -508,7 +645,10 @@ class Vector4:
         new.w += other.w
         return new
 
-    def __sub__(self, other):
+    def __sub__(
+            self,
+            other
+    ):
         """
         Subtracts the components of two Vector4 objects.
         """
@@ -522,7 +662,10 @@ class Vector4:
         new.w -= other.w
         return new
 
-    def __mul__(self, other):
+    def __mul__(
+            self,
+            other
+    ):
         """
         Multiplies the components by a scalar integer.
         """
@@ -537,7 +680,10 @@ class Vector4:
         return new
 
     @classmethod
-    def from_vector4(cls, other: Vector4) -> Vector4:
+    def from_vector4(
+            cls,
+            other: Vector4
+    ) -> Vector4:
         """
         Returns a duplicate of the specified vector.
 
@@ -550,7 +696,9 @@ class Vector4:
         return Vector4(other.x, other.y, other.z, other.w)
 
     @classmethod
-    def from_null(cls) -> Vector4:
+    def from_null(
+            cls
+    ) -> Vector4:
         """
         Returns a new vector with a magnitude of zero.
 
@@ -560,7 +708,10 @@ class Vector4:
         return Vector4(0.0, 0.0, 0.0, 0.0)
 
     @classmethod
-    def from_compressed(cls, data: int) -> Vector4:
+    def from_compressed(
+            cls,
+            data: int
+    ) -> Vector4:
         x = 1 - (data & 0x7FF) / 1023
         y = 1 - ((data >> 11) & 0x7FF) / 1023
         z = 1 - (data >> 22) / 511
@@ -577,7 +728,9 @@ class Vector4:
 
         return Vector4(x, y, z, w)
 
-    def magnitude(self) -> float:
+    def magnitude(
+            self
+    ) -> float:
         """
         Returns the magnitude of the vector.
 
@@ -586,7 +739,9 @@ class Vector4:
         """
         return math.sqrt(self.x ** 2 + self.y ** 2 + self.z ** 2 + self.w ** 2)
 
-    def normalize(self) -> Vector4:
+    def normalize(
+            self
+    ) -> Vector4:
         """
         Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
 
@@ -600,7 +755,13 @@ class Vector4:
         self.w /= magnitude
         return self
 
-    def set(self, x: float, y: float, z: float, w: float) -> None:
+    def set(
+            self,
+            x: float,
+            y: float,
+            z: float,
+            w: float
+    ) -> None:
         """
         Sets the components of the vector.
 
@@ -625,12 +786,19 @@ class AxisAngle:
         angle: The magnitude of the rotation.
     """
 
-    def __init__(self, axis: Vector3, angle: float):
+    def __init__(
+            self,
+            axis: Vector3,
+            angle: float
+    ):
         self.axis: Vector3 = axis
         self.angle: float = angle
 
     @classmethod
-    def from_quaternion(cls, quaternion: Vector4) -> AxisAngle:
+    def from_quaternion(
+            cls,
+            quaternion: Vector4
+    ) -> AxisAngle:
         """
         Returns a AxisAngle converted from a Vector4 quaternion.
 
@@ -656,7 +824,9 @@ class AxisAngle:
         return aa
 
     @classmethod
-    def from_null(cls) -> AxisAngle:
+    def from_null(
+            cls
+    ) -> AxisAngle:
         """
         Returns a AxisAngle that contains no rotation.
 
@@ -693,7 +863,9 @@ class SurfaceMaterial(IntEnum):
     NON_WALK_GRASS = 19
     TRIGGER = 30
 
-    def walkable(self) -> bool:
+    def walkable(
+            self
+    ) -> bool:
         return self in [SurfaceMaterial.DIRT, SurfaceMaterial.GRASS, SurfaceMaterial.STONE, SurfaceMaterial.WOOD,
                         SurfaceMaterial.WATER, SurfaceMaterial.CARPET, SurfaceMaterial.METAL, SurfaceMaterial.PUDDLES,
                         SurfaceMaterial.SWAMP, SurfaceMaterial.MUD, SurfaceMaterial.LEAVES, SurfaceMaterial.DOOR,
@@ -711,13 +883,21 @@ class Face:
         material: Material of the triangle, for usage in-game.
     """
 
-    def __init__(self, v1: Vector3, v2: Vector3, v3: Vector3, material=SurfaceMaterial.UNDEFINED):
+    def __init__(
+            self,
+            v1: Vector3,
+            v2: Vector3,
+            v3: Vector3,
+            material=SurfaceMaterial.UNDEFINED
+    ):
         self.v1: Vector3 = v1
         self.v2: Vector3 = v2
         self.v3: Vector3 = v3
         self.material: SurfaceMaterial = material
 
-    def normal(self) -> Vector3:
+    def normal(
+            self
+    ) -> Vector3:
         """
         Returns the normal for the face.
 
@@ -735,34 +915,52 @@ class Face:
 
         return normal
 
-    def area(self) -> float:
+    def area(
+            self
+    ) -> float:
         a = self.v1.distance(self.v2)
         b = self.v1.distance(self.v3)
         c = self.v2.distance(self.v3)
         return 0.25 * math.sqrt((a + b + c) * (-a + b + c) * (a - b + c) * (a + b - c))
 
-    def planar_distance(self) -> float:
+    def planar_distance(
+            self
+    ) -> float:
         return -1.0 * (self.normal().dot(self.v1))
 
-    def centre(self) -> Vector3:
+    def centre(
+            self
+    ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
 
 class Polygon2:
-    def __init__(self, points: List[Vector2] = None):
+    def __init__(
+            self,
+            points: List[Vector2] = None
+    ):
         self.points: List[Vector2] = [] if points is None else points
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         for point in self.points:
             yield point
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         return len(self.points)
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "Polygon3({})".format(self.points)
 
-    def __getitem__(self, item: int):
+    def __getitem__(
+            self,
+            item: int
+    ):
         if isinstance(item, int):
             return self.points[item]
         elif isinstance(item, slice):
@@ -770,14 +968,21 @@ class Polygon2:
         else:
             return NotImplemented
 
-    def __setitem__(self, key: int, value: Vector2):
+    def __setitem__(
+            self,
+            key: int,
+            value: Vector2
+    ):
         if isinstance(key, int) and isinstance(value, Vector2):
             self.points[key] = value
         else:
             return NotImplemented
 
     @classmethod
-    def from_polygon3(cls, poly3: Polygon3) -> Polygon2:
+    def from_polygon3(
+            cls,
+            poly3: Polygon3
+    ) -> Polygon2:
         """
         Converts a Polygon3 object into a Polygon2 object. The Z-axis is removed.
 
@@ -792,7 +997,11 @@ class Polygon2:
             poly2.points.append(Vector2(point.x, point.y))
         return poly2
 
-    def inside(self, point: Vector2, include_edges: bool = True) -> bool:
+    def inside(
+            self,
+            point: Vector2,
+            include_edges: bool = True
+    ) -> bool:
         """
         Returns if the specified point is inside the polygon.
 
@@ -810,7 +1019,7 @@ class Polygon2:
         inside = False
 
         p1 = self.points[0]
-        for i in range(1, n+1):
+        for i in range(1, n + 1):
             p2 = self.points[i % n]
             if p1.y == p2.y:
                 if point.y == p2.y:
@@ -832,46 +1041,72 @@ class Polygon2:
             p1 = p2
         return inside
 
-    def area(self) -> float:
+    def area(
+            self
+    ) -> float:
         # Code was adapted from this stackoverflow post:
         # https://stackoverflow.com/a/34327761
 
         n = len(self.points)
         area = 0.0
         for i in range(0, n - 1):
-            area += -self.points[i].y * self.points[i+1].x + self.points[i].x * self.points[i+1].y
+            area += -self.points[i].y * self.points[i + 1].x + self.points[i].x * self.points[i + 1].y
         area += -self.points[n - 1].y * self.points[0].x + self.points[n - 1].x * self.points[0].y
         area = 0.5 * math.fabs(area)
         return area
 
-    def append(self, point: Vector2) -> None:
+    def append(
+            self,
+            point: Vector2
+    ) -> None:
         self.points.append(point)
 
-    def extend(self, points: List[Vector2]) -> None:
+    def extend(
+            self,
+            points: List[Vector2]
+    ) -> None:
         self.points.extend(points)
 
-    def remove(self, point: Vector2) -> None:
+    def remove(
+            self,
+            point: Vector2
+    ) -> None:
         self.points.remove(point)
 
-    def index(self, point: Vector2) -> int:
+    def index(
+            self,
+            point: Vector2
+    ) -> int:
         return self.points.index(point)
 
 
 class Polygon3:
-    def __init__(self, points: List[Vector3] = None):
+    def __init__(
+            self,
+            points: List[Vector3] = None
+    ):
         self.points: List[Vector3] = [] if points is None else points
 
-    def __iter__(self):
+    def __iter__(
+            self
+    ):
         for point in self.points:
             yield point
 
-    def __len__(self):
+    def __len__(
+            self
+    ):
         return len(self.points)
 
-    def __repr__(self):
+    def __repr__(
+            self
+    ):
         return "Polygon3({})".format(self.points)
 
-    def __getitem__(self, item: int):
+    def __getitem__(
+            self,
+            item: int
+    ):
         if isinstance(item, int):
             return self.points[item]
         elif isinstance(item, slice):
@@ -879,14 +1114,21 @@ class Polygon3:
         else:
             return NotImplemented
 
-    def __setitem__(self, key: int, value: Vector3):
+    def __setitem__(
+            self,
+            key: int,
+            value: Vector3
+    ):
         if isinstance(key, int) and isinstance(value, Vector3):
             self.points[key] = value
         else:
             return NotImplemented
 
     @classmethod
-    def from_polygon2(cls, poly2: Polygon2) -> Polygon3:
+    def from_polygon2(
+            cls,
+            poly2: Polygon2
+    ) -> Polygon3:
         """
         Converts a Polygon3 object into a Polygon2 object. Points have their Z-axis set to 0.
 
@@ -901,14 +1143,26 @@ class Polygon3:
             poly3.points.append(Vector3(point.x, point.y, point.z))
         return poly3
 
-    def append(self, point: Vector3) -> None:
+    def append(
+            self,
+            point: Vector3
+    ) -> None:
         self.points.append(point)
 
-    def extend(self, points: List[Vector3]) -> None:
+    def extend(
+            self,
+            points: List[Vector3]
+    ) -> None:
         self.points.extend(points)
 
-    def remove(self, point: Vector3) -> None:
+    def remove(
+            self,
+            point: Vector3
+    ) -> None:
         self.points.remove(point)
 
-    def index(self, point: Vector3) -> int:
+    def index(
+            self,
+            point: Vector3
+    ) -> int:
         return self.points.index(point)

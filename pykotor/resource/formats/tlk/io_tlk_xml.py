@@ -13,13 +13,21 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, Re
 
 
 class TLKXMLReader(ResourceReader):
-    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = None):
+    def __init__(
+            self,
+            source: SOURCE_TYPES,
+            offset: int = 0,
+            size: int = None
+    ):
         super().__init__(source, offset, size)
         data = self._reader.read_bytes(self._reader.size()).decode()
         self._xml: ElementTree.Element = ElementTree.parse(io.StringIO(data)).getroot()
         self._tlk: Optional[TLK] = None
 
-    def load(self, auto_close: bool = True) -> TLK:
+    def load(
+            self,
+            auto_close: bool = True
+    ) -> TLK:
         self._tlk = TLK()
 
         self._tlk.language = Language(int(self._xml.get("language")))
@@ -27,7 +35,8 @@ class TLKXMLReader(ResourceReader):
         for string in self._xml:
             index = int(string.get("id"))
             self._tlk.entries[index].text = string.text
-            self._tlk.entries[index].voiceover = ResRef(string.get("sound")) if string.get("sound") else ResRef.from_blank()
+            self._tlk.entries[index].voiceover = ResRef(string.get("sound")) if string.get(
+                "sound") else ResRef.from_blank()
 
         if auto_close:
             self._reader.close()
@@ -36,12 +45,19 @@ class TLKXMLReader(ResourceReader):
 
 
 class TLKXMLWriter(ResourceWriter):
-    def __init__(self, tlk: TLK, target: TARGET_TYPES):
+    def __init__(
+            self,
+            tlk: TLK,
+            target: TARGET_TYPES
+    ):
         super().__init__(target)
         self._xml: ElementTree.Element = ElementTree.Element("xml")
         self._tlk: TLK = tlk
 
-    def write(self, auto_close: bool = True) -> None:
+    def write(
+            self,
+            auto_close: bool = True
+    ) -> None:
         self._xml.tag = "tlk"
         self._xml.set("language", str(self._tlk.language.value))
 

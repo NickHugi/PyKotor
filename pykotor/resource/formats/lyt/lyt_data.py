@@ -17,7 +17,9 @@ class LYT:
 
     BINARY_TYPE = ResourceType.LTR
 
-    def __init__(self):
+    def __init__(
+            self
+    ):
         self.rooms: List[LYTRoom] = []
         self.tracks: List[LYTTrack] = []
         self.obstacles: List[LYTObstacle] = []
@@ -32,11 +34,19 @@ class LYTRoom:
         model: The filename of the area model.
         position: The position of the area model.
     """
-    def __init__(self, model: str, position: Vector3):
+
+    def __init__(
+            self,
+            model: str,
+            position: Vector3
+    ):
         self.model: str = model
         self.position: Vector3 = position
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         return self.model == other.model and self.position == other.position
 
 
@@ -51,11 +61,18 @@ class LYTTrack:
         position: The position.
     """
 
-    def __init__(self, model: str, position: Vector3):
+    def __init__(
+            self,
+            model: str,
+            position: Vector3
+    ):
         self.model: str = model
         self.position: Vector3 = position
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         return self.model == other.model and self.position == other.position
 
 
@@ -70,11 +87,18 @@ class LYTObstacle:
         position: The position.
     """
 
-    def __init__(self, model: str, position: Vector3):
+    def __init__(
+            self,
+            model: str,
+            position: Vector3
+    ):
         self.model: str = model
         self.position: Vector3 = position
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         return self.model == other.model and self.position == other.position
 
 
@@ -91,12 +115,21 @@ class LYTDoorHook:
         orientation: The door orientation.
     """
 
-    def __init__(self, room: str, door: str, position: Vector3, orientation: Vector4):
+    def __init__(
+            self,
+            room: str,
+            door: str,
+            position: Vector3,
+            orientation: Vector4
+    ):
         self.room: str = room
         self.door: str = door
         self.position: Vector3 = position
         self.orientation: Vector4 = orientation
 
-    def __eq__(self, other):
+    def __eq__(
+            self,
+            other
+    ):
         return (self.room == other.room and self.door == other.door and self.position == other.position
                 and self.orientation == other.orientation)

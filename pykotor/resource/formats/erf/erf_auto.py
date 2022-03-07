@@ -5,7 +5,11 @@ from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
 from pykotor.resource.type import ResourceType
 
 
-def read_erf(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> ERF:
+def read_erf(
+        source: Union[str, bytes, bytearray, BinaryReader],
+        offset: int = 0,
+        size: int = None
+) -> ERF:
     """
     Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
     the data.
@@ -27,7 +31,11 @@ def read_erf(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
         raise ValueError("Tried to load an unsupported or corrupted ERF file.")
 
 
-def write_erf(erf: ERF, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.ERF) -> None:
+def write_erf(
+        erf: ERF,
+        target: Union[str, bytearray, BinaryReader],
+        file_format: ResourceType = ResourceType.ERF
+) -> None:
     """
     Writes the ERF data to the target location with the specified format (ERF or MOD).
 
@@ -45,7 +53,10 @@ def write_erf(erf: ERF, target: Union[str, bytearray, BinaryReader], file_format
         raise ValueError("Unsupported format specified; use ERF or MOD.")
 
 
-def bytes_erf(erf: ERF, file_format: ResourceType = ResourceType.ERF) -> bytes:
+def bytes_erf(
+        erf: ERF,
+        file_format: ResourceType = ResourceType.ERF
+) -> bytes:
     """
     Returns the ERF data in the specified format (ERF or MOD) as a bytes object.
 

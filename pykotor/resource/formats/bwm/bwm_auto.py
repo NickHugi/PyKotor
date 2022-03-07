@@ -6,7 +6,11 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, BWMBinaryWriter
 
 
-def read_bwm(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> BWM:
+def read_bwm(
+        source: Union[str, bytes, bytearray, BinaryReader],
+        offset: int = 0,
+        size: int = None
+) -> BWM:
     """
     Returns an WOK instance from the source.
 
@@ -25,7 +29,11 @@ def read_bwm(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0
     return BWMBinaryReader(source, offset, size).load()
 
 
-def write_bwm(wok: BWM, target: Union[str, bytearray, BinaryReader], file_format: ResourceType = ResourceType.WOK) -> None:
+def write_bwm(
+        wok: BWM,
+        target: Union[str, bytearray, BinaryReader],
+        file_format: ResourceType = ResourceType.WOK
+) -> None:
     """
     Writes the WOK data to the target location with the specified format (WOK only).
 
@@ -44,7 +52,10 @@ def write_bwm(wok: BWM, target: Union[str, bytearray, BinaryReader], file_format
         raise ValueError("Unsupported format specified; use WOK.")
 
 
-def bytes_bwm(bwm: BWM, file_format: ResourceType = ResourceType.WOK) -> bytes:
+def bytes_bwm(
+        bwm: BWM,
+        file_format: ResourceType = ResourceType.WOK
+) -> bytes:
     """
     Returns the BWM data in the specified format (WOK only) as a bytes object.
 
