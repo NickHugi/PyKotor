@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import abstractmethod, ABC
 from enum import IntEnum
 from typing import List, Optional
 
@@ -34,7 +35,17 @@ class GIT:
         self.waypoints: List[GITWaypoint] = []
 
 
-class GITCamera:
+class GITInstance(ABC):
+    @abstractmethod
+    def move(self, x: float, y: float, z: float) -> None:
+        ...
+
+    @abstractmethod
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        ...
+
+
+class GITCamera(GITInstance):
     GFF_STRUCT_ID = 14
 
     def __init__(self):
@@ -46,14 +57,30 @@ class GITCamera:
         self.orientation: Vector4 = Vector4.from_null()
         self.position: Vector3 = Vector3.from_null()
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
 
-class GITCreature:
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        ...
+
+
+class GITCreature(GITInstance):
     GFF_STRUCT_ID = 4
 
     def __init__(self):
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
+
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
+
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        self.bearing += yaw
 
 
 class GITModuleLink(IntEnum):
@@ -62,7 +89,7 @@ class GITModuleLink(IntEnum):
     ToWaypoint = 2
 
 
-class GITDoor:
+class GITDoor(GITInstance):
     GFF_STRUCT_ID = 8
 
     def __init__(self):
@@ -76,14 +103,30 @@ class GITDoor:
         self.transition_destination: LocalizedString = LocalizedString.from_invalid()
         self.tag: str = ""
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
 
-class GITEncounterSpawnPoint:
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        self.bearing += yaw
+
+
+class GITEncounterSpawnPoint(GITInstance):
     def __init__(self):
         self.orientation: float = 0.0
         self.position: Vector3 = Vector3.from_null()
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
 
-class GITEncounter:
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        self.orientation += yaw
+
+
+class GITEncounter(GITInstance):
     GFF_STRUCT_ID = 7
     GFF_GEOMETRY_STRUCT_ID = 1
     GFF_SPAWN_STRUCT_ID = 2
@@ -94,8 +137,16 @@ class GITEncounter:
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
 
-class GITPlaceable:
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        raise ValueError("Encounters cannot be rotated.")
+
+
+class GITPlaceable(GITInstance):
     GFF_STRUCT_ID = 9
 
     def __init__(self):
@@ -104,16 +155,32 @@ class GITPlaceable:
         self.tweak_color: Optional[Color] = Color.WHITE
         self.position: Vector3 = Vector3.from_null()
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
 
-class GITSound:
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        self.bearing += yaw
+
+
+class GITSound(GITInstance):
     GFF_STRUCT_ID = 6
 
     def __init__(self):
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
 
-class GITStore:
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        raise ValueError("Sounds cannot be rotated.")
+
+
+class GITStore(GITInstance):
     GFF_STRUCT_ID = 11
 
     def __init__(self):
@@ -121,8 +188,16 @@ class GITStore:
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
 
-class GITTrigger:
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        self.bearing += yaw
+
+
+class GITTrigger(GITInstance):
     GFF_STRUCT_ID = 1
     GFF_GEOMETRY_STRUCT_ID = 3
 
@@ -136,6 +211,14 @@ class GITTrigger:
         self.linked_to_module: ResRef = ResRef.from_blank()
         self.transition_destination: LocalizedString = LocalizedString.from_invalid()
 
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
+
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        raise ValueError("Triggers cannot be rotated.")
+
 
 class GITTransitionTrigger(GITTrigger):
     def __init__(self):
@@ -148,7 +231,7 @@ class GITTransitionTrigger(GITTrigger):
         self.tag: str = ""
 
 
-class GITWaypoint:
+class GITWaypoint(GITInstance):
     GFF_STRUCT_ID = 5
 
     def __init__(self):
@@ -159,6 +242,14 @@ class GITWaypoint:
         self.map_note_enabled: bool = False
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
+
+    def move(self, x: float, y: float, z: float) -> None:
+        self.position.x += x
+        self.position.y += y
+        self.position.z += z
+
+    def rotate(self, yaw: float, pitch: float, roll: float) -> None:
+        self.bearing += yaw
 
 
 def construct_git(gff: GFF) -> GIT:
