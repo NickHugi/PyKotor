@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFContent, load_gff, write_gff
 
 
 class UTT:
@@ -156,3 +157,21 @@ def dismantle_utt(utt: UTT, game: Game = Game.K2, *, use_deprecated: bool = True
         root.set_uint16("PortraitId", utt.portrait_id)
 
     return gff
+
+
+def read_utt(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTT:
+    gff = load_gff(source, offset, size)
+    utt = construct_utt(gff)
+    return utt
+
+
+def write_utt(utt: UTT, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_utt(utt: UTT, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)

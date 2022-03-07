@@ -3,12 +3,13 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List, Optional
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import LocalizedString, Gender, Language
 from pykotor.common.misc import Game, ResRef, Color
-from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, GFFContent, load_gff, write_gff
 
 
 class DLG:
@@ -659,3 +660,21 @@ def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True
         dismantle_node(replies_struct, reply, all_entries, "EntriesList")
 
     return gff
+
+
+def read_dlg(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> DLG:
+    gff = load_gff(source, offset, size)
+    dlg = construct_dlg(gff)
+    return dlg
+
+
+def write_dlg(dlg: DLG, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_dlg(dlg: DLG, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)

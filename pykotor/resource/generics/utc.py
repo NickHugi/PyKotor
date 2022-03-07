@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import List, Dict, Optional
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, EquipmentSlot, InventoryItem, Game
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, load_gff, write_gff
 
 
 class UTC:
@@ -445,3 +446,21 @@ def dismantle_utc(utc: UTC, game: Game = Game.K2, *, use_deprecated: bool = True
         root.set_list("TemplateList", GFFList())
 
     return gff
+
+
+def read_utc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTC:
+    gff = load_gff(source, offset, size)
+    utc = construct_utc(gff)
+    return utc
+
+
+def write_utc(utc: UTC, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_utc(utc: UTC, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_utc(utc, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)

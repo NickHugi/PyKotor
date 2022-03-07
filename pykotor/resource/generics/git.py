@@ -4,12 +4,13 @@ from abc import abstractmethod, ABC
 from enum import IntEnum
 from typing import List, Optional
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4, Polygon3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, load_gff, write_gff
 
 
 class GIT:
@@ -559,3 +560,21 @@ def dismantle_git(git: GIT, game: Game = Game.K2, *, use_deprecated: bool = True
         waypoint_struct.set_locstring("MapNote", LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note)
 
     return gff
+
+
+def read_git(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> GIT:
+    gff = load_gff(source, offset, size)
+    git = construct_git(gff)
+    return git
+
+
+def write_git(git: GIT, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_git(git, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_git(git: GIT, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_git(git, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)

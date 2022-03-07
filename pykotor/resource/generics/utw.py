@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFContent, load_gff, write_gff
 
 
 class UTW:
@@ -83,3 +84,21 @@ def dismantle_utw(utw: UTW, game: Game = Game.K2, *, use_deprecated: bool = True
     root.set_string("Comment", utw.comment)
 
     return gff
+
+
+def read_utw(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTW:
+    gff = load_gff(source, offset, size)
+    utw = construct_utw(gff)
+    return utw
+
+
+def write_utw(utw: UTW, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_utw(utw: UTW, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_utw(utw, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)

@@ -1,10 +1,11 @@
 from typing import List
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, load_gff, write_gff
 
 
 class UTE:
@@ -179,3 +180,22 @@ def dismantle_ute(ute: UTE, game: Game = Game.K2, *, use_deprecated: bool = True
         root.set_int32("Difficulty", ute.unused_difficulty)
 
     return gff
+
+
+def read_ute(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTE:
+    gff = load_gff(source, offset, size)
+    ute = construct_ute(gff)
+    return ute
+
+
+def write_ute(ute: UTE, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_ute(ute: UTE, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)
+

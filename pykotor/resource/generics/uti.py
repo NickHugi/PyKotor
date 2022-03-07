@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, load_gff, write_gff
 
 ARMOR_BASE_ITEMS = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
 """ Base Item IDs that are considered armor as per the 2DA files. """
@@ -146,3 +147,21 @@ def dismantle_uti(uti: UTI, game: Game = Game.K2, *, use_deprecated: bool = True
         root.set_uint8("Identified", uti.identified)
 
     return gff
+
+
+def read_uti(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTI:
+    gff = load_gff(source, offset, size)
+    uti = construct_uti(gff)
+    return uti
+
+
+def write_uti(uti: UTI, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_uti(uti: UTI, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_uti(uti, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)

@@ -3,12 +3,13 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List
 
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, load_gff, write_gff
 
 
 class ARE:
@@ -402,3 +403,21 @@ def dismantle_are(are: ARE, game: Game = Game.K2, *, use_deprecated: bool = True
         root.set_uint8("PlayerVsPlayer", are.player_vs_player)
 
     return gff
+
+
+def read_are(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> ARE:
+    gff = load_gff(source, offset, size)
+    are = construct_are(gff)
+    return are
+
+
+def write_are(are: ARE, target: TARGET_TYPES, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> None:
+    gff = dismantle_are(are, game, use_deprecated=use_deprecated)
+    write_gff(gff, target, file_format)
+
+
+def bytes_are(are: ARE, game: Game = Game.K2, file_format: ResourceType = ResourceType.GFF, *,
+              use_deprecated: bool = True) -> bytes:
+    gff = dismantle_are(are, game, use_deprecated=use_deprecated)
+    return bytes_gff(gff, file_format)
