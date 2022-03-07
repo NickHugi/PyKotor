@@ -4,13 +4,12 @@ from abc import abstractmethod, ABC
 from enum import IntEnum
 from typing import List, Optional
 
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
-
 from pykotor.common.geometry import Vector2, Vector3, Vector4, Polygon3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
 from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 
 class GIT:

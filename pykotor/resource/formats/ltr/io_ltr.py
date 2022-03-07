@@ -1,6 +1,5 @@
 from typing import Optional
 
-from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ltr.ltr_data import LTR
 from pykotor.resource.type import SOURCE_TYPES, ResourceReader, TARGET_TYPES, ResourceWriter
 

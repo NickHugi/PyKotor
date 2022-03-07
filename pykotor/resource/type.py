@@ -5,7 +5,6 @@ games.
 from __future__ import annotations
 
 from abc import ABC
-from enum import Enum
 from typing import Union, overload
 
 from pykotor.common.stream import BinaryReader, BinaryWriter

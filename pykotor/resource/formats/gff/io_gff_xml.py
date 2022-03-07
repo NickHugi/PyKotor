@@ -5,10 +5,9 @@ import io
 from typing import Optional, Any
 from xml.etree import ElementTree
 
-from pykotor.common.misc import ResRef
-
 from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFF, GFFStruct, GFFFieldType, GFFList
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 

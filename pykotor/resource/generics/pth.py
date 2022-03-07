@@ -3,12 +3,11 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import List, Optional
 
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
-
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 
 class PTH:

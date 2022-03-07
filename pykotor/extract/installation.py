@@ -1,25 +1,20 @@
 from __future__ import annotations
 
 import os
-from collections import namedtuple
 from contextlib import suppress
 from copy import copy
-from enum import Enum, IntEnum
-from typing import Dict, List, Optional, Tuple, NamedTuple
-
-from pykotor.common.misc import CaseInsensitiveDict
-from pykotor.common.stream import BinaryReader
+from enum import IntEnum
+from typing import Dict, List, Optional, NamedTuple
 
 from pykotor.common.language import Language, Gender, LocalizedString
-from pykotor.extract.file import FileResource, ResourceResult, LocationResult, ResourceIdentifier
+from pykotor.common.misc import CaseInsensitiveDict
+from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
+from pykotor.extract.file import FileResource, ResourceResult, LocationResult, ResourceIdentifier
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.mdl import MDL
-from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tpc import TPC, read_tpc
-from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
 

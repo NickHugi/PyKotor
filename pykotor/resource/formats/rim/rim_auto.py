@@ -1,9 +1,8 @@
 from typing import Union
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, RIMBinaryWriter
+from pykotor.resource.type import ResourceType
 
 
 def read_rim(

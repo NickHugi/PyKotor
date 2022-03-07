@@ -1,11 +1,10 @@
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import Language, Gender
 from pykotor.resource.formats.gff import GFFBinaryReader, GFF, GFFXMLReader
 from pykotor.resource.formats.gff.gff_auto import write_gff, read_gff
+from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.gff"
 XML_TEST_FILE = "../../files/test.gff.xml"

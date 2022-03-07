@@ -1,8 +1,7 @@
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.resource.formats.lip import LIP, LIPShape, LIPBinaryReader, detect_lip, write_lip, LIPXMLReader
+from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.lip"
 XML_TEST_FILE = "../../files/test.lip.xml"

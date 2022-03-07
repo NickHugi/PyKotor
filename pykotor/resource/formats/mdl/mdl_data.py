@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List, Optional, Union, Tuple, Dict, Set
-
-from pykotor.resource.type import ResourceType
+from typing import List, Optional, Tuple, Set
 
 from pykotor.common.geometry import Vector3, Vector4, Vector2, SurfaceMaterial
 from pykotor.common.misc import Color
+from pykotor.resource.type import ResourceType
 
 
 class MDL:

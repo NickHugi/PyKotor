@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import EquipmentSlot, Game, Color
+from pykotor.common.misc import Color
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.git import construct_git, dismantle_git
 

@@ -2,48 +2,34 @@ from __future__ import annotations
 
 import os.path
 from contextlib import suppress
-from copy import copy
-from typing import List, TypeVar, Generic, Optional, Dict, Type, Any
-
-from PyQt5.QtWidgets import QMenu
-
-from pykotor.resource.formats.mdl import read_mdl, MDL
-from pykotor.tools.model import list_textures
-
-from pykotor.resource.formats.vis import read_vis
-from pykotor.resource.formats.vis.vis_data import VIS
+from typing import List, TypeVar, Generic, Optional, Dict, Any
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.tpc import TPC, read_tpc
-
-from pykotor.resource.generics.ifo import IFO, construct_ifo
-from pykotor.resource.generics.are import ARE, construct_are
-from pykotor.resource.generics.git import GIT, construct_git
-from pykotor.resource.generics.pth import PTH, construct_pth
-from pykotor.resource.generics.dlg import DLG, construct_dlg
-from pykotor.resource.generics.uts import UTS, construct_uts
-from pykotor.resource.generics.utw import UTW, construct_utw
-from pykotor.resource.generics.utt import UTT, construct_utt
-from pykotor.resource.generics.ute import UTE, construct_ute
-from pykotor.resource.generics.utm import UTM, construct_utm
-from pykotor.resource.generics.uti import UTI, construct_uti
-from pykotor.resource.generics.utd import UTD, construct_utd
-from pykotor.resource.generics.utp import UTP, construct_utp
-
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.twoda import read_2da
-from pykotor.resource.type import ResourceType
-
 from pykotor.extract.capsule import Capsule
-
 from pykotor.extract.file import ResourceIdentifier
-
-from pykotor.resource.formats.lyt.lyt_auto import read_lyt
-
 from pykotor.extract.installation import Installation, SearchLocation
-
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import LYT
+from pykotor.resource.formats.lyt.lyt_auto import read_lyt
+from pykotor.resource.formats.mdl import MDL
+from pykotor.resource.formats.tpc import read_tpc
+from pykotor.resource.formats.vis import read_vis
+from pykotor.resource.generics.are import ARE, construct_are
+from pykotor.resource.generics.dlg import construct_dlg
+from pykotor.resource.generics.git import GIT, construct_git
+from pykotor.resource.generics.ifo import IFO, construct_ifo
+from pykotor.resource.generics.pth import construct_pth
 from pykotor.resource.generics.utc import UTC, construct_utc
+from pykotor.resource.generics.utd import UTD, construct_utd
+from pykotor.resource.generics.ute import UTE, construct_ute
+from pykotor.resource.generics.uti import UTI, construct_uti
+from pykotor.resource.generics.utm import UTM, construct_utm
+from pykotor.resource.generics.utp import UTP, construct_utp
+from pykotor.resource.generics.uts import construct_uts
+from pykotor.resource.generics.utt import UTT, construct_utt
+from pykotor.resource.generics.utw import UTW, construct_utw
+from pykotor.resource.type import ResourceType
+from pykotor.tools.model import list_textures
 
 T = TypeVar('T')
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES, SearchLocation.CHITIN]

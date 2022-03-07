@@ -3,12 +3,11 @@ from __future__ import annotations
 from enum import IntEnum
 from typing import List
 
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 
 class JRL:

@@ -4,7 +4,6 @@ import json
 from typing import Optional
 
 from pykotor.common.misc import ResRef
-
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
 

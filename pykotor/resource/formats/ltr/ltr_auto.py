@@ -1,5 +1,5 @@
-from pykotor.resource.formats.ltr.ltr_data import LTR
 from pykotor.resource.formats.ltr.io_ltr import LTRBinaryReader, LTRBinaryWriter
+from pykotor.resource.formats.ltr.ltr_data import LTR
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 

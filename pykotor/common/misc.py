@@ -2,11 +2,10 @@
 This module holds various unrelated classes.
 """
 from __future__ import annotations
+
 import os
 from enum import IntEnum, Enum
-from typing import Tuple, TypeVar, Generic, Dict
-
-from pykotor.resource.type import ResourceType
+from typing import TypeVar, Generic, Dict
 
 from pykotor.common.geometry import Vector3
 

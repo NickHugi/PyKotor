@@ -1,5 +1,3 @@
-from typing import overload, Union
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCBinaryReader, TPCBinaryWriter, TPCTGAWriter, TPCBMPWriter, TPCTGAReader
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType

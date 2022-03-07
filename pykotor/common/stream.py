@@ -2,10 +2,12 @@
 This module holds classes relating to read and write operations.
 """
 from __future__ import annotations
+
 import io
 import struct
 from abc import ABC, abstractmethod
 from typing import BinaryIO, Union, Optional
+
 from pykotor.common.geometry import Vector3, Vector4, Vector2
 from pykotor.common.language import LocalizedString
 

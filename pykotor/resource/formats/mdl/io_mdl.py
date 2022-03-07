@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import struct
-from copy import copy
 from typing import Optional, List, Tuple, Dict
 
 from pykotor.common.geometry import Vector3, Vector4, Vector2, SurfaceMaterial

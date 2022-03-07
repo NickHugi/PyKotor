@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 ARMOR_BASE_ITEMS = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
 """ Base Item IDs that are considered armor as per the 2DA files. """

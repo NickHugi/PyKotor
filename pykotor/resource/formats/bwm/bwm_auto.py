@@ -1,9 +1,8 @@
 from typing import Union
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, BWMBinaryWriter
+from pykotor.resource.type import ResourceType
 
 
 def read_bwm(

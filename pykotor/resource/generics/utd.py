@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
-from pykotor.resource.type import ResourceType, TARGET_TYPES, SOURCE_TYPES
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game
 from pykotor.resource.formats.gff import GFF, GFFContent, write_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
+from pykotor.resource.type import ResourceType, TARGET_TYPES, SOURCE_TYPES
 
 
 class UTD:

@@ -2,14 +2,10 @@ import os
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
-
-from pykotor.extract.file import ResourceIdentifier
-
 from pykotor.extract.capsule import Capsule
-
-from pykotor.resource.type import ResourceType
-
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.resource.type import ResourceType
 
 
 class TestInstallation(TestCase):

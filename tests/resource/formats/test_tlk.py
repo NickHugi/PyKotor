@@ -1,11 +1,10 @@
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryReader, write_tlk, read_tlk, TLKXMLReader, \
     TLKJSONReader
+from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.tlk"
 XML_TEST_FILE = "../../files/test.tlk.xml"

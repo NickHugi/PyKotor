@@ -1,9 +1,7 @@
 from unittest import TestCase
 
-from pykotor.resource.type import ResourceType
-
-from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf import SSF, SSFSound, SSFBinaryReader, detect_ssf, SSFXMLReader, write_ssf
+from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.ssf"
 XML_TEST_FILE = "../../files/test.ssf.xml"

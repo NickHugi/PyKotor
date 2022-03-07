@@ -5,10 +5,9 @@ from __future__ import annotations
 
 from typing import List
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
+from pykotor.resource.type import ResourceType
 
 
 class TLK:

@@ -1,10 +1,7 @@
 from unittest import TestCase
 
 from pykotor.common.language import Language
-
-from pykotor.extract.capsule import Capsule
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.type import ResourceType
 
 TEST_FILE = "../../tests/files/test.tlk"
 

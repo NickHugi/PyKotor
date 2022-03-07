@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import List, Dict, Optional
-
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from typing import List, Dict
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, EquipmentSlot, InventoryItem, Game
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 
 class UTC:

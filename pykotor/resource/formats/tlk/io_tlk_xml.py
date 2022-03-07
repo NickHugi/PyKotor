@@ -4,11 +4,9 @@ import io
 from typing import Optional
 from xml.etree import ElementTree
 
-from pykotor.common.misc import ResRef
-
 from pykotor.common.language import Language
-
-from pykotor.resource.formats.tlk.tlk_data import TLK, TLKEntry
+from pykotor.common.misc import ResRef
+from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
 
 

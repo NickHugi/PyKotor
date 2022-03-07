@@ -2,12 +2,12 @@
 This module holds classes relating to string localization.
 """
 from __future__ import annotations
+
 from enum import IntEnum
-from typing import Dict, Tuple, Optional, Union, TYPE_CHECKING
+from typing import Dict, Tuple, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pykotor.extract.talktable import TalkTable
-    from pykotor.resource.formats.tlk import TLK
+    pass
 
 
 class Language(IntEnum):

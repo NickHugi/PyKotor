@@ -1,11 +1,7 @@
-import os
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector3
-
-from pykotor.resource.type import ResourceType
-
-from pykotor.resource.formats.bwm import BWMBinaryReader, BWMBinaryWriter, BWM, write_bwm, read_bwm
+from pykotor.resource.formats.bwm import BWMBinaryReader, BWM, write_bwm, read_bwm
 
 BINARY_TEST_FILE = "../../files/test.wok"
 

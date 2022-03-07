@@ -5,9 +5,8 @@ from __future__ import annotations
 
 from typing import List
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.geometry import Vector3, Vector4
+from pykotor.resource.type import ResourceType
 
 
 class LYT:

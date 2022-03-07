@@ -7,11 +7,10 @@ from copy import copy, deepcopy
 from enum import IntEnum, Enum
 from typing import List, Optional, Any, Dict, TypeVar, Union
 
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
+from pykotor.resource.type import ResourceType
 
 T = TypeVar("T")
 U = TypeVar("U")

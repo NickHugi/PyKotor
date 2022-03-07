@@ -1,7 +1,6 @@
-from typing import List, Tuple, Dict, NamedTuple
+from typing import List, Dict, NamedTuple
 
-from pykotor.common.language import Language, Gender
-
+from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 

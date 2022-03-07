@@ -25,7 +25,6 @@ class TestCapsule(TestCase):
         self.assertEqual(19788, len(erf_capsule.resource("001ebo", ResourceType.PTH)))
         self.assertEqual("PTH ", erf_capsule.resource("001ebo", ResourceType.PTH)[:4].decode())
 
-
     def test_rim_capsule(self):
         rim_capsule = Capsule(TEST_FILE_RIM)
 

@@ -1,7 +1,5 @@
 from unittest import TestCase
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import EquipmentSlot, Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
 

@@ -1,26 +1,20 @@
-from pykotor.resource.generics.pth import dismantle_pth
-
-from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-
-from pykotor.tools import model
-
-from pykotor.resource.formats.tpc import TPCTextureFormat, TPC, write_tpc
-from pykotor.resource.generics.git import dismantle_git
-from pykotor.resource.generics.uts import dismantle_uts
-from pykotor.resource.generics.utp import dismantle_utp
-from pykotor.resource.generics.utd import dismantle_utd
-from pykotor.resource.generics.are import dismantle_are
-from pykotor.resource.generics.ifo import dismantle_ifo
-
-from pykotor.resource.type import ResourceType
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
-
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.formats.lyt.lyt_auto import write_lyt
+from pykotor.resource.formats.tpc import TPCTextureFormat, TPC, write_tpc
 from pykotor.resource.formats.vis import write_vis
+from pykotor.resource.generics.are import dismantle_are
+from pykotor.resource.generics.git import dismantle_git
+from pykotor.resource.generics.ifo import dismantle_ifo
+from pykotor.resource.generics.pth import dismantle_pth
+from pykotor.resource.generics.utd import dismantle_utd
+from pykotor.resource.generics.utp import dismantle_utp
+from pykotor.resource.generics.uts import dismantle_uts
+from pykotor.resource.type import ResourceType
+from pykotor.tools import model
 
 
 def clone_module(

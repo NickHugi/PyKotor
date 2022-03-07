@@ -1,4 +1,4 @@
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.twoda import TwoDA, TwoDABinaryReader, TwoDABinaryWriter, TwoDACSVWriter, TwoDACSVReader, \
     TwoDAJSONReader, TwoDAJSONWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType

@@ -1,11 +1,9 @@
-import io
 import struct
 from copy import deepcopy
 from typing import Dict, List
 
 from pykotor.common.misc import Game
-
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryReader
 
 _GEOM_ROOT_FP0_K1 = 4273776
 _GEOM_ROOT_FP1_K1 = 4216096

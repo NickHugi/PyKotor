@@ -1,6 +1,6 @@
 import struct
 
-from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceWriter, TARGET_TYPES
 

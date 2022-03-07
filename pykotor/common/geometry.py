@@ -2,6 +2,7 @@
 This module holds classes relating to geometry.
 """
 from __future__ import annotations
+
 import math
 from enum import IntEnum
 from typing import List

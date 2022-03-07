@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.twoda import TwoDA, write_2da, TwoDABinaryReader, read_2da, detect_2da, TwoDACSVReader
-from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader, TwoDAJSONWriter
+from pykotor.resource.formats.twoda import write_2da, TwoDABinaryReader, read_2da, detect_2da, TwoDACSVReader
+from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.2da"

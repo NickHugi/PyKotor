@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.rim import RIM, RIMBinaryReader, write_rim, RIMBinaryWriter, read_rim
+from pykotor.resource.formats.rim import RIM, RIMBinaryReader, write_rim, read_rim
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.rim"

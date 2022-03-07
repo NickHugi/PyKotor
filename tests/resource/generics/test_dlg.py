@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from pykotor.common.language import LocalizedString
-from pykotor.common.misc import EquipmentSlot, Game
+from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
 

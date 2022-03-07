@@ -3,13 +3,11 @@ This module handles classes relating to editing TPC files.
 """
 from __future__ import annotations
 
-import struct
 from enum import IntEnum
 from typing import List, Tuple, Optional, NamedTuple
 
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.type import ResourceType
-
-from pykotor.common.stream import BinaryReader, BinaryWriter
 
 
 class TPCGetResult(NamedTuple):
