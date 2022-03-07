@@ -34,7 +34,7 @@ def detect_mdl(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_mdl(source: SOURCE_TYPES, offset: int = 0, size: int = 0,
+def read_mdl(source: SOURCE_TYPES, offset: int = 0, size: int = 0,
              source_ext: SOURCE_TYPES = None, offset_ext: int = 0, size_ext: int = 0) -> MDL:
     """
     Returns an MDL instance from the source. The file format (MDL or MDL_ASCII) is automatically determined before

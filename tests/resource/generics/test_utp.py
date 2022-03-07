@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utp import construct_utp, dismantle_utp, UTP
 
 TEST_FILE = "../../files/test.utp"
@@ -8,7 +8,7 @@ TEST_FILE = "../../files/test.utp"
 
 class Test(TestCase):
     def test_io(self):
-        gff = load_gff(TEST_FILE)
+        gff = read_gff(TEST_FILE)
         utp = construct_utp(gff)
         self.validate_io(utp)
 

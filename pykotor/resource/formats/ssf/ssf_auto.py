@@ -33,7 +33,7 @@ def detect_ssf(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_ssf(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> SSF:
+def read_ssf(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> SSF:
     """
     Returns an SSF instance from the source. The file format (SSF or SSF_XML) is automatically determined before parsing
     the data.

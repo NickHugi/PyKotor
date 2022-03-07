@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uti import construct_uti, dismantle_uti, UTI
 
 TEST_FILE = "../../files/test.uti"
@@ -10,7 +10,7 @@ TEST_FILE = "../../files/test.uti"
 
 class TestUTI(TestCase):
     def test_io(self):
-        gff = load_gff(TEST_FILE)
+        gff = read_gff(TEST_FILE)
         uti = construct_uti(gff)
         self.validate_io(uti)
 

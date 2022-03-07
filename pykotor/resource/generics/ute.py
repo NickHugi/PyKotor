@@ -5,7 +5,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
 
 
 class UTE:
@@ -183,7 +183,7 @@ def dismantle_ute(ute: UTE, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_ute(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTE:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     ute = construct_ute(gff)
     return ute
 

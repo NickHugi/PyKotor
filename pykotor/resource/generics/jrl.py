@@ -8,7 +8,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
 
 
 class JRL:
@@ -121,7 +121,7 @@ def dismantle_jrl(jrl: JRL, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_jrl(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> JRL:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     jrl = construct_jrl(gff)
     return jrl
 

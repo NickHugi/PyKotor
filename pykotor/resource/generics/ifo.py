@@ -6,7 +6,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, read_gff, write_gff
 
 
 class IFO:
@@ -204,7 +204,7 @@ def dismantle_ifo(ifo: IFO, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_ifo(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> IFO:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     ifo = construct_ifo(gff)
     return ifo
 

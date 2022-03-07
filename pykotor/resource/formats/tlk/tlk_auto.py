@@ -44,7 +44,7 @@ def detect_tlk(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_tlk(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TLK:
+def read_tlk(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TLK:
     """
     Returns an TLK instance from the source. The file format (TLK, TLK_XML or TLK_JSON) is automatically determined
     before parsing the data.

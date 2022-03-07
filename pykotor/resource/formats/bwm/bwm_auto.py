@@ -6,7 +6,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, BWMBinaryWriter
 
 
-def load_bwm(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> BWM:
+def read_bwm(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> BWM:
     """
     Returns an WOK instance from the source.
 

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game, Color
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.git import construct_git, dismantle_git
 
 TEST_FILE = "../../files/test.git"
@@ -10,7 +10,7 @@ TEST_FILE = "../../files/test.git"
 
 class TestGIT(TestCase):
     def test_io(self):
-        gff = load_gff(TEST_FILE)
+        gff = read_gff(TEST_FILE)
         git = construct_git(gff)
         self.validate_io(git)
 

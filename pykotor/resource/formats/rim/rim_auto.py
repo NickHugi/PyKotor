@@ -6,7 +6,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, RIMBinaryWriter
 
 
-def load_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> RIM:
+def read_rim(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> RIM:
     """
     Returns an RIM instance from the source. The file format (RIM) is automatically determined before parsing
     the data.

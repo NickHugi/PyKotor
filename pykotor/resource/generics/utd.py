@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.gff.gff_auto import bytes_gff, load_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.type import ResourceType, TARGET_TYPES, SOURCE_TYPES
 
 from pykotor.common.language import LocalizedString
@@ -281,7 +281,7 @@ def dismantle_utd(utd: UTD, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_utd(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTD:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     utd = construct_utd(gff)
     return utd
 

@@ -7,14 +7,14 @@ from typing import List, TypeVar, Generic, Optional, Dict, Type, Any
 
 from PyQt5.QtWidgets import QMenu
 
-from pykotor.resource.formats.mdl import load_mdl, MDL
+from pykotor.resource.formats.mdl import read_mdl, MDL
 from pykotor.tools.model import list_textures
 
-from pykotor.resource.formats.vis import load_vis
+from pykotor.resource.formats.vis import read_vis
 from pykotor.resource.formats.vis.vis_data import VIS
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.tpc import TPC, load_tpc
+from pykotor.resource.formats.tpc import TPC, read_tpc
 
 from pykotor.resource.generics.ifo import IFO, construct_ifo
 from pykotor.resource.generics.are import ARE, construct_are
@@ -30,15 +30,15 @@ from pykotor.resource.generics.uti import UTI, construct_uti
 from pykotor.resource.generics.utd import UTD, construct_utd
 from pykotor.resource.generics.utp import UTP, construct_utp
 
-from pykotor.resource.formats.gff import load_gff
-from pykotor.resource.formats.twoda import load_2da
+from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.type import ResourceType
 
 from pykotor.extract.capsule import Capsule
 
 from pykotor.extract.file import ResourceIdentifier
 
-from pykotor.resource.formats.lyt.lyt_auto import load_lyt
+from pykotor.resource.formats.lyt.lyt_auto import read_lyt
 
 from pykotor.extract.installation import Installation, SearchLocation
 
@@ -59,7 +59,7 @@ class Module:
 
         for capsule in self._capsules:
             if capsule.exists("module", ResourceType.IFO):
-                ifo = load_gff(capsule.resource("module", ResourceType.IFO))
+                ifo = read_gff(capsule.resource("module", ResourceType.IFO))
                 self._id = ifo.root.get_resref("Mod_Entry_Area").get().lower()
                 break
         else:
@@ -327,24 +327,24 @@ class ModuleResource(Generic[T]):
     def resource(self) -> T:
         if self._resource is None:
             conversions = {
-                ResourceType.UTC: (lambda data: construct_utc(load_gff(data))),
-                ResourceType.UTP: (lambda data: construct_utp(load_gff(data))),
-                ResourceType.UTD: (lambda data: construct_utd(load_gff(data))),
-                ResourceType.UTI: (lambda data: construct_uti(load_gff(data))),
-                ResourceType.UTM: (lambda data: construct_utm(load_gff(data))),
-                ResourceType.UTE: (lambda data: construct_ute(load_gff(data))),
-                ResourceType.UTT: (lambda data: construct_utt(load_gff(data))),
-                ResourceType.UTW: (lambda data: construct_utw(load_gff(data))),
-                ResourceType.UTS: (lambda data: construct_uts(load_gff(data))),
-                ResourceType.DLG: (lambda data: construct_dlg(load_gff(data))),
-                ResourceType.PTH: (lambda data: construct_pth(load_gff(data))),
+                ResourceType.UTC: (lambda data: construct_utc(read_gff(data))),
+                ResourceType.UTP: (lambda data: construct_utp(read_gff(data))),
+                ResourceType.UTD: (lambda data: construct_utd(read_gff(data))),
+                ResourceType.UTI: (lambda data: construct_uti(read_gff(data))),
+                ResourceType.UTM: (lambda data: construct_utm(read_gff(data))),
+                ResourceType.UTE: (lambda data: construct_ute(read_gff(data))),
+                ResourceType.UTT: (lambda data: construct_utt(read_gff(data))),
+                ResourceType.UTW: (lambda data: construct_utw(read_gff(data))),
+                ResourceType.UTS: (lambda data: construct_uts(read_gff(data))),
+                ResourceType.DLG: (lambda data: construct_dlg(read_gff(data))),
+                ResourceType.PTH: (lambda data: construct_pth(read_gff(data))),
                 ResourceType.NCS: (lambda data: data),
-                ResourceType.TPC: (lambda data: load_tpc(data)),
-                ResourceType.LYT: (lambda data: load_lyt(data)),
-                ResourceType.VIS: (lambda data: load_vis(data)),
-                ResourceType.IFO: (lambda data: construct_ifo(load_gff(data))),
-                ResourceType.ARE: (lambda data: construct_are(load_gff(data))),
-                ResourceType.GIT: (lambda data: construct_git(load_gff(data)))
+                ResourceType.TPC: (lambda data: read_tpc(data)),
+                ResourceType.LYT: (lambda data: read_lyt(data)),
+                ResourceType.VIS: (lambda data: read_vis(data)),
+                ResourceType.IFO: (lambda data: construct_ifo(read_gff(data))),
+                ResourceType.ARE: (lambda data: construct_are(read_gff(data))),
+                ResourceType.GIT: (lambda data: construct_git(read_gff(data)))
             }
 
             if self._active is None:

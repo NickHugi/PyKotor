@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.type import ResourceType
 
 from pykotor.resource.formats.vis import VISAsciiReader, VIS
-from pykotor.resource.formats.vis.vis_auto import write_vis, load_vis
+from pykotor.resource.formats.vis.vis_auto import write_vis, read_vis
 
 ASCII_TEST_FILE = "../../files/test.vis"
 
@@ -15,7 +15,7 @@ class TestVIS(TestCase):
 
         data = bytearray()
         write_vis(vis, data, ResourceType.VIS)
-        vis = load_vis(data)
+        vis = read_vis(data)
         self.validate_io(vis)
 
     def validate_io(self, vis: VIS):

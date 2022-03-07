@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utt import construct_utt, dismantle_utt
 
 TEST_FILE = "../../files/test.utt"
@@ -8,7 +8,7 @@ TEST_FILE = "../../files/test.utt"
 
 class TestUTT(TestCase):
     def test_io(self):
-        gff = load_gff(TEST_FILE)
+        gff = read_gff(TEST_FILE)
         utt = construct_utt(gff)
         self.validate_io(utt)
 

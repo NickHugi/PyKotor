@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.pth import construct_pth, dismantle_pth
 
 TEST_FILE = "../../files/test.pth"
@@ -11,7 +11,7 @@ TEST_FILE = "../../files/test.pth"
 
 class TestPTH(TestCase):
     def test_io(self):
-        gff = load_gff(TEST_FILE)
+        gff = read_gff(TEST_FILE)
         pth = construct_pth(gff)
         self.validate_io(pth)
 

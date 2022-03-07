@@ -15,11 +15,11 @@ from pykotor.extract.file import FileResource, ResourceResult, LocationResult, R
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
 from pykotor.extract.talktable import TalkTable
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.mdl import MDL
 from pykotor.resource.formats.tlk import TLK
-from pykotor.resource.formats.tpc import TPC, load_tpc
-from pykotor.resource.formats.twoda import TwoDA, load_2da
+from pykotor.resource.formats.tpc import TPC, read_tpc
+from pykotor.resource.formats.twoda import TwoDA, read_2da
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
 
@@ -507,23 +507,23 @@ class Installation:
                 for resource in resources:
                     if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                         resnames.remove(resource.resname())
-                        textures[resource.resname()] = load_tpc(resource.data())
+                        textures[resource.resname()] = read_tpc(resource.data())
 
         def check_list(values):
             for resource in values:
                 if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                     resnames.remove(resource.resname())
-                    textures[resource.resname()] = load_tpc(resource.data())
+                    textures[resource.resname()] = read_tpc(resource.data())
 
         def check_capsules(values):
             for capsule in values:
                 for resname in resnames:
                     if capsule.exists(resname, ResourceType.TPC):
                         resnames.remove(resname)
-                        textures[resname] = load_tpc(capsule.resource(resname, ResourceType.TPC))
+                        textures[resname] = read_tpc(capsule.resource(resname, ResourceType.TPC))
                     if capsule.exists(resname, ResourceType.TGA):
                         resnames.remove(resname)
-                        textures[resname] = load_tpc(capsule.resource(resname, ResourceType.TGA))
+                        textures[resname] = read_tpc(capsule.resource(resname, ResourceType.TGA))
 
         def check_folders(values):
             for folder in values:
@@ -534,7 +534,7 @@ class Installation:
                     for resname in resnames:
                         if identifier.resname == resname and identifier.restype in texture_types:
                             data = BinaryReader.load_file(filepath)
-                            textures[resname] = load_tpc(data)
+                            textures[resname] = read_tpc(data)
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -680,10 +680,10 @@ class Installation:
             tag = ""
 
             if capsule.exists("module", ResourceType.IFO):
-                ifo = load_gff(capsule.resource("module", ResourceType.IFO))
+                ifo = read_gff(capsule.resource("module", ResourceType.IFO))
                 tag = ifo.root.get_resref("Mod_Entry_Area").get()
             if capsule.exists(tag, ResourceType.ARE):
-                are = load_gff(capsule.resource(tag, ResourceType.ARE))
+                are = read_gff(capsule.resource(tag, ResourceType.ARE))
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
                     name = self._talktable.string(locstring.stringref)

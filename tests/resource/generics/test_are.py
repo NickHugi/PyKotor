@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.are import construct_are, dismantle_are
 
 TEST_FILE = "../../files/test.are"
@@ -10,7 +10,7 @@ TEST_FILE = "../../files/test.are"
 
 class TestARE(TestCase):
     def test_io(self):
-        gff = load_gff(TEST_FILE)
+        gff = read_gff(TEST_FILE)
         are = construct_are(gff)
         self.validate_io(are)
 

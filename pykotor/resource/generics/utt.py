@@ -5,7 +5,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 
 
 class UTT:
@@ -160,7 +160,7 @@ def dismantle_utt(utt: UTT, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_utt(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTT:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     utt = construct_utt(gff)
     return utt
 

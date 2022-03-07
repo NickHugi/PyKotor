@@ -33,7 +33,7 @@ def detect_lip(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_lip(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LIP:
+def read_lip(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LIP:
     """
     Returns an LIP instance from the source. The file format (LIP or LIP_XML) is automatically determined before parsing
     the data.

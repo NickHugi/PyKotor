@@ -7,7 +7,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
 
 ARMOR_BASE_ITEMS = {35, 36, 37, 38, 39, 40, 41, 42, 43, 53, 58, 63, 64, 65, 69, 71, 85, 89, 98, 100, 102, 103}
 """ Base Item IDs that are considered armor as per the 2DA files. """
@@ -150,7 +150,7 @@ def dismantle_uti(uti: UTI, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_uti(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTI:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     uti = construct_uti(gff)
     return uti
 

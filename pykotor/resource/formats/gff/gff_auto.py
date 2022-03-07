@@ -34,7 +34,7 @@ def detect_gff(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_gff(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> GFF:
+def read_gff(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> GFF:
     """
     Returns an GFF instance from the source. The file format (binary or xml) is automatically determined before parsing
     the data.

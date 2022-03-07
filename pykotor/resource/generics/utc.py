@@ -7,7 +7,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, EquipmentSlot, InventoryItem, Game
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, read_gff, write_gff
 
 
 class UTC:
@@ -449,7 +449,7 @@ def dismantle_utc(utc: UTC, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_utc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTC:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     utc = construct_utc(gff)
     return utc
 

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game
-from pykotor.resource.formats.gff import load_gff
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
 
 TEST_FILE = "../../files/test.jrl"
@@ -10,7 +10,7 @@ TEST_FILE = "../../files/test.jrl"
 
 class TestJRL(TestCase):
     def test_io(self):
-        gff = load_gff(TEST_FILE)
+        gff = read_gff(TEST_FILE)
         jrl = construct_jrl(gff)
         self.validate_io(jrl)
 

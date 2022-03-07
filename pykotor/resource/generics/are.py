@@ -9,7 +9,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 from pykotor.common.geometry import Vector2
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
-from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFStruct, read_gff, write_gff
 
 
 class ARE:
@@ -406,7 +406,7 @@ def dismantle_are(are: ARE, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_are(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> ARE:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     are = construct_are(gff)
     return are
 

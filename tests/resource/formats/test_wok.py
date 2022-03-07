@@ -5,7 +5,7 @@ from pykotor.common.geometry import Vector3
 
 from pykotor.resource.type import ResourceType
 
-from pykotor.resource.formats.bwm import BWMBinaryReader, BWMBinaryWriter, BWM, write_bwm, load_bwm
+from pykotor.resource.formats.bwm import BWMBinaryReader, BWMBinaryWriter, BWM, write_bwm, read_bwm
 
 BINARY_TEST_FILE = "../../files/test.wok"
 
@@ -17,7 +17,7 @@ class TestBWM(TestCase):
 
         data = bytearray()
         write_bwm(wok, data)
-        wok = load_bwm(data)
+        wok = read_bwm(data)
         self.validate_io(wok)
 
     def validate_io(self, wok: BWM):

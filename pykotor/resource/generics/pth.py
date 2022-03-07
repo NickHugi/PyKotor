@@ -8,7 +8,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
 
 
 class PTH:
@@ -132,7 +132,7 @@ def dismantle_pth(pth: PTH, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_pth(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> PTH:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     pth = construct_pth(gff)
     return pth
 

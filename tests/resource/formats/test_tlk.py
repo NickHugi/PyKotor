@@ -4,7 +4,7 @@ from pykotor.resource.type import ResourceType
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryReader, write_tlk, load_tlk, TLKXMLReader, \
+from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryReader, write_tlk, read_tlk, TLKXMLReader, \
     TLKJSONReader
 
 BINARY_TEST_FILE = "../../files/test.tlk"
@@ -33,7 +33,7 @@ class TestTLK(TestCase):
 
         data = bytearray()
         write_tlk(tlk, data, ResourceType.TLK)
-        tlk = load_tlk(data)
+        tlk = read_tlk(data)
         self.validate_io(tlk)
 
     def test_xml_io(self):
@@ -44,7 +44,7 @@ class TestTLK(TestCase):
 
         data = bytearray()
         write_tlk(tlk, data, ResourceType.TLK_XML)
-        tlk = load_tlk(data)
+        tlk = read_tlk(data)
         self.validate_io(tlk)
 
     def test_json_io(self):
@@ -55,7 +55,7 @@ class TestTLK(TestCase):
 
         data = bytearray()
         write_tlk(tlk, data, ResourceType.TLK_JSON)
-        tlk = load_tlk(data)
+        tlk = read_tlk(data)
         self.validate_io(tlk)
 
     def validate_io(self, tlk: TLK):

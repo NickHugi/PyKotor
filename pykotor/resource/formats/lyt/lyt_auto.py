@@ -6,7 +6,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lyt import LYT, LYTAsciiWriter, LYTAsciiReader
 
 
-def load_lyt(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> LYT:
+def read_lyt(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> LYT:
     """
     Returns an LYT instance from the source. The file format (LYT only) is automatically determined before parsing
     the data.

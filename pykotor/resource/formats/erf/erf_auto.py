@@ -5,7 +5,7 @@ from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
 from pykotor.resource.type import ResourceType
 
 
-def load_erf(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> ERF:
+def read_erf(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> ERF:
     """
     Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
     the data.

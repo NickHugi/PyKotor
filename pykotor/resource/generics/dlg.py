@@ -9,7 +9,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 from pykotor.common.geometry import Vector3
 from pykotor.common.language import LocalizedString, Gender, Language
 from pykotor.common.misc import Game, ResRef, Color
-from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, GFFContent, read_gff, write_gff
 
 
 class DLG:
@@ -663,7 +663,7 @@ def dismantle_dlg(dlg: DLG, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_dlg(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> DLG:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     dlg = construct_dlg(gff)
     return dlg
 

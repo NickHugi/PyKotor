@@ -5,7 +5,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import Language, Gender
 from pykotor.resource.formats.gff import GFFBinaryReader, GFF, GFFXMLReader
-from pykotor.resource.formats.gff.gff_auto import write_gff, load_gff
+from pykotor.resource.formats.gff.gff_auto import write_gff, read_gff
 
 BINARY_TEST_FILE = "../../files/test.gff"
 XML_TEST_FILE = "../../files/test.gff.xml"
@@ -18,7 +18,7 @@ class TestGFF(TestCase):
 
         data = bytearray()
         write_gff(gff, data, ResourceType.GFF)
-        gff = load_gff(data)
+        gff = read_gff(data)
         self.validate_io(gff)
 
     def test_xml_io(self):
@@ -27,7 +27,7 @@ class TestGFF(TestCase):
 
         data = bytearray()
         write_gff(gff, data, ResourceType.GFF_XML)
-        gff = load_gff(data)
+        gff = read_gff(data)
         self.validate_io(gff)
 
     def validate_io(self, gff: GFF):

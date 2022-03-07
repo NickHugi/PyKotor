@@ -6,7 +6,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.vis import VIS, VISAsciiWriter, VISAsciiReader
 
 
-def load_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> VIS:
+def read_vis(source: Union[str, bytes, bytearray, BinaryReader], offset: int = 0, size: int = None) -> VIS:
     """
     Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
     the data.

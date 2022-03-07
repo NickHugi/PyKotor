@@ -43,7 +43,7 @@ def detect_2da(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_2da(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TwoDA:
+def read_2da(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TwoDA:
     """
     Returns an TwoDA instance from the source. The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically
     determined before parsing the data.

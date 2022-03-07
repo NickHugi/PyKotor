@@ -7,7 +7,7 @@ from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Game, InventoryItem
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, load_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
 
 
 class UTM:
@@ -103,7 +103,7 @@ def dismantle_utm(utm: UTM, game: Game = Game.K2, *, use_deprecated: bool = True
 
 
 def read_utm(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> UTM:
-    gff = load_gff(source, offset, size)
+    gff = read_gff(source, offset, size)
     utm = construct_utm(gff)
     return utm
 

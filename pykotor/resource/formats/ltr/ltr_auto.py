@@ -3,7 +3,7 @@ from pykotor.resource.formats.ltr.io_ltr import LTRBinaryReader, LTRBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
-def load_ltr(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LTR:
+def read_ltr(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> LTR:
     """
     Returns an LTR instance from the source.
 

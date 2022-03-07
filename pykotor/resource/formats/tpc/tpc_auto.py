@@ -44,7 +44,7 @@ def detect_tpc(source: SOURCE_TYPES, offset: int = 0) -> ResourceType:
     return file_format
 
 
-def load_tpc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TPC:
+def read_tpc(source: SOURCE_TYPES, offset: int = 0, size: int = None) -> TPC:
     """
     Returns an TPC instance from the source. The file format (TPC or TGA) is automatically determined before
     parsing the data.
