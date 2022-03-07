@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from copy import copy
 from enum import IntEnum
 from typing import List, Optional, Tuple
@@ -250,6 +251,35 @@ class BWM:
             if (c1 < 0 and c2 < 0 and c3 < 0) or (c1 > 0 and c2 > 0 and c3 > 0):
                 return face
         return
+
+    def translate(self, x: float, y: float, z: float) -> None:
+        """
+        Shifts the position of the walkmesh.
+
+        Args:
+            x: How many units to shift on the X-axis.
+            y: How many units to shift on the Y-axis.
+            z: How many units to shift on the Z-axis.
+        """
+        for vertex in self.vertices():
+            vertex.x += x
+            vertex.y += y
+            vertex.z += z
+
+    def rotate(self, degrees: float) -> None:
+        """
+        Rotates the walkmesh around the Z-axis counter-clockwise.
+
+        Args:
+            degrees: The angle to rotate in degrees.
+        """
+        radians = math.radians(degrees)
+        cos = math.cos(radians)
+        sin = math.sin(radians)
+
+        for vertex in self.vertices():
+            vertex.x = vertex.x*cos - vertex.y*sin
+            vertex.y = vertex.x*sin + vertex.y*cos
 
 
 class BWMFace(Face):
