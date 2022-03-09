@@ -28,7 +28,7 @@ class Vector2:
     def __iter__(
             self
     ):
-        yield self.x, self.y
+        return iter((self.x, self.y))
 
     def __repr__(
             self
@@ -350,7 +350,7 @@ class Vector3:
     def __iter__(
             self
     ):
-        yield self.x, self.y, self.z
+        return iter((self.x, self.y, self.z))
 
     def __repr__(
             self

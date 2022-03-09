@@ -4,6 +4,12 @@ from pykotor.common.geometry import Polygon2, Vector2, Vector3, Vector4
 
 
 class TestVector2(TestCase):
+    def test_unpacking(self):
+        source = Vector2(1.2, 2.3)
+        x, y = source
+        self.assertEqual(x, 1.2)
+        self.assertEqual(y, 2.3)
+
     def test_from_vector2(self):
         source = Vector2(1.2, 2.3)
         vec2 = Vector2.from_vector2(source)
@@ -24,6 +30,13 @@ class TestVector2(TestCase):
 
 
 class TestVector3(TestCase):
+    def test_unpacking(self):
+        source = Vector3(1.2, 2.3, 3.4)
+        x, y, z = source
+        self.assertEqual(x, 1.2)
+        self.assertEqual(y, 2.3)
+        self.assertEqual(z, 3.4)
+
     def test_from_vector2(self):
         source = Vector2(1.2, 2.3)
         vec3 = Vector3.from_vector2(source)
@@ -47,6 +60,14 @@ class TestVector3(TestCase):
 
 
 class TestVector4(TestCase):
+    def test_unpacking(self):
+        source = Vector4(1.2, 2.3, 3.4, 4.5)
+        x, y, z, w = source
+        self.assertEqual(x, 1.2)
+        self.assertEqual(y, 2.3)
+        self.assertEqual(z, 3.4)
+        self.assertEqual(w, 4.5)
+
     def test_from_vector2(self):
         source = Vector2(1.2, 2.3)
         vec4 = Vector4.from_vector2(source)
