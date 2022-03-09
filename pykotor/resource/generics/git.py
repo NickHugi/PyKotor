@@ -60,6 +60,9 @@ class GIT:
 
 
 class GITInstance(ABC):
+    def __init__(self):
+        self.position: Vector3 = Vector3.from_null()
+
     @abstractmethod
     def reference(
             self
