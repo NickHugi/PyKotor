@@ -1030,6 +1030,40 @@ class Face:
     ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
+    def average(
+            self
+    ) -> Vector3:
+        """
+        Returns the average point of the face.
+
+        Returns:
+            A vector representing the average point of the face.
+        """
+        return (self.v1 + self.v2 + self.v3) / 3
+
+    def determine_z(
+            self,
+            x: float,
+            y: float
+    ):
+        """
+        Returns the Z-component determined from the given X and Y components. This method does not check if the point
+        exists within the face, that must be done seperatley with inside().
+
+        Returns:
+            The Z-component.
+        """
+        dx1 = x - self.v1.x
+        dy1 = y - self.v1.y
+        dx2 = self.v2.x - self.v1.x
+        dy2 = self.v2.y - self.v1.y
+        dx3 = self.v3.x - self.v1.x
+        dy3 = self.v3.z - self.v1.y
+        scale = dx3 * dy2 - dx2 * dy3
+        nx = (dx1 * dy2 - dy1 * dx2) / scale
+        ny = (dy1 * dx3 - dx1 * dy3) / scale
+        return self.v1.z + ny * (self.v2.z - self.v1.z) + nx * (self.v3.z - self.v1.z)
+
 
 class Polygon2:
     def __init__(

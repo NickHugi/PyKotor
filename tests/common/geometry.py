@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pykotor.common.geometry import Polygon2, Vector2, Vector3, Vector4
+from pykotor.common.geometry import Polygon2, Vector2, Vector3, Vector4, Face
 
 
 class TestVector2(TestCase):
@@ -91,6 +91,24 @@ class TestVector4(TestCase):
         self.assertEqual(vec4.y, 2.3)
         self.assertEqual(vec4.z, 3.4)
         self.assertEqual(vec4.w, 5.6)
+
+
+class TestFace(TestCase):
+    def test_determine_z(self):
+        v1 = Vector3(0.0, 0.0, 0.0)
+        v2 = Vector3(1.0, 0.0, 1.0)
+        v3 = Vector3(0.0, 1.0, 1.0)
+        face = Face(v1, v2, v3)
+        # At the points
+        self.assertEqual(0.0, face.determine_z(0.0, 0.0))  # v1
+        self.assertEqual(1.0, face.determine_z(1.0, 0.0))  # v2
+        self.assertEqual(1.0, face.determine_z(0.0, 1.0))  # v3
+        # Middle of each edge
+        self.assertEqual(0.5, face.determine_z(0.5, 0.0))  # v1, v2
+        self.assertEqual(0.5, face.determine_z(0.0, 0.5))  # v1, v3
+        self.assertEqual(1.0, face.determine_z(0.5, 0.5))  # v2, v3
+        # Centre of the face
+        self.assertEqual(0.66, face.determine_z(0.33, 0.33))
 
 
 class TestPolygon2(TestCase):
