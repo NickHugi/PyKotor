@@ -35,8 +35,37 @@ class GIT:
         self.triggers: List[GITTrigger] = []
         self.waypoints: List[GITWaypoint] = []
 
+    def instances(
+            self
+    ) -> List[GITInstance]:
+        """
+        Returns a list of all instances stored inside the GIT, regardless of the type.
+
+        Returns:
+            A list of all stored instances.
+        """
+        instances = []
+        # We could just add these all together rather than using the extend method, but then PyCharms would get cranky
+        # about the type hints...
+        instances.extend(self.cameras)
+        instances.extend(self.creatures)
+        instances.extend(self.doors)
+        instances.extend(self.encounters)
+        instances.extend(self.placeables)
+        instances.extend(self.sounds)
+        instances.extend(self.stores)
+        instances.extend(self.triggers)
+        instances.extend(self.waypoints)
+        return instances
+
 
 class GITInstance(ABC):
+    @abstractmethod
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        ...
+
     @abstractmethod
     def move(
             self,
@@ -88,6 +117,11 @@ class GITCamera(GITInstance):
     ) -> None:
         ...
 
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return None
+
 
 class GITCreature(GITInstance):
     GFF_STRUCT_ID = 4
@@ -116,6 +150,11 @@ class GITCreature(GITInstance):
             roll: float
     ) -> None:
         self.bearing += yaw
+
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
 
 
 class GITModuleLink(IntEnum):
@@ -158,6 +197,11 @@ class GITDoor(GITInstance):
     ) -> None:
         self.bearing += yaw
 
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
+
 
 class GITEncounterSpawnPoint(GITInstance):
     def __init__(
@@ -183,6 +227,11 @@ class GITEncounterSpawnPoint(GITInstance):
             roll: float
     ) -> None:
         self.orientation += yaw
+
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return None
 
 
 class GITEncounter(GITInstance):
@@ -216,6 +265,11 @@ class GITEncounter(GITInstance):
     ) -> None:
         raise ValueError("Encounters cannot be rotated.")
 
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
+
 
 class GITPlaceable(GITInstance):
     GFF_STRUCT_ID = 9
@@ -246,6 +300,11 @@ class GITPlaceable(GITInstance):
     ) -> None:
         self.bearing += yaw
 
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
+
 
 class GITSound(GITInstance):
     GFF_STRUCT_ID = 6
@@ -273,6 +332,11 @@ class GITSound(GITInstance):
             roll: float
     ) -> None:
         raise ValueError("Sounds cannot be rotated.")
+
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
 
 
 class GITStore(GITInstance):
@@ -302,6 +366,11 @@ class GITStore(GITInstance):
             roll: float
     ) -> None:
         self.bearing += yaw
+
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
 
 
 class GITTrigger(GITInstance):
@@ -337,6 +406,11 @@ class GITTrigger(GITInstance):
             roll: float
     ) -> None:
         raise ValueError("Triggers cannot be rotated.")
+
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
 
 
 class GITTransitionTrigger(GITTrigger):
@@ -383,6 +457,11 @@ class GITWaypoint(GITInstance):
             roll: float
     ) -> None:
         self.bearing += yaw
+
+    def reference(
+            self
+    ) -> Optional[ResRef]:
+        return self.resref
 
 
 def construct_git(
