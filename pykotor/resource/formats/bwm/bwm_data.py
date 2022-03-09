@@ -39,6 +39,11 @@ class BWM:
     ):
         return [face for face in self.faces if face.material.walkable()]
 
+    def unwalkable_faces(
+            self
+    ):
+        return [face for face in self.faces if not face.material.walkable()]
+
     def vertices(
             self
     ) -> List[Vector3]:
