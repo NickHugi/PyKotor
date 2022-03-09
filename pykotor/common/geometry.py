@@ -151,7 +151,39 @@ class Vector2:
             other: The vector to be duplicated.
 
         Returns:
-            A new Vector2 instance.
+            A new Vector2 object.
+        """
+        return Vector2(other.x, other.y)
+
+    @classmethod
+    def from_vector3(
+            cls,
+            other: Vector3
+    ) -> Vector2:
+        """
+        Returns a Vector2 object from the Vector3 object, discarding the Z-component.
+
+        Args:
+            other: The vector to be copied.
+
+        Returns:
+            A new Vector2 object.
+        """
+        return Vector2(other.x, other.y)
+
+    @classmethod
+    def from_vector4(
+            cls,
+            other: Vector4
+    ) -> Vector2:
+        """
+        Returns a Vector2 object from the Vector4 object, discarding the Z-component and W-components.
+
+        Args:
+            other: The vector to be copied.
+
+        Returns:
+            A new Vector2 object.
         """
         return Vector2(other.x, other.y)
 
@@ -439,6 +471,22 @@ class Vector3:
             return NotImplemented
 
     @classmethod
+    def from_vector2(
+            cls,
+            other: Vector2
+    ) -> Vector3:
+        """
+        Returns a Vector3 object from the Vector2 object, setting the Z-component to zero.
+
+        Args:
+            other: The vector to be copied.
+
+        Returns:
+            A new Vector3 object.
+        """
+        return Vector3(other.x, other.y, 0.0)
+
+    @classmethod
     def from_vector3(
             cls,
             other: Vector3
@@ -451,6 +499,22 @@ class Vector3:
 
         Returns:
             A new Vector3 instance.
+        """
+        return Vector3(other.x, other.y, other.z)
+
+    @classmethod
+    def from_vector4(
+            cls,
+            other: Vector4
+    ) -> Vector3:
+        """
+        Returns a Vector3 object from the Vector4 object, discarding the W-component.
+
+        Args:
+            other: The vector to be copied.
+
+        Returns:
+            A new Vector3 object.
         """
         return Vector3(other.x, other.y, other.z)
 
@@ -679,6 +743,38 @@ class Vector4:
         new.z *= other
         new.w *= other
         return new
+
+    @classmethod
+    def from_vector2(
+            cls,
+            other: Vector2
+    ) -> Vector4:
+        """
+        Returns a Vector4 object from the Vector2 object, setting the Z-component and W-component to zero.
+
+        Args:
+            other: The vector to be copied.
+
+        Returns:
+            A new Vector4 object.
+        """
+        return Vector4(other.x, other.y, 0.0, 0.0)
+
+    @classmethod
+    def from_vector3(
+            cls,
+            other: Vector3
+    ) -> Vector4:
+        """
+        Returns a Vector4 object from the Vector3 object, setting the W-component to zero.
+
+        Args:
+            other: The vector to be copied.
+
+        Returns:
+            A new Vector4 object.
+        """
+        return Vector4(other.x, other.y, other.z, 0.0)
 
     @classmethod
     def from_vector4(
