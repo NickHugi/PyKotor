@@ -121,6 +121,58 @@ class GIT:
         except ValueError:
             raise ValueError("Could not find instance in GIT object.")
 
+    def add(
+            self,
+            instance: GITInstance
+    ) -> None:
+        """
+        Adds instance to the relevant list in the GIT.
+
+        Args:
+            instance: The instance to add into the GIT.
+
+        Raises:
+            ValueError: If the instance already is stored inside the GIT.
+        """
+        if isinstance(instance, GITCreature):
+            if instance in self.creatures:
+                ValueError("Creature instance already exists inside the GIT object.")
+            return self.creatures.append(instance)
+        elif isinstance(instance, GITPlaceable):
+            if instance in self.placeables:
+                ValueError("Placeable instance already exists inside the GIT object.")
+            return self.placeables.append(instance)
+        elif isinstance(instance, GITDoor):
+            if instance in self.doors:
+                ValueError("Door instance already exists inside the GIT object.")
+            return self.doors.append(instance)
+        elif isinstance(instance, GITTrigger):
+            if instance in self.triggers:
+                ValueError("Trigger instance already exists inside the GIT object.")
+            return self.triggers.append(instance)
+        elif isinstance(instance, GITEncounter):
+            if instance in self.encounters:
+                ValueError("Encounter instance already exists inside the GIT object.")
+            return self.encounters.append(instance)
+        elif isinstance(instance, GITWaypoint):
+            if instance in self.waypoints:
+                ValueError("Waypoint instance already exists inside the GIT object.")
+            return self.waypoints.append(instance)
+        elif isinstance(instance, GITCamera):
+            if instance in self.cameras:
+                ValueError("Camera instance already exists inside the GIT object.")
+            return self.cameras.append(instance)
+        elif isinstance(instance, GITSound):
+            if instance in self.sounds:
+                ValueError("Sound instance already exists inside the GIT object.")
+            return self.sounds.append(instance)
+        elif isinstance(instance, GITStore):
+            if instance in self.stores:
+                ValueError("Store instance already exists inside the GIT object.")
+            return self.stores.append(instance)
+        else:
+            TypeError("Tired to add invalid instance.")
+
 
 class GITInstance(ABC):
     def __init__(self):
