@@ -150,6 +150,12 @@ class GITInstance(ABC):
     ) -> None:
         ...
 
+    @abstractmethod
+    def classification(
+            self
+    ) -> str:
+        ...
+
 
 class GITCamera(GITInstance):
     GFF_STRUCT_ID = 14
@@ -189,6 +195,11 @@ class GITCamera(GITInstance):
     ) -> Optional[ResRef]:
         return None
 
+    def classification(
+            self
+    ) -> str:
+        return "Camera"
+
 
 class GITCreature(GITInstance):
     GFF_STRUCT_ID = 4
@@ -224,6 +235,10 @@ class GITCreature(GITInstance):
     ) -> Optional[ResRef]:
         return self.resref
 
+    def classification(
+            self
+    ) -> str:
+        return "Creature"
 
 class GITModuleLink(IntEnum):
     NoLink = 0
@@ -270,6 +285,11 @@ class GITDoor(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def classification(
+            self
+    ) -> str:
+        return "Door"
 
 
 class GITEncounterSpawnPoint(GITInstance):
@@ -341,6 +361,11 @@ class GITEncounter(GITInstance):
     ) -> Optional[ResRef]:
         return self.resref
 
+    def classification(
+            self
+    ) -> str:
+        return "Encounter"
+
 
 class GITPlaceable(GITInstance):
     GFF_STRUCT_ID = 9
@@ -377,6 +402,11 @@ class GITPlaceable(GITInstance):
     ) -> Optional[ResRef]:
         return self.resref
 
+    def classification(
+            self
+    ) -> str:
+        return "Placeable"
+
 
 class GITSound(GITInstance):
     GFF_STRUCT_ID = 6
@@ -410,6 +440,11 @@ class GITSound(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def classification(
+            self
+    ) -> str:
+        return "Sound"
 
 
 class GITStore(GITInstance):
@@ -445,6 +480,11 @@ class GITStore(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def classification(
+            self
+    ) -> str:
+        return "Store"
 
 
 class GITTrigger(GITInstance):
@@ -486,6 +526,11 @@ class GITTrigger(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def classification(
+            self
+    ) -> str:
+        return "Trigger"
 
 
 class GITTransitionTrigger(GITTrigger):
@@ -537,6 +582,11 @@ class GITWaypoint(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def classification(
+            self
+    ) -> str:
+        return "Waypoint"
 
 
 def construct_git(
