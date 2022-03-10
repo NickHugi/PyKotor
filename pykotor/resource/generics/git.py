@@ -81,6 +81,46 @@ class GIT:
         elif isinstance(instance, GITStore):
             self.stores.remove(instance)
 
+    def index(
+            self,
+            instance: GITInstance
+    ) -> int:
+        """
+        Finds the index of an instance in the particular list it belongs to inside the GIT object.
+
+        Args:
+            instance: The instance to search for.
+
+        Raises:
+            ValueError: If the given instance does not belong to the GIT.
+
+        Returns:
+            The index into one of the GIT instance lists.
+        """
+        try:
+            if isinstance(instance, GITCreature):
+                return self.creatures.index(instance)
+            elif isinstance(instance, GITPlaceable):
+                return self.placeables.index(instance)
+            elif isinstance(instance, GITDoor):
+                return self.doors.index(instance)
+            elif isinstance(instance, GITTrigger):
+                return self.triggers.index(instance)
+            elif isinstance(instance, GITEncounter):
+                return self.encounters.index(instance)
+            elif isinstance(instance, GITWaypoint):
+                return self.waypoints.index(instance)
+            elif isinstance(instance, GITCamera):
+                return self.cameras.index(instance)
+            elif isinstance(instance, GITSound):
+                return self.sounds.index(instance)
+            elif isinstance(instance, GITStore):
+                return self.stores.index(instance)
+            else:
+                raise ValueError
+        except ValueError:
+            raise ValueError("Could not find instance in GIT object.")
+
 
 class GITInstance(ABC):
     def __init__(self):
