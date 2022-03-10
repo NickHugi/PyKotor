@@ -94,6 +94,7 @@ class GITCamera(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.camera_id = 0
         self.fov: float = 0
         self.height: float = 0.0
@@ -132,6 +133,7 @@ class GITCreature(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
@@ -172,6 +174,7 @@ class GITDoor(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.tweak_color: Optional[Color] = Color.WHITE
@@ -210,6 +213,7 @@ class GITEncounterSpawnPoint(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.orientation: float = 0.0
         self.position: Vector3 = Vector3.from_null()
 
@@ -245,6 +249,7 @@ class GITEncounter(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.geometry: List[Vector3] = []
         self.spawn_points: List[GITEncounterSpawnPoint] = []
         self.resref: ResRef = ResRef.from_blank()
@@ -280,6 +285,7 @@ class GITPlaceable(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.tweak_color: Optional[Color] = Color.WHITE
@@ -315,6 +321,7 @@ class GITSound(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
 
@@ -348,6 +355,7 @@ class GITStore(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.position: Vector3 = Vector3.from_null()
@@ -383,6 +391,7 @@ class GITTrigger(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.resref: ResRef = ResRef.from_blank()
         self.position: Vector3 = Vector3.from_null()
         self.geometry: Polygon3 = Polygon3()
@@ -421,7 +430,6 @@ class GITTransitionTrigger(GITTrigger):
             self
     ):
         super().__init__()
-
         self.linked_to: str = ""
         self.linked_to_flags: GITModuleLink = GITModuleLink.NoLink
         self.linked_to_module: ResRef = ResRef.from_blank()
@@ -435,6 +443,7 @@ class GITWaypoint(GITInstance):
     def __init__(
             self
     ):
+        super().__init__()
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
