@@ -58,6 +58,29 @@ class GIT:
         instances.extend(self.waypoints)
         return instances
 
+    def remove(
+            self,
+            instance: GITInstance
+    ):
+        if isinstance(instance, GITCreature):
+            self.creatures.remove(instance)
+        elif isinstance(instance, GITPlaceable):
+            self.placeables.remove(instance)
+        elif isinstance(instance, GITDoor):
+            self.doors.remove(instance)
+        elif isinstance(instance, GITTrigger):
+            self.triggers.remove(instance)
+        elif isinstance(instance, GITEncounter):
+            self.encounters.remove(instance)
+        elif isinstance(instance, GITWaypoint):
+            self.waypoints.remove(instance)
+        elif isinstance(instance, GITCamera):
+            self.cameras.remove(instance)
+        elif isinstance(instance, GITSound):
+            self.sounds.remove(instance)
+        elif isinstance(instance, GITStore):
+            self.stores.remove(instance)
+
 
 class GITInstance(ABC):
     def __init__(self):
