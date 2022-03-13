@@ -397,7 +397,7 @@ class GITEncounter(GITInstance):
             z: float = 0.0
     ):
         super().__init__(x, y, z)
-        self.geometry: List[Vector3] = []
+        self.geometry: Polygon3 = Polygon3()
         self.spawn_points: List[GITEncounterSpawnPoint] = []
         self.resref: ResRef = ResRef.from_blank()
 
