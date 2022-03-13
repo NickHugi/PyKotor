@@ -539,7 +539,6 @@
     <addaction name="actionEditTLK"/>
     <addaction name="actionEditJRL"/>
     <addaction name="separator"/>
-    <addaction name="actionGeometryEditor"/>
     <addaction name="actionFileSearch"/>
    </widget>
    <widget class="QMenu" name="menuHelp">

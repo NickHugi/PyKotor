@@ -192,6 +192,26 @@ class WalkmeshRenderer(QWidget):
 
         return Vector3(x2, y2, z)
 
+    def toWorldDelta(self, x, y) -> Vector2:
+        """
+        Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
+        a change in screen-space, such as the delta paramater given in a mouseMove event.
+
+        Args:
+            x: The screen-space X value.
+            y: The screen-space Y value.
+
+        Returns:
+            A vector representing a change in position in the world.
+        """
+        cos = math.cos(-self._camRotation)
+        sin = math.sin(-self._camRotation)
+        x = x / self._camScale
+        y = y / self._camScale
+        x2 = x*cos - y*sin
+        y2 = x*sin + y*cos
+        return Vector2(x2, y2)
+
     def materialColor(self, material: SurfaceMaterial) -> QColor:
         """
         Returns the color for the specified material.
@@ -344,12 +364,8 @@ class WalkmeshRenderer(QWidget):
             x: Units to move the x coordinate.
             y: Units to move the y coordinate.
         """
-
-        dx = math.cos(self._camRotation)*x + math.sin(self._camRotation)*y
-        dy = -math.sin(self._camRotation)*x + math.cos(self._camRotation)*y
-
-        self._camPosition.x += dx / self._camScale
-        self._camPosition.y += dy / self._camScale
+        self._camPosition.x += x
+        self._camPosition.y += y
 
     def cameraRotation(self) -> float:
         """

@@ -389,7 +389,6 @@ class Ui_MainWindow(object):
         self.menuTools.addAction(self.actionEditTLK)
         self.menuTools.addAction(self.actionEditJRL)
         self.menuTools.addSeparator()
-        self.menuTools.addAction(self.actionGeometryEditor)
         self.menuTools.addAction(self.actionFileSearch)
         self.menuHelp.addAction(self.actionHelpUpdates)
         self.menuHelp.addAction(self.actionHelpAbout)

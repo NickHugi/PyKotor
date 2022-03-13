@@ -249,14 +249,15 @@ class _InstanceMode(_Mode):
         self.rebuildInstanceList()
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        worldDelta = self._ui.renderArea.toWorldDelta(delta.x, delta.y)
+
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.panCamera(-delta.x, -delta.y)
+            self._ui.renderArea.panCamera(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             self._ui.renderArea.rotateCamera(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys:
             for instance in self._ui.renderArea.selectedInstances():
-                zoom = self._ui.renderArea.cameraZoom()
-                instance.move(delta.x / zoom, delta.y / zoom, 0.0)  # TODO: DOES NOT TAKE INTO ACCOUNT ROTATION!
+                instance.move(worldDelta.x, worldDelta.y, 0.0)
                 # Snap the instance on top of the walkmesh, if there is no walkmesh underneath it will snap Z to 0
                 instance.position.z = self._ui.renderArea.toWorldCoords(instance.position.x, instance.position.y).z
 
@@ -372,15 +373,16 @@ class _GeometryMode(_Mode):
         ...
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        worldDelta = self._ui.renderArea.toWorldDelta(delta.x, delta.y)
+
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.panCamera(-delta.x, -delta.y)
+            self._ui.renderArea.panCamera(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             self._ui.renderArea.rotateCamera(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys and self._ui.renderArea.selectedGeomPoints():
-            zoom = self._ui.renderArea.cameraZoom()
             instance, point = self._ui.renderArea.selectedGeomPoints()[0]
-            point.x += delta.x / zoom
-            point.y += delta.y / zoom
+            point.x += worldDelta.x
+            point.y += worldDelta.y
             point.z = self._ui.renderArea.toWorldCoords(instance.position.x, instance.position.y).z
 
         self.updateStatusBar()
