@@ -175,8 +175,8 @@ class GIT:
 
 
 class GITInstance(ABC):
-    def __init__(self):
-        self.position: Vector3 = Vector3.from_null()
+    def __init__(self, x: float, y: float, z: float):
+        self.position: Vector3 = Vector3(x, y, z)
 
     @abstractmethod
     def reference(
@@ -213,16 +213,18 @@ class GITCamera(GITInstance):
     GFF_STRUCT_ID = 14
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.camera_id = 0
         self.fov: float = 0
         self.height: float = 0.0
         self.mic_range: float = 0.0
         self.pitch: float = 0.0
         self.orientation: Vector4 = Vector4.from_null()
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
@@ -257,12 +259,14 @@ class GITCreature(GITInstance):
     GFF_STRUCT_ID = 4
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
@@ -292,6 +296,7 @@ class GITCreature(GITInstance):
     ) -> str:
         return "Creature"
 
+
 class GITModuleLink(IntEnum):
     NoLink = 0
     ToDoor = 1
@@ -302,13 +307,15 @@ class GITDoor(GITInstance):
     GFF_STRUCT_ID = 8
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.tweak_color: Optional[Color] = Color.WHITE
-        self.position: Vector3 = Vector3.from_null()
         self.linked_to: str = ""
         self.linked_to_flags: GITModuleLink = GITModuleLink.NoLink
         self.linked_to_module: ResRef = ResRef.from_blank()
@@ -346,11 +353,13 @@ class GITDoor(GITInstance):
 
 class GITEncounterSpawnPoint(GITInstance):
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.orientation: float = 0.0
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
@@ -382,13 +391,15 @@ class GITEncounter(GITInstance):
     GFF_SPAWN_STRUCT_ID = 2
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.geometry: List[Vector3] = []
         self.spawn_points: List[GITEncounterSpawnPoint] = []
         self.resref: ResRef = ResRef.from_blank()
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
@@ -423,13 +434,15 @@ class GITPlaceable(GITInstance):
     GFF_STRUCT_ID = 9
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.tweak_color: Optional[Color] = Color.WHITE
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
@@ -464,11 +477,13 @@ class GITSound(GITInstance):
     GFF_STRUCT_ID = 6
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
@@ -503,12 +518,14 @@ class GITStore(GITInstance):
     GFF_STRUCT_ID = 11
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
@@ -544,11 +561,13 @@ class GITTrigger(GITInstance):
     GFF_GEOMETRY_STRUCT_ID = 3
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
-        self.position: Vector3 = Vector3.from_null()
         self.geometry: Polygon3 = Polygon3()
         self.tag: str = ""
         self.linked_to: str = ""
@@ -601,16 +620,18 @@ class GITWaypoint(GITInstance):
     GFF_STRUCT_ID = 5
 
     def __init__(
-            self
+            self,
+            x: float = 0.0,
+            y: float = 0.0,
+            z: float = 0.0
     ):
-        super().__init__()
+        super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.map_note: Optional[LocalizedString] = LocalizedString.from_invalid()
         self.map_note_enabled: bool = False
         self.bearing: float = 0.0
-        self.position: Vector3 = Vector3.from_null()
 
     def move(
             self,
