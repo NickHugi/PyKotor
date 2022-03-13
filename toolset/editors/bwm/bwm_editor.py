@@ -1,11 +1,11 @@
 import math
 import struct
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List, Set
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QPoint
 from PyQt5.QtGui import QIcon, QPixmap, QPaintEvent, QPainter, QPen, QColor, QPainterPath, QBrush, QMouseEvent, QImage, \
-    QWheelEvent
+    QWheelEvent, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QShortcut
 from pykotor.common.geometry import Vector3, SurfaceMaterial, Vector2
 from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace, write_bwm
@@ -56,17 +56,18 @@ class BWMEditor(Editor):
             SurfaceMaterial.NON_WALK_GRASS: QColor(0xb3ffb3),
             SurfaceMaterial.TRIGGER:        QColor(0x4d0033)
         }
-        self.ui.drawArea.materialColors = self.materialColors
+        self.ui.renderArea.materialColors = self.materialColors
         self.rebuildMaterials()
 
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.transList.itemSelectionChanged.connect(self.onTransitionSelect)
-        self.ui.drawArea.mouseDragged.connect(lambda x, y: self.changeFace(self._bwm.faceAt(x, y)))
-        self.ui.drawArea.mouseMoved.connect(self.mouseMoved)
-        QShortcut("+", self).activated.connect(lambda: self.ui.drawArea.zoom(2))
-        QShortcut("-", self).activated.connect(lambda: self.ui.drawArea.zoom(-2))
+        #self.ui.transList.itemSelectionChanged.connect(self.onTransitionSelect)
+        self.ui.renderArea.mouseMoved.connect(self.onMouseMoved)
+        self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
+
+        QShortcut("+", self).activated.connect(lambda: self.ui.renderArea.cameraZoom(2))
+        QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.cameraZoom(-2))
 
     def rebuildMaterials(self) -> None:
         self.ui.materialList.clear()
@@ -83,7 +84,7 @@ class BWMEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         self._bwm = read_bwm(data)
-        self.ui.drawArea.setWalkmeshes([self._bwm])
+        self.ui.renderArea.setWalkmeshes([self._bwm])
 
         def addTransItem(face, edge, transition):
             if transition is not None:
@@ -106,13 +107,30 @@ class BWMEditor(Editor):
     def new(self) -> None:
         super().new()
 
-    def mouseMoved(self, x: float, y: float) -> None:
-        coords = self.ui.drawArea.toWalkmeshCoords(x, y)
-        text = "(x: {0:.2f}, y: {0:.2f})".format(coords.x, coords.y)
-        self.statusBar().showMessage(text + " Zoom: {}".format(self.ui.drawArea.currentZoom()))
-        self.ui.drawArea.invalidateCache()
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+        face = self._bwm.faceAt(world.x, world.y)
 
-    def changeFace(self, face: BWMFace):
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+            self.ui.renderArea.panCamera(-delta.x, -delta.y)
+        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+            self.ui.renderArea.rotateCamera(delta.x / 50)
+        elif QtCore.Qt.LeftButton in buttons:
+            self.changeFaceMaterial(face)
+
+        coordsText = "x: {:.2f}, {:.2f}".format(world.x, world.y)
+        faceText = ", face: {}".format("None" if face is None else self._bwm.faces.index(face))
+
+        screen = self.ui.renderArea.toRenderCoords(world.x, world.y)
+        xy = " || x: {0:.2f}, ".format(screen.x) + "y: {0:.2f}, ".format(screen.y)
+
+        self.statusBar().showMessage(coordsText + faceText + xy)
+
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if QtCore.Qt.Key_Control in keys:
+            self.ui.renderArea.zoomInCamera(delta.y / 50)
+
+    def changeFaceMaterial(self, face: BWMFace):
         newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)
         if face and face.material != newMaterial:
             face.material = newMaterial
@@ -120,253 +138,7 @@ class BWMEditor(Editor):
     def onTransitionSelect(self) -> None:
         if self.ui.transList.currentItem():
             item = self.ui.transList.currentItem()
-            self.ui.drawArea.setHighlightedTrans(item.data(_TRANS_FACE_ROLE))
+            self.ui.renderArea.setHighlightedTrans(item.data(_TRANS_FACE_ROLE))
         else:
-            self.ui.drawArea.setHighlightedTrans(None)
+            self.ui.renderArea.setHighlightedTrans(None)
 
-
-class WalkmeshRenderer(QWidget):
-    doubleClicked = QtCore.pyqtSignal(object, object)
-    """Emitted when widget is double clicked. Emits the coordinates in the BWM file from where the mouse was pressed."""
-
-    mouseDragged = QtCore.pyqtSignal(object, object)
-    """Emitted when mouse is down and moving accross the widget. Emits the coordinates in the BWM file from where the
-       mouse was pressed."""
-
-    mouseMoved = QtCore.pyqtSignal(object, object)
-    """Emitted when mouse is has moved accross the widget. Emits the coordinates in the BWM file from where the mouse
-       was pressed."""
-
-    mouseScrolled = QtCore.pyqtSignal(object)
-    """Emitted when mouse has been scrolled over the widget."""
-
-    mouseReleased = QtCore.pyqtSignal(object, object)
-    """Emitted when the mouse button has been released off the widget."""
-
-    mousePressed = QtCore.pyqtSignal(object, object)
-    """Emitted when the mouse has been pressed on the widget."""
-
-    def __init__(self, parent: QWidget):
-        super().__init__(parent)
-        self._walkmeshes: List[BWM] = []
-        self._positions: List[Vector3] = []
-        self._git: Optional[GIT] = None
-        self._painter: QPainter = QPainter(self)
-        self._width: int = 0
-        self._height: int = 0
-        self._zoom: float = 11.0
-        self._bbmin: Vector3 = Vector3.from_null()
-        self._bbmax: Vector3 = Vector3.from_null()
-        self._mousePressed: bool = False
-        self._highlightTrans: Optional[BWMFace] = None
-        self._highlightTrigger: Optional[GITTrigger] = None
-        self._walkmeshCache: Optional[QPixmap] = None
-        self.hideEdges: bool = False
-
-        self.cursor().setShape(QtCore.Qt.CrossCursor)
-
-        self.materialColors: Dict[SurfaceMaterial, int] = {}
-        for material in SurfaceMaterial._member_names_:
-            self.materialColors[material] = QColor(0xFFFFFF)
-
-        self.repaintLoop()
-
-    def repaintLoop(self) -> None:
-        self.repaint()
-        QTimer.singleShot(33, self.repaintLoop)
-
-    def invalidateCache(self) -> None:
-        self._walkmeshCache = None
-
-    def setHighlightedTrans(self, face: Optional[BWMFace]) -> None:
-        self._highlightTrans = face
-
-    def setHighlightedTrigger(self, trigger: Optional[GITTrigger]) -> None:
-        self._highlightTrigger = trigger
-
-    def setWalkmeshes(self, walkmeshes: List[BWM], positions: List[Vector3] = None):
-        self._walkmeshes = walkmeshes
-        self._bbmin = Vector3(1000000, 1000000, 1000000)
-        self._bbmax = Vector3(-1000000, -1000000, -1000000)
-
-        positions = [] if positions is None else positions
-        while len(positions) < len(walkmeshes):
-            positions.append(Vector3.from_null())
-
-        for i, walkmesh in enumerate(walkmeshes):
-            bbmin, bbmax = walkmesh.box()
-            bbmin += positions[i]
-            bbmax += positions[i]
-            self._bbmin.x = min(bbmin.x, self._bbmin.x)
-            self._bbmin.y = min(bbmin.y, self._bbmin.y)
-            self._bbmin.z = min(bbmin.z, self._bbmin.z)
-            self._bbmax.x = max(bbmax.x, self._bbmax.x)
-            self._bbmax.y = max(bbmax.y, self._bbmax.y)
-            self._bbmax.z = max(bbmax.z, self._bbmax.z)
-
-        width, height = self.zoomedSize()
-        self.setMinimumWidth(width)
-        self.setMinimumHeight(height)
-
-        # Fit all to screen
-        sizeX = math.fabs(self._bbmax.x - self._bbmin.x)
-        sizeY = math.fabs(self._bbmax.y - self._bbmin.y)
-        zoom = min(self.window().width() / sizeX, self.window().height() / sizeY) if sizeX != 0 and sizeY != 0 else 6
-        self.setZoom(zoom - 5)
-
-        self.invalidateCache()
-
-    def setGit(self, git: GIT) -> None:
-        self._git = git
-
-    def zoomedSize(self) -> Tuple[int, int]:
-        bbmin = self._bbmin * self._zoom
-        bbmax = self._bbmax * self._zoom
-        width = math.fabs(bbmax.x - bbmin.x)
-        height = math.fabs(bbmax.y - bbmin.y)
-        return int(width), int(height)
-
-    def paintEvent(self, e: QPaintEvent) -> None:
-        if self._walkmeshCache is None:
-            width, height = self.zoomedSize()
-            self._walkmeshCache = QPixmap(width, height)
-            painter = QPainter(self._walkmeshCache)
-            painter.setBrush(QColor(0, 0, 0))
-            painter.drawRect(0, 0, width, height)
-            for walkmesh in self._walkmeshes:
-                for face in walkmesh.faces:
-                    self._drawFace(painter, face)
-
-        painter = QPainter(self)
-        painter.drawPixmap(0, 0, self._walkmeshCache)
-
-        if self._git is not None:
-            for trigger in self._git.triggers:
-                self._drawTrigger(trigger)
-
-    def _drawFace(self, painter: QPainter, face: BWMFace) -> None:
-        pen = QPen(QColor(0x111111), 1, QtCore.Qt.SolidLine, QtCore.Qt.SquareCap) if not self.hideEdges else QPen(QtCore.Qt.NoPen)
-        painter.setPen(pen)
-
-        color = QColor(self.materialColor(face.material))
-        painter.setBrush(QBrush(color))
-
-        v1 = self.toRenderCoords(face.v1.x, face.v1.y)
-        v2 = self.toRenderCoords(face.v2.x, face.v2.y)
-        v3 = self.toRenderCoords(face.v3.x, face.v3.y)
-
-        path = QPainterPath()
-        path.moveTo(v1.x, v1.y)
-        path.lineTo(v2.x, v2.y)
-        path.lineTo(v3.x, v3.y)
-        path.lineTo(v1.x, v1.y)
-        path.closeSubpath()
-
-        painter.drawPath(path)
-
-        if face.trans1 is not None:
-            self._drawTransition(v1, v2, self._highlightTrans == face)
-        if face.trans2 is not None:
-            self._drawTransition(v2, v3, self._highlightTrans == face)
-        if face.trans3 is not None:
-            self._drawTransition(v3, v1, self._highlightTrans == face)
-
-    def _drawTransition(self, v1: Vector2, v2: Vector2, highlight: bool):
-        painter = QPainter(self)
-
-        if highlight:
-            painter.setPen(QPen(QColor(0xFFDDDD), 6, QtCore.Qt.SolidLine, QtCore.Qt.RoundCap))
-            path = QPainterPath()
-            path.moveTo(v1.x, v1.y)
-            path.lineTo(v2.x, v2.y)
-            path.closeSubpath()
-            painter.drawPath(path)
-
-        painter.setPen(QPen(QColor(0xFF1111), 2))
-        path = QPainterPath()
-        path.moveTo(v1.x, v1.y)
-        path.lineTo(v2.x, v2.y)
-        path.closeSubpath()
-        painter.drawPath(path)
-
-    def _drawTrigger(self, trigger: GITTrigger):
-        path = QPainterPath()
-        if trigger.geometry:
-            offset = trigger.position
-            start = self.toRenderCoords(trigger.geometry[0].x + offset.x, trigger.geometry[0].y + offset.y)
-            path.moveTo(start.x, start.y)
-            for point in trigger.geometry[1:]:
-                move = self.toRenderCoords(point.x + offset.x, point.y + offset.y)
-                path.lineTo(move.x, move.y)
-        path.closeSubpath()
-
-        painter = QPainter(self)
-        # Draw trigger zone
-        painter.setBrush(QBrush(QColor(255, 255, 210, 60) if trigger is self._highlightTrigger else QColor(255, 255, 0, 30)))
-        painter.setPen(QPen(QColor(0xFFFFCC) if trigger is self._highlightTrigger else QColor(0xFFFF00), 1))
-        painter.drawPath(path)
-
-        # Draw trigger vertices
-        painter.setPen(QPen(QtCore.Qt.NoPen))
-        painter.setBrush(QBrush(QColor(0xAAAA66)))
-        if trigger.geometry:
-            offset = trigger.position
-            for point in trigger.geometry:
-                move = self.toRenderCoords(point.x + offset.x, point.y + offset.y)
-                painter.drawEllipse(move.x-3, move.y-3, 6, 6)
-
-    def toRenderCoords(self, x, y) -> Vector2:
-        x *= self._zoom
-        y *= self._zoom
-        x -= math.fabs(self._bbmin.x * self._zoom)
-        y -= math.fabs(self._bbmin.y * self._zoom)
-        return Vector2(x, y)
-
-    def toWalkmeshCoords(self, x, y) -> Vector2:
-        x = (x + math.fabs(self._bbmin.x * self._zoom)) / self._zoom
-        y = (y + math.fabs(self._bbmin.y * self._zoom)) / self._zoom
-        return Vector2(x, y)
-
-    def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
-        mouse = self.toWalkmeshCoords(e.x(), e.y())
-        self.doubleClicked.emit(mouse.x, mouse.y)
-
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:
-        coords = self.toWalkmeshCoords(e.x(), e.y())
-        self.mouseMoved.emit(coords.x, coords.y)
-        if self._mousePressed:
-            self.mouseDragged.emit(coords.x, coords.y)
-
-    def mousePressEvent(self, e: QMouseEvent) -> None:
-        self._mousePressed = True
-        coords = self.toWalkmeshCoords(e.x(), e.y())
-        self.mousePressed.emit(coords.x, coords.y)
-
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
-        self._mousePressed = False
-        coords = self.toWalkmeshCoords(e.x(), e.y())
-        self.mouseReleased.emit(coords.x, coords.y)
-
-    def wheelEvent(self, e: QWheelEvent) -> None:
-        self.mouseScrolled.emit(e.angleDelta())
-
-    def currentZoom(self) -> float:
-        return self._zoom
-
-    def setZoom(self, zoom: float) -> None:
-        self._zoom = zoom
-
-        if self._zoom < 1:
-            self._zoom = 1
-
-        width, height = self.zoomedSize()
-        self.setMinimumWidth(width)
-        self.setMinimumHeight(height)
-
-        self.invalidateCache()
-
-    def zoom(self, amount: float) -> None:
-        self.setZoom(self._zoom + amount)
-
-    def materialColor(self, material: SurfaceMaterial) -> QColor:
-        return self.materialColors[material] if material in self.materialColors else QColor(255, 0, 255)

@@ -37,10 +37,10 @@
        <bool>true</bool>
       </property>
       <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOn</enum>
+       <enum>Qt::ScrollBarAlwaysOff</enum>
       </property>
       <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOn</enum>
+       <enum>Qt::ScrollBarAlwaysOff</enum>
       </property>
       <property name="widgetResizable">
        <bool>true</bool>
@@ -50,8 +50,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>563</width>
-         <height>522</height>
+         <width>580</width>
+         <height>539</height>
         </rect>
        </property>
        <property name="mouseTracking">
@@ -74,12 +74,15 @@
          <number>0</number>
         </property>
         <item row="0" column="0">
-         <widget class="WalkmeshRenderer" name="drawArea" native="true">
+         <widget class="WalkmeshRenderer" name="renderArea" native="true">
           <property name="mouseTracking">
            <bool>true</bool>
           </property>
+          <property name="focusPolicy">
+           <enum>Qt::StrongFocus</enum>
+          </property>
           <property name="autoFillBackground">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="styleSheet">
            <string notr="true">QWidget {
@@ -152,7 +155,7 @@ background: #000000;
   <customwidget>
    <class>WalkmeshRenderer</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.editors.bwm.bwm_editor</header>
+   <header location="global">toolset.misc.walkmesh.renderer</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

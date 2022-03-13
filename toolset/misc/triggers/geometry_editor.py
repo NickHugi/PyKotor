@@ -1,9 +1,9 @@
 import math
-from typing import Optional, Dict, NamedTuple
+from typing import Optional, Dict, NamedTuple, Set
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QShortcut, QFileDialog, QMessageBox, QDialog
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QFileDialog, QMessageBox, QDialog
 from pykotor.common.geometry import Vector3, SurfaceMaterial, Vector2, Polygon2
 from pykotor.common.misc import ResRef, Game
 from pykotor.common.stream import BinaryReader
@@ -11,12 +11,13 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm, BWM
 from pykotor.resource.formats.gff import read_gff, write_gff
 from pykotor.resource.formats.lyt import read_lyt, LYT
-from pykotor.resource.generics.git import GIT, construct_git, GITTrigger, dismantle_git
+from pykotor.resource.generics.git import GIT, construct_git, GITTrigger, dismantle_git, GITInstance
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor
-from misc import geometry_editor_ui, edit_trigger_ui
+from misc import edit_trigger_ui
+from misc.triggers import geometry_editor_ui
 
 _TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1
 _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2
@@ -45,41 +46,43 @@ class GeometryEditor(Editor):
         self._extendTrigger: bool = False
 
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
-            SurfaceMaterial.UNDEFINED:      QColor(0x222222),
-            SurfaceMaterial.OBSCURING:      QColor(0x222222),
+            SurfaceMaterial.UNDEFINED:      QColor(255, 0, 0, 40),
+            SurfaceMaterial.OBSCURING:      QColor(255, 0, 0, 40),
             SurfaceMaterial.DIRT:           QColor(0x444444),
             SurfaceMaterial.GRASS:          QColor(0x444444),
             SurfaceMaterial.STONE:          QColor(0x444444),
             SurfaceMaterial.WOOD:           QColor(0x444444),
             SurfaceMaterial.WATER:          QColor(0x444444),
-            SurfaceMaterial.NON_WALK:       QColor(0x222222),
-            SurfaceMaterial.TRANSPARENT:    QColor(0x222222),
+            SurfaceMaterial.NON_WALK:       QColor(255, 0, 0, 40),
+            SurfaceMaterial.TRANSPARENT:    QColor(255, 0, 0, 40),
             SurfaceMaterial.CARPET:         QColor(0x444444),
             SurfaceMaterial.METAL:          QColor(0x444444),
             SurfaceMaterial.PUDDLES:        QColor(0x444444),
             SurfaceMaterial.SWAMP:          QColor(0x444444),
             SurfaceMaterial.MUD:            QColor(0x444444),
             SurfaceMaterial.LEAVES:         QColor(0x444444),
-            SurfaceMaterial.LAVA:           QColor(0x222222),
-            SurfaceMaterial.BOTTOMLESS_PIT: QColor(0x222222),
-            SurfaceMaterial.DEEP_WATER:     QColor(0x222222),
+            SurfaceMaterial.LAVA:           QColor(255, 0, 0, 40),
+            SurfaceMaterial.BOTTOMLESS_PIT: QColor(255, 0, 0, 40),
+            SurfaceMaterial.DEEP_WATER:     QColor(255, 0, 0, 40),
             SurfaceMaterial.DOOR:           QColor(0x444444),
-            SurfaceMaterial.NON_WALK_GRASS: QColor(0x222222),
+            SurfaceMaterial.NON_WALK_GRASS: QColor(255, 0, 0, 40),
             SurfaceMaterial.TRIGGER:        QColor(0x999900)
         }
         self.ui.drawArea.materialColors = self.materialColors
-        self.ui.drawArea.hideEdges = True
+        self.ui.drawArea.hideWalkmeshEdges = True
 
         self.new()
 
     def _setupSignals(self) -> None:
         self.ui.actionSelectLayout.triggered.connect(self.openLayout)
 
-        self.ui.drawArea.mousePressed.connect(self.onWalkmeshMousePressed)
-        self.ui.drawArea.mouseDragged.connect(self.onWalkmeshMouseDragged)
-        self.ui.drawArea.mouseReleased.connect(self.onWalkmeshMouseReleased)
+        #self.ui.drawArea.mousePressed.connect(self.onWalkmeshMousePressed)
+        self.ui.drawArea.mouseMoved.connect(self.onWorldMouseMoved)
+        self.ui.drawArea.mouseScrolled.connect(self.onMouseScrolled)
+        #self.ui.drawArea.instanceHovered.connect(self.onInstanceHovered)
+        #self.ui.drawArea.mouseReleased.connect(self.onWalkmeshMouseReleased)
 
-        self.ui.triggerList.itemSelectionChanged.connect(self.reloadGeomList)
+        '''self.ui.triggerList.itemSelectionChanged.connect(self.reloadGeomList)
         self.ui.addTriggerButton.clicked.connect(self.onAddTrigger)
         self.ui.removeTriggerButton.clicked.connect(self.onRemoveTrigger)
         self.ui.editTriggerButton.clicked.connect(self.onEditTrigger)
@@ -88,10 +91,10 @@ class GeometryEditor(Editor):
         self.ui.removeGeomButton.clicked.connect(self.onRemoveGeom)
         self.ui.editGeomButton.clicked.connect(self.onEditGeom)
 
-        self.ui.actionZoomIn.triggered.connect(lambda: self.ui.drawArea.zoom(2))
-        self.ui.actionZoomOut.triggered.connect(lambda: self.ui.drawArea.zoom(-2))
+        self.ui.actionZoomIn.triggered.connect(lambda: self.ui.drawArea.cameraZoom(2))
+        self.ui.actionZoomOut.triggered.connect(lambda: self.ui.drawArea.cameraZoom(-2))
 
-        QShortcut("Esc", self).activated.connect(self.onStopAddGeom)
+        QShortcut("Esc", self).activated.connect(self.onStopAddGeom)'''
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -191,7 +194,22 @@ class GeometryEditor(Editor):
                         self._selectedOrigin = Vector2(trigger.position.x - x, trigger.position.y - y)
                         break
 
-    def onWalkmeshMouseDragged(self, x: float, y: float) -> None:
+    def onWorldMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        world = self.ui.drawArea.toWorldCoords(screen.x, screen.y)
+
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+            self.ui.drawArea.panCamera(-delta.x, -delta.y)
+        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+            self.ui.drawArea.rotateCamera(delta.x / 50)
+
+        if self.ui.drawArea._hoveredInstance and self.ui.drawArea._hoveredInstance[0].resref:
+            xy = " || ResRef: {} ".format(self.ui.drawArea._hoveredInstance[0].resref)
+        else:
+            xy = " || "
+
+        self.statusBar().showMessage("x: {:.2f}, y: {:.2f}, z: {:.2f}".format(world.x, world.y, world.z) + xy)
+
+        return
         if self._extendTrigger:
             return
 
@@ -202,7 +220,10 @@ class GeometryEditor(Editor):
         elif self._selectedTrigger is not None:
             trigger.position.x = x + self._selectedOrigin.x
             trigger.position.y = y + self._selectedOrigin.y
-        self.ui.drawArea.repaint()
+
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if QtCore.Qt.Key_Control in keys:
+            self.ui.drawArea.zoomInCamera(delta.y / 50)
 
     def onWalkmeshMouseReleased(self):
         self.selectVertex(None)

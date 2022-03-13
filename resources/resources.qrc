@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="images">
+    <file>icons/k1/camera.png</file>
+    <file>icons/k2/camera.png</file>
+    <file>icons/kx/camera.png</file>
     <file>icons/k1/journal.png</file>
     <file>icons/k2/journal.png</file>
     <file>icons/kx/journal.png</file>

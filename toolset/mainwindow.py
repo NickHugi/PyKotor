@@ -13,7 +13,7 @@ from typing import Optional, List, Union, Tuple, Dict
 
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QItemSelectionModel, QTimer
+from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QTimer
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView
@@ -37,6 +37,7 @@ from editors.dlg.dlg_editor import DLGEditor
 from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
+from editors.git.git_editor import GITEditor
 from editors.jrl.jrl_editor import JRLEditor
 from editors.nss.nss_editor import NSSEditor
 from editors.ssf.sff_editor import SSFEditor
@@ -56,13 +57,10 @@ from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.audio_player import AudioPlayer
-from misc.geometry_editor import GeometryEditor
+from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
 from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
-
-import resources_rc
-
 
 PROGRAM_VERSION = "1.5.2"
 
@@ -897,8 +895,14 @@ class ToolWindow(QMainWindow):
             else:
                 editor = AREEditor(self, self.active)
 
+        if restype in [ResourceType.GIT]:
+            if self.active is None or not self.config.gffSpecializedEditors:
+                editor, external = useGFFEditor()
+            else:
+                editor = GITEditor(self, self.active)
+
         if restype in [ResourceType.GFF, ResourceType.ITP,
-                       ResourceType.GUI, ResourceType.IFO, ResourceType.GIT]:
+                       ResourceType.GUI, ResourceType.IFO]:
             editor, external = useGFFEditor()
 
         if restype in [ResourceType.WAV, ResourceType.MP3]:

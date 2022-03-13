@@ -31,6 +31,7 @@ class ERFEditor(Editor):
 
         self.model = QStandardItemModel(self)
         self.ui.tableView.setModel(self.model)
+        self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
 
         self._externalHandlers: List[ExternalUpdateEventHandler] = []
         self._externalOpened: bool = False
@@ -47,7 +48,6 @@ class ERFEditor(Editor):
         self.ui.unloadButton.clicked.connect(self.removeSelected)
         self.ui.openButton.clicked.connect(self.openSelected)
         self.ui.refreshButton.clicked.connect(self.refresh)
-        self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
         self.ui.tableView.resourceDropped.connect(self.addResources)
         self.ui.tableView.doubleClicked.connect(self.openSelected)
 

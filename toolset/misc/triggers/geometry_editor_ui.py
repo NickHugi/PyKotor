@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'misc\geometry_editor.ui'
+# Form implementation generated from reading ui file 'misc\triggers\geometry_editor.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -84,6 +84,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.drawArea.sizePolicy().hasHeightForWidth())
         self.drawArea.setSizePolicy(sizePolicy)
+        self.drawArea.setMouseTracking(True)
+        self.drawArea.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.drawArea.setStyleSheet("background: black;")
         self.drawArea.setObjectName("drawArea")
         self.gridLayout_3.addWidget(self.drawArea, 0, 0, 1, 1)
@@ -157,4 +159,4 @@ class Ui_MainWindow(object):
         self.actionZoomIn.setShortcut(_translate("MainWindow", "+"))
         self.actionZoomOut.setText(_translate("MainWindow", "Zoom Out"))
         self.actionZoomOut.setShortcut(_translate("MainWindow", "-"))
-from toolset.editors.bwm.bwm_editor import WalkmeshRenderer
+from toolset.misc.walkmesh.renderer import WalkmeshRenderer
