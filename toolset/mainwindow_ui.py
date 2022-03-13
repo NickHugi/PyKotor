@@ -362,6 +362,8 @@ class Ui_MainWindow(object):
         self.actionGeometryEditor = QtWidgets.QAction(MainWindow)
         self.actionGeometryEditor.setEnabled(False)
         self.actionGeometryEditor.setObjectName("actionGeometryEditor")
+        self.actionIndoorMapBuilder = QtWidgets.QAction(MainWindow)
+        self.actionIndoorMapBuilder.setObjectName("actionIndoorMapBuilder")
         self.menuNew.addAction(self.actionNewDLG)
         self.menuNew.addAction(self.actionNewNSS)
         self.menuNew.addAction(self.actionNewUTC)
@@ -390,6 +392,7 @@ class Ui_MainWindow(object):
         self.menuTools.addAction(self.actionEditJRL)
         self.menuTools.addSeparator()
         self.menuTools.addAction(self.actionFileSearch)
+        self.menuTools.addAction(self.actionIndoorMapBuilder)
         self.menuHelp.addAction(self.actionHelpUpdates)
         self.menuHelp.addAction(self.actionHelpAbout)
         self.menubar.addAction(self.menuFile.menuAction())
@@ -470,5 +473,6 @@ class Ui_MainWindow(object):
         self.actionEditJRL.setText(_translate("MainWindow", "Edit Journal"))
         self.actionFileSearch.setText(_translate("MainWindow", "File Search"))
         self.actionGeometryEditor.setText(_translate("MainWindow", "Geometry Editor"))
+        self.actionIndoorMapBuilder.setText(_translate("MainWindow", "Indoor Map Builder"))
 from toolset.mainwindow import TexturesView
 import resources_rc

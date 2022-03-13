@@ -61,6 +61,7 @@ from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
 from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
+from tools.indoormap.indoorbuilder import IndoorMapBuilder
 
 PROGRAM_VERSION = "1.5.2"
 
@@ -168,7 +169,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
-        self.ui.actionGeometryEditor.triggered.connect(self.openGeometryEditor)
+        self.ui.actionIndoorMapBuilder.triggered.connect(self.openIndoorMapBuilder)
         self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
@@ -255,6 +256,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionEditJRL.setEnabled(self.active is not None)
         self.ui.actionGeometryEditor.setEnabled(self.active is not None)
         self.ui.actionFileSearch.setEnabled(self.active is not None)
+        self.ui.actionIndoorMapBuilder.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
@@ -278,9 +280,9 @@ class ToolWindow(QMainWindow):
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         self.openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data)
 
-    def openGeometryEditor(self) -> None:
-        editor = GeometryEditor(self, self.active)
-        editor.show()
+    def openIndoorMapBuilder(self) -> None:
+        builder = IndoorMapBuilder(self, self.active)
+        builder.show()
 
     def openFileSearchDialog(self) -> None:
         """

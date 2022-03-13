@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'tools\indoormap\map_editor.ui'
+# Form implementation generated from reading ui file 'tools\indoormap\indoorbuilder.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -33,12 +33,16 @@ class Ui_MainWindow(object):
         self.gridLayout = QtWidgets.QGridLayout(self.groupBox)
         self.gridLayout.setObjectName("gridLayout")
         self.componentImage = QtWidgets.QLabel(self.groupBox)
+        self.componentImage.setMinimumSize(QtCore.QSize(128, 128))
+        self.componentImage.setMaximumSize(QtCore.QSize(128, 16777215))
         self.componentImage.setText("")
         self.componentImage.setObjectName("componentImage")
         self.gridLayout.addWidget(self.componentImage, 0, 0, 1, 1)
         self.verticalLayout.addWidget(self.groupBox)
         self.horizontalLayout.addLayout(self.verticalLayout)
         self.mapRenderer = IndoorMapRenderer(self.centralwidget)
+        self.mapRenderer.setMouseTracking(True)
+        self.mapRenderer.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.mapRenderer.setObjectName("mapRenderer")
         self.horizontalLayout.addWidget(self.mapRenderer)
         self.horizontalLayout.setStretch(0, 1)
@@ -88,4 +92,4 @@ class Ui_MainWindow(object):
         self.actionNew.setText(_translate("MainWindow", "File"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionBuild.setText(_translate("MainWindow", "Build"))
-from toolset.tools.indoormap.map_editor import IndoorMapRenderer
+from toolset.tools.indoormap.indoorbuilder import IndoorMapRenderer

@@ -540,6 +540,7 @@
     <addaction name="actionEditJRL"/>
     <addaction name="separator"/>
     <addaction name="actionFileSearch"/>
+    <addaction name="actionIndoorMapBuilder"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -842,6 +843,11 @@
    </property>
    <property name="text">
     <string>Geometry Editor</string>
+   </property>
+  </action>
+  <action name="actionIndoorMapBuilder">
+   <property name="text">
+    <string>Indoor Map Builder</string>
    </property>
   </action>
  </widget>
