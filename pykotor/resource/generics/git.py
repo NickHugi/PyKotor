@@ -351,7 +351,7 @@ class GITDoor(GITInstance):
         return "Door"
 
 
-class GITEncounterSpawnPoint(GITInstance):
+class GITEncounterSpawnPoint:
     def __init__(
             self,
             x: float = 0.0,
@@ -360,29 +360,6 @@ class GITEncounterSpawnPoint(GITInstance):
     ):
         super().__init__(x, y, z)
         self.orientation: float = 0.0
-
-    def move(
-            self,
-            x: float,
-            y: float,
-            z: float
-    ) -> None:
-        self.position.x += x
-        self.position.y += y
-        self.position.z += z
-
-    def rotate(
-            self,
-            yaw: float,
-            pitch: float,
-            roll: float
-    ) -> None:
-        self.orientation += yaw
-
-    def reference(
-            self
-    ) -> Optional[ResRef]:
-        return None
 
 
 class GITEncounter(GITInstance):
