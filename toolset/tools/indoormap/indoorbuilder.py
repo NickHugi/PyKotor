@@ -17,7 +17,7 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from tools.indoormap import indoorbuilder_ui
-from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit
+from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit, KitDoor
 from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
 
 
@@ -70,6 +70,12 @@ class IndoorMapBuilder(QMainWindow):
                     component.hooks.append(hook)
 
                 kit.components.append(component)
+            for door_json in kit_json["doors"]:
+                name = door_json["name"]
+                width = door_json["width"]
+                priority = door_json["priority"]
+                door = KitDoor(name, width, priority)
+                kit.doors.append(door)
             self._kits.append(kit)
 
         for kit in self._kits:
@@ -105,6 +111,7 @@ class IndoorMapBuilder(QMainWindow):
             component = self.selectedComponent()
             room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint, self.ui.mapRenderer._cursorRotation)
             self._map.rooms.append(room)
+            self._map.rebuildRoomConnections()
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
@@ -377,10 +384,22 @@ class IndoorMapRenderer(QWidget):
             self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position), room.rotation)
 
             for hook in room.component.hooks if not self.hideMagnets else []:
+                hookIndex = room.component.hooks.index(hook)
+                if room.hooks[hookIndex] is not None:
+                    continue
+
                 hookPos = room.hookPosition(hook)
                 painter.setBrush(QColor("red"))
                 painter.setPen(QtCore.Qt.NoPen)
                 painter.drawEllipse(QPointF(hookPos.x, hookPos.y), 0.5, 0.5)
+
+        for room in self._map.rooms:
+            for hookIndex, hook in enumerate(room.component.hooks):
+                if room.hooks[hookIndex] is not None:
+                    hookPos = room.hookPosition(hook)
+                    painter.setBrush(QColor("green"))
+                    painter.setPen(QtCore.Qt.NoPen)
+                    painter.drawEllipse(QPointF(hookPos.x, hookPos.y), 0.5, 0.5)
 
         if self._cursorComponent:
             painter.setOpacity(0.5)

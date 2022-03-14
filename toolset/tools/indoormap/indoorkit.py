@@ -9,6 +9,7 @@ class Kit:
     def __init__(self, name: str):
         self.name: str = name
         self.components: List[KitComponent] = []
+        self.doors: List[KitDoor] = []
 
 
 class KitComponent:
@@ -29,3 +30,9 @@ class KitComponentHook:
         self.edge: int = edge
         self.door: int = door
 
+
+class KitDoor:
+    def __init__(self, name: str, width: float, priority: float):
+        self.name: str = name
+        self.width: float = width
+        self.priority: float = priority
