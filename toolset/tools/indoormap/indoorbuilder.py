@@ -103,11 +103,14 @@ class IndoorMapBuilder(QMainWindow):
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.RightButton in buttons:
             component = self.selectedComponent()
-            self._map.rooms.append(IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint))
+            room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint, self.ui.mapRenderer._cursorRotation)
+            self._map.rooms.append(room)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
             self.ui.mapRenderer.zoomInCamera(delta.y / 50)
+        else:
+            self.ui.mapRenderer._cursorRotation += math.copysign(90, delta.y)
 
 
 class IndoorMapRenderer(QWidget):
@@ -134,6 +137,7 @@ class IndoorMapRenderer(QWidget):
         self._camScale = 1.0
         self._cursorComponent: Optional[KitComponent] = None
         self._cursorPoint: Vector3 = Vector3.from_null()
+        self._cursorRotation: float = 0.0
 
         self._keysDown: Set[int] = set()
         self._mouseDown: Set[int] = set()
@@ -218,16 +222,14 @@ class IndoorMapRenderer(QWidget):
         y2 = x*sin + y*cos
         return Vector2(x2, y2)
 
-    def getConnectedHooks(self, hooks: List[KitComponentHook], roomPos: Vector3,
-                          otherHooks: List[KitComponentHook], otherRoomPos: Vector3
-    ) -> Tuple:
+    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> Tuple:
         hook1 = None
         hook2 = None
 
-        for hook in hooks:
-            hookPos = hook.position + roomPos
-            for otherHook in otherHooks:
-                otherHookPos = otherHook.position + otherRoomPos
+        for hook in room1.component.hooks:
+            hookPos = room1.hookPosition(hook)
+            for otherHook in room2.component.hooks:
+                otherHookPos = room2.hookPosition(otherHook)
                 if hookPos.distance(otherHookPos) < 1:
                     hook1 = hook
                     hook2 = otherHook
@@ -324,12 +326,29 @@ class IndoorMapRenderer(QWidget):
         self._camRotation += radians
     # endregion
 
-    def _drawImage(self, painter: QPainter, image: QImage, coords: Vector2) -> None:
+    def _drawImage(self, painter: QPainter, image: QImage, coords: Vector2, rotation: float) -> None:
+        original = painter.transform()
+
         trueWidth, trueHeight = image.width(), image.height()
-        width, height = image.width()/10, image.height()/10
+        width, height = image.width() / 10, image.height() / 10
+
+        transform = QTransform()
+        transform.translate(self.width() / 2, self.height() / 2)
+        transform.rotate(math.degrees(self._camRotation))
+        transform.scale(self._camScale, self._camScale)
+        transform.translate(-self._camPosition.x, -self._camPosition.y)
+
+        transform.translate(coords.x, coords.y)
+        transform.rotate(rotation)
+        transform.translate(-width / 2, -height / 2)
+
+        painter.setTransform(transform)
+
         source = QRectF(0, 0, trueWidth, trueHeight)
-        rect = QRectF(coords.x - width/2, coords.y - height/2, width, height)
+        rect = QRectF(0, 0, width, height)
         painter.drawImage(rect, image, source)
+
+        painter.setTransform(original)
 
     def _drawCircle(self, painter: QPainter, coords: Vector2):
         ...
@@ -355,17 +374,17 @@ class IndoorMapRenderer(QWidget):
         painter.setRenderHint(QPainter.LosslessImageRendering, True)
 
         for room in self._map.rooms:
-            self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position))
+            self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position), room.rotation)
 
             for hook in room.component.hooks if not self.hideMagnets else []:
-                hookPos = hook.position + room.position
+                hookPos = room.hookPosition(hook)
                 painter.setBrush(QColor("red"))
                 painter.setPen(QtCore.Qt.NoPen)
                 painter.drawEllipse(QPointF(hookPos.x, hookPos.y), 0.5, 0.5)
 
         if self._cursorComponent:
             painter.setOpacity(0.5)
-            self._drawImage(painter, self._cursorComponent.image, Vector2.from_vector3(self._cursorPoint))
+            self._drawImage(painter, self._cursorComponent.image, Vector2.from_vector3(self._cursorPoint), self._cursorRotation)
 
     def wheelEvent(self, e: QWheelEvent) -> None:
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
@@ -380,12 +399,11 @@ class IndoorMapRenderer(QWidget):
         self._cursorPoint = world
 
         if self._cursorComponent:
-            hooks = self._cursorComponent.hooks
-
+            fakeCursorRoom = IndoorMapRoom(self._cursorComponent, self._cursorPoint, self._cursorRotation)
             for room in self._map.rooms:
-                hook1, hook2 = self.getConnectedHooks(hooks, world, room.component.hooks, room.position)
+                hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
-                    self._cursorPoint = room.position - hook1.position + hook2.position
+                    self._cursorPoint = room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         self._mouseDown.add(e.button())
