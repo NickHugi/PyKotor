@@ -825,6 +825,24 @@ class Vector4:
 
         return Vector4(x, y, z, w)
 
+    @classmethod
+    def from_euler(
+            cls,
+            x: float,
+            y: float,
+            z: float
+    ):
+        roll = math.radians(x)
+        pitch = math.radians(y)
+        yaw = math.radians(z)
+
+        qx = math.sin(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) - math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
+        qy = math.cos(roll/2) * math.sin(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.cos(pitch/2) * math.sin(yaw/2)
+        qz = math.cos(roll/2) * math.cos(pitch/2) * math.sin(yaw/2) - math.sin(roll/2) * math.sin(pitch/2) * math.cos(yaw/2)
+        qw = math.cos(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
+
+        return Vector4(qx, qy, qz, qw)
+
     def magnitude(
             self
     ) -> float:

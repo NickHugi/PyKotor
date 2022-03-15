@@ -92,6 +92,32 @@ class TestVector4(TestCase):
         self.assertEqual(vec4.z, 3.4)
         self.assertEqual(vec4.w, 5.6)
 
+    def test_from_euler(self):
+        q1 = Vector4.from_euler(0, 0, 0)
+        q2 = Vector4.from_euler(90, 0, 0)
+        q3 = Vector4.from_euler(0, 90, 0)
+        q4 = Vector4.from_euler(0, 0, 90)
+
+        self.assertAlmostEqual(0.0, q1.x, 1)
+        self.assertAlmostEqual(0.0, q1.y, 1)
+        self.assertAlmostEqual(0.0, q1.z, 1)
+        self.assertAlmostEqual(1.0, q1.w, 1)
+
+        self.assertAlmostEqual(0.7, q2.x, 1)
+        self.assertAlmostEqual(0.0, q2.y, 1)
+        self.assertAlmostEqual(0.0, q2.z, 1)
+        self.assertAlmostEqual(0.7, q2.w, 1)
+
+        self.assertAlmostEqual(0.0, q3.x, 1)
+        self.assertAlmostEqual(0.7, q3.y, 1)
+        self.assertAlmostEqual(0.0, q3.z, 1)
+        self.assertAlmostEqual(0.7, q3.w, 1)
+
+        self.assertAlmostEqual(0.0, q4.x, 1)
+        self.assertAlmostEqual(0.0, q4.y, 1)
+        self.assertAlmostEqual(0.7, q4.z, 1)
+        self.assertAlmostEqual(0.7, q4.w, 1)
+
 
 class TestFace(TestCase):
     def test_determine_z(self):
