@@ -319,8 +319,9 @@ class BWM:
         sin = math.sin(radians)
 
         for vertex in self.vertices():
-            vertex.x = vertex.x * cos - vertex.y * sin
-            vertex.y = vertex.x * sin + vertex.y * cos
+            x, y = vertex.x, vertex.y
+            vertex.x = x*cos - y*sin
+            vertex.y = x*sin + y*cos
 
     def change_lyt_indexes(
             self,
