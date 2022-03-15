@@ -322,6 +322,19 @@ class BWM:
             vertex.x = vertex.x * cos - vertex.y * sin
             vertex.y = vertex.x * sin + vertex.y * cos
 
+    def change_lyt_indexes(
+            self,
+            old: int,
+            new: Optional[int]
+    ):
+        for face in self.faces:
+            if face.trans1 == old:
+                face.trans1 = new
+            if face.trans2 == old:
+                face.trans2 = new
+            if face.trans2 == old:
+                face.trans2 = new
+
 
 class BWMFace(Face):
     """
