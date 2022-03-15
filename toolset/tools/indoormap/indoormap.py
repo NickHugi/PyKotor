@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import math
-from copy import copy
+from copy import copy, deepcopy
 from typing import List, Optional, Tuple
 
 from pykotor.common.geometry import Vector3, Vector2
+from pykotor.resource.formats.bwm import BWM
 
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook
 
@@ -49,3 +50,9 @@ class IndoorMapRoom:
                     otherHookPos = otherRoom.hookPosition(otherHook)
                     if hookPos.distance(otherHookPos) < 1:
                         self.hooks[hookIndex] = otherRoom
+
+    def walkmesh(self) -> BWM:
+        bwm = deepcopy(self.component.bwm)
+        bwm.translate(self.position.x, self.position.y, self.position.z)
+        return bwm
+

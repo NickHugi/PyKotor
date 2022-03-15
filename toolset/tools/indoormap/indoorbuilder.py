@@ -113,11 +113,18 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rooms.append(room)
             self._map.rebuildRoomConnections()
 
+        if (self.ui.mapRenderer.roomUnderMouse() not in self.ui.mapRenderer.selectedRooms()
+                and QtCore.Qt.LeftButton in buttons
+                and not QtCore.Qt.Key_Control in keys
+                and self.ui.mapRenderer.roomUnderMouse()):
+            clearExisting = QtCore.Qt.Key_Shift not in keys
+            self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
+
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
             self.ui.mapRenderer.zoomInCamera(delta.y / 50)
         else:
-            self.ui.mapRenderer._cursorRotation += math.copysign(90, delta.y)
+            self.ui.mapRenderer._cursorRotation += math.copysign(15, delta.y)
 
 
 class IndoorMapRenderer(QWidget):
@@ -137,7 +144,8 @@ class IndoorMapRenderer(QWidget):
         super().__init__(parent)
 
         self._map: IndoorMap = IndoorMap()
-        self._selectedRooms: List[IndoorMapRoom]
+        self._underMouseRoom: Optional[IndoorMapRoom] = None
+        self._selectedRooms: List[IndoorMapRoom] = []
 
         self._camPosition: Vector2 = Vector2.from_null()
         self._camRotation: float = 0.0
@@ -167,6 +175,17 @@ class IndoorMapRenderer(QWidget):
 
     def setCursorComponent(self, component: KitComponent) -> None:
         self._cursorComponent = component
+
+    def selectRoom(self, room: IndoorMapRoom, clearExisting: bool) -> None:
+        if clearExisting:
+            self._selectedRooms.clear()
+        self._selectedRooms.append(room)
+
+    def roomUnderMouse(self) -> None:
+        return self._underMouseRoom
+
+    def selectedRooms(self) -> List[IndoorMapRoom]:
+        return self._selectedRooms
 
     def toRenderCoords(self, x, y) -> Vector2:
         """
@@ -357,6 +376,12 @@ class IndoorMapRenderer(QWidget):
 
         painter.setTransform(original)
 
+    def _drawRoomHighlight(self, painter: QPainter, room: IndoorMapRoom, alpha: int) -> None:
+        width, height = room.component.image.width() / 10, room.component.image.height() / 10
+        painter.setBrush(QColor(255, 255, 255, alpha))
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.drawRect(room.position.x - width / 2, room.position.y - height / 2, width, height)
+
     def _drawCircle(self, painter: QPainter, coords: Vector2):
         ...
 
@@ -405,6 +430,12 @@ class IndoorMapRenderer(QWidget):
             painter.setOpacity(0.5)
             self._drawImage(painter, self._cursorComponent.image, Vector2.from_vector3(self._cursorPoint), self._cursorRotation)
 
+        if self._underMouseRoom:
+            self._drawRoomHighlight(painter, self._underMouseRoom, 50)
+
+        for room in self._selectedRooms:
+            self._drawRoomHighlight(painter, room, 100)
+
     def wheelEvent(self, e: QWheelEvent) -> None:
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
 
@@ -423,6 +454,13 @@ class IndoorMapRenderer(QWidget):
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
                     self._cursorPoint = room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
+
+        self._underMouseRoom = None
+        for room in self._map.rooms:
+            walkmesh = room.walkmesh()
+            if walkmesh.faceAt(world.x, world.y):
+                self._underMouseRoom = room
+                break
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         self._mouseDown.add(e.button())
