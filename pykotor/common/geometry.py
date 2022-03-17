@@ -239,8 +239,12 @@ class Vector2:
         Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
         """
         magnitude = self.magnitude()
-        self.x /= magnitude
-        self.y /= magnitude
+        if magnitude == 0:
+            self.x = 0
+            self.y = 0
+        else:
+            self.x /= magnitude
+            self.y /= magnitude
 
     def magnitude(
             self
@@ -257,9 +261,7 @@ class Vector2:
             self
     ) -> Vector2:
         vec2 = Vector2.from_vector2(self)
-        magnitude = self.magnitude()
-        vec2.x /= magnitude
-        vec2.y /= magnitude
+        vec2.normalize()
         return vec2
 
     def dot(
@@ -555,9 +557,14 @@ class Vector3:
         Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
         """
         magnitude = self.magnitude()
-        self.x /= magnitude
-        self.y /= magnitude
-        self.z /= magnitude
+        if magnitude == 0:
+            self.x = 0
+            self.y = 0
+            self.z = 0
+        else:
+            self.x /= magnitude
+            self.y /= magnitude
+            self.z /= magnitude
 
     def magnitude(
             self
@@ -574,10 +581,7 @@ class Vector3:
             self
     ) -> Vector3:
         vec3 = Vector3.from_vector3(self)
-        magnitude = self.magnitude()
-        vec3.x /= magnitude
-        vec3.y /= magnitude
-        vec3.z /= magnitude
+        vec3.normalize()
         return vec3
 
     def dot(
@@ -864,10 +868,16 @@ class Vector4:
             The same vector.
         """
         magnitude = self.magnitude()
-        self.x /= magnitude
-        self.y /= magnitude
-        self.z /= magnitude
-        self.w /= magnitude
+        if magnitude == 0:
+            self.x = 0
+            self.y = 0
+            self.z = 0
+            self.w = 0
+        else:
+            self.x /= magnitude
+            self.y /= magnitude
+            self.z /= magnitude
+            self.w /= magnitude
         return self
 
     def set(
