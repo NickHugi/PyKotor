@@ -13,6 +13,7 @@ from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace
+from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -54,10 +55,11 @@ class IndoorMapBuilder(QMainWindow):
             kit_identifier = kit_json["id"]
 
             for door_json in kit_json["doors"]:
-                name = door_json["name"]
+                utdK1 = read_utd("{}/{}/{}.utd".format(kits_path, kit_identifier, door_json["utd_k1"]))
+                utdK2 = read_utd("{}/{}/{}.utd".format(kits_path, kit_identifier, door_json["utd_k2"]))
                 width = door_json["width"]
-                priority = door_json["priority"]
-                door = KitDoor(name, width, priority)
+                height = door_json["height"]
+                door = KitDoor(utdK1, utdK2, width, height)
                 kit.doors.append(door)
 
             for component_json in kit_json["components"]:
@@ -87,7 +89,7 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def buildMap(self) -> None:
-        self._map.build("test", r"C:\Program Files (x86)\Steam\steamapps\common\swkotor\modules\test.mod")
+        self._map.build("test", r"C:\Program Files (x86)\Steam\steamapps\common\swkotor\modules\test.mod", self._installation.tsl)
 
     def selectedComponent(self) -> KitComponent:
         return self.ui.componentList.currentItem().data(QtCore.Qt.UserRole)

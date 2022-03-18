@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from copy import copy, deepcopy
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, NamedTuple
 
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import ResRef
@@ -14,12 +14,20 @@ from pykotor.resource.formats.lyt.lyt_auto import bytes_lyt
 from pykotor.resource.formats.vis import VIS
 from pykotor.resource.formats.vis.vis_auto import bytes_vis
 from pykotor.resource.generics.are import ARE, bytes_are
-from pykotor.resource.generics.git import GIT, bytes_git
+from pykotor.resource.generics.git import GIT, bytes_git, GITDoor
 from pykotor.resource.generics.ifo import IFO, bytes_ifo
+from pykotor.resource.generics.utd import UTD, bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 
-from tools.indoormap.indoorkit import KitComponent, KitComponentHook
+from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor
+
+
+class DoorInsertion(NamedTuple):
+    door: KitDoor
+    static: bool
+    position: Vector3
+    rotation: float
 
 
 class IndoorMap:
@@ -30,7 +38,24 @@ class IndoorMap:
         for room in self.rooms:
             room.rebuildConnections(self.rooms)
 
-    def build(self, mod_id: str, output_path: str) -> None:
+    def doorInsertions(self) -> List[DoorInsertion]:
+        points = []
+        insertions = []
+
+        for i, room in enumerate(self.rooms):
+            for hookIndex, connection in enumerate(room.hooks):
+                hook = room.component.hooks[hookIndex]
+                door = hook.door
+                position = room.hookPosition(hook)
+                rotation = hook.rotation + room.rotation
+                static = connection is None
+                if position not in points:
+                    points.append(position)  # 47
+                    insertions.append(DoorInsertion(door, static, position, rotation))
+
+        return insertions
+
+    def build(self, mod_id: str, output_path: str, tsl: bool) -> None:
         mod = ERF(ERFType.MOD)
         lyt = LYT()
         vis = VIS()
@@ -70,6 +95,18 @@ class IndoorMap:
                     if face.trans3 == dummyIndex:
                         face.trans3 = actualIndex
             mod.set(modelname, ResourceType.WOK, bytes_bwm(bwm))
+
+        for i, insert in enumerate(self.doorInsertions()):
+            door = GITDoor(*insert.position)
+            door.resref = ResRef("{}_dor{:02}".format(mod_id, i))
+            door.bearing = math.radians(insert.rotation)
+            git.doors.append(door)
+
+            utd = deepcopy(insert.door.utdK2 if tsl else insert.door.utdK1)
+            utd.resref = door.resref
+            utd.static = insert.static
+            utd.tag = door.resref.get().title().replace("_", "")
+            mod.set(door.resref.get(), ResourceType.UTD, bytes_utd(utd))
 
         are.tag = mod_id
         ifo.tag = mod_id

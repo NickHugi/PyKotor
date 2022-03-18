@@ -5,6 +5,7 @@ from typing import List
 from PyQt5.QtGui import QImage
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm import BWM
+from pykotor.resource.generics.utd import UTD
 
 
 class Kit:
@@ -34,7 +35,8 @@ class KitComponentHook:
 
 
 class KitDoor:
-    def __init__(self, name: str, width: float, priority: float):
-        self.name: str = name
+    def __init__(self, utdK1: UTD, utdK2: UTD, width: float, height: float):
+        self.utdK1: UTD = utdK1
+        self.utdK2: UTD = utdK2
         self.width: float = width
-        self.priority: float = priority
+        self.priority: float = height
