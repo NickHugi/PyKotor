@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from PyQt5.QtGui import QImage
@@ -24,11 +26,11 @@ class KitComponent:
 
 
 class KitComponentHook:
-    def __init__(self, position: Vector3, rotation: float, edge: int, door: int):
+    def __init__(self, position: Vector3, rotation: float, edge: int, door: KitDoor):
         self.position: Vector3 = position
         self.rotation: float = rotation
         self.edge: int = edge
-        self.door: int = door
+        self.door: KitDoor = door
 
 
 class KitDoor:

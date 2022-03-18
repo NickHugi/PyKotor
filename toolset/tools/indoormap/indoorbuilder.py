@@ -52,6 +52,14 @@ class IndoorMapBuilder(QMainWindow):
             kit_json = json.loads(BinaryReader.load_file("{}/{}".format(kits_path, filename)))
             kit = Kit(kit_json["name"])
             kit_identifier = kit_json["id"]
+
+            for door_json in kit_json["doors"]:
+                name = door_json["name"]
+                width = door_json["width"]
+                priority = door_json["priority"]
+                door = KitDoor(name, width, priority)
+                kit.doors.append(door)
+
             for component_json in kit_json["components"]:
                 name = component_json["name"]
                 component_identifier = component_json["id"]
@@ -66,18 +74,13 @@ class IndoorMapBuilder(QMainWindow):
                 for hook_json in component_json["doorhooks"]:
                     position = Vector3(hook_json["x"], hook_json["y"], hook_json["z"])
                     rotation = hook_json["rotation"]
-                    door = hook_json["door"]
+                    door = kit.doors[hook_json["door"]]
                     edge = hook_json["edge"]
                     hook = KitComponentHook(position, rotation, edge, door)
                     component.hooks.append(hook)
 
                 kit.components.append(component)
-            for door_json in kit_json["doors"]:
-                name = door_json["name"]
-                width = door_json["width"]
-                priority = door_json["priority"]
-                door = KitDoor(name, width, priority)
-                kit.doors.append(door)
+
             self._kits.append(kit)
 
         for kit in self._kits:
@@ -448,19 +451,14 @@ class IndoorMapRenderer(QWidget):
                 painter.setPen(QtCore.Qt.NoPen)
                 painter.drawEllipse(QPointF(hookPos.x, hookPos.y), 0.5, 0.5)
 
-            for face in room.walkmesh().faces:
-                painter.setPen(QtCore.Qt.NoPen)
-                painter.setBrush(QColor(255, 0, 0, 60))
-                x = self._buildFace(face)
-                #painter.drawPath(x)
-
         for room in self._map.rooms:
             for hookIndex, hook in enumerate(room.component.hooks):
                 if room.hooks[hookIndex] is not None:
                     hookPos = room.hookPosition(hook)
-                    painter.setBrush(QColor("green"))
-                    painter.setPen(QtCore.Qt.NoPen)
-                    painter.drawEllipse(QPointF(hookPos.x, hookPos.y), 0.5, 0.5)
+                    xd = math.cos(math.radians(hook.rotation + room.rotation)) * hook.door.width / 2
+                    yd = math.sin(math.radians(hook.rotation + room.rotation)) * hook.door.width / 2
+                    painter.setPen(QPen(QColor(0, 255, 0), 2 / self._camScale))
+                    painter.drawLine(QPointF(hookPos.x-xd, hookPos.y-yd), QPointF(hookPos.x+xd, hookPos.y+yd))
 
         if self._cursorComponent:
             painter.setOpacity(0.5)
