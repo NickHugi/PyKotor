@@ -7,12 +7,12 @@ from typing import Optional, List, Set, Tuple
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer, QPointF, QRectF
 from PyQt5.QtGui import QImage, QPixmap, QPaintEvent, QTransform, QPainter, QColor, QWheelEvent, QMouseEvent, QKeyEvent, \
-    QPen
+    QPen, QPainterPath
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
-from pykotor.resource.formats.bwm import read_bwm, BWM
+from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -39,6 +39,8 @@ class IndoorMapBuilder(QMainWindow):
     def _setupSignals(self) -> None:
         self.ui.kitSelect.currentIndexChanged.connect(self.onKitSelected)
         self.ui.componentList.currentItemChanged.connect(self.onComponentSelected)
+
+        self.ui.actionBuild.triggered.connect(self.buildMap)
 
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
@@ -81,6 +83,9 @@ class IndoorMapBuilder(QMainWindow):
         for kit in self._kits:
             self.ui.kitSelect.addItem(kit.name, kit)
 
+    def buildMap(self) -> None:
+        self._map.build("test", r"C:\Program Files (x86)\Steam\steamapps\common\swkotor\modules\test.mod")
+
     def selectedComponent(self) -> KitComponent:
         return self.ui.componentList.currentItem().data(QtCore.Qt.UserRole)
 
@@ -116,7 +121,8 @@ class IndoorMapBuilder(QMainWindow):
         if (self.ui.mapRenderer.roomUnderMouse() not in self.ui.mapRenderer.selectedRooms()
                 and QtCore.Qt.LeftButton in buttons
                 and not QtCore.Qt.Key_Control in keys
-                and self.ui.mapRenderer.roomUnderMouse()):
+                and self.ui.mapRenderer.roomUnderMouse()
+        ):
             clearExisting = QtCore.Qt.Key_Shift not in keys
             self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
 
@@ -124,7 +130,7 @@ class IndoorMapBuilder(QMainWindow):
         if QtCore.Qt.Key_Control in keys:
             self.ui.mapRenderer.zoomInCamera(delta.y / 50)
         else:
-            self.ui.mapRenderer._cursorRotation += math.copysign(15, delta.y)
+            self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
 
 class IndoorMapRenderer(QWidget):
@@ -256,7 +262,8 @@ class IndoorMapRenderer(QWidget):
             hookPos = room1.hookPosition(hook)
             for otherHook in room2.component.hooks:
                 otherHookPos = room2.hookPosition(otherHook)
-                if hookPos.distance(otherHookPos) < 1:
+                distance_2d = Vector2.from_vector3(hookPos).distance(Vector2.from_vector3(otherHookPos))
+                if distance_2d < 1:
                     hook1 = hook
                     hook2 = otherHook
 
@@ -385,6 +392,29 @@ class IndoorMapRenderer(QWidget):
     def _drawCircle(self, painter: QPainter, coords: Vector2):
         ...
 
+    def _buildFace(self, face: BWMFace) -> QPainterPath:
+        """
+        Returns a QPainterPath for the specified face.
+
+        Args:
+            face: A face used in a walkmesh.
+
+        Returns:
+            A QPainterPath object representing a BWMFace.
+        """
+        v1 = Vector2(face.v1.x, face.v1.y)
+        v2 = Vector2(face.v2.x, face.v2.y)
+        v3 = Vector2(face.v3.x, face.v3.y)
+
+        path = QPainterPath()
+        path.moveTo(v1.x, v1.y)
+        path.lineTo(v2.x, v2.y)
+        path.lineTo(v3.x, v3.y)
+        path.lineTo(v1.x, v1.y)
+        path.closeSubpath()
+
+        return path
+
     # region Events
     def paintEvent(self, e: QPaintEvent) -> None:
         screen = self.mapFromGlobal(self.cursor().pos())
@@ -417,6 +447,12 @@ class IndoorMapRenderer(QWidget):
                 painter.setBrush(QColor("red"))
                 painter.setPen(QtCore.Qt.NoPen)
                 painter.drawEllipse(QPointF(hookPos.x, hookPos.y), 0.5, 0.5)
+
+            for face in room.walkmesh().faces:
+                painter.setPen(QtCore.Qt.NoPen)
+                painter.setBrush(QColor(255, 0, 0, 60))
+                x = self._buildFace(face)
+                #painter.drawPath(x)
 
         for room in self._map.rooms:
             for hookIndex, hook in enumerate(room.component.hooks):

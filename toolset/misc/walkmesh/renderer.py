@@ -468,6 +468,21 @@ class WalkmeshRenderer(QWidget):
             painter.setBrush(self.materialColor(face.material))
             painter.drawPath(path)
 
+        for walkmesh in self._walkmeshes:
+            for face in walkmesh.walkable_faces():
+                painter.setPen(QPen(QColor(255, 0, 0), 3/self._camScale))
+                path = QPainterPath()
+                if face.trans1 is not None:
+                    path.moveTo(face.v1.x, face.v1.y)
+                    path.lineTo(face.v2.x, face.v2.y)
+                if face.trans2 is not None:
+                    path.moveTo(face.v2.x, face.v2.y)
+                    path.lineTo(face.v3.x, face.v3.y)
+                if face.trans3 is not None:
+                    path.moveTo(face.v1.x, face.v1.y)
+                    path.lineTo(face.v3.x, face.v3.y)
+                painter.drawPath(path)
+
         # Draw the git instances (represented as icons)
         painter.setOpacity(0.6)
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)

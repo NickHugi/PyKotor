@@ -169,10 +169,11 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
-        self.ui.actionIndoorMapBuilder.triggered.connect(self.openIndoorMapBuilder)
+        self.ui.actionGeometryEditor.triggered.connect(self.openGeometryEditor)
         self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
+        self.ui.actionIndoorMapBuilder.triggered.connect(self.openIndoorMapBuilder)
 
         self.ui.coreTree.doubleClicked.connect(self.openFromSelected)
         self.ui.modulesTree.doubleClicked.connect(self.openFromSelected)
@@ -256,7 +257,6 @@ class ToolWindow(QMainWindow):
         self.ui.actionEditJRL.setEnabled(self.active is not None)
         self.ui.actionGeometryEditor.setEnabled(self.active is not None)
         self.ui.actionFileSearch.setEnabled(self.active is not None)
-        self.ui.actionIndoorMapBuilder.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
@@ -280,9 +280,9 @@ class ToolWindow(QMainWindow):
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         self.openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data)
 
-    def openIndoorMapBuilder(self) -> None:
-        builder = IndoorMapBuilder(self, self.active)
-        builder.show()
+    def openGeometryEditor(self) -> None:
+        editor = GeometryEditor(self, self.active)
+        editor.show()
 
     def openFileSearchDialog(self) -> None:
         """
@@ -311,6 +311,9 @@ class ToolWindow(QMainWindow):
                     self.selectResource(self.ui.overrideTree, selection)
                 elif selection.filepath().endswith(".bif"):
                     self.selectResource(self.ui.coreTree, selection)
+
+    def openIndoorMapBuilder(self) -> None:
+        IndoorMapBuilder(self, self.active).show()
 
     def openAboutDialog(self) -> None:
         """

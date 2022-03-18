@@ -34,8 +34,9 @@ class Ui_MainWindow(object):
         self.gridLayout.setObjectName("gridLayout")
         self.componentImage = QtWidgets.QLabel(self.groupBox)
         self.componentImage.setMinimumSize(QtCore.QSize(128, 128))
-        self.componentImage.setMaximumSize(QtCore.QSize(128, 16777215))
+        self.componentImage.setMaximumSize(QtCore.QSize(128, 128))
         self.componentImage.setText("")
+        self.componentImage.setScaledContents(True)
         self.componentImage.setObjectName("componentImage")
         self.gridLayout.addWidget(self.componentImage, 0, 0, 1, 1)
         self.verticalLayout.addWidget(self.groupBox)
@@ -85,11 +86,11 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.menuNew.setTitle(_translate("MainWindow", "New"))
+        self.menuNew.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionSave.setText(_translate("MainWindow", "Save"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
-        self.actionNew.setText(_translate("MainWindow", "File"))
+        self.actionNew.setText(_translate("MainWindow", "New"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionBuild.setText(_translate("MainWindow", "Build"))
 from toolset.tools.indoormap.indoorbuilder import IndoorMapRenderer

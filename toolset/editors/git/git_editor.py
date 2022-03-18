@@ -15,7 +15,7 @@ from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import LYT, read_lyt
 from pykotor.resource.generics.git import read_git, GIT, GITInstance, GITCreature, GITTrigger, GITEncounter, GITCamera, \
-    GITWaypoint, GITSound, GITStore, GITPlaceable, GITDoor
+    GITWaypoint, GITSound, GITStore, GITPlaceable, GITDoor, bytes_git
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
@@ -89,7 +89,7 @@ class GITEditor(Editor):
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
-        order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+        order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
         result = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
             m = QMessageBox(QMessageBox.Information,
@@ -105,7 +105,7 @@ class GITEditor(Editor):
         self.updateInstanceVisibility()
 
     def build(self) -> bytes:
-        return b''
+        return bytes_git(self._git)
 
     def new(self) -> None:
         super().new()
@@ -113,8 +113,9 @@ class GITEditor(Editor):
     def loadLayout(self, layout: LYT) -> None:
         walkmeshes = []
         for room in layout.rooms:
-            order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+            order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
             bwmData = self._installation.resource(room.model, ResourceType.WOK, order).data
+            print(bwmData)
             walkmeshes.append(read_bwm(bwmData))
 
         self.ui.renderArea.setWalkmeshes(walkmeshes)
