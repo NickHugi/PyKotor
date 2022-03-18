@@ -4,12 +4,12 @@ import math
 from copy import copy, deepcopy
 from typing import List, Optional, Tuple, NamedTuple
 
-from pykotor.common.geometry import Vector3, Vector2
+from pykotor.common.geometry import Vector3, Vector2, Vector4
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.bwm import BWM
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
-from pykotor.resource.formats.lyt import LYT, LYTRoom
+from pykotor.resource.formats.lyt import LYT, LYTRoom, LYTDoorHook
 from pykotor.resource.formats.lyt.lyt_auto import bytes_lyt
 from pykotor.resource.formats.vis import VIS
 from pykotor.resource.formats.vis.vis_auto import bytes_vis
@@ -25,6 +25,7 @@ from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor
 
 class DoorInsertion(NamedTuple):
     door: KitDoor
+    room: IndoorMapRoom
     static: bool
     position: Vector3
     rotation: float
@@ -51,7 +52,7 @@ class IndoorMap:
                 static = connection is None
                 if position not in points:
                     points.append(position)  # 47
-                    insertions.append(DoorInsertion(door, static, position, rotation))
+                    insertions.append(DoorInsertion(door, room, static, position, rotation))
 
         return insertions
 
@@ -63,12 +64,15 @@ class IndoorMap:
         ifo = IFO()
         git = GIT()
 
+        roomNames = {}
+
         for i in range(len(self.rooms)):
             modelname = "{}_room{}".format(mod_id, i)
             vis.add_room(modelname)
 
         for i, room in enumerate(self.rooms):
             modelname = "{}_room{}".format(mod_id, i)
+            roomNames[room] = modelname
             lyt.rooms.append(LYTRoom(modelname, room.position))
 
             for j in range(len(self.rooms)):
@@ -107,6 +111,9 @@ class IndoorMap:
             utd.static = insert.static
             utd.tag = door.resref.get().title().replace("_", "")
             mod.set(door.resref.get(), ResourceType.UTD, bytes_utd(utd))
+
+            orientation = Vector4.from_euler(0, 0, door.bearing)
+            lyt.doorhooks.append(LYTDoorHook(roomNames[insert.room], door.resref.get(), insert.position, orientation))
 
         are.tag = mod_id
         ifo.tag = mod_id
