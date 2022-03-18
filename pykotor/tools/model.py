@@ -2,6 +2,7 @@ import struct
 from copy import deepcopy
 from typing import Dict, List
 
+from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 
@@ -563,3 +564,88 @@ def convert_to_k2(
         data[offset_location:offset_location + 4] = struct.pack("I", offset_value)
 
     return bytes([0 for i in range(4)]) + struct.pack("I", len(data)) + mdx_size + data
+
+
+def transform(
+        data: bytes,
+        translation: Vector3,
+        rotation: float
+) -> bytes:
+    """
+    Performs a translation and then rotation on the target MDL data.
+
+    Args:
+        data: MDL data.
+        translation: Translation value.
+        rotation: Rotation value.
+
+    Returns:
+        The MDL data post-transformation.
+    """
+    orientation = Vector4.from_euler(0, 0, rotation)
+    mdx_size = struct.unpack("I", data[8:12])[0]
+    data = bytearray(data[12:])
+
+    with BinaryReader.from_bytes(data) as reader:
+        reader.seek(44)
+        node_count = reader.read_uint32()
+
+        reader.seek(168)
+        root_offset = reader.read_uint32()
+
+        reader.seek(root_offset)
+        type_id = reader.read_uint16()
+        supernode_id = reader.read_uint16()
+        label_id = reader.read_uint32()
+        reader.skip(6)
+        reader.skip(4)
+        reader.skip(4)
+        reader.skip(4 * 3)
+        reader.skip(4 * 4)
+
+        reader.seek(root_offset + 44)
+        child_array_offset = reader.read_uint32()
+        child_count = reader.read_uint32()
+
+    if child_count == 0:
+        return data
+
+    root_child_array_offset = len(data)
+    insert_node_offset = len(data) + 4
+    insert_controller_offset = insert_node_offset + 80
+    insert_controller_data_offset = insert_controller_offset + 32
+
+    data[44:48] = struct.pack("I", node_count + 1)
+
+    data[root_offset+44:root_offset+48] = struct.pack("I", root_child_array_offset)
+    data[root_offset+48:root_offset+52] = struct.pack("I", 1)
+    data[root_offset+52:root_offset+56] = struct.pack("I", 1)
+
+    data += struct.pack("I", insert_node_offset)
+    data += struct.pack("HHHH II fff ffff III III III",
+                        1,                      # Node Type
+                        node_count + 1,         # Node ID
+                        1,                      # Label ID (steal some existing node's label)
+                        0,                      # Padding
+
+                        0,
+                        root_offset,
+                        *translation,              # Node Position
+                        *orientation,           # Node Orientation
+                        child_array_offset,     # Child Array Offset
+                        child_count,
+                        child_count,
+                        insert_controller_offset,  # Controller Array
+                        2,
+                        2,
+                        insert_controller_data_offset,  # Controller Data Array
+                        9,
+                        9
+    )
+
+    data += struct.pack("IHHHHBBBB", 8, 0xFFFF, 1, 0, 1, 3, 0, 0, 0)
+    data += struct.pack("IHHHHBBBB", 20, 0xFFFF, 1, 4, 5, 4, 0, 0, 0)
+    data += struct.pack("ffff", 0.0, *translation)
+    data += struct.pack("fffff", 0.0, *orientation)
+
+    return struct.pack("III", 0, len(data), mdx_size) + data
