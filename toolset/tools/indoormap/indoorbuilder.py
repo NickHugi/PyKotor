@@ -10,6 +10,7 @@ from PyQt5.QtGui import QImage, QPixmap, QPaintEvent, QTransform, QPainter, QCol
     QPen, QPainterPath
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow
 from pykotor.common.geometry import Vector3, Vector2
+from pykotor.common.misc import Color
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace
@@ -20,6 +21,7 @@ from data.installation import HTInstallation
 from tools.indoormap import indoorbuilder_ui
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit, KitDoor
 from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
+from tools.indoormap.indoorsettings import IndoorMapSettings
 
 
 class IndoorMapBuilder(QMainWindow):
@@ -42,6 +44,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.componentList.currentItemChanged.connect(self.onComponentSelected)
 
         self.ui.actionBuild.triggered.connect(self.buildMap)
+        self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map).exec_())
 
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
@@ -89,7 +92,7 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.kitSelect.addItem(kit.name, kit)
 
     def buildMap(self) -> None:
-        self._map.build("test", r"C:\Program Files (x86)\Steam\steamapps\common\swkotor\modules\test.mod", self._installation.tsl)
+        self._map.build(self._installation)
 
     def selectedComponent(self) -> KitComponent:
         return self.ui.componentList.currentItem().data(QtCore.Qt.UserRole)

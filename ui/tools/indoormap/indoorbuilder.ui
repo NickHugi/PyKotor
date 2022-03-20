@@ -40,7 +40,7 @@
            <property name="maximumSize">
             <size>
              <width>128</width>
-             <height>128</height>
+             <height>16777215</height>
             </size>
            </property>
            <property name="text">
@@ -87,6 +87,7 @@
     <addaction name="actionSave_As"/>
     <addaction name="separator"/>
     <addaction name="actionBuild"/>
+    <addaction name="actionSettings"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -121,6 +122,11 @@
   <action name="actionBuild">
    <property name="text">
     <string>Build</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>

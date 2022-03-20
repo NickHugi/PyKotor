@@ -5,7 +5,8 @@ from copy import copy, deepcopy
 from typing import List, Optional, Tuple, NamedTuple
 
 from pykotor.common.geometry import Vector3, Vector2, Vector4
-from pykotor.common.misc import ResRef
+from pykotor.common.language import LocalizedString
+from pykotor.common.misc import ResRef, Color
 from pykotor.resource.formats.bwm import BWM
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
@@ -20,6 +21,7 @@ from pykotor.resource.generics.utd import UTD, bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 
+from data.installation import HTInstallation
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor
 
 
@@ -34,6 +36,9 @@ class DoorInsertion(NamedTuple):
 class IndoorMap:
     def __init__(self):
         self.rooms: List[IndoorMapRoom] = []
+        self.module_id: str = "test01"
+        self.name: LocalizedString = LocalizedString.from_english("New Module")
+        self.lighting: Color = Color(0.5, 0.5, 0.5)
 
     def rebuildRoomConnections(self) -> None:
         for room in self.rooms:
@@ -56,7 +61,7 @@ class IndoorMap:
 
         return insertions
 
-    def build(self, mod_id: str, output_path: str, tsl: bool) -> None:
+    def build(self, installation: HTInstallation) -> None:
         mod = ERF(ERFType.MOD)
         lyt = LYT()
         vis = VIS()
@@ -65,19 +70,18 @@ class IndoorMap:
         git = GIT()
 
         roomNames = {}
-
         for i in range(len(self.rooms)):
-            modelname = "{}_room{}".format(mod_id, i)
+            modelname = "{}_room{}".format(self.module_id, i)
             vis.add_room(modelname)
 
         for i, room in enumerate(self.rooms):
-            modelname = "{}_room{}".format(mod_id, i)
+            modelname = "{}_room{}".format(self.module_id, i)
             roomNames[room] = modelname
             lyt.rooms.append(LYTRoom(modelname, room.position))
 
             for j in range(len(self.rooms)):
                 if j != i:
-                    vis.set_visible(modelname, "{}_room{}".format(mod_id, j), True)
+                    vis.set_visible(modelname, "{}_room{}".format(self.module_id, j), True)
 
             mdl = room.component.mdl
             mdl = model.transform(mdl, Vector3.from_null(), room.rotation)
@@ -102,11 +106,11 @@ class IndoorMap:
 
         for i, insert in enumerate(self.doorInsertions()):
             door = GITDoor(*insert.position)
-            door.resref = ResRef("{}_dor{:02}".format(mod_id, i))
+            door.resref = ResRef("{}_dor{:02}".format(self.module_id, i))
             door.bearing = math.radians(insert.rotation)
             git.doors.append(door)
 
-            utd = deepcopy(insert.door.utdK2 if tsl else insert.door.utdK1)
+            utd = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
             utd.resref = door.resref
             utd.static = insert.static
             utd.tag = door.resref.get().title().replace("_", "")
@@ -115,17 +119,19 @@ class IndoorMap:
             orientation = Vector4.from_euler(0, 0, door.bearing)
             lyt.doorhooks.append(LYTDoorHook(roomNames[insert.room], door.resref.get(), insert.position, orientation))
 
-        are.tag = mod_id
-        ifo.tag = mod_id
-        ifo.area_name = ResRef(mod_id)
+        are.tag = self.module_id
+        are.dynamic_light = self.lighting
+        are.name = self.name
+        ifo.tag = self.module_id
+        ifo.area_name = ResRef(self.module_id)
 
-        mod.set(mod_id, ResourceType.LYT, bytes_lyt(lyt))
-        mod.set(mod_id, ResourceType.VIS, bytes_vis(vis))
-        mod.set(mod_id, ResourceType.ARE, bytes_are(are))
-        mod.set(mod_id, ResourceType.GIT, bytes_git(git))
+        mod.set(self.module_id, ResourceType.LYT, bytes_lyt(lyt))
+        mod.set(self.module_id, ResourceType.VIS, bytes_vis(vis))
+        mod.set(self.module_id, ResourceType.ARE, bytes_are(are))
+        mod.set(self.module_id, ResourceType.GIT, bytes_git(git))
         mod.set("module", ResourceType.IFO, bytes_ifo(ifo))
 
-        write_erf(mod, output_path)
+        write_erf(mod, "{}{}.mod".format(installation.module_path(), self.module_id))
 
 
 class IndoorMapRoom:
