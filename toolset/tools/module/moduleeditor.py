@@ -1,8 +1,11 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
-from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction
+from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
+from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
+    GITSound, GITStore, GITCamera, GITInstance
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -19,10 +22,32 @@ class ModuleEditor(QMainWindow):
         self.ui = moduleeditor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
+
+        self.hideCreatures = False
+        self.hidePlaceables = False
+        self.hideDoors = False
+        self.hideTriggers = False
+        self.hideEncounters = False
+        self.hideWaypoints = False
+        self.hideSounds = False
+        self.hideStores = False
+        self.hideCameras = False
+
         self.rebuildResourceTree()
+        self.rebuildInstanceList()
 
     def _setupSignals(self) -> None:
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceTreeContextMenu)
+
+        self.ui.viewCreatureCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewPlaceableCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewDoorCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewSoundCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewTriggerCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewEncounterCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewWaypointCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewCameraCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
@@ -97,6 +122,57 @@ class ModuleEditor(QMainWindow):
                 menu.addAction(locationAciton)
 
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
+
+    def rebuildInstanceList(self) -> None:
+        visibleMapping = {
+            GITCreature: self.hideCreatures,
+            GITPlaceable: self.hidePlaceables,
+            GITDoor: self.hideDoors,
+            GITTrigger: self.hideTriggers,
+            GITEncounter: self.hideEncounters,
+            GITWaypoint: self.hideWaypoints,
+            GITSound: self.hideSounds,
+            GITStore: self.hideStores,
+            GITCamera: self.hideCameras,
+            GITInstance: False
+        }
+
+        iconMapping = {
+            GITCreature: QPixmap(":/images/icons/k1/creature.png"),
+            GITPlaceable: QPixmap(":/images/icons/k1/placeable.png"),
+            GITDoor: QPixmap(":/images/icons/k1/door.png"),
+            GITSound: QPixmap(":/images/icons/k1/sound.png"),
+            GITTrigger: QPixmap(":/images/icons/k1/trigger.png"),
+            GITEncounter: QPixmap(":/images/icons/k1/encounter.png"),
+            GITWaypoint: QPixmap(":/images/icons/k1/waypoint.png"),
+            GITCamera: QPixmap(":/images/icons/k1/camera.png"),
+            GITStore: QPixmap(":/images/icons/k1/merchant.png"),
+            GITInstance: QPixmap(32, 32)
+        }
+
+        self.ui.instanceList.clear()
+        for instance in self._module.git().resource().instances():
+            if visibleMapping[type(instance)]:
+                continue
+
+            icon = QIcon(iconMapping[type(instance)])
+            reference = "" if instance.reference() is None else instance.reference().get()
+            text = "[{}] {}".format(self._module.git().resource().index(instance), reference)
+            item = QListWidgetItem(icon, text)
+            item.setData(QtCore.Qt.UserRole, instance)
+            self.ui.instanceList.addItem(item)
+
+    def updateInstanceVisibility(self) -> None:
+        self.hideCreatures = not self.ui.viewCreatureCheck.isChecked()
+        self.hidePlaceables = not self.ui.viewPlaceableCheck.isChecked()
+        self.hideDoors = not self.ui.viewDoorCheck.isChecked()
+        self.hideTriggers = not self.ui.viewTriggerCheck.isChecked()
+        self.hideEncounters = not self.ui.viewEncounterCheck.isChecked()
+        self.hideWaypoints = not self.ui.viewWaypointCheck.isChecked()
+        self.hideSounds = not self.ui.viewSoundCheck.isChecked()
+        self.hideStores = not self.ui.viewStoreCheck.isChecked()
+        self.hideCameras = not self.ui.viewCameraCheck.isChecked()
+        self.rebuildInstanceList()
 
 
 class ModuleRenderer(QOpenGLWidget):

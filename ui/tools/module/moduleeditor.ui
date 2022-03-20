@@ -384,7 +384,7 @@ QCheckBox::indicator:checked:hover {
        <widget class="ModuleRenderer" name="mainRenderer"/>
       </item>
       <item>
-       <widget class="QListView" name="instanceList">
+       <widget class="QListWidget" name="instanceList">
         <property name="maximumSize">
          <size>
           <width>200</width>
