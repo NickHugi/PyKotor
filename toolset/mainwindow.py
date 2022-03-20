@@ -17,6 +17,7 @@ from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QT
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView
+from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
@@ -62,6 +63,7 @@ from misc.search import FileSearcher, FileResults
 from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 from tools.indoormap.indoorbuilder import IndoorMapBuilder
+from tools.module.moduleeditor import ModuleEditor
 
 PROGRAM_VERSION = "1.5.2"
 
@@ -150,6 +152,7 @@ class ToolWindow(QMainWindow):
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
+        self.ui.actionEditModule.triggered.connect(self.openModuleEditor)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionNewDLG.triggered.connect(lambda: DLGEditor(self, self.active).show())
         self.ui.actionNewNSS.triggered.connect(lambda: NSSEditor(self, self.active).show())
@@ -259,6 +262,13 @@ class ToolWindow(QMainWindow):
         self.ui.actionFileSearch.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
+
+    def openModuleEditor(self) -> None:
+        filepath = QFileDialog.getOpenFileName(self, "Select a module")[0]
+        if filepath:
+            module = Module(Module.get_root(filepath), self.active)
+            designer = ModuleEditor(self, self.active, module)
+            designer.show()
 
     def openSettingsDialog(self) -> None:
         """
