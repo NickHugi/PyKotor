@@ -155,10 +155,17 @@ class ModuleEditor(QMainWindow):
             if visibleMapping[type(instance)]:
                 continue
 
+            if instance.reference():
+                resource = self._module.resource(instance.reference().get(), instance.extension())
+                text = resource.localized_name()
+                if text is None or text.isspace():
+                    text = "[{}]".format(resource.resname())
+            else:
+                text = "Camera #{}".format(self._module.git().resource().index(instance))
+
             icon = QIcon(iconMapping[type(instance)])
-            reference = "" if instance.reference() is None else instance.reference().get()
-            text = "[{}] {}".format(self._module.git().resource().index(instance), reference)
             item = QListWidgetItem(icon, text)
+            item.setToolTip("" if instance.reference() is None else instance.reference().get())
             item.setData(QtCore.Qt.UserRole, instance)
             self.ui.instanceList.addItem(item)
 
