@@ -57,6 +57,24 @@ class IndoorMapBuilder(QMainWindow):
             kit = Kit(kit_json["name"])
             kit_identifier = kit_json["id"]
 
+            always_path = "{}/{}/always".format(kits_path, filename[:-5])
+            for always_file in os.listdir(always_path):
+                kit.always[always_file] = BinaryReader.load_file("{}/{}".format(always_path, always_file))
+
+            textures_path = "{}/{}/textures".format(kits_path, filename[:-5])
+            for texture_file in [filename for filename in os.listdir(textures_path) if filename.endswith(".tga")]:
+                texture = texture_file[:-4]
+                kit.textures[texture] = BinaryReader.load_file("{}/{}.tga".format(textures_path, texture))
+                txi_path = "{}/{}.txi".format(textures_path, texture)
+                kit.txis[texture] = BinaryReader.load_file(txi_path) if os.path.exists(txi_path) else b''
+
+            lightmaps_path = "{}/{}/lightmaps".format(kits_path, filename[:-5])
+            for lightmap_file in [filename for filename in os.listdir(lightmaps_path) if filename.endswith(".tga")]:
+                lightmap = lightmap_file[:-4]
+                kit.lightmaps[lightmap] = BinaryReader.load_file("{}/{}.tga".format(lightmaps_path, lightmap))
+                txi_path = "{}/{}.txi".format(lightmaps_path, lightmap)
+                kit.txis[lightmap] = BinaryReader.load_file(txi_path) if os.path.exists(txi_path) else b''
+
             for door_json in kit_json["doors"]:
                 utdK1 = read_utd("{}/{}/{}.utd".format(kits_path, kit_identifier, door_json["utd_k1"]))
                 utdK2 = read_utd("{}/{}/{}.utd".format(kits_path, kit_identifier, door_json["utd_k2"]))
@@ -74,7 +92,7 @@ class IndoorMapBuilder(QMainWindow):
                 bwm = read_bwm("{}/{}/{}.wok".format(kits_path, kit_identifier, component_identifier))
                 mdl = BinaryReader.load_file("{}/{}/{}.mdl".format(kits_path, kit_identifier, component_identifier))
                 mdx = BinaryReader.load_file("{}/{}/{}.mdx".format(kits_path, kit_identifier, component_identifier))
-                component = KitComponent(name, image, bwm, mdl, mdx)
+                component = KitComponent(kit, name, image, bwm, mdl, mdx)
 
                 for hook_json in component_json["doorhooks"]:
                     position = Vector3(hook_json["x"], hook_json["y"], hook_json["z"])

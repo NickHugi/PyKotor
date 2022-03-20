@@ -7,6 +7,8 @@ from typing import List, Optional, Tuple, NamedTuple
 from pykotor.common.geometry import Vector3, Vector2, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Color
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm import BWM
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
@@ -70,6 +72,9 @@ class IndoorMap:
         git = GIT()
 
         roomNames = {}
+        texRenames = {}
+        lmRenames = {}
+
         for i in range(len(self.rooms)):
             modelname = "{}_room{}".format(self.module_id, i)
             vis.add_room(modelname)
@@ -83,8 +88,24 @@ class IndoorMap:
                 if j != i:
                     vis.set_visible(modelname, "{}_room{}".format(self.module_id, j), True)
 
-            mdl = room.component.mdl
-            mdl = model.transform(mdl, Vector3.from_null(), room.rotation)
+            for filename, data in room.component.kit.always.items():
+                resname, restype = ResourceIdentifier.from_path(filename)
+                mod.set(resname, restype, data)
+
+            mdl = model.transform(room.component.mdl, Vector3.from_null(), room.rotation)
+            mdl = model.convert_to_k2(mdl) if installation.tsl else model.convert_to_k1(mdl)
+            for texture in set([texture for texture in model.list_textures(mdl) if texture.lower() not in texRenames.keys()]):
+                renamed = "{}_tex{}".format(self.module_id, len(texRenames.keys()))
+                texRenames[texture.lower()] = renamed
+                mod.set(renamed, ResourceType.TGA, room.component.kit.textures[texture])
+                mod.set(renamed, ResourceType.TXI, room.component.kit.txis[texture])
+            for lightmap in set([lightmap for lightmap in model.list_lightmaps(mdl) if lightmap.lower() not in texRenames.keys()]):
+                renamed = "{}_lm{}".format(self.module_id, len(lmRenames.keys()))
+                lmRenames[lightmap.lower()] = renamed
+                mod.set(renamed, ResourceType.TGA, room.component.kit.lightmaps[lightmap])
+                mod.set(renamed, ResourceType.TXI, room.component.kit.txis[lightmap])
+            mdl = model.change_textures(mdl, texRenames)
+            mdl = model.change_lightmaps(mdl, lmRenames)
 
             mod.set(modelname, ResourceType.MDL, mdl)
             mod.set(modelname, ResourceType.MDX, room.component.mdx)

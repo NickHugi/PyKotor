@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Dict
 
 from PyQt5.QtGui import QImage
 from pykotor.common.geometry import Vector3
+from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.resource.formats.bwm import BWM
 from pykotor.resource.generics.utd import UTD
 
@@ -13,10 +14,15 @@ class Kit:
         self.name: str = name
         self.components: List[KitComponent] = []
         self.doors: List[KitDoor] = []
+        self.textures: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
+        self.lightmaps: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
+        self.txis: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
+        self.always: Dict[str, bytes] = {}
 
 
 class KitComponent:
-    def __init__(self, name: str, image: QImage, bwm: BWM, mdl: bytes, mdx: bytes):
+    def __init__(self, kit: Kit, name: str, image: QImage, bwm: BWM, mdl: bytes, mdx: bytes):
+        self.kit: Kit = kit
         self.image: QImage = image
         self.name: str = name
         self.hooks: List[KitComponentHook] = []
