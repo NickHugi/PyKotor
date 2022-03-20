@@ -1,7 +1,7 @@
 import json
 import math
 import os
-from copy import copy
+from copy import copy, deepcopy
 from typing import Optional, List, Set, Tuple
 
 from PyQt5 import QtCore
@@ -357,10 +357,14 @@ class IndoorMapRenderer(QWidget):
         painter.setTransform(original)
 
     def _drawRoomHighlight(self, painter: QPainter, room: IndoorMapRoom, alpha: int) -> None:
-        width, height = room.component.image.width() / 10, room.component.image.height() / 10
+        bwm = deepcopy(room.component.bwm)
+        bwm.translate(*room.position)
+        bwm.rotate(room.rotation)
         painter.setBrush(QColor(255, 255, 255, alpha))
         painter.setPen(QtCore.Qt.NoPen)
-        painter.drawRect(room.position.x - width / 2, room.position.y - height / 2, width, height)
+        for face in bwm.faces:
+            path = self._buildFace(face)
+            painter.drawPath(path)
 
     def _drawCircle(self, painter: QPainter, coords: Vector2):
         ...
