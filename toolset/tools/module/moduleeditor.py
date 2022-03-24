@@ -1,5 +1,7 @@
+from typing import Optional
+
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem
 from pykotor.common.module import Module, ModuleResource
@@ -9,6 +11,7 @@ from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GI
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
+from pykotor.gl.scene import Scene
 from tools.module import moduleeditor_ui
 
 
@@ -22,6 +25,8 @@ class ModuleEditor(QMainWindow):
         self.ui = moduleeditor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
+
+        self.ui.mainRenderer.init(installation, module)
 
         self.hideCreatures = False
         self.hidePlaceables = False
@@ -170,18 +175,39 @@ class ModuleEditor(QMainWindow):
             self.ui.instanceList.addItem(item)
 
     def updateInstanceVisibility(self) -> None:
-        self.hideCreatures = not self.ui.viewCreatureCheck.isChecked()
-        self.hidePlaceables = not self.ui.viewPlaceableCheck.isChecked()
-        self.hideDoors = not self.ui.viewDoorCheck.isChecked()
-        self.hideTriggers = not self.ui.viewTriggerCheck.isChecked()
-        self.hideEncounters = not self.ui.viewEncounterCheck.isChecked()
-        self.hideWaypoints = not self.ui.viewWaypointCheck.isChecked()
-        self.hideSounds = not self.ui.viewSoundCheck.isChecked()
-        self.hideStores = not self.ui.viewStoreCheck.isChecked()
-        self.hideCameras = not self.ui.viewCameraCheck.isChecked()
+        self.hideCreatures = self.ui.mainRenderer.scene.hide_creatures = not self.ui.viewCreatureCheck.isChecked()
+        self.hidePlaceables = self.ui.mainRenderer.scene.hide_placeables = not self.ui.viewPlaceableCheck.isChecked()
+        self.hideDoors = self.ui.mainRenderer.scene.hide_doors = not self.ui.viewDoorCheck.isChecked()
+        self.hideTriggers = self.ui.mainRenderer.scene.hide_triggers = not self.ui.viewTriggerCheck.isChecked()
+        self.hideEncounters = self.ui.mainRenderer.scene.hide_encounters = not self.ui.viewEncounterCheck.isChecked()
+        self.hideWaypoints = self.ui.mainRenderer.scene.hide_waypoints = not self.ui.viewWaypointCheck.isChecked()
+        self.hideSounds = self.ui.mainRenderer.scene.hide_sounds = not self.ui.viewSoundCheck.isChecked()
+        self.hideStores = self.ui.mainRenderer.scene.hide_stores = not self.ui.viewStoreCheck.isChecked()
+        self.hideCameras = self.ui.mainRenderer.scene.hide_cameras = not self.ui.viewCameraCheck.isChecked()
         self.rebuildInstanceList()
 
 
 class ModuleRenderer(QOpenGLWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
+        self.scene: Optional[Scene] = None
+        self._module: Optional[Module] = None
+        self._installation: Optional[HTInstallation] = None
+        self._init = False
+
+    def init(self, installation: HTInstallation, module: Module) -> None:
+        self._installation = installation
+        self._module = module
+
+        QTimer.singleShot(33, self.loop)
+
+    def loop(self) -> None:
+        self.repaint()
+        QTimer.singleShot(33, self.loop)
+
+    def paintGL(self) -> None:
+        if not self._init:
+            self._init = True
+            self.scene = Scene(self._module, self._installation)
+
+        self.scene.render()
