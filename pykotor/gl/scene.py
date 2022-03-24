@@ -18,7 +18,8 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.formats.twoda import read_2da
-from pykotor.resource.generics.git import GIT
+from pykotor.resource.generics.git import GIT, GITPlaceable, GITCreature, GITDoor, GITTrigger, GITEncounter, \
+    GITWaypoint, GITSound, GITStore, GITCamera
 from pykotor.resource.type import ResourceType
 
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
@@ -63,6 +64,16 @@ class Scene:
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+
+        self.hide_creatures: bool = False
+        self.hide_placeables: bool = False
+        self.hide_doors: bool = False
+        self.hide_triggers: bool = False
+        self.hide_encounters: bool = False
+        self.hide_waypoints: bool = False
+        self.hide_sounds: bool = False
+        self.hide_stores: bool = False
+        self.hide_cameras: bool = False
 
     def buildCache(self, clearCache: bool = False) -> None:
         if clearCache:
@@ -166,10 +177,6 @@ class Scene:
 
     def render(self) -> None:
         self.buildCache()
-
-        for creature in self.git.creatures:
-            creature.bearing += 0.01
-
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -196,6 +203,25 @@ class Scene:
             obj.cube(self).draw(self.plain_shader, transform)
 
     def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
+        if isinstance(obj.data, GITCreature) and self.hide_creatures:
+            return
+        if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
+            return
+        if isinstance(obj.data, GITDoor) and self.hide_doors:
+            return
+        if isinstance(obj.data, GITTrigger) and self.hide_triggers:
+            return
+        if isinstance(obj.data, GITEncounter) and self.hide_encounters:
+            return
+        if isinstance(obj.data, GITWaypoint) and self.hide_waypoints:
+            return
+        if isinstance(obj.data, GITSound) and self.hide_sounds:
+            return
+        if isinstance(obj.data, GITStore) and self.hide_sounds:
+            return
+        if isinstance(obj.data, GITCamera) and self.hide_cameras:
+            return
+
         model = self.model(obj.model)
         model.draw(shader, transform * obj.transform())
         for child in obj.children:
