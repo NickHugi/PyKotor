@@ -1,9 +1,11 @@
+import math
 from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem
+from pykotor.common.geometry import Vector3
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
@@ -53,6 +55,8 @@ class ModuleEditor(QMainWindow):
         self.ui.viewWaypointCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewCameraCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
+
+        self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
@@ -185,6 +189,24 @@ class ModuleEditor(QMainWindow):
         self.hideStores = self.ui.mainRenderer.scene.hide_stores = not self.ui.viewStoreCheck.isChecked()
         self.hideCameras = self.ui.mainRenderer.scene.hide_cameras = not self.ui.viewCameraCheck.isChecked()
         self.rebuildInstanceList()
+
+    def onInstanceListDoubleClicked(self) -> None:
+
+        # Double clicked
+        if self.ui.instanceList.selectedItems():
+            item = self.ui.instanceList.selectedItems()[0]
+            instance: GITInstance = item.data(QtCore.Qt.UserRole)
+
+            camera = self.ui.mainRenderer.scene.camera
+            newCamPos = Vector3.from_vector3(instance.position)
+
+            ax = -math.cos(camera.yaw)*math.sin(camera.pitch)*math.sin(0) - math.sin(camera.yaw)*math.cos(0)
+            ay = -math.sin(camera.yaw)*math.sin(camera.pitch)*math.sin(0) + math.cos(camera.yaw)*math.cos(0)
+            az = math.cos(camera.pitch)*math.sin(0)
+            angleVec3 = Vector3(ax, ay, az).normal()
+
+            newCamPos -= angleVec3
+            camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z
 
 
 class ModuleRenderer(QOpenGLWidget):
