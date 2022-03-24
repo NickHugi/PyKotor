@@ -17,7 +17,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.lyt import LYT
-from pykotor.resource.formats.twoda import load_2da
+from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.generics.git import GIT
 from pykotor.resource.type import ResourceType
 
@@ -59,10 +59,10 @@ class Scene:
 
         self.jumpToEntryLocation()
 
-        self.table_doors = load_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_placeables = load_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_creatures = load_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_heads = load_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
     def buildCache(self, clearCache: bool = False) -> None:
         if clearCache:
@@ -98,6 +98,9 @@ class Scene:
                 position = vec3(door.position.x, door.position.y, door.position.z)
                 rotation = vec3(0, 0, door.bearing)
                 self.objects[door] = RenderObject(model_name, position, rotation, data=door)
+            else:
+                self.objects[door].set_position(door.position.x, door.position.y, door.position.z)
+                self.objects[door].set_rotation(0, 0, door.bearing)
 
         for placeable in self.git.placeables:
             if placeable not in self.objects:
@@ -106,6 +109,9 @@ class Scene:
                 position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
                 rotation = vec3(0, 0, placeable.bearing)
                 self.objects[placeable] = RenderObject(model_name, position, rotation, data=placeable)
+            else:
+                self.objects[placeable].set_position(placeable.position.x, placeable.position.y, placeable.position.z)
+                self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
         for creature in self.git.creatures:
             if creature not in self.objects:
@@ -124,6 +130,9 @@ class Scene:
                     head_obj = RenderObject(head_model)
                     head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
                     obj.children.append(head_obj)
+            else:
+                self.objects[creature].set_position(creature.position.x, creature.position.y, creature.position.z)
+                self.objects[creature].set_rotation(0, 0, creature.bearing)
 
         for waypoint in self.git.waypoints:
             if waypoint not in self.objects:
@@ -131,6 +140,9 @@ class Scene:
                 rotation = vec3(0, 0, waypoint.bearing)
                 obj = RenderObject("waypoint", position, rotation, data=waypoint)
                 self.objects[waypoint] = obj
+            else:
+                self.objects[waypoint].set_position(waypoint.position.x, waypoint.position.y, waypoint.position.z)
+                self.objects[waypoint].set_rotation(0, 0, waypoint.bearing)
 
         for store in self.git.stores:
             if store not in self.objects:
@@ -138,6 +150,9 @@ class Scene:
                 rotation = vec3(0, 0, store.bearing)
                 obj = RenderObject("store", position, rotation, data=store)
                 self.objects[store] = obj
+            else:
+                self.objects[store].set_position(store.position.x, store.position.y, store.position.z)
+                self.objects[store].set_rotation(0, 0, store.bearing)
 
         for sound in self.git.sounds:
             if sound not in self.objects:
@@ -145,9 +160,15 @@ class Scene:
                 rotation = vec3(0, 0, 0)
                 obj = RenderObject("sound", position, rotation, data=sound)
                 self.objects[sound] = obj
+            else:
+                self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
+                self.objects[sound].set_rotation(0, 0, 0)
 
     def render(self) -> None:
         self.buildCache()
+
+        for creature in self.git.creatures:
+            creature.bearing += 0.01
 
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -281,6 +302,9 @@ class RenderObject:
         return copy(self._position)
 
     def set_position(self, x: float, y: float, z: float) -> None:
+        if self._position.x == x and self._position.y == y and self._position.z == z:
+            return
+
         self._position = vec3(x, y, z)
         self._recalc_transform()
 
@@ -288,6 +312,9 @@ class RenderObject:
         return copy(self._rotation)
 
     def set_rotation(self, x: float, y: float, z: float) -> None:
+        if self._rotation.x == x and self._rotation.y == y and self._rotation.z == z:
+            return
+
         self._rotation = vec3(x, y, z)
         self._recalc_transform()
 
