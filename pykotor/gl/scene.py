@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import random
 from copy import copy
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 
 import glm
 from OpenGL.GL import glReadPixels
@@ -19,7 +19,7 @@ from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.generics.git import GIT, GITPlaceable, GITCreature, GITDoor, GITTrigger, GITEncounter, \
-    GITWaypoint, GITSound, GITStore, GITCamera
+    GITWaypoint, GITSound, GITStore, GITCamera, GITInstance
 from pykotor.resource.type import ResourceType
 
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
@@ -257,10 +257,17 @@ class Scene:
         instances = list(self.objects.values())
         return instances[pixel] if pixel != 0xFFFFFF else None
 
-    def select(self, obj: RenderObject, clear_existing: bool = True):
+    def select(self, target: Union[RenderObject, GITInstance], clear_existing: bool = True):
         if clear_existing:
             self.selection.clear()
-        self.selection.append(obj)
+
+        if isinstance(target, GITInstance):
+            for obj in self.objects.values():
+                if obj.data is target:
+                    target = obj
+                    break
+
+        self.selection.append(target)
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
