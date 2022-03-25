@@ -1,11 +1,11 @@
 import math
-from typing import Optional
+from typing import Optional, Set
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem
-from pykotor.common.geometry import Vector3
+from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
@@ -57,6 +57,10 @@ class ModuleEditor(QMainWindow):
         self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
 
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
+
+        self.ui.mainRenderer.mousePressed.connect(self.onMousePressed)
+        self.ui.mainRenderer.mouseMoved.connect(self.onMouseMoved)
+        self.ui.mainRenderer.mouseScrolled.connect(self.onMouseScrolled)
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
@@ -208,14 +212,44 @@ class ModuleEditor(QMainWindow):
             newCamPos -= angleVec3
             camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z
 
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+            self.ui.mainRenderer.panCamera(delta.x / 30, delta.y / 30, 0)
+        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+            self.ui.mainRenderer.rotateCamera(delta.x / 200, delta.y / 200)
+        ...
+
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if QtCore.Qt.Key_Control in keys:
+            self.ui.mainRenderer.panCamera(0, 0, delta.y / 50)
+
+    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        ...
+
 
 class ModuleRenderer(QOpenGLWidget):
+    mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
+    """Signal emitted when mouse is moved over the widget."""
+
+    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
+    """Signal emitted when mouse is scrolled over the widget."""
+
+    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    """Signal emitted when a mouse button is released after being pressed on the widget."""
+
+    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    """Signal emitted when a mouse button is pressed on the widget."""
+
     def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.scene: Optional[Scene] = None
         self._module: Optional[Module] = None
         self._installation: Optional[HTInstallation] = None
         self._init = False
+
+        self._keysDown: Set[int] = set()
+        self._mouseDown: Set[int] = set()
+        self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
 
     def init(self, installation: HTInstallation, module: Module) -> None:
         self._installation = installation
@@ -233,3 +267,62 @@ class ModuleRenderer(QOpenGLWidget):
             self.scene = Scene(self._module, self._installation)
 
         self.scene.render()
+
+    # region Camera Transformations
+    def panCamera(self, x: float, y: float, z: float) -> None:
+        """
+        Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
+        camera on the x/y plane.
+
+        Args:
+            x: Units to move the x coordinate.
+            y: Units to move the y coordinate.
+            z: Units to move the z coordinate.
+        """
+        forward = y * self.scene.camera.forward()
+        sideward = x * self.scene.camera.sideward()
+
+        self.scene.camera.x += (forward.x + sideward.x)
+        self.scene.camera.y += (forward.y + sideward.y)
+        self.scene.camera.z += z
+
+    def rotateCamera(self, yaw: float, pitch: float) -> None:
+        """
+        Rotates the camera by the angles (radians) specified.
+
+        Args:
+            yaw:
+            pitch:
+        """
+        self.scene.camera.rotate(yaw, pitch)
+
+
+    # endregion
+
+    # region Events
+    def wheelEvent(self, e: QWheelEvent) -> None:
+        self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
+
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        coords = Vector2(e.x(), e.y())
+        coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
+        self._mousePrev = coords
+        self.mouseMoved.emit(coords, coordsDelta, self._mouseDown, self._keysDown)
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        self._mouseDown.add(e.button())
+        coords = Vector2(e.x(), e.y())
+        self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
+
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+        self._mouseDown.discard(e.button())
+
+        coords = Vector2(e.x(), e.y())
+        self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
+
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        self._keysDown.add(e.key())
+
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        self._keysDown.discard(e.key())
+    # endregion

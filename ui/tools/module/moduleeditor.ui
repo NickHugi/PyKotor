@@ -381,7 +381,17 @@ QCheckBox::indicator:checked:hover {
        </widget>
       </item>
       <item>
-       <widget class="ModuleRenderer" name="mainRenderer"/>
+       <widget class="ModuleRenderer" name="mainRenderer">
+        <property name="mouseTracking">
+         <bool>true</bool>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::StrongFocus</enum>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QListWidget" name="instanceList">
