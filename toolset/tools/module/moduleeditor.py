@@ -204,7 +204,6 @@ class ModuleEditor(QMainWindow):
         self.rebuildInstanceList()
 
     def onInstanceListDoubleClicked(self) -> None:
-        # Double clicked
         if self.ui.instanceList.selectedItems():
             item = self.ui.instanceList.selectedItems()[0]
             instance: GITInstance = item.data(QtCore.Qt.UserRole)
@@ -218,8 +217,8 @@ class ModuleEditor(QMainWindow):
             az = math.cos(camera.pitch)*math.sin(0)
             angleVec3 = Vector3(ax, ay, az).normal()
 
-            newCamPos -= angleVec3
-            camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z
+            newCamPos -= angleVec3*2
+            camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z+1
 
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
