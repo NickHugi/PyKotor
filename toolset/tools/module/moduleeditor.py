@@ -13,7 +13,7 @@ from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GI
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from pykotor.gl.scene import Scene
+from pykotor.gl.scene import Scene, RenderObject
 from tools.module import moduleeditor_ui
 
 
@@ -58,9 +58,10 @@ class ModuleEditor(QMainWindow):
 
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
 
-        self.ui.mainRenderer.mousePressed.connect(self.onMousePressed)
-        self.ui.mainRenderer.mouseMoved.connect(self.onMouseMoved)
-        self.ui.mainRenderer.mouseScrolled.connect(self.onMouseScrolled)
+        self.ui.mainRenderer.mousePressed.connect(self.onRendererMousePressed)
+        self.ui.mainRenderer.mouseMoved.connect(self.onRendererMouseMoved)
+        self.ui.mainRenderer.mouseScrolled.connect(self.onRendererMouseScrolled)
+        self.ui.mainRenderer.objectSelected.connect(self.onRendererObjectSelected)
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
@@ -182,6 +183,14 @@ class ModuleEditor(QMainWindow):
             item.setData(QtCore.Qt.UserRole, instance)
             self.ui.instanceList.addItem(item)
 
+    def selectInstanceItemOnList(self, instance: GITInstance) -> None:
+        self.ui.instanceList.clearSelection()
+        for i in range(self.ui.instanceList.count()):
+            item = self.ui.instanceList.item(i)
+            data: GITInstance = item.data(QtCore.Qt.UserRole)
+            if data is instance:
+                item.setSelected(True)
+
     def updateInstanceVisibility(self) -> None:
         self.hideCreatures = self.ui.mainRenderer.scene.hide_creatures = not self.ui.viewCreatureCheck.isChecked()
         self.hidePlaceables = self.ui.mainRenderer.scene.hide_placeables = not self.ui.viewPlaceableCheck.isChecked()
@@ -195,11 +204,11 @@ class ModuleEditor(QMainWindow):
         self.rebuildInstanceList()
 
     def onInstanceListDoubleClicked(self) -> None:
-
         # Double clicked
         if self.ui.instanceList.selectedItems():
             item = self.ui.instanceList.selectedItems()[0]
             instance: GITInstance = item.data(QtCore.Qt.UserRole)
+            self.ui.mainRenderer.scene.select(instance)
 
             camera = self.ui.mainRenderer.scene.camera
             newCamPos = Vector3.from_vector3(instance.position)
@@ -212,19 +221,25 @@ class ModuleEditor(QMainWindow):
             newCamPos -= angleVec3
             camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             self.ui.mainRenderer.panCamera(delta.x / 30, delta.y / 30, 0)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             self.ui.mainRenderer.rotateCamera(delta.x / 200, delta.y / 200)
         ...
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onRendererMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
             self.ui.mainRenderer.panCamera(0, 0, delta.y / 50)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        ...
+    def onRendererMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+            self.ui.mainRenderer.doSelect = True
+
+    def onRendererObjectSelected(self, object: RenderObject) -> None:
+        data = object.data
+        if isinstance(data, GITInstance):
+            self.selectInstanceItemOnList(data)
 
 
 class ModuleRenderer(QOpenGLWidget):
@@ -240,6 +255,9 @@ class ModuleRenderer(QOpenGLWidget):
     mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
+    objectSelected = QtCore.pyqtSignal(object)
+    """Signal emitted when an object has been selected through the renderer."""
+
     def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.scene: Optional[Scene] = None
@@ -250,6 +268,8 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown: Set[int] = set()
         self._mouseDown: Set[int] = set()
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
+
+        self.doSelect: bool = False  # Set to true to select object at mouse pointer
 
     def init(self, installation: HTInstallation, module: Module) -> None:
         self._installation = installation
@@ -265,6 +285,12 @@ class ModuleRenderer(QOpenGLWidget):
         if not self._init:
             self._init = True
             self.scene = Scene(self._module, self._installation)
+
+        if self.doSelect:
+            self.doSelect = False
+            obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
+            self.scene.select(obj)
+            self.objectSelected.emit(obj)
 
         self.scene.render()
 
