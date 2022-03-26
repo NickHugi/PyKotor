@@ -10,6 +10,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.formats.lyt.lyt_auto import read_lyt
@@ -122,6 +123,8 @@ class Module:
             layout = self.layout().resource()
             for room in layout.rooms:
                 look_for.append(ResourceIdentifier(room.model, ResourceType.MDL))
+                look_for.append(ResourceIdentifier(room.model, ResourceType.MDX))
+                look_for.append(ResourceIdentifier(room.model, ResourceType.WOK))
         self.layout().activate(original)
 
         search = self._installation.locations(look_for, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
@@ -477,42 +480,25 @@ class ModuleResource(Generic[T]):
 
         if self._resource is None:
             conversions = {
-                ResourceType.UTC: (lambda
-                                           data: construct_utc(read_gff(data))),
-                ResourceType.UTP: (lambda
-                                           data: construct_utp(read_gff(data))),
-                ResourceType.UTD: (lambda
-                                           data: construct_utd(read_gff(data))),
-                ResourceType.UTI: (lambda
-                                           data: construct_uti(read_gff(data))),
-                ResourceType.UTM: (lambda
-                                           data: construct_utm(read_gff(data))),
-                ResourceType.UTE: (lambda
-                                           data: construct_ute(read_gff(data))),
-                ResourceType.UTT: (lambda
-                                           data: construct_utt(read_gff(data))),
-                ResourceType.UTW: (lambda
-                                           data: construct_utw(read_gff(data))),
-                ResourceType.UTS: (lambda
-                                           data: construct_uts(read_gff(data))),
-                ResourceType.DLG: (lambda
-                                           data: construct_dlg(read_gff(data))),
-                ResourceType.PTH: (lambda
-                                           data: construct_pth(read_gff(data))),
-                ResourceType.NCS: (lambda
-                                           data: data),
-                ResourceType.TPC: (lambda
-                                           data: read_tpc(data)),
-                ResourceType.LYT: (lambda
-                                           data: read_lyt(data)),
-                ResourceType.VIS: (lambda
-                                           data: read_vis(data)),
-                ResourceType.IFO: (lambda
-                                           data: construct_ifo(read_gff(data))),
-                ResourceType.ARE: (lambda
-                                           data: construct_are(read_gff(data))),
-                ResourceType.GIT: (lambda
-                                           data: construct_git(read_gff(data)))
+                ResourceType.UTC: (lambda data: construct_utc(read_gff(data))),
+                ResourceType.UTP: (lambda data: construct_utp(read_gff(data))),
+                ResourceType.UTD: (lambda data: construct_utd(read_gff(data))),
+                ResourceType.UTI: (lambda data: construct_uti(read_gff(data))),
+                ResourceType.UTM: (lambda data: construct_utm(read_gff(data))),
+                ResourceType.UTE: (lambda data: construct_ute(read_gff(data))),
+                ResourceType.UTT: (lambda data: construct_utt(read_gff(data))),
+                ResourceType.UTW: (lambda data: construct_utw(read_gff(data))),
+                ResourceType.UTS: (lambda data: construct_uts(read_gff(data))),
+                ResourceType.DLG: (lambda data: construct_dlg(read_gff(data))),
+                ResourceType.PTH: (lambda data: construct_pth(read_gff(data))),
+                ResourceType.NCS: (lambda data: data),
+                ResourceType.TPC: (lambda data: read_tpc(data)),
+                ResourceType.LYT: (lambda data: read_lyt(data)),
+                ResourceType.VIS: (lambda data: read_vis(data)),
+                ResourceType.IFO: (lambda data: construct_ifo(read_gff(data))),
+                ResourceType.ARE: (lambda data: construct_are(read_gff(data))),
+                ResourceType.GIT: (lambda data: construct_git(read_gff(data))),
+                ResourceType.WOK: (lambda data: read_bwm(data))
             }
 
             if self._active is None:
