@@ -4,6 +4,8 @@ import os.path
 from contextlib import suppress
 from typing import List, TypeVar, Generic, Optional, Dict, Any
 
+from pykotor.common.misc import CaseInsensitiveDict
+
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
@@ -46,8 +48,7 @@ class Module:
         self._root = root
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
-        self._capsules.extend(
-            [Capsule(installation.module_path() + module) for module in installation.module_names() if root in module])
+        self._capsules.extend([Capsule(installation.module_path() + module) for module in installation.module_names() if root in module])
 
         for capsule in self._capsules:
             if capsule.exists("module", ResourceType.IFO):
@@ -57,7 +58,7 @@ class Module:
         else:
             raise ValueError("Unable to locate module IFO file for '{}'.".format(root))
 
-        self.resources: Dict[str, ModuleResource] = {}
+        self.resources: CaseInsensitiveDict[ModuleResource] = CaseInsensitiveDict()
         self.reload_resources()
 
     @staticmethod
@@ -166,6 +167,14 @@ class Module:
             self
     ) -> Installation:
         return self._installation
+
+    def resource(
+            self,
+            resname: str,
+            restype: ResourceType
+    ) -> Optional[ModuleResource]:
+        filename = resname + "." + restype.extension
+        return self.resources[filename] if filename in self.resources else None
 
     def layout(
             self
@@ -410,6 +419,29 @@ class ModuleResource(Generic[T]):
         """
         return self._restype
 
+    def localized_name(
+            self
+    ) -> Optional[str]:
+        res = self.resource()
+        if res is None:
+            return None
+        elif isinstance(res, UTC):
+            return self._installation.string(res.first_name) + " " + self._installation.string(res.last_name)
+        elif isinstance(res, UTP):
+            return self._installation.string(res.name)
+        elif isinstance(res, UTD):
+            return self._installation.string(res.name)
+        elif isinstance(res, UTW):
+            return self._installation.string(res.name)
+        elif isinstance(res, UTT):
+            return self._installation.string(res.name)
+        elif isinstance(res, UTE):
+            return self._installation.string(res.name)
+        elif isinstance(res, UTM):
+            return self._installation.string(res.name)
+        else:
+            return None
+
     def data(
             self
     ) -> bytes:
@@ -423,7 +455,7 @@ class ModuleResource(Generic[T]):
             The bytes data of the active file.
         """
 
-        if self.active is None:
+        if self._active is None:
             raise ValueError("No file is currently active for resource '{}.{}'.".format(self.resname, self._restype.extension))
         elif self._active.endswith(".erf") or self._active.endswith(".mod") or self._active.endswith(".rim"):
             capsule = Capsule(self._active)
@@ -435,7 +467,7 @@ class ModuleResource(Generic[T]):
 
     def resource(
             self
-    ) -> T:
+    ) -> Optional[T]:
         """
         Returns the cached resource object. If no object has been cached, then it will load the object.
 
