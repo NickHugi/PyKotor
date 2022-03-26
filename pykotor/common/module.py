@@ -17,20 +17,20 @@ from pykotor.resource.formats.lyt.lyt_auto import read_lyt
 from pykotor.resource.formats.mdl import MDL
 from pykotor.resource.formats.tpc import read_tpc
 from pykotor.resource.formats.vis import read_vis, VIS
-from pykotor.resource.generics.are import ARE, construct_are
-from pykotor.resource.generics.dlg import construct_dlg
-from pykotor.resource.generics.git import GIT, construct_git
-from pykotor.resource.generics.ifo import IFO, construct_ifo
-from pykotor.resource.generics.pth import construct_pth
-from pykotor.resource.generics.utc import UTC, construct_utc
-from pykotor.resource.generics.utd import UTD, construct_utd
-from pykotor.resource.generics.ute import UTE, construct_ute
-from pykotor.resource.generics.uti import UTI, construct_uti
-from pykotor.resource.generics.utm import UTM, construct_utm
-from pykotor.resource.generics.utp import UTP, construct_utp
-from pykotor.resource.generics.uts import construct_uts
-from pykotor.resource.generics.utt import UTT, construct_utt
-from pykotor.resource.generics.utw import UTW, construct_utw
+from pykotor.resource.generics.are import ARE, construct_are, read_are
+from pykotor.resource.generics.dlg import construct_dlg, read_dlg
+from pykotor.resource.generics.git import GIT, construct_git, read_git
+from pykotor.resource.generics.ifo import IFO, construct_ifo, read_ifo
+from pykotor.resource.generics.pth import construct_pth, read_pth
+from pykotor.resource.generics.utc import UTC, construct_utc, read_utc
+from pykotor.resource.generics.utd import UTD, construct_utd, read_utd
+from pykotor.resource.generics.ute import UTE, construct_ute, read_ute
+from pykotor.resource.generics.uti import UTI, construct_uti, read_uti
+from pykotor.resource.generics.utm import UTM, construct_utm, read_utm
+from pykotor.resource.generics.utp import UTP, construct_utp, read_utp
+from pykotor.resource.generics.uts import construct_uts, read_uts
+from pykotor.resource.generics.utt import UTT, construct_utt, read_utt
+from pykotor.resource.generics.utw import UTW, construct_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.model import list_textures
 
@@ -480,24 +480,24 @@ class ModuleResource(Generic[T]):
 
         if self._resource is None:
             conversions = {
-                ResourceType.UTC: (lambda data: construct_utc(read_gff(data))),
-                ResourceType.UTP: (lambda data: construct_utp(read_gff(data))),
-                ResourceType.UTD: (lambda data: construct_utd(read_gff(data))),
-                ResourceType.UTI: (lambda data: construct_uti(read_gff(data))),
-                ResourceType.UTM: (lambda data: construct_utm(read_gff(data))),
-                ResourceType.UTE: (lambda data: construct_ute(read_gff(data))),
-                ResourceType.UTT: (lambda data: construct_utt(read_gff(data))),
-                ResourceType.UTW: (lambda data: construct_utw(read_gff(data))),
-                ResourceType.UTS: (lambda data: construct_uts(read_gff(data))),
-                ResourceType.DLG: (lambda data: construct_dlg(read_gff(data))),
-                ResourceType.PTH: (lambda data: construct_pth(read_gff(data))),
+                ResourceType.UTC: (lambda data: read_utc(data)),
+                ResourceType.UTP: (lambda data: read_utp(data)),
+                ResourceType.UTD: (lambda data: read_utd(data)),
+                ResourceType.UTI: (lambda data: read_uti(data)),
+                ResourceType.UTM: (lambda data: read_utm(data)),
+                ResourceType.UTE: (lambda data: read_ute(data)),
+                ResourceType.UTT: (lambda data: read_utt(data)),
+                ResourceType.UTW: (lambda data: read_utw(data)),
+                ResourceType.UTS: (lambda data: read_uts(data)),
+                ResourceType.DLG: (lambda data: read_dlg(data)),
+                ResourceType.PTH: (lambda data: read_pth(data)),
                 ResourceType.NCS: (lambda data: data),
                 ResourceType.TPC: (lambda data: read_tpc(data)),
                 ResourceType.LYT: (lambda data: read_lyt(data)),
                 ResourceType.VIS: (lambda data: read_vis(data)),
-                ResourceType.IFO: (lambda data: construct_ifo(read_gff(data))),
-                ResourceType.ARE: (lambda data: construct_are(read_gff(data))),
-                ResourceType.GIT: (lambda data: construct_git(read_gff(data))),
+                ResourceType.IFO: (lambda data: read_ifo(data)),
+                ResourceType.ARE: (lambda data: read_are(data)),
+                ResourceType.GIT: (lambda data: read_git(data)),
                 ResourceType.WOK: (lambda data: read_bwm(data))
             }
 
