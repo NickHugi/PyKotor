@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
+from pykotor.resource.formats.bwm import BWMFace
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
     GITSound, GITStore, GITCamera, GITInstance
 from pykotor.resource.type import ResourceType
@@ -30,15 +31,17 @@ class ModuleEditor(QMainWindow):
 
         self.ui.mainRenderer.init(installation, module)
 
-        self.hideCreatures = False
-        self.hidePlaceables = False
-        self.hideDoors = False
-        self.hideTriggers = False
-        self.hideEncounters = False
-        self.hideWaypoints = False
-        self.hideSounds = False
-        self.hideStores = False
-        self.hideCameras = False
+        self.hideCreatures:bool = False
+        self.hidePlaceables:bool = False
+        self.hideDoors:bool = False
+        self.hideTriggers:bool = False
+        self.hideEncounters:bool = False
+        self.hideWaypoints:bool = False
+        self.hideSounds:bool = False
+        self.hideStores:bool = False
+        self.hideCameras:bool = False
+
+        self.snapToWalkmesh: bool = True
 
         self.rebuildResourceTree()
         self.rebuildInstanceList()
@@ -222,10 +225,36 @@ class ModuleEditor(QMainWindow):
 
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+            # Move the camera (Ctrl + LMB)
             self.ui.mainRenderer.panCamera(delta.x / 30, delta.y / 30, 0)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+            # Rotate the camera (Ctrl + MMB)
             self.ui.mainRenderer.rotateCamera(delta.x / 200, delta.y / 200)
-        ...
+        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+            # Translate the selected object (LMB)
+            for obj in self.ui.mainRenderer.scene.selection:
+                forward = self.ui.mainRenderer.scene.camera.forward() * -delta.y
+                sideward = self.ui.mainRenderer.scene.camera.sideward() * -delta.x
+
+                x = obj.data.position.x + (forward.x + sideward.x)/40
+                y = obj.data.position.y + (forward.y + sideward.y)/40
+
+                face: Optional[BWMFace] = None
+                for walkmesh in [res.resource() for res in self._module.resources.values() if res.restype() == ResourceType.WOK]:
+                    if over := walkmesh.faceAt(x, y):
+                        if face is None:
+                            face = over
+                        elif not face.material.walkable() and over.material.walkable():
+                            face = over
+                z = obj.data.position.z if face is None else face.determine_z(x, y)
+
+                instance: GITInstance = obj.data
+                instance.position = Vector3(x, y, z)
+        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
+            # Rotate the selected object (MMB)
+            for obj in self.ui.mainRenderer.scene.selection:
+                instance: GITInstance = obj.data
+                instance.rotate(delta.x/80, 0, 0)
 
     def onRendererMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
@@ -237,8 +266,7 @@ class ModuleEditor(QMainWindow):
 
     def onRendererObjectSelected(self, object: RenderObject) -> None:
         data = object.data
-        if isinstance(data, GITInstance):
-            self.selectInstanceItemOnList(data)
+        self.selectInstanceItemOnList(data)
 
 
 class ModuleRenderer(QOpenGLWidget):
@@ -288,8 +316,9 @@ class ModuleRenderer(QOpenGLWidget):
         if self.doSelect:
             self.doSelect = False
             obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
-            self.scene.select(obj)
-            self.objectSelected.emit(obj)
+            if isinstance(obj.data, GITInstance):
+                self.scene.select(obj)
+                self.objectSelected.emit(obj)
 
         self.scene.render()
 
@@ -320,8 +349,6 @@ class ModuleRenderer(QOpenGLWidget):
             pitch:
         """
         self.scene.camera.rotate(yaw, pitch)
-
-
     # endregion
 
     # region Events
