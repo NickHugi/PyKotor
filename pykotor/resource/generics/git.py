@@ -185,6 +185,12 @@ class GITInstance(ABC):
         ...
 
     @abstractmethod
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        ...
+
+    @abstractmethod
     def move(
             self,
             x: float,
@@ -249,6 +255,11 @@ class GITCamera(GITInstance):
     ) -> Optional[ResRef]:
         return None
 
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return None
+
     def classification(
             self
     ) -> str:
@@ -290,6 +301,11 @@ class GITCreature(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTC
 
     def classification(
             self
@@ -344,6 +360,11 @@ class GITDoor(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTD
 
     def classification(
             self
@@ -401,6 +422,11 @@ class GITEncounter(GITInstance):
     ) -> Optional[ResRef]:
         return self.resref
 
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTE
+
     def classification(
             self
     ) -> str:
@@ -444,6 +470,11 @@ class GITPlaceable(GITInstance):
     ) -> Optional[ResRef]:
         return self.resref
 
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTP
+
     def classification(
             self
     ) -> str:
@@ -479,6 +510,11 @@ class GITSound(GITInstance):
             roll: float
     ) -> None:
         raise ValueError("Sounds cannot be rotated.")
+
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTS
 
     def reference(
             self
@@ -526,7 +562,12 @@ class GITStore(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
-
+    
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTM
+    
     def classification(
             self
     ) -> str:
@@ -574,6 +615,11 @@ class GITTrigger(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTT
 
     def classification(
             self
@@ -632,6 +678,11 @@ class GITWaypoint(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def extension(
+            self
+    ) -> Optional[ResourceType]:
+        return ResourceType.UTW
 
     def classification(
             self
