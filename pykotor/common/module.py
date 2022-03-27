@@ -32,7 +32,7 @@ from pykotor.resource.generics.uts import construct_uts, read_uts
 from pykotor.resource.generics.utt import UTT, construct_utt, read_utt
 from pykotor.resource.generics.utw import UTW, construct_utw, read_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.model import list_textures
+from pykotor.tools.model import list_textures, list_lightmaps
 
 T = TypeVar('T')
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES, SearchLocation.CHITIN]
@@ -139,6 +139,8 @@ class Module:
                 data = model.data()
                 for texture in list_textures(data):
                     textures.add(texture)
+                for lightmap in list_lightmaps(data):
+                    textures.add(lightmap)
         for texture in textures:
             look_for.append(ResourceIdentifier(texture, ResourceType.TPC))
             look_for.append(ResourceIdentifier(texture, ResourceType.TGA))
