@@ -12,6 +12,7 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST,
     glDisable, GL_CULL_FACE, GL_CW, GL_BACK, glCullFace
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
+from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
@@ -42,12 +43,14 @@ class Scene:
         glCullFace(GL_BACK)
 
         self.installation: Installation = installation
-        self.textures: Dict[str, Texture] = {"NULL": Texture.from_color()}
-        self.models: Dict[str, Model] = {}
+        self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
+        self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
         self.objects: List[RenderObject] = []
         self.selection: List[RenderObject] = []
         self.module: Module = module
         self.camera: Camera = Camera()
+
+        self.textures["NULL"] = Texture.from_color()
 
         self.git: Optional[GIT] = None
         self.layout: Optional[LYT] = None
