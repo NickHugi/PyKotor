@@ -283,9 +283,10 @@ class ModuleEditor(QMainWindow):
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
             self.ui.mainRenderer.doSelect = True
 
-    def onRendererObjectSelected(self, object: RenderObject) -> None:
-        data = object.data
-        self.selectInstanceItemOnList(data)
+    def onRendererObjectSelected(self, obj: RenderObject) -> None:
+        if obj is not None:
+            data = obj.data
+            self.selectInstanceItemOnList(data)
 
 
 class ModuleRenderer(QOpenGLWidget):
@@ -335,9 +336,13 @@ class ModuleRenderer(QOpenGLWidget):
         if self.doSelect:
             self.doSelect = False
             obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
+
             if isinstance(obj.data, GITInstance):
                 self.scene.select(obj)
                 self.objectSelected.emit(obj)
+            else:
+                self.scene.selection.clear()
+                self.objectSelected.emit(None)
 
         self.scene.render()
 
