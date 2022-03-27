@@ -3,7 +3,7 @@ from typing import Optional, Set
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent
+from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
     QMessageBox
 from pykotor.common.geometry import Vector3, Vector2
@@ -376,6 +376,10 @@ class ModuleRenderer(QOpenGLWidget):
     # endregion
 
     # region Events
+    def resizeEvent(self, e: QResizeEvent) -> None:
+        super().resizeEvent(e)
+        self.scene.camera.aspect = e.size().width() / e.size().height()
+        
     def wheelEvent(self, e: QWheelEvent) -> None:
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
 
