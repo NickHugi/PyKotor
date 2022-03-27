@@ -556,6 +556,23 @@ class ModuleResource(Generic[T]):
         else:
             raise ValueError("The filepath '{}' is not being tracked as a location for the resource.".format(self._active))
 
+    def unload(
+            self
+    ) -> None:
+        """
+        Clears the cached resource object from memory.
+        """
+        self._resource = None
+
+    def reload(
+            self
+    ) -> None:
+        """
+        Reloads the resource object from the active location.
+        """
+        self._resource = None
+        self.resource()
+
     def active(
             self
     ) -> Optional[str]:
