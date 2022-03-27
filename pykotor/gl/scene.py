@@ -89,6 +89,10 @@ class Scene:
             for door in copy(self.git.doors):
                 if door.resref.get() == identifier.resname and identifier.restype == ResourceType.UTD:
                     del self.objects[door]
+            if identifier.restype in [ResourceType.TPC, ResourceType.TGA]:
+                del self.textures[identifier.resname]
+            if identifier.restype in [ResourceType.MDL, ResourceType.MDX]:
+                del self.models[identifier.resname]
         self.clearCacheBuffer = []
 
         if self.git is None:
