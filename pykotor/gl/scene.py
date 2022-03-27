@@ -271,9 +271,13 @@ class Scene:
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
+            # Check the textures linked to the module first
+            tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
+            # Otherwise just search through all relevant game files
             tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA,
-                                                   SearchLocation.CHITIN])
-            self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(255, 255, 255)
+                                                   SearchLocation.CHITIN]) if tpc is None else tpc
+
+            self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(255, 0, 255)
         return self.textures[name]
 
     def model(self, name: str) -> Model:
