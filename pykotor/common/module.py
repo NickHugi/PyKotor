@@ -15,7 +15,7 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.formats.lyt.lyt_auto import read_lyt
 from pykotor.resource.formats.mdl import MDL
-from pykotor.resource.formats.tpc import read_tpc
+from pykotor.resource.formats.tpc import read_tpc, TPC
 from pykotor.resource.formats.vis import read_vis, VIS
 from pykotor.resource.generics.are import ARE, construct_are, read_are
 from pykotor.resource.generics.dlg import construct_dlg, read_dlg
@@ -387,6 +387,24 @@ class Module:
                 models.append(resource)
         return models
 
+    def texture(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[TPC]]:
+        for resource in self.resources.values():
+            if resname.lower() == resource.resname().lower() and resource.restype() in [ResourceType.TPC, ResourceType.TGA]:
+                return resource
+        return None
+
+    def textures(
+            self
+    ) -> List[ModuleResource[MDL]]:
+        textures = []
+        for resource in self.resources.values():
+            if resource.restype() in [ResourceType.TPC, ResourceType.TGA]:
+                textures.append(resource)
+        return textures
+
 
 class ModuleResource(Generic[T]):
     def __init__(
@@ -495,6 +513,7 @@ class ModuleResource(Generic[T]):
                 ResourceType.PTH: (lambda data: read_pth(data)),
                 ResourceType.NCS: (lambda data: data),
                 ResourceType.TPC: (lambda data: read_tpc(data)),
+                ResourceType.TGA: (lambda data: read_tpc(data)),
                 ResourceType.LYT: (lambda data: read_lyt(data)),
                 ResourceType.VIS: (lambda data: read_vis(data)),
                 ResourceType.IFO: (lambda data: read_ifo(data)),
