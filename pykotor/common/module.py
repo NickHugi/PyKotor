@@ -161,7 +161,10 @@ class Module:
             restype: ResourceType,
             locations: List[str]
     ):
-        filename = "{}.{}".format(resname, restype)
+        # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
+        # instead of the .TGA for the dictionary key.
+        filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
+        filename = "{}.{}".format(resname, filename_ext)
         if filename in self.resources:
             self.resources[filename].add_locations(locations)
         else:
