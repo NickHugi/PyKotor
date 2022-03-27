@@ -4,10 +4,12 @@ from typing import Optional, Set
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent
-from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem
+from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
+    QMessageBox
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm import BWMFace
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
     GITSound, GITStore, GITCamera, GITInstance
@@ -110,13 +112,30 @@ class ModuleEditor(QMainWindow):
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource) -> None:
-        self.parent().openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data())
+        editor = self.parent().openResourceEditor(resource.active(), resource.resname(), resource.restype(),
+                                                  resource.data(), noExternal=True)[1]
+
+        if editor is None:
+            QMessageBox(QMessageBox.Critical,
+                        "Failed to open editor",
+                        "Failed to open editor for file: {}.{}".format(resource.resname(), resource.restype().extension))
+        else:
+            editor.savedFile.connect(lambda: self._onSavedResource(resource))
+
+    def _onSavedResource(self, resource: ModuleResource) -> None:
+        resource.reload()
+        self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
     def copyResourceToOverride(self, resource: ModuleResource) -> None:
         location = "{}/{}.{}".format(self._installation.override_path(), resource.resname(), resource.restype().extension)
         BinaryWriter.dump(location, resource.data())
         resource.add_locations([location])
         resource.activate(location)
+        self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
+
+    def activateResourceFile(self, resource: ModuleResource, location: str) -> None:
+        resource.activate(location)
+        self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
     def onResourceTreeContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self)
@@ -131,7 +150,7 @@ class ModuleEditor(QMainWindow):
             menu.addSeparator()
             for location in data.locations():
                 locationAciton = QAction(location, self)
-                locationAciton.triggered.connect(lambda _, l=location: data.activate(l))
+                locationAciton.triggered.connect(lambda _, l=location: self.activateResourceFile(data, l))
                 if location == data.active():
                     locationAciton.setEnabled(False)
                 if "override" in location.lower():
