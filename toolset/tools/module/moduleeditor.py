@@ -146,6 +146,7 @@ class ModuleEditor(QMainWindow):
             copyToOverrideAction.triggered.connect(lambda _, r=data: self.copyResourceToOverride(r))
 
             menu.addAction("Edit Active File").triggered.connect(lambda _, r=data: self.openModuleResource(r))
+            menu.addAction("Reload Active File").triggered.connect(lambda _: data.reload())
             menu.addAction(copyToOverrideAction)
             menu.addSeparator()
             for location in data.locations():
