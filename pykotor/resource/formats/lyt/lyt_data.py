@@ -48,6 +48,11 @@ class LYTRoom:
     ):
         return self.model == other.model and self.position == other.position
 
+    def __hash__(
+            self
+    ):
+        return hash(self.model)
+
 
 class LYTTrack:
     """
