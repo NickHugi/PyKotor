@@ -159,6 +159,20 @@ class ModuleEditor(QMainWindow):
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
+    def selectResouceItem(self, instance: GITInstance, clearExisting: bool = True) -> None:
+        if clearExisting:
+            self.ui.resourceTree.clearSelection()
+
+        for i in range(self.ui.resourceTree.topLevelItemCount()):
+            parent = self.ui.resourceTree.topLevelItem(i)
+            for j in range(parent.childCount()):
+                item = parent.child(j)
+                res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
+                if res.resname() == instance.reference() and res.restype() == instance.extension():
+                    parent.setExpanded(True)
+                    item.setSelected(True)
+                    self.ui.resourceTree.scrollToItem(item)
+
     def onResourceTreeContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self)
 
@@ -235,6 +249,7 @@ class ModuleEditor(QMainWindow):
             data: GITInstance = item.data(QtCore.Qt.UserRole)
             if data is instance:
                 item.setSelected(True)
+                self.ui.instanceList.scrollToItem(item)
 
     def onInstanceVisiblityDoubleClick(self, checkbox: QCheckBox) -> None:
         """
@@ -270,6 +285,8 @@ class ModuleEditor(QMainWindow):
             item = self.ui.instanceList.selectedItems()[0]
             instance: GITInstance = item.data(QtCore.Qt.UserRole)
             self.ui.mainRenderer.scene.select(instance)
+
+            self.selectResouceItem(item.data(QtCore.Qt.UserRole))
 
             camera = self.ui.mainRenderer.scene.camera
             newCamPos = Vector3.from_vector3(instance.position)
@@ -338,6 +355,7 @@ class ModuleEditor(QMainWindow):
         if obj is not None:
             data = obj.data
             self.selectInstanceItemOnList(data)
+            self.selectResouceItem(data)
 
     def onRendererContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self)
