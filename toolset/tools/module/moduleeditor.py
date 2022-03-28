@@ -60,6 +60,8 @@ class ModuleEditor(QMainWindow):
         self.rebuildInstanceList()
 
     def _setupSignals(self) -> None:
+        self.ui.actionSave.triggered.connect(self.saveGit)
+
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceTreeContextMenu)
 
         self.ui.viewCreatureCheck.toggled.connect(self.updateInstanceVisibility)
@@ -89,6 +91,9 @@ class ModuleEditor(QMainWindow):
         self.ui.mainRenderer.mouseScrolled.connect(self.onRendererMouseScrolled)
         self.ui.mainRenderer.objectSelected.connect(self.onRendererObjectSelected)
         self.ui.mainRenderer.customContextMenuRequested.connect(self.onRendererContextMenu)
+
+    def saveGit(self) -> None:
+        self._module.git().save()
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
