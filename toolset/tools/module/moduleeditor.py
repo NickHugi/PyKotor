@@ -295,6 +295,7 @@ class ModuleEditor(QMainWindow):
                 self._module.git().resource().add(instance)
         else:
             self._module.git().resource().add(instance)
+        self.rebuildInstanceList()
 
     def removeSelectedInstances(self) -> None:
         for selected in self.ui.mainRenderer.scene.selection:
