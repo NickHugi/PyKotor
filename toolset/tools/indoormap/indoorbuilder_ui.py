@@ -34,7 +34,7 @@ class Ui_MainWindow(object):
         self.gridLayout.setObjectName("gridLayout")
         self.componentImage = QtWidgets.QLabel(self.groupBox)
         self.componentImage.setMinimumSize(QtCore.QSize(128, 128))
-        self.componentImage.setMaximumSize(QtCore.QSize(128, 16777215))
+        self.componentImage.setMaximumSize(QtCore.QSize(128, 128))
         self.componentImage.setText("")
         self.componentImage.setScaledContents(True)
         self.componentImage.setObjectName("componentImage")
