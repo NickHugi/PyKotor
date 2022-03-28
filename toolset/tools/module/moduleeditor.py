@@ -5,19 +5,30 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
-    QMessageBox
+    QMessageBox, QDialog, QDialogButtonBox
 from pykotor.common.geometry import Vector3, Vector2
+from pykotor.common.misc import ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm import BWMFace
+from pykotor.resource.formats.erf import read_erf, write_erf
+from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
     GITSound, GITStore, GITCamera, GITInstance
+from pykotor.resource.generics.utc import bytes_utc, UTC
+from pykotor.resource.generics.utd import bytes_utd, UTD
+from pykotor.resource.generics.ute import bytes_ute, UTE
+from pykotor.resource.generics.utm import UTM, bytes_utm
+from pykotor.resource.generics.utp import bytes_utp, UTP
+from pykotor.resource.generics.uts import bytes_uts, UTS
+from pykotor.resource.generics.utt import bytes_utt, UTT
+from pykotor.resource.generics.utw import bytes_utw, UTW
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from pykotor.gl.scene import Scene, RenderObject
-from tools.module import moduleeditor_ui
+from tools.module import moduleeditor_ui, insert_instance_ui
 
 
 class ModuleEditor(QMainWindow):
@@ -67,6 +78,7 @@ class ModuleEditor(QMainWindow):
         self.ui.mainRenderer.mouseMoved.connect(self.onRendererMouseMoved)
         self.ui.mainRenderer.mouseScrolled.connect(self.onRendererMouseScrolled)
         self.ui.mainRenderer.objectSelected.connect(self.onRendererObjectSelected)
+        self.ui.mainRenderer.customContextMenuRequested.connect(self.onRendererContextMenu)
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
@@ -243,6 +255,25 @@ class ModuleEditor(QMainWindow):
             newCamPos -= angleVec3*2
             camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z+1
 
+    def addInstance(self, instance: GITInstance) -> None:
+        instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y,
+                                                                 self.ui.mainRenderer.scene.camera.z).z
+
+        if not isinstance(instance, GITCamera):
+            dialog = InsertInstanceDialog(self, self._installation, self._module, instance.extension())
+
+            if dialog.exec_():
+                self.rebuildResourceTree()
+                instance.resref = ResRef(dialog.resname)
+                self._module.git().resource().add(instance)
+        else:
+            self._module.git().resource().add(instance)
+
+    def removeSelectedInstances(self) -> None:
+        for selected in self.ui.mainRenderer.scene.selection:
+            if isinstance(selected.data, GITInstance):
+                self._module.git().resource().remove(selected.data)
+
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             # Move the camera (Ctrl + LMB)
@@ -259,17 +290,8 @@ class ModuleEditor(QMainWindow):
                 x = obj.data.position.x + (forward.x + sideward.x)/40
                 y = obj.data.position.y + (forward.y + sideward.y)/40
 
-                face: Optional[BWMFace] = None
-                for walkmesh in [res.resource() for res in self._module.resources.values() if res.restype() == ResourceType.WOK]:
-                    if over := walkmesh.faceAt(x, y):
-                        if face is None:
-                            face = over
-                        elif not face.material.walkable() and over.material.walkable():
-                            face = over
-                z = obj.data.position.z if face is None else face.determine_z(x, y)
-
                 instance: GITInstance = obj.data
-                instance.position = Vector3(x, y, z)
+                instance.position = self.ui.mainRenderer.walkmeshPoint(x, y, obj.data.position.z)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
             # Rotate the selected object (MMB)
             for obj in self.ui.mainRenderer.scene.selection:
@@ -288,6 +310,25 @@ class ModuleEditor(QMainWindow):
         if obj is not None:
             data = obj.data
             self.selectInstanceItemOnList(data)
+
+    def onRendererContextMenu(self, point: QPoint) -> None:
+        menu = QMenu(self)
+        world = self.ui.mainRenderer.walkmeshPoint(self.ui.mainRenderer.scene.camera.x, self.ui.mainRenderer.scene.camera.y)
+
+        if len(self.ui.mainRenderer.scene.selection) == 0:
+            menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y)))
+            menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y)))
+            menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(world.x, world.y)))
+            menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(world.x, world.y)))
+            menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(world.x, world.y)))
+            menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(world.x, world.y)))
+            menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(world.x, world.y)))
+            menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(world.x, world.y)))
+            menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(world.x, world.y)))
+        else:
+            menu.addAction("Remove").triggered.connect(self.removeSelectedInstances)
+
+        menu.popup(self.ui.mainRenderer.mapToGlobal(point))
 
 
 class ModuleRenderer(QOpenGLWidget):
@@ -328,6 +369,18 @@ class ModuleRenderer(QOpenGLWidget):
     def loop(self) -> None:
         self.repaint()
         QTimer.singleShot(33, self.loop)
+
+    def walkmeshPoint(self, x: float, y: float, default_z: float = 0.0) -> Vector3:
+        face: Optional[BWMFace] = None
+        for walkmesh in [res.resource() for res in self._module.resources.values() if
+                         res.restype() == ResourceType.WOK]:
+            if over := walkmesh.faceAt(x, y):
+                if face is None:
+                    face = over
+                elif not face.material.walkable() and over.material.walkable():
+                    face = over
+        z = default_z if face is None else face.determine_z(x, y)
+        return Vector3(x, y, z)
 
     def paintGL(self) -> None:
         if not self._init:
@@ -407,3 +460,89 @@ class ModuleRenderer(QOpenGLWidget):
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
     # endregion
+
+
+class InsertInstanceDialog(QDialog):
+    def __init__(self, parent: QWidget, installation: HTInstallation, module: Module, restype: ResourceType):
+        super().__init__(parent)
+
+        self._installation: HTInstallation = installation
+        self._module: Module = module
+        self._restype: ResourceType = restype
+
+        self.resname: str = ""
+        self.data: bytes = b''
+        self.filepath: str = ""
+
+        self.ui = insert_instance_ui.Ui_Dialog()
+        self.ui.setupUi(self)
+        self._setupSignals()
+        self._setupSelect()
+        self._setupList()
+
+    def _setupSignals(self) -> None:
+        self.ui.templateCheck.toggled.connect(self.onTemplateCheckToggled)
+        self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
+
+    def _setupSelect(self) -> None:
+        self.ui.locationSelect.addItem(self._installation.override_path())
+        for capsule in self._module.capsules():
+            self.ui.locationSelect.addItem(capsule.path())
+
+    def _setupList(self) -> None:
+        for resource in self._installation.chitin_resources():
+            if resource.restype() == self._restype:
+                item = QListWidgetItem(resource.resname())
+                item.setData(QtCore.Qt.UserRole, resource)
+                self.ui.templateList.addItem(item)
+        if self.ui.templateList.count() > 0:
+            self.ui.templateList.item(0).setSelected(True)
+        self.ui.templateCheck.setChecked(self.ui.templateList.count() > 0)
+
+    def accept(self) -> None:
+        super().accept()
+
+        if self.ui.templateCheck.isChecked():
+            self.data = self.ui.templateList.selectedItems()[0].data(QtCore.Qt.UserRole).data()
+        elif self._restype == ResourceType.UTC:
+            self.data = bytes_utc(UTC())
+        elif self._restype == ResourceType.UTP:
+            self.data = bytes_utp(UTP())
+        elif self._restype == ResourceType.UTD:
+            self.data = bytes_utd(UTD())
+        elif self._restype == ResourceType.UTE:
+            self.data = bytes_ute(UTE())
+        elif self._restype == ResourceType.UTT:
+            self.data = bytes_utt(UTT())
+        elif self._restype == ResourceType.UTS:
+            self.data = bytes_uts(UTS())
+        elif self._restype == ResourceType.UTM:
+            self.data = bytes_utm(UTM())
+        elif self._restype == ResourceType.UTW:
+            self.data = bytes_utw(UTW())
+        else:
+            self.data = b''
+
+        self.resname = self.ui.resrefEdit.text()
+        self.filepath = self.ui.locationSelect.currentText()
+
+        if self.filepath.endswith(".erf") or self.filepath.endswith(".mod"):
+            erf = read_erf(self.filepath)
+            erf.set(self.resname, self._restype, self.data)
+            write_erf(erf, self.filepath)
+        elif self.filepath.endswith(".rim"):
+            rim = read_rim(self.filepath)
+            rim.set(self.resname, self._restype, self.data)
+            write_rim(rim, self.filepath)
+        else:
+            self.filepath = "{}/{}.{}".format(self.filepath, self.resname, self._restype.extension)
+            BinaryWriter.dump(self.filepath, self.data)
+
+        self._module.add_locations(self.resname, self._restype, [self.filepath])
+
+    def onTemplateCheckToggled(self, checked: bool) -> None:
+        self.ui.templateList.setEnabled(checked)
+
+    def onResRefEdited(self, text: str) -> None:
+        valid = self._module.resource(text, self._restype) is None and text != ""
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(valid)
