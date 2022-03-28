@@ -448,6 +448,9 @@ class RenderObject:
         self._rotation = vec3(x, y, z)
         self._recalc_transform()
 
+    def reset_cube(self) -> None:
+        self._cube = None
+
     def cube(self, scene: Scene) -> Cube:
         if not self._cube:
             min_point = vec3(10000, 10000, 10000)
