@@ -182,6 +182,27 @@ class Scene:
                 self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
                 self.objects[sound].set_rotation(0, 0, 0)
 
+        # Detect if GIT still exists; if they do not then remove them from the render list
+        for obj in copy(self.objects):
+            if isinstance(obj, GITCreature) and obj not in self.git.creatures:
+                del self.objects[obj]
+            if isinstance(obj, GITPlaceable) and obj not in self.git.placeables:
+                del self.objects[obj]
+            if isinstance(obj, GITDoor) and obj not in self.git.doors:
+                del self.objects[obj]
+            if isinstance(obj, GITTrigger) and obj not in self.git.triggers:
+                del self.objects[obj]
+            if isinstance(obj, GITStore) and obj not in self.git.stores:
+                del self.objects[obj]
+            if isinstance(obj, GITCamera) and obj not in self.git.cameras:
+                del self.objects[obj]
+            if isinstance(obj, GITWaypoint) and obj not in self.git.waypoints:
+                del self.objects[obj]
+            if isinstance(obj, GITEncounter) and obj not in self.git.encounters:
+                del self.objects[obj]
+            if isinstance(obj, GITSound) and obj not in self.git.sounds:
+                del self.objects[obj]
+
     def render(self) -> None:
         self.buildCache()
         glClearColor(0.5, 0.5, 1, 1.0)
