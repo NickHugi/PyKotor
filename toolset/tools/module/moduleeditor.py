@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
-    QMessageBox, QDialog, QDialogButtonBox
+    QMessageBox, QDialog, QDialogButtonBox, QCheckBox
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module, ModuleResource
@@ -71,6 +71,16 @@ class ModuleEditor(QMainWindow):
         self.ui.viewWaypointCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewCameraCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
+
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCreatureCheck)
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewPlaceableCheck)
+        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewDoorCheck)
+        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewSoundCheck)
+        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewTriggerCheck)
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewEncounterCheck)
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewWaypointCheck)
+        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCameraCheck)
+        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewStoreCheck)
 
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
 
@@ -225,6 +235,23 @@ class ModuleEditor(QMainWindow):
             data: GITInstance = item.data(QtCore.Qt.UserRole)
             if data is instance:
                 item.setSelected(True)
+
+    def onInstanceVisiblityDoubleClick(self, checkbox: QCheckBox) -> None:
+        """
+        This method should be called whenever one of the instance visibility checkboxes have been double clicked. The
+        resulting affect should be that all checkboxes become unchecked except for the one that was pressed.
+        """
+        self.ui.viewCreatureCheck.setChecked(False)
+        self.ui.viewPlaceableCheck.setChecked(False)
+        self.ui.viewDoorCheck.setChecked(False)
+        self.ui.viewSoundCheck.setChecked(False)
+        self.ui.viewTriggerCheck.setChecked(False)
+        self.ui.viewEncounterCheck.setChecked(False)
+        self.ui.viewWaypointCheck.setChecked(False)
+        self.ui.viewCameraCheck.setChecked(False)
+        self.ui.viewStoreCheck.setChecked(False)
+
+        checkbox.setChecked(True)
 
     def updateInstanceVisibility(self) -> None:
         self.hideCreatures = self.ui.mainRenderer.scene.hide_creatures = not self.ui.viewCreatureCheck.isChecked()
