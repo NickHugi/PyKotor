@@ -26,14 +26,18 @@ from pykotor.resource.type import ResourceType
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
     PLAIN_VSHADER, PLAIN_FSHADER
 from pykotor.gl.modelreader import gl_load_mdl, gl_load_stitched_model
-from pykotor.gl.model import Model, Cube, STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDX_DATA, WAYPOINT_MDL_DATA, \
-    SOUND_MDX_DATA, SOUND_MDL_DATA, ENTRY_MDX_DATA, ENTRY_MDL_DATA
+from pykotor.gl.model import Model, Cube
+from pykotor.gl.models.predefined import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA, \
+    SOUND_MDL_DATA, SOUND_MDX_DATA, CAMERA_MDL_DATA, CAMERA_MDX_DATA, TRIGGER_MDL_DATA, TRIGGER_MDX_DATA, \
+    ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA
 
 SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
 class Scene:
+    SPECIAL_MODELS = ["waypoint", "store", "sound", "camera", "trigger", "encounter"]
+
     def __init__(self, module: Module, installation: Installation):
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
@@ -182,6 +186,37 @@ class Scene:
                 self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
                 self.objects[sound].set_rotation(0, 0, 0)
 
+        for encounter in self.git.encounters:
+            if encounter not in self.objects:
+                position = vec3(encounter.position.x, encounter.position.y, encounter.position.z)
+                rotation = vec3(0, 0, 0)
+                obj = RenderObject("encounter", position, rotation, data=encounter)
+                self.objects[encounter] = obj
+            else:
+                self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
+                self.objects[encounter].set_rotation(0, 0, 0)
+
+        for trigger in self.git.triggers:
+            if trigger not in self.objects:
+                position = vec3(trigger.position.x, trigger.position.y, trigger.position.z)
+                rotation = vec3(0, 0, 0)
+                obj = RenderObject("trigger", position, rotation, data=trigger)
+                self.objects[trigger] = obj
+            else:
+                self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
+                self.objects[trigger].set_rotation(0, 0, 0)
+
+        for camera in self.git.cameras:
+            if camera not in self.objects:
+                position = vec3(camera.position.x, camera.position.y, camera.position.z)
+                rotation = glm.eulerAngles(quat(camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w))
+                obj = RenderObject("camera", position, rotation, data=camera)
+                self.objects[camera] = obj
+            else:
+                self.objects[camera].set_position(camera.position.x, camera.position.y, camera.position.z)
+                euler = glm.eulerAngles(quat(camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w))
+                self.objects[camera].set_rotation(euler.x, euler.y, euler.z)
+
         # Detect if GIT still exists; if they do not then remove them from the render list
         for obj in copy(self.objects):
             if isinstance(obj, GITCreature) and obj not in self.git.creatures:
@@ -212,7 +247,7 @@ class Scene:
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
-        group1 = [obj for obj in self.objects.values() if obj.model not in ["waypoint", "store", "sound"]]
+        group1 = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
@@ -221,7 +256,7 @@ class Scene:
         self.plain_shader.set_matrix4("view", self.camera.view())
         self.plain_shader.set_matrix4("projection", self.camera.projection())
         self.plain_shader.set_vector4("color", vec4(0.0, 0.0, 1.0, 0.4))
-        group2 = [obj for obj in self.objects.values() if obj.model in ["waypoint", "store", "sound"]]
+        group2 = [obj for obj in self.objects.values() if obj.model in self.SPECIAL_MODELS]
         for obj in group2:
             self._render_object(self.plain_shader, obj, mat4())
         self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
@@ -322,6 +357,15 @@ class Scene:
             elif name == "entry":
                 mdl_data = ENTRY_MDL_DATA
                 mdx_data = ENTRY_MDX_DATA
+            elif name == "encounter":
+                mdl_data = ENCOUNTER_MDL_DATA
+                mdx_data = ENCOUNTER_MDX_DATA
+            elif name == "trigger":
+                mdl_data = TRIGGER_MDL_DATA
+                mdx_data = TRIGGER_MDX_DATA
+            elif name == "camera":
+                mdl_data = CAMERA_MDL_DATA
+                mdx_data = CAMERA_MDX_DATA
             else:
                 mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER).data
                 mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER).data
