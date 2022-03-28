@@ -73,7 +73,7 @@ class IndoorMap:
 
         roomNames = {}
         texRenames = {}
-        lmRenames = {}
+        totalLm = 0
 
         for i in range(len(self.rooms)):
             modelname = "{}_room{}".format(self.module_id, i)
@@ -94,17 +94,21 @@ class IndoorMap:
 
             mdl = model.transform(room.component.mdl, Vector3.from_null(), room.rotation)
             mdl = model.convert_to_k2(mdl) if installation.tsl else model.convert_to_k1(mdl)
+
             for texture in set([texture for texture in model.list_textures(mdl) if texture.lower() not in texRenames.keys()]):
                 renamed = "{}_tex{}".format(self.module_id, len(texRenames.keys()))
                 texRenames[texture.lower()] = renamed
                 mod.set(renamed, ResourceType.TGA, room.component.kit.textures[texture])
                 mod.set(renamed, ResourceType.TXI, room.component.kit.txis[texture])
-            for lightmap in set([lightmap for lightmap in model.list_lightmaps(mdl) if lightmap.lower() not in texRenames.keys()]):
-                renamed = "{}_lm{}".format(self.module_id, len(lmRenames.keys()))
+            mdl = model.change_textures(mdl, texRenames)
+
+            lmRenames = {}
+            for lightmap in model.list_lightmaps(mdl):
+                renamed = "{}_lm{}".format(self.module_id, totalLm)
+                totalLm += 1
                 lmRenames[lightmap.lower()] = renamed
                 mod.set(renamed, ResourceType.TGA, room.component.kit.lightmaps[lightmap])
                 mod.set(renamed, ResourceType.TXI, room.component.kit.txis[lightmap])
-            mdl = model.change_textures(mdl, texRenames)
             mdl = model.change_lightmaps(mdl, lmRenames)
 
             mod.set(modelname, ResourceType.MDL, mdl)
