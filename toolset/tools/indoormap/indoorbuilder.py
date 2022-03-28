@@ -358,8 +358,8 @@ class IndoorMapRenderer(QWidget):
 
     def _drawRoomHighlight(self, painter: QPainter, room: IndoorMapRoom, alpha: int) -> None:
         bwm = deepcopy(room.component.bwm)
-        bwm.translate(*room.position)
         bwm.rotate(room.rotation)
+        bwm.translate(*room.position)
         painter.setBrush(QColor(255, 255, 255, alpha))
         painter.setPen(QtCore.Qt.NoPen)
         for face in bwm.faces:
