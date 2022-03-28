@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os.path
 from contextlib import suppress
+from copy import copy
 from typing import List, TypeVar, Generic, Optional, Dict, Any
 
 from pykotor.common.misc import CaseInsensitiveDict
@@ -82,6 +83,17 @@ class Module:
         if "_" in rootb:
             rootb = rootb[:rootb.index("_")]
         return roota + rootb
+
+    def capsules(
+            self
+    ) -> List[Capsule]:
+        """
+        Returns a copy of the capsules used by the module.
+
+        Returns:
+            A list of linked capsules.
+        """
+        return copy(self._capsules)
 
     def reload_resources(
             self
