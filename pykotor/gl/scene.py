@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import random
+from contextlib import suppress
 from copy import copy
 from typing import Dict, List, Any, Optional, Union
 
@@ -29,7 +30,7 @@ from pykotor.gl.modelreader import gl_load_mdl, gl_load_stitched_model
 from pykotor.gl.model import Model, Cube
 from pykotor.gl.models.predefined import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA, \
     SOUND_MDL_DATA, SOUND_MDX_DATA, CAMERA_MDL_DATA, CAMERA_MDX_DATA, TRIGGER_MDL_DATA, TRIGGER_MDX_DATA, \
-    ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA
+    ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA
 
 SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -115,10 +116,16 @@ class Scene:
 
         for door in self.git.doors:
             if door not in self.objects:
-                utd = self.module.door(door.resref.get()).resource()
-                model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 position = vec3(door.position.x, door.position.y, door.position.z)
                 rotation = vec3(0, 0, door.bearing)
+
+                try:
+                    utd = self.module.door(door.resref.get()).resource()
+                    model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
+                except Exception:
+                    # If failed to load creature models, use an empty model instead
+                    model_name = "empty"
+
                 self.objects[door] = RenderObject(model_name, position, rotation, data=door)
             else:
                 self.objects[door].set_position(door.position.x, door.position.y, door.position.z)
@@ -126,10 +133,16 @@ class Scene:
 
         for placeable in self.git.placeables:
             if placeable not in self.objects:
-                utp = self.module.placeable(placeable.resref.get()).resource()
-                model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
                 position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
                 rotation = vec3(0, 0, placeable.bearing)
+
+                try:
+                    utp = self.module.placeable(placeable.resref.get()).resource()
+                    model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
+                except Exception:
+                    # If failed to load creature models, use an empty model instead
+                    model_name = "empty"
+
                 self.objects[placeable] = RenderObject(model_name, position, rotation, data=placeable)
             else:
                 self.objects[placeable].set_position(placeable.position.x, placeable.position.y, placeable.position.z)
@@ -137,21 +150,26 @@ class Scene:
 
         for creature in self.git.creatures:
             if creature not in self.objects:
-                utc = self.module.creature(creature.resref.get()).resource()
                 position = vec3(creature.position.x, creature.position.y, creature.position.z)
                 rotation = vec3(0, 0, creature.bearing)
-                body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
 
-                obj = RenderObject(body_model, position, rotation, data=creature)
+                try:
+                    utc = self.module.creature(creature.resref.get()).resource()
+                    body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
+                    obj = RenderObject(body_model, position, rotation, data=creature)
+
+                    head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
+                    if head_str:
+                        head_id = int(head_str)
+                        head_model = self.table_heads.get_row(head_id).get_string("head")
+                        head_obj = RenderObject(head_model)
+                        head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
+                        obj.children.append(head_obj)
+                except Exception:
+                    # If failed to load creature models, use an empty model instead
+                    obj = RenderObject("empty", position, rotation, data=creature)
+
                 self.objects[creature] = obj
-
-                head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
-                if head_str:
-                    head_id = int(head_str)
-                    head_model = self.table_heads.get_row(head_id).get_string("head")
-                    head_obj = RenderObject(head_model)
-                    head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
-                    obj.children.append(head_obj)
             else:
                 self.objects[creature].set_position(creature.position.x, creature.position.y, creature.position.z)
                 self.objects[creature].set_rotation(0, 0, creature.bearing)
@@ -366,6 +384,9 @@ class Scene:
             elif name == "camera":
                 mdl_data = CAMERA_MDL_DATA
                 mdx_data = CAMERA_MDX_DATA
+            elif name == "empty":
+                mdl_data = EMPTY_MDL_DATA
+                mdx_data = EMPTY_MDX_DATA
             else:
                 mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER).data
                 mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER).data
