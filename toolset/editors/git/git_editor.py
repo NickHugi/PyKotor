@@ -237,6 +237,7 @@ class _InstanceMode(_Mode):
     def removeSelectedInstances(self) -> None:
         for instance in self._ui.renderArea.selectedInstances():
             self._editor.git().remove(instance)
+        self._ui.renderArea.clearSelectedInstances()
         self.rebuildInstanceList()
 
     def addInstance(self, instance: GITInstance):
