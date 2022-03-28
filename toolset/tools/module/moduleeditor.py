@@ -323,6 +323,7 @@ class ModuleEditor(QMainWindow):
         for selected in self.ui.mainRenderer.scene.selection:
             if isinstance(selected.data, GITInstance):
                 self._module.git().resource().remove(selected.data)
+        self.ui.mainRenderer.scene.selection.clear()
 
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
