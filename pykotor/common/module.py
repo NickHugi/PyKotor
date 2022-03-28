@@ -5,33 +5,41 @@ from contextlib import suppress
 from copy import copy
 from typing import List, TypeVar, Generic, Optional, Dict, Any
 
+from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
+from pykotor.resource.formats.erf import ERF, write_erf, read_erf
+from pykotor.resource.formats.rim import read_rim, write_rim
+
+from pykotor.resource.formats.vis.vis_auto import bytes_vis
+
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
+
 from pykotor.common.misc import CaseInsensitiveDict
 
-from pykotor.common.stream import BinaryReader
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.lyt import LYT
-from pykotor.resource.formats.lyt.lyt_auto import read_lyt
+from pykotor.resource.formats.lyt.lyt_auto import read_lyt, bytes_lyt
 from pykotor.resource.formats.mdl import MDL
 from pykotor.resource.formats.tpc import read_tpc, TPC
 from pykotor.resource.formats.vis import read_vis, VIS
-from pykotor.resource.generics.are import ARE, construct_are, read_are
-from pykotor.resource.generics.dlg import construct_dlg, read_dlg
-from pykotor.resource.generics.git import GIT, construct_git, read_git
-from pykotor.resource.generics.ifo import IFO, construct_ifo, read_ifo
-from pykotor.resource.generics.pth import construct_pth, read_pth
-from pykotor.resource.generics.utc import UTC, construct_utc, read_utc
-from pykotor.resource.generics.utd import UTD, construct_utd, read_utd
-from pykotor.resource.generics.ute import UTE, construct_ute, read_ute
-from pykotor.resource.generics.uti import UTI, construct_uti, read_uti
-from pykotor.resource.generics.utm import UTM, construct_utm, read_utm
-from pykotor.resource.generics.utp import UTP, construct_utp, read_utp
-from pykotor.resource.generics.uts import construct_uts, read_uts
-from pykotor.resource.generics.utt import UTT, construct_utt, read_utt
-from pykotor.resource.generics.utw import UTW, construct_utw, read_utw
+from pykotor.resource.generics.are import ARE, construct_are, read_are, bytes_are
+from pykotor.resource.generics.dlg import construct_dlg, read_dlg, bytes_dlg
+from pykotor.resource.generics.git import GIT, construct_git, read_git, bytes_git
+from pykotor.resource.generics.ifo import IFO, construct_ifo, read_ifo, bytes_ifo
+from pykotor.resource.generics.pth import construct_pth, read_pth, bytes_pth
+from pykotor.resource.generics.utc import UTC, construct_utc, read_utc, bytes_utc
+from pykotor.resource.generics.utd import UTD, construct_utd, read_utd, bytes_utd
+from pykotor.resource.generics.ute import UTE, construct_ute, read_ute, bytes_ute
+from pykotor.resource.generics.uti import UTI, construct_uti, read_uti, bytes_uti
+from pykotor.resource.generics.utm import UTM, construct_utm, read_utm, bytes_utm
+from pykotor.resource.generics.utp import UTP, construct_utp, read_utp, bytes_utp
+from pykotor.resource.generics.uts import construct_uts, read_uts, bytes_uts
+from pykotor.resource.generics.utt import UTT, construct_utt, read_utt, bytes_utt
+from pykotor.resource.generics.utw import UTW, construct_utw, read_utw, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.model import list_textures, list_lightmaps
 
@@ -619,3 +627,44 @@ class ModuleResource(Generic[T]):
             Filepath to the active resource.
         """
         return self._active
+
+    def save(
+            self
+    ) -> None:
+        conversions = {
+            ResourceType.UTC: (lambda res: bytes_utc(res)),
+            ResourceType.UTP: (lambda res: bytes_utp(res)),
+            ResourceType.UTD: (lambda res: bytes_utd(res)),
+            ResourceType.UTI: (lambda res: bytes_uti(res)),
+            ResourceType.UTM: (lambda res: bytes_utm(res)),
+            ResourceType.UTE: (lambda res: bytes_ute(res)),
+            ResourceType.UTT: (lambda res: bytes_utt(res)),
+            ResourceType.UTW: (lambda res: bytes_utw(res)),
+            ResourceType.UTS: (lambda res: bytes_uts(res)),
+            ResourceType.DLG: (lambda res: bytes_dlg(res)),
+            ResourceType.PTH: (lambda res: bytes_pth(res)),
+            ResourceType.NCS: (lambda res: res),
+            ResourceType.TPC: (lambda res: bytes_tpc(res)),
+            ResourceType.TGA: (lambda res: bytes_tpc(res)),
+            ResourceType.LYT: (lambda res: bytes_lyt(res)),
+            ResourceType.VIS: (lambda res: bytes_vis(res)),
+            ResourceType.IFO: (lambda res: bytes_ifo(res)),
+            ResourceType.ARE: (lambda res: bytes_are(res)),
+            ResourceType.GIT: (lambda res: bytes_git(res)),
+            ResourceType.WOK: (lambda res: bytes_bwm(res))
+        }
+
+        if self._active is None:
+            raise ValueError("No active file selected for resource '{}.{}'".format(self._resname, self._restype.extension))
+        elif self._active.endswith(".erf") or self._active.endswith(".mod"):
+            erf = read_erf(self._active)
+            erf.set(self._resname, self._restype, conversions[self._restype](self.resource()))
+            write_erf(erf, self._active)
+        elif self._active.endswith(".rim"):
+            rim = read_rim(self._active)
+            rim.set(self._resname, self._restype, conversions[self._restype](self.resource()))
+            write_rim(rim, self._active)
+        elif self._active.endswith("bif"):
+            raise ValueError("Cannot save file to BIF.")
+        else:
+            BinaryWriter.dump(self._active, conversions[self._restype](self.resource()))
