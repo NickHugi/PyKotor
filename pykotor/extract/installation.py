@@ -1054,6 +1054,7 @@ class Installation:
 
         Args:
             module_filename: The name of the module file.
+            use_hardcoded: Use hardcoded values for modules where applicable.
 
         Returns:
             The name of the area for the module.
@@ -1082,11 +1083,23 @@ class Installation:
             "STUNT_54A": "Dodonna Flagship - Cutscene (Pull Back)",
             "STUNT_55A": "Unknown World - Cutscene (DS Ending)",
             "STUNT_56A": "Dodona Flagship - Cutscene (Star Forge Destroyed)",
-            "STUNT_57": "Unknown World - Cutscene (LS Ending)"
+            "STUNT_57": "Unknown World - Cutscene (LS Ending)",
+            "001EBO": "Ebon Hawk - Interior (Prologue)",
+            "004EBO": "Ebon Hawk - Interior (Red Eclipse)",
+            "005EBO": "Ebon Hawk - Interior (Escaping Peragus)",
+            "006EBO": "Ebon Hawk - Cutscene (After Rebuilt Enclave)",
+            "007EBO": "Ebon Hawk - Cutscene (After Goto's Yatch)",
+            "154HAR": "Harbinger - Cutscene (Sion Introduction)",
+            "205TEL": "Citadel Station - Cutscene (Carth Discussion)",
+            "352NAR": "Nar Shaddaa - Cutscene (Goto Introduction)",
+            "853NIH": "Ravager - Cutscene (Nihilus Introduction)",
+            "856NIH": "Ravager - Cutscene (Sion vs. Nihilus)"
         }
 
-        if use_hardcoded and module_filename.upper() in hardcoded:
-            return hardcoded[module_filename.upper()]
+        if use_hardcoded:
+            for key in hardcoded.keys():
+                if key.upper() in module_filename.upper():
+                    return hardcoded[key]
 
         name = ""
 
