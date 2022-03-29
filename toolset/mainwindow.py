@@ -431,12 +431,14 @@ class ToolWindow(QMainWindow):
 
         if self.config.showModuleNames:
             areaNames = self.active.module_names()
-            for module in self.active.modules_list():
+            sortedKeys = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
+
+            for module in sortedKeys:
                 item = QStandardItem("{} [{}]".format(areaNames[module], module))
                 item.setData(module, QtCore.Qt.UserRole)
                 self._modules_list[self.active.name].appendRow(item)
         else:
-            for module in self.active.modules_list():
+            for module in sorted(self.active.modules_list()):
                 item = QStandardItem(module)
                 item.setData(module, QtCore.Qt.UserRole)
                 self._modules_list[self.active.name].appendRow()
