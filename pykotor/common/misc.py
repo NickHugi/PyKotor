@@ -365,6 +365,7 @@ class InventoryItem:
 
 
 class EquipmentSlot(Enum):
+    INVALID = 0
     HEAD = 1
     ARMOR = 2
     GAUNTLET = 8
