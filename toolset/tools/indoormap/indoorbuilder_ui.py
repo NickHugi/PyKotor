@@ -62,8 +62,8 @@ class Ui_MainWindow(object):
         self.actionOpen.setObjectName("actionOpen")
         self.actionSave = QtWidgets.QAction(MainWindow)
         self.actionSave.setObjectName("actionSave")
-        self.actionSave_As = QtWidgets.QAction(MainWindow)
-        self.actionSave_As.setObjectName("actionSave_As")
+        self.actionSaveAs = QtWidgets.QAction(MainWindow)
+        self.actionSaveAs.setObjectName("actionSaveAs")
         self.actionNew = QtWidgets.QAction(MainWindow)
         self.actionNew.setObjectName("actionNew")
         self.actionExit = QtWidgets.QAction(MainWindow)
@@ -75,7 +75,7 @@ class Ui_MainWindow(object):
         self.menuNew.addAction(self.actionNew)
         self.menuNew.addAction(self.actionOpen)
         self.menuNew.addAction(self.actionSave)
-        self.menuNew.addAction(self.actionSave_As)
+        self.menuNew.addAction(self.actionSaveAs)
         self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionBuild)
         self.menuNew.addAction(self.actionSettings)
@@ -88,11 +88,11 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Map Builder"))
         self.menuNew.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionSave.setText(_translate("MainWindow", "Save"))
-        self.actionSave_As.setText(_translate("MainWindow", "Save As"))
+        self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionNew.setText(_translate("MainWindow", "New"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionBuild.setText(_translate("MainWindow", "Build"))

@@ -8,10 +8,10 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer, QPointF, QRectF
 from PyQt5.QtGui import QImage, QPixmap, QPaintEvent, QTransform, QPainter, QColor, QWheelEvent, QMouseEvent, QKeyEvent, \
     QPen, QPainterPath
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow, QFileDialog, QMessageBox
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import Color
-from pykotor.common.stream import BinaryReader
+from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace
 from pykotor.resource.generics.utd import read_utd
@@ -31,11 +31,13 @@ class IndoorMapBuilder(QMainWindow):
         self._installation: HTInstallation = installation
         self._kits: List[Kit] = []
         self._map: IndoorMap = IndoorMap()
+        self._filepath: str = ""
 
         self.ui = indoorbuilder_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupKits()
+        self._refreshWindowTitle()
 
         self.ui.mapRenderer.setMap(self._map)
 
@@ -43,6 +45,10 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.kitSelect.currentIndexChanged.connect(self.onKitSelected)
         self.ui.componentList.currentItemChanged.connect(self.onComponentSelected)
 
+        self.ui.actionNew.triggered.connect(self.new)
+        self.ui.actionOpen.triggered.connect(self.open)
+        self.ui.actionSave.triggered.connect(self.save)
+        self.ui.actionSaveAs.triggered.connect(self.saveAs)
         self.ui.actionBuild.triggered.connect(self.buildMap)
         self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map).exec_())
 
@@ -55,6 +61,42 @@ class IndoorMapBuilder(QMainWindow):
 
         for kit in self._kits:
             self.ui.kitSelect.addItem(kit.name, kit)
+
+    def _refreshWindowTitle(self) -> None:
+        if self._filepath == "":
+            self.setWindowTitle("{} - Map Builder".format( self._installation.name))
+        else:
+            self.setWindowTitle("{} - {} - Map Builder".format(self._filepath, self._installation.name))
+
+    def save(self) -> None:
+        if self._filepath == "":
+            self.saveAs()
+        else:
+            BinaryWriter.dump(self._filepath, self._map.write())
+            self._refreshWindowTitle()
+
+    def saveAs(self) -> None:
+        filepath, _ = QFileDialog.getSaveFileName(self, "Save Map", "", "Indoor Map File (*.indoor)")
+        if filepath:
+            BinaryWriter.dump(filepath, self._map.write())
+            self._filepath = filepath
+            self._refreshWindowTitle()
+
+    def new(self) -> None:
+        self._filepath = ""
+        self._map.reset()
+        self._refreshWindowTitle()
+
+    def open(self) -> None:
+        filepath, _ = QFileDialog.getOpenFileName(self, "Open Map", "", "Indoor Map File (*.indoor)")
+        if filepath:
+            try:
+                self._map.load(BinaryReader.load_file(filepath), self._kits)
+                self._map.rebuildRoomConnections()
+                self._filepath = filepath
+                self._refreshWindowTitle()
+            except Exception as e:
+                QMessageBox(QMessageBox.Critical, "Failed to load file", str(e)).exec_()
 
     def buildMap(self) -> None:
         self._map.build(self._installation)

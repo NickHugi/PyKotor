@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import math
 from copy import copy, deepcopy
 from typing import List, Optional, Tuple, NamedTuple
@@ -24,7 +25,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 
 from data.installation import HTInstallation
-from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor
+from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor, Kit
 
 
 class DoorInsertion(NamedTuple):
@@ -157,6 +158,78 @@ class IndoorMap:
         mod.set("module", ResourceType.IFO, bytes_ifo(ifo))
 
         write_erf(mod, "{}{}.mod".format(installation.module_path(), self.module_id))
+
+    def write(self) -> bytes:
+        data = {}
+
+        data["moduleId"] = self.module_id
+
+        data["name"] = {}
+        data["name"]["stringref"] = self.name.stringref
+        for language, gender, text in self.name:
+            stringid = LocalizedString.substring_id(language, gender)
+            data["name"][stringid] = text
+
+        data["lighting"] = [self.lighting.r, self.lighting.g, self.lighting.b]
+
+        data["warp"] = self.module_id
+
+        data["rooms"] = []
+        for room in self.rooms:
+            roomData = {}
+            roomData["position"] = [*room.position]
+            roomData["rotation"] = room.rotation
+            roomData["kit"] = room.component.kit.name
+            roomData["component"] = room.component.name
+            data["rooms"].append(roomData)
+
+        return json.dumps(data).encode()
+
+    def load(self, raw: bytes, kits: List[Kit]) -> None:
+        self.reset()
+        data = json.loads(raw)
+
+        try:
+            self.name = LocalizedString(data["name"]["stringref"])
+            for stringid in [key for key in data["name"] if key.isnumeric()]:
+                language, gender = LocalizedString.substring_pair(int(stringid))
+                self.name.set(language, gender, data["name"][stringid])
+
+            self.lighting.b = data["lighting"][0]
+            self.lighting.g = data["lighting"][1]
+            self.lighting.r = data["lighting"][2]
+
+            self.module_id = data["warp"]
+
+            for roomData in data["rooms"]:
+                sKit = None
+                for kit in kits:
+                    if kit.name == roomData["kit"]:
+                        sKit = kit
+                        break
+                if sKit is None:
+                    raise ValueError("Required kit is missing '{}'.".format(roomData["kit"]))
+
+                sComponent = None
+                for component in sKit.components:
+                    if component.name == roomData["component"]:
+                        sComponent = component
+                        break
+                if sComponent is None:
+                    raise ValueError("Required component '{}' is missing in kit '{}'.".format(roomData["component"], sKit.name))
+
+                position = Vector3(roomData["position"][0], roomData["position"][1], roomData["position"][2])
+                rotation = roomData["rotation"]
+                room = IndoorMapRoom(sComponent, position, rotation)
+                self.rooms.append(room)
+        except KeyError:
+            raise ValueError("Map file is corrupted.")
+
+    def reset(self) -> None:
+        self.rooms.clear()
+        self.module_id = "test01"
+        self.name = LocalizedString.from_english("New Module")
+        self.lighting = Color(0.5, 0.5, 0.5)
 
 
 class IndoorMapRoom:
