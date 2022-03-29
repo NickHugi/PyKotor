@@ -1045,7 +1045,8 @@ class Installation:
 
     def module_name(
             self,
-            module_filename: str
+            module_filename: str,
+            use_hardcoded: bool = True
     ) -> str:
         """
         Returns the name of the area for a module from the installations module list. The name is taken from the
@@ -1060,6 +1061,32 @@ class Installation:
         root = module_filename.replace(".mod", "").replace(".erf", "").replace(".rim", "")
         root = root[:-len("_s")] if root.endswith("_s") else root
         root = root[:-len("_dlg")] if root.endswith("_dlg") else root
+
+        hardcoded = {
+            "STUNT_00": "Ebon Hawk - Cutscene (Vision Sequences)",
+            "STUNT_03A": "Leviathan - Cutscene (Destroy Taris)",
+            "STUNT_06": "Leviathan - Cutscene (Resume Bombardment)",
+            "STUNT_07": "Ebon Hawk - Cutscene (Escape Taris)",
+            "STUNT_12": "Leviathan - Cutscene (Calo Nord)",
+            "STUNT_14": "Leviathan - Cutscene (Darth Bandon)",
+            "STUNT_16": "Ebon Hawk - Cutscene (Leviathan Capture)",
+            "STUNT_18": "Unknown World - Cutscene (Bastila Torture)",
+            "STUNT_19": "Star Forge - Cutscene (Jawless Malak)",
+            "STUNT_31B": "Unknown World - Cutscene (Revan Reveal)",
+            "STUNT_34": "Ebon Hawk - Cutscene (Star Forge Arrival)",
+            "STUNT_35": "Ebon Hawk - Cutscene (Lehon Crash)",
+            "STUNT_42": "Ebon Hawk - Cutscene (LS Dodonna Call)",
+            "STUNT_44": "Ebon Hawk - Cutscene (DS Dodonna Call)",
+            "STUNT_50A": "Dodonna Flagship - Cutscene (Break In Formation)",
+            "STUNT_51A": "Dodonna Flagship - Cutscene (Bastilla Against Us)",
+            "STUNT_54A": "Dodonna Flagship - Cutscene (Pull Back)",
+            "STUNT_55A": "Unknown World - Cutscene (DS Ending)",
+            "STUNT_56A": "Dodona Flagship - Cutscene (Star Forge Destroyed)",
+            "STUNT_57": "Unknown World - Cutscene (LS Ending)"
+        }
+
+        if use_hardcoded and module_filename.upper() in hardcoded:
+            return hardcoded[module_filename.upper()]
 
         name = ""
 
