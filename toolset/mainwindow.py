@@ -187,7 +187,28 @@ class ToolWindow(QMainWindow):
         self.ui.overrideTree.doubleClicked.connect(self.openFromSelected)
         self.ui.texturesList.doubleClicked.connect(self.openFromSelected)
 
-    # Overriden methods
+        self.ui.coreTree.customContextMenuRequested.connect(self.onResourceContextMenu)
+        self.ui.modulesTree.customContextMenuRequested.connect(self.onResourceContextMenu)
+        self.ui.overrideTree.customContextMenuRequested.connect(self.onResourceContextMenu)
+
+    def onResourceContextMenu(self, point: QPoint) -> None:
+        menu = QMenu(self)
+
+        resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
+        if len(resources) == 1:
+            resource = resources[0]
+            if resource.restype() in self.GFF_TYPES:
+                open1 = lambda: self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
+                                                       resource.data(), gffSpecialized=False)
+                menu.addAction("Open with GFF Editor").triggered.connect(open1)
+
+                open2 = lambda: self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
+                                                        resource.data(), gffSpecialized=True)
+                menu.addAction("Open with Specialized Editor").triggered.connect(open2)
+
+        menu.popup(self.currentDataView().mapToGlobal(point))
+
+    # region Events
     def closeEvent(self, e: QCloseEvent) -> None:
         self.ui.texturesList.stop()
 
@@ -211,8 +232,9 @@ class ToolWindow(QMainWindow):
                     # Call from_path method as it will throw an error if the file extension is not recognized.
                     ResourceIdentifier.from_path(url.toLocalFile())
                     e.accept()
+    # endregion
 
-    # Menu Bar
+    # region Menu Bar
     def updateMenus(self) -> None:
         version = "x" if self.active is None else "2" if self.active.tsl else "1"
 
@@ -768,7 +790,9 @@ class ToolWindow(QMainWindow):
             filepath: str,
             resref: str,
             restype: ResourceType,
-            data: bytes
+            data: bytes,
+            *,
+            gffSpecialized: bool = None
     ) -> Union[Tuple[str, Editor], Tuple[str, subprocess.Popen], Tuple[None, None]]:
         """
         Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
@@ -779,12 +803,15 @@ class ToolWindow(QMainWindow):
             resref: The ResRef.
             restype: The resource type.
             data: The resource data.
-            noExternal: If True, internal editors will only be used, regardless of user settings.
+            gffSpecialized: Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
 
         Returns:
             Either the Editor object if using an internal editor, the filepath if using a external editor or None if
             no editor was successfully opened.
         """
+        if gffSpecialized is None:
+            gffSpecialized = self.config.gffSpecializedEditors
+
         editor = None
 
         if restype in [ResourceType.TwoDA]:
@@ -822,73 +849,73 @@ class ToolWindow(QMainWindow):
                 editor = DLGEditor(self, self.active)
 
         if restype in [ResourceType.UTC]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTCEditor(self, self.active)
 
         if restype in [ResourceType.UTP]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTPEditor(self, self.active)
 
         if restype in [ResourceType.UTD]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTDEditor(self, self.active)
 
         if restype in [ResourceType.UTS]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTSEditor(self, self.active)
 
         if restype in [ResourceType.UTT]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTTEditor(self, self.active)
 
         if restype in [ResourceType.UTM]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTMEditor(self, self.active)
 
         if restype in [ResourceType.UTW]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTWEditor(self, self.active)
 
         if restype in [ResourceType.UTE]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTEEditor(self, self.active)
 
         if restype in [ResourceType.UTI]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTIEditor(self, self.active)
 
         if restype in [ResourceType.JRL]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = JRLEditor(self, self.active)
 
         if restype in [ResourceType.ARE]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = AREEditor(self, self.active)
 
         if restype in [ResourceType.GIT]:
-            if self.active is None or not self.config.gffSpecializedEditors:
+            if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = GITEditor(self, self.active)
