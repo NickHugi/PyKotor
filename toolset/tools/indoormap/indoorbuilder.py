@@ -51,6 +51,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionSaveAs.triggered.connect(self.saveAs)
         self.ui.actionBuild.triggered.connect(self.buildMap)
         self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map).exec_())
+        self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
 
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
@@ -100,6 +101,11 @@ class IndoorMapBuilder(QMainWindow):
 
     def buildMap(self) -> None:
         self._map.build(self._installation)
+
+    def deleteSelected(self) -> None:
+        for room in self.ui.mapRenderer.selectedRooms():
+            self._map.rooms.remove(room)
+        self.ui.mapRenderer.clearSelectedRooms()
 
     def selectedComponent(self) -> KitComponent:
         return self.ui.componentList.currentItem().data(QtCore.Qt.UserRole)
@@ -207,6 +213,9 @@ class IndoorMapRenderer(QWidget):
 
     def selectedRooms(self) -> List[IndoorMapRoom]:
         return self._selectedRooms
+
+    def clearSelectedRooms(self) -> None:
+        self._selectedRooms.clear()
 
     def toRenderCoords(self, x, y) -> Vector2:
         """

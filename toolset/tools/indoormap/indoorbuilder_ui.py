@@ -54,6 +54,8 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         self.menuNew = QtWidgets.QMenu(self.menubar)
         self.menuNew.setObjectName("menuNew")
+        self.menuEdit = QtWidgets.QMenu(self.menubar)
+        self.menuEdit.setObjectName("menuEdit")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -72,6 +74,8 @@ class Ui_MainWindow(object):
         self.actionBuild.setObjectName("actionBuild")
         self.actionSettings = QtWidgets.QAction(MainWindow)
         self.actionSettings.setObjectName("actionSettings")
+        self.actionDeleteSelected = QtWidgets.QAction(MainWindow)
+        self.actionDeleteSelected.setObjectName("actionDeleteSelected")
         self.menuNew.addAction(self.actionNew)
         self.menuNew.addAction(self.actionOpen)
         self.menuNew.addAction(self.actionSave)
@@ -81,7 +85,9 @@ class Ui_MainWindow(object):
         self.menuNew.addAction(self.actionSettings)
         self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionExit)
+        self.menuEdit.addAction(self.actionDeleteSelected)
         self.menubar.addAction(self.menuNew.menuAction())
+        self.menubar.addAction(self.menuEdit.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -90,6 +96,7 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Map Builder"))
         self.menuNew.setTitle(_translate("MainWindow", "File"))
+        self.menuEdit.setTitle(_translate("MainWindow", "Edit"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionSave.setText(_translate("MainWindow", "Save"))
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
@@ -97,4 +104,5 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionBuild.setText(_translate("MainWindow", "Build"))
         self.actionSettings.setText(_translate("MainWindow", "Settings"))
+        self.actionDeleteSelected.setText(_translate("MainWindow", "Delete Selected"))
 from toolset.tools.indoormap.indoorbuilder import IndoorMapRenderer
