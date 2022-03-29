@@ -45,6 +45,9 @@
           </item>
           <item>
            <widget class="QTreeView" name="coreTree">
+            <property name="contextMenuPolicy">
+             <enum>Qt::CustomContextMenu</enum>
+            </property>
             <property name="editTriggers">
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>
@@ -153,6 +156,9 @@
           </item>
           <item>
            <widget class="QTreeView" name="modulesTree">
+            <property name="contextMenuPolicy">
+             <enum>Qt::CustomContextMenu</enum>
+            </property>
             <property name="editTriggers">
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>
@@ -271,6 +277,9 @@
           </item>
           <item>
            <widget class="QTreeView" name="overrideTree">
+            <property name="contextMenuPolicy">
+             <enum>Qt::CustomContextMenu</enum>
+            </property>
             <property name="editTriggers">
              <set>QAbstractItemView::NoEditTriggers</set>
             </property>

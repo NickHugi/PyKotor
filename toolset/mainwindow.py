@@ -16,8 +16,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QTimer
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
-    QTreeView
-from pykotor.common.module import Module
+    QTreeView, QMenu
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
@@ -69,6 +68,11 @@ PROGRAM_VERSION = "1.5.2"
 
 
 class ToolWindow(QMainWindow):
+    GFF_TYPES = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
+                 ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
+                 ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,
+                 ResourceType.JRL, ResourceType.ITP]
+
     def __init__(self):
         super().__init__()
 
@@ -357,8 +361,9 @@ class ToolWindow(QMainWindow):
             if not silent:
                 QMessageBox(QMessageBox.Information, "Unable to fetch latest version.",
                             "Check if you are connected to the internet.", QMessageBox.Ok, self).exec_()
+    # endregion
 
-    # Modules Tab
+    # region Modules Tab
     def changeModule(self, module: str) -> None:
         """
         Updates the items in the module tree to the module specified.
@@ -415,8 +420,9 @@ class ToolWindow(QMainWindow):
                 self._modules_list[self.active.name].appendRow()
 
         self.ui.modulesCombo.setModel(self._modules_list[self.active.name])
+    # endregion
 
-    # Override Tab
+    # region Override Tab
     def changeOverrideFolder(self, folder: str) -> None:
         self.overrideModel.clear()
 
@@ -457,8 +463,9 @@ class ToolWindow(QMainWindow):
             self.overrideModel.addResource(resource)
 
         self.resizeColumns()
+    # endregion
 
-    # Textures Tab
+    # region Textures Tab
     def refreshTexturePackList(self):
         self.ui.texturesCombo.clear()
         for texturepack in self.active.texturepacks_list():
@@ -483,8 +490,9 @@ class ToolWindow(QMainWindow):
                 item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
                 self.texturesModel.appendRow(item)
         self.ui.texturesList.setInstallation(self.active)
+    # endregion
 
-    # Other
+    # region Other
     def reloadSettings(self) -> None:
         self.config.reload()
         self.ui.mdlDecompileCheckbox.setVisible(self.config.mdlAllowDecompile)
@@ -744,16 +752,7 @@ class ToolWindow(QMainWindow):
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
         for resource in resources:
             filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data())
-            inERForRIM = resource.filepath().endswith('.erf') or resource.filepath().endswith('.rim') or resource.filepath().endswith('.mod')
-
-            # If opened with external editor AND the resource in encapsulated in ERF/RIM
-            if isinstance(editor, subprocess.Popen) and resource.filepath() != editor and inERForRIM:
-                handler = EncapsulatedExternalUpdateHandler(self, filepath, editor, resource.filepath(), resource.resname(), resource.restype())
-                handler.errorOccurred.connect(self.externalEncapsulatedSavedError)
-                handler.fileModified.connect(self.reloadModule)
-                handler.start()
-            elif self.active.module_path() in filepath and isinstance(editor, Editor):
-                editor.savedFile.connect(self.reloadModule)
+            editor.savedFile.connect(self.reloadModule)
 
     def openFromFile(self) -> None:
         filepath, filter = QFileDialog.getOpenFileName(self, "Open a file")
@@ -765,8 +764,12 @@ class ToolWindow(QMainWindow):
                 data = file.read()
             self.openResourceEditor(filepath, resref, restype, data)
 
-    def openResourceEditor(self, filepath: str, resref: str, restype: ResourceType, data: bytes, *,
-                           noExternal=False) -> Union[Tuple[str, Editor], Tuple[str, subprocess.Popen], Tuple[None, None]]:
+    def openResourceEditor(self,
+            filepath: str,
+            resref: str,
+            restype: ResourceType,
+            data: bytes
+    ) -> Union[Tuple[str, Editor], Tuple[str, subprocess.Popen], Tuple[None, None]]:
         """
         Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
         the editor, otherwise it returns None
@@ -783,35 +786,15 @@ class ToolWindow(QMainWindow):
             no editor was successfully opened.
         """
         editor = None
-        external = None
-
-        encapsulated = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod') or filepath.endswith('.bif') or filepath.endswith('.key')
-        inERForRIM = filepath.endswith('.erf') or filepath.endswith('.rim') or filepath.endswith('.mod')
-        shouldUseExternal = (self.config.erfExternalEditors and inERForRIM) or not inERForRIM
-        noExternal = noExternal or not shouldUseExternal
-
-        def useGFFEditor():
-            editor = external = None
-            if self.config.gffEditorPath and not noExternal:
-                external = self.config.gffEditorPath
-            else:
-                editor = GFFEditor(self, self.active)
-            return editor, external
 
         if restype in [ResourceType.TwoDA]:
-            if self.config.twodaEditorPath and not noExternal:
-                external = self.config.twodaEditorPath
-            else:
-                editor = TwoDAEditor(self, self.active)
+            editor = TwoDAEditor(self, self.active)
 
         if restype in [ResourceType.SSF]:
             editor = SSFEditor(self, self.active)
 
         if restype in [ResourceType.TLK]:
-            if self.config.tlkEditorPath and not noExternal:
-                external = self.config.tlkEditorPath
-            else:
-                editor = TLKEditor(self, self.active)
+            editor = TLKEditor(self, self.active)
 
         if restype in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]:
             editor = BWMEditor(self, self.active)
@@ -820,10 +803,7 @@ class ToolWindow(QMainWindow):
             editor = TPCEditor(self, self.active)
 
         if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
-            if self.config.txtEditorPath and not noExternal:
-                external = self.config.txtEditorPath
-            else:
-                editor = TXTEditor(self)
+            editor = TXTEditor(self)
 
         if restype in [ResourceType.NSS]:
             if self.active:
@@ -836,89 +816,86 @@ class ToolWindow(QMainWindow):
                 editor = NSSEditor(self, self.active)
 
         if restype in [ResourceType.DLG]:
-            if self.config.dlgEditorPath and not noExternal:
-                external = self.config.dlgEditorPath
+            if self.active is None:
+                editor = GFFEditor(self, self.active)
             else:
-                if self.active is None:
-                    editor, external = useGFFEditor()
-                else:
-                    editor = DLGEditor(self, self.active)
+                editor = DLGEditor(self, self.active)
 
         if restype in [ResourceType.UTC]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTCEditor(self, self.active)
 
         if restype in [ResourceType.UTP]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTPEditor(self, self.active)
 
         if restype in [ResourceType.UTD]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTDEditor(self, self.active)
 
         if restype in [ResourceType.UTS]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTSEditor(self, self.active)
 
         if restype in [ResourceType.UTT]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTTEditor(self, self.active)
 
         if restype in [ResourceType.UTM]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTMEditor(self, self.active)
 
         if restype in [ResourceType.UTW]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTWEditor(self, self.active)
 
         if restype in [ResourceType.UTE]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTEEditor(self, self.active)
 
         if restype in [ResourceType.UTI]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = UTIEditor(self, self.active)
 
         if restype in [ResourceType.JRL]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = JRLEditor(self, self.active)
 
         if restype in [ResourceType.ARE]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = AREEditor(self, self.active)
 
         if restype in [ResourceType.GIT]:
             if self.active is None or not self.config.gffSpecializedEditors:
-                editor, external = useGFFEditor()
+                editor = GFFEditor(self, self.active)
             else:
                 editor = GITEditor(self, self.active)
 
         if restype in [ResourceType.GFF, ResourceType.ITP,
                        ResourceType.GUI, ResourceType.IFO]:
-            editor, external = useGFFEditor()
+            editor = GFFEditor(self, self.active)
 
         if restype in [ResourceType.WAV, ResourceType.MP3]:
             editor = AudioPlayer(self)
@@ -930,37 +907,11 @@ class ToolWindow(QMainWindow):
             editor.load(filepath, resref, restype, data)
             editor.show()
             return filepath, editor
-        elif external is not None:
-            try:
-                if encapsulated:
-                    modName = os.path.basename(filepath.replace(".rim", "").replace(".erf", "").replace(".mod", ""))
-                    tempFilepath = "{}/{}-{}.{}".format(self.config.extractPath, modName, resref, restype.extension)
-                    with open(tempFilepath, 'wb') as file:
-                        file.write(data)
-                    process = subprocess.Popen([external, tempFilepath])
-                    return tempFilepath, process
-                else:
-                    process = subprocess.Popen([external, filepath])
-                    return filepath, process
-            except Exception as e:
-                QMessageBox(QMessageBox.Critical, "Could not open editor", "Double check the file path in settings.",
-                            QMessageBox.Ok, self).show()
         else:
             QMessageBox(QMessageBox.Critical, "Failed to open file", "The selected file is not yet supported.",
                         QMessageBox.Ok, self).show()
         return None, None
-
-    def externalEncapsulatedSavedError(self, tempFilepath: str, modFilepath: str, error: Exception) -> None:
-        """
-        Opens a messagebox for when an error occurred trying to save a resource through an external editor into an
-        encapsulated file.
-
-        Attributes:
-            error: The error that occurred.
-        """
-        QMessageBox(QMessageBox.Critical, "Could not saved resource to ERF/MOD/RIM",
-                    "Tried to save a resource '{}' into ".format(tempFilepath) +
-                    "'{}' using an external editor.".format(modFilepath), QMessageBox.Ok, self).exec_()
+    # endregion
 
 
 class ResourceModel(QStandardItemModel):
@@ -1022,60 +973,6 @@ class ResourceModel(QStandardItemModel):
             for i in range(category.rowCount()):
                 resources.append(category.child(i, 0))
         return resources
-
-
-class EncapsulatedExternalUpdateHandler(FileSystemEventHandler, QThread):
-    errorOccurred = QtCore.pyqtSignal(object, object, object)
-    fileModified = QtCore.pyqtSignal(object)
-
-    def __init__(self, parent, tempFilepath: str, process: subprocess.Popen, modFilepath: str, resref: str, restype: ResourceType):
-        super().__init__(parent)
-        self._tempFilename = os.path.basename(tempFilepath)
-        self._tempFilepath: str = tempFilepath
-        self._modFilepath: str = modFilepath
-        self._resref: str = resref
-        self._restype: ResourceType = restype
-        self._observer: Observer = Observer()
-        self._closeListener = ProcessCloseListener(process)
-        self._closeListener.closed.connect(self.stop)
-        self._first: bool = True
-
-    def observer(self) -> Observer:
-        return self._observer
-
-    def run(self) -> None:
-        sleep(2)
-        self._closeListener.start()
-        self._observer.schedule(self, os.path.dirname(self._tempFilepath), recursive=False)
-        self._observer.start()
-        self._observer.join()
-
-    def on_modified(self, event: FileModifiedEvent):
-        if not event.is_directory and event.src_path.endswith(self._tempFilename):
-            if self._first:
-                self._first = False
-                return
-
-            try:
-                with open(self._tempFilepath, 'rb') as file:
-                    data = file.read()
-                    if self._modFilepath.endswith(".erf") or self._modFilepath.endswith(".mod"):
-                        erf = read_erf(self._modFilepath)
-                        erf.erf_type = ERFType.ERF if self._modFilepath.endswith(".erf") else ERFType.MOD
-                        if erf.get(self._resref, self._restype) != data:
-                            erf.set(self._resref, self._restype, data)
-                            write_erf(erf, self._modFilepath)
-                    elif self._modFilepath.endswith(".rim"):
-                        rim = read_rim(self._modFilepath)
-                        if rim.get(self._resref, self._restype) != data:
-                            rim.set(self._resref, self._restype, data)
-                            write_rim(rim, self._modFilepath)
-                    self.fileModified.emit(self._modFilepath)
-            except Exception as e:
-                self.errorOccurred.emit(self._tempFilepath, self._modFilepath, e)
-
-    def stop(self) -> None:
-        self._observer.stop()
 
 
 class ProcessCloseListener(QThread):

@@ -9,12 +9,6 @@ class Configuration:
 
         self.firstTime: bool = True
 
-        self.twodaEditorPath: str = ""
-        self.dlgEditorPath: str = ""
-        self.gffEditorPath: str = ""
-        self.tlkEditorPath: str = ""
-        self.txtEditorPath: str = ""
-        self.nssEditorPath: str = ""
         self.gffSpecializedEditors: bool = True
 
         self.nssCompilerPath: str = ""
@@ -23,7 +17,6 @@ class Configuration:
         self.extractPath: str = ""
         self.showModuleNames: bool = False
         self.mdlAllowDecompile: bool = False
-        self.erfExternalEditors: bool = False
 
         self.reload()
 
@@ -38,12 +31,6 @@ class Configuration:
             installation = InstallationConfig(name, data['path'], bool(data['tsl']))
             self.installations.append(installation)
 
-        self.twodaEditorPath = settings.value('2daEditor', "")
-        self.dlgEditorPath = settings.value('dlgEditor', "")
-        self.gffEditorPath = settings.value('gffEditor', "")
-        self.tlkEditorPath = settings.value('tlkEditor', "")
-        self.txtEditorPath = settings.value('txtEditor', "")
-        self.nssEditorPath = settings.value('nssEditor', "")
         self.gffSpecializedEditors = settings.value('gffSpecialized', True, bool)
 
         self.nssCompilerPath = settings.value('nssCompilerPath', "")
@@ -52,7 +39,6 @@ class Configuration:
         self.extractPath = settings.value('tempDir', "")
         self.showModuleNames = settings.value('showModuleNames', True, bool)
         self.mdlAllowDecompile = settings.value('mdlDecompile', False, bool)
-        self.erfExternalEditors = settings.value('encapsulatedExternalEditor', False, bool)
 
     def save(self):
         settings = QSettings('cortisol', 'holocrontoolset')
@@ -65,12 +51,6 @@ class Configuration:
             installations[installation.name] = data
         settings.setValue('games', installations)
 
-        settings.setValue('2daEditor', self.twodaEditorPath)
-        settings.setValue('dlgEditor', self.dlgEditorPath)
-        settings.setValue('gffEditor', self.gffEditorPath)
-        settings.setValue('tlkEditor', self.tlkEditorPath)
-        settings.setValue('txtEditor', self.txtEditorPath)
-        settings.setValue('nssEditor', self.nssEditorPath)
         settings.setValue('gffSpecialized', self.gffSpecializedEditors)
 
         settings.setValue('nssCompilerPath', self.nssCompilerPath)
@@ -79,7 +59,6 @@ class Configuration:
         settings.setValue('tempDir', self.extractPath)
         settings.setValue('showModuleNames', self.showModuleNames)
         settings.setValue('mdlDecompile', self.mdlAllowDecompile)
-        settings.setValue('encapsulatedExternalEditor', self.erfExternalEditors)
 
         settings.sync()
 

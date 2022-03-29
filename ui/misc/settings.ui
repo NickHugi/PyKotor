@@ -112,7 +112,7 @@
        <string>Tools</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="1" column="0">
+       <item row="0" column="0">
         <widget class="QScrollArea" name="scrollArea">
          <property name="widgetResizable">
           <bool>true</bool>
@@ -121,175 +121,20 @@
           <property name="geometry">
            <rect>
             <x>0</x>
-            <y>-110</y>
-            <width>439</width>
-            <height>296</height>
+            <y>0</y>
+            <width>456</width>
+            <height>218</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="formLayout">
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_3">
-             <property name="text">
-              <string>GFF Editor:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout">
-             <item>
-              <widget class="QComboBox" name="gffToolCombo">
-               <property name="minimumSize">
-                <size>
-                 <width>80</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Internal</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>External</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="gffToolEdit">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>2DA Editor:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <item>
-              <widget class="QComboBox" name="twodaToolCombo">
-               <property name="minimumSize">
-                <size>
-                 <width>80</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Internal</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>External</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="twodaToolEdit">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_8">
-             <property name="text">
-              <string>DLG Editor:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
-             <item>
-              <widget class="QComboBox" name="dlgToolCombo">
-               <property name="enabled">
-                <bool>true</bool>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>80</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Internal</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>External</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="dlgToolEdit">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_9">
-             <property name="text">
-              <string>TLK Editor:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <item>
-              <widget class="QComboBox" name="tlkToolCombo">
-               <property name="minimumSize">
-                <size>
-                 <width>80</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Internal</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>External</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="tlkToolEdit">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="7" column="0">
+           <item row="0" column="0">
             <widget class="QLabel" name="label_5">
              <property name="text">
-              <string>UTx Editor:</string>
+              <string>GFF Files:</string>
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
+           <item row="0" column="1">
             <widget class="QComboBox" name="utxToolCombo">
              <item>
               <property name="text">
@@ -303,14 +148,14 @@
              </item>
             </widget>
            </item>
-           <item row="8" column="0">
+           <item row="1" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
               <string>NSS Compiler:</string>
              </property>
             </widget>
            </item>
-           <item row="8" column="1">
+           <item row="1" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
               <widget class="QComboBox" name="nssCompToolCombo">
@@ -339,14 +184,7 @@
              </item>
             </layout>
            </item>
-           <item row="9" column="0">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>NCS Decompiler:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="9" column="1">
+           <item row="2" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_7">
              <item>
               <widget class="QComboBox" name="ncsToolCombo">
@@ -375,14 +213,14 @@
              </item>
             </layout>
            </item>
-           <item row="10" column="0">
-            <widget class="QLabel" name="label_6">
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_10">
              <property name="text">
-              <string>MDL Decompiler:</string>
+              <string>NCS Decompiler:</string>
              </property>
             </widget>
            </item>
-           <item row="10" column="1">
+           <item row="3" column="1">
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
               <widget class="QComboBox" name="mdlToolCombo">
@@ -411,94 +249,15 @@
              </item>
             </layout>
            </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="label_2">
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_6">
              <property name="text">
-              <string>TXT Editor:</string>
+              <string>MDL Decompiler:</string>
              </property>
             </widget>
-           </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="label_14">
-             <property name="text">
-              <string>NSS Editor:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_10">
-             <item>
-              <widget class="QComboBox" name="txtToolCombo">
-               <property name="minimumSize">
-                <size>
-                 <width>80</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Internal</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>External</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="txtToolEdit">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item row="6" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout_11">
-             <item>
-              <widget class="QComboBox" name="nssToolCombo">
-               <property name="minimumSize">
-                <size>
-                 <width>80</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <item>
-                <property name="text">
-                 <string>Internal</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>External</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLineEdit" name="nssToolEdit">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
            </item>
           </layout>
          </widget>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_16">
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;External editors will not be used by default when editing resources stored inside ERF/MOD/RIM files. This can be changed under the &amp;quot;Misc&amp;quot; tab.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
         </widget>
        </item>
       </layout>
@@ -521,8 +280,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>374</width>
-            <height>228</height>
+            <width>456</width>
+            <height>218</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -539,57 +298,6 @@
               <widget class="QLineEdit" name="tempMiscEdit"/>
              </item>
             </layout>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="showModuleNameCheckbox">
-             <property name="text">
-              <string>Show location names for modules</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="Line" name="line_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_15">
-             <property name="text">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;The following features are incomplete and so may be unstable. Use with caution.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="wordWrap">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="experimentalMdlCheckbox">
-             <property name="text">
-              <string>EXPERIMENTAL: Enable MDL Decompiler</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="experimentalExternalCheckbox">
-             <property name="text">
-              <string>EXPERIMENTAL: Enable External Editor for resouces in ERF/MOD/RIM</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="verticalSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>72</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </widget>

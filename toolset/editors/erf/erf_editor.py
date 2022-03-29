@@ -9,8 +9,6 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import read_erf, ERF, ERFType, write_erf, ERFResource
 from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
 from data.configuration import Configuration
 from data.installation import HTInstallation
@@ -32,9 +30,6 @@ class ERFEditor(Editor):
         self.model = QStandardItemModel(self)
         self.ui.tableView.setModel(self.model)
         self.ui.tableView.selectionModel().selectionChanged.connect(self.selectionChanged)
-
-        self._externalHandlers: List[ExternalUpdateEventHandler] = []
-        self._externalOpened: bool = False
 
         # Disable saving file into module
         self._saveFilter = self._saveFilter.replace(";;Save into module (*.erf *.mod *.rim)", "")
@@ -177,16 +172,9 @@ class ERFEditor(Editor):
                             QMessageBox.Ok, self).exec_()
                 continue
 
-            noExternal = not self._config.erfExternalEditors
             tempPath, editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype,
-                                                                resource.data, noExternal=noExternal)
-            if isinstance(editor, Editor):
-                editor.savedFile.connect(self.resourceSavedInternal)
-            elif editor is not None:
-                handler = ExternalUpdateEventHandler(self, tempPath, resource.resref.get(), resource.restype, self.resourceSavedExternal)
-                handler.start()
-                self._externalHandlers.append(handler)
-                self._externalOpened = True
+                                                                resource.data)
+            editor.savedFile.connect(self.resourceSaved)
 
     def refresh(self) -> None:
         with open(self._filepath, 'rb') as file:
@@ -203,7 +191,7 @@ class ERFEditor(Editor):
             self.ui.openButton.setEnabled(True)
             self.ui.unloadButton.setEnabled(True)
 
-    def resourceSavedInternal(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def resourceSaved(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         if filepath != self._filepath:
             return
 
@@ -211,16 +199,6 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             if item.data().resref == resref and item.data().restype == restype:
                 item.data().data = data
-
-    def resourceSavedExternal(self, filepath: str, resref: str, restype: ResourceType, data: bytes):
-        for index in self.ui.tableView.selectionModel().selectedRows(0):
-            item = self.model.itemFromIndex(index)
-            if item.data().resref == resref and item.data().restype == restype:
-                item.data().data = data
-
-    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
-        for handler in self._externalHandlers:
-            handler.stop()
 
 
 class ERFEditorTable(QTableView):
@@ -273,28 +251,3 @@ class ERFEditorTable(QTableView):
         drag = QtGui.QDrag(self)
         drag.setMimeData(mimeData)
         drag.exec_(QtCore.Qt.CopyAction, QtCore.Qt.CopyAction)
-
-
-class ExternalUpdateEventHandler(FileSystemEventHandler, QThread):
-    def __init__(self, parent, filepath: str, resref: str, restype: ResourceType, callback: Callable):
-        super().__init__(parent)
-        self._filename = os.path.basename(filepath)
-        self._filepath: str = filepath
-        self._callback: Callable = callback
-        self._resref: str = resref
-        self._restype: ResourceType = restype
-        self._observer = Observer()
-
-    def run(self) -> None:
-        self._observer.schedule(self, os.path.dirname(self._filepath), recursive=False)
-        self._observer.start()
-        self._observer.join()
-
-    def on_modified(self, event):
-        if not event.is_directory and event.src_path.endswith(self._filename):
-            with open(self._filepath, 'rb') as file:
-                data = file.read()
-                self._callback(self._filepath, self._resref, self._restype, data)
-
-    def stop(self) -> None:
-        self._observer.stop()
