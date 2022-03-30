@@ -168,6 +168,10 @@ class IndoorMap:
         minimapTpc.set(512, 256, [tpcData], TPCTextureFormat.RGBA)
         mod.set("lbl_map{}".format(self.module_id), ResourceType.TGA, bytes_tpc(minimapTpc, ResourceType.TGA))
 
+        # Add loadscreen
+        loadTga = BinaryReader.load_file("./kits/load_k2.tga") if installation.tsl else BinaryReader.load_file("./kits/load_k1.tga")
+        mod.set("load_{}".format(self.module_id), ResourceType.TGA, loadTga)
+
         are.tag = self.module_id
         are.dynamic_light = self.lighting
         are.name = self.name

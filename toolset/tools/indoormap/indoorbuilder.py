@@ -59,7 +59,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.mouseScrolled.connect(self.onMouseScrolled)
 
     def _setupKits(self) -> None:
-        self._kits = load_kits("C:/Users/hugin/Documents/Apps/HolocronToolset/kits")
+        self._kits = load_kits("./kits")
 
         for kit in self._kits:
             self.ui.kitSelect.addItem(kit.name, kit)

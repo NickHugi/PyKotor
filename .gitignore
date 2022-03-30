@@ -13,3 +13,4 @@ build
 dist-mac
 dist-lin
 dist-win
+/toolset/kits/
