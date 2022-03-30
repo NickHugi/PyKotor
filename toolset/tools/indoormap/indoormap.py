@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 from copy import copy, deepcopy
+from time import sleep
 from typing import List, Optional, Tuple, NamedTuple
 
 from PyQt5 import QtCore
@@ -76,7 +77,7 @@ class IndoorMap:
 
         return insertions
 
-    def build(self, installation: HTInstallation) -> None:
+    def build(self, installation: HTInstallation, outputPath: str) -> None:
         mod = ERF(ERFType.MOD)
         lyt = LYT()
         vis = VIS()
@@ -186,7 +187,7 @@ class IndoorMap:
         mod.set(self.module_id, ResourceType.GIT, bytes_git(git))
         mod.set("module", ResourceType.IFO, bytes_ifo(ifo))
 
-        write_erf(mod, "{}{}.mod".format(installation.module_path(), self.module_id))
+        write_erf(mod, outputPath)
 
     def write(self) -> bytes:
         data = {}
@@ -267,6 +268,7 @@ class IndoorMap:
         Returns:
             The minimap data.
         """
+        print("Start")
         # Get the bounding box that encompasses all the walkmeshes, we will use this to determine the size of the
         # unscaled pixmap for our minimap
         walkmeshes = []
@@ -298,7 +300,6 @@ class IndoorMap:
 
         # Draw the actual minimap
         painter = QPainter(pixmap)
-
         for room in self.rooms:
             image = room.component.image
 
@@ -309,6 +310,8 @@ class IndoorMap:
 
             painter.drawImage(0, 0, image)
             painter.restore()
+        painter.end()
+        del painter
 
         # Minimaps are 512x256 so we need to appropriately scale down our image
         pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)
@@ -325,7 +328,8 @@ class IndoorMap:
         worldPointMin = Vector2(bbmax.x, bbmin.y)
         worldPointMax = Vector2(bbmin.x, bbmax.y)
 
-        del painter
+        painter2.end()
+
         del painter2
         del pixmap
         del pixmap2

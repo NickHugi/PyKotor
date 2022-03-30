@@ -18,6 +18,7 @@ from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
+from misc.asyncloader import AsyncLoader
 from tools.indoormap import indoorbuilder_ui
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit, KitDoor, load_kits
 from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
@@ -101,7 +102,14 @@ class IndoorMapBuilder(QMainWindow):
                 QMessageBox(QMessageBox.Critical, "Failed to load file", str(e)).exec_()
 
     def buildMap(self) -> None:
-        self._map.build(self._installation)
+        path = "{}{}.mod".format(self._installation.module_path(), self._map.module_id)
+        task = lambda: self._map.build(self._installation, path)
+        loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
+
+        if loader.exec_():
+            msg = "You can warp to the game using the code 'warp {}'. ".format(self._map.module_id)
+            msg += "Map files can be found in:\n{}".format(path)
+            QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
 
     def deleteSelected(self) -> None:
         for room in self.ui.mapRenderer.selectedRooms():
