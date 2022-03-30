@@ -65,11 +65,12 @@ class IndoorMapBuilder(QMainWindow):
 
     def _refreshWindowTitle(self) -> None:
         if self._filepath == "":
-            self.setWindowTitle("{} - Map Builder".format( self._installation.name))
+            self.setWindowTitle("{} - Map Builder".format(self._installation.name))
         else:
             self.setWindowTitle("{} - {} - Map Builder".format(self._filepath, self._installation.name))
 
     def save(self) -> None:
+        self._map.generateMinimap()
         if self._filepath == "":
             self.saveAs()
         else:

@@ -5,6 +5,8 @@ import math
 from copy import copy, deepcopy
 from typing import List, Optional, Tuple, NamedTuple
 
+from PyQt5 import QtCore
+from PyQt5.QtGui import QPixmap, QPainter, QTransform, QColor, QImage
 from pykotor.common.geometry import Vector3, Vector2, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Color
@@ -15,9 +17,11 @@ from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.lyt import LYT, LYTRoom, LYTDoorHook
 from pykotor.resource.formats.lyt.lyt_auto import bytes_lyt
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
 from pykotor.resource.formats.vis import VIS
 from pykotor.resource.formats.vis.vis_auto import bytes_vis
-from pykotor.resource.generics.are import ARE, bytes_are
+from pykotor.resource.generics.are import ARE, bytes_are, ARENorthAxis
 from pykotor.resource.generics.git import GIT, bytes_git, GITDoor
 from pykotor.resource.generics.ifo import IFO, bytes_ifo
 from pykotor.resource.generics.utd import UTD, bytes_utd
@@ -34,6 +38,14 @@ class DoorInsertion(NamedTuple):
     static: bool
     position: Vector3
     rotation: float
+
+
+class MinimapData(NamedTuple):
+    image: QImage
+    imagePointMin: Vector2
+    imagePointMax: Vector2
+    worldPointMin: Vector2
+    worldPointMax: Vector2
 
 
 class IndoorMap:
@@ -145,9 +157,26 @@ class IndoorMap:
             orientation = Vector4.from_euler(0, 0, door.bearing)
             lyt.doorhooks.append(LYTDoorHook(roomNames[insert.room], door.resref.get(), insert.position, orientation))
 
+        minimap = self.generateMinimap()
+        tpcData = bytearray()
+        for y in range(256):
+            for x in range(512):
+                pixel = QColor(minimap.image.pixel(x, y))
+                tpcData.extend([pixel.red(), pixel.green(), pixel.blue(), 255])
+        minimapTpc = TPC()
+        minimapTpc.set(512, 256, [tpcData], TPCTextureFormat.RGBA)
+        mod.set("lbl_map{}".format(self.module_id), ResourceType.TGA, bytes_tpc(minimapTpc, ResourceType.TGA))
+
         are.tag = self.module_id
         are.dynamic_light = self.lighting
         are.name = self.name
+        are.map_point_1 = minimap.imagePointMin
+        are.map_point_2 = minimap.imagePointMax
+        are.world_point_1 = minimap.worldPointMin
+        are.world_point_2 = minimap.worldPointMax
+        are.map_zoom = 1
+        are.map_res_x = 1
+        are.north_axis = ARENorthAxis.NegativeY
         ifo.tag = self.module_id
         ifo.area_name = ResRef(self.module_id)
 
@@ -230,6 +259,78 @@ class IndoorMap:
         self.module_id = "test01"
         self.name = LocalizedString.from_english("New Module")
         self.lighting = Color(0.5, 0.5, 0.5)
+
+    def generateMinimap(self) -> MinimapData:
+        """
+        Returns the all neccessary minimap data required for a module including the image and the ARE field values.
+
+        Returns:
+            The minimap data.
+        """
+        # Get the bounding box that encompasses all the walkmeshes, we will use this to determine the size of the
+        # unscaled pixmap for our minimap
+        walkmeshes = []
+        for i, room in enumerate(self.rooms):
+            bwm = deepcopy(room.component.bwm)
+            bwm.rotate(room.rotation)
+            bwm.translate(room.position.x, room.position.y, room.position.z)
+            walkmeshes.append(bwm)
+
+        bbmin = Vector3(1000000, 1000000, 1000000)
+        bbmax = Vector3(-1000000, -1000000, -1000000)
+        for bwm in walkmeshes:
+            for vertex in bwm.vertices():
+                bbmin.x = min(bbmin.x, vertex.x)
+                bbmin.y = min(bbmin.y, vertex.y)
+                bbmin.z = min(bbmin.z, vertex.z)
+                bbmax.x = max(bbmax.x, vertex.x)
+                bbmax.y = max(bbmax.y, vertex.y)
+                bbmax.z = max(bbmax.z, vertex.z)
+        bbmin.x -= 5
+        bbmin.y -= 5
+        bbmax.x += 5
+        bbmax.y += 5
+
+        width = int(bbmax.x)*10 - int(bbmin.x)*10
+        height = int(bbmax.y)*10 - int(bbmin.y)*10
+        pixmap = QPixmap(width, height)
+        pixmap.fill(QColor(0))
+
+        # Draw the actual minimap
+        painter = QPainter(pixmap)
+
+        for room in self.rooms:
+            image = room.component.image
+
+            painter.save()
+            painter.translate(room.position.x*10 - int(bbmin.x)*10, room.position.y*10 - int(bbmin.y)*10)
+            painter.rotate(room.rotation)
+            painter.translate(-image.width()/2, -image.height()/2)
+
+            painter.drawImage(0, 0, image)
+            painter.restore()
+
+        # Minimaps are 512x256 so we need to appropriately scale down our image
+        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)
+
+        pixmap2 = QPixmap(512, 256)
+        pixmap2.fill(QColor(0))
+        painter2 = QPainter(pixmap2)
+        painter2.drawPixmap(0, 128-pixmap.height()/2, pixmap)
+
+        image = pixmap2.transformed(QTransform().scale(1, -1)).toImage()
+        image.convertTo(QImage.Format_RGB888)
+        imagePointMin = Vector2(0/435, (128-pixmap.height()/2)/256)  # +512-435
+        imagePointMax = Vector2((imagePointMin.x+pixmap.width())/435, (imagePointMin.y+pixmap.height())/256)
+        worldPointMin = Vector2(bbmax.x, bbmin.y)
+        worldPointMax = Vector2(bbmin.x, bbmax.y)
+
+        del painter
+        del painter2
+        del pixmap
+        del pixmap2
+
+        return MinimapData(image, imagePointMin, imagePointMax, worldPointMin, worldPointMax)
 
 
 class IndoorMapRoom:
