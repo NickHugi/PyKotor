@@ -370,7 +370,7 @@ class IndoorMapRoom:
             for otherRoom in [room for room in rooms if room is not self]:
                 for otherHook in otherRoom.component.hooks:
                     otherHookPos = otherRoom.hookPosition(otherHook)
-                    if hookPos.distance(otherHookPos) < 1:
+                    if hookPos.distance(otherHookPos) < 0.001:
                         self.hooks[hookIndex] = otherRoom
 
     def walkmesh(self) -> BWM:

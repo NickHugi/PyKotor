@@ -138,9 +138,29 @@ class IndoorMapBuilder(QMainWindow):
         worldDelta = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
+            # LMB + CTRL
             self.ui.mapRenderer.panCamera(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
+            # MMB + CTRL
             self.ui.mapRenderer.rotateCamera(delta.x / 50)
+        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
+            # LMB
+            rooms = self.ui.mapRenderer.selectedRooms()
+            if len(rooms) == 0:
+                return
+            active = rooms[-1]
+            for room in rooms:
+                room.position.x += worldDelta.x
+                room.position.y += worldDelta.y
+            for room in [room for room in self._map.rooms if room not in rooms]:
+                hook1, hook2 = self.ui.mapRenderer.getConnectedHooks(active, room)
+                if hook1 is not None:
+                    shift = (room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)) - active.position
+                    for snapping in rooms:
+                        snapping.position = shift + snapping.position
+                        #snapping.position += shift
+                    #active.position = room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
+            self._map.rebuildRoomConnections()
 
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.RightButton in buttons:
@@ -230,8 +250,9 @@ class IndoorMapRenderer(QWidget):
     def selectRoom(self, room: IndoorMapRoom, clearExisting: bool) -> None:
         if clearExisting:
             self._selectedRooms.clear()
-        if room not in self._selectedRooms:
-            self._selectedRooms.append(room)
+        if room in self._selectedRooms:
+            self._selectedRooms.remove(room)
+        self._selectedRooms.append(room)
 
     def roomUnderMouse(self) -> None:
         return self._underMouseRoom
