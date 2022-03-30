@@ -117,8 +117,9 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rooms.remove(room)
         self.ui.mapRenderer.clearSelectedRooms()
 
-    def selectedComponent(self) -> KitComponent:
-        return self.ui.componentList.currentItem().data(QtCore.Qt.UserRole)
+    def selectedComponent(self) -> Optional[KitComponent]:
+        currentItem = self.ui.componentList.currentItem()
+        return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)
 
     def onKitSelected(self) -> None:
         kit: Kit = self.ui.kitSelect.currentData()
@@ -130,6 +131,8 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.componentList.addItem(item)
 
     def onComponentSelected(self, item: QListWidgetItem) -> None:
+        if item is None:
+            return
         component: KitComponent = item.data(QtCore.Qt.UserRole)
         self.ui.componentImage.setPixmap(QPixmap.fromImage(component.image))
         self.ui.mapRenderer.setCursorComponent(component)
@@ -165,9 +168,14 @@ class IndoorMapBuilder(QMainWindow):
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.RightButton in buttons:
             component = self.selectedComponent()
-            room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint, self.ui.mapRenderer._cursorRotation)
-            self._map.rooms.append(room)
-            self._map.rebuildRoomConnections()
+            if component is not None:
+                room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint, self.ui.mapRenderer._cursorRotation)
+                self._map.rooms.append(room)
+                self._map.rebuildRoomConnections()
+            if QtCore.Qt.Key_Shift not in keys:
+                self.ui.mapRenderer.setCursorComponent(None)
+                self.ui.componentList.clearSelection()
+                self.ui.componentList.setCurrentItem(None)
 
         if QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys:
             clearExisting = QtCore.Qt.Key_Shift not in keys
@@ -244,7 +252,7 @@ class IndoorMapRenderer(QWidget):
     def setMap(self, indoorMap: IndoorMap) -> None:
         self._map = indoorMap
 
-    def setCursorComponent(self, component: KitComponent) -> None:
+    def setCursorComponent(self, component: Optional[KitComponent]) -> None:
         self._cursorComponent = component
 
     def selectRoom(self, room: IndoorMapRoom, clearExisting: bool) -> None:
