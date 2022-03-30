@@ -149,13 +149,13 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rooms.append(room)
             self._map.rebuildRoomConnections()
 
-        if (self.ui.mapRenderer.roomUnderMouse() not in self.ui.mapRenderer.selectedRooms()
-                and QtCore.Qt.LeftButton in buttons
-                and not QtCore.Qt.Key_Control in keys
-                and self.ui.mapRenderer.roomUnderMouse()
-        ):
+        if QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys:
             clearExisting = QtCore.Qt.Key_Shift not in keys
-            self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
+            room = self.ui.mapRenderer.roomUnderMouse()
+            if room:
+                self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
+            else:
+                self.ui.mapRenderer.clearSelectedRooms()
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
@@ -230,7 +230,8 @@ class IndoorMapRenderer(QWidget):
     def selectRoom(self, room: IndoorMapRoom, clearExisting: bool) -> None:
         if clearExisting:
             self._selectedRooms.clear()
-        self._selectedRooms.append(room)
+        if room not in self._selectedRooms:
+            self._selectedRooms.append(room)
 
     def roomUnderMouse(self) -> None:
         return self._underMouseRoom
