@@ -57,6 +57,7 @@ from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.audio_player import AudioPlayer
+from misc.help.help import HelpWindow
 from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
 from misc.settings import Settings
@@ -178,6 +179,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
         self.ui.actionGeometryEditor.triggered.connect(self.openGeometryEditor)
         self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
+        self.ui.actionInstructions.triggered.connect(self.openInstructionsWindow)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
         self.ui.actionIndoorMapBuilder.triggered.connect(self.openIndoorMapBuilder)
@@ -350,6 +352,12 @@ class ToolWindow(QMainWindow):
 
     def openIndoorMapBuilder(self) -> None:
         IndoorMapBuilder(self, self.active).show()
+
+    def openInstructionsWindow(self) -> None:
+        """
+        Opens the instructions window.
+        """
+        HelpWindow(self).show()
 
     def openAboutDialog(self) -> None:
         """
