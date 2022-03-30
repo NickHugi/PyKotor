@@ -57,6 +57,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
         self.ui.mapRenderer.mouseScrolled.connect(self.onMouseScrolled)
+        self.ui.mapRenderer.mouseDoubleClicked.connect(self.onMouseDoubleClicked)
 
     def _setupKits(self) -> None:
         self._kits = load_kits("./kits")
@@ -162,6 +163,17 @@ class IndoorMapBuilder(QMainWindow):
         else:
             self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
+    def onMouseDoubleClicked(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():
+            self.ui.mapRenderer.clearSelectedRooms()
+            self.addConnectedToSelection(self.ui.mapRenderer.roomUnderMouse())
+
+    def addConnectedToSelection(self, room):
+        self.ui.mapRenderer.selectRoom(room, False)
+        for hookIndex, hook in enumerate(room.component.hooks):
+            if room.hooks[hookIndex] is not None and room.hooks[hookIndex] not in self.ui.mapRenderer.selectedRooms():
+                self.addConnectedToSelection(room.hooks[hookIndex])
+
 
 class IndoorMapRenderer(QWidget):
     mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
@@ -175,6 +187,9 @@ class IndoorMapRenderer(QWidget):
 
     mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
+
+    mouseDoubleClicked = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
+    """Signal emitted when a mouse button is double clicked on the widget."""
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -539,7 +554,12 @@ class IndoorMapRenderer(QWidget):
         self._mouseDown.discard(e.button())
 
         coords = Vector2(e.x(), e.y())
-        self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
+        self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
+
+    def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
+        mouseDown = copy(self._mouseDown)
+        mouseDown.add(e.button())  # Called after release event so we need to manually include it
+        self.mouseDoubleClicked.emit(Vector2(e.x(), e.y()), mouseDown, self._keysDown)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         self._keysDown.add(e.key())
