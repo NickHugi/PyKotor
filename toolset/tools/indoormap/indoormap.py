@@ -272,7 +272,6 @@ class IndoorMap:
         Returns:
             The minimap data.
         """
-        print("Start")
         # Get the bounding box that encompasses all the walkmeshes, we will use this to determine the size of the
         # unscaled pixmap for our minimap
         walkmeshes = []

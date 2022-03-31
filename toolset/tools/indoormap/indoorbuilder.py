@@ -82,6 +82,13 @@ class IndoorMapBuilder(QMainWindow):
         else:
             self.setWindowTitle("{} - {} - Map Builder".format(self._filepath, self._installation.name))
 
+    def _refreshStatusBar(self) -> None:
+        screen = self.ui.mapRenderer.mapFromGlobal(self.cursor().pos())
+        world = self.ui.mapRenderer.toWorldCoords(screen.x(), screen.y())
+        obj = self.ui.mapRenderer.roomUnderMouse()
+
+        self.statusBar().showMessage("X: {}, Y: {}, Object: {}".format(world.x, world.y, obj.component.name if obj else ""))
+
     def save(self) -> None:
         self._map.generateMinimap()
         if self._filepath == "":
@@ -149,6 +156,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.setCursorComponent(component)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        self._refreshStatusBar()
         worldDelta = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
@@ -273,7 +281,7 @@ class IndoorMapRenderer(QWidget):
             self._selectedRooms.remove(room)
         self._selectedRooms.append(room)
 
-    def roomUnderMouse(self) -> None:
+    def roomUnderMouse(self) -> Optional[IndoorMapRoom]:
         return self._underMouseRoom
 
     def selectedRooms(self) -> List[IndoorMapRoom]:
