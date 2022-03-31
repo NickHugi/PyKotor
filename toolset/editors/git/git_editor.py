@@ -8,7 +8,7 @@ from typing import Optional, Set, Dict
 import chardet
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QIcon, QPixmap, QColor
+from PyQt5.QtGui import QIcon, QPixmap, QColor, QKeySequence
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
 from pykotor.extract.installation import Installation, SearchLocation
@@ -34,6 +34,7 @@ class GITEditor(Editor):
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
+        self._setupHotkeys()
 
         self._git: GIT = GIT()
         self._mode: _Mode = _InstanceMode(self)
@@ -68,6 +69,11 @@ class GITEditor(Editor):
 
         self.new()
 
+    def _setupHotkeys(self) -> None:
+        self.ui.actionDeleteSelected.setShortcut(QKeySequence("Del"))
+        self.ui.actionZoomIn.setShortcut(QKeySequence("+"))
+        self.ui.actionZoomOut.setShortcut(QKeySequence("-"))
+
     def _setupSignals(self) -> None:
         self.ui.renderArea.mousePressed.connect(self.onMousePressed)
         self.ui.renderArea.mouseMoved.connect(self.onMouseMoved)
@@ -85,6 +91,11 @@ class GITEditor(Editor):
         self.ui.viewWaypointCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewCameraCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
+
+        self.ui.actionDeleteSelected.triggered.connect(lambda: self._mode.removeSelected())
+        self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(1))
+        self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
+        self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -126,6 +137,9 @@ class GITEditor(Editor):
     def setMode(self, mode: _Mode) -> None:
         self._mode = mode
 
+    def removeSelected(self) -> None:
+        self._mode.removeSelected()
+
     def updateStatusBar(self) -> None:
         self._mode.updateStatusBar()
 
@@ -152,6 +166,10 @@ class _Mode(ABC):
     def __init__(self, editor: GITEditor):
         self._editor: GITEditor = editor
         self._ui: git_editor_ui = editor.ui
+
+    @abstractmethod
+    def removeSelected(self) -> None:
+        ...
 
     @abstractmethod
     def updateStatusBar(self) -> None:
@@ -235,7 +253,7 @@ class _InstanceMode(_Mode):
                 self._ui.listWidget.setCurrentItem(item)
         self._ui.listWidget.blockSignals(False)
 
-    def removeSelectedInstances(self) -> None:
+    def removeSelected(self) -> None:
         for instance in self._ui.renderArea.selectedInstances():
             self._editor.git().remove(instance)
         self._ui.renderArea.clearSelectedInstances()
@@ -288,7 +306,7 @@ class _InstanceMode(_Mode):
         world = self._ui.renderArea.toWorldCoords(point.x(), point.y())
 
         if self._ui.renderArea.selectedInstances():
-            menu.addAction("Remove").triggered.connect(self.removeSelectedInstances)
+            menu.addAction("Remove").triggered.connect(self.removeSelected)
 
         if len(self._ui.renderArea.selectedInstances()) == 1:
             menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
@@ -340,7 +358,7 @@ class _GeometryMode(_Mode):
         self._ui.renderArea.hideWaypoints = True
         self._ui.renderArea.hideGeomPoints = False
 
-    def removeSelectedPoint(self) -> None:
+    def removeSelected(self) -> None:
         geomPoints = self._ui.renderArea.selectedGeomPoints()
         for geomPoint in geomPoints:
             geomPoint.instance.geometry.remove(geomPoint.point)
@@ -404,7 +422,7 @@ class _GeometryMode(_Mode):
         menu = QMenu(self._editor)
 
         if self._ui.renderArea.selectedGeomPoints():
-            menu.addAction("Remove").triggered.connect(self.removeSelectedPoint)
+            menu.addAction("Remove").triggered.connect(self.removeSelected)
 
         if len(self._ui.renderArea.selectedGeomPoints()) == 1:
             menu.addAction("Edit").triggered.connect(self.editSelectedPoint)

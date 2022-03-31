@@ -414,6 +414,8 @@ class WalkmeshRenderer(QWidget):
         camScale = min(scale_w, scale_h)
 
         self._camScale = camScale
+
+        self._camRotation = 0
     # endregion
 
     def _buildFace(self, face: BWMFace) -> QPainterPath:
