@@ -79,7 +79,7 @@ class Scene:
         self.hide_sounds: bool = False
         self.hide_stores: bool = False
         self.hide_cameras: bool = False
-        self.show_all_boundaries: bool = True
+        self.show_all_boundaries: bool = False
 
     def buildCache(self, clearCache: bool = False) -> None:
         if clearCache:
@@ -272,6 +272,7 @@ class Scene:
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
+        # Draw all instance types that lack a proper model
         glEnable(GL_BLEND)
         self.plain_shader.use()
         self.plain_shader.set_matrix4("view", self.camera.view())
@@ -280,16 +281,22 @@ class Scene:
         group2 = [obj for obj in self.objects.values() if obj.model in self.SPECIAL_MODELS]
         for obj in group2:
             self._render_object(self.plain_shader, obj, mat4())
+
+        # Draw bounding box for selected objects
         self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
         for obj in self.selection:
             obj.cube(self).draw(self.plain_shader, obj.transform())
 
+        # Draw boundary for selected objects
+        glDisable(GL_CULL_FACE)
+        self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.4))
+        for obj in self.selection:
+            obj.boundary(self).draw(self.plain_shader, obj.transform())
+
+        # Draw all boundaries
         if self.show_all_boundaries:
-            glDisable(GL_CULL_FACE)
-            self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.4))
             for obj in self.objects.values():
-                boundary = obj.boundary(self)
-                boundary.draw(self.plain_shader, obj.transform())
+                obj.boundary(self).draw(self.plain_shader, obj.transform())
 
     def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
