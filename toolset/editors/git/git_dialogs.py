@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QColor, QPixmap, QImage
+from PyQt5.QtGui import QColor, QPixmap, QImage, QIcon
 from PyQt5.QtWidgets import QDialog, QWidget, QColorDialog, QLabel
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import Color, ResRef
@@ -43,6 +43,7 @@ class CreatureDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Creature")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/creature.png")))
 
         self.ui.resrefEdit.setText(creature.resref.get())
         self.ui.xPosSpin.setValue(creature.position.x)
@@ -69,6 +70,7 @@ class PlaceableDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Placeable")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/placeable.png")))
 
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
@@ -112,6 +114,7 @@ class DoorDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Door")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/door.png")))
 
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
@@ -155,6 +158,7 @@ class EncounterDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Encounter")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/encounter.png")))
 
         self.ui.resrefEdit.setText(encounter.resref.get())
         self.ui.xPosSpin.setValue(encounter.position.x)
@@ -179,6 +183,7 @@ class TriggerDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Trigger")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/trigger.png")))
 
         self.ui.resrefEdit.setText(trigger.resref.get())
         self.ui.xPosSpin.setValue(trigger.position.x)
@@ -203,6 +208,7 @@ class SoundDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Sound")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/sound.png")))
 
         self.ui.resrefEdit.setText(sound.resref.get())
         self.ui.xPosSpin.setValue(sound.position.x)
@@ -227,6 +233,7 @@ class StoreDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Store")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/merchant.png")))
 
         self.ui.resrefEdit.setText(store.resref.get())
         self.ui.xPosSpin.setValue(store.position.x)
@@ -251,6 +258,7 @@ class WaypointDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Waypoint")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/waypoint.png")))
 
         self.ui.resrefEdit.setText(waypoint.resref.get())
         self.ui.xPosSpin.setValue(waypoint.position.x)
@@ -275,6 +283,7 @@ class CameraDialog(QDialog):
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Camera")
+        self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/camera.png")))
 
         self.ui.xPosSpin.setValue(camera.position.x)
         self.ui.yPosSpin.setValue(camera.position.y)
