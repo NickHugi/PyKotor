@@ -17,6 +17,7 @@ from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QT
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView, QMenu
+from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
@@ -288,12 +289,15 @@ class ToolWindow(QMainWindow):
         self.ui.actionEditJRL.setEnabled(self.active is not None)
         self.ui.actionGeometryEditor.setEnabled(self.active is not None)
         self.ui.actionFileSearch.setEnabled(self.active is not None)
+        self.ui.actionEditModule.setEnabled(self.active is not None)
+        self.ui.actionIndoorMapBuilder.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def openModuleEditor(self) -> None:
         filepath = QFileDialog.getOpenFileName(self, "Select a module")[0]
         if filepath:
+            print("A ->", Module.get_root(filepath))
             module = Module(Module.get_root(filepath), self.active)
             designer = ModuleEditor(self, self.active, module)
             designer.show()

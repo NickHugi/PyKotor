@@ -857,11 +857,17 @@
    </property>
   </action>
   <action name="actionIndoorMapBuilder">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Indoor Map Builder</string>
    </property>
   </action>
   <action name="actionEditModule">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>Edit Module</string>
    </property>

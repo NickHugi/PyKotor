@@ -14,3 +14,5 @@ dist-mac
 dist-lin
 dist-win
 /toolset/help/
+/toolset/kits/
+/pykotor/

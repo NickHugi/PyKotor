@@ -140,7 +140,7 @@ class ModuleEditor(QMainWindow):
 
     def openModuleResource(self, resource: ModuleResource) -> None:
         editor = self.parent().openResourceEditor(resource.active(), resource.resname(), resource.restype(),
-                                                  resource.data(), noExternal=True)[1]
+                                                  resource.data())[1]
 
         if editor is None:
             QMessageBox(QMessageBox.Critical,
@@ -443,7 +443,7 @@ class ModuleRenderer(QOpenGLWidget):
             self.doSelect = False
             obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
 
-            if isinstance(obj.data, GITInstance):
+            if obj is not None and isinstance(obj.data, GITInstance):
                 self.scene.select(obj)
                 self.objectSelected.emit(obj)
             else:

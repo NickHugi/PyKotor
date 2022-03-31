@@ -184,6 +184,7 @@ class IndoorMap:
         are.north_axis = ARENorthAxis.NegativeY
         ifo.tag = self.module_id
         ifo.area_name = ResRef(self.module_id)
+        ifo.identifier = ResRef(self.module_id)
 
         mod.set(self.module_id, ResourceType.LYT, bytes_lyt(lyt))
         mod.set(self.module_id, ResourceType.VIS, bytes_vis(vis))
