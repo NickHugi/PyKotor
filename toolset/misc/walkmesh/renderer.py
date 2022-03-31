@@ -138,7 +138,7 @@ class WalkmeshRenderer(QWidget):
         """
         self._git = git
 
-    def toRenderCoords(self, x, y) -> Vector2:
+    def toRenderCoords(self, x: float, y: float) -> Vector2:
         """
         Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
         screen-space coordinates is the top-left of the WalkmeshRenderer widget.
@@ -158,7 +158,7 @@ class WalkmeshRenderer(QWidget):
         y2 = (x*sin + y*cos) * self._camScale + self.height() / 2
         return Vector2(x2, y2)
 
-    def toWorldCoords(self, x, y) -> Vector3:
+    def toWorldCoords(self, x: float, y: float) -> Vector3:
         """
         Returns the world-space coordinates converted from the specified screen-space coordinates. The Z component
         is calculated using the X/Y components and the walkmesh face the mouse is over. If there is no face underneath
@@ -178,21 +178,11 @@ class WalkmeshRenderer(QWidget):
         x2 = x*cos - y*sin + self._camPosition.x
         y2 = x*sin + y*cos + self._camPosition.y
 
-        # We need to find a face in the walkmesh thats underneath the mouse to find the Z
-        # We also want to prioritize walkable faces
-        # And if we cant find a face, then set the Z to 0.0
-        face: Optional[BWMFace] = None
-        for walkmesh in self._walkmeshes:
-            if over := walkmesh.faceAt(x2, y2):
-                if face is None:
-                    face = over
-                elif not face.material.walkable() and over.material.walkable():
-                    face = over
-        z = 0.0 if face is None else face.determine_z(x2, y2)
+        z = self.getZCoord(x2, y2)
 
         return Vector3(x2, y2, z)
 
-    def toWorldDelta(self, x, y) -> Vector2:
+    def toWorldDelta(self, x: float, y: float) -> Vector2:
         """
         Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
         a change in screen-space, such as the delta paramater given in a mouseMove event.
@@ -211,6 +201,31 @@ class WalkmeshRenderer(QWidget):
         x2 = x*cos - y*sin
         y2 = x*sin + y*cos
         return Vector2(x2, y2)
+
+    def getZCoord(self, x: float, y: float) -> float:
+        """
+        Returns the Z coordinate based of walkmesh data for the specificied point. If there are overlapping faces, the
+        walkable face will take priority.
+
+        Args:
+            x: The x coordinate.
+            y: The y coordinate.
+
+        Returns:
+            The z coordinate.
+        """
+        # We need to find a face in the walkmesh thats underneath the mouse to find the Z
+        # We also want to prioritize walkable faces
+        # And if we cant find a face, then set the Z to 0.0
+        face: Optional[BWMFace] = None
+        for walkmesh in self._walkmeshes:
+            if over := walkmesh.faceAt(x, y):
+                if face is None:
+                    face = over
+                elif not face.material.walkable() and over.material.walkable():
+                    face = over
+        z = 0.0 if face is None else face.determine_z(x, y)
+        return z
 
     def materialColor(self, material: SurfaceMaterial) -> QColor:
         """

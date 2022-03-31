@@ -287,7 +287,8 @@ class _InstanceMode(_Mode):
             for instance in self._ui.renderArea.selectedInstances():
                 instance.move(worldDelta.x, worldDelta.y, 0.0)
                 # Snap the instance on top of the walkmesh, if there is no walkmesh underneath it will snap Z to 0
-                instance.position.z = self._ui.renderArea.toWorldCoords(instance.position.x, instance.position.y).z
+                getZ = self._ui.renderArea.getZCoord(instance.position.x, instance.position.y)
+                instance.position.z = getZ if getZ != 0.0 else instance.position.z
 
         self.updateStatusBar()
 
