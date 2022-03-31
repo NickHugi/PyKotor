@@ -7,7 +7,7 @@ from typing import Optional, List, Set, Tuple
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer, QPointF, QRectF
 from PyQt5.QtGui import QImage, QPixmap, QPaintEvent, QTransform, QPainter, QColor, QWheelEvent, QMouseEvent, QKeyEvent, \
-    QPen, QPainterPath
+    QPen, QPainterPath, QKeySequence
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow, QFileDialog, QMessageBox
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import Color
@@ -37,6 +37,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui = indoorbuilder_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
+        self._setupHotkeys()
         self._setupKits()
         self._refreshWindowTitle()
 
@@ -58,6 +59,16 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
         self.ui.mapRenderer.mouseScrolled.connect(self.onMouseScrolled)
         self.ui.mapRenderer.mouseDoubleClicked.connect(self.onMouseDoubleClicked)
+
+    def _setupHotkeys(self) -> None:
+        self.ui.actionSave.setShortcut(QKeySequence("Ctrl+S"))
+        self.ui.actionOpen.setShortcut(QKeySequence("Ctrl+O"))
+        self.ui.actionNew.setShortcut(QKeySequence("Ctrl+N"))
+        self.ui.actionBuild.setShortcut(QKeySequence("Ctrl+B"))
+        self.ui.actionExit.setShortcut(QKeySequence("Ctrl+Q"))
+        self.ui.actionSaveAs.setShortcut(QKeySequence("Ctrl+Shift+S"))
+        self.ui.actionDeleteSelected.setShortcut(QKeySequence("Del"))
+        self.ui.actionSettings.setShortcut(QKeySequence("Ctrl+Alt+S"))
 
     def _setupKits(self) -> None:
         self._kits = load_kits("./kits")
