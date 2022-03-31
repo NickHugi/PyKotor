@@ -709,7 +709,7 @@ class Installation:
             for capsule in values:
                 for query in queries:
                     if capsule.exists(query.resname, query.restype):
-                        resource = FileResource(query.resname, query.restype, 0, 0, capsule.path())
+                        resource = capsule.info(query.resname, query.restype)
                         location = LocationResult(resource.filepath(), resource.offset(), resource.size())
                         locations[resource.identifier()].append(location)
 
