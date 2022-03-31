@@ -4,13 +4,13 @@ import math
 import random
 from contextlib import suppress
 from copy import copy
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional, Union, Callable
 
 import glm
 from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_RGBA, GL_BLEND, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
-    glDisable, GL_CULL_FACE, GL_CW, GL_BACK, glCullFace
+    glDisable, GL_CULL_FACE, GL_CW, GL_BACK, glCullFace, GL_FRONT_AND_BACK
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
 from pykotor.common.misc import CaseInsensitiveDict
@@ -27,7 +27,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
     PLAIN_VSHADER, PLAIN_FSHADER
 from pykotor.gl.modelreader import gl_load_mdl, gl_load_stitched_model
-from pykotor.gl.model import Model, Cube
+from pykotor.gl.model import Model, Cube, Boundary, Empty
 from pykotor.gl.models.predefined import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA, \
     SOUND_MDL_DATA, SOUND_MDX_DATA, CAMERA_MDL_DATA, CAMERA_MDX_DATA, TRIGGER_MDL_DATA, TRIGGER_MDX_DATA, \
     ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA
@@ -43,9 +43,6 @@ class Scene:
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-        glEnable(GL_CULL_FACE)
-        glCullFace(GL_BACK)
 
         self.installation: Installation = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
@@ -82,6 +79,7 @@ class Scene:
         self.hide_sounds: bool = False
         self.hide_stores: bool = False
         self.hide_cameras: bool = False
+        self.show_all_boundaries: bool = True
 
     def buildCache(self, clearCache: bool = False) -> None:
         if clearCache:
@@ -208,7 +206,8 @@ class Scene:
             if encounter not in self.objects:
                 position = vec3(encounter.position.x, encounter.position.y, encounter.position.z)
                 rotation = vec3(0, 0, 0)
-                obj = RenderObject("encounter", position, rotation, data=encounter)
+                genBoundary = lambda: Boundary(self, encounter.geometry.points)
+                obj = RenderObject("encounter", position, rotation, data=encounter, genBoundary=genBoundary)
                 self.objects[encounter] = obj
             else:
                 self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
@@ -218,7 +217,8 @@ class Scene:
             if trigger not in self.objects:
                 position = vec3(trigger.position.x, trigger.position.y, trigger.position.z)
                 rotation = vec3(0, 0, 0)
-                obj = RenderObject("trigger", position, rotation, data=trigger)
+                genBoundary = lambda: Boundary(self, trigger.geometry.points)
+                obj = RenderObject("trigger", position, rotation, data=trigger, genBoundary=genBoundary)
                 self.objects[trigger] = obj
             else:
                 self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
@@ -261,6 +261,9 @@ class Scene:
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        glCullFace(GL_BACK)
+        glEnable(GL_CULL_FACE)
+
         glDisable(GL_BLEND)
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
@@ -279,9 +282,14 @@ class Scene:
             self._render_object(self.plain_shader, obj, mat4())
         self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
         for obj in self.selection:
-            transform = glm.translate(mat4(), obj.position())
-            transform = transform * glm.mat4_cast(quat(obj.rotation()))
-            obj.cube(self).draw(self.plain_shader, transform)
+            obj.cube(self).draw(self.plain_shader, obj.transform())
+
+        if self.show_all_boundaries:
+            glDisable(GL_CULL_FACE)
+            self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.4))
+            for obj in self.objects.values():
+                boundary = obj.boundary(self)
+                boundary.draw(self.plain_shader, obj.transform())
 
     def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
@@ -404,13 +412,16 @@ class Scene:
 
 
 class RenderObject:
-    def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None, *, data=None):
+    def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None, *, data: Any = None,
+                 genBoundary: Callable[[], Boundary] = None):
         self.model: str = model
         self.children: List[RenderObject] = []
         self._transform: mat4 = mat4()
         self._position: vec3 = position if position is not None else vec3()
         self._rotation: vec3 = rotation if rotation is not None else vec3()
         self._cube: Optional[Cube] = None
+        self._boundary: Optional[Boundary] = None
+        self.genBoundary: Optional[Callable[[], Boundary]] = genBoundary
         self.data: Any = data
 
         self._recalc_transform()
@@ -471,6 +482,17 @@ class RenderObject:
         max_point.z = max(max_point.z, obj_min.z, obj_max.z)
         for child in obj.children:
             self._cube_rec(scene, transform * child.transform(), child, min_point, max_point)
+
+    def reset_boundary(self) -> None:
+        self._boundary = None
+
+    def boundary(self, scene: Scene) -> Boundary | Empty:
+        if not self._boundary:
+            if self.genBoundary is None:
+                self._boundary = Empty(scene)
+            else:
+                self._boundary = self.genBoundary()
+        return self._boundary
 
 
 class Camera:

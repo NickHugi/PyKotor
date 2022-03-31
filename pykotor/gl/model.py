@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes
 import struct
+from _testbuffer import ndarray
 from copy import copy
 from typing import Optional, List, Tuple
 
@@ -19,6 +20,7 @@ from OpenGL.raw.GL.VERSION.GL_1_5 import GL_ARRAY_BUFFER, glBindBuffer, glBuffer
 from OpenGL.raw.GL.VERSION.GL_2_0 import glEnableVertexAttribArray
 from OpenGL.raw.GL.VERSION.GL_3_0 import glBindVertexArray
 from glm import mat4, vec3, quat, vec4
+from pykotor.common.geometry import Vector3
 
 from pykotor.gl.shader import Shader
 from typing import TYPE_CHECKING
@@ -287,3 +289,55 @@ class Cube:
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
 
 
+class Boundary:
+    def __init__(self, scene: Scene, vertices: List[Vector3]):
+        self._scene = scene
+
+        vertices, elements = self._build_nd(vertices)
+
+        self._vao = glGenVertexArrays(1)
+        self._vbo = glGenBuffers(1)
+        self._ebo = glGenBuffers(1)
+        glBindVertexArray(self._vao)
+
+        glBindBuffer(GL_ARRAY_BUFFER, self._vbo)
+        glBufferData(GL_ARRAY_BUFFER, len(vertices) * 4, vertices, GL_STATIC_DRAW)
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ebo)
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(elements) * 4, elements, GL_STATIC_DRAW)
+        self._face_count = len(elements)
+
+        glEnableVertexAttribArray(1)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+        glBindVertexArray(0)
+
+    def draw(self, shader: Shader, transform: mat4):
+        shader.set_matrix4("model", transform)
+        glBindVertexArray(self._vao)
+        glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
+
+    def _build_nd(self, vertices) -> Tuple[ndarray, ndarray]:
+        npvertices = []
+        [npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z+2)]) for vertex in vertices]
+
+        npfaces = []
+        count = len(vertices) * 2
+        for i, vertex in enumerate(vertices):
+            index1 = i*2
+            index2 = i*2+2 if i*2+2 < count else 0
+            index3 = i*2+1
+            index4 = (i*2+2)+1 if (i*2+2)+1 < count else 1
+            npfaces.extend([index1, index2, index3])
+            npfaces.extend([index2, index4, index3])
+        print(count, npfaces)
+        return numpy.array(npvertices, dtype='float32'), numpy.array(npfaces, dtype='int16')
+
+
+class Empty:
+    def __init__(self, scene: Scene):
+        self._scene = scene
+
+    def draw(self, shader: Shader, transform: mat4):
+        ...
