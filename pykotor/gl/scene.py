@@ -80,7 +80,9 @@ class Scene:
         self.hide_sounds: bool = False
         self.hide_stores: bool = False
         self.hide_cameras: bool = False
-        self.show_all_boundaries: bool = False
+        self.hide_sound_boundaries: bool = True
+        self.hide_trigger_boundaries: bool = True
+        self.hide_encounter_boundaries: bool = True
         self.backface_culling: bool = True
 
     def buildCache(self, clearCache: bool = False) -> None:
@@ -300,10 +302,13 @@ class Scene:
         for obj in self.selection:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
 
-        # Draw all boundaries
-        if self.show_all_boundaries:
-            for obj in self.objects.values():
-                obj.boundary(self).draw(self.plain_shader, obj.transform())
+        # Draw non-selected boundaries
+        for obj in [obj for obj in self.objects.values() if obj.model == "sound" and not self.hide_sound_boundaries]:
+            obj.boundary(self).draw(self.plain_shader, obj.transform())
+        for obj in [obj for obj in self.objects.values() if obj.model == "encounter" and not self.hide_encounter_boundaries]:
+            obj.boundary(self).draw(self.plain_shader, obj.transform())
+        for obj in [obj for obj in self.objects.values() if obj.model == "trigger" and not self.hide_trigger_boundaries]:
+            obj.boundary(self).draw(self.plain_shader, obj.transform())
 
     def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
