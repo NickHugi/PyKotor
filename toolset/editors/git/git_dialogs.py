@@ -42,6 +42,8 @@ class CreatureDialog(QDialog):
         self.ui = instance1_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
 
+        self.setWindowTitle("Edit Creature")
+
         self.ui.resrefEdit.setText(creature.resref.get())
         self.ui.xPosSpin.setValue(creature.position.x)
         self.ui.yPosSpin.setValue(creature.position.y)
@@ -65,6 +67,8 @@ class PlaceableDialog(QDialog):
 
         self.ui = instance2_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.setWindowTitle("Edit Placeable")
 
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
@@ -107,6 +111,8 @@ class DoorDialog(QDialog):
         self.ui = instance2_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
 
+        self.setWindowTitle("Edit Door")
+
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
 
@@ -148,6 +154,8 @@ class EncounterDialog(QDialog):
         self.ui = instance4_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
 
+        self.setWindowTitle("Edit Encounter")
+
         self.ui.resrefEdit.setText(encounter.resref.get())
         self.ui.xPosSpin.setValue(encounter.position.x)
         self.ui.yPosSpin.setValue(encounter.position.y)
@@ -169,6 +177,8 @@ class TriggerDialog(QDialog):
 
         self.ui = instance4_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.setWindowTitle("Edit Trigger")
 
         self.ui.resrefEdit.setText(trigger.resref.get())
         self.ui.xPosSpin.setValue(trigger.position.x)
@@ -192,6 +202,8 @@ class SoundDialog(QDialog):
         self.ui = instance4_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
 
+        self.setWindowTitle("Edit Sound")
+
         self.ui.resrefEdit.setText(sound.resref.get())
         self.ui.xPosSpin.setValue(sound.position.x)
         self.ui.yPosSpin.setValue(sound.position.y)
@@ -213,6 +225,8 @@ class StoreDialog(QDialog):
 
         self.ui = instance4_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.setWindowTitle("Edit Store")
 
         self.ui.resrefEdit.setText(store.resref.get())
         self.ui.xPosSpin.setValue(store.position.x)
@@ -236,6 +250,8 @@ class WaypointDialog(QDialog):
         self.ui = instance4_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
 
+        self.setWindowTitle("Edit Waypoint")
+
         self.ui.resrefEdit.setText(waypoint.resref.get())
         self.ui.xPosSpin.setValue(waypoint.position.x)
         self.ui.yPosSpin.setValue(waypoint.position.y)
@@ -257,6 +273,8 @@ class CameraDialog(QDialog):
 
         self.ui = instance3_dialog_ui.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.setWindowTitle("Edit Camera")
 
         self.ui.xPosSpin.setValue(camera.position.x)
         self.ui.yPosSpin.setValue(camera.position.y)
