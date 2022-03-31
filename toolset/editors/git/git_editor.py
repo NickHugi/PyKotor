@@ -215,7 +215,7 @@ class _InstanceMode(_Mode):
         self.updateInstanceVisibility()
 
     def updateStatusBar(self) -> None:
-        screen = self._ui.renderArea.cursor().pos()
+        screen = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
         world = self._ui.renderArea.toWorldCoords(screen.x(), screen.y())
 
         reference = ""
@@ -223,7 +223,7 @@ class _InstanceMode(_Mode):
             instance = self._ui.renderArea.instancesUnderMouse()[0]
             reference = "" if instance.reference() is None else instance.reference()
 
-        statusFormat = "mode: Instance Mode, x: {:.2f}, y: {:.2f}, z: {:.2f}, resref: {}"
+        statusFormat = "Mode: Instance Mode, X: {:.2f}, Y: {:.2f}, Z: {:.2f}, ResRef: {}"
         status = statusFormat.format(world.x, world.y, world.z, reference)
 
         self._editor.statusBar().showMessage(status)
@@ -392,7 +392,7 @@ class _GeometryMode(_Mode):
                 instance = self._ui.renderArea.selectedInstances()[0]
                 pointIndex = instance.geometry.points.index(self._ui.renderArea.geomPointsUnderMouse()[0].point)
 
-        statusFormat = "mode: Geometry Mode, x: {:.2f}, y: {:.2f}, z: {:.2f}, point: {}"
+        statusFormat = "Mode: Geometry Mode, X: {:.2f}, Y: {:.2f}, Z: {:.2f}, Point: {}"
         status = statusFormat.format(world.x, world.y, world.z, pointIndex)
 
         self._editor.statusBar().showMessage(status)
