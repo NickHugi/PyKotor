@@ -373,6 +373,8 @@ class Ui_MainWindow(object):
         self.actionEditModule.setObjectName("actionEditModule")
         self.actionInstructions = QtWidgets.QAction(MainWindow)
         self.actionInstructions.setObjectName("actionInstructions")
+        self.actionDiscord = QtWidgets.QAction(MainWindow)
+        self.actionDiscord.setObjectName("actionDiscord")
         self.menuNew.addAction(self.actionNewDLG)
         self.menuNew.addAction(self.actionNewNSS)
         self.menuNew.addAction(self.actionNewUTC)
@@ -403,9 +405,10 @@ class Ui_MainWindow(object):
         self.menuTools.addSeparator()
         self.menuTools.addAction(self.actionFileSearch)
         self.menuTools.addAction(self.actionIndoorMapBuilder)
+        self.menuHelp.addAction(self.actionHelpAbout)
+        self.menuHelp.addAction(self.actionDiscord)
         self.menuHelp.addAction(self.actionInstructions)
         self.menuHelp.addAction(self.actionHelpUpdates)
-        self.menuHelp.addAction(self.actionHelpAbout)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuTools.menuAction())
         self.menubar.addAction(self.menuHelp.menuAction())
@@ -487,5 +490,6 @@ class Ui_MainWindow(object):
         self.actionIndoorMapBuilder.setText(_translate("MainWindow", "Indoor Map Builder"))
         self.actionEditModule.setText(_translate("MainWindow", "Edit Module"))
         self.actionInstructions.setText(_translate("MainWindow", "Instructions"))
+        self.actionDiscord.setText(_translate("MainWindow", "Discord"))
 from toolset.mainwindow import TexturesView
 import resources_rc

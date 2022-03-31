@@ -58,6 +58,7 @@ from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.audio_player import AudioPlayer
+from misc.help.discord import DiscordDialog
 from misc.help.help import HelpWindow
 from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
@@ -176,14 +177,17 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewTXT.triggered.connect(lambda: TXTEditor(self, self.active).show())
         self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
         self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
+
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
         self.ui.actionGeometryEditor.triggered.connect(self.openGeometryEditor)
         self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
+        self.ui.actionIndoorMapBuilder.triggered.connect(self.openIndoorMapBuilder)
+
         self.ui.actionInstructions.triggered.connect(self.openInstructionsWindow)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
-        self.ui.actionIndoorMapBuilder.triggered.connect(self.openIndoorMapBuilder)
+        self.ui.actionDiscord.triggered.connect(self.openDiscordDialog)
 
         self.ui.coreTree.doubleClicked.connect(self.openFromSelected)
         self.ui.modulesTree.doubleClicked.connect(self.openFromSelected)
@@ -362,6 +366,9 @@ class ToolWindow(QMainWindow):
         Opens the instructions window.
         """
         HelpWindow(self).show()
+
+    def openDiscordDialog(self) -> None:
+        DiscordDialog(self).show()
 
     def openAboutDialog(self) -> None:
         """

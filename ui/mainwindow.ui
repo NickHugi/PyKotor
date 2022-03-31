@@ -556,9 +556,10 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <addaction name="actionHelpAbout"/>
+    <addaction name="actionDiscord"/>
     <addaction name="actionInstructions"/>
     <addaction name="actionHelpUpdates"/>
-    <addaction name="actionHelpAbout"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
@@ -875,6 +876,11 @@
   <action name="actionInstructions">
    <property name="text">
     <string>Instructions</string>
+   </property>
+  </action>
+  <action name="actionDiscord">
+   <property name="text">
+    <string>Discord</string>
    </property>
   </action>
  </widget>
