@@ -33,7 +33,7 @@ from pykotor.gl.models.predefined import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOIN
     ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA
 
 SEARCH_ORDER_2DA = [SearchLocation.CHITIN]
-SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
+SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
 class Scene:
@@ -388,8 +388,8 @@ class Scene:
                 mdl_data = EMPTY_MDL_DATA
                 mdx_data = EMPTY_MDX_DATA
             else:
-                mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER).data
-                mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER).data
+                mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=self.module.capsules()).data
+                mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules()).data
 
             # model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
             model = gl_load_stitched_model(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
