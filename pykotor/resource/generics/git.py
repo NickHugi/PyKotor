@@ -379,7 +379,9 @@ class GITEncounterSpawnPoint:
             y: float = 0.0,
             z: float = 0.0
     ):
-        super().__init__(x, y, z)
+        self.x = x
+        self.y = y
+        self.z = z
         self.orientation: float = 0.0
 
 
