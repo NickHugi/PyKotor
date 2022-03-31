@@ -43,6 +43,7 @@ class Scene:
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glCullFace(GL_BACK)
 
         self.installation: Installation = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
@@ -80,6 +81,7 @@ class Scene:
         self.hide_stores: bool = False
         self.hide_cameras: bool = False
         self.show_all_boundaries: bool = False
+        self.backface_culling: bool = True
 
     def buildCache(self, clearCache: bool = False) -> None:
         if clearCache:
@@ -261,8 +263,8 @@ class Scene:
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        glCullFace(GL_BACK)
-        glEnable(GL_CULL_FACE)
+        if self.backface_culling:
+            glEnable(GL_CULL_FACE)
 
         glDisable(GL_BLEND)
         self.shader.use()
