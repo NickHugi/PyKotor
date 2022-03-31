@@ -37,7 +37,7 @@ from pykotor.resource.generics.ute import UTE, construct_ute, read_ute, bytes_ut
 from pykotor.resource.generics.uti import UTI, construct_uti, read_uti, bytes_uti
 from pykotor.resource.generics.utm import UTM, construct_utm, read_utm, bytes_utm
 from pykotor.resource.generics.utp import UTP, construct_utp, read_utp, bytes_utp
-from pykotor.resource.generics.uts import construct_uts, read_uts, bytes_uts
+from pykotor.resource.generics.uts import construct_uts, read_uts, bytes_uts, UTS
 from pykotor.resource.generics.utt import UTT, construct_utt, read_utt, bytes_utt
 from pykotor.resource.generics.utw import UTW, construct_utw, read_utw, bytes_utw
 from pykotor.resource.type import ResourceType
@@ -427,6 +427,24 @@ class Module:
             if resource.restype() in [ResourceType.TPC, ResourceType.TGA]:
                 textures.append(resource)
         return textures
+
+    def sound(
+            self,
+            resname: str
+    ) -> Optional[ModuleResource[UTS]]:
+        for resource in self.resources.values():
+            if resname == resource.resname() and resource.restype() == ResourceType.UTS:
+                return resource
+        return None
+
+    def sounds(
+            self
+    ) -> List[ModuleResource[UTS]]:
+        sounds = []
+        for resource in self.resources.values():
+            if resource.restype() == ResourceType.UTS:
+                sounds.append(resource)
+        return sounds
 
 
 class ModuleResource(Generic[T]):
