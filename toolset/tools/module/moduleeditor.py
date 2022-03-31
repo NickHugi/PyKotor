@@ -382,6 +382,14 @@ class ModuleEditor(QMainWindow):
 
         menu.popup(self.ui.mainRenderer.mapToGlobal(point))
 
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        super().keyPressEvent(e)
+        self.ui.mainRenderer.keyPressEvent(e)
+
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        super().keyPressEvent(e)
+        self.ui.mainRenderer.keyReleaseEvent(e)
+
 
 class ModuleRenderer(QOpenGLWidget):
     mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys

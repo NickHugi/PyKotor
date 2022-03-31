@@ -8,7 +8,7 @@ from typing import Optional, Set, Dict
 import chardet
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QIcon, QPixmap, QColor, QKeySequence
+from PyQt5.QtGui import QIcon, QPixmap, QColor, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
 from pykotor.extract.installation import Installation, SearchLocation
@@ -160,6 +160,14 @@ class GITEditor(Editor):
 
     def onItemSelectionChanged(self) -> None:
         self._mode.onItemSelectionChanged()
+
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        super().keyPressEvent(e)
+        self.ui.renderArea.keyPressEvent(e)
+
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        super().keyPressEvent(e)
+        self.ui.renderArea.keyReleaseEvent(e)
 
 
 class _Mode(ABC):
