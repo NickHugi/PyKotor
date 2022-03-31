@@ -393,6 +393,27 @@ class WalkmeshRenderer(QWidget):
             radians: The angle of rotation to apply to the camera.
         """
         self._camRotation += radians
+
+    def centerCamera(self) -> None:
+        self._camPosition.x = (self._bbmin.x + self._bbmax.x) / 2
+        self._camPosition.y = (self._bbmin.y + self._bbmax.y) / 2
+        world_w = self._worldSize.x
+        world_h = self._worldSize.y
+
+        # If the GIT is being loaded directly after the window opens the widget won't have appropriately resized itself,
+        # so we check for this and set the sizes to what it should be by default.
+        if self.width() == 100:
+            screen_w = 520
+            screen_h = 507
+        else:
+            screen_w = self.width()
+            screen_h = self.height()
+
+        scale_w = screen_w / world_w
+        scale_h = screen_h / world_h
+        camScale = min(scale_w, scale_h)
+
+        self._camScale = camScale
     # endregion
 
     def _buildFace(self, face: BWMFace) -> QPainterPath:

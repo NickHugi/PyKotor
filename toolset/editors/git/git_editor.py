@@ -103,6 +103,7 @@ class GITEditor(Editor):
         self._git = read_git(data)
         self.ui.renderArea.setGit(self._git)
         self.updateInstanceVisibility()
+        self.ui.renderArea.centerCamera()
 
     def build(self) -> bytes:
         return bytes_git(self._git)
