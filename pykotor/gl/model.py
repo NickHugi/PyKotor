@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import math
 import struct
 from _testbuffer import ndarray
 from copy import copy
@@ -313,6 +314,27 @@ class Boundary:
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
+    @classmethod
+    def from_circle(cls, scene: Scene, radius: float, smoothness: int = 10) -> Boundary:
+        vertices = []
+        for i in range(smoothness):
+            x = math.cos(i/smoothness*math.pi/2)
+            y = math.sin(i/smoothness*math.pi/2)
+            vertices.append(Vector3(x, y, 0)*radius)
+        for i in range(smoothness):
+            x = math.cos(i/smoothness*math.pi/2 + math.pi/2)
+            y = math.sin(i/smoothness*math.pi/2 + math.pi/2)
+            vertices.append(Vector3(x, y, 0)*radius)
+        for i in range(smoothness):
+            x = math.cos(i/smoothness*math.pi/2 + math.pi/2*2)
+            y = math.sin(i/smoothness*math.pi/2 + math.pi/2*2)
+            vertices.append(Vector3(x, y, 0)*radius)
+        for i in range(smoothness):
+            x = math.cos(i/smoothness*math.pi/2 + math.pi/2*3)
+            y = math.sin(i/smoothness*math.pi/2 + math.pi/2*3)
+            vertices.append(Vector3(x, y, 0)*radius)
+        return Boundary(scene, vertices)
+
     def draw(self, shader: Shader, transform: mat4):
         shader.set_matrix4("model", transform)
         glBindVertexArray(self._vao)
@@ -331,7 +353,7 @@ class Boundary:
             index4 = (i*2+2)+1 if (i*2+2)+1 < count else 1
             npfaces.extend([index1, index2, index3])
             npfaces.extend([index2, index4, index3])
-        print(count, npfaces)
+
         return numpy.array(npvertices, dtype='float32'), numpy.array(npfaces, dtype='int16')
 
 

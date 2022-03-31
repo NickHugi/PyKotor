@@ -196,9 +196,14 @@ class Scene:
 
         for sound in self.git.sounds:
             if sound not in self.objects:
+                genBoundary = lambda: Empty(self)
+                with suppress(Exception):
+                    uts = self.module.sound(sound.resref.get()).resource()
+                    genBoundary = lambda: Boundary.from_circle(self, uts.max_distance)
+
                 position = vec3(sound.position.x, sound.position.y, sound.position.z)
                 rotation = vec3(0, 0, 0)
-                obj = RenderObject("sound", position, rotation, data=sound)
+                obj = RenderObject("sound", position, rotation, data=sound, genBoundary=genBoundary)
                 self.objects[sound] = obj
             else:
                 self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
