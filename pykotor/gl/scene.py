@@ -427,7 +427,7 @@ class Scene:
         point = self.module.info().resource().entry_position
         self.camera.x = point.x
         self.camera.y = point.y
-        self.camera.z = point.z
+        self.camera.z = point.z + 1.5
 
 
 class RenderObject:
