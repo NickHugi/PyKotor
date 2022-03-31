@@ -631,7 +631,7 @@ def transform(
                         0,
                         root_offset,
                         *translation,              # Node Position
-                        *orientation,           # Node Orientation
+                        orientation.w, orientation.x, orientation.y, orientation.z,           # Node Orientation
                         child_array_offset,     # Child Array Offset
                         child_count,
                         child_count,
