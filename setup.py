@@ -5,7 +5,7 @@ from setuptools import setup, find_namespace_packages
 HERE = pathlib.Path(__file__).parent
 
 NAME = "HolocronToolset"
-VERSION = "1.5.2"
+VERSION = "2.0.0"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "A PyQt5 application that can edit the files used by the KotOR game engine."
 PACKAGES = find_namespace_packages()
