@@ -4,7 +4,7 @@ from setuptools import setup, find_packages, find_namespace_packages
 HERE = pathlib.Path(__file__).parent
 
 NAME = "PyKotorGL"
-VERSION = "0.1"
+VERSION = "1.0.0"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "Render modules from both KotOR games."
 PACKAGES = find_namespace_packages()
