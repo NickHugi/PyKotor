@@ -18,7 +18,7 @@ class HelpWindow(QMainWindow):
         self._setupSignals()
         self._setupContents()
 
-        self.ui.textDisplay.setSearchPaths(["./help/images"])
+        self.ui.textDisplay.setSearchPaths(["./help"])
 
     def _setupSignals(self) -> None:
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
