@@ -20,7 +20,7 @@ class HelpWindow(QMainWindow):
         self.ui.textDisplay.setSearchPaths(["./help/images"])
 
     def _setupSignals(self) -> None:
-        self.ui.contentsTree.itemDoubleClicked.connect(self.onContentsDoubleClicked)
+        self.ui.contentsTree.clicked.connect(self.onContentsClicked)
 
     def _setupContents(self) -> None:
         text = BinaryReader.load_file("./help/contents.json")
@@ -44,8 +44,10 @@ class HelpWindow(QMainWindow):
         except (IOError, FileNotFoundError):
             QMessageBox(QMessageBox.Critical, "Failed to open help file", "Could not access '{}'.".format(filepath)).exec_()
 
-    def onContentsDoubleClicked(self, item: QTreeWidgetItem) -> None:
-        filename = item.data(0, QtCore.Qt.UserRole)
-        if filename != "":
-            self.displayFile("./help/{}".format(filename))
+    def onContentsClicked(self) -> None:
+        if self.ui.contentsTree.selectedItems():
+            item = self.ui.contentsTree.selectedItems()[0]
+            filename = item.data(0, QtCore.Qt.UserRole)
+            if filename != "":
+                self.displayFile("./help/{}".format(filename))
 
