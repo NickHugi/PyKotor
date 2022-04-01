@@ -1,6 +1,7 @@
 import json
 from typing import Dict, Optional
 
+import markdown
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMessageBox
 from pykotor.common.stream import BinaryReader
@@ -40,7 +41,8 @@ class HelpWindow(QMainWindow):
     def displayFile(self, filepath: str) -> None:
         try:
             text = BinaryReader.load_file(filepath).decode()
-            self.ui.textDisplay.setHtml(text)
+            html = markdown.markdown(text) if filepath.endswith(".md") else text
+            self.ui.textDisplay.setHtml(html)
         except (IOError, FileNotFoundError):
             QMessageBox(QMessageBox.Critical, "Failed to open help file", "Could not access '{}'.".format(filepath)).exec_()
 
