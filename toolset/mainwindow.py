@@ -30,6 +30,7 @@ from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
 
 import mainwindow_ui
+from config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
 from editors.are.are_editor import AREEditor
@@ -66,8 +67,6 @@ from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 from tools.indoormap.indoorbuilder import IndoorMapBuilder
 from tools.module.moduleeditor import ModuleEditor
-
-PROGRAM_VERSION = "1.5.2"
 
 
 class ToolWindow(QMainWindow):
@@ -374,7 +373,7 @@ class ToolWindow(QMainWindow):
         """
         Opens the about dialog.
         """
-        About(self, PROGRAM_VERSION).exec_()
+        About(self).exec_()
 
     def checkForUpdates(self, silent: bool = False) -> None:
         """
@@ -384,7 +383,7 @@ class ToolWindow(QMainWindow):
             silent: If true, only shows popup if an update is available.
         """
         try:
-            req = requests.get("https://pastebin.com/raw/tUJCGgrX")
+            req = requests.get(UPDATE_INFO_LINK)
             data = json.loads(req.text)
 
             latestVersion = data['latestVersion']
