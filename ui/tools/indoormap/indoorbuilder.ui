@@ -89,7 +89,10 @@
     <addaction name="actionBuild"/>
     <addaction name="actionSettings"/>
     <addaction name="separator"/>
+    <addaction name="actionDownloadKits"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -139,6 +142,11 @@
   <action name="actionDeleteSelected">
    <property name="text">
     <string>Delete Selected</string>
+   </property>
+  </action>
+  <action name="actionDownloadKits">
+   <property name="text">
+    <string>Download Kits</string>
    </property>
   </action>
  </widget>

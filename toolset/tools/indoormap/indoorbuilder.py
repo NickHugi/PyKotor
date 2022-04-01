@@ -1,14 +1,18 @@
 import json
 import math
 import os
+import zipfile
+from contextlib import suppress
 from copy import copy, deepcopy
-from typing import Optional, List, Set, Tuple
+from typing import Optional, List, Set, Tuple, Dict
 
+import requests
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer, QPointF, QRectF
 from PyQt5.QtGui import QImage, QPixmap, QPaintEvent, QTransform, QPainter, QColor, QWheelEvent, QMouseEvent, QKeyEvent, \
     QPen, QPainterPath, QKeySequence
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow, QFileDialog, QMessageBox, QDialog, QFormLayout, \
+    QPushButton
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import Color
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -17,9 +21,10 @@ from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace
 from pykotor.resource.generics.utd import read_utd
 from pykotor.resource.type import ResourceType
 
+from config import UPDATE_INFO_LINK
 from data.installation import HTInstallation
 from misc.asyncloader import AsyncLoader
-from tools.indoormap import indoorbuilder_ui
+from tools.indoormap import indoorbuilder_ui, indoordownloader_ui
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit, KitDoor, load_kits
 from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
 from tools.indoormap.indoorsettings import IndoorMapSettings
@@ -54,6 +59,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionBuild.triggered.connect(self.buildMap)
         self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map).exec_())
         self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
+        self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
 
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
@@ -71,6 +77,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionSettings.setShortcut(QKeySequence("Ctrl+Alt+S"))
 
     def _setupKits(self) -> None:
+        self.ui.kitSelect.clear()
         self._kits = load_kits("./kits")
 
         for kit in self._kits:
@@ -119,6 +126,10 @@ class IndoorMapBuilder(QMainWindow):
                 self._refreshWindowTitle()
             except Exception as e:
                 QMessageBox(QMessageBox.Critical, "Failed to load file", str(e)).exec_()
+
+    def openKitDownloader(self) -> None:
+        KitDownloader(self).exec_()
+        self._setupKits()
 
     def buildMap(self) -> None:
         path = "{}{}.mod".format(self._installation.module_path(), self._map.module_id)
@@ -616,3 +627,57 @@ class IndoorMapRenderer(QWidget):
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
     # endregion
+
+
+class KitDownloader(QDialog):
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+
+        self.ui = indoordownloader_ui.Ui_Dialog()
+        self.ui.setupUi(self)
+        self._setupDownloads()
+
+    def _setupDownloads(self) -> None:
+        req = requests.get(UPDATE_INFO_LINK)
+        updateInfoData = json.loads(req.text)
+
+        for kitName, kitDict in updateInfoData["kits"].items():
+            kitId = kitDict["id"]
+            kitPath = "./kits/{}.json".format(kitId)
+            if os.path.exists(kitPath):
+                button = QPushButton("Already Downloaded")
+                button.setEnabled(False)
+                with suppress(Exception):
+                    localKitDict = json.loads(BinaryReader.load_file(kitPath))
+                    if localKitDict["version"] < kitDict["version"]:
+                        button.setText("Update Available")
+                        button.setEnabled(True)
+                        button.clicked.connect(lambda _, button=button: self._downloadButtonPressed(button, kitDict))
+            else:
+                button = QPushButton("Download")
+                button.clicked.connect(lambda _, button=button: self._downloadButtonPressed(button, kitDict))
+
+            layout: QFormLayout = self.ui.groupBox.layout()
+            layout.addRow(kitName, button)
+
+    def _downloadButtonPressed(self, button: QPushButton, infoDict: Dict) -> None:
+        button.setText("Downloading")
+        button.setEnabled(False)
+
+        task = lambda: self._downloadKit(infoDict["id"], infoDict["directDownload"])
+        loader = AsyncLoader(self, "Downloading Kit...", task, "Failed to download.")
+        if loader.exec_():
+            button.setText("Download Complete")
+        else:
+            button.setText("Download Failed")
+            button.setEnabled(True)
+
+    def _downloadKit(self, kitId: str, link: str) -> None:
+        response = requests.get(link, stream=True)
+        filepath = "./kits/{}.zip".format(kitId)
+        with open(filepath, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+        with zipfile.ZipFile(filepath, 'r') as zip_ref:
+            zip_ref.extractall("./kits")
