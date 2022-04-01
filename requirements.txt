@@ -13,3 +13,4 @@ urllib3==1.26.8
 watchdog==2.1.6
 Pillow==9.0.1
 numpy==1.22.2
+Markdown==3.3.6
