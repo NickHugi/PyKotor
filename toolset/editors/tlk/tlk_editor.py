@@ -41,7 +41,7 @@ class TLKEditor(Editor):
         self.ui.searchButton.clicked.connect(lambda: self.doFilter(self.ui.searchEdit.text()))
         self.ui.actionInsert.triggered.connect(self.insert)
 
-        self.ui.talkTable.selectionModel().selectionChanged.connect(self.selectionChanged)
+        self.ui.talkTable.clicked.connect(self.selectionChanged)
         self.ui.textEdit.textChanged.connect(self.updateEntry)
         self.ui.soundEdit.textChanged.connect(self.updateEntry)
 
@@ -105,7 +105,9 @@ class TLKEditor(Editor):
     def toggleGotoBox(self) -> None:
         self.ui.jumpBox.setVisible(not self.ui.jumpBox.isVisible())
 
-    def selectionChanged(self, selected: QItemSelection) -> None:
+    def selectionChanged(self) -> None:
+        selected = self.ui.talkTable.selectionModel().selection()
+
         if len(selected.indexes()) == 0:
             self.ui.textEdit.setEnabled(False)
             self.ui.soundEdit.setEnabled(False)
