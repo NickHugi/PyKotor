@@ -3,3 +3,4 @@ venv
 .git
 PyKotorGL.egg-info
 dist
+/pykotor/gl/window.py
