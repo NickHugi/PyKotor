@@ -1,5 +1,4 @@
 glfw==2.3.0
-glm==0.4.3
 numpy==1.22.2
 PyGLM==2.5.7
 PyOpenGL==3.1.6
