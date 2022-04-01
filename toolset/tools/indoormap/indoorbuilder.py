@@ -80,6 +80,12 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.kitSelect.clear()
         self._kits = load_kits("./kits")
 
+        if len(self._kits) == 0:
+            noKitPrompt = QMessageBox(QMessageBox.Warning, "No Kits Available",
+                                      "No kits were detected, would you like to open the Kit downloader?")
+            if noKitPrompt.exec_():
+                self.openKitDownloader()
+
         for kit in self._kits:
             self.ui.kitSelect.addItem(kit.name, kit)
 
