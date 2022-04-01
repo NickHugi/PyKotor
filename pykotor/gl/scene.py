@@ -103,6 +103,14 @@ class Scene:
                 del self.textures[identifier.resname]
             if identifier.restype in [ResourceType.MDL, ResourceType.MDX]:
                 del self.models[identifier.resname]
+            if identifier.restype in [ResourceType.GIT]:
+                for instance in self.git.instances():
+                    del self.objects[instance]
+                self.git = self.module.git().resource()
+            if identifier.restype in [ResourceType.LYT]:
+                for room in self.layout.rooms:
+                    del self.objects[room]
+                self.layout = self.module.layout().resource()
         self.clearCacheBuffer = []
 
         if self.git is None:
