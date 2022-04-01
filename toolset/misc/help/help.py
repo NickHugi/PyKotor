@@ -100,7 +100,7 @@ class HelpWindow(QMainWindow):
     def displayFile(self, filepath: str) -> None:
         try:
             text = BinaryReader.load_file(filepath).decode()
-            html = markdown.markdown(text) if filepath.endswith(".md") else text
+            html = markdown.markdown(text, extensions=['tables']) if filepath.endswith(".md") else text
             self.ui.textDisplay.setHtml(html)
         except (IOError, FileNotFoundError):
             QMessageBox(QMessageBox.Critical, "Failed to open help file", "Could not access '{}'.".format(filepath)).exec_()
