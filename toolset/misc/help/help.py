@@ -3,6 +3,7 @@ import os
 import zipfile
 from contextlib import suppress
 from typing import Dict, Optional
+import xml.etree.ElementTree as ET
 
 import markdown
 import requests
@@ -40,12 +41,19 @@ class HelpWindow(QMainWindow):
         self.ui.contentsTree.clear()
 
         with suppress(Exception):
-            text = BinaryReader.load_file("./help/contents.json")
-            data = json.loads(text)
-            self.version = data["version"]
-            self._setupContentsRec(None, data)
+            tree = ET.parse("./help/contents.xml")
+            root = tree.getroot()
 
-    def _setupContentsRec(self, parent: Optional[QTreeWidgetItem], data: Dict) -> None:
+            self.version = root.get("version")
+            self._setupContentsRecXML(None, root)
+
+            # Old JSON code:
+            # text = BinaryReader.load_file("./help/contents.xml")
+            # data = json.loads(text)
+            # self.version = data["version"]
+            # self._setupContentsRecJSON(None, data)
+
+    def _setupContentsRecJSON(self, parent: Optional[QTreeWidgetItem], data: Dict) -> None:
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         if "structure" in data:
@@ -53,7 +61,16 @@ class HelpWindow(QMainWindow):
                 item = QTreeWidgetItem([title])
                 item.setData(0, QtCore.Qt.UserRole, data["structure"][title]["filename"])
                 add(item)
-                self._setupContentsRec(item, data["structure"][title])
+                self._setupContentsRecJSON(item, data["structure"][title])
+
+    def _setupContentsRecXML(self, parent: Optional[QTreeWidgetItem], element: ET.Element) -> None:
+        add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
+
+        for child in element:
+            item = QTreeWidgetItem([child.get("name")])
+            item.setData(0, QtCore.Qt.UserRole, child.get("file"))
+            add(item)
+            self._setupContentsRecXML(item, child)
 
     def checkForUpdates(self) -> None:
         req = requests.get(UPDATE_INFO_LINK)
@@ -92,5 +109,5 @@ class HelpWindow(QMainWindow):
         if self.ui.contentsTree.selectedItems():
             item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)
-            if filename != "":
+            if filename is not None and filename != "":
                 self.displayFile("./help/{}".format(filename))
