@@ -16,3 +16,4 @@ dist-win
 /toolset/help/
 /toolset/kits/
 /pykotor/
+build-windows.ps1
