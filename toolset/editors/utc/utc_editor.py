@@ -20,7 +20,6 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
 from editors.inventory_editor import InventoryEditor
-from editors.utc import utc_editor_ui
 
 
 class UTCEditor(Editor):
@@ -28,6 +27,7 @@ class UTCEditor(Editor):
         supported = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation)
 
+        from editors.utc import utc_editor_ui
         self.ui = utc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

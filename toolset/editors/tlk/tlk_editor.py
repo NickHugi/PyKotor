@@ -11,7 +11,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor
-from editors.tlk import tlk_editor_ui
 
 
 class TLKEditor(Editor):
@@ -19,6 +18,7 @@ class TLKEditor(Editor):
         supported = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
+        from editors.tlk import tlk_editor_ui
         self.ui = tlk_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

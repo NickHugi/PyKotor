@@ -6,7 +6,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
-from editors.utt import utt_editor_ui
 
 
 class UTTEditor(Editor):
@@ -14,6 +13,7 @@ class UTTEditor(Editor):
         supported = [ResourceType.UTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
+        from editors.utt import utt_editor_ui
         self.ui = utt_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

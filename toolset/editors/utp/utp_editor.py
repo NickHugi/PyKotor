@@ -13,7 +13,6 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
 from editors.inventory_editor import InventoryEditor
-from editors.utp import utp_editor_ui
 
 
 class UTPEditor(Editor):
@@ -21,6 +20,7 @@ class UTPEditor(Editor):
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
 
+        from editors.utp import utp_editor_ui
         self.ui = utp_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

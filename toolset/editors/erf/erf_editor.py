@@ -13,7 +13,6 @@ from pykotor.resource.type import ResourceType
 from data.configuration import Configuration
 from data.installation import HTInstallation
 from editors.editor import Editor
-from editors.erf import erf_editor_ui
 
 
 class ERFEditor(Editor):
@@ -22,6 +21,7 @@ class ERFEditor(Editor):
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
+        from editors.erf import erf_editor_ui
         self.ui = erf_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

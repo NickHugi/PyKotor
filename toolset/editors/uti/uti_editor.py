@@ -9,7 +9,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
-from editors.uti import uti_editor_ui, property_editor_ui
 
 
 class UTIEditor(Editor):
@@ -17,6 +16,7 @@ class UTIEditor(Editor):
         supported = [ResourceType.UTI]
         super().__init__(parent, "Item Editor", "item", supported, supported, installation)
 
+        from editors.uti import uti_editor_ui
         self.ui = uti_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -256,6 +256,7 @@ class PropertyEditor(QDialog):
     def __init__(self, installation: HTInstallation, utiProperty: UTIProperty):
         super().__init__()
 
+        from editors.uti import property_editor_ui
         self.ui = property_editor_ui.Ui_Dialog()
         self.ui.setupUi(self)
 

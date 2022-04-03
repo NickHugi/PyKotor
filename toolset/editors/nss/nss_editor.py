@@ -18,7 +18,6 @@ from pykotor.resource.type import ResourceType
 from data.configuration import Configuration, NoConfigurationSetError
 from data.installation import HTInstallation
 from editors.editor import Editor
-from editors.nss import nss_editor_ui
 from utils.script import decompileScript, compileScript
 
 
@@ -30,6 +29,7 @@ class NSSEditor(Editor):
         supported = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
+        from editors.nss import nss_editor_ui
         self.ui = nss_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

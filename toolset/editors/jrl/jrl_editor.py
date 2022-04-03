@@ -10,8 +10,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
-from editors.jrl import jrl_editor_ui
-
 
 class JRLEditor(Editor):
     """
@@ -32,6 +30,7 @@ class JRLEditor(Editor):
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
+        from editors.jrl import jrl_editor_ui
         self.ui = jrl_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

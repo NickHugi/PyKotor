@@ -14,7 +14,7 @@ from pykotor.resource.formats.gff import read_gff, GFFStruct, GFFFieldType, GFFL
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
-from editors.gff import gff_editor_ui
+
 
 _VALUE_NODE_ROLE = QtCore.Qt.UserRole + 1
 _TYPE_NODE_ROLE = QtCore.Qt.UserRole + 2
@@ -35,6 +35,7 @@ class GFFEditor(Editor):
 
         self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
 
+        from editors.gff import gff_editor_ui
         self.ui = gff_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

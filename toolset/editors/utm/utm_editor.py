@@ -11,7 +11,6 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
 from editors.inventory_editor import InventoryEditor
-from editors.utm import utm_editor_ui
 
 
 class UTMEditor(Editor):
@@ -19,6 +18,7 @@ class UTMEditor(Editor):
         supported = [ResourceType.UTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
+        from editors.utm import utm_editor_ui
         self.ui = utm_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

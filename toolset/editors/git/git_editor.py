@@ -19,10 +19,7 @@ from pykotor.resource.generics.git import read_git, GIT, GITInstance, GITCreatur
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
-from editors.git import git_editor_ui
 from editors.git.git_dialogs import openInstanceDialog
-from editors.txt import txt_editor_ui
-from misc.walkmesh.renderer import WalkmeshRenderer
 
 
 class GITEditor(Editor):
@@ -30,6 +27,7 @@ class GITEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
+        from editors.git import git_editor_ui
         self.ui = git_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -173,6 +171,7 @@ class GITEditor(Editor):
 class _Mode(ABC):
     def __init__(self, editor: GITEditor):
         self._editor: GITEditor = editor
+        from editors.git import git_editor_ui
         self._ui: git_editor_ui = editor.ui
 
     @abstractmethod

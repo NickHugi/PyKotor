@@ -9,7 +9,6 @@ from pykotor.resource.formats.tpc import read_tpc, TPCTextureFormat, TPC, write_
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
-from editors.tpc import tpc_editor_ui
 
 
 class TPCEditor(Editor):
@@ -17,6 +16,7 @@ class TPCEditor(Editor):
         supported = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
+        from editors.tpc import tpc_editor_ui
         self.ui = tpc_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

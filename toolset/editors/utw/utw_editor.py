@@ -5,7 +5,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
-from editors.utw import utw_editor_ui
 
 
 class UTWEditor(Editor):
@@ -13,6 +12,7 @@ class UTWEditor(Editor):
         supported = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
+        from editors.utw import utw_editor_ui
         self.ui = utw_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

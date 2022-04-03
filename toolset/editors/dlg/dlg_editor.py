@@ -15,7 +15,6 @@ from pykotor.resource.generics.dlg import DLG, construct_dlg, DLGLink, DLGNode, 
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from editors.dlg import dlg_editor_ui, edit_animation_ui, edit_model_ui
 from editors.editor import Editor, LocalizedStringDialog
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
@@ -27,6 +26,7 @@ class DLGEditor(Editor):
         supported = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
+        from editors.dlg import dlg_editor_ui
         self.ui = dlg_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -733,6 +733,7 @@ class EditAnimationDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, animation: DLGAnimation = DLGAnimation()):
         super().__init__(parent)
 
+        from editors.dlg import edit_animation_ui
         self.ui = edit_animation_ui.Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -768,6 +769,7 @@ class CutsceneModelDialog(QDialog):
     def __init__(self, parent: QWidget, stunt: DLGStunt = DLGStunt()):
         super().__init__(parent)
 
+        from editors.dlg import edit_model_ui
         self.ui = edit_model_ui.Ui_Dialog()
         self.ui.setupUi(self)
 

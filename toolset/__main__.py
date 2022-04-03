@@ -1,6 +1,9 @@
+import sys
+sys.path.append('.')
+sys.path.append('..')
+
 import multiprocessing
 import os
-import sys
 import traceback
 from types import TracebackType
 

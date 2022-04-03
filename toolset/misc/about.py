@@ -1,12 +1,13 @@
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from config import PROGRAM_VERSION
-from misc import about_ui
 
 
 class About(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
+
+        from misc import about_ui
         self.ui = about_ui.Ui_Dialog()
         self.ui.setupUi(self)
 

@@ -10,7 +10,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor
-from editors.twoda import twoda_editor_ui
 
 
 class TwoDAEditor(Editor):
@@ -19,6 +18,7 @@ class TwoDAEditor(Editor):
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
+        from editors.twoda import twoda_editor_ui
         self.ui = twoda_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

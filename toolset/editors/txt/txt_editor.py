@@ -7,7 +7,6 @@ from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
 
 from editors.editor import Editor
-from editors.txt import txt_editor_ui
 
 
 class TXTEditor(Editor):
@@ -16,6 +15,7 @@ class TXTEditor(Editor):
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
+        from editors.txt import txt_editor_ui
         self.ui = txt_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

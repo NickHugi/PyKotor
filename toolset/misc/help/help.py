@@ -13,7 +13,6 @@ from pykotor.common.stream import BinaryReader
 
 from config import UPDATE_INFO_LINK
 from misc.asyncloader import AsyncLoader
-from misc.help import helpwindow_ui
 
 
 class HelpWindow(QMainWindow):
@@ -24,6 +23,7 @@ class HelpWindow(QMainWindow):
 
         self.version: Optional[int] = None
 
+        from misc.help import helpwindow_ui
         self.ui = helpwindow_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()

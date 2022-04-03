@@ -20,7 +20,7 @@ from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from editors import inventory_editor_ui
+
 
 _RESNAME_ROLE = QtCore.Qt.UserRole + 1
 _FILEPATH_ROLE = QtCore.Qt.UserRole + 2
@@ -39,6 +39,7 @@ class InventoryEditor(QDialog):
                  hide_equipment: bool = False, is_store: bool = False):
         super().__init__(parent)
 
+        from editors import inventory_editor_ui
         self.ui = inventory_editor_ui.Ui_Dialog()
         self.ui.setupUi(self)
 

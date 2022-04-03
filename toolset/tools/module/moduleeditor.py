@@ -28,7 +28,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from pykotor.gl.scene import Scene, RenderObject
-from tools.module import moduleeditor_ui, insert_instance_ui
 
 
 class ModuleEditor(QMainWindow):
@@ -38,6 +37,7 @@ class ModuleEditor(QMainWindow):
         self._installation: HTInstallation = installation
         self._module: Module = module
 
+        from tools.module import moduleeditor_ui
         self.ui = moduleeditor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
@@ -534,6 +534,7 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b''
         self.filepath: str = ""
 
+        from tools.module import insert_instance_ui
         self.ui = insert_instance_ui.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupSignals()

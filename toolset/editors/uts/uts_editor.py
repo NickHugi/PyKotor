@@ -10,7 +10,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
-from editors.uts import uts_editor_ui
 
 
 class UTSEditor(Editor):
@@ -18,6 +17,7 @@ class UTSEditor(Editor):
         supported = [ResourceType.UTS]
         super().__init__(parent, "Sound Editor", "sound", supported, supported, installation)
 
+        from editors.uts import uts_editor_ui
         self.ui = uts_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

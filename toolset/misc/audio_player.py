@@ -10,13 +10,12 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
 
-from misc import about_ui, audio_player_ui
-
 
 class AudioPlayer(QMainWindow):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
+        from misc import audio_player_ui
         self.ui = audio_player_ui.Ui_MainWindow()
         self.ui.setupUi(self)
 

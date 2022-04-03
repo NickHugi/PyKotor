@@ -3,7 +3,6 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QDialog
 
 from data.configuration import Configuration, InstallationConfig
-from misc import settings_ui
 
 
 class Settings(QDialog):
@@ -12,6 +11,7 @@ class Settings(QDialog):
 
         self.pathsModel: QStandardItemModel = QStandardItemModel()
 
+        from misc import settings_ui
         self.ui = settings_ui.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupSignals()

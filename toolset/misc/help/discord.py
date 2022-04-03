@@ -1,16 +1,13 @@
-import sys
-
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QDialog, QWidget, QApplication
-
-from misc.help import discord_ui
 
 
 class DiscordDialog(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
+        from misc.help import discord_ui
         self.ui = discord_ui.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupSignals()

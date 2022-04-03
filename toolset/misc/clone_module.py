@@ -5,7 +5,6 @@ from pykotor.common.module import Module
 from pykotor.tools import module
 
 from data.installation import HTInstallation
-from misc import clone_module_ui
 from misc.asyncloader import AsyncLoader
 
 _ROOT_INDEX = 0
@@ -22,6 +21,8 @@ class ModuleOption(NamedTuple):
 class CloneModuleDialog(QDialog):
     def __init__(self, parent: QWidget, active: HTInstallation, installations: Dict[str, HTInstallation]):
         super().__init__(parent)
+
+        from misc import clone_module_ui
         self.ui = clone_module_ui.Ui_Dialog()
         self.ui.setupUi(self)
 

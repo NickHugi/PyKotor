@@ -8,7 +8,6 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
-from editors.utd import utd_editor_ui
 
 
 class UTDEditor(Editor):
@@ -16,6 +15,7 @@ class UTDEditor(Editor):
         supported = [ResourceType.UTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation)
 
+        from editors.utd import utd_editor_ui
         self.ui = utd_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

@@ -7,14 +7,13 @@ from pykotor.common.misc import Color
 
 from data.installation import HTInstallation
 from editors.editor import LocalizedStringDialog
-from misc.longspinbox import LongSpinBox
-from misc.widget import locstringlineedit_ui, coloredit_ui
 
 
 class LocalizedStringLineEdit(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
+        from misc.widget import locstringlineedit_ui
         self.ui = locstringlineedit_ui.Ui_Form()
         self.ui.setupUi(self)
 
@@ -50,6 +49,7 @@ class ColorEdit(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
+        from misc.widget import coloredit_ui
         self.ui = coloredit_ui.Ui_Form()
         self.ui.setupUi(self)
 

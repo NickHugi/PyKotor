@@ -13,7 +13,6 @@ from pykotor.resource.generics.git import GITTrigger, GIT
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from editors.bwm import bwm_editor_ui
 from editors.editor import Editor
 
 
@@ -26,6 +25,7 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
+        from editors.bwm import bwm_editor_ui
         self.ui = bwm_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

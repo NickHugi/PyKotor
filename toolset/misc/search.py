@@ -7,7 +7,6 @@ from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from misc import search_ui, search_result_ui
 from misc.asyncloader import AsyncBatchLoader
 
 
@@ -18,6 +17,8 @@ class FileSearcher(QDialog):
 
     def __init__(self, parent: QWidget, installations: Dict[str, HTInstallation]):
         super().__init__(parent)
+
+        from misc import search_ui
         self.ui = search_ui.Ui_Dialog()
         self.ui.setupUi(self)
 

@@ -9,7 +9,6 @@ from pykotor.resource.generics.are import ARE, dismantle_are, ARENorthAxis, AREW
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from editors.are import are_editor_ui
 from editors.editor import Editor, LocalizedStringDialog
 from misc.longspinbox import LongSpinBox
 
@@ -20,6 +19,7 @@ class AREEditor(Editor):
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
+        from editors.are import are_editor_ui
         self.ui = are_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()

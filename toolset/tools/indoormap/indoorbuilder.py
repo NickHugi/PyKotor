@@ -24,7 +24,6 @@ from pykotor.resource.type import ResourceType
 from config import UPDATE_INFO_LINK
 from data.installation import HTInstallation
 from misc.asyncloader import AsyncLoader
-from tools.indoormap import indoorbuilder_ui, indoordownloader_ui
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit, KitDoor, load_kits
 from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
 from tools.indoormap.indoorsettings import IndoorMapSettings
@@ -39,6 +38,7 @@ class IndoorMapBuilder(QMainWindow):
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
+        from tools.indoormap import indoorbuilder_ui
         self.ui = indoorbuilder_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
@@ -639,6 +639,7 @@ class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
+        from tools.indoormap import indoordownloader_ui
         self.ui = indoordownloader_ui.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupDownloads()

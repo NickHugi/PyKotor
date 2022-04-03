@@ -29,7 +29,6 @@ from pykotor.resource.type import ResourceType
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent
 from watchdog.observers import Observer
 
-import mainwindow_ui
 from config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
@@ -78,6 +77,7 @@ class ToolWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        import mainwindow_ui
         self.ui = mainwindow_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
