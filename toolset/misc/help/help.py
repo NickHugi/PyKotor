@@ -73,10 +73,10 @@ class HelpWindow(QMainWindow):
             self._setupContentsRecXML(item, child)
 
     def checkForUpdates(self) -> None:
-        req = requests.get(UPDATE_INFO_LINK)
-        updateInfoData = json.loads(req.text)
-
         with suppress(Exception):
+            req = requests.get(UPDATE_INFO_LINK)
+            updateInfoData = json.loads(req.text)
+
             if self.version is None or updateInfoData["help"]["version"] > self.version:
                 msgbox = QMessageBox(QMessageBox.Information, "Update available",
                                      "A newer version of the help book is available for download, would you like to download it?")
