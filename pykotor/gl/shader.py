@@ -40,7 +40,7 @@ void main()
 
 
 KOTOR_FSHADER = """
-#version 330
+#version 420
 in vec2 diffuse_uv;
 in vec2 lightmap_uv;
 
