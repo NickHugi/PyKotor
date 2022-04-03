@@ -56,6 +56,7 @@ class ModuleEditor(QMainWindow):
 
         self.snapToWalkmesh: bool = True
 
+        self._refreshWindowTitle()
         self.rebuildResourceTree()
         self.rebuildInstanceList()
 
@@ -91,6 +92,10 @@ class ModuleEditor(QMainWindow):
         self.ui.mainRenderer.mouseScrolled.connect(self.onRendererMouseScrolled)
         self.ui.mainRenderer.objectSelected.connect(self.onRendererObjectSelected)
         self.ui.mainRenderer.customContextMenuRequested.connect(self.onRendererContextMenu)
+
+    def _refreshWindowTitle(self) -> None:
+        title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
+        self.setWindowTitle(title)
 
     def saveGit(self) -> None:
         self._module.git().save()
