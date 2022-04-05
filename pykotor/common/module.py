@@ -6,7 +6,7 @@ from copy import copy
 from typing import List, TypeVar, Generic, Optional, Dict, Any
 
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
-from pykotor.resource.formats.erf import ERF, write_erf, read_erf
+from pykotor.resource.formats.erf import ERF, write_erf, read_erf, ERFType
 from pykotor.resource.formats.rim import read_rim, write_rim
 
 from pykotor.resource.formats.vis.vis_auto import bytes_vis
@@ -676,6 +676,7 @@ class ModuleResource(Generic[T]):
             raise ValueError("No active file selected for resource '{}.{}'".format(self._resname, self._restype.extension))
         elif self._active.endswith(".erf") or self._active.endswith(".mod"):
             erf = read_erf(self._active)
+            erf.erf_type = ERFType.ERF if self._active.endswith(".erf") else ERFType.MOD
             erf.set(self._resname, self._restype, conversions[self._restype](self.resource()))
             write_erf(erf, self._active)
         elif self._active.endswith(".rim"):
