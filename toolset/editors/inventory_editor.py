@@ -124,7 +124,7 @@ class InventoryEditor(QDialog):
 
         self.ui.contentsTable.setColumnWidth(0, 64)
 
-        for slot in EquipmentSlot:
+        for slot in [slot for slot in EquipmentSlot if slot in self._slotMap]:
             image = self._slotMap[slot].emptyImage.format("droid" if droid else "human")
             self._slotMap[slot].label.setPixmap(QPixmap(image))
 
