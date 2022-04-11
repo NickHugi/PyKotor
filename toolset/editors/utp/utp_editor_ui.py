@@ -467,7 +467,7 @@ class Ui_MainWindow(object):
         self.label_19.setText(_translate("MainWindow", "OnUserDefined:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Scripts"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("MainWindow", "Comments"))
-        self.menuNew.setTitle(_translate("MainWindow", "New"))
+        self.menuNew.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionSave.setText(_translate("MainWindow", "Save"))
         self.actionNew.setText(_translate("MainWindow", "New"))
