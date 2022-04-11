@@ -23,6 +23,7 @@ class Ui_MainWindow(object):
         font = QtGui.QFont()
         font.setFamily("Courier New")
         self.textEdit.setFont(font)
+        self.textEdit.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
         self.textEdit.setObjectName("textEdit")
         self.gridLayout.addWidget(self.textEdit, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
