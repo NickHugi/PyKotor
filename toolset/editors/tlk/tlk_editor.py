@@ -32,6 +32,9 @@ class TLKEditor(Editor):
         self.proxyModel.setSourceModel(self.model)
         self.ui.talkTable.setModel(self.proxyModel)
 
+        # Make the bottom panel take as little space possible
+        self.ui.splitter.setSizes([99999999, 1])
+
         self.new()
 
     def _setupSignals(self) -> None:
