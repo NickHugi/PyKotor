@@ -1,8 +1,9 @@
 from typing import Optional
 
 import chardet
+from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QPlainTextEdit
 from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
 
@@ -15,6 +16,8 @@ class TXTEditor(Editor):
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
+        self._wordWrap: bool = False
+
         from editors.txt import txt_editor_ui
         self.ui = txt_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -24,7 +27,7 @@ class TXTEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        ...
+        self.ui.actionWord_Wrap.triggered.connect(self.toggleWordWrap)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -42,3 +45,8 @@ class TXTEditor(Editor):
     def new(self) -> None:
         super().new()
         self.ui.textEdit.setPlainText("")
+
+    def toggleWordWrap(self) -> None:
+        self._wordWrap = not self._wordWrap
+        self.ui.actionWord_Wrap.setChecked(self._wordWrap)
+        self.ui.textEdit.setLineWrapMode(QPlainTextEdit.WidgetWidth if self._wordWrap else QPlainTextEdit.NoWrap)
