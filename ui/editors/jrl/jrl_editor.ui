@@ -32,6 +32,12 @@
        </property>
       </widget>
       <widget class="QStackedWidget" name="questPages">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="currentIndex">
         <number>0</number>
        </property>
