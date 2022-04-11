@@ -181,7 +181,7 @@ class Ui_MainWindow(object):
         self.label_7.setText(_translate("MainWindow", "End:"))
         self.label_9.setText(_translate("MainWindow", "XP Percentage:"))
         self.label_10.setText(_translate("MainWindow", "Text:"))
-        self.menuNew.setTitle(_translate("MainWindow", "New"))
+        self.menuNew.setTitle(_translate("MainWindow", "File"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionSave.setText(_translate("MainWindow", "Save"))
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
