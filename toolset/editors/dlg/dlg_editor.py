@@ -49,6 +49,9 @@ class DLGEditor(Editor):
         # This boolean is used to prevent events firing onNodeUpdate() when values are changed programatically
         self.acceptUpdates: bool = False
 
+        # Make the bottom panel take as little space possible
+        self.ui.splitter.setSizes([99999999, 1])
+
         self.new()
 
     def _setupSignals(self) -> None:
