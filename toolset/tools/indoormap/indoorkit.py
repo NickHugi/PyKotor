@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import json
 import os
-from typing import List, Dict
+from typing import List, Dict, Tuple, NamedTuple
 
 from PyQt5.QtGui import QImage
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, read_bwm
+from pykotor.resource.formats.mdl import read_mdl
 from pykotor.resource.generics.utd import UTD, read_utd
+
+from utils.misc import get_nums
 
 
 class Kit:
@@ -21,6 +24,8 @@ class Kit:
         self.lightmaps: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.txis: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.always: Dict[str, bytes] = {}
+        self.side_padding: List[Tuple[bytes, bytes]] = []
+        self.top_padding: Dict[int, MDLMDXTuple] = {}
 
 
 class KitComponent:
@@ -51,6 +56,11 @@ class KitDoor:
         self.priority: float = height
 
 
+class MDLMDXTuple(NamedTuple):
+    mdl: bytes
+    mdx: bytes
+
+
 def load_kits(path: str) -> List[Kit]:
     kits = []
 
@@ -60,7 +70,7 @@ def load_kits(path: str) -> List[Kit]:
         kit = Kit(kit_json["name"])
         kit_identifier = kit_json["id"]
 
-        always_path = "{}/{}/always".format(kits_path, filename[:-5])
+        always_path = "{}/{}/always".format(kits_path, filename[:-5])  # -5 used to remove ".json"
         for always_file in os.listdir(always_path):
             kit.always[always_file] = BinaryReader.load_file("{}/{}".format(always_path, always_file))
 
@@ -77,6 +87,17 @@ def load_kits(path: str) -> List[Kit]:
             kit.lightmaps[lightmap] = BinaryReader.load_file("{}/{}.tga".format(lightmaps_path, lightmap))
             txi_path = "{}/{}.txi".format(lightmaps_path, lightmap)
             kit.txis[lightmap] = BinaryReader.load_file(txi_path) if os.path.exists(txi_path) else b''
+
+        doorway_path = "{}/{}/doorway".format(kits_path, filename[:-5])
+        for padding_id in [filename[:-4] for filename in os.listdir(doorway_path) if filename.endswith(".mdl")]:
+            mdl_path = doorway_path + "/" + padding_id + ".mdl"
+            mdx_path = doorway_path + "/" + padding_id + ".mdx"
+            mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
+            padding_size = get_nums(padding_id)[0]
+            if doorway_path.startswith("side"):
+                kit.side_padding[padding_size] = MDLMDXTuple(mdl, mdx)
+            if doorway_path.startswith("top"):
+                kit.top_padding[padding_size] = MDLMDXTuple(mdl, mdx)
 
         for door_json in kit_json["doors"]:
             utdK1 = read_utd("{}/{}/{}.utd".format(kits_path, kit_identifier, door_json["utd_k1"]))
