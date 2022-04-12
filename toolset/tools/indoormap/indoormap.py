@@ -39,6 +39,8 @@ class DoorInsertion(NamedTuple):
     static: bool
     position: Vector3
     rotation: float
+    hook1: KitComponentHook
+    hook2: Optional[KitComponentHook]
 
 
 class MinimapData(NamedTuple):
@@ -61,19 +63,29 @@ class IndoorMap:
             room.rebuildConnections(self.rooms)
 
     def doorInsertions(self) -> List[DoorInsertion]:
-        points = []
+        """
+        Returns a list of connections between rooms. Used when determining when to place doors when building a map.
+        """
+        points = []  # Used to determine if door already exists at this point
         insertions = []
 
         for i, room in enumerate(self.rooms):
             for hookIndex, connection in enumerate(room.hooks):
-                hook = room.component.hooks[hookIndex]
-                door = hook.door
-                position = room.hookPosition(hook)
-                rotation = hook.rotation + room.rotation
+                hook1 = room.component.hooks[hookIndex]
+                hook2 = None
+                door = hook1.door
+                position = room.hookPosition(hook1)
+                rotation = hook1.rotation + room.rotation
                 static = connection is None
+
+                if connection is not None:
+                    for otherRoom in connection.hooks:
+                        if otherRoom == room:
+                            print("Yes")
+
                 if position not in points:
                     points.append(position)  # 47
-                    insertions.append(DoorInsertion(door, room, static, position, rotation))
+                    insertions.append(DoorInsertion(door, room, static, position, rotation, hook1, hook2))
 
         return insertions
 

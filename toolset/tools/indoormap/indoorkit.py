@@ -9,7 +9,6 @@ from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, read_bwm
-from pykotor.resource.formats.mdl import read_mdl
 from pykotor.resource.generics.utd import UTD, read_utd
 
 from utils.misc import get_nums
@@ -53,7 +52,7 @@ class KitDoor:
         self.utdK1: UTD = utdK1
         self.utdK2: UTD = utdK2
         self.width: float = width
-        self.priority: float = height
+        self.height: float = height
 
 
 class MDLMDXTuple(NamedTuple):
