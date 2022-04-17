@@ -597,9 +597,12 @@ class BinaryReader:
 
         Args:
             num: Number of bytes.
+
+        Raises:
+            IOError: If the given number sex exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
-            raise ValueError("This operation would exceeed the streams boundaries.")
+            raise IOError("This operation would exceeed the streams boundaries.")
 
 
 class BinaryWriter(ABC):
