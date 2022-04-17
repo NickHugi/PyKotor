@@ -5,7 +5,7 @@ from typing import Optional
 
 from pykotor.common.geometry import Vector3, SurfaceMaterial
 from pykotor.resource.formats.bwm import BWM, BWMFace, BWMType
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class BWMBinaryReader(ResourceReader):
@@ -23,6 +23,7 @@ class BWMBinaryReader(ResourceReader):
         self.absolute_hook1: Vector3 = Vector3.from_null()
         self.absolute_hook2: Vector3 = Vector3.from_null()
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -31,6 +32,12 @@ class BWMBinaryReader(ResourceReader):
 
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
+
+        if file_type != "BWM ":
+            raise ValueError("Not a valid binary BWM file.")
+
+        if file_version != "V1.0":
+            raise ValueError("The BWM version of the file is unsupported.")
 
         self._wok.walkmesh_type = BWMType(self._reader.read_uint32())
         self._wok.relative_hook1 = self._reader.read_vector3()
@@ -96,9 +103,6 @@ class BWMBinaryReader(ResourceReader):
 
         self._wok.faces = faces
 
-        if auto_close:
-            self._reader.close()
-
         return self._wok
 
 
@@ -113,6 +117,7 @@ class BWMBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._wok: BWM = wok
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -218,6 +223,3 @@ class BWMBinaryWriter(ResourceWriter):
         self._writer.write_bytes(adjacency_data)
         self._writer.write_bytes(edge_data)
         self._writer.write_bytes(perimeter_data)
-
-        if auto_close:
-            self._writer.close()

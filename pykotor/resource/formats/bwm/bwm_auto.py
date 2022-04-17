@@ -2,11 +2,11 @@ from typing import Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, BWMBinaryWriter
-from pykotor.resource.type import ResourceType
+from pykotor.resource.type import ResourceType, SOURCE_TYPES
 
 
 def read_bwm(
-        source: Union[str, bytes, bytearray, BinaryReader],
+        source: SOURCE_TYPES,
         offset: int = 0,
         size: int = None
 ) -> BWM:
@@ -19,8 +19,10 @@ def read_bwm(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
-        IOError: If the file was inaccessible.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted.
 
     Returns:
         An WOK instance.
@@ -42,8 +44,9 @@ def write_bwm(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
-        IOError: If the file was inaccessible.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.WOK:
         BWMBinaryWriter(wok, target).write()
@@ -65,7 +68,7 @@ def bytes_bwm(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        ValueError: If the specified format was unsupported.
 
     Returns:
         The BWM data.
