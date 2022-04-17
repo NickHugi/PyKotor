@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pykotor.resource.formats.erf import ERF, ERFType
-from pykotor.resource.type import ResourceType, TARGET_TYPES, ResourceReader, SOURCE_TYPES, ResourceWriter
+from pykotor.resource.type import ResourceType, TARGET_TYPES, ResourceReader, SOURCE_TYPES, ResourceWriter, autoclose
 
 
 class ERFBinaryReader(ResourceReader):
@@ -16,6 +16,7 @@ class ERFBinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._erf: Optional[ERF] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -26,10 +27,10 @@ class ERFBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if not any(x for x in ERFType if x.value == file_type):
-            raise TypeError("Not a valid ERF file.")
+            raise ValueError("Not a valid ERF file.")
 
         if file_version != "V1.0":
-            raise TypeError("The ERF version that was loaded is unsupported.")
+            raise ValueError("The ERF version that was loaded is unsupported.")
 
         self._reader.skip(8)
         entry_count = self._reader.read_uint32()
@@ -59,9 +60,6 @@ class ERFBinaryReader(ResourceReader):
             resdata = self._reader.read_bytes(ressizes[i])
             self._erf.set(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
 
-        if auto_close:
-            self._reader.close()
-
         return self._erf
 
 
@@ -78,6 +76,7 @@ class ERFBinaryWriter(ResourceWriter):
         super().__init__(target)
         self.erf = erf
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -115,6 +114,3 @@ class ERFBinaryWriter(ResourceWriter):
 
         for resource in self.erf:
             self._writer.write_bytes(resource.data)
-
-        if auto_close:
-            self._writer.close()

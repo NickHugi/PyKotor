@@ -20,15 +20,15 @@ def read_erf(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted.
 
     Returns:
         An ERF instance.
     """
-    try:
-        return ERFBinaryReader(source, offset).load()
-    except IOError:
-        raise ValueError("Tried to load an unsupported or corrupted ERF file.")
+    return ERFBinaryReader(source, offset).load()
 
 
 def write_erf(
@@ -45,7 +45,9 @@ def write_erf(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.ERF or file_format == ResourceType.MOD:
         ERFBinaryWriter(erf, target).write()
@@ -67,7 +69,7 @@ def bytes_erf(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        ValueError: If the specified format was unsupported.
 
     Returns:
         The ERF data.
