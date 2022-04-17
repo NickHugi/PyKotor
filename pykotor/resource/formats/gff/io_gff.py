@@ -3,7 +3,8 @@ from typing import Optional, List, Any
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFFieldType, GFFStruct, GFFList
-from pykotor.resource.type import SOURCE_TYPES, ResourceReader, ResourceWriter, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, ResourceReader, ResourceWriter, TARGET_TYPES, autoclose
+
 
 _COMPLEX_FIELD = {GFFFieldType.UInt64, GFFFieldType.Int64, GFFFieldType.Double, GFFFieldType.String,
                   GFFFieldType.ResRef, GFFFieldType.LocalizedString, GFFFieldType.Binary, GFFFieldType.Vector3,
@@ -27,6 +28,7 @@ class GFFBinaryReader(ResourceReader):
         self._struct_offset = 0
         self._field_offset = 0
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -37,10 +39,10 @@ class GFFBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if not any(x for x in GFFContent if x.value == file_type):
-            raise TypeError("Not a valid GFF file.")
+            raise ValueError("Not a valid binary GFF file.")
 
         if file_version != "V3.2":
-            raise TypeError("The GFF version that was loaded is unsupported.")
+            raise ValueError("The GFF version of the file is unsupported.")
 
         self._struct_offset = self._reader.read_uint32()
         struct_count = self._reader.read_uint32()
@@ -61,9 +63,6 @@ class GFFBinaryReader(ResourceReader):
             self._labels.append(self._reader.read_string(16))
 
         self._load_struct(self._gff.root, 0)
-
-        if auto_close:
-            self._reader.close()
 
         return self._gff
 
@@ -180,6 +179,7 @@ class GFFBinaryWriter(ResourceWriter):
         self._struct_count: int = 0
         self._field_count: int = 0
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -221,9 +221,6 @@ class GFFBinaryWriter(ResourceWriter):
         self._writer.write_bytes(self._field_data_writer.data())
         self._writer.write_bytes(self._field_indices_writer.data())
         self._writer.write_bytes(self._list_indices_writer.data())
-
-        if auto_close:
-            self._writer.close()
 
     def _build_struct(
             self,

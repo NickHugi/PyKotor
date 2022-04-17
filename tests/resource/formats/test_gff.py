@@ -1,3 +1,4 @@
+import platform
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector4, Vector3
@@ -6,8 +7,12 @@ from pykotor.resource.formats.gff import GFFBinaryReader, GFF, GFFXMLReader
 from pykotor.resource.formats.gff.gff_auto import write_gff, read_gff
 from pykotor.resource.type import ResourceType
 
+
 BINARY_TEST_FILE = "../../files/test.gff"
 XML_TEST_FILE = "../../files/test.gff.xml"
+DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
+CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.gff"
+CORRUPT_XML_TEST_FILE = "../../files/test_corrupted.gff.xml"
 
 
 class TestGFF(TestCase):
@@ -58,3 +63,19 @@ class TestGFF(TestCase):
         self.assertEqual(gff.root.get_struct("child_struct").get_uint8("child_uint8"), 4)
         self.assertEqual(gff.root.get_list("list").at(0).struct_id, 1)
         self.assertEqual(gff.root.get_list("list").at(1).struct_id, 2)
+
+    def test_read_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, read_gff, ".")
+        else:
+            self.assertRaises(IsADirectoryError, read_gff, ".")
+        self.assertRaises(FileNotFoundError, read_gff, DOES_NOT_EXIST_FILE)
+        self.assertRaises(ValueError, read_gff, CORRUPT_BINARY_TEST_FILE)
+        self.assertRaises(ValueError, read_gff, CORRUPT_XML_TEST_FILE)
+
+    def test_write_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, write_gff, GFF(), ".", ResourceType.GFF)
+        else:
+            self.assertRaises(IsADirectoryError, write_gff, GFF(), ".", ResourceType.GFF)
+        self.assertRaises(ValueError, write_gff, GFF(), ".", ResourceType.INVALID)

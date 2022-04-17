@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC
 from typing import Union, overload
+from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
@@ -59,6 +60,11 @@ class ResourceReader(ABC):
         self._reader = BinaryReader.from_auto(source, offset)
         self._size = self._reader.remaining() if size == 0 else size
 
+    def close(
+            self
+    ):
+        self._reader.close()
+
 
 class ResourceWriter(ABC):
     @overload
@@ -94,6 +100,11 @@ class ResourceWriter(ABC):
             target: Union[str, bytearray, BinaryReader]
     ):
         self._writer = BinaryWriter.to_auto(target)
+
+    def close(
+            self
+    ):
+        self._writer.close()
 
 
 class ResourceType:
@@ -296,6 +307,19 @@ class ResourceType:
                 return ResourceType.__dict__[resource_type]
         else:
             raise ValueError("Could not find resource with extension '{}'.".format(extension))
+
+
+def autoclose(func):
+    def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True):
+        try:
+            resource = func(self, auto_close)
+        except (IOError, ParseError, ValueError) as e:
+            raise ValueError("Tried to load an unsupported or corrupted GFF file.", e)
+        finally:
+            if auto_close:
+                self.close()
+        return resource
+    return _autoclose
 
 
 ResourceType.INVALID = ResourceType(0, "", "Undefined", "binary")

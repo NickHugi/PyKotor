@@ -9,7 +9,7 @@ from pykotor.common.geometry import Vector4, Vector3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff.gff_data import GFF, GFFStruct, GFFFieldType, GFFList
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class GFFXMLReader(ResourceReader):
@@ -20,21 +20,18 @@ class GFFXMLReader(ResourceReader):
             size: int = None
     ):
         super().__init__(source, offset, size)
-        data = self._reader.read_bytes(self._reader.size()).decode()
-        self._xml_root: ElementTree.Element = ElementTree.parse(io.StringIO(data)).getroot()
         self._gff: Optional[GFF] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> GFF:
         self._gff = GFF()
 
-        xml_root: ElementTree.Element = self._xml_root.find('struct')
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        xml_root = ElementTree.parse(io.StringIO(data)).getroot().find('struct')
         self._load_struct(self._gff.root, xml_root)
-
-        if auto_close:
-            self._reader.close()
 
         return self._gff
 
@@ -120,6 +117,7 @@ class GFFXMLWriter(ResourceWriter):
         self.xml_root: ElementTree.Element = ElementTree.Element("xml")
         self.gff: GFF = gff
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -132,9 +130,6 @@ class GFFXMLWriter(ResourceWriter):
 
         ElementTree.indent(self.xml_root)
         self._writer.write_bytes(ElementTree.tostring(self.xml_root))
-
-        if auto_close:
-            self._writer.close()
 
     def _build_struct(
             self,
