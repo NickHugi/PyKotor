@@ -1,3 +1,4 @@
+import platform
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector3, Vector4
@@ -5,7 +6,10 @@ from pykotor.resource.formats.lyt import LYTAsciiReader, LYTRoom, LYTTrack, LYT,
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt, read_lyt
 from pykotor.resource.type import ResourceType
 
+
 ASCII_TEST_FILE = "../../files/test.lyt"
+DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
+CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.lyt"
 
 
 class TestLYT(TestCase):
@@ -29,3 +33,18 @@ class TestLYT(TestCase):
                                                        Vector4(0.707107, 0.0, 0.0, -0.707107)))
         self.assertEqual(lyt.doorhooks[1],
                          LYTDoorHook("M02ac_02a", "door_06", Vector3(90.0, 129.525, 0.0), Vector4(1.0, 0.0, 0.0, 0.0)))
+    
+    def test_read_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, read_lyt, ".")
+        else:
+            self.assertRaises(IsADirectoryError, read_lyt, ".")
+        self.assertRaises(FileNotFoundError, read_lyt, DOES_NOT_EXIST_FILE)
+        self.assertRaises(ValueError, read_lyt, CORRUPT_BINARY_TEST_FILE)
+
+    def test_write_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, write_lyt, LYT(), ".", ResourceType.LYT)
+        else:
+            self.assertRaises(IsADirectoryError, write_lyt, LYT(), ".", ResourceType.LYT)
+        self.assertRaises(ValueError, write_lyt, LYT(), ".", ResourceType.INVALID)

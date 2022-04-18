@@ -1,0 +1,16 @@
+#MAXLAYOUT ASCII
+   filedependancy M17mg.max
+beginlayout
+     roomcount    5
+           M17mg_01a    100.0   100.0 0.0
+         M17mg_01b 100.0  100.0 0.0
+   trackcount 2
+      M17mg_MGT01   0.0 0.0 0.0
+         M17mg_MGT02 112.047 209.04 0.0
+   obstaclecount 2
+      M17mg_MGO01 103.309 3691.61 0.0
+         M17mg_MGO02 118.969 3688.0 0.0
+     doorhookcount 2
+      M02ac_02h door_01 0 170.475 66.375 0.0 0.707107 0.0 0.0 -0.707107
+         M02ac_02a door_06 0 90.0 129.525 0.0 1.0 0.0 0.0 0.0
+    donelayout

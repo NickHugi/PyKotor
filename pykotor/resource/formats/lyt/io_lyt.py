@@ -4,7 +4,7 @@ from typing import Optional, Iterator, List
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.lyt import LYT, LYTRoom, LYTTrack, LYTObstacle, LYTDoorHook
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class LYTAsciiReader(ResourceReader):
@@ -16,13 +16,16 @@ class LYTAsciiReader(ResourceReader):
     ):
         super().__init__(source, offset, size)
         self._lyt: Optional[LYT] = None
-        self._lines: List[str] = self._reader.read_string(self._reader.size()).splitlines()
+        self._lines: List[str] = []
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> LYT:
         self._lyt = LYT()
+
+        self._lines = self._reader.read_string(self._reader.size()).splitlines()
 
         iterator = iter(self._lines)
         for line in iterator:
@@ -98,6 +101,7 @@ class LYTAsciiWriter(ResourceWriter):
         super().__init__(target)
         self._lyt: LYT = lyt
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True

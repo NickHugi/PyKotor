@@ -20,16 +20,15 @@ def read_lyt(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
-        size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted or the format could not be determined.
 
     Returns:
         An LYT instance.
     """
-    try:
-        return LYTAsciiReader(source, offset, size).load()
-    except IOError:
-        raise ValueError("Tried to load an unsupported or corrupted LYT file.")
+    return LYTAsciiReader(source, offset, size).load()
 
 
 def write_lyt(
@@ -46,7 +45,9 @@ def write_lyt(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.LYT:
         LYTAsciiWriter(lyt, target).write()
@@ -68,7 +69,7 @@ def bytes_lyt(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+       ValueError: If the specified format was unsupported.
 
     Returns:
         The LYT data.
