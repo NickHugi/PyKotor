@@ -5,7 +5,7 @@ import io
 from typing import Optional
 
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class TwoDACSVReader(ResourceReader):
@@ -16,27 +16,25 @@ class TwoDACSVReader(ResourceReader):
             size: int = 0
     ):
         super().__init__(source, offset, size)
-        data = self._reader.read_bytes(self._reader.size()).decode()
-        self._csv: csv.reader = csv.reader(io.StringIO(data))
         self._twoda: Optional[TwoDA] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> TwoDA:
         self._twoda = TwoDA()
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        _csv: csv.reader = csv.reader(io.StringIO(data))
 
-        headers = next(self._csv)[1:]
+        headers = next(_csv)[1:]
         for header in headers:
             self._twoda.add_column(header)
 
-        for row in self._csv:
+        for row in _csv:
             label = row[:1][0]
             cells = dict(zip(headers, row[1:]))
             self._twoda.add_row(label, cells)
-
-        if auto_close:
-            self._reader.close()
 
         return self._twoda
 
@@ -52,6 +50,7 @@ class TwoDACSVWriter(ResourceWriter):
         self._csv_string = io.StringIO("")
         self._csv_writer = csv.writer(self._csv_string)
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -71,6 +70,3 @@ class TwoDACSVWriter(ResourceWriter):
 
         data = self._csv_string.getvalue().encode('ascii')
         self._writer.write_bytes(data)
-
-        if auto_close:
-            self._writer.close()

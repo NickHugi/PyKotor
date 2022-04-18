@@ -17,7 +17,9 @@ def detect_2da(
         offset: Offset into the data.
 
     Raises:
-        IOError: If an error occured reading the file.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
 
     Returns:
         The format of the TwoDA data.
@@ -35,16 +37,21 @@ def detect_2da(
         else:
             return ResourceType.INVALID
 
-    if isinstance(source, str):
-        with BinaryReader.from_file(source, offset) as reader:
-            file_format = check(reader.read_string(4))
-    elif isinstance(source, bytes) or isinstance(source, bytearray):
-        file_format = check(source[:4].decode('ascii', 'ignore'))
-    elif isinstance(source, BinaryReader):
-        file_format = check(source.read_string(4))
-        source.skip(-4)
-    else:
-        raise TypeError("Invalid type passed to 'source' argument.")
+    try:
+        if isinstance(source, str):
+            with BinaryReader.from_file(source, offset) as reader:
+                file_format = check(reader.read_string(4))
+        elif isinstance(source, bytes) or isinstance(source, bytearray):
+            file_format = check(source[:4].decode('ascii', 'ignore'))
+        elif isinstance(source, BinaryReader):
+            file_format = check(source.read_string(4))
+            source.skip(-4)
+        else:
+            file_format = ResourceType.INVALID
+    except (FileNotFoundError, PermissionError, IsADirectoryError) as e:
+        raise e
+    except IOError:
+        file_format = ResourceType.INVALID
 
     return file_format
 
@@ -64,13 +71,18 @@ def read_2da(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        IOError: If an error occured reading the file.
-        ValueError: If unable to determine the file format or the file data was corrupted.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted or the format could not be determined.
 
     Returns:
         An TwoDA instance.
     """
     file_format = detect_2da(source, offset)
+
+    if file_format is ResourceType.INVALID:
+        raise ValueError("Failed to determine the format of the GFF file.")
 
     if file_format == ResourceType.TwoDA:
         return TwoDABinaryReader(source, offset, size).load()
@@ -78,8 +90,6 @@ def read_2da(
         return TwoDACSVReader(source, offset, size).load()
     elif file_format == ResourceType.TwoDA_JSON:
         return TwoDAJSONReader(source, offset, size).load()
-    else:
-        raise ValueError("Unable to determine the file format.")
 
 
 def write_2da(
@@ -98,8 +108,9 @@ def write_2da(
         file_format: The file format.
 
     Raises:
-        IOEroor: If an error occured writing to the file.
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.TwoDA:
         TwoDABinaryWriter(twoda, target).write()
@@ -125,7 +136,7 @@ def bytes_2da(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        ValueError: If the specified format was unsupported.
 
     Returns:
         The TwoDA data.

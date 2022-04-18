@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class TwoDABinaryReader(ResourceReader):
@@ -16,6 +16,7 @@ class TwoDABinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._twoda: Optional[TwoDA] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -64,9 +65,6 @@ class TwoDABinaryReader(ResourceReader):
             cell_value = self._reader.read_terminated_string("\0")
             self._twoda.set_cell(row_id, column_header, cell_value)
 
-        if auto_close:
-            self._reader.close()
-
         return self._twoda
 
 
@@ -79,6 +77,7 @@ class TwoDABinaryWriter(ResourceWriter):
         super().__init__(target)
         self._twoda: TwoDA = twoda
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -119,6 +118,3 @@ class TwoDABinaryWriter(ResourceWriter):
 
         for value in values:
             self._writer.write_string(value)
-
-        if auto_close:
-            self._writer.close()
