@@ -837,13 +837,13 @@ class ToolWindow(QMainWindow):
 
         editor = None
 
-        if restype in [ResourceType.TwoDA]:
+        if restype in [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]:
             editor = TwoDAEditor(self, self.active)
 
-        if restype in [ResourceType.SSF]:
+        if restype in [ResourceType.SSF, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
             editor = SSFEditor(self, self.active)
 
-        if restype in [ResourceType.TLK]:
+        if restype in [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
             editor = TLKEditor(self, self.active)
 
         if restype in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]:
@@ -865,86 +865,86 @@ class ToolWindow(QMainWindow):
             if self.active:
                 editor = NSSEditor(self, self.active)
 
-        if restype in [ResourceType.DLG]:
+        if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
             if self.active is None:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = DLGEditor(self, self.active)
 
-        if restype in [ResourceType.UTC]:
+        if restype in [ResourceType.UTC, ResourceType.UTC_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTCEditor(self, self.active)
 
-        if restype in [ResourceType.UTP]:
+        if restype in [ResourceType.UTP, ResourceType.UTP_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTPEditor(self, self.active)
 
-        if restype in [ResourceType.UTD]:
+        if restype in [ResourceType.UTD, ResourceType.UTD_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTDEditor(self, self.active)
 
-        if restype in [ResourceType.UTS]:
+        if restype in [ResourceType.UTS, ResourceType.UTS_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTSEditor(self, self.active)
 
-        if restype in [ResourceType.UTT]:
+        if restype in [ResourceType.UTT, ResourceType.UTT_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTTEditor(self, self.active)
 
-        if restype in [ResourceType.UTM]:
+        if restype in [ResourceType.UTM, ResourceType.UTM_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTMEditor(self, self.active)
 
-        if restype in [ResourceType.UTW]:
+        if restype in [ResourceType.UTW, ResourceType.UTW_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTWEditor(self, self.active)
 
-        if restype in [ResourceType.UTE]:
+        if restype in [ResourceType.UTE, ResourceType.UTE_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTEEditor(self, self.active)
 
-        if restype in [ResourceType.UTI]:
+        if restype in [ResourceType.UTI, ResourceType.UTI_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = UTIEditor(self, self.active)
 
-        if restype in [ResourceType.JRL]:
+        if restype in [ResourceType.JRL, ResourceType.JRL_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = JRLEditor(self, self.active)
 
-        if restype in [ResourceType.ARE]:
+        if restype in [ResourceType.ARE, ResourceType.ARE_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = AREEditor(self, self.active)
 
-        if restype in [ResourceType.GIT]:
+        if restype in [ResourceType.GIT, ResourceType.GIT_XML]:
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(self, self.active)
             else:
                 editor = GITEditor(self, self.active)
 
-        if restype in [ResourceType.GFF, ResourceType.ITP,
-                       ResourceType.GUI, ResourceType.IFO]:
+        if restype in [ResourceType.GFF, ResourceType.GFF_XML, ResourceType.ITP, ResourceType.ITP_XML,
+                       ResourceType.GUI, ResourceType.GUI_XML, ResourceType.IFO, ResourceType.IFO_XML]:
             editor = GFFEditor(self, self.active)
 
         if restype in [ResourceType.WAV, ResourceType.MP3]:
