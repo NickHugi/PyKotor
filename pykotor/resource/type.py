@@ -306,7 +306,7 @@ class ResourceType:
             if ResourceType.__dict__[resource_type].extension.upper() == extension.upper():
                 return ResourceType.__dict__[resource_type]
         else:
-            raise ValueError("Could not find resource with extension '{}'.".format(extension))
+            raise ValueError("Could not find resource type with extension '{}'.".format(extension))
 
 
 def autoclose(func):
