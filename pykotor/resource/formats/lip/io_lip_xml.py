@@ -5,7 +5,7 @@ from typing import Optional
 from xml.etree import ElementTree
 
 from pykotor.resource.formats.lip import LIP, LIPShape
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class LIPXMLReader(ResourceReader):
@@ -16,28 +16,27 @@ class LIPXMLReader(ResourceReader):
             size: int = 0
     ):
         super().__init__(source, offset, size)
-        self._xml_root: ElementTree.Element = ElementTree.parse(
-            io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
         self._lip: Optional[LIP] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> LIP:
-        if self._xml_root.tag != "lip":
-            raise TypeError("The XML file that was loaded was not a valid LIP.")
-
         self._lip = LIP()
 
-        self._lip.length = float(self._xml_root.get("duration"))
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        xml_root = ElementTree.parse(io.StringIO(data)).getroot()
 
-        for subelement in self._xml_root:
+        if xml_root.tag != "lip":
+            raise ValueError("The XML file that was loaded was not a valid LIP.")
+
+        self._lip.length = float(xml_root.get("duration"))
+
+        for subelement in xml_root:
             time = float(subelement.get("time"))
             shape = LIPShape(int(subelement.get("shape")))
             self._lip.add(time, shape)
-
-        if auto_close:
-            self._reader.close()
 
         return self._lip
 
@@ -52,6 +51,7 @@ class LIPXMLWriter(ResourceWriter):
         self._lip = lip
         self._xml_root: ElementTree.Element = ElementTree.Element("lip")
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -66,6 +66,3 @@ class LIPXMLWriter(ResourceWriter):
 
         ElementTree.indent(self._xml_root)
         self._writer.write_bytes(ElementTree.tostring(self._xml_root))
-
-        if auto_close:
-            self._writer.close()

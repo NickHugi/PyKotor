@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pykotor.resource.formats.lip import LIP, LIPShape
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class LIPBinaryReader(ResourceReader):
@@ -16,6 +16,7 @@ class LIPBinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._lip: Optional[LIP] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -39,9 +40,6 @@ class LIPBinaryReader(ResourceReader):
             shape = LIPShape(self._reader.read_uint8())
             self._lip.add(time, shape)
 
-        if auto_close:
-            self._reader.close()
-
         return self._lip
 
 
@@ -57,6 +55,7 @@ class LIPBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._lip: LIP = lip
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -69,6 +68,3 @@ class LIPBinaryWriter(ResourceWriter):
         for keyframe in self._lip:
             self._writer.write_single(keyframe.time)
             self._writer.write_uint8(keyframe.shape.value)
-
-        if auto_close:
-            self._writer.close()
