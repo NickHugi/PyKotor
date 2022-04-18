@@ -15,6 +15,11 @@ def detect_mdl(
         source: Source of the MDL data.
         offset: Offset into the source data.
 
+    Raises:
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+
     Returns:
         The format of the MDL data.
     """
@@ -31,6 +36,8 @@ def detect_mdl(
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID
+    except (FileNotFoundError, PermissionError, IsADirectoryError) as e:
+        raise e
     except IOError:
         file_format = ResourceType.INVALID
 
@@ -58,22 +65,23 @@ def read_mdl(
         size_ext: The number of bytes to read from the MDX source.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted or the format could not be determined.
 
     Returns:
         An MDL instance.
     """
     file_format = detect_mdl(source, offset)
 
-    try:
-        if file_format == ResourceType.MDL:
-            return MDLBinaryReader(source, offset, size, source_ext, offset_ext, size_ext).load()
-        elif file_format == ResourceType.MDL_ASCII:
-            return MDLAsciiReader(source, offset, size).load()
-        else:
-            raise ValueError
-    except (IOError, ValueError):
-        raise ValueError("Tried to load an unsupported or corrupted MDL file.")
+    if file_format is ResourceType.INVALID:
+        raise ValueError("Failed to determine the format of the MDL file.")
+
+    if file_format == ResourceType.MDL:
+        return MDLBinaryReader(source, offset, size, source_ext, offset_ext, size_ext).load()
+    elif file_format == ResourceType.MDL_ASCII:
+        return MDLAsciiReader(source, offset, size).load()
 
 
 def write_mdl(
@@ -92,7 +100,9 @@ def write_mdl(
         target_ext: The location to write the MDX data to (if file format is MDL).
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.MDL:
         MDLBinaryWriter(mdl, target, target_ext).write()
