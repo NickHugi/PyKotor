@@ -800,11 +800,14 @@ class ToolWindow(QMainWindow):
         filepath, filter = QFileDialog.getOpenFileName(self, "Open a file")
 
         if filepath != "":
-            resref, restype_ext = os.path.basename(filepath).split('.', 1)
-            restype = ResourceType.from_extension(restype_ext)
-            with open(filepath, 'rb') as file:
-                data = file.read()
-            self.openResourceEditor(filepath, resref, restype, data)
+            try:
+                resref, restype_ext = os.path.basename(filepath).split('.', 1)
+                restype = ResourceType.from_extension(restype_ext)
+                with open(filepath, 'rb') as file:
+                    data = file.read()
+                self.openResourceEditor(filepath, resref, restype, data)
+            except ValueError as e:
+                QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
 
     def openResourceEditor(self,
             filepath: str,
