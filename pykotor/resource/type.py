@@ -313,7 +313,7 @@ def autoclose(func):
     def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True):
         try:
             resource = func(self, auto_close)
-        except (IOError, ParseError, ValueError, IndexError) as e:
+        except (IOError, ParseError, ValueError, IndexError, StopIteration) as e:
             raise ValueError("Tried to load an unsupported or corrupted GFF file.", e)
         finally:
             if auto_close:

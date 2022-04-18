@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional, List
 
 from pykotor.resource.formats.vis import VIS
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class VISAsciiReader(ResourceReader):
@@ -15,13 +15,15 @@ class VISAsciiReader(ResourceReader):
     ):
         super().__init__(source, offset, size)
         self._vis: Optional[VIS] = None
-        self._lines: List[str] = self._reader.read_string(self._reader.size()).splitlines()
+        self._lines: List[str] = []
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> VIS:
         self._vis = VIS()
+        self._lines = self._reader.read_string(self._reader.size()).splitlines()
 
         pairs = []
 
@@ -44,9 +46,6 @@ class VISAsciiReader(ResourceReader):
                 self._vis.add_room(show)
             self._vis.set_visible(when_inside, show, True)
 
-        if auto_close:
-            self._reader.close()
-
         return self._vis
 
 
@@ -59,6 +58,7 @@ class VISAsciiWriter(ResourceWriter):
         super().__init__(target)
         self._vis: VIS = vis
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -67,6 +67,3 @@ class VISAsciiWriter(ResourceWriter):
             self._writer.write_string("{} {}\r\n".format(observer, str(len(observed))))
             for room in observed:
                 self._writer.write_string("  {}\r\n".format(room))
-
-        if auto_close:
-            self._writer.close()
