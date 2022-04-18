@@ -55,10 +55,10 @@ class Module:
             custom_capsule: Optional[Capsule] = None
     ):
         self._installation = installation
-        self._root = root
+        self._root = root = root.lower()
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
-        self._capsules.extend([Capsule(installation.module_path() + module) for module in installation.module_names() if root in module])
+        self._capsules.extend([Capsule(installation.module_path() + module) for module in installation.module_names() if root in module.lower()])
 
         for capsule in self._capsules:
             if capsule.exists("module", ResourceType.IFO):
