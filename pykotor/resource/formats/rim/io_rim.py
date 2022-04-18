@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pykotor.resource.formats.rim import RIM
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class RIMBinaryReader(ResourceReader):
@@ -16,6 +16,7 @@ class RIMBinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._rim: Optional[RIM] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -26,10 +27,10 @@ class RIMBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "RIM ":
-            raise TypeError("The RIM file type that was loaded was unrecognized.")
+            raise ValueError("The RIM file type that was loaded was unrecognized.")
 
         if file_version != "V1.0":
-            raise TypeError("The RIM version that was loaded is not supported.")
+            raise ValueError("The RIM version that was loaded is not supported.")
 
         self._reader.skip(4)
         entry_count = self._reader.read_uint32()
@@ -53,9 +54,6 @@ class RIMBinaryReader(ResourceReader):
             resdata = self._reader.read_bytes(ressizes[i])
             self._rim.set(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
 
-        if auto_close:
-            self._reader.close()
-
         return self._rim
 
 
@@ -71,6 +69,7 @@ class RIMBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._rim = rim
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -98,6 +97,3 @@ class RIMBinaryWriter(ResourceWriter):
 
         for resource in self._rim:
             self._writer.write_bytes(resource.data)
-
-        if auto_close:
-            self._writer.close()

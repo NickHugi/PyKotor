@@ -11,7 +11,7 @@ def read_rim(
         size: int = None
 ) -> RIM:
     """
-    Returns an RIM instance from the source. The file format (RIM) is automatically determined before parsing
+    Returns an RIM instance from the source. The file format (RIM only) is automatically determined before parsing
     the data.
 
     Args:
@@ -20,15 +20,15 @@ def read_rim(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted or the format could not be determined.
 
     Returns:
         An RIM instance.
     """
-    try:
-        return RIMBinaryReader(source, offset, size).load()
-    except IOError:
-        raise ValueError("Tried to load an unsupported or corrupted RIM file.")
+    return RIMBinaryReader(source, offset, size).load()
 
 
 def write_rim(
@@ -45,7 +45,9 @@ def write_rim(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.RIM:
         RIMBinaryWriter(rim, target).write()
@@ -67,7 +69,7 @@ def bytes_rim(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        ValueError: If the specified format was unsupported.
 
     Returns:
         The RIM data.
