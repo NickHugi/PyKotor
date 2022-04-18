@@ -18,7 +18,9 @@ def detect_tlk(
         offset: Offset into the data.
 
     Raises:
-        IOError: If an error occured reading the file.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
 
     Returns:
         The format of the TLK data.
@@ -36,15 +38,20 @@ def detect_tlk(
         else:
             return ResourceType.INVALID
 
-    if isinstance(source, str):
-        with BinaryReader.from_file(source, offset) as reader:
-            file_format = check(reader.read_string(4))
-    elif isinstance(source, bytes) or isinstance(source, bytearray):
-        file_format = check(source[:4].decode('ascii', 'ignore'))
-    elif isinstance(source, BinaryReader):
-        file_format = check(source.read_string(4))
-        source.skip(-4)
-    else:
+    try:
+        if isinstance(source, str):
+            with BinaryReader.from_file(source, offset) as reader:
+                file_format = check(reader.read_string(4))
+        elif isinstance(source, bytes) or isinstance(source, bytearray):
+            file_format = check(source[:4].decode('ascii', 'ignore'))
+        elif isinstance(source, BinaryReader):
+            file_format = check(source.read_string(4))
+            source.skip(-4)
+        else:
+            file_format = ResourceType.INVALID
+    except (FileNotFoundError, PermissionError, IsADirectoryError) as e:
+        raise e
+    except IOError:
         file_format = ResourceType.INVALID
 
     return file_format
@@ -65,13 +72,18 @@ def read_tlk(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        IOError: If an error occured reading the file.
-        ValueError: If unable to determine the file format or the file data was corrupted.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted or the format could not be determined.
 
     Returns:
         An TLK instance.
     """
     file_format = detect_tlk(source, offset)
+
+    if file_format is ResourceType.INVALID:
+        raise ValueError("Failed to determine the format of the GFF file.")
 
     if file_format == ResourceType.TLK:
         return TLKBinaryReader(source, offset, size).load()
@@ -79,8 +91,6 @@ def read_tlk(
         return TLKXMLReader(source, offset, size).load()
     elif file_format == ResourceType.TLK_JSON:
         return TLKJSONReader(source, offset, size).load()
-    else:
-        raise ValueError("Unable to determine the file format.")
 
 
 def write_tlk(
@@ -97,8 +107,9 @@ def write_tlk(
         file_format: The file format.
 
     Raises:
-        IOError: If an error occured writing to the file.
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.TLK:
         TLKBinaryWriter(tlk, target).write()
@@ -124,7 +135,7 @@ def bytes_tlk(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        ValueError: If the specified format was unsupported.
 
     Returns:
         The TLK data.

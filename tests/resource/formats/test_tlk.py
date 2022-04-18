@@ -1,3 +1,4 @@
+import platform
 from unittest import TestCase
 
 from pykotor.common.language import Language
@@ -6,9 +7,14 @@ from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryRea
     TLKJSONReader
 from pykotor.resource.type import ResourceType
 
+
 BINARY_TEST_FILE = "../../files/test.tlk"
 XML_TEST_FILE = "../../files/test.tlk.xml"
 JSON_TEST_FILE = "../../files/test.tlk.json"
+DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
+CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.tlk"
+CORRUPT_XML_TEST_FILE = "../../files/test_corrupted.tlk.xml"
+CORRUPT_JSON_TEST_FILE = "../../files/test_corrupted.tlk.json"
 
 
 class TestTLK(TestCase):
@@ -63,3 +69,20 @@ class TestTLK(TestCase):
         self.assertEqual(TLKEntry("abcdef", ResRef("resref01")), tlk[0])
         self.assertEqual(TLKEntry("ghijklmnop", ResRef("resref02")), tlk[1])
         self.assertEqual(TLKEntry("qrstuvwxyz", ResRef("")), tlk[2])
+
+    def test_read_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, read_tlk, ".")
+        else:
+            self.assertRaises(IsADirectoryError, read_tlk, ".")
+        self.assertRaises(FileNotFoundError, read_tlk, DOES_NOT_EXIST_FILE)
+        self.assertRaises(ValueError, read_tlk, CORRUPT_BINARY_TEST_FILE)
+        self.assertRaises(ValueError, read_tlk, CORRUPT_XML_TEST_FILE)
+        self.assertRaises(ValueError, read_tlk, CORRUPT_JSON_TEST_FILE)
+
+    def test_write_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, write_tlk, TLK(), ".", ResourceType.TLK)
+        else:
+            self.assertRaises(IsADirectoryError, write_tlk, TLK(), ".", ResourceType.TLK)
+        self.assertRaises(ValueError, write_tlk, TLK(), ".", ResourceType.INVALID)

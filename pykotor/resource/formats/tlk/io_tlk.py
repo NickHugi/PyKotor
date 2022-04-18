@@ -6,7 +6,7 @@ from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
 from pykotor.resource.formats.tlk import TLK, TLKEntry
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader, autoclose
 
 _FILE_HEADER_SIZE = 20
 _ENTRY_SIZE = 40
@@ -24,6 +24,7 @@ class TLKBinaryReader(ResourceReader):
         self._texts_offset = 0
         self._text_headers = []
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -37,9 +38,6 @@ class TLKBinaryReader(ResourceReader):
         self._load_file_header()
         [self._load_entry(stringref) for stringref, entry in self._tlk]
         [self._load_text(stringref) for stringref, entry in self._tlk]
-
-        if auto_close:
-            self._reader.close()
 
         return self._tlk
 
@@ -97,6 +95,7 @@ class TLKBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._tlk = tlk
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -106,9 +105,6 @@ class TLKBinaryWriter(ResourceWriter):
         text_offset = WrappedInt(0)
         [self._write_entry(entry, text_offset) for entry in self._tlk.entries]
         [self._writer.write_string(entry.text) for entry in self._tlk.entries]
-
-        if auto_close:
-            self._writer.close()
 
     def _calculate_entries_offset(
             self

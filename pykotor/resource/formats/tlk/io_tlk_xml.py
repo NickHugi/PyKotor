@@ -7,7 +7,7 @@ from xml.etree import ElementTree
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk.tlk_data import TLK
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class TLKXMLReader(ResourceReader):
@@ -18,26 +18,24 @@ class TLKXMLReader(ResourceReader):
             size: int = None
     ):
         super().__init__(source, offset, size)
-        data = self._reader.read_bytes(self._reader.size()).decode()
-        self._xml: ElementTree.Element = ElementTree.parse(io.StringIO(data)).getroot()
         self._tlk: Optional[TLK] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> TLK:
         self._tlk = TLK()
 
-        self._tlk.language = Language(int(self._xml.get("language")))
-        self._tlk.resize(len(self._xml))
-        for string in self._xml:
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        xml = ElementTree.parse(io.StringIO(data)).getroot()
+
+        self._tlk.language = Language(int(xml.get("language")))
+        self._tlk.resize(len(xml))
+        for string in xml:
             index = int(string.get("id"))
             self._tlk.entries[index].text = string.text
-            self._tlk.entries[index].voiceover = ResRef(string.get("sound")) if string.get(
-                "sound") else ResRef.from_blank()
-
-        if auto_close:
-            self._reader.close()
+            self._tlk.entries[index].voiceover = ResRef(string.get("sound")) if string.get("sound") else ResRef.from_blank()
 
         return self._tlk
 
@@ -52,6 +50,7 @@ class TLKXMLWriter(ResourceWriter):
         self._xml: ElementTree.Element = ElementTree.Element("xml")
         self._tlk: TLK = tlk
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -69,6 +68,3 @@ class TLKXMLWriter(ResourceWriter):
 
         ElementTree.indent(self._xml)
         self._writer.write_bytes(ElementTree.tostring(self._xml))
-
-        if auto_close:
-            self._writer.close()

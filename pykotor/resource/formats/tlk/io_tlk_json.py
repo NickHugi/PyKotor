@@ -5,7 +5,7 @@ from typing import Optional
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class TLKJSONReader(ResourceReader):
@@ -16,23 +16,22 @@ class TLKJSONReader(ResourceReader):
             size: int = 0
     ):
         super().__init__(source, offset, size)
-        self._json = json.loads(self._reader.read_bytes(self._reader.size()).decode())
+        self._json = {}
         self._tlk: Optional[TLK] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> TLK:
         self._tlk = TLK()
+        self._json = json.loads(self._reader.read_bytes(self._reader.size()).decode())
 
         self._tlk.resize(len(self._json["strings"]))
         for string in self._json["strings"]:
             index = int(string["_index"])
             self._tlk.entries[index].text = string["text"]
             self._tlk.entries[index].voiceover = ResRef(string["soundResRef"])
-
-        if auto_close:
-            self._reader.close()
 
         return self._tlk
 
@@ -47,6 +46,7 @@ class TLKJSONWriter(ResourceWriter):
         self._tlk: TLK = twoda
         self._json = {"strings": []}
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -61,6 +61,3 @@ class TLKJSONWriter(ResourceWriter):
 
         json_dump = json.dumps(self._json, indent=4)
         self._writer.write_bytes(json_dump.encode())
-
-        if auto_close:
-            self._writer.close()
