@@ -16,6 +16,11 @@ def detect_ssf(
         source: Source of the SSF data.
         offset: Offset into the data.
 
+    Raises:
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+
     Returns:
         The format of the SSF data.
     """
@@ -30,6 +35,8 @@ def detect_ssf(
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID
+    except (FileNotFoundError, PermissionError, IsADirectoryError) as e:
+        raise e
     except IOError:
         file_format = ResourceType.INVALID
 
@@ -51,22 +58,23 @@ def read_ssf(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted or the format could not be determined.
 
     Returns:
         An SSF instance.
     """
     file_format = detect_ssf(source, offset)
 
-    try:
-        if file_format == ResourceType.SSF:
-            return SSFBinaryReader(source, offset, size).load()
-        elif file_format == ResourceType.SSF_XML:
-            return SSFXMLReader(source, offset, size).load()
-        else:
-            raise ValueError
-    except (IOError, ValueError):
-        raise ValueError("Tried to load an unsupported or corrupted SSF file.")
+    if file_format is ResourceType.INVALID:
+        raise ValueError("Failed to determine the format of the GFF file.")
+
+    if file_format == ResourceType.SSF:
+        return SSFBinaryReader(source, offset, size).load()
+    elif file_format == ResourceType.SSF_XML:
+        return SSFXMLReader(source, offset, size).load()
 
 
 def write_ssf(
@@ -83,7 +91,9 @@ def write_ssf(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.SSF:
         SSFBinaryWriter(ssf, target).write()
@@ -107,7 +117,7 @@ def bytes_ssf(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        ValueError: If the specified format was unsupported.
 
     Returns:
         The SSF data.

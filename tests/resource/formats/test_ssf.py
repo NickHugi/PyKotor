@@ -1,10 +1,15 @@
+import platform
 from unittest import TestCase
 
-from pykotor.resource.formats.ssf import SSF, SSFSound, SSFBinaryReader, detect_ssf, SSFXMLReader, write_ssf
+from pykotor.resource.formats.ssf import SSF, SSFSound, SSFBinaryReader, detect_ssf, SSFXMLReader, write_ssf, read_ssf
 from pykotor.resource.type import ResourceType
+
 
 BINARY_TEST_FILE = "../../files/test.ssf"
 XML_TEST_FILE = "../../files/test.ssf.xml"
+DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
+CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.ssf"
+CORRUPT_XML_TEST_FILE = "../../files/test_corrupted.ssf.xml"
 
 
 class TestSSF(TestCase):
@@ -59,3 +64,19 @@ class TestSSF(TestCase):
         self.assertEqual(ssf.get(SSFSound.SEPARATED_FROM_PARTY), 123050)
         self.assertEqual(ssf.get(SSFSound.REJOINED_PARTY), 123049)
         self.assertEqual(ssf.get(SSFSound.POISONED), 123048)
+
+    def test_read_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, read_ssf, ".")
+        else:
+            self.assertRaises(IsADirectoryError, read_ssf, ".")
+        self.assertRaises(FileNotFoundError, read_ssf, DOES_NOT_EXIST_FILE)
+        self.assertRaises(ValueError, read_ssf, CORRUPT_BINARY_TEST_FILE)
+        self.assertRaises(ValueError, read_ssf, CORRUPT_XML_TEST_FILE)
+
+    def test_write_raises(self):
+        if platform.system() == "Windows":
+            self.assertRaises(PermissionError, write_ssf, SSF(), ".", ResourceType.SSF)
+        else:
+            self.assertRaises(IsADirectoryError, write_ssf, SSF(), ".", ResourceType.SSF)
+        self.assertRaises(ValueError, write_ssf, SSF(), ".", ResourceType.INVALID)

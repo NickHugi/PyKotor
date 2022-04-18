@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class SSFBinaryReader(ResourceReader):
@@ -16,6 +16,7 @@ class SSFBinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._ssf: Optional[SSF] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -26,10 +27,10 @@ class SSFBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "SSF ":
-            raise TypeError("Attempted to load an invalid SSF was loaded.")
+            raise ValueError("Attempted to load an invalid SSF was loaded.")
 
         if file_version != "V1.1":
-            raise TypeError("The supplied SSF file version is not supported.")
+            raise ValueError("The supplied SSF file version is not supported.")
 
         sounds_offset = self._reader.read_uint32()
         self._reader.seek(sounds_offset)
@@ -63,9 +64,6 @@ class SSFBinaryReader(ResourceReader):
         self._ssf.set(SSFSound.REJOINED_PARTY, self._reader.read_uint32(max_neg1=True))
         self._ssf.set(SSFSound.POISONED, self._reader.read_uint32(max_neg1=True))
 
-        if auto_close:
-            self._reader.close()
-
         return self._ssf
 
 
@@ -78,6 +76,7 @@ class SSFBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._ssf: SSF = ssf
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -117,6 +116,3 @@ class SSFBinaryWriter(ResourceWriter):
 
         for i in range(12):
             self._writer.write_uint32(0xFFFFFFFF)
-
-        if auto_close:
-            self._writer.close()

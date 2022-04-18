@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import io
+from contextlib import suppress
 from typing import Optional
 from xml.etree import ElementTree
 
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
 
 
 class SSFXMLReader(ResourceReader):
@@ -16,26 +17,23 @@ class SSFXMLReader(ResourceReader):
             size: int = 0
     ):
         super().__init__(source, offset, size)
-        self._xml_root: ElementTree.Element = ElementTree.parse(
-            io.StringIO(self._reader.read_bytes(self._size).decode())).getroot()
         self._ssf: Optional[SSF] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
     ) -> SSF:
         self._ssf = SSF()
 
-        for child in self._xml_root:
-            try:
+        data = self._reader.read_bytes(self._reader.size()).decode()
+        xml_root = ElementTree.parse(io.StringIO(data)).getroot()
+
+        for child in xml_root:
+            with suppress(ValueError):
                 sound = SSFSound(int(child.attrib['id']))
                 stringref = int(child.attrib['strref'])
                 self._ssf.set(sound, stringref)
-            except ValueError:
-                pass
-
-        if auto_close:
-            self._reader.close()
 
         return self._ssf
 
@@ -50,6 +48,7 @@ class SSFXMLWriter(ResourceWriter):
         self.xml_root: ElementTree.Element = ElementTree.Element("xml")
         self.ssf: SSF = ssf
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -63,6 +62,3 @@ class SSFXMLWriter(ResourceWriter):
 
         ElementTree.indent(self.xml_root)
         self._writer.write_bytes(ElementTree.tostring(self.xml_root))
-
-        if auto_close:
-            self._writer.close()
