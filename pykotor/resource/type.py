@@ -315,7 +315,7 @@ def autoclose(func):
         try:
             resource = func(self, auto_close)
         except (IOError, ParseError, ValueError, IndexError, StopIteration) as e:
-            raise ValueError("Tried to load an unsupported or corrupted GFF file.", e)
+            raise ValueError("Tried to load an unsupported or corrupted file.", e)
         finally:
             if auto_close:
                 self.close()
