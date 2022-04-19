@@ -15,6 +15,11 @@ def detect_tpc(
         source: Source of the TPC data.
         offset: Offset into the source data.
 
+    Raises:
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+
     Returns:
         The format of the TPC data.
     """
@@ -42,6 +47,8 @@ def detect_tpc(
             source.skip(-100)
         else:
             file_format = ResourceType.INVALID
+    except (FileNotFoundError, PermissionError, IsADirectoryError) as e:
+        raise e
     except IOError:
         file_format = ResourceType.INVALID
 
@@ -63,22 +70,23 @@ def read_tpc(
         size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
     Raises:
-        ValueError: If the file was corrupted or in an unsupported format.
+        FileNotFoundError: If the file could not be found.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be accessed.
+        ValueError: If the file was corrupted or the format could not be determined.
 
     Returns:
         An TPC instance.
     """
     file_format = detect_tpc(source, offset)
 
-    try:
-        if file_format == ResourceType.TPC:
-            return TPCBinaryReader(source, offset, size).load()
-        elif file_format == ResourceType.TGA:
-            return TPCTGAReader(source, offset, size).load()
-        else:
-            raise ValueError
-    except (IOError, ValueError):
-        raise ValueError("Tried to load an unsupported or corrupted TPC file.")
+    if file_format is ResourceType.INVALID:
+        raise ValueError("Failed to determine the format of the GFF file.")
+
+    if file_format == ResourceType.TPC:
+        return TPCBinaryReader(source, offset, size).load()
+    elif file_format == ResourceType.TGA:
+        return TPCTGAReader(source, offset, size).load()
 
 
 def write_tpc(
@@ -95,7 +103,9 @@ def write_tpc(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        IsADirectoryError: If the specified path is a directory (Unix-like systems only).
+        PermissionError: If the file could not be written to the specified destination.
+        ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.TGA:
         TPCTGAWriter(tpc, target).write()
@@ -121,7 +131,7 @@ def bytes_tpc(
         file_format: The file format.
 
     Raises:
-        ValueError: If an unsupported file format was given.
+        ValueError: If the specified format was unsupported.
 
     Returns:
         The TPC data.

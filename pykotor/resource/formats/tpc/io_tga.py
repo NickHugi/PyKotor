@@ -4,7 +4,7 @@ from typing import Optional
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import ResourceWriter, TARGET_TYPES, ResourceReader, SOURCE_TYPES
+from pykotor.resource.type import ResourceWriter, TARGET_TYPES, ResourceReader, SOURCE_TYPES, autoclose
 
 
 class _DataTypes(IntEnum):
@@ -29,6 +29,7 @@ class TPCTGAReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: Optional[TPC] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -82,9 +83,6 @@ class TPCTGAReader(ResourceReader):
         else:
             raise ValueError("Unable to load TGA file. The image must store uncompressed RGB data.")
 
-        if auto_close:
-            self._reader.close()
-
         return self._tpc
 
 
@@ -97,6 +95,7 @@ class TPCTGAWriter(ResourceWriter):
         super().__init__(target)
         self._tpc = tpc
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -133,6 +132,3 @@ class TPCTGAWriter(ResourceWriter):
                 b = pixel_reader.read_uint8()
                 a = pixel_reader.read_uint8()
                 self._writer.write_bytes(struct.pack('BBBB', b, g, r, a))
-
-        if auto_close:
-            self._writer.close()

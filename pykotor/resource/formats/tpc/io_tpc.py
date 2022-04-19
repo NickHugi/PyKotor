@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader, autoclose
 
 
 def _get_size(
@@ -33,6 +33,7 @@ class TPCBinaryReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: Optional[TPC] = None
 
+    @autoclose
     def load(
             self,
             auto_close: bool = True
@@ -90,9 +91,6 @@ class TPCBinaryReader(ResourceReader):
         self._tpc.txi = txi
         self._tpc.set(width, height, mipmaps, tpc_format)
 
-        if auto_close:
-            self._reader.close()
-
         return self._tpc
 
 
@@ -105,6 +103,7 @@ class TPCBinaryWriter(ResourceWriter):
         super().__init__(target)
         self._tpc = tpc
 
+    @autoclose
     def write(
             self,
             auto_close: bool = True
@@ -145,6 +144,3 @@ class TPCBinaryWriter(ResourceWriter):
         self._writer.write_bytes(b'\x00' * 114)
         self._writer.write_bytes(data)
         self._writer.write_bytes(self._tpc.txi.encode('ascii'))
-
-        if auto_close:
-            self._writer.close()
