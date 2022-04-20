@@ -19,6 +19,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.lyt import LYT
+from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.generics.git import GIT, GITPlaceable, GITCreature, GITDoor, GITTrigger, GITEncounter, \
     GITWaypoint, GITSound, GITStore, GITCamera, GITInstance
@@ -387,11 +388,15 @@ class Scene:
 
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
-            # Check the textures linked to the module first
-            tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
-            # Otherwise just search through all relevant game files
-            tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA,
-                                                   SearchLocation.CHITIN]) if tpc is None else tpc
+            try:
+                # Check the textures linked to the module first
+                tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
+                # Otherwise just search through all relevant game files
+                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA,
+                                                       SearchLocation.CHITIN]) if tpc is None else tpc
+            except (ValueError, IOError):
+                # If an error occurs during the loading process, just use a blank image.
+                tpc = TPC()
 
             self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(255, 0, 255)
         return self.textures[name]
