@@ -564,10 +564,10 @@ class Camera:
             self.pitch = 0
 
     def forward(self, ignoreZ: bool = True) -> vec3:
-        eye_x = math.sin(self.yaw) * math.sin(self.pitch)
-        eye_y = math.cos(self.yaw) * math.sin(self.pitch)
+        eye_x = -math.cos(self.yaw) * math.cos(self.pitch)
+        eye_y = math.sin(self.yaw) * math.cos(self.pitch)
         eye_z = 0 if ignoreZ else math.sin(self.pitch)
-        return glm.normalize(vec3(-eye_x, eye_y, eye_z))
+        return -glm.normalize(vec3(eye_y, eye_x, eye_z))
 
     def sideward(self, ignoreZ: bool = True) -> vec3:
         eye_x = math.cos(self.yaw) * math.cos(self.pitch)
