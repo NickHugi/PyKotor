@@ -522,6 +522,27 @@ class ModuleRenderer(QOpenGLWidget):
     def keyPressEvent(self, e: QKeyEvent) -> None:
         self._keysDown.add(e.key())
 
+        if e.key() == QtCore.Qt.Key_7:
+            # Look directly down
+            self.scene.camera.pitch = 0
+        if e.key() == QtCore.Qt.Key_9:
+            # Look directly forward
+            self.scene.camera.yaw = 0
+
+        if e.key() == QtCore.Qt.Key_4:
+            # Turn slightly left
+            self.scene.camera.yaw += math.pi/8
+        if e.key() == QtCore.Qt.Key_6:
+            # Turn slightly right
+            self.scene.camera.yaw -= math.pi/8
+
+        if e.key() == QtCore.Qt.Key_8:
+            # Look slightly up
+            self.scene.camera.pitch += math.pi/8
+        if e.key() == QtCore.Qt.Key_2:
+            # Look slightly down
+            self.scene.camera.pitch -= math.pi/8
+
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
     # endregion
