@@ -29,7 +29,7 @@ class TPCTGAReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: Optional[TPC] = None
 
-    @autoclose
+    #@autoclose
     def load(
             self,
             auto_close: bool = True
@@ -48,20 +48,20 @@ class TPCTGAReader(ResourceReader):
         height = self._reader.read_uint16()
         bits_per_pixel = self._reader.read_uint8()
         image_descriptor = self._reader.read_uint8()
+        self._reader.skip(id_length)
 
         y_flipped = bool(image_descriptor & 0b00100000)
         interleaving_id = (image_descriptor & 0b11000000) >> 6
 
         if interleaving_id:
-            ValueError("Unable to load TGA file. The image data must not be interleaved.")
+            ValueError("The image data must not be interleaved.")
 
         if datatype_code == _DataTypes.UNCOMPRESSED_RGB:
-            self._reader.skip(id_length)
             self._reader.skip(colormap_length * colormap_depth // 8)
             data = bytearray()
 
             if bits_per_pixel != 24 and bits_per_pixel != 32:
-                ValueError("Unable to load TGA file. The bits per pixel must be 24 or 32.")
+                ValueError("The image must store 24 or 32 bits per pixel.")
 
             pixel_rows = []
             for y in range(height):
@@ -77,11 +77,42 @@ class TPCTGAReader(ResourceReader):
                 [data.extend(pixels) for pixels in reversed(pixel_rows)]
             else:
                 [data.extend(pixels) for pixels in pixel_rows]
+        elif datatype_code == _DataTypes.RLE_RGB:
+            data = bytearray()
+            pixels = []
+            n = 0
 
-            self._tpc.set(width, height, [bytes(data)], TPCTextureFormat.RGBA)
+            while self._reader.remaining():
+                packet = self._reader.read_uint8()
 
+                raw = (packet >> 7) == 0
+                count = (packet & 0b01111111) + 1
+                n += count
+
+                if raw:
+                    for i in range(count):
+                        b, g, r = self._reader.read_uint8(), self._reader.read_uint8(), self._reader.read_uint8()
+                        if bits_per_pixel == 32:
+                            pixels.extend([r, g, b, self._reader.read_uint8()])
+                        else:
+                            pixels.extend([r, g, b, 255])
+                else:
+                    b, g, r = self._reader.read_uint8(), self._reader.read_uint8(), self._reader.read_uint8()
+                    pixel = [r, g, b]
+                    if bits_per_pixel == 32:
+                        pixel.append(self._reader.read_uint8())
+                    else:
+                        pixel.append(255)
+                    for i in range(count):
+                        pixels.extend(pixel)
+
+                if n == width*height:
+                    break
+            data.extend(pixels)
         else:
-            raise ValueError("Unable to load TGA file. The image must store uncompressed RGB data.")
+            raise ValueError("The image data must be RGB and not color-mapped.")
+
+        self._tpc.set(width, height, [bytes(data)], TPCTextureFormat.RGBA)
 
         return self._tpc
 
