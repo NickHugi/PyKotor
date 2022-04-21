@@ -151,3 +151,10 @@ class VIS:
             raise ValueError("One of the specified rooms does not exist.")
 
         return show in self._visibility[when_inside]
+
+    def set_all_visible(
+            self
+    ) -> None:
+        for when_inside in self._rooms:
+            for show in [room for room in self._rooms if room != when_inside]:
+                self.set_visible(when_inside, show, True)
