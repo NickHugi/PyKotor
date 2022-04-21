@@ -163,6 +163,7 @@ class IndoorMap:
             door = GITDoor(*insert.position)
             door.resref = ResRef("{}_dor{:02}".format(self.module_id, i))
             door.bearing = math.radians(insert.rotation)
+            door.tweak_color = None
             git.doors.append(door)
 
             utd = deepcopy(insert.door.utdK2 if installation.tsl else insert.door.utdK1)
