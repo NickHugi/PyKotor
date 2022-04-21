@@ -36,6 +36,7 @@ from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor, K
 class DoorInsertion(NamedTuple):
     door: KitDoor
     room: IndoorMapRoom
+    room2: IndoorMapRoom
     static: bool
     position: Vector3
     rotation: float
@@ -73,19 +74,21 @@ class IndoorMap:
             for hookIndex, connection in enumerate(room.hooks):
                 hook1 = room.component.hooks[hookIndex]
                 hook2 = None
+                room2 = None
                 door = hook1.door
                 position = room.hookPosition(hook1)
                 rotation = hook1.rotation + room.rotation
                 static = connection is None
 
                 if connection is not None:
-                    for otherRoom in connection.hooks:
+                    for otherHookIndex, otherRoom in enumerate(connection.hooks):
                         if otherRoom == room:
-                            print("Yes")
+                            hook2 = connection.component.hooks[otherHookIndex]
+                            room2 = connection
 
                 if position not in points:
                     points.append(position)  # 47
-                    insertions.append(DoorInsertion(door, room, static, position, rotation, hook1, hook2))
+                    insertions.append(DoorInsertion(door, room, room2, static, position, rotation, hook1, hook2))
 
         return insertions
 
@@ -109,10 +112,6 @@ class IndoorMap:
             modelname = "{}_room{}".format(self.module_id, i)
             roomNames[room] = modelname
             lyt.rooms.append(LYTRoom(modelname, room.position))
-
-            for j in range(len(self.rooms)):
-                if j != i:
-                    vis.set_visible(modelname, "{}_room{}".format(self.module_id, j), True)
 
             for filename, data in room.component.kit.always.items():
                 resname, restype = ResourceIdentifier.from_path(filename)
@@ -155,6 +154,7 @@ class IndoorMap:
                         face.trans3 = actualIndex
             mod.set(modelname, ResourceType.WOK, bytes_bwm(bwm))
 
+        paddingCount = 0
         for i, insert in enumerate(self.doorInsertions()):
             door = GITDoor(*insert.position)
             door.resref = ResRef("{}_dor{:02}".format(self.module_id, i))
@@ -169,6 +169,59 @@ class IndoorMap:
 
             orientation = Vector4.from_euler(0, 0, door.bearing)
             lyt.doorhooks.append(LYTDoorHook(roomNames[insert.room], door.resref.get(), insert.position, orientation))
+
+            if insert.hook1 and insert.hook2:
+                if insert.hook1.door.height != insert.hook2.door.height:
+                    cRoom = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
+                    cHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
+                    altHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
+
+                    kit = cRoom.component.kit
+                    doorIndex = kit.doors.index(cHook.door)
+                    height = altHook.door.height * 100
+                    paddingKey = min([i for i in kit.top_padding[doorIndex].keys() if i > height])
+                    paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
+                    paddingCount += 1
+                    pad_mdl = model.transform(kit.top_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
+                    mod.set(paddingName, ResourceType.MDL, pad_mdl)
+                    mod.set(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
+                    lmRenames = {}
+                    for lightmap in model.list_lightmaps(pad_mdl):
+                        renamed = "{}_lm{}".format(self.module_id, totalLm)
+                        totalLm += 1
+                        lmRenames[lightmap.lower()] = renamed
+                        mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
+                        mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
+                    pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
+                    mod.set(paddingName, ResourceType.MDL, pad_mdl)
+                    mod.set(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
+                    lyt.rooms.append(LYTRoom(paddingName, insert.position))
+                    vis.add_room(paddingName)
+                if insert.hook1.door.width != insert.hook2.door.width:
+                    cRoom = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
+                    cHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
+                    altHook = insert.hook2 if insert.hook1.door.height < insert.hook2.door.height else insert.hook1
+
+                    kit = cRoom.component.kit
+                    doorIndex = kit.doors.index(cHook.door)
+                    width = altHook.door.width * 100
+                    paddingKey = min([i for i in kit.side_padding[doorIndex].keys() if i > width])
+                    paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
+                    paddingCount += 1
+                    pad_mdl = model.transform(kit.side_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
+                    pad_mdl = model.change_textures(pad_mdl, texRenames)
+                    lmRenames = {}
+                    for lightmap in model.list_lightmaps(pad_mdl):
+                        renamed = "{}_lm{}".format(self.module_id, totalLm)
+                        totalLm += 1
+                        lmRenames[lightmap.lower()] = renamed
+                        mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
+                        mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
+                    pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
+                    mod.set(paddingName, ResourceType.MDL, pad_mdl)
+                    mod.set(paddingName, ResourceType.MDX, kit.side_padding[doorIndex][paddingKey].mdx)
+                    lyt.rooms.append(LYTRoom(paddingName, insert.position))
+                    vis.add_room(paddingName)
 
         minimap = self.generateMinimap()
         tpcData = bytearray()
@@ -197,6 +250,7 @@ class IndoorMap:
         ifo.tag = self.module_id
         ifo.area_name = ResRef(self.module_id)
         ifo.identifier = ResRef(self.module_id)
+        vis.set_all_visible()
 
         mod.set(self.module_id, ResourceType.LYT, bytes_lyt(lyt))
         mod.set(self.module_id, ResourceType.VIS, bytes_vis(vis))

@@ -23,8 +23,8 @@ class Kit:
         self.lightmaps: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.txis: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.always: Dict[str, bytes] = {}
-        self.side_padding: List[Tuple[bytes, bytes]] = []
-        self.top_padding: Dict[int, MDLMDXTuple] = {}
+        self.side_padding: Dict[int, Dict[int, MDLMDXTuple]] = {}
+        self.top_padding: Dict[int, Dict[int, MDLMDXTuple]] = {}
 
 
 class KitComponent:
@@ -92,11 +92,17 @@ def load_kits(path: str) -> List[Kit]:
             mdl_path = doorway_path + "/" + padding_id + ".mdl"
             mdx_path = doorway_path + "/" + padding_id + ".mdx"
             mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
-            padding_size = get_nums(padding_id)[0]
-            if doorway_path.startswith("side"):
-                kit.side_padding[padding_size] = MDLMDXTuple(mdl, mdx)
-            if doorway_path.startswith("top"):
-                kit.top_padding[padding_size] = MDLMDXTuple(mdl, mdx)
+            door_id = get_nums(padding_id)[0]
+            padding_size = get_nums(padding_id)[1]
+
+            if padding_id.startswith("side"):
+                if door_id not in kit.side_padding:
+                    kit.side_padding[door_id] = {}
+                kit.side_padding[door_id][padding_size] = MDLMDXTuple(mdl, mdx)
+            if padding_id.startswith("top"):
+                if door_id not in kit.top_padding:
+                    kit.top_padding[door_id] = {}
+                kit.top_padding[door_id][padding_size] = MDLMDXTuple(mdl, mdx)
 
         for door_json in kit_json["doors"]:
             utdK1 = read_utd("{}/{}/{}.utd".format(kits_path, kit_identifier, door_json["utd_k1"]))
