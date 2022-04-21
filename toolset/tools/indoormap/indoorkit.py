@@ -25,6 +25,7 @@ class Kit:
         self.always: Dict[str, bytes] = {}
         self.side_padding: Dict[int, Dict[int, MDLMDXTuple]] = {}
         self.top_padding: Dict[int, Dict[int, MDLMDXTuple]] = {}
+        self.skyboxes: Dict[str, MDLMDXTuple] = {}
 
 
 class KitComponent:
@@ -87,22 +88,31 @@ def load_kits(path: str) -> List[Kit]:
             txi_path = "{}/{}.txi".format(lightmaps_path, lightmap)
             kit.txis[lightmap] = BinaryReader.load_file(txi_path) if os.path.exists(txi_path) else b''
 
-        doorway_path = "{}/{}/doorway".format(kits_path, filename[:-5])
-        for padding_id in [filename[:-4] for filename in os.listdir(doorway_path) if filename.endswith(".mdl")]:
-            mdl_path = doorway_path + "/" + padding_id + ".mdl"
-            mdx_path = doorway_path + "/" + padding_id + ".mdx"
-            mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
-            door_id = get_nums(padding_id)[0]
-            padding_size = get_nums(padding_id)[1]
+        skyboxes_path = "{}/{}/skyboxes".format(kits_path, filename[:-5])
+        if os.path.exists(skyboxes_path):
+            for skybox_name in [filename[:-4] for filename in os.listdir(skyboxes_path) if filename.endswith(".mdl")]:
+                mdl_path = skyboxes_path + "/" + skybox_name + ".mdl"
+                mdx_path = skyboxes_path + "/" + skybox_name + ".mdx"
+                mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
+                kit.skyboxes[skybox_name] = MDLMDXTuple(mdl, mdx)
 
-            if padding_id.startswith("side"):
-                if door_id not in kit.side_padding:
-                    kit.side_padding[door_id] = {}
-                kit.side_padding[door_id][padding_size] = MDLMDXTuple(mdl, mdx)
-            if padding_id.startswith("top"):
-                if door_id not in kit.top_padding:
-                    kit.top_padding[door_id] = {}
-                kit.top_padding[door_id][padding_size] = MDLMDXTuple(mdl, mdx)
+        doorway_path = "{}/{}/doorway".format(kits_path, filename[:-5])
+        if os.path.exists(doorway_path):
+            for padding_id in [filename[:-4] for filename in os.listdir(doorway_path) if filename.endswith(".mdl")]:
+                mdl_path = doorway_path + "/" + padding_id + ".mdl"
+                mdx_path = doorway_path + "/" + padding_id + ".mdx"
+                mdl, mdx = BinaryReader.load_file(mdl_path), BinaryReader.load_file(mdx_path)
+                door_id = get_nums(padding_id)[0]
+                padding_size = get_nums(padding_id)[1]
+
+                if padding_id.startswith("side"):
+                    if door_id not in kit.side_padding:
+                        kit.side_padding[door_id] = {}
+                    kit.side_padding[door_id][padding_size] = MDLMDXTuple(mdl, mdx)
+                if padding_id.startswith("top"):
+                    if door_id not in kit.top_padding:
+                        kit.top_padding[door_id] = {}
+                    kit.top_padding[door_id][padding_size] = MDLMDXTuple(mdl, mdx)
 
         for door_json in kit_json["doors"]:
             utdK1 = read_utd("{}/{}/{}.utd".format(kits_path, kit_identifier, door_json["utd_k1"]))

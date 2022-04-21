@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>285</width>
-    <height>131</height>
+    <height>157</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -69,6 +69,16 @@
       <widget class="QLineEdit" name="warpCodeEdit">
        <property name="maxLength">
         <number>6</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="skyboxSelect"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Skybox:</string>
        </property>
       </widget>
      </item>

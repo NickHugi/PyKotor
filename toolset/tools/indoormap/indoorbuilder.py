@@ -57,7 +57,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionSave.triggered.connect(self.save)
         self.ui.actionSaveAs.triggered.connect(self.saveAs)
         self.ui.actionBuild.triggered.connect(self.buildMap)
-        self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map).exec_())
+        self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_())
         self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
 
@@ -139,7 +139,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def buildMap(self) -> None:
         path = "{}{}.mod".format(self._installation.module_path(), self._map.module_id)
-        task = lambda: self._map.build(self._installation, path)
+        task = lambda: self._map.build(self._installation, self._kits, path)
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
 
         if loader.exec_():

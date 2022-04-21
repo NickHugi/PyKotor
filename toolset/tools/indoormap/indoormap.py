@@ -33,6 +33,9 @@ from data.installation import HTInstallation
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor, Kit
 
 
+# TODO: This code is a mess and is in need of a serious rewrite
+
+
 class DoorInsertion(NamedTuple):
     door: KitDoor
     room: IndoorMapRoom
@@ -58,6 +61,7 @@ class IndoorMap:
         self.module_id: str = "test01"
         self.name: LocalizedString = LocalizedString.from_english("New Module")
         self.lighting: Color = Color(0.5, 0.5, 0.5)
+        self.skybox: str = ""
 
     def rebuildRoomConnections(self) -> None:
         for room in self.rooms:
@@ -92,7 +96,7 @@ class IndoorMap:
 
         return insertions
 
-    def build(self, installation: HTInstallation, outputPath: str) -> None:
+    def build(self, installation: HTInstallation, kits: List[Kit], outputPath: str) -> None:
         mod = ERF(ERFType.MOD)
         lyt = LYT()
         vis = VIS()
@@ -223,6 +227,22 @@ class IndoorMap:
                     lyt.rooms.append(LYTRoom(paddingName, insert.position))
                     vis.add_room(paddingName)
 
+        if self.skybox != "":
+            for kit in kits:
+                if self.skybox in kit.skyboxes:
+                    mdl, mdx = kit.skyboxes[self.skybox]
+                    modelName = "{}_sky".format(self.module_id)
+                    for texture in set([texture for texture in model.list_textures(mdl) if texture.lower() not in texRenames.keys()]):
+                        renamed = "{}_tex{}".format(self.module_id, len(texRenames.keys()))
+                        texRenames[texture.lower()] = renamed
+                        mod.set(renamed, ResourceType.TGA, kit.textures[texture])
+                        mod.set(renamed, ResourceType.TXI, kit.txis[texture])
+                    mdl = model.change_textures(mdl, texRenames)
+                    mod.set(modelName, ResourceType.MDL, mdl)
+                    mod.set(modelName, ResourceType.MDX, mdx)
+                    lyt.rooms.append(LYTRoom(modelName, Vector3.from_null()))
+                    vis.add_room(modelName)
+
         minimap = self.generateMinimap()
         tpcData = bytearray()
         for y in range(256):
@@ -272,7 +292,7 @@ class IndoorMap:
             data["name"][stringid] = text
 
         data["lighting"] = [self.lighting.r, self.lighting.g, self.lighting.b]
-
+        data["skybox"] = self.skybox
         data["warp"] = self.module_id
 
         data["rooms"] = []
@@ -301,6 +321,7 @@ class IndoorMap:
             self.lighting.r = data["lighting"][2]
 
             self.module_id = data["warp"]
+            self.skybox = data["skybox"] if "skybox" in data else ""
 
             for roomData in data["rooms"]:
                 sKit = None

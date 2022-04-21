@@ -1,13 +1,16 @@
+from typing import List
+
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from data.installation import HTInstallation
 from editors.editor import Editor
 from tools.indoormap import indoorsettings_ui
+from tools.indoormap.indoorkit import Kit
 from tools.indoormap.indoormap import IndoorMap
 
 
 class IndoorMapSettings(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, indoorMap: IndoorMap):
+    def __init__(self, parent: QWidget, installation: HTInstallation, indoorMap: IndoorMap, kits: List[Kit]):
         super().__init__(parent)
 
         self.ui = indoorsettings_ui.Ui_Dialog()
@@ -15,10 +18,17 @@ class IndoorMapSettings(QDialog):
         self.ui.nameEdit.setInstallation(installation)
 
         self._indoorMap: IndoorMap = indoorMap
+        self._kits: List[Kit] = kits
 
         self.ui.nameEdit.setLocstring(indoorMap.name)
         self.ui.colorEdit.setColor(indoorMap.lighting)
         self.ui.warpCodeEdit.setText(indoorMap.module_id)
+
+        self.ui.skyboxSelect.addItem("[None]", "")
+        for kit in kits:
+            for skybox in kit.skyboxes.keys():
+                self.ui.skyboxSelect.addItem(skybox, skybox)
+        self.ui.skyboxSelect.setCurrentText(indoorMap.skybox)
 
     def _setupSignals(self) -> None:
         ...
@@ -29,4 +39,4 @@ class IndoorMapSettings(QDialog):
         self._indoorMap.name = self.ui.nameEdit.locstring()
         self._indoorMap.lighting = self.ui.colorEdit.color()
         self._indoorMap.module_id = self.ui.warpCodeEdit.text()
-
+        self._indoorMap.skybox = self.ui.skyboxSelect.currentData()

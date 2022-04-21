@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(285, 131)
+        Dialog.resize(285, 157)
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.formLayout = QtWidgets.QFormLayout()
@@ -46,6 +46,12 @@ class Ui_Dialog(object):
         self.warpCodeEdit.setMaxLength(6)
         self.warpCodeEdit.setObjectName("warpCodeEdit")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.warpCodeEdit)
+        self.skyboxSelect = QtWidgets.QComboBox(Dialog)
+        self.skyboxSelect.setObjectName("skyboxSelect")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.skyboxSelect)
+        self.label_4 = QtWidgets.QLabel(Dialog)
+        self.label_4.setObjectName("label_4")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_4)
         self.verticalLayout.addLayout(self.formLayout)
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
@@ -64,4 +70,5 @@ class Ui_Dialog(object):
         self.label.setText(_translate("Dialog", "Name:"))
         self.label_2.setText(_translate("Dialog", "Lighting:"))
         self.label_3.setText(_translate("Dialog", "Warp Code:"))
+        self.label_4.setText(_translate("Dialog", "Skybox:"))
 from toolset.misc.widget.widgets import ColorEdit, LocalizedStringLineEdit
