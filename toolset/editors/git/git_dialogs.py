@@ -80,7 +80,7 @@ class PlaceableDialog(QDialog):
         self.ui.yPosSpin.setValue(placeable.position.y)
         self.ui.zPosSpin.setValue(placeable.position.z)
         self.ui.bearingSpin.setValue(placeable.bearing)
-        self.ui.colorSpin.setValue(placeable.tweak_color)
+        self.ui.colorSpin.setValue(0 if placeable.tweak_color is None else placeable.tweak_color.rgb_integer())
 
         self.placeable: GITPlaceable = placeable
 
@@ -91,12 +91,12 @@ class PlaceableDialog(QDialog):
         self.placeable.position.y = self.ui.yPosSpin.value()
         self.placeable.position.z = self.ui.zPosSpin.value()
         self.placeable.bearing = self.ui.bearingSpin.value()
-        self.placeable.tweak_color = self.ui.colorSpin.value()
+        self.door.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
 
     def changeColor(self, colorSpin: LongSpinBox) -> None:
         qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
-        color = Color.from_bgr_integer(qcolor.rgb())
-        colorSpin.setValue(color.bgr_integer())
+        color = Color.from_rgb_integer(qcolor.rgb())
+        colorSpin.setValue(color.rgb_integer())
 
     def redoColorImage(self, value: int, colorLabel: QLabel) -> None:
         color = Color.from_bgr_integer(value)
@@ -124,7 +124,7 @@ class DoorDialog(QDialog):
         self.ui.yPosSpin.setValue(door.position.y)
         self.ui.zPosSpin.setValue(door.position.z)
         self.ui.bearingSpin.setValue(door.bearing)
-        self.ui.colorSpin.setValue(door.tweak_color)
+        self.ui.colorSpin.setValue(0 if door.tweak_color is None else door.tweak_color.rgb_integer())
 
         self.door: GITDoor = door
 
@@ -135,12 +135,12 @@ class DoorDialog(QDialog):
         self.door.position.y = self.ui.yPosSpin.value()
         self.door.position.z = self.ui.zPosSpin.value()
         self.door.bearing = self.ui.bearingSpin.value()
-        self.door.tweak_color = self.ui.colorSpin.value()
+        self.door.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
 
     def changeColor(self, colorSpin: LongSpinBox) -> None:
         qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
-        color = Color.from_bgr_integer(qcolor.rgb())
-        colorSpin.setValue(color.bgr_integer())
+        color = Color.from_rgb_integer(qcolor.rgb())
+        colorSpin.setValue(color.rgb_integer())
 
     def redoColorImage(self, value: int, colorLabel: QLabel) -> None:
         color = Color.from_bgr_integer(value)
