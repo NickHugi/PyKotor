@@ -78,7 +78,7 @@ class PlaceableDialog(QDialog):
         self.ui.resrefEdit.setText(placeable.resref.get())
         self.ui.xPosSpin.setValue(placeable.position.x)
         self.ui.yPosSpin.setValue(placeable.position.y)
-        self.ui.zPosSpin.setValue(placeable.position.y)
+        self.ui.zPosSpin.setValue(placeable.position.z)
         self.ui.bearingSpin.setValue(placeable.bearing)
         self.ui.colorSpin.setValue(placeable.tweak_color)
 
@@ -122,7 +122,7 @@ class DoorDialog(QDialog):
         self.ui.resrefEdit.setText(door.resref.get())
         self.ui.xPosSpin.setValue(door.position.x)
         self.ui.yPosSpin.setValue(door.position.y)
-        self.ui.zPosSpin.setValue(door.position.y)
+        self.ui.zPosSpin.setValue(door.position.z)
         self.ui.bearingSpin.setValue(door.bearing)
         self.ui.colorSpin.setValue(door.tweak_color)
 
@@ -163,7 +163,7 @@ class EncounterDialog(QDialog):
         self.ui.resrefEdit.setText(encounter.resref.get())
         self.ui.xPosSpin.setValue(encounter.position.x)
         self.ui.yPosSpin.setValue(encounter.position.y)
-        self.ui.zPosSpin.setValue(encounter.position.y)
+        self.ui.zPosSpin.setValue(encounter.position.z)
 
         self.encounter: GITEncounter = encounter
 
@@ -188,7 +188,7 @@ class TriggerDialog(QDialog):
         self.ui.resrefEdit.setText(trigger.resref.get())
         self.ui.xPosSpin.setValue(trigger.position.x)
         self.ui.yPosSpin.setValue(trigger.position.y)
-        self.ui.zPosSpin.setValue(trigger.position.y)
+        self.ui.zPosSpin.setValue(trigger.position.z)
 
         self.trigger: GITTrigger = trigger
 
@@ -213,7 +213,7 @@ class SoundDialog(QDialog):
         self.ui.resrefEdit.setText(sound.resref.get())
         self.ui.xPosSpin.setValue(sound.position.x)
         self.ui.yPosSpin.setValue(sound.position.y)
-        self.ui.zPosSpin.setValue(sound.position.y)
+        self.ui.zPosSpin.setValue(sound.position.z)
 
         self.sound: GITSound = sound
 
@@ -238,7 +238,7 @@ class StoreDialog(QDialog):
         self.ui.resrefEdit.setText(store.resref.get())
         self.ui.xPosSpin.setValue(store.position.x)
         self.ui.yPosSpin.setValue(store.position.y)
-        self.ui.zPosSpin.setValue(store.position.y)
+        self.ui.zPosSpin.setValue(store.position.z)
 
         self.store: GITStore = store
 
@@ -263,7 +263,7 @@ class WaypointDialog(QDialog):
         self.ui.resrefEdit.setText(waypoint.resref.get())
         self.ui.xPosSpin.setValue(waypoint.position.x)
         self.ui.yPosSpin.setValue(waypoint.position.y)
-        self.ui.zPosSpin.setValue(waypoint.position.y)
+        self.ui.zPosSpin.setValue(waypoint.position.z)
 
         self.waypoint: GITWaypoint = waypoint
 
@@ -287,7 +287,7 @@ class CameraDialog(QDialog):
 
         self.ui.xPosSpin.setValue(camera.position.x)
         self.ui.yPosSpin.setValue(camera.position.y)
-        self.ui.zPosSpin.setValue(camera.position.y)
+        self.ui.zPosSpin.setValue(camera.position.z)
         self.ui.xOrientSpin.setValue(camera.orientation.x)
         self.ui.yOrientSpin.setValue(camera.orientation.y)
         self.ui.zOrientSpin.setValue(camera.orientation.z)
