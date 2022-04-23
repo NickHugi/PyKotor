@@ -124,8 +124,9 @@ class GITEditor(Editor):
         walkmeshes = []
         for room in layout.rooms:
             order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
-            bwmData = self._installation.resource(room.model, ResourceType.WOK, order).data
-            walkmeshes.append(read_bwm(bwmData))
+            findBWM = self._installation.resource(room.model, ResourceType.WOK, order)
+            if findBWM is not None:
+                walkmeshes.append(read_bwm(findBWM.data))
 
         self.ui.renderArea.setWalkmeshes(walkmeshes)
 
