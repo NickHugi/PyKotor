@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QWidget
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utw import UTW, dismantle_utw, read_utw
 from pykotor.resource.type import ResourceType
@@ -59,7 +60,7 @@ class UTWEditor(Editor):
 
         utw.name = self.ui.nameEdit.locstring
         utw.tag = self.ui.tagEdit.text()
-        utw.resref = self.ui.resrefEdit.text()
+        utw.resref = ResRef(self.ui.resrefEdit.text())
         utw.has_map_note = self.ui.isNoteCheckbox.isChecked()
         utw.map_note_enabled = self.ui.noteEnabledCheckbox.isChecked()
         utw.map_note = self.ui.noteEdit.locstring
