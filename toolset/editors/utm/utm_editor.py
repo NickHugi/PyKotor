@@ -55,7 +55,7 @@ class UTMEditor(Editor):
         self.ui.markUpSpin.setValue(utm.mark_up)
         self.ui.markDownSpin.setValue(utm.mark_down)
         self.ui.onOpenEdit.setText(utm.on_open.get())
-        self.ui.storeFlagSelect.setCurrentIndex(int(utm.can_buy) + int(utm.can_sell) * 2)
+        self.ui.storeFlagSelect.setCurrentIndex((int(utm.can_buy) + int(utm.can_sell) * 2) - 1)
 
         # Comments
         self.ui.commentsEdit.setPlainText(utm.comment)
