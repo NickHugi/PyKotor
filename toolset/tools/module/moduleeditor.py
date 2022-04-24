@@ -529,17 +529,17 @@ class ModuleRenderer(QOpenGLWidget):
             # Look directly forward
             self.scene.camera.yaw = 0
 
-        if e.key() == QtCore.Qt.Key_4:
+        if e.key() in [QtCore.Qt.Key_4, QtCore.Qt.Key_A]:
             # Turn slightly left
             self.scene.camera.yaw += math.pi/8
-        if e.key() == QtCore.Qt.Key_6:
+        if e.key() in [QtCore.Qt.Key_6, QtCore.Qt.Key_D]:
             # Turn slightly right
             self.scene.camera.yaw -= math.pi/8
 
-        if e.key() == QtCore.Qt.Key_8:
+        if e.key() in [QtCore.Qt.Key_8, QtCore.Qt.Key_W]:
             # Look slightly up
             self.scene.camera.pitch += math.pi/8
-        if e.key() == QtCore.Qt.Key_2:
+        if e.key() in [QtCore.Qt.Key_2, QtCore.Qt.Key_S]:
             # Look slightly down
             self.scene.camera.pitch -= math.pi/8
 
