@@ -11,7 +11,7 @@ DESCRIPTION = "A PyQt5 application that can edit the files used by the KotOR gam
 PACKAGES = find_namespace_packages()
 URL = "https://github.com/NickHugi/PyKotor"
 
-README = (HERE / "README.rd").read_text()
+README = (HERE / "README.md").read_text()
 REQUIREMENTS = (HERE / "requirements.txt").read_text()
 
 setup(
