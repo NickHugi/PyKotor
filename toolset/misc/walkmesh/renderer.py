@@ -473,6 +473,15 @@ class WalkmeshRenderer(QWidget):
                 path.addEllipse(QPointF(instance.position.x + point.x, instance.position.y + point.y), size, size)
         return path
 
+    def _drawImage(self, painter: QPainter, pixmap: QPixmap, x: float, y: float, rotation: float, scale: float):
+        source = QRectF(0, 0, pixmap.width(), pixmap.height())
+        trueWidth, trueHeight = pixmap.width()*scale, pixmap.height()*scale
+        painter.save()
+        painter.translate(x, y)
+        painter.rotate(math.degrees(rotation))
+        painter.drawPixmap(QRectF(-trueWidth/2, -trueHeight/2, trueWidth, trueHeight), pixmap, source)
+        painter.restore()
+
     # region Events
     def paintEvent(self, e: QPaintEvent) -> None:
         # Build walkmesh faces cache
@@ -526,43 +535,32 @@ class WalkmeshRenderer(QWidget):
         painter.setOpacity(0.6)
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
         if self._git is not None:
-            source = QRectF(0, 0, 32, 32)
-
             for creature in self._git.creatures if not self.hideCreatures else []:
-                rect = QRectF(creature.position.x - 1, creature.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapCreature, source)
+                self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, -self._camRotation, 1/16)
 
             for door in self._git.doors if not self.hideDoors else []:
-                rect = QRectF(door.position.x - 1, door.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapDoor, source)
+                self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, -self._camRotation, 1/16)
 
             for placeable in self._git.placeables if not self.hidePlaceables else []:
-                rect = QRectF(placeable.position.x - 1, placeable.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapPlaceable, source)
+                self._drawImage(painter, self._pixmapPlaceable, placeable.position.x, placeable.position.y, -self._camRotation, 1/16)
 
             for merchant in self._git.stores if not self.hideStores else []:
-                rect = QRectF(merchant.position.x - 1, merchant.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapMerchant, source)
+                self._drawImage(painter, self._pixmapMerchant, merchant.position.x, merchant.position.y, -self._camRotation, 1/16)
 
             for waypoint in self._git.waypoints if not self.hideWaypoints else []:
-                rect = QRectF(waypoint.position.x - 1, waypoint.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapWaypoint, source)
+                self._drawImage(painter, self._pixmapWaypoint, waypoint.position.x, waypoint.position.y, -self._camRotation, 1/16)
 
             for sound in self._git.sounds if not self.hideSounds else []:
-                rect = QRectF(sound.position.x - 1, sound.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapSound, source)
+                self._drawImage(painter, self._pixmapSound, sound.position.x, sound.position.y, -self._camRotation, 1/16)
 
             for encounter in self._git.encounters if not self.hideEncounters else []:
-                rect = QRectF(encounter.position.x - 1, encounter.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapEncounter, source)
+                self._drawImage(painter, self._pixmapEncounter, encounter.position.x, encounter.position.y, -self._camRotation, 1/16)
 
             for trigger in self._git.triggers if not self.hideTriggers else []:
-                rect = QRectF(trigger.position.x - 1, trigger.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapTrigger, source)
+                self._drawImage(painter, self._pixmapTrigger, trigger.position.x, trigger.position.y, -self._camRotation, 1/16)
 
             for camera in self._git.cameras if not self.hideCameras else []:
-                rect = QRectF(camera.position.x - 1, camera.position.y - 1, 2.0, 2.0)
-                painter.drawPixmap(rect, self._pixmapCamera, source)
+                self._drawImage(painter, self._pixmapCamera, camera.position.x, camera.position.y, -self._camRotation, 1/16)
 
         # Highlight the first instance that is underneath the mouse
         if self._instancesUnderMouse:
