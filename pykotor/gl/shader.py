@@ -3,11 +3,12 @@ from __future__ import annotations
 import glm
 from OpenGL.GL import shaders, glGenTextures, glTexImage2D, glGetUniformLocation, glUniformMatrix4fv, glUniform4fv, \
     glUniform3fv
+from OpenGL.GL.framebufferobjects import glGenerateMipmap
 from OpenGL.GL.shaders import GL_FALSE
 from OpenGL.raw.GL.EXT.texture_compression_s3tc import GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
 from OpenGL.raw.GL.VERSION.GL_1_0 import GL_TEXTURE_2D, glTexParameteri, GL_RGB, GL_UNSIGNED_BYTE, \
     GL_CLAMP, GL_LINEAR, GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_REPEAT, \
-    GL_RGBA
+    GL_RGBA, GL_NEAREST_MIPMAP_LINEAR
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
 from OpenGL.raw.GL.VERSION.GL_2_0 import GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, glUseProgram
@@ -163,8 +164,10 @@ class Texture:
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+        glGenerateMipmap(GL_TEXTURE_2D)
+
         return Texture(gl_id)
 
     @classmethod
