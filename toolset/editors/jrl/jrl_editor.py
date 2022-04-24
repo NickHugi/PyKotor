@@ -104,7 +104,7 @@ class JRLEditor(Editor):
         self.ui.categoryPlanetSelect.clear()
         self.ui.categoryPlanetSelect.addItem("[None]", -1)
         for row in planets:
-            text = self._installation.talktable().string(row.get_integer("name"))
+            text = self._installation.talktable().string(row.get_integer("name", 0))
             text = row.get_string("label").replace("_", " ").title() if text == "" or text is None else text
             self.ui.categoryPlanetSelect.addItem(text)
 
