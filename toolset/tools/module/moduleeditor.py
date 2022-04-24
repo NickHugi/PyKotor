@@ -543,6 +543,13 @@ class ModuleRenderer(QOpenGLWidget):
             # Look slightly down
             self.scene.camera.pitch -= math.pi/8
 
+        if e.key() == QtCore.Qt.Key_Q:
+            # Pan up
+            self.panCamera(0, 0, 1)
+        if e.key() == QtCore.Qt.Key_Z:
+            # Pan down
+            self.panCamera(0, 0, -1)
+
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
     # endregion
