@@ -110,4 +110,5 @@ class HelpWindow(QMainWindow):
             item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)
             if filename is not None and filename != "":
+                self.ui.textDisplay.setSearchPaths(["./help", "./help/{}".format(os.path.dirname(filename))])
                 self.displayFile("./help/{}".format(filename))
