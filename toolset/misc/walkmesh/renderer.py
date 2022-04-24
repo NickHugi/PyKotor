@@ -171,8 +171,9 @@ class WalkmeshRenderer(QWidget):
         Returns:
             A vector representing a point in the world.
         """
-        cos = math.cos(-self._camRotation)
-        sin = math.sin(-self._camRotation)
+        y = self.height() - y
+        cos = math.cos(self._camRotation)
+        sin = math.sin(self._camRotation)
         x = (x - self.width() / 2) / self._camScale
         y = (y - self.height() / 2) / self._camScale
         x2 = x*cos - y*sin + self._camPosition.x
@@ -200,7 +201,7 @@ class WalkmeshRenderer(QWidget):
         y = y / self._camScale
         x2 = x*cos - y*sin
         y2 = x*sin + y*cos
-        return Vector2(x2, y2)
+        return Vector2(x2, -y2)
 
     def getZCoord(self, x: float, y: float) -> float:
         """
@@ -498,7 +499,7 @@ class WalkmeshRenderer(QWidget):
         transform = QTransform()
         transform.translate(self.width() / 2, self.height() / 2)
         transform.rotate(math.degrees(self._camRotation))
-        transform.scale(self._camScale, self._camScale)
+        transform.scale(self._camScale, -self._camScale)
         transform.translate(-self._camPosition.x, -self._camPosition.y)
 
         # Fill the screen with black
@@ -536,7 +537,7 @@ class WalkmeshRenderer(QWidget):
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
         if self._git is not None:
             for creature in self._git.creatures if not self.hideCreatures else []:
-                self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, 1.57-self._camRotation, 1/16)
 
             for door in self._git.doors if not self.hideDoors else []:
                 self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, -self._camRotation, 1/16)
@@ -653,7 +654,3 @@ class WalkmeshRenderer(QWidget):
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
     # endregion
-
-    # FOR ASSISTANCE, LINK DISCORD IN README of github page
-    # Encounter and Trigger inheirt common class
-
