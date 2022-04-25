@@ -954,9 +954,15 @@ class ToolWindow(QMainWindow):
             editor = ERFEditor(self, self.active)
 
         if editor is not None:
-            editor.load(filepath, resref, restype, data)
-            editor.show()
-            return filepath, editor
+            try:
+                editor.load(filepath, resref, restype, data)
+                editor.show()
+                return filepath, editor
+            except Exception as e:
+                QMessageBox(QMessageBox.Critical, "An unknown error occured",
+                            "Report the error on the toolset thread on Deadlystream and include the log file.",
+                            QMessageBox.Ok, self).show()
+                raise e
         else:
             QMessageBox(QMessageBox.Critical, "Failed to open file", "The selected file is not yet supported.",
                         QMessageBox.Ok, self).show()
