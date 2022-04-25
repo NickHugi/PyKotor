@@ -79,6 +79,7 @@ class IndoorMap:
             for hookIndex, connection in enumerate(room.hooks):
                 hook1 = room.component.hooks[hookIndex]
                 hook2 = None
+                room1 = room
                 room2 = None
                 door = hook1.door
                 position = room.hookPosition(hook1)
@@ -87,22 +88,22 @@ class IndoorMap:
 
                 if connection is not None:
                     for otherHookIndex, otherRoom in enumerate(connection.hooks):
-                        if otherRoom == room:
+                        if otherRoom == room1:
                             otherHook = connection.component.hooks[otherHookIndex]
                             if hook1.door.width < otherHook.door.width:
                                 door = otherHook.door
                                 hook2 = hook1
                                 hook1 = otherHook
-                                room2 = room
-                                room = connection
+                                room2 = room1
+                                room1 = connection
                             else:
                                 hook2 = connection.component.hooks[otherHookIndex]
                                 room2 = connection
-                                rotation = hook2.rotation + room.rotation
+                                rotation = hook2.rotation + room1.rotation
 
                 if position not in points:
                     points.append(position)  # 47
-                    insertions.append(DoorInsertion(door, room, room2, static, position, rotation, hook1, hook2))
+                    insertions.append(DoorInsertion(door, room1, room2, static, position, rotation, hook1, hook2))
 
         return insertions
 
