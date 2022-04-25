@@ -439,6 +439,8 @@ class ModuleRenderer(QOpenGLWidget):
         face: Optional[BWMFace] = None
         for walkmesh in [res.resource() for res in self._module.resources.values() if
                          res.restype() == ResourceType.WOK]:
+            if walkmesh is None:
+                continue
             if over := walkmesh.faceAt(x, y):
                 if face is None:
                     face = over
