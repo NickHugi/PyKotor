@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple, NamedTuple
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QPainter, QTransform, QColor, QImage
+from PyQt5.QtWidgets import QMessageBox
 from pykotor.common.geometry import Vector3, Vector2, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Color
@@ -184,24 +185,25 @@ class IndoorMap:
                     kit = cRoom.component.kit
                     doorIndex = kit.doors.index(cHook.door)
                     height = altHook.door.height * 100
-                    paddingKey = min([i for i in kit.top_padding[doorIndex].keys() if i > height])
-                    paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
-                    paddingCount += 1
-                    pad_mdl = model.transform(kit.top_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
-                    pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
-                    pad_mdl = model.change_textures(pad_mdl, texRenames)
-                    lmRenames = {}
-                    for lightmap in model.list_lightmaps(pad_mdl):
-                        renamed = "{}_lm{}".format(self.module_id, totalLm)
-                        totalLm += 1
-                        lmRenames[lightmap.lower()] = renamed
-                        mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
-                        mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
-                    pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
-                    mod.set(paddingName, ResourceType.MDL, pad_mdl)
-                    mod.set(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
-                    lyt.rooms.append(LYTRoom(paddingName, insert.position))
-                    vis.add_room(paddingName)
+                    paddingKey = min([i for i in kit.top_padding[doorIndex].keys() if i > height], default=None) if doorIndex in kit.side_padding else None
+                    if paddingKey is not None:
+                        paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
+                        paddingCount += 1
+                        pad_mdl = model.transform(kit.top_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
+                        pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
+                        pad_mdl = model.change_textures(pad_mdl, texRenames)
+                        lmRenames = {}
+                        for lightmap in model.list_lightmaps(pad_mdl):
+                            renamed = "{}_lm{}".format(self.module_id, totalLm)
+                            totalLm += 1
+                            lmRenames[lightmap.lower()] = renamed
+                            mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
+                            mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
+                        pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
+                        mod.set(paddingName, ResourceType.MDL, pad_mdl)
+                        mod.set(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
+                        lyt.rooms.append(LYTRoom(paddingName, insert.position))
+                        vis.add_room(paddingName)
                 if insert.hook1.door.width != insert.hook2.door.width:
                     cRoom = insert.room if insert.hook1.door.height < insert.hook2.door.height else insert.room2
                     cHook = insert.hook1 if insert.hook1.door.height < insert.hook2.door.height else insert.hook2
@@ -210,24 +212,25 @@ class IndoorMap:
                     kit = cRoom.component.kit
                     doorIndex = kit.doors.index(cHook.door)
                     width = altHook.door.width * 100
-                    paddingKey = min([i for i in kit.side_padding[doorIndex].keys() if i > width])
-                    paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
-                    paddingCount += 1
-                    pad_mdl = model.transform(kit.side_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
-                    pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
-                    pad_mdl = model.change_textures(pad_mdl, texRenames)
-                    lmRenames = {}
-                    for lightmap in model.list_lightmaps(pad_mdl):
-                        renamed = "{}_lm{}".format(self.module_id, totalLm)
-                        totalLm += 1
-                        lmRenames[lightmap.lower()] = renamed
-                        mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
-                        mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
-                    pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
-                    mod.set(paddingName, ResourceType.MDL, pad_mdl)
-                    mod.set(paddingName, ResourceType.MDX, kit.side_padding[doorIndex][paddingKey].mdx)
-                    lyt.rooms.append(LYTRoom(paddingName, insert.position))
-                    vis.add_room(paddingName)
+                    paddingKey = min([i for i in kit.side_padding[doorIndex].keys() if i > width], default=None) if doorIndex in kit.side_padding else None
+                    if paddingKey is not None:
+                        paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
+                        paddingCount += 1
+                        pad_mdl = model.transform(kit.side_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
+                        pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
+                        pad_mdl = model.change_textures(pad_mdl, texRenames)
+                        lmRenames = {}
+                        for lightmap in model.list_lightmaps(pad_mdl):
+                            renamed = "{}_lm{}".format(self.module_id, totalLm)
+                            totalLm += 1
+                            lmRenames[lightmap.lower()] = renamed
+                            mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
+                            mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
+                        pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
+                        mod.set(paddingName, ResourceType.MDL, pad_mdl)
+                        mod.set(paddingName, ResourceType.MDX, kit.side_padding[doorIndex][paddingKey].mdx)
+                        lyt.rooms.append(LYTRoom(paddingName, insert.position))
+                        vis.add_room(paddingName)
 
         if self.skybox != "":
             for kit in kits:
