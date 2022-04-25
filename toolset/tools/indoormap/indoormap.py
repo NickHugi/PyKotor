@@ -77,13 +77,13 @@ class IndoorMap:
 
         for i, room in enumerate(self.rooms):
             for hookIndex, connection in enumerate(room.hooks):
-                hook1 = room.component.hooks[hookIndex]
-                hook2 = None
                 room1 = room
                 room2 = None
+                hook1 = room1.component.hooks[hookIndex]
+                hook2 = None
                 door = hook1.door
-                position = room.hookPosition(hook1)
-                rotation = hook1.rotation + room.rotation
+                position = room1.hookPosition(hook1)
+                rotation = hook1.rotation + room1.rotation
                 static = connection is None
 
                 if connection is not None:
@@ -99,7 +99,7 @@ class IndoorMap:
                             else:
                                 hook2 = connection.component.hooks[otherHookIndex]
                                 room2 = connection
-                                rotation = hook2.rotation + room1.rotation
+                                rotation = hook2.rotation + room2.rotation
 
                 if position not in points:
                     points.append(position)  # 47
