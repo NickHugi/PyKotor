@@ -47,7 +47,7 @@ class WalkmeshRenderer(QWidget):
         self._worldSize: Vector3 = Vector3.from_null()
 
         self._camPosition: Vector2 = Vector2.from_null()
-        self._camRotation: float = 0.0
+        self._camRotation: float = 0.0  # radians
         self._camScale = 1.0
 
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
@@ -537,31 +537,31 @@ class WalkmeshRenderer(QWidget):
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
         if self._git is not None:
             for creature in self._git.creatures if not self.hideCreatures else []:
-                self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, 1.57-self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, 3.142+self._camRotation, 1/16)
 
             for door in self._git.doors if not self.hideDoors else []:
-                self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, 3.142+self._camRotation, 1/16)
 
             for placeable in self._git.placeables if not self.hidePlaceables else []:
-                self._drawImage(painter, self._pixmapPlaceable, placeable.position.x, placeable.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapPlaceable, placeable.position.x, placeable.position.y, 3.142+self._camRotation, 1/16)
 
             for merchant in self._git.stores if not self.hideStores else []:
-                self._drawImage(painter, self._pixmapMerchant, merchant.position.x, merchant.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapMerchant, merchant.position.x, merchant.position.y, 3.142+self._camRotation, 1/16)
 
             for waypoint in self._git.waypoints if not self.hideWaypoints else []:
-                self._drawImage(painter, self._pixmapWaypoint, waypoint.position.x, waypoint.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapWaypoint, waypoint.position.x, waypoint.position.y, 3.142+self._camRotation, 1/16)
 
             for sound in self._git.sounds if not self.hideSounds else []:
-                self._drawImage(painter, self._pixmapSound, sound.position.x, sound.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapSound, sound.position.x, sound.position.y, 3.142+self._camRotation, 1/16)
 
             for encounter in self._git.encounters if not self.hideEncounters else []:
-                self._drawImage(painter, self._pixmapEncounter, encounter.position.x, encounter.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapEncounter, encounter.position.x, encounter.position.y, 3.142+self._camRotation, 1/16)
 
             for trigger in self._git.triggers if not self.hideTriggers else []:
-                self._drawImage(painter, self._pixmapTrigger, trigger.position.x, trigger.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapTrigger, trigger.position.x, trigger.position.y, 3.142+self._camRotation, 1/16)
 
             for camera in self._git.cameras if not self.hideCameras else []:
-                self._drawImage(painter, self._pixmapCamera, camera.position.x, camera.position.y, -self._camRotation, 1/16)
+                self._drawImage(painter, self._pixmapCamera, camera.position.x, camera.position.y, 3.142+self._camRotation, 1/16)
 
         # Highlight the first instance that is underneath the mouse
         if self._instancesUnderMouse:
