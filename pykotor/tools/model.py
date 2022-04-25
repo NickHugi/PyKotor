@@ -93,7 +93,7 @@ def list_textures(
             if node_id & 32:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32)
-                if texture != "" and texture != "NULL":
+                if texture != "" and texture != "NULL" and texture.lower() not in textures:
                     textures.append(texture.lower())
 
     return textures
@@ -126,7 +126,7 @@ def list_lightmaps(
             if node_id & 32:
                 reader.seek(node_offset + 200)
                 lightmap = reader.read_string(32)
-                if lightmap != "" and lightmap != "NULL":
+                if lightmap != "" and lightmap != "NULL" and lightmap.lower() not in lightmaps:
                     lightmaps.append(lightmap.lower())
 
     return lightmaps
