@@ -21,6 +21,10 @@ class Language(IntEnum):
     SPANISH = 4
     POLISH = 5
 
+    @classmethod
+    def _missing_(cls, value: int):
+        return Language.ENGLISH
+
 
 class Gender(IntEnum):
     """
