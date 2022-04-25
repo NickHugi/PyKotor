@@ -188,8 +188,8 @@ class IndoorMap:
                     paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
                     paddingCount += 1
                     pad_mdl = model.transform(kit.top_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
-                    mod.set(paddingName, ResourceType.MDL, pad_mdl)
-                    mod.set(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
+                    pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
+                    pad_mdl = model.change_textures(pad_mdl, texRenames)
                     lmRenames = {}
                     for lightmap in model.list_lightmaps(pad_mdl):
                         renamed = "{}_lm{}".format(self.module_id, totalLm)
@@ -214,6 +214,7 @@ class IndoorMap:
                     paddingName = "{}_tpad{}".format(self.module_id, paddingCount)
                     paddingCount += 1
                     pad_mdl = model.transform(kit.side_padding[doorIndex][paddingKey].mdl, Vector3.from_null(), insert.rotation)
+                    pad_mdl = model.convert_to_k2(pad_mdl) if installation.tsl else model.convert_to_k1(pad_mdl)
                     pad_mdl = model.change_textures(pad_mdl, texRenames)
                     lmRenames = {}
                     for lightmap in model.list_lightmaps(pad_mdl):
