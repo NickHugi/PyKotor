@@ -327,7 +327,7 @@ class BWM:
             self,
             old: int,
             new: Optional[int]
-    ):
+    ) -> None:
         for face in self.faces:
             if face.trans1 == old:
                 face.trans1 = new
@@ -335,6 +335,23 @@ class BWM:
                 face.trans2 = new
             if face.trans2 == old:
                 face.trans2 = new
+
+    def flip(self,
+             x: bool,
+             y: bool
+    ) -> None:
+        """
+        Flips the walkmesh around the specified axes.
+
+        Args:
+            x: Flip around the X-axis.
+            y: Flip around the Y-axis.
+        """
+        for vertex in self.vertices():
+            if x:
+                vertex.x = -vertex.x
+            if y:
+                vertex.y = -vertex.y
 
 
 class BWMFace(Face):
