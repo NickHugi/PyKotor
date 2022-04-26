@@ -688,8 +688,11 @@ def flip(
     mdl_data = bytearray(mdl_data[12:])
     mdx_data = bytearray(mdx_data)
 
-    mdl_vertex_offsets = []  # These are a list of tuples: (count, offset)
-    mdx_vertex_offsets = []  # These are a list of tuples: (count, offset, stride, position)
+    mdl_vertex_offsets = []  # This is a list of tuples: (count, offset)
+    mdx_vertex_offsets = []  # This is a list of tuples: (count, offset, stride, position)
+    mdx_normal_offsets = []  # This is a list of tuples: (count, offset, stride, position)
+    elements_offsets = []  # This is a list of tuples: (count, offset)
+    faces_offsets = []  # This is a list of tuples: (count, offset)
     with BinaryReader.from_bytes(mdl_data) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
@@ -701,6 +704,23 @@ def flip(
             node_id = reader.read_uint32()
 
             mdl_vertex_offsets.append((1, node_offset+16))
+
+            # Need to determine the location of the position controller
+            reader.seek(node_offset + 56)
+            controllers_offset = reader.read_uint32()
+            controllers_count = reader.read_uint32()
+
+            reader.seek(node_offset + 68)
+            controller_datas_offset = reader.read_uint32()
+            controller_datas_count = reader.read_uint32()
+
+            for i in range(controllers_count):
+                reader.seek(controllers_offset + i*16)
+                controller_type = reader.read_uint32()
+                if controller_type == 8:
+                    reader.skip(6)
+                    data_offset = reader.read_uint16()
+                    mdl_vertex_offsets.append((1, controller_datas_offset + data_offset*4))
 
             reader.seek(node_offset + 44)
             child_offsets_offset = reader.read_uint32()
@@ -714,6 +734,17 @@ def flip(
                 reader.seek(node_offset+80)
                 fp = reader.read_uint32()
                 tsl = False if fp in [_MESH_FP0_K1, _SKIN_FP0_K1, _DANGLY_FP0_K2, _AABB_FP0_K1, _SABER_FP0_K1] else True
+
+                reader.seek(node_offset+80+8)
+                faces_offset = reader.read_uint32()
+                faces_count = reader.read_uint32()
+                faces_offsets.append((faces_count, faces_offset))
+
+                reader.seek(node_offset+80+188)
+                offset_to_elements_offset = reader.read_uint32()
+                reader.seek(offset_to_elements_offset)
+                elements_offset = reader.read_uint32()
+                elements_offsets.append((faces_count, elements_offset))
 
                 reader.seek(node_offset+80+304)
                 vertex_count = reader.read_uint16()
@@ -730,7 +761,28 @@ def flip(
                 reader.seek(node_offset+80+332 if tsl else node_offset+80+324)
                 mdx_start = reader.read_uint32()
                 mdx_vertex_offsets.append((vertex_count, mdx_start, mdx_stride, mdx_offset_pos))
-                mdx_vertex_offsets.append((vertex_count, mdx_start, mdx_stride, mdx_offset_norm))
+                mdx_normal_offsets.append((vertex_count, mdx_start, mdx_stride, mdx_offset_norm))
+
+    # Fix vertex order
+    if flip_x != flip_y:
+        for count, start_offset in elements_offsets:
+            for i in range(count):
+                offset = start_offset + i*6
+                v1 = struct.unpack("H", mdl_data[offset:offset+2])[0]
+                v2 = struct.unpack("H", mdl_data[offset+2:offset+4])[0]
+                v3 = struct.unpack("H", mdl_data[offset+4:offset+6])[0]
+                mdl_data[offset:offset+2] = struct.pack("H", v1)
+                mdl_data[offset+2:offset+4] = struct.pack("H", v3)
+                mdl_data[offset+4:offset+6] = struct.pack("H", v2)
+        for count, start_offset in faces_offsets:
+            for i in range(count):
+                offset = start_offset + i*32 + 26
+                v1 = struct.unpack("H", mdl_data[offset:offset+2])[0]
+                v2 = struct.unpack("H", mdl_data[offset+2:offset+4])[0]
+                v3 = struct.unpack("H", mdl_data[offset+4:offset+6])[0]
+                mdl_data[offset:offset+2] = struct.pack("H", v1)
+                mdl_data[offset+2:offset+4] = struct.pack("H", v3)
+                mdl_data[offset+4:offset+6] = struct.pack("H", v2)
 
     # Update the MDL vertices
     for count, start_offset in mdl_vertex_offsets:
@@ -740,8 +792,8 @@ def flip(
                 x = struct.unpack("f", mdl_data[offset:offset+4])[0]
                 mdl_data[offset:offset+4] = struct.pack("f", -x)
             if flip_y:
-                x = struct.unpack("f", mdl_data[offset+4:offset+8])[0]
-                mdl_data[offset+4:offset+8] = struct.pack("f", -x)
+                y = struct.unpack("f", mdl_data[offset+4:offset+8])[0]
+                mdl_data[offset+4:offset+8] = struct.pack("f", -y)
 
     # Update the MDX vertices
     for count, start_offset, stride, position in mdx_vertex_offsets:
@@ -751,8 +803,19 @@ def flip(
                 x = struct.unpack("f", mdx_data[offset:offset+4])[0]
                 mdx_data[offset:offset+4] = struct.pack("f", -x)
             if flip_y:
-                x = struct.unpack("f", mdx_data[offset+4:offset+8])[0]
-                mdx_data[offset+4:offset+8] = struct.pack("f", -x)
+                y = struct.unpack("f", mdx_data[offset+4:offset+8])[0]
+                mdx_data[offset+4:offset+8] = struct.pack("f", -y)
+
+    # Update the MDX normals
+    for count, start_offset, stride, position in mdx_normal_offsets:
+        for i in range(count):
+            offset = start_offset + i * stride + position
+            if flip_x:
+                x = struct.unpack("f", mdx_data[offset:offset + 4])[0]
+                mdx_data[offset:offset + 4] = struct.pack("f", -x)
+            if flip_y:
+                y = struct.unpack("f", mdx_data[offset + 4:offset + 8])[0]
+                mdx_data[offset + 4:offset + 8] = struct.pack("f", -y)
 
     # Readd the first 12 bytes
     mdl_data = mdl_start + mdl_data
