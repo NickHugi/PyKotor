@@ -123,6 +123,30 @@ class IndoorMap:
             modelname = "{}_room{}".format(self.module_id, i)
             vis.add_room(modelname)
 
+        usedRooms = set()
+        usedKits = set()
+        scanMdls = set()
+        for room in self.rooms:
+            usedRooms.add(room.component)
+        for room in usedRooms:
+            scanMdls.add(room.mdl)
+            usedKits.add(room.kit)
+            for doorPaddingDict in list(room.kit.top_padding.values()) + list(room.kit.side_padding.values()):
+                for paddingModel in doorPaddingDict.values():
+                    scanMdls.add(paddingModel.mdl)
+        if self.skybox != "":
+            for kit in kits:
+                if self.skybox in kit.skyboxes:
+                    scanMdls.add(kit.skyboxes[self.skybox].mdl)
+        for mdl in scanMdls:
+            for texture in [texture for texture in model.list_textures(mdl) if texture not in texRenames]:
+                renamed = "{}_tex{}".format(self.module_id, len(texRenames.keys()))
+                texRenames[texture] = renamed
+                for kit in usedKits:
+                    if texture in kit.textures:
+                        mod.set(renamed, ResourceType.TGA, kit.textures[texture])
+                        mod.set(renamed, ResourceType.TXI, kit.txis[texture])
+
         for i, room in enumerate(self.rooms):
             modelname = "{}_room{}".format(self.module_id, i)
             roomNames[room] = modelname
@@ -134,12 +158,6 @@ class IndoorMap:
 
             mdl = model.transform(room.component.mdl, Vector3.from_null(), room.rotation)
             mdl = model.convert_to_k2(mdl) if installation.tsl else model.convert_to_k1(mdl)
-
-            for texture in set([texture for texture in model.list_textures(mdl) if texture.lower() not in texRenames.keys()]):
-                renamed = "{}_tex{}".format(self.module_id, len(texRenames.keys()))
-                texRenames[texture.lower()] = renamed
-                mod.set(renamed, ResourceType.TGA, room.component.kit.textures[texture])
-                mod.set(renamed, ResourceType.TXI, room.component.kit.txis[texture])
             mdl = model.change_textures(mdl, texRenames)
 
             lmRenames = {}
@@ -247,11 +265,6 @@ class IndoorMap:
                 if self.skybox in kit.skyboxes:
                     mdl, mdx = kit.skyboxes[self.skybox]
                     modelName = "{}_sky".format(self.module_id)
-                    for texture in set([texture for texture in model.list_textures(mdl) if texture.lower() not in texRenames.keys()]):
-                        renamed = "{}_tex{}".format(self.module_id, len(texRenames.keys()))
-                        texRenames[texture.lower()] = renamed
-                        mod.set(renamed, ResourceType.TGA, kit.textures[texture])
-                        mod.set(renamed, ResourceType.TXI, kit.txis[texture])
                     mdl = model.change_textures(mdl, texRenames)
                     mod.set(modelName, ResourceType.MDL, mdl)
                     mod.set(modelName, ResourceType.MDX, mdx)
