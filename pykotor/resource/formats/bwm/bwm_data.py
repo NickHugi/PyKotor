@@ -347,11 +347,20 @@ class BWM:
             x: Flip around the X-axis.
             y: Flip around the Y-axis.
         """
+        if not x and not y:
+            return
+
         for vertex in self.vertices():
             if x:
                 vertex.x = -vertex.x
             if y:
                 vertex.y = -vertex.y
+
+        # Fix the face normals
+        if x is not y:
+            for face in self.faces:
+                v1, v2, v3 = face.v1, face.v2, face.v3
+                face.v1, face.v2, face.v3 = v3, v2, v1
 
 
 class BWMFace(Face):
