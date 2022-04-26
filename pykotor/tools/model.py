@@ -1,6 +1,6 @@
 import struct
 from copy import deepcopy
-from typing import Dict, List
+from typing import Dict, List, NamedTuple
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.misc import Game
@@ -57,6 +57,11 @@ _LIGHT_HEADER_SIZE = 92
 
 _NODE_TYPE_EMITTER = 4
 _EMITTER_HEADER_SIZE = 224
+
+
+class MDLMDXTuple(NamedTuple):
+    mdl: bytes
+    mdx: bytes
 
 
 def rename(
@@ -649,3 +654,107 @@ def transform(
     data += struct.pack("fffff", 0.0, *orientation)
 
     return struct.pack("III", 0, len(data), mdx_size) + data
+
+
+def flip(
+        mdl_data: bytes,
+        mdx_data: bytes,
+        flip_x: bool,
+        flip_y: bool
+) -> MDLMDXTuple:
+    """
+    Returns the given MDL and MDX data with the vertices flipped along the specified axes.
+
+    Args:
+        mdl_data: The raw MDL data.
+        mdx_data: The raw MDX data.
+        flip_x: Flip the vertices across the X-axis.
+        flip_y: Flip the vertices across the Y-axis.
+
+    Returns:
+        The MDL and MDX data post-flip.
+    """
+
+    # If neither bools are set to True, no transformations need to be done and we can just return the original data
+    if not flip_x and not flip_y:
+        return MDLMDXTuple(mdl_data, mdx_data)
+
+    # The data we need to change:
+    #    1. The vertices stored in the MDL
+    #    2. The vertex positions, normals, stored in the MDX
+
+    # Trim the data to correct the offsets
+    mdl_start = mdl_data[:12]
+    mdl_data = bytearray(mdl_data[12:])
+    mdx_data = bytearray(mdx_data)
+
+    mdl_vertex_offsets = []  # These are a list of tuples: (count, offset)
+    mdx_vertex_offsets = []  # These are a list of tuples: (count, offset, stride, position)
+    with BinaryReader.from_bytes(mdl_data) as reader:
+        reader.seek(168)
+        root_offset = reader.read_uint32()
+
+        nodes = [root_offset]
+        while nodes:
+            node_offset = nodes.pop()
+            reader.seek(node_offset)
+            node_id = reader.read_uint32()
+
+            mdl_vertex_offsets.append((1, node_offset+16))
+
+            reader.seek(node_offset + 44)
+            child_offsets_offset = reader.read_uint32()
+            child_offsets_count = reader.read_uint32()
+
+            reader.seek(child_offsets_offset)
+            for i in range(child_offsets_count):
+                nodes.append(reader.read_uint32())
+
+            if node_id & 32:
+                reader.seek(node_offset+80)
+                fp = reader.read_uint32()
+                tsl = False if fp in [_MESH_FP0_K1, _SKIN_FP0_K1, _DANGLY_FP0_K2, _AABB_FP0_K1, _SABER_FP0_K1] else True
+
+                reader.seek(node_offset+80+304)
+                vertex_count = reader.read_uint16()
+                reader.seek(node_offset+80+336 if tsl else node_offset+80+328)
+                vertex_offset = reader.read_uint32()
+                mdl_vertex_offsets.append((vertex_count, vertex_offset))
+
+                reader.seek(node_offset+80+252)
+                mdx_stride = reader.read_uint32()
+                mdx_bitmap = reader.read_uint32()
+                reader.seek(node_offset+80+260)
+                mdx_offset_pos = reader.read_uint32()
+                mdx_offset_norm = reader.read_uint32()
+                reader.seek(node_offset+80+332 if tsl else node_offset+80+324)
+                mdx_start = reader.read_uint32()
+                mdx_vertex_offsets.append((vertex_count, mdx_start, mdx_stride, mdx_offset_pos))
+                mdx_vertex_offsets.append((vertex_count, mdx_start, mdx_stride, mdx_offset_norm))
+
+    # Update the MDL vertices
+    for count, start_offset in mdl_vertex_offsets:
+        for i in range(count):
+            offset = start_offset + i*12
+            if flip_x:
+                x = struct.unpack("f", mdl_data[offset:offset+4])[0]
+                mdl_data[offset:offset+4] = struct.pack("f", -x)
+            if flip_y:
+                x = struct.unpack("f", mdl_data[offset+4:offset+8])[0]
+                mdl_data[offset+4:offset+8] = struct.pack("f", -x)
+
+    # Update the MDX vertices
+    for count, start_offset, stride, position in mdx_vertex_offsets:
+        for i in range(count):
+            offset = start_offset + i*stride + position
+            if flip_x:
+                x = struct.unpack("f", mdx_data[offset:offset+4])[0]
+                mdx_data[offset:offset+4] = struct.pack("f", -x)
+            if flip_y:
+                x = struct.unpack("f", mdx_data[offset+4:offset+8])[0]
+                mdx_data[offset+4:offset+8] = struct.pack("f", -x)
+
+    # Readd the first 12 bytes
+    mdl_data = mdl_start + mdl_data
+
+    return MDLMDXTuple(mdl_data, mdx_data)
