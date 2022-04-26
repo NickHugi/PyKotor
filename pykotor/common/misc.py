@@ -89,18 +89,22 @@ class ResRef:
 
     def set(
             self,
-            text: str
+            text: str,
+            truncate: bool = True
     ) -> None:
         """
         Sets the ResRef.
 
         Args:
             text: The reference string.
+            truncate: If true, the string will be truncated to 16 characters, otherwise it will raise an error instead.
 
         Raises:
             ValueError:
         """
-        if len(text) > 16:
+        if len(text) > 16 and truncate:
+            text = text[:16]
+        elif len(text) > 16 and not truncate:
             raise ResRef.ExceedsMaxLengthError("ResRef cannot exceed 16 characters.")
         if len(text) != len(text.encode()):
             raise ResRef.InvalidEncodingError("ResRef must be in ASCII characters.")
