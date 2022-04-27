@@ -236,7 +236,7 @@
              <item row="4" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <item>
-                <widget class="QComboBox" name="appearanceSelect"/>
+                <widget class="ComboBox2DA" name="appearanceSelect"/>
                </item>
                <item>
                 <spacer name="horizontalSpacer_4">
@@ -282,7 +282,7 @@
              <item row="5" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_10">
                <item>
-                <widget class="QComboBox" name="soundsetSelect"/>
+                <widget class="ComboBox2DA" name="soundsetSelect"/>
                </item>
                <item>
                 <spacer name="horizontalSpacer_7">
@@ -430,7 +430,7 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
-              <widget class="QComboBox" name="portraitSelect"/>
+              <widget class="ComboBox2DA" name="portraitSelect"/>
              </item>
             </layout>
            </item>
@@ -567,7 +567,7 @@
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QComboBox" name="subraceSelect"/>
+            <widget class="ComboBox2DA" name="subraceSelect"/>
            </item>
           </layout>
          </widget>
@@ -588,7 +588,7 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QComboBox" name="speedSelect"/>
+              <widget class="ComboBox2DA" name="speedSelect"/>
              </item>
              <item row="1" column="0">
               <widget class="QLabel" name="label_11">
@@ -598,7 +598,7 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QComboBox" name="factionSelect"/>
+              <widget class="ComboBox2DA" name="factionSelect"/>
              </item>
              <item row="2" column="0">
               <widget class="QLabel" name="label_99">
@@ -608,7 +608,7 @@
               </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QComboBox" name="genderSelect"/>
+              <widget class="ComboBox2DA" name="genderSelect"/>
              </item>
              <item row="3" column="0">
               <widget class="QLabel" name="label_12">
@@ -618,7 +618,7 @@
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QComboBox" name="perceptionSelect"/>
+              <widget class="ComboBox2DA" name="perceptionSelect"/>
              </item>
              <item row="4" column="0">
               <widget class="QLabel" name="label_13">
@@ -1040,7 +1040,7 @@
            <item row="0" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_13" stretch="3,1,2">
              <item>
-              <widget class="QComboBox" name="class1Select"/>
+              <widget class="ComboBox2DA" name="class1Select"/>
              </item>
              <item>
               <widget class="QSpinBox" name="class1LevelSpin"/>
@@ -1063,7 +1063,7 @@
            <item row="1" column="0">
             <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="3,1,2">
              <item>
-              <widget class="QComboBox" name="class2Select"/>
+              <widget class="ComboBox2DA" name="class2Select"/>
              </item>
              <item>
               <widget class="QSpinBox" name="class2LevelSpin"/>
@@ -1502,6 +1502,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.misc.widget.widgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

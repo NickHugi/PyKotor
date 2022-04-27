@@ -101,7 +101,7 @@
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QComboBox" name="categoryPlanetSelect"/>
+            <widget class="ComboBox2DA" name="categoryPlanetSelect"/>
            </item>
            <item row="2" column="1">
             <widget class="QSpinBox" name="categoryPlotSpin"/>
@@ -287,6 +287,11 @@
   </action>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.misc.widget.widgets</header>
+  </customwidget>
   <customwidget>
    <class>HTPlainTextEdit</class>
    <extends>QPlainTextEdit</extends>

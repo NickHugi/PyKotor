@@ -71,7 +71,7 @@ class Ui_MainWindow(object):
         self.label_39 = QtWidgets.QLabel(self.tab)
         self.label_39.setObjectName("label_39")
         self.formLayout.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_39)
-        self.baseSelect = QtWidgets.QComboBox(self.tab)
+        self.baseSelect = ComboBox2DA(self.tab)
         self.baseSelect.setObjectName("baseSelect")
         self.formLayout.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.baseSelect)
         self.label_40 = QtWidgets.QLabel(self.tab)
@@ -280,3 +280,4 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
+from toolset.misc.widget.widgets import ComboBox2DA

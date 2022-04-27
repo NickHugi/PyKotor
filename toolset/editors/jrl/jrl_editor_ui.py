@@ -66,7 +66,7 @@ class Ui_MainWindow(object):
         self.label_3 = QtWidgets.QLabel(self.categoryPage)
         self.label_3.setObjectName("label_3")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_3)
-        self.categoryPlanetSelect = QtWidgets.QComboBox(self.categoryPage)
+        self.categoryPlanetSelect = ComboBox2DA(self.categoryPage)
         self.categoryPlanetSelect.setObjectName("categoryPlanetSelect")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.categoryPlanetSelect)
         self.categoryPlotSpin = QtWidgets.QSpinBox(self.categoryPage)
@@ -194,3 +194,4 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 from toolset.editors.editor import HTPlainTextEdit
+from toolset.misc.widget.widgets import ComboBox2DA

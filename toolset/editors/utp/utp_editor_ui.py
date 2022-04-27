@@ -93,7 +93,7 @@ class Ui_MainWindow(object):
         self.formLayout_10.setLayout(2, QtWidgets.QFormLayout.FieldRole, self.horizontalLayout_17)
         self.horizontalLayout_18 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_18.setObjectName("horizontalLayout_18")
-        self.appearanceSelect = QtWidgets.QComboBox(self.groupBox)
+        self.appearanceSelect = ComboBox2DA(self.groupBox)
         self.appearanceSelect.setObjectName("appearanceSelect")
         self.horizontalLayout_18.addWidget(self.appearanceSelect)
         spacerItem1 = QtWidgets.QSpacerItem(29, 17, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
@@ -150,7 +150,7 @@ class Ui_MainWindow(object):
         self.label_41 = QtWidgets.QLabel(self.groupBox_17)
         self.label_41.setObjectName("label_41")
         self.formLayout_11.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_41)
-        self.factionSelect = QtWidgets.QComboBox(self.groupBox_17)
+        self.factionSelect = ComboBox2DA(self.groupBox_17)
         self.factionSelect.setObjectName("factionSelect")
         self.formLayout_11.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.factionSelect)
         self.label_42 = QtWidgets.QLabel(self.groupBox_17)
@@ -474,3 +474,4 @@ class Ui_MainWindow(object):
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
+from toolset.misc.widget.widgets import ComboBox2DA

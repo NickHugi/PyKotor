@@ -174,7 +174,7 @@
              <item row="3" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_18">
                <item>
-                <widget class="QComboBox" name="appearanceSelect"/>
+                <widget class="ComboBox2DA" name="appearanceSelect"/>
                </item>
                <item>
                 <spacer name="horizontalSpacer_11">
@@ -302,7 +302,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QComboBox" name="factionSelect"/>
+            <widget class="ComboBox2DA" name="factionSelect"/>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="label_42">
@@ -770,6 +770,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.misc.widget.widgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -64,7 +64,7 @@ class Ui_MainWindow(object):
         self.formLayout_7.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_22)
         self.horizontalLayout_16 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_16.setObjectName("horizontalLayout_16")
-        self.cameraStyleSelect = QtWidgets.QComboBox(self.groupBox_7)
+        self.cameraStyleSelect = ComboBox2DA(self.groupBox_7)
         self.cameraStyleSelect.setObjectName("cameraStyleSelect")
         self.horizontalLayout_16.addWidget(self.cameraStyleSelect)
         spacerItem = QtWidgets.QSpacerItem(32, 17, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
@@ -828,3 +828,4 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 from misc.longspinbox import LongSpinBox
+from toolset.misc.widget.widgets import ComboBox2DA

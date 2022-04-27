@@ -146,7 +146,7 @@
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QComboBox" name="cursorSelect"/>
+           <widget class="ComboBox2DA" name="cursorSelect"/>
           </item>
          </layout>
         </item>
@@ -195,7 +195,7 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QComboBox" name="factionSelect"/>
+           <widget class="ComboBox2DA" name="factionSelect"/>
           </item>
           <item row="1" column="1">
            <widget class="QDoubleSpinBox" name="highlightHeightSpin"/>
@@ -255,7 +255,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="trapSelect"/>
+             <widget class="ComboBox2DA" name="trapSelect"/>
             </item>
            </layout>
           </item>
@@ -333,7 +333,11 @@
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QLineEdit" name="onHeartbeatEdit"/>
+           <widget class="QLineEdit" name="onHeartbeatEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_10">
@@ -357,13 +361,25 @@
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QLineEdit" name="onExitEdit"/>
+           <widget class="QLineEdit" name="onExitEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="onEnterEdit"/>
+           <widget class="QLineEdit" name="onEnterEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="6" column="1">
-           <widget class="QLineEdit" name="onUserDefinedEdit"/>
+           <widget class="QLineEdit" name="onUserDefinedEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_13">
@@ -387,13 +403,25 @@
            </widget>
           </item>
           <item row="5" column="1">
-           <widget class="QLineEdit" name="onTrapTriggeredEdit"/>
+           <widget class="QLineEdit" name="onTrapTriggeredEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLineEdit" name="onDisarmEdit"/>
+           <widget class="QLineEdit" name="onDisarmEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="onClickEdit"/>
+           <widget class="QLineEdit" name="onClickEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -480,6 +508,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.misc.widget.widgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

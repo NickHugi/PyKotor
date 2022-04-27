@@ -120,7 +120,7 @@
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QComboBox" name="difficultySelect"/>
+           <widget class="ComboBox2DA" name="difficultySelect"/>
           </item>
           <item row="4" column="0">
            <widget class="QLabel" name="label_40">
@@ -198,7 +198,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="factionSelect"/>
+             <widget class="ComboBox2DA" name="factionSelect"/>
             </item>
            </layout>
           </item>
@@ -357,7 +357,11 @@
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLineEdit" name="onEnterEdit"/>
+           <widget class="QLineEdit" name="onEnterEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="label_5">
@@ -388,16 +392,32 @@
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QLineEdit" name="onExitEdit"/>
+           <widget class="QLineEdit" name="onExitEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QLineEdit" name="onExhaustedEdit"/>
+           <widget class="QLineEdit" name="onExhaustedEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QLineEdit" name="onHeartbeatEdit"/>
+           <widget class="QLineEdit" name="onHeartbeatEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QLineEdit" name="onUserDefinedEdit"/>
+           <widget class="QLineEdit" name="onUserDefinedEdit">
+            <property name="maxLength">
+             <number>16</number>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -471,6 +491,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ComboBox2DA</class>
+   <extends>QComboBox</extends>
+   <header location="global">toolset.misc.widget.widgets</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
