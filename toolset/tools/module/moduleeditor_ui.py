@@ -293,7 +293,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.resourceTree)
         self.mainRenderer = ModuleRenderer(self.centralwidget)
         self.mainRenderer.setMouseTracking(True)
-        self.mainRenderer.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.mainRenderer.setFocusPolicy(QtCore.Qt.NoFocus)
         self.mainRenderer.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.mainRenderer.setObjectName("mainRenderer")
         self.horizontalLayout.addWidget(self.mainRenderer)
@@ -327,5 +327,5 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionSave.setText(_translate("MainWindow", "Save GIT"))
-from toolset.tools.module.moduleeditor import ModuleRenderer
+from toolset.tools.module.me_widgets import ModuleRenderer
 import resources_rc

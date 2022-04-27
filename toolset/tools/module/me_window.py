@@ -1,4 +1,5 @@
 import math
+from abc import ABC, abstractmethod
 from typing import Optional, Set
 
 from PyQt5 import QtCore
@@ -29,6 +30,8 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from pykotor.gl.scene import Scene, RenderObject
 
+from tools.module.me_controls import ModuleEditorControls, ModuleEditorControlsAurora
+
 
 class ModuleEditor(QMainWindow):
     def __init__(self, parent: QWidget, installation: HTInstallation, module: Module):
@@ -44,15 +47,17 @@ class ModuleEditor(QMainWindow):
 
         self.ui.mainRenderer.init(installation, module)
 
-        self.hideCreatures:bool = False
-        self.hidePlaceables:bool = False
-        self.hideDoors:bool = False
-        self.hideTriggers:bool = False
-        self.hideEncounters:bool = False
-        self.hideWaypoints:bool = False
-        self.hideSounds:bool = False
-        self.hideStores:bool = False
-        self.hideCameras:bool = False
+        self.hideCreatures: bool = False
+        self.hidePlaceables: bool = False
+        self.hideDoors: bool = False
+        self.hideTriggers: bool = False
+        self.hideEncounters: bool = False
+        self.hideWaypoints: bool = False
+        self.hideSounds: bool = False
+        self.hideStores: bool = False
+        self.hideCameras: bool = False
+
+        self.cameraControls: ModuleEditorControls = ModuleEditorControlsAurora(self.ui.mainRenderer)
 
         self.snapToWalkmesh: bool = True
 
@@ -331,36 +336,13 @@ class ModuleEditor(QMainWindow):
         self.ui.mainRenderer.scene.selection.clear()
 
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
-            # Move the camera (Ctrl + LMB)
-            self.ui.mainRenderer.panCamera(delta.x / 30, delta.y / 30, 0)
-        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
-            # Rotate the camera (Ctrl + MMB)
-            self.ui.mainRenderer.rotateCamera(delta.x / 200, delta.y / 200)
-        elif QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
-            # Translate the selected object (LMB)
-            for obj in self.ui.mainRenderer.scene.selection:
-                forward = self.ui.mainRenderer.scene.camera.forward() * -delta.y
-                sideward = self.ui.mainRenderer.scene.camera.sideward() * -delta.x
-
-                x = obj.data.position.x + (forward.x + sideward.x)/40
-                y = obj.data.position.y + (forward.y + sideward.y)/40
-
-                instance: GITInstance = obj.data
-                instance.position = self.ui.mainRenderer.walkmeshPoint(x, y, obj.data.position.z)
-        elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
-            # Rotate the selected object (MMB)
-            for obj in self.ui.mainRenderer.scene.selection:
-                instance: GITInstance = obj.data
-                instance.rotate(delta.x/80, 0, 0)
+        self.cameraControls.onMouseMoved(screen, delta, buttons, keys)
 
     def onRendererMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if QtCore.Qt.Key_Control in keys:
-            self.ui.mainRenderer.panCamera(0, 0, delta.y / 50)
+        self.cameraControls.onMouseScrolled(delta, buttons, keys)
 
     def onRendererMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
-            self.ui.mainRenderer.doSelect = True
+        self.cameraControls.onMousePressed(screen, buttons, keys)
 
     def onRendererObjectSelected(self, obj: RenderObject) -> None:
         if obj is not None:
@@ -390,171 +372,12 @@ class ModuleEditor(QMainWindow):
     def keyPressEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
         self.ui.mainRenderer.keyPressEvent(e)
+        self.cameraControls.onKeyPressed(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
         self.ui.mainRenderer.keyReleaseEvent(e)
-
-
-class ModuleRenderer(QOpenGLWidget):
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
-    """Signal emitted when mouse is moved over the widget."""
-
-    mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
-    """Signal emitted when mouse is scrolled over the widget."""
-
-    mouseReleased = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
-    """Signal emitted when a mouse button is released after being pressed on the widget."""
-
-    mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
-    """Signal emitted when a mouse button is pressed on the widget."""
-
-    objectSelected = QtCore.pyqtSignal(object)
-    """Signal emitted when an object has been selected through the renderer."""
-
-    def __init__(self, parent: QWidget):
-        super().__init__(parent)
-        self.scene: Optional[Scene] = None
-        self._module: Optional[Module] = None
-        self._installation: Optional[HTInstallation] = None
-        self._init = False
-
-        self._keysDown: Set[int] = set()
-        self._mouseDown: Set[int] = set()
-        self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
-
-        self.doSelect: bool = False  # Set to true to select object at mouse pointer
-
-    def init(self, installation: HTInstallation, module: Module) -> None:
-        self._installation = installation
-        self._module = module
-
-        QTimer.singleShot(33, self.loop)
-
-    def loop(self) -> None:
-        self.repaint()
-        QTimer.singleShot(33, self.loop)
-
-    def walkmeshPoint(self, x: float, y: float, default_z: float = 0.0) -> Vector3:
-        face: Optional[BWMFace] = None
-        for walkmesh in [res.resource() for res in self._module.resources.values() if
-                         res.restype() == ResourceType.WOK]:
-            if walkmesh is None:
-                continue
-            if over := walkmesh.faceAt(x, y):
-                if face is None:
-                    face = over
-                elif not face.material.walkable() and over.material.walkable():
-                    face = over
-        z = default_z if face is None else face.determine_z(x, y)
-        return Vector3(x, y, z)
-
-    def paintGL(self) -> None:
-        if not self._init:
-            self._init = True
-            self.scene = Scene(self._module, self._installation)
-
-        if self.doSelect:
-            self.doSelect = False
-            obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
-
-            if obj is not None and isinstance(obj.data, GITInstance):
-                self.scene.select(obj)
-                self.objectSelected.emit(obj)
-            else:
-                self.scene.selection.clear()
-                self.objectSelected.emit(None)
-
-        self.scene.render()
-
-    # region Camera Transformations
-    def panCamera(self, x: float, y: float, z: float) -> None:
-        """
-        Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
-        camera on the x/y plane.
-
-        Args:
-            x: Units to move the x coordinate.
-            y: Units to move the y coordinate.
-            z: Units to move the z coordinate.
-        """
-        forward = y * self.scene.camera.forward()
-        sideward = x * self.scene.camera.sideward()
-
-        self.scene.camera.x += (forward.x + sideward.x)
-        self.scene.camera.y += (forward.y + sideward.y)
-        self.scene.camera.z += z
-
-    def rotateCamera(self, yaw: float, pitch: float) -> None:
-        """
-        Rotates the camera by the angles (radians) specified.
-
-        Args:
-            yaw:
-            pitch:
-        """
-        self.scene.camera.rotate(yaw, pitch)
-    # endregion
-
-    # region Events
-    def resizeEvent(self, e: QResizeEvent) -> None:
-        super().resizeEvent(e)
-        self.scene.camera.aspect = e.size().width() / e.size().height()
-        
-    def wheelEvent(self, e: QWheelEvent) -> None:
-        self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
-
-    def mouseMoveEvent(self, e: QMouseEvent) -> None:
-        coords = Vector2(e.x(), e.y())
-        coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
-        self._mousePrev = coords
-        self.mouseMoved.emit(coords, coordsDelta, self._mouseDown, self._keysDown)
-
-    def mousePressEvent(self, e: QMouseEvent) -> None:
-        self._mouseDown.add(e.button())
-        coords = Vector2(e.x(), e.y())
-        self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
-
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
-        self._mouseDown.discard(e.button())
-
-        coords = Vector2(e.x(), e.y())
-        self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
-
-    def keyPressEvent(self, e: QKeyEvent) -> None:
-        self._keysDown.add(e.key())
-
-        if e.key() == QtCore.Qt.Key_7:
-            # Look directly down
-            self.scene.camera.pitch = 0
-        if e.key() == QtCore.Qt.Key_9:
-            # Look directly forward
-            self.scene.camera.yaw = 0
-
-        if e.key() in [QtCore.Qt.Key_4, QtCore.Qt.Key_A]:
-            # Turn slightly left
-            self.scene.camera.yaw += math.pi/8
-        if e.key() in [QtCore.Qt.Key_6, QtCore.Qt.Key_D]:
-            # Turn slightly right
-            self.scene.camera.yaw -= math.pi/8
-
-        if e.key() in [QtCore.Qt.Key_8, QtCore.Qt.Key_W]:
-            # Look slightly up
-            self.scene.camera.pitch += math.pi/8
-        if e.key() in [QtCore.Qt.Key_2, QtCore.Qt.Key_S]:
-            # Look slightly down
-            self.scene.camera.pitch -= math.pi/8
-
-        if e.key() == QtCore.Qt.Key_Q:
-            # Pan up
-            self.panCamera(0, 0, 1)
-        if e.key() == QtCore.Qt.Key_Z:
-            # Pan down
-            self.panCamera(0, 0, -1)
-
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:
-        self._keysDown.discard(e.key())
-    # endregion
+        self.cameraControls.onKeyReleased(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
 
 class InsertInstanceDialog(QDialog):
@@ -642,3 +465,4 @@ class InsertInstanceDialog(QDialog):
     def onResRefEdited(self, text: str) -> None:
         valid = self._module.resource(text, self._restype) is None and text != ""
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(valid)
+
