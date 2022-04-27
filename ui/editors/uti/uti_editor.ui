@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>550</width>
-    <height>390</height>
+    <height>308</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -171,22 +171,12 @@
           <item row="3" column="1">
            <layout class="QHBoxLayout" name="horizontalLayout_21">
             <item>
-             <widget class="QLineEdit" name="descEdit">
-              <property name="readOnly">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="descChangeButton">
-              <property name="maximumSize">
+             <widget class="LocalizedStringLineEdit" name="descEdit" native="true">
+              <property name="minimumSize">
                <size>
-                <width>26</width>
-                <height>16777215</height>
+                <width>0</width>
+                <height>23</height>
                </size>
-              </property>
-              <property name="text">
-               <string>...</string>
               </property>
              </widget>
             </item>
@@ -480,6 +470,12 @@
   </action>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>LocalizedStringLineEdit</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.misc.widget.widgets</header>
+   <container>1</container>
+  </customwidget>
   <customwidget>
    <class>ComboBox2DA</class>
    <extends>QComboBox</extends>

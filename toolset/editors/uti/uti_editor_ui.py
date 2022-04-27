@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(550, 390)
+        MainWindow.resize(550, 308)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -96,14 +96,10 @@ class Ui_MainWindow(object):
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_53)
         self.horizontalLayout_21 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_21.setObjectName("horizontalLayout_21")
-        self.descEdit = QtWidgets.QLineEdit(self.tab)
-        self.descEdit.setReadOnly(True)
+        self.descEdit = LocalizedStringLineEdit(self.tab)
+        self.descEdit.setMinimumSize(QtCore.QSize(0, 23))
         self.descEdit.setObjectName("descEdit")
         self.horizontalLayout_21.addWidget(self.descEdit)
-        self.descChangeButton = QtWidgets.QPushButton(self.tab)
-        self.descChangeButton.setMaximumSize(QtCore.QSize(26, 16777215))
-        self.descChangeButton.setObjectName("descChangeButton")
-        self.horizontalLayout_21.addWidget(self.descChangeButton)
         self.formLayout.setLayout(3, QtWidgets.QFormLayout.FieldRole, self.horizontalLayout_21)
         self.upgradeSpin = QtWidgets.QSpinBox(self.tab)
         self.upgradeSpin.setMaximum(255)
@@ -258,7 +254,6 @@ class Ui_MainWindow(object):
         self.label_41.setText(_translate("MainWindow", "Additional Cost:"))
         self.label_42.setText(_translate("MainWindow", "Upgrade Level:"))
         self.label_53.setText(_translate("MainWindow", "Description:"))
-        self.descChangeButton.setText(_translate("MainWindow", "..."))
         self.plotCheckbox.setText(_translate("MainWindow", "Plot"))
         self.label_43.setText(_translate("MainWindow", "Charges:"))
         self.label_44.setText(_translate("MainWindow", "Stack Size:"))
@@ -280,4 +275,4 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-from toolset.misc.widget.widgets import ComboBox2DA
+from toolset.misc.widget.widgets import ComboBox2DA, LocalizedStringLineEdit

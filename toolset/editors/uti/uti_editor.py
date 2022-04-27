@@ -16,6 +16,8 @@ class UTIEditor(Editor):
         supported = [ResourceType.UTI]
         super().__init__(parent, "Item Editor", "item", supported, supported, installation)
 
+        self._uti = UTI()
+
         from editors.uti import uti_editor_ui
         self.ui = uti_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -23,7 +25,7 @@ class UTIEditor(Editor):
         self._setupSignals()
         self._setupInstallation(installation)
 
-        self._uti = UTI()
+        self.ui.descEdit.setInstallation(installation)
 
         self.new()
 
@@ -59,6 +61,8 @@ class UTIEditor(Editor):
 
             subtype = installation.htGetCache2DA(subtypeResname)
             for j in range(subtype.get_height()):
+                if subtypeResname == "spells":
+                    print("   ", j)
                 name = UTIEditor.subpropertyName(installation, i, j)
                 child = QTreeWidgetItem([name])
                 child.setData(0, QtCore.Qt.UserRole, i)
@@ -76,7 +80,7 @@ class UTIEditor(Editor):
 
         # Basic
         self._loadLocstring(self.ui.nameEdit, uti.name)
-        self._loadLocstring(self.ui.descEdit, uti.description)
+        self.ui.descEdit.setLocstring(uti.description)
         self.ui.tagEdit.setText(uti.tag)
         self.ui.resrefEdit.setText(uti.resref.get())
         self.ui.baseSelect.setCurrentIndex(uti.base_item)
@@ -106,7 +110,7 @@ class UTIEditor(Editor):
 
         # Basic
         uti.name = self.ui.nameEdit.locstring
-        uti.description = self.ui.descEdit.locstring
+        uti.description = self.ui.descEdit.locstring()
         uti.tag = self.ui.tagEdit.text()
         uti.resref = ResRef(self.ui.resrefEdit.text())
         uti.base_item = self.ui.baseSelect.currentIndex()
