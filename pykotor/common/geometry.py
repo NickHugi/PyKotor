@@ -208,14 +208,14 @@ class Vector2:
         Returns a unit vector based on the specified angle.
 
         Args:
-            angle: The angle of the new vector.
+            angle: The angle of the new vector in radians.
 
         Returns:
             A new Vector2 instance.
         """
-        x = math.cos(math.radians(angle))
-        y = math.sin(math.radians(angle))
-        return Vector2(x, y)
+        x = math.cos(angle)
+        y = math.sin(angle)
+        return Vector2(x, y).normal()
 
     def set(
             self,
@@ -324,9 +324,9 @@ class Vector2:
         Returns the angle of the vector.
 
         Returns:
-            The angle of the vector.
+            The angle of the vector in radians.
         """
-        return math.degrees(math.atan2(self.y, self.x))
+        return math.atan2(self.y, self.x)
 
 
 class Vector3:
