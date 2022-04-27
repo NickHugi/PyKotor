@@ -48,15 +48,15 @@ class JRLEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        #self.ui.journalTree.selectionChanged.connect(self.onSelectionChanged)
+        # self.ui.journalTree.selectionChanged.connect(self.onSelectionChanged)
         self.ui.journalTree.selectionChanged = self.onSelectionChanged
         self.ui.journalTree.customContextMenuRequested.connect(self.onContextMenuRequested)
 
-        self.ui.categoryNameButton.clicked.connect(self.changeQuestName)
         self.ui.entryTextEdit.doubleClicked.connect(self.changeEntryText)
 
         # Make sure all these signals are excusively fired through user interaction NOT when values change
         # programmatically, otherwise values bleed into other items when onSelectionChanged() fires.
+        self.ui.categoryNameEdit.editingFinished.connect(self.onValueUpdated)
         self.ui.categoryTag.editingFinished.connect(self.onValueUpdated)
         self.ui.categoryPlotSpin.editingFinished.connect(self.onValueUpdated)
         self.ui.categoryPlanetSelect.activated.connect(self.onValueUpdated)
@@ -67,6 +67,19 @@ class JRLEditor(Editor):
         self.ui.entryEndCheck.clicked.connect(self.onValueUpdated)
 
         QShortcut("Del", self).activated.connect(self.onDeleteShortcut)
+
+    def _setupInstallation(self, installation: HTInstallation) -> None:
+        self._installation = installation
+        self.ui.categoryNameEdit.setInstallation(installation)
+
+        planets = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
+
+        self.ui.categoryPlanetSelect.clear()
+        self.ui.categoryPlanetSelect.addItem("[None]", -1)
+        for row in planets:
+            text = self._installation.talktable().string(row.get_integer("name", 0))
+            text = row.get_string("label").replace("_", " ").title() if text == "" or text is None else text
+            self.ui.categoryPlanetSelect.addItem(text)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -96,18 +109,6 @@ class JRLEditor(Editor):
         self._jrl = JRL()
         self._model.clear()
 
-    def _setupInstallation(self, installation: HTInstallation) -> None:
-        self._installation = installation
-
-        planets = installation.htGetCache2DA(HTInstallation.TwoDA_PLANETS)
-
-        self.ui.categoryPlanetSelect.clear()
-        self.ui.categoryPlanetSelect.addItem("[None]", -1)
-        for row in planets:
-            text = self._installation.talktable().string(row.get_integer("name", 0))
-            text = row.get_string("label").replace("_", " ").title() if text == "" or text is None else text
-            self.ui.categoryPlanetSelect.addItem(text)
-
     def refreshEntryItem(self, entryItem: QStandardItem) -> None:
         """
         Updates the specified item's (storing entry data) text.
@@ -135,7 +136,7 @@ class JRLEditor(Editor):
         """
         dialog = LocalizedStringDialog(self, self._installation, self.ui.categoryNameEdit.locstring)
         if dialog.exec_():
-            self._loadLocstring(self.ui.categoryNameEdit, dialog.locstring)
+            self.ui.categoryNameEdit.setInstallation(self._installation)
             self.onValueUpdated()
             item = self._model.itemFromIndex(self.ui.journalTree.selectedIndexes()[0])
             quest: JRLQuest = item.data()
@@ -216,7 +217,7 @@ class JRLEditor(Editor):
         item = self._model.itemFromIndex(self.ui.journalTree.selectedIndexes()[0])
         data = item.data()
         if isinstance(data, JRLQuest):
-            data.name = self.ui.categoryNameEdit.locstring
+            data.name = self.ui.categoryNameEdit.locstring()
             data.tag = self.ui.categoryTag.text()
             data.plot_index = self.ui.categoryPlotSpin.value()
             data.planet_id = self.ui.categoryPlanetSelect.currentIndex() - 1
@@ -244,7 +245,7 @@ class JRLEditor(Editor):
             data = item.data()
             if isinstance(data, JRLQuest):
                 self.ui.questPages.setCurrentIndex(0)
-                self._loadLocstring(self.ui.categoryNameEdit, data.name)
+                self.ui.categoryNameEdit.setLocstring(data.name)
                 self.ui.categoryTag.setText(data.tag)
                 self.ui.categoryPlotSpin.setValue(data.plot_index)
                 self.ui.categoryPlanetSelect.setCurrentIndex(data.planet_id + 1)
@@ -259,7 +260,6 @@ class JRLEditor(Editor):
 
         self.ui.categoryCommentEdit.blockSignals(False)
         self.ui.entryTextEdit.blockSignals(False)
-
 
     def onContextMenuRequested(self, point: QPoint) -> None:
         """

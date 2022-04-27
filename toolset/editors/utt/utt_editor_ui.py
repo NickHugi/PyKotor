@@ -32,13 +32,10 @@ class Ui_MainWindow(object):
         self.formLayout_10.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_6)
         self.horizontalLayout_15 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_15.setObjectName("horizontalLayout_15")
-        self.nameEdit = QtWidgets.QLineEdit(self.tab)
+        self.nameEdit = LocalizedStringLineEdit(self.tab)
+        self.nameEdit.setMinimumSize(QtCore.QSize(0, 23))
         self.nameEdit.setObjectName("nameEdit")
         self.horizontalLayout_15.addWidget(self.nameEdit)
-        self.nameChangeButton = QtWidgets.QPushButton(self.tab)
-        self.nameChangeButton.setMaximumSize(QtCore.QSize(26, 16777215))
-        self.nameChangeButton.setObjectName("nameChangeButton")
-        self.horizontalLayout_15.addWidget(self.nameChangeButton)
         self.formLayout_10.setLayout(0, QtWidgets.QFormLayout.FieldRole, self.horizontalLayout_15)
         self.label_14 = QtWidgets.QLabel(self.tab)
         self.label_14.setObjectName("label_14")
@@ -276,7 +273,6 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label_6.setText(_translate("MainWindow", "Name:"))
-        self.nameChangeButton.setText(_translate("MainWindow", "..."))
         self.label_14.setText(_translate("MainWindow", "Tag:"))
         self.tagGenerateButton.setText(_translate("MainWindow", "-"))
         self.label_38.setText(_translate("MainWindow", "ResRef:"))
@@ -316,4 +312,4 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-from toolset.misc.widget.widgets import ComboBox2DA
+from toolset.misc.widget.widgets import ComboBox2DA, LocalizedStringLineEdit

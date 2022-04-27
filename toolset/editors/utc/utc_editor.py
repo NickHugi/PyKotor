@@ -40,9 +40,7 @@ class UTCEditor(Editor):
 
     def _setupSignals(self) -> None:
         self.ui.firstnameRandomButton.clicked.connect(self.randomizeFirstname)
-        self.ui.firstnameChangeButton.clicked.connect(self.changeFirstname)
         self.ui.lastnameRandomButton.clicked.connect(self.randomizeLastname)
-        self.ui.lastnameChangeButton.clicked.connect(self.changeLastname)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.alignmentSlider.valueChanged.connect(lambda: self.portraitChanged(self.ui.portraitSelect.currentIndex()))
         self.ui.portraitSelect.currentIndexChanged.connect(self.portraitChanged)
@@ -53,6 +51,9 @@ class UTCEditor(Editor):
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+
+        self.ui.firstnameEdit.setInstallation(installation)
+        self.ui.lastnameEdit.setInstallation(installation)
 
         # Load required 2da files if they have not been loaded already
         required = [HTInstallation.TwoDA_APPEARANCES, HTInstallation.TwoDA_SOUNDSETS, HTInstallation.TwoDA_PORTRAITS,
@@ -150,8 +151,8 @@ class UTCEditor(Editor):
         self._utc = utc
 
         # Basic
-        self._loadLocstring(self.ui.firstnameEdit, utc.first_name)
-        self._loadLocstring(self.ui.lastnameEdit, utc.last_name)
+        self.ui.firstnameEdit.setLocstring(utc.first_name)
+        self.ui.lastnameEdit.setLocstring(utc.last_name)
         self.ui.tagEdit.setText(utc.tag)
         self.ui.resrefEdit.setText(utc.resref.get())
         self.ui.appearanceSelect.setCurrentIndex(utc.appearance_id)
@@ -261,8 +262,8 @@ class UTCEditor(Editor):
     def build(self) -> bytes:
         utc = self._utc
 
-        utc.first_name = self.ui.firstnameEdit.locstring
-        utc.last_name = self.ui.lastnameEdit.locstring
+        utc.first_name = self.ui.firstnameEdit.locstring()
+        utc.last_name = self.ui.lastnameEdit.locstring()
         utc.tag = self.ui.tagEdit.text()
         utc.resref = ResRef(self.ui.resrefEdit.text())
         utc.appearance_id = self.ui.appearanceSelect.currentIndex()
@@ -357,28 +358,18 @@ class UTCEditor(Editor):
 
     def randomizeFirstname(self) -> None:
         ltr_resname = "humanf" if self.ui.genderSelect.currentIndex() == 1 else "humanm"
-        locstring = self.ui.firstnameEdit.locstring
+        locstring = self.ui.firstnameEdit.locstring()
         ltr = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
-        self._loadLocstring(self.ui.firstnameEdit, locstring)
-
-    def changeFirstname(self) -> None:
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.firstnameEdit.locstring)
-        if dialog.exec_():
-            self._loadLocstring(self.ui.firstnameEdit, dialog.locstring)
+        self.ui.firstnameEdit.setLocstring(locstring)
 
     def randomizeLastname(self) -> None:
-        locstring = self.ui.lastnameEdit.locstring
+        locstring = self.ui.lastnameEdit.locstring()
         ltr = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
         locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
-        self._loadLocstring(self.ui.lastnameEdit, locstring)
-
-    def changeLastname(self) -> None:
-        dialog = LocalizedStringDialog(self, self._installation, self.ui.lastnameEdit.locstring)
-        if dialog.exec_():
-            self._loadLocstring(self.ui.lastnameEdit, dialog.locstring)
+        self.ui.lastnameEdit.setLocstring(locstring)
 
     def generateTag(self) -> None:
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())

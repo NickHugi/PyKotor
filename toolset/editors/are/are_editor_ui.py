@@ -36,15 +36,10 @@ class Ui_MainWindow(object):
         self.formLayout_7.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_20)
         self.horizontalLayout_14 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_14.setObjectName("horizontalLayout_14")
-        self.nameEdit = QtWidgets.QLineEdit(self.groupBox_7)
-        self.nameEdit.setReadOnly(True)
+        self.nameEdit = LocalizedStringLineEdit(self.groupBox_7)
+        self.nameEdit.setMinimumSize(QtCore.QSize(0, 23))
         self.nameEdit.setObjectName("nameEdit")
         self.horizontalLayout_14.addWidget(self.nameEdit)
-        self.nameChangeButton = QtWidgets.QPushButton(self.groupBox_7)
-        self.nameChangeButton.setMaximumSize(QtCore.QSize(26, 16777215))
-        self.nameChangeButton.setObjectName("nameChangeButton")
-        self.horizontalLayout_14.addWidget(self.nameChangeButton)
-        self.horizontalLayout_14.setStretch(0, 1)
         self.formLayout_7.setLayout(0, QtWidgets.QFormLayout.FieldRole, self.horizontalLayout_14)
         self.label_21 = QtWidgets.QLabel(self.groupBox_7)
         self.label_21.setObjectName("label_21")
@@ -740,7 +735,6 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.groupBox_7.setTitle(_translate("MainWindow", "Basic"))
         self.label_20.setText(_translate("MainWindow", "Name:"))
-        self.nameChangeButton.setText(_translate("MainWindow", "..."))
         self.label_21.setText(_translate("MainWindow", "Tag:"))
         self.tagGenerateButton.setText(_translate("MainWindow", "-"))
         self.label_22.setText(_translate("MainWindow", "Camera:"))
@@ -828,4 +822,4 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 from misc.longspinbox import LongSpinBox
-from toolset.misc.widget.widgets import ComboBox2DA
+from toolset.misc.widget.widgets import ComboBox2DA, LocalizedStringLineEdit

@@ -27,13 +27,13 @@ class UTDEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
 
         # Load required 2da files if they have not been loaded already
         required = [HTInstallation.TwoDA_DOORS, HTInstallation.TwoDA_FACTIONS]
@@ -64,7 +64,7 @@ class UTDEditor(Editor):
         self._utd = utd
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, utd.name)
+        self.ui.nameEdit.setLocstring(utd.name)
         self.ui.tagEdit.setText(utd.tag)
         self.ui.resrefEdit.setText(utd.resref.get())
         self.ui.appearanceSelect.setCurrentIndex(utd.appearance_id)
@@ -113,7 +113,7 @@ class UTDEditor(Editor):
         utd = self._utd
 
         # Basic
-        utd.name = self.ui.nameEdit.locstring
+        utd.name = self.ui.nameEdit.locstring()
         utd.tag = self.ui.tagEdit.text()
         utd.resref = ResRef(self.ui.resrefEdit.text())
         utd.appearance_id = self.ui.appearanceSelect.currentIndex()

@@ -45,14 +45,10 @@ class Ui_MainWindow(object):
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.categoryNameEdit = QtWidgets.QLineEdit(self.categoryPage)
-        self.categoryNameEdit.setReadOnly(True)
+        self.categoryNameEdit = LocalizedStringLineEdit(self.categoryPage)
+        self.categoryNameEdit.setMinimumSize(QtCore.QSize(0, 23))
         self.categoryNameEdit.setObjectName("categoryNameEdit")
         self.horizontalLayout.addWidget(self.categoryNameEdit)
-        self.categoryNameButton = QtWidgets.QPushButton(self.categoryPage)
-        self.categoryNameButton.setMaximumSize(QtCore.QSize(24, 16777215))
-        self.categoryNameButton.setObjectName("categoryNameButton")
-        self.horizontalLayout.addWidget(self.categoryNameButton)
         self.formLayout.setLayout(0, QtWidgets.QFormLayout.FieldRole, self.horizontalLayout)
         self.label_2 = QtWidgets.QLabel(self.categoryPage)
         self.label_2.setObjectName("label_2")
@@ -171,7 +167,6 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label.setText(_translate("MainWindow", "Name:"))
-        self.categoryNameButton.setText(_translate("MainWindow", "..."))
         self.label_2.setText(_translate("MainWindow", "Planet ID:"))
         self.label_5.setText(_translate("MainWindow", "Tag:"))
         self.label_3.setText(_translate("MainWindow", "Plot Index:"))
@@ -194,4 +189,4 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
 from toolset.editors.editor import HTPlainTextEdit
-from toolset.misc.widget.widgets import ComboBox2DA
+from toolset.misc.widget.widgets import ComboBox2DA, LocalizedStringLineEdit

@@ -25,13 +25,13 @@ class UTWEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.noteChangeButton.clicked.connect(self.changeNote)
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -43,7 +43,7 @@ class UTWEditor(Editor):
         self._utw = utw
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, utw.name)
+        self.ui.nameEdit.setLocstring(utw.name)
         self.ui.tagEdit.setText(utw.tag)
         self.ui.resrefEdit.setText(utw.resref.get())
 
@@ -58,7 +58,7 @@ class UTWEditor(Editor):
     def build(self) -> bytes:
         utw = self._utw
 
-        utw.name = self.ui.nameEdit.locstring
+        utw.name = self.ui.nameEdit.locstring()
         utw.tag = self.ui.tagEdit.text()
         utw.resref = ResRef(self.ui.resrefEdit.text())
         utw.has_map_note = self.ui.isNoteCheckbox.isChecked()

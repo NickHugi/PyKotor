@@ -18,6 +18,8 @@ class UTMEditor(Editor):
         supported = [ResourceType.UTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
+        self._utm = UTM()
+
         from editors.utm import utm_editor_ui
         self.ui = utm_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -25,18 +27,16 @@ class UTMEditor(Editor):
         self._setupSignals()
         self._setupInstallation(installation)
 
-        self._utm = UTM()
-
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -48,7 +48,7 @@ class UTMEditor(Editor):
         self._utm = utm
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, utm.name)
+        self.ui.nameEdit.setLocstring(utm.name)
         self.ui.tagEdit.setText(utm.tag)
         self.ui.resrefEdit.setText(utm.resref.get())
         self.ui.idSpin.setValue(utm.id)
@@ -64,7 +64,7 @@ class UTMEditor(Editor):
         utm = self._utm
 
         # Basic
-        utm.name = self.ui.nameEdit.locstring
+        utm.name = self.ui.nameEdit.locstring()
         utm.tag = self.ui.tagEdit.text()
         utm.resref = ResRef(self.ui.resrefEdit.text())
         utm.id = self.ui.idSpin.value()

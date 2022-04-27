@@ -32,7 +32,6 @@ class UTPEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
@@ -40,6 +39,7 @@ class UTPEditor(Editor):
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
 
         # Load required 2da files if they have not been loaded already
         required = [HTInstallation.TwoDA_PLACEABLES, HTInstallation.TwoDA_FACTIONS]
@@ -72,7 +72,7 @@ class UTPEditor(Editor):
         self._utp = utp
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, utp.name)
+        self.ui.nameEdit.setLocstring(utp.name)
         self.ui.tagEdit.setText(utp.tag)
         self.ui.resrefEdit.setText(utp.resref.get())
         self.ui.appearanceSelect.setCurrentIndex(utp.appearance_id)
@@ -129,7 +129,7 @@ class UTPEditor(Editor):
         utp = self._utp
 
         # Basic
-        utp.name = self.ui.nameEdit.locstring
+        utp.name = self.ui.nameEdit.locstring()
         utp.tag = self.ui.tagEdit.text()
         utp.resref = ResRef(self.ui.resrefEdit.text())
         utp.appearance_id = self.ui.appearanceSelect.currentIndex()

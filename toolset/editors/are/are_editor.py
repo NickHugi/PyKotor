@@ -19,6 +19,9 @@ class AREEditor(Editor):
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
+        self._are: ARE = ARE()
+
+
         from editors.are import are_editor_ui
         self.ui = are_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -26,12 +29,9 @@ class AREEditor(Editor):
         self._setupSignals()
         self._setupInstallation(installation)
 
-        self._are: ARE = ARE()
-
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
 
         self.ui.fogColorButton.clicked.connect(lambda: self.changeColor(self.ui.fogColorSpin))
@@ -58,6 +58,8 @@ class AREEditor(Editor):
     def _setupInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
 
+        self.ui.nameEdit.setInstallation(installation)
+
         cameras = installation.htGetCache2DA(HTInstallation.TwoDA_CAMERAS)
 
         self.ui.cameraStyleSelect.clear()
@@ -82,7 +84,7 @@ class AREEditor(Editor):
         self._are = are
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, are.name)
+        self.ui.nameEdit.setLocstring(are.name)
         self.ui.tagEdit.setText(are.tag)
         self.ui.cameraStyleSelect.setCurrentIndex(are.camera_style)
         self.ui.envmapEdit.setText(are.default_envmap.get())
@@ -158,7 +160,7 @@ class AREEditor(Editor):
         are = self._are
 
         # Basic
-        are.name = self.ui.nameEdit.locstring
+        are.name = self.ui.nameEdit.locstring()
         are.tag = self.ui.tagEdit.text()
         are.camera_style = self.ui.cameraStyleSelect.currentIndex()
         are.default_envmap = ResRef(self.ui.envmapEdit.text())

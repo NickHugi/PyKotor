@@ -25,12 +25,12 @@ class UTTEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
 
         cursors = installation.htGetCache2DA(HTInstallation.TwoDA_CURSORS)
         factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
@@ -55,7 +55,7 @@ class UTTEditor(Editor):
         self._utt = utt
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, utt.name)
+        self.ui.nameEdit.setLocstring(utt.name)
         self.ui.tagEdit.setText(utt.tag)
         self.ui.resrefEdit.setText(utt.resref.get())
         self.ui.cursorSelect.setCurrentIndex(utt.cursor_id)
@@ -92,7 +92,7 @@ class UTTEditor(Editor):
         utt = self._utt
 
         # Basic
-        utt.name = self.ui.nameEdit.locstring
+        utt.name = self.ui.nameEdit.locstring()
         utt.tag = self.ui.tagEdit.text()
         utt.resref = ResRef(self.ui.resrefEdit.text())
         utt.cursor_id = self.ui.cursorSelect.currentIndex()

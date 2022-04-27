@@ -1,17 +1,19 @@
 from typing import Optional, Any
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QColor, QPixmap, QImage
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QColorDialog, QLabel, QComboBox, QMenu, QDialog
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color
-from qtpy import QtCore
 
 from data.installation import HTInstallation
 from editors.editor import LocalizedStringDialog
 
 
 class LocalizedStringLineEdit(QWidget):
+    editingFinished = QtCore.pyqtSignal()
+
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
@@ -42,6 +44,7 @@ class LocalizedStringLineEdit(QWidget):
         dialog = LocalizedStringDialog(self, self._installation, self._locstring)
         if dialog.exec_():
             self.setLocstring(dialog.locstring)
+            self.editingFinished.emit()
 
     def locstring(self) -> LocalizedString:
         return self._locstring

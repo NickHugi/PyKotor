@@ -17,17 +17,17 @@ class UTSEditor(Editor):
         supported = [ResourceType.UTS]
         super().__init__(parent, "Sound Editor", "sound", supported, supported, installation)
 
+        self._uts = UTS()
+
+        self.player = QMediaPlayer(self)
+        self.buffer = QBuffer(self)
+
         from editors.uts import uts_editor_ui
         self.ui = uts_editor_ui.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
         self._setupInstallation(installation)
-
-        self.player = QMediaPlayer(self)
-        self.buffer = QBuffer(self)
-
-        self._uts = UTS()
 
         self.new()
 
@@ -39,7 +39,6 @@ class UTSEditor(Editor):
         self.ui.moveUpButton.clicked.connect(self.moveSoundUp)
         self.ui.moveDownButton.clicked.connect(self.moveSoundDown)
 
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
 
@@ -53,6 +52,7 @@ class UTSEditor(Editor):
 
     def _setupInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -64,7 +64,7 @@ class UTSEditor(Editor):
         self._uts = uts
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, uts.name)
+        self.ui.nameEdit.setLocstring(uts.name)
         self.ui.tagEdit.setText(uts.tag)
         self.ui.resrefEdit.setText(uts.resref.get())
         self.ui.volumeSlider.setValue(uts.volume)
@@ -120,7 +120,7 @@ class UTSEditor(Editor):
         uts = self._uts
 
         # Basic
-        uts.name = self.ui.nameEdit.locstring
+        uts.name = self.ui.nameEdit.locstring()
         uts.tag = self.ui.tagEdit.text()
         uts.resref = ResRef(self.ui.resrefEdit.text())
         uts.volume = self.ui.volumeSlider.value()

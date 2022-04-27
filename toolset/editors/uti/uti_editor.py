@@ -30,7 +30,6 @@ class UTIEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.editPropertyButton.clicked.connect(self.editProperty)
@@ -39,6 +38,8 @@ class UTIEditor(Editor):
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
+        self.ui.descEdit.setInstallation(installation)
 
         required = [HTInstallation.TwoDA_BASEITEMS, HTInstallation.TwoDA_ITEM_PROPERTIES]
         installation.htBatchCache2DA(required)
@@ -79,7 +80,7 @@ class UTIEditor(Editor):
         self._uti = uti
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, uti.name)
+        self.ui.nameEdit.setLocstring(uti.name)
         self.ui.descEdit.setLocstring(uti.description)
         self.ui.tagEdit.setText(uti.tag)
         self.ui.resrefEdit.setText(uti.resref.get())
@@ -109,7 +110,7 @@ class UTIEditor(Editor):
         uti = self._uti
 
         # Basic
-        uti.name = self.ui.nameEdit.locstring
+        uti.name = self.ui.nameEdit.locstring()
         uti.description = self.ui.descEdit.locstring()
         uti.tag = self.ui.tagEdit.text()
         uti.resref = ResRef(self.ui.resrefEdit.text())

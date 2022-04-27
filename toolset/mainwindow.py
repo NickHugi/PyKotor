@@ -794,7 +794,7 @@ class ToolWindow(QMainWindow):
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
         for resource in resources:
             filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data())
-            if editor is not None:
+            if editor is not None and resource.filepath():
                 editor.savedFile.connect(self.reloadModule)
 
     def openFromFile(self) -> None:
