@@ -54,7 +54,7 @@ class WalkmeshRenderer(QWidget):
         self._walkmeshFaceCache: Optional[List[QPainterPath]] = None
 
         self.highlightOnHover: bool = False
-        self.highlightBoundaries: bool = False
+        self.highlightBoundaries: bool = True
 
         self.hideWalkmeshEdges: bool = False
 

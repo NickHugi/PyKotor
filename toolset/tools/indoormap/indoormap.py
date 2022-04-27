@@ -156,7 +156,8 @@ class IndoorMap:
                 resname, restype = ResourceIdentifier.from_path(filename)
                 mod.set(resname, restype, data)
 
-            mdl = model.transform(room.component.mdl, Vector3.from_null(), room.rotation)
+            mdl, mdx = model.flip(room.component.mdl, room.component.mdx, room.flip_x, room.flip_y)
+            mdl = model.transform(mdl, Vector3.from_null(), room.rotation)
             mdl = model.convert_to_k2(mdl) if installation.tsl else model.convert_to_k1(mdl)
             mdl = model.change_textures(mdl, texRenames)
 
@@ -170,9 +171,10 @@ class IndoorMap:
             mdl = model.change_lightmaps(mdl, lmRenames)
 
             mod.set(modelname, ResourceType.MDL, mdl)
-            mod.set(modelname, ResourceType.MDX, room.component.mdx)
+            mod.set(modelname, ResourceType.MDX, mdx)
 
             bwm = deepcopy(room.component.bwm)
+            bwm.flip(room.flip_x, room.flip_y)
             bwm.rotate(room.rotation)
             bwm.translate(room.position.x, room.position.y, room.position.z)
             for hookIndex, connection in enumerate(room.hooks):
@@ -425,6 +427,7 @@ class IndoorMap:
             painter.save()
             painter.translate(room.position.x*10 - int(bbmin.x)*10, room.position.y*10 - int(bbmin.y)*10)
             painter.rotate(room.rotation)
+            painter.scale(-1 if room.flip_x else 1, -1 if room.flip_y else 1)
             painter.translate(-image.width()/2, -image.height()/2)
 
             painter.drawImage(0, 0, image)
@@ -457,19 +460,25 @@ class IndoorMap:
 
 
 class IndoorMapRoom:
-    def __init__(self, component: KitComponent, position: Vector3, rotation: float):
+    def __init__(self, component: KitComponent, position: Vector3, rotation: float, flip_x: bool, flip_y: bool):
         self.component: KitComponent = component
         self.position: Vector3 = position
         self.rotation: float = rotation
         self.hooks: List[Optional[IndoorMapRoom]] = [None] * len(component.hooks)
+        self.flip_x: bool = flip_x
+        self.flip_y: bool = flip_y
 
     def hookPosition(self, hook: KitComponentHook, worldOffset: bool = True):
         pos = copy(hook.position)
 
+        pos.x = -pos.x if self.flip_x else pos.x
+        pos.y = -pos.y if self.flip_y else pos.y
+        temp = copy(pos)
+
         cos = math.cos(math.radians(self.rotation))
         sin = math.sin(math.radians(self.rotation))
-        pos.x = (hook.position.x * cos - hook.position.y * sin)
-        pos.y = (hook.position.x * sin + hook.position.y * cos)
+        pos.x = temp.x*cos - temp.y*sin
+        pos.y = temp.x*sin + temp.y*cos
 
         if worldOffset:
             pos = pos + self.position

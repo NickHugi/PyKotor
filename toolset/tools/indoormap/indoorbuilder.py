@@ -205,7 +205,8 @@ class IndoorMapBuilder(QMainWindow):
         if QtCore.Qt.RightButton in buttons:
             component = self.selectedComponent()
             if component is not None:
-                room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint, self.ui.mapRenderer._cursorRotation)
+                room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint, self.ui.mapRenderer._cursorRotation,
+                                     self.ui.mapRenderer._cursorFlipX, self.ui.mapRenderer._cursorFlipY)
                 self._map.rooms.append(room)
                 self._map.rebuildRoomConnections()
             if QtCore.Qt.Key_Shift not in keys:
@@ -220,6 +221,9 @@ class IndoorMapBuilder(QMainWindow):
                 self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
             else:
                 self.ui.mapRenderer.clearSelectedRooms()
+
+        if QtCore.Qt.MiddleButton in buttons and not QtCore.Qt.Key_Control in keys:
+            self.ui.mapRenderer.toggleCursorFlip()
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
@@ -268,6 +272,8 @@ class IndoorMapRenderer(QWidget):
         self._cursorComponent: Optional[KitComponent] = None
         self._cursorPoint: Vector3 = Vector3.from_null()
         self._cursorRotation: float = 0.0
+        self._cursorFlipX: bool = False
+        self._cursorFlipY: bool = False
 
         self._keysDown: Set[int] = set()
         self._mouseDown: Set[int] = set()
@@ -383,6 +389,17 @@ class IndoorMapRenderer(QWidget):
 
         return hook1, hook2
 
+    def toggleCursorFlip(self):
+        if self._cursorFlipX is True:
+            self._cursorFlipX = False
+            self._cursorFlipY = True
+        elif self._cursorFlipY is True:
+            self._cursorFlipX = False
+            self._cursorFlipY = False
+        else:
+            self._cursorFlipX = True
+            self._cursorFlipY = False
+
     # region Camera Transformations
     def cameraZoom(self) -> float:
         """
@@ -473,7 +490,7 @@ class IndoorMapRenderer(QWidget):
         self._camRotation += radians
     # endregion
 
-    def _drawImage(self, painter: QPainter, image: QImage, coords: Vector2, rotation: float) -> None:
+    def _drawImage(self, painter: QPainter, image: QImage, coords: Vector2, rotation: float, flip_x: bool, flip_y: bool) -> None:
         original = painter.transform()
 
         trueWidth, trueHeight = image.width(), image.height()
@@ -487,6 +504,7 @@ class IndoorMapRenderer(QWidget):
 
         transform.translate(coords.x, coords.y)
         transform.rotate(rotation)
+        transform.scale(-1.0 if flip_x else 1.0, -1.0 if flip_y else 1.0)
         transform.translate(-width / 2, -height / 2)
 
         painter.setTransform(transform)
@@ -499,6 +517,7 @@ class IndoorMapRenderer(QWidget):
 
     def _drawRoomHighlight(self, painter: QPainter, room: IndoorMapRoom, alpha: int) -> None:
         bwm = deepcopy(room.component.bwm)
+        bwm.flip(room.flip_x, room.flip_y)
         bwm.rotate(room.rotation)
         bwm.translate(*room.position)
         painter.setBrush(QColor(255, 255, 255, alpha))
@@ -554,7 +573,7 @@ class IndoorMapRenderer(QWidget):
         painter.setRenderHint(QPainter.LosslessImageRendering, True)
 
         for room in self._map.rooms:
-            self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position), room.rotation)
+            self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y)
 
             for hook in room.component.hooks if not self.hideMagnets else []:
                 hookIndex = room.component.hooks.index(hook)
@@ -577,7 +596,7 @@ class IndoorMapRenderer(QWidget):
 
         if self._cursorComponent:
             painter.setOpacity(0.5)
-            self._drawImage(painter, self._cursorComponent.image, Vector2.from_vector3(self._cursorPoint), self._cursorRotation)
+            self._drawImage(painter, self._cursorComponent.image, Vector2.from_vector3(self._cursorPoint), self._cursorRotation, self._cursorFlipX, self._cursorFlipY)
 
         if self._underMouseRoom:
             self._drawRoomHighlight(painter, self._underMouseRoom, 50)
@@ -598,7 +617,7 @@ class IndoorMapRenderer(QWidget):
         self._cursorPoint = world
 
         if self._cursorComponent:
-            fakeCursorRoom = IndoorMapRoom(self._cursorComponent, self._cursorPoint, self._cursorRotation)
+            fakeCursorRoom = IndoorMapRoom(self._cursorComponent, self._cursorPoint, self._cursorRotation, self._cursorFlipX, self._cursorFlipY)
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
