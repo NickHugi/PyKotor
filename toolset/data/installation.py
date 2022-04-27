@@ -70,8 +70,8 @@ class HTInstallation(Installation):
     def htGetCache2DA(self, resname: str):
         resname = resname.lower()
         if resname not in self._cache2da:
-            data = self.resource(resname, ResourceType.TwoDA, [SearchLocation.CHITIN, SearchLocation.OVERRIDE]).data
-            self._cache2da[resname] = read_2da(data)
+            result = self.resource(resname, ResourceType.TwoDA, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+            self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
     def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
@@ -83,7 +83,7 @@ class HTInstallation(Installation):
         if not queries:
             return
 
-        resources = self.resources(queries, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+        resources = self.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         for iden, resource in resources.items():
             if resource:
                 self._cache2da[iden.resname] = read_2da(resource.data)
