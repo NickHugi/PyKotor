@@ -428,11 +428,21 @@ class Scene:
                 mdl_data = EMPTY_MDL_DATA
                 mdx_data = EMPTY_MDX_DATA
             else:
-                mdl_data = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=self.module.capsules()).data
-                mdx_data = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules()).data
+                mdl_search = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=self.module.capsules())
+                mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules())
+                if mdl_search and mdx_search:
+                    mdl_data = mdl_search.data
+                    mdx_data = mdl_search.data
+                else:
+                    mdl_data = EMPTY_MDL_DATA
+                    mdx_data = EMPTY_MDX_DATA
 
             # model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
-            model = gl_load_stitched_model(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
+            try:
+                model = gl_load_stitched_model(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
+            except Exception:
+                model = gl_load_stitched_model(self, BinaryReader.from_bytes(EMPTY_MDL_DATA, 12), BinaryReader.from_bytes(EMPTY_MDX_DATA))
+
             self.models[name] = model
         return self.models[name]
 
