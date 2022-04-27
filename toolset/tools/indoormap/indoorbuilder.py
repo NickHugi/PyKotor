@@ -8,11 +8,11 @@ from typing import Optional, List, Set, Tuple, Dict
 
 import requests
 from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer, QPointF, QRectF
+from PyQt5.QtCore import QTimer, QPointF, QRectF, QPoint
 from PyQt5.QtGui import QImage, QPixmap, QPaintEvent, QTransform, QPainter, QColor, QWheelEvent, QMouseEvent, QKeyEvent, \
     QPen, QPainterPath, QKeySequence
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow, QFileDialog, QMessageBox, QDialog, QFormLayout, \
-    QPushButton
+    QPushButton, QMenu
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import Color
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -61,6 +61,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
 
+        self.ui.mapRenderer.customContextMenuRequested.connect(self.onContextMenu)
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
         self.ui.mapRenderer.mousePressed.connect(self.onMousePressed)
         self.ui.mapRenderer.mouseScrolled.connect(self.onMouseScrolled)
@@ -138,12 +139,12 @@ class IndoorMapBuilder(QMainWindow):
         self._setupKits()
 
     def buildMap(self) -> None:
-        path = "{}{}.mod".format(self._installation.module_path(), self._map.module_id)
+        path = "{}{}.mod".format(self._installation.module_path(), self._map.moduleId)
         task = lambda: self._map.build(self._installation, self._kits, path)
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
 
         if loader.exec_():
-            msg = "You can warp to the game using the code 'warp {}'. ".format(self._map.module_id)
+            msg = "You can warp to the game using the code 'warp {}'. ".format(self._map.moduleId)
             msg += "Map files can be found in:\n{}".format(path)
             QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
 
@@ -155,6 +156,9 @@ class IndoorMapBuilder(QMainWindow):
     def selectedComponent(self) -> Optional[KitComponent]:
         currentItem = self.ui.componentList.currentItem()
         return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)
+
+    def setWarpPoint(self, x: float, y: float, z: float):
+        self._map.warpPoint = Vector3(x, y, z)
 
     def onKitSelected(self) -> None:
         kit: Kit = self.ui.kitSelect.currentData()
@@ -202,25 +206,27 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rebuildRoomConnections()
 
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if QtCore.Qt.RightButton in buttons:
-            component = self.selectedComponent()
-            if component is not None:
-                room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint, self.ui.mapRenderer._cursorRotation,
-                                     self.ui.mapRenderer._cursorFlipX, self.ui.mapRenderer._cursorFlipY)
-                self._map.rooms.append(room)
-                self._map.rebuildRoomConnections()
-            if QtCore.Qt.Key_Shift not in keys:
-                self.ui.mapRenderer.setCursorComponent(None)
-                self.ui.componentList.clearSelection()
-                self.ui.componentList.setCurrentItem(None)
-
         if QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys:
-            clearExisting = QtCore.Qt.Key_Shift not in keys
-            room = self.ui.mapRenderer.roomUnderMouse()
-            if room:
-                self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
+
+            if self.ui.mapRenderer._cursorComponent is not None:
+                component = self.selectedComponent()
+                if component is not None:
+                    room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint,
+                                         self.ui.mapRenderer._cursorRotation,
+                                         self.ui.mapRenderer._cursorFlipX, self.ui.mapRenderer._cursorFlipY)
+                    self._map.rooms.append(room)
+                    self._map.rebuildRoomConnections()
+                if QtCore.Qt.Key_Shift not in keys:
+                    self.ui.mapRenderer.setCursorComponent(None)
+                    self.ui.componentList.clearSelection()
+                    self.ui.componentList.setCurrentItem(None)
             else:
-                self.ui.mapRenderer.clearSelectedRooms()
+                clearExisting = QtCore.Qt.Key_Shift not in keys
+                room = self.ui.mapRenderer.roomUnderMouse()
+                if room:
+                    self.ui.mapRenderer.selectRoom(self.ui.mapRenderer.roomUnderMouse(), clearExisting)
+                else:
+                    self.ui.mapRenderer.clearSelectedRooms()
 
         if QtCore.Qt.MiddleButton in buttons and not QtCore.Qt.Key_Control in keys:
             self.ui.mapRenderer.toggleCursorFlip()
@@ -235,6 +241,20 @@ class IndoorMapBuilder(QMainWindow):
         if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():
             self.ui.mapRenderer.clearSelectedRooms()
             self.addConnectedToSelection(self.ui.mapRenderer.roomUnderMouse())
+
+    def onContextMenu(self, point: QPoint) -> None:
+        world = self.ui.mapRenderer.toWorldCoords(point.x(), point.y())
+        menu = QMenu(self)
+
+        menu.addAction("Set Warp Point").triggered.connect(lambda: self.setWarpPoint(world.x, world.y, world.z))
+
+        menu.popup(self.ui.mapRenderer.mapToGlobal(point))
+
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        self.ui.mapRenderer.keyPressEvent(e)
+
+    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+        self.ui.mapRenderer.keyReleaseEvent(e)
 
     def addConnectedToSelection(self, room):
         self.ui.mapRenderer.selectRoom(room, False)
@@ -529,6 +549,15 @@ class IndoorMapRenderer(QWidget):
     def _drawCircle(self, painter: QPainter, coords: Vector2):
         ...
 
+    def _drawSpawnPoint(self, painter: QPainter, coords: Vector3):
+        painter.setPen(QtCore.Qt.NoPen)
+        painter.setBrush(QColor(0, 255, 0, 127))
+        painter.drawEllipse(QPointF(coords.x, coords.y), 1.0, 1.0)
+
+        painter.setPen(QPen(QColor(0, 255, 0), 0.4))
+        painter.drawLine(QPointF(coords.x, coords.y-1.0), QPointF(coords.x, coords.y+1.0))
+        painter.drawLine(QPointF(coords.x-1.0, coords.y), QPointF(coords.x+1.0, coords.y))
+
     def _buildFace(self, face: BWMFace) -> QPainterPath:
         """
         Returns a QPainterPath for the specified face.
@@ -603,6 +632,8 @@ class IndoorMapRenderer(QWidget):
 
         for room in self._selectedRooms:
             self._drawRoomHighlight(painter, room, 100)
+
+        self._drawSpawnPoint(painter, self._map.warpPoint)
 
     def wheelEvent(self, e: QWheelEvent) -> None:
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
