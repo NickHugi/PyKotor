@@ -72,6 +72,10 @@ class UTWEditor(Editor):
 
         return data
 
+    def new(self) -> None:
+        super().new()
+        self._loadUTW(UTW())
+
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
         if dialog.exec_():
