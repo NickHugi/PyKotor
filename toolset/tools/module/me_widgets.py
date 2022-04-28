@@ -134,7 +134,7 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.aspect = e.size().width() / e.size().height()
 
     def wheelEvent(self, e: QWheelEvent) -> None:
-        self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
+        self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         coords = Vector2(e.x(), e.y())

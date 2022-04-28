@@ -30,7 +30,7 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from pykotor.gl.scene import Scene, RenderObject
 
-from tools.module.me_controls import ModuleEditorControls, ModuleEditorControlsAurora
+from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, AuroraModuleEditorControls
 
 
 class ModuleEditor(QMainWindow):
@@ -57,7 +57,7 @@ class ModuleEditor(QMainWindow):
         self.hideStores: bool = False
         self.hideCameras: bool = False
 
-        self.cameraControls: ModuleEditorControls = ModuleEditorControlsAurora(self.ui.mainRenderer)
+        self.cameraControls: ModuleEditorControls = AuroraModuleEditorControls(self.ui.mainRenderer)
 
         self.snapToWalkmesh: bool = True
 

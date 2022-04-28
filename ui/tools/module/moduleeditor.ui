@@ -386,7 +386,7 @@ QCheckBox::indicator:checked:hover {
          <bool>true</bool>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::StrongFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="contextMenuPolicy">
          <enum>Qt::CustomContextMenu</enum>
@@ -438,7 +438,7 @@ QCheckBox::indicator:checked:hover {
   <customwidget>
    <class>ModuleRenderer</class>
    <extends>QOpenGLWidget</extends>
-   <header location="global">toolset.tools.module.moduleeditor</header>
+   <header location="global">toolset.tools.module.me_widgets</header>
   </customwidget>
  </customwidgets>
  <resources>

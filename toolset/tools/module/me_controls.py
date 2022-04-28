@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import math
 from abc import ABC, abstractmethod
-from typing import Set
+from typing import Set, List, Union, Callable
 
 from PyQt5 import QtCore
-from pykotor.common.geometry import Vector2
+from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
 from pykotor.resource.generics.git import GITInstance
 
@@ -34,13 +36,13 @@ KEY_9 = QtCore.Qt.Key_9
 
 class ModuleEditorControls(ABC):
     def __init__(self, renderer: ModuleRenderer):
-        self._renderer: ModuleRenderer = renderer
-        self._panStrength: float = 0.033
+        self.renderer: ModuleRenderer = renderer
+        self.alterCameraPositionSensitivity: float = 0.033
         self._raiseStrength: float = 0.02
-        self._rotateStrength: float = 1 / 200
 
-        self._zoomStrength: float = 0.0
-        self._objectTranslateStrength: float = 1/40
+        self.alterCameraRotationSensitivity: float = 1 / 200
+        self.alterObjectPositionSensitivity: float = 1 / 40
+        self.alterObjectRotationSensitivity: float = 1
 
     @abstractmethod
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
@@ -66,91 +68,244 @@ class ModuleEditorControls(ABC):
     def onKeyReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
-    def translateSelectedObjects(self, dx: float, dy: float) -> None:
-        for obj in self._renderer.scene.selection:
-            forward = self._renderer.scene.camera.forward() * -dy
-            sideward = self._renderer.scene.camera.sideward() * -dx
+    def wz(self, x: float, y: float, z: float) -> float:
+        point = self.renderer.walkmeshPoint(x, y, z)
+        return z - point.z
 
-            x = obj.data.position.x + (forward.x + sideward.x) / 40
-            y = obj.data.position.y + (forward.y + sideward.y) / 40
+    def translateSelectedObjects(self, snap: bool, dx: float, dy: float, dz: float) -> None:
+        for obj in self.renderer.scene.selection:
+            x = obj.data.position.x + dx
+            y = obj.data.position.y + dy
+            z = obj.data.position.z
 
+            point = Vector3(obj.data.position.x + dx, obj.data.position.y + dy, obj.data.position.z)
+            if snap:
+                point = self.renderer.walkmeshPoint(x, y, z)
+            point.z += dz
+
+            instance = obj.data
+            instance.position = point
+
+    def rotateSelectedObjects(self, yaw: float, pitch: float) -> None:
+        for obj in self.renderer.scene.selection:
             instance: GITInstance = obj.data
-            instance.position = self._renderer.walkmeshPoint(x, y, obj.data.position.z)
-            
-    def rotateSelectedObjects(self, dx: float, dy: float) -> None:
-        for obj in self._renderer.scene.selection:
-            instance: GITInstance = obj.data
-            instance.rotate(dx / 80, 0, 0)
+            instance.rotate(yaw / 80, 0, 0)
 
     def alterCameraPosition(self, dx: float, dy: float, dz: float) -> None:
-        self._renderer.panCamera(dx, dy, dz)
+        self.renderer.scene.camera.x += dx
+        self.renderer.scene.camera.y += dy
+        self.renderer.scene.camera.z += dz
 
-    def snapCameraPosition(self, *, x: float = None, y: float = None, z: float = None) -> None:
+    def snapCameraPosition(self, x: float = None, y: float = None, z: float = None) -> None:
         if x is not None:
-            self._renderer.scene.camera.x = x
+            self.renderer.scene.camera.x = x
         if y is not None:
-            self._renderer.scene.camera.y = y
+            self.renderer.scene.camera.y = y
         if z is not None:
-            self._renderer.scene.camera.z = z
+            self.renderer.scene.camera.z = z
 
-    def alterCameraRotation(self, pitch: float, yaw: float) -> None:
-        self._renderer.rotateCamera(yaw, pitch)
+    def alterCameraRotation(self, yaw: float, pitch: float) -> None:
+        self.renderer.scene.camera.yaw += yaw
+        self.renderer.scene.camera.pitch += pitch
 
-    def snapCameraRotation(self, *, pitch: float = None, yaw: float = None) -> None:
-        if pitch is not None:
-            self._renderer.scene.camera.pitch = pitch
-        if yaw is not None:
-            self._renderer.scene.camera.yaw = yaw
+    def setCameraRotation(self, yaw: float, pitch: float) -> None:
+        self.renderer.scene.camera.yaw = yaw
+        self.renderer.scene.camera.pitch = pitch
+
+    def selectObjectAtMouse(self) -> None:
+        self.renderer.doSelect = True
 
 
-class ModuleEditorControlsAurora(ModuleEditorControls):
-    
+class DynamicModuleEditorControls(ModuleEditorControls):
+
+    def __init__(self, renderer: ModuleRenderer):
+        super().__init__(renderer)
+
+        self.mouseMoveEvents: List[DCItem] = []
+        self.mousePressEvents: List[DCItem] = []
+        self.mouseReleaseEvents: List[DCItem] = []
+        self.mouseScrollEvents: List[DCItem] = []
+        self.keyPressEvents: List[DCItem] = []
+        self.keyReleaseEvents: List[DCItem] = []
+
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if MB_L in buttons and KEY_CTRL in keys:
-            self.alterCameraPosition(delta.x * self._panStrength, delta.y * self._panStrength, 0.0)
-        elif MB_M in buttons and KEY_CTRL in keys:
-            self.alterCameraRotation(delta.y * self._rotateStrength, delta.x * self._rotateStrength,)
-        elif MB_L in buttons and KEY_CTRL not in keys:
-            self.translateSelectedObjects(delta.x, delta.y)
-        elif MB_M in buttons and KEY_CTRL in keys:
-            self.rotateSelectedObjects(delta.x, delta.y)
+        for event in self.mouseMoveEvents:
+            if event.mouse == buttons and event.keys == keys:
+                for effect in event.effects:
+                    effect.apply(self, delta.x, delta.y)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if MB_M in buttons and KEY_CTRL in keys:
-            self.alterCameraPosition(0.0, 0.0, delta.y * self._raiseStrength)
+        for event in self.mouseScrollEvents:
+            if event.mouse == buttons and event.keys == keys:
+                for effect in event.effects:
+                    effect.apply(self, delta.x, delta.y)
 
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if MB_L in buttons and KEY_CTRL not in keys:
-            self._renderer.doSelect = True
+        for event in self.mousePressEvents:
+            if event.mouse == buttons and event.keys == keys:
+                for effect in event.effects:
+                    effect.apply(self, 0, 0)
 
     def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        ...
+        for event in self.mouseReleaseEvents:
+            if event.mouse == buttons and event.keys == keys:
+                for effect in event.effects:
+                    effect.apply(self, 0, 0)
 
     def onKeyPressed(self, buttons: Set[int], keys: Set[int]) -> None:
-        if {KEY_9} & keys:
-            self.snapCameraRotation(yaw=0)
-
-        if {KEY_7} & keys:
-            self.snapCameraRotation(pitch=0)
-
-        if {KEY_4, KEY_A} & keys:
-            self.alterCameraRotation(0, math.pi / 8)
-
-        if {KEY_6, KEY_D} & keys:
-            self.alterCameraRotation(0, -math.pi / 8)
-
-        if {KEY_8, KEY_W} & keys:
-            self.alterCameraRotation(math.pi / 8, 0)
-
-        if {KEY_2, KEY_S} & keys:
-            self.alterCameraRotation(-math.pi / 8, 0)
-
-        if {KEY_Q} & keys:
-            self.alterCameraPosition(0, 0, 1)
-
-        if {KEY_Z} & keys:
-            self.alterCameraPosition(0, 0, -1)
+        for event in self.keyPressEvents:
+            if event.mouse == buttons and event.keys == keys:
+                for effect in event.effects:
+                    effect.apply(self, 0, 0)
 
     def onKeyReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+        for event in self.keyReleaseEvents:
+            if event.mouse == buttons and event.keys == keys:
+                for effect in event.effects:
+                    effect.apply(self, 0, 0)
+
+
+class AuroraModuleEditorControls(DynamicModuleEditorControls):
+
+    def __init__(self, renderer: ModuleRenderer):
+        super().__init__(renderer)
+
+        self.mouseMoveEvents: List[DCItem] = [
+            DCItem({KEY_CTRL}, {MB_L}, [DCEffectAlterCameraPosition(True, "cx", "cy", 0)]),
+            DCItem({KEY_CTRL}, {MB_M}, [DCEffectAlterCameraRotation(True, "dx", "dy")]),
+            DCItem(set(),      {MB_L}, [DCEffectAlterObjectPosition(True, True, "cx", "cy", 0)]),
+            DCItem(set(),      {MB_M}, [DCEffectAlterObjectRotation(True, "dx")])
+        ]
+        self.mousePressEvents: List[DCItem] = [
+            DCItem(set(), {MB_L}, [DCEffectSelectObjectAtMouse()])
+        ]
+        self.mouseReleaseEvents: List[DCItem] = []
+        self.mouseScrollEvents: List[DCItem] = [
+            DCItem({KEY_CTRL}, set(), [DCEffectAlterCameraPosition(True, 0, 0, "dy")])
+        ]
+        self.keyPressEvents: List[DCItem] = [
+            DCItem({KEY_1}, set(), [DCEffectSetCameraRotation(0, "crp")]),
+            DCItem({KEY_3}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectSetCameraRotation(math.pi/2, 0)]),
+            DCItem({KEY_7}, set(), [DCEffectSetCameraRotation("cry", 0)]),
+            DCItem({KEY_9}, set(), [DCEffectSetCameraRotation("cry", math.pi/2)]),
+            DCItem({KEY_4}, set(), [DCEffectAlterCameraRotation(False, math.pi/8, 0)]),
+            DCItem({KEY_6}, set(), [DCEffectAlterCameraRotation(False, -math.pi/8, 0)]),
+            DCItem({KEY_8}, set(), [DCEffectAlterCameraRotation(False, 0, math.pi/8)]),
+            DCItem({KEY_2}, set(), [DCEffectAlterCameraRotation(False, 0, -math.pi/8)])
+        ]
+        self.keyReleaseEvents: List[DCItem] = []
+
+
+class DCItem:
+    def __init__(self, keys: Set[int], mouse: Set[int], effects: List[DCEffect]):
+        self.keys: Set[int] = keys
+        self.mouse: Set[int] = mouse
+        self.effects: List[DCEffect] = effects
+
+
+class DCEffect(ABC):
+    @abstractmethod
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
         ...
 
+    @staticmethod
+    def determineFloat(value: Union[float, str], controls: ModuleEditorControls, dx: float, dy: float) -> float:
+        if isinstance(value, str):
+            if value == "dx":
+                return dx
+            elif value == "dy":
+                return dy
+            elif value == "cx":
+                forward = dy * controls.renderer.scene.camera.forward()
+                sideward = dx * controls.renderer.scene.camera.sideward()
+                return forward.x + sideward.x
+            elif value == "cy":
+                forward = dy * controls.renderer.scene.camera.forward()
+                sideward = dx * controls.renderer.scene.camera.sideward()
+                return forward.y + sideward.y
+            elif value == "cz":
+                ...
+            elif value == "cry":
+                return controls.renderer.scene.camera.yaw
+            elif value == "crp":
+                return controls.renderer.scene.camera.pitch
+            else:
+                return 0
+        elif isinstance(value, float) or isinstance(value, int):
+            return value
+        else:
+            return 0
+
+
+class DCEffectAlterCameraPosition(DCEffect):
+    def __init__(self, applySensitivity: bool, x: Union[float, str], y: Union[float, str], z: Union[float, str]):
+        self.applySensitivity: bool = applySensitivity
+        self.x: Union[float, str] = x
+        self.y: Union[float, str] = y
+        self.z: Union[float, str] = z
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        x = super().determineFloat(self.x, controls, dx, dy)
+        y = super().determineFloat(self.y, controls, dx, dy)
+        z = super().determineFloat(self.z, controls, dx, dy)
+        sensitivity = controls.alterCameraPositionSensitivity if self.applySensitivity else 1.0
+        controls.alterCameraPosition(x * sensitivity, y * sensitivity, z * sensitivity)
+
+
+class DCEffectAlterCameraRotation(DCEffect):
+    def __init__(self, applySensitivity: bool, yaw: Union[float, str], pitch: Union[float, str]):
+        self.applySensitivity: bool = applySensitivity
+        self.yaw: Union[float, str] = yaw
+        self.pitch: Union[float, str] = pitch
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        pitch = super().determineFloat(self.pitch, controls, dx, dy)
+        yaw = super().determineFloat(self.yaw, controls, dx, dy)
+        sensitivity = controls.alterCameraRotationSensitivity if self.applySensitivity else 1.0
+        controls.alterCameraRotation(yaw * sensitivity, pitch * sensitivity)
+
+
+class DCEffectSetCameraRotation(DCEffect):
+    def __init__(self, yaw: Union[float, str], pitch: Union[float, str]):
+        self.yaw: Union[float, str] = yaw
+        self.pitch: Union[float, str] = pitch
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        yaw = super().determineFloat(self.yaw, controls, dx, dy)
+        pitch = super().determineFloat(self.pitch, controls, dx, dy)
+        controls.setCameraRotation(yaw, pitch)
+
+
+class DCEffectAlterObjectPosition(DCEffect):
+    def __init__(self, applySensitivity: bool, snapToWalkmesh: bool, x: Union[float, str], y: Union[float, str], z: Union[float, str]):
+        self.applySensitivity: bool = applySensitivity
+        self.snapToWalkmesh: bool = snapToWalkmesh
+        self.x: Union[float, str] = x
+        self.y: Union[float, str] = y
+        self.z: Union[float, str] = z
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        x = super().determineFloat(self.x, controls, dx, dy)
+        y = super().determineFloat(self.y, controls, dx, dy)
+        z = super().determineFloat(self.z, controls, dx, dy)
+        sensitivity = controls.alterObjectPositionSensitivity if self.applySensitivity else 1.0
+        controls.translateSelectedObjects(self.snapToWalkmesh, -x * sensitivity, -y * sensitivity, z * sensitivity)
+
+
+class DCEffectAlterObjectRotation(DCEffect):
+    def __init__(self, applySensitivity: bool, yaw: Union[float, str]):
+        self.applySensitivity: bool = applySensitivity
+        self.yaw: Union[float, str] = yaw
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        yaw = super().determineFloat(self.yaw, controls, dx, dy)
+        sensitivity = controls.alterCameraRotationSensitivity if self.applySensitivity else 1.0
+        controls.rotateSelectedObjects(yaw * sensitivity, 0.0)
+
+
+class DCEffectSelectObjectAtMouse(DCEffect):
+    def __init__(self):
+        ...
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        controls.selectObjectAtMouse()
