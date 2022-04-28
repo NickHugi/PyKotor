@@ -292,7 +292,7 @@ class PropertyEditor(QDialog):
             text = upgrades.get_cell(i, "label").replace("_" , " ").title()
             self.ui.upgradeSelect.addItem(text, i)
         if utiProperty.upgrade_type is not None:
-            self.ui.upgradeSelect.setCurrentIndex(utiProperty.upgrade_type)
+            self.ui.upgradeSelect.setCurrentIndex(utiProperty.upgrade_type + 1)
 
         self.reloadTextboxes()
 
