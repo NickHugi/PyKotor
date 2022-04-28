@@ -294,7 +294,7 @@ class Ui_MainWindow(object):
         self.mainRenderer = ModuleRenderer(self.centralwidget)
         self.mainRenderer.setMouseTracking(True)
         self.mainRenderer.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.mainRenderer.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.mainRenderer.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         self.mainRenderer.setObjectName("mainRenderer")
         self.horizontalLayout.addWidget(self.mainRenderer)
         self.instanceList = QtWidgets.QListWidget(self.centralwidget)

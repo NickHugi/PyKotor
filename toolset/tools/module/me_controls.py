@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Set, List, Union, Callable
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Scene
 from pykotor.resource.generics.git import GITInstance
@@ -115,6 +116,10 @@ class ModuleEditorControls(ABC):
     def selectObjectAtMouse(self) -> None:
         self.renderer.doSelect = True
 
+    def openContextMenu(self) -> None:
+        x, y = self.renderer.cursor().pos().x(), self.renderer.cursor().pos().y()
+        self.renderer.customContextMenuRequested.emit(self.renderer.mapFromGlobal(QPoint(x, y)))
+
 
 class DynamicModuleEditorControls(ModuleEditorControls):
 
@@ -177,7 +182,8 @@ class AuroraModuleEditorControls(DynamicModuleEditorControls):
             DCItem(set(),      {MB_M}, [DCEffectAlterObjectRotation(True, "dx")])
         ]
         self.mousePressEvents: List[DCItem] = [
-            DCItem(set(), {MB_L}, [DCEffectSelectObjectAtMouse()])
+            DCItem(set(), {MB_L}, [DCEffectSelectObjectAtMouse()]),
+            DCItem(set(), {MB_R}, [DCEffectOpenContextMenu()])
         ]
         self.mouseReleaseEvents: List[DCItem] = []
         self.mouseScrollEvents: List[DCItem] = [
@@ -309,3 +315,11 @@ class DCEffectSelectObjectAtMouse(DCEffect):
 
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
         controls.selectObjectAtMouse()
+
+
+class DCEffectOpenContextMenu(DCEffect):
+    def __init__(self):
+        ...
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        controls.openContextMenu()

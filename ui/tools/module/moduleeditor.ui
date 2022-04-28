@@ -389,7 +389,7 @@ QCheckBox::indicator:checked:hover {
          <enum>Qt::NoFocus</enum>
         </property>
         <property name="contextMenuPolicy">
-         <enum>Qt::CustomContextMenu</enum>
+         <enum>Qt::NoContextMenu</enum>
         </property>
        </widget>
       </item>
