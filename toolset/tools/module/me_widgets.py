@@ -155,7 +155,9 @@ class ModuleRenderer(QOpenGLWidget):
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         self._keysDown.add(e.key())
+        self.parent().keyPressEvent(e)
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
+        self.parent().keyReleaseEvent(e)
     # endregion

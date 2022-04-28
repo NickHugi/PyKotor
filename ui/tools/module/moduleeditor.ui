@@ -386,7 +386,7 @@ QCheckBox::indicator:checked:hover {
          <bool>true</bool>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::NoFocus</enum>
+         <enum>Qt::StrongFocus</enum>
         </property>
         <property name="contextMenuPolicy">
          <enum>Qt::NoContextMenu</enum>

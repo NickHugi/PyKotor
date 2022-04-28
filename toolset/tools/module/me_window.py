@@ -1,4 +1,5 @@
 import math
+import os
 from abc import ABC, abstractmethod
 from typing import Optional, Set
 
@@ -30,7 +31,7 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from pykotor.gl.scene import Scene, RenderObject
 
-from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, AuroraModuleEditorControls
+from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
 
 
 class ModuleEditor(QMainWindow):
@@ -57,7 +58,10 @@ class ModuleEditor(QMainWindow):
         self.hideStores: bool = False
         self.hideCameras: bool = False
 
-        self.cameraControls: ModuleEditorControls = AuroraModuleEditorControls(self.ui.mainRenderer)
+        self.cameraControls: ModuleEditorControls = HolocronModuleEditorControls(self.ui.mainRenderer)
+        if os.path.exists("./controls/3d/aurora.json"):
+            self.cameraControls = DynamicModuleEditorControls(self.ui.mainRenderer)
+            self.cameraControls.load("./controls/3d/aurora.json")
 
         self.snapToWalkmesh: bool = True
 
@@ -371,12 +375,10 @@ class ModuleEditor(QMainWindow):
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
-        self.ui.mainRenderer.keyPressEvent(e)
         self.cameraControls.onKeyPressed(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
-        self.ui.mainRenderer.keyReleaseEvent(e)
         self.cameraControls.onKeyReleased(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
 

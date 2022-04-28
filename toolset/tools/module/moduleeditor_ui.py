@@ -293,7 +293,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.resourceTree)
         self.mainRenderer = ModuleRenderer(self.centralwidget)
         self.mainRenderer.setMouseTracking(True)
-        self.mainRenderer.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.mainRenderer.setFocusPolicy(QtCore.Qt.StrongFocus)
         self.mainRenderer.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         self.mainRenderer.setObjectName("mainRenderer")
         self.horizontalLayout.addWidget(self.mainRenderer)
