@@ -1,6 +1,6 @@
 {
 	"name": "Aurora",
-	"style": "FREE",
+	"style": "UNFOCUSED",
 
 	"variables": {
 		"panCamSensitivity": {
@@ -21,7 +21,7 @@
 		},
 		"rotateObjSensitivity": {
 			"type": "FLOAT",
-			"default": 0.005
+			"default": 0.8
 		}
 	},
 
