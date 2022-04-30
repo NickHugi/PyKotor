@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>390</width>
-    <height>425</height>
+    <width>360</width>
+    <height>447</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,6 +25,9 @@
      </item>
      <item row="0" column="1">
       <widget class="QLineEdit" name="resrefEdit">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="maxLength">
         <number>16</number>
        </property>
@@ -43,17 +46,55 @@
     </layout>
    </item>
    <item>
-    <widget class="QCheckBox" name="templateCheck">
-     <property name="text">
-      <string>Use existing template</string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QRadioButton" name="reuseResourceRadio">
+       <property name="text">
+        <string>Reuse Resource</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="copyResourceRadio">
+       <property name="text">
+        <string>Copy Resource</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="createResourceRadio">
+       <property name="text">
+        <string>Create Resource</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
-    <widget class="QListWidget" name="templateList"/>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string/>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QLineEdit" name="resourceFilter">
+        <property name="placeholderText">
+         <string>search...</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="resourceList">
+        <property name="sortingEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">

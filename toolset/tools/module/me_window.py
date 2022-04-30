@@ -1,18 +1,19 @@
 import math
 import os
 from abc import ABC, abstractmethod
+from contextlib import suppress
 from typing import Optional, Set
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent, QResizeEvent
+from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent, QResizeEvent, QColor
 from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
     QMessageBox, QDialog, QDialogButtonBox, QCheckBox
 from pykotor.common.geometry import Vector3, Vector2
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier, FileResource
 from pykotor.resource.formats.bwm import BWMFace
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -399,73 +400,106 @@ class InsertInstanceDialog(QDialog):
         self.ui = insert_instance_ui.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupSignals()
-        self._setupSelect()
-        self._setupList()
+        self._setupLocationSelect()
+        self._setupResourceList()
 
     def _setupSignals(self) -> None:
-        self.ui.templateCheck.toggled.connect(self.onTemplateCheckToggled)
+        self.ui.createResourceRadio.toggled.connect(self.onResourceRadioToggled)
+        self.ui.reuseResourceRadio.toggled.connect(self.onResourceRadioToggled)
+        self.ui.copyResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
 
-    def _setupSelect(self) -> None:
+    def _setupLocationSelect(self) -> None:
         self.ui.locationSelect.addItem(self._installation.override_path())
         for capsule in self._module.capsules():
             self.ui.locationSelect.addItem(capsule.path())
 
-    def _setupList(self) -> None:
+    def _setupResourceList(self) -> None:
         for resource in self._installation.chitin_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
+                item.setToolTip(resource.filepath())
                 item.setData(QtCore.Qt.UserRole, resource)
-                self.ui.templateList.addItem(item)
-        if self.ui.templateList.count() > 0:
-            self.ui.templateList.item(0).setSelected(True)
-        self.ui.templateCheck.setChecked(self.ui.templateList.count() > 0)
+                self.ui.resourceList.addItem(item)
+
+        for capsule in self._module.capsules():
+            for resource in [resource for resource in capsule if resource.restype() == self._restype]:
+                if resource.restype() == self._restype:
+                    item = QListWidgetItem(resource.resname())
+                    item.setToolTip(resource.filepath())
+                    item.setForeground(QColor(30, 30, 30))
+                    item.setData(QtCore.Qt.UserRole, resource)
+                    self.ui.resourceList.addItem(item)
+
+        if self.ui.resourceList.count() > 0:
+            self.ui.resourceList.item(0).setSelected(True)
 
     def accept(self) -> None:
         super().accept()
 
-        if self.ui.templateCheck.isChecked():
-            self.data = self.ui.templateList.selectedItems()[0].data(QtCore.Qt.UserRole).data()
-        elif self._restype == ResourceType.UTC:
-            self.data = bytes_utc(UTC())
-        elif self._restype == ResourceType.UTP:
-            self.data = bytes_utp(UTP())
-        elif self._restype == ResourceType.UTD:
-            self.data = bytes_utd(UTD())
-        elif self._restype == ResourceType.UTE:
-            self.data = bytes_ute(UTE())
-        elif self._restype == ResourceType.UTT:
-            self.data = bytes_utt(UTT())
-        elif self._restype == ResourceType.UTS:
-            self.data = bytes_uts(UTS())
-        elif self._restype == ResourceType.UTM:
-            self.data = bytes_utm(UTM())
-        elif self._restype == ResourceType.UTW:
-            self.data = bytes_utw(UTW())
-        else:
-            self.data = b''
+        new = True
+        resource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.UserRole)
 
-        self.resname = self.ui.resrefEdit.text()
-        self.filepath = self.ui.locationSelect.currentText()
+        if self.ui.reuseResourceRadio.isChecked():
+            new = False
+            self.resname = resource.resname()
+            self.filepath = resource.filepath()
+            self.data = resource.data()
+        elif self.ui.copyResourceRadio.isChecked():
+            self.resname = self.ui.resrefEdit.text()
+            self.data = resource.data()
+        elif self.ui.createResourceRadio.isChecked():
+            self.resname = self.ui.resrefEdit.text()
+            if self._restype == ResourceType.UTC:
+                self.data = bytes_utc(UTC())
+            elif self._restype == ResourceType.UTP:
+                self.data = bytes_utp(UTP())
+            elif self._restype == ResourceType.UTD:
+                self.data = bytes_utd(UTD())
+            elif self._restype == ResourceType.UTE:
+                self.data = bytes_ute(UTE())
+            elif self._restype == ResourceType.UTT:
+                self.data = bytes_utt(UTT())
+            elif self._restype == ResourceType.UTS:
+                self.data = bytes_uts(UTS())
+            elif self._restype == ResourceType.UTM:
+                self.data = bytes_utm(UTM())
+            elif self._restype == ResourceType.UTW:
+                self.data = bytes_utw(UTW())
+            else:
+                self.data = b''
 
-        if self.filepath.endswith(".erf") or self.filepath.endswith(".mod"):
-            erf = read_erf(self.filepath)
-            erf.set(self.resname, self._restype, self.data)
-            write_erf(erf, self.filepath)
-        elif self.filepath.endswith(".rim"):
-            rim = read_rim(self.filepath)
-            rim.set(self.resname, self._restype, self.data)
-            write_rim(rim, self.filepath)
-        else:
-            self.filepath = "{}/{}.{}".format(self.filepath, self.resname, self._restype.extension)
-            BinaryWriter.dump(self.filepath, self.data)
+        if new:
+            if self.filepath.endswith(".erf") or self.filepath.endswith(".mod"):
+                erf = read_erf(self.filepath)
+                erf.set(self.resname, self._restype, self.data)
+                write_erf(erf, self.filepath)
+            elif self.filepath.endswith(".rim"):
+                rim = read_rim(self.filepath)
+                rim.set(self.resname, self._restype, self.data)
+                write_rim(rim, self.filepath)
+            else:
+                self.filepath = "{}/{}.{}".format(self.filepath, self.resname, self._restype.extension)
+                BinaryWriter.dump(self.filepath, self.data)
 
         self._module.add_locations(self.resname, self._restype, [self.filepath])
 
-    def onTemplateCheckToggled(self, checked: bool) -> None:
-        self.ui.templateList.setEnabled(checked)
+    def onResourceRadioToggled(self) -> None:
+        self.ui.resourceList.setEnabled(not self.ui.createResourceRadio.isChecked())
+        self.ui.resourceFilter.setEnabled(not self.ui.createResourceRadio.isChecked())
+        self.ui.resrefEdit.setEnabled(not self.ui.reuseResourceRadio.isChecked())
+
+        if self.ui.reuseResourceRadio.isChecked():
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)
+
+        if self.ui.copyResourceRadio.isChecked():
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
+
+        if self.ui.createResourceRadio.isChecked():
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(self.ui.resrefEdit.text()))
 
     def onResRefEdited(self, text: str) -> None:
-        valid = self._module.resource(text, self._restype) is None and text != ""
-        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(valid)
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(text))
 
+    def isValidResref(self, text: str) -> bool:
+        return self._module.resource(text, self._restype) is None and text != ""
