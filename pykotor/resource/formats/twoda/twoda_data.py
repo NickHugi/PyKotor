@@ -163,6 +163,15 @@ class TwoDA:
         """
         return TwoDARow(self.get_label(row_index), self._rows[row_index])
 
+    def find_row(
+            self,
+            row_label: str
+    ) -> Optional[TwoDARow]:
+        for row in self:
+            if row.label() == row_label:
+                return row
+        return None
+
     def add_row(
             self,
             row_label: Optional[str] = None,
@@ -306,6 +315,13 @@ class TwoDARow:
             The label for the row.
         """
         return self._row_label
+
+    def update_values(
+            self,
+            values: Dict[str, str]
+    ):
+        for column, cell in values.items():
+            self.set_string(column, cell)
 
     def get_string(
             self,
