@@ -432,7 +432,7 @@ class Scene:
                 mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules())
                 if mdl_search and mdx_search:
                     mdl_data = mdl_search.data
-                    mdx_data = mdl_search.data
+                    mdx_data = mdx_search.data
                 else:
                     mdl_data = EMPTY_MDL_DATA
                     mdx_data = EMPTY_MDX_DATA
@@ -553,8 +553,8 @@ class UnfocusedCamera:
         unfocused.x = camera.x
         unfocused.y = camera.y
         unfocused.z = camera.z
-        unfocused.pitch = camera.pitch,
-        unfocused.yaw = camera.yaw
+        unfocused.pitch = camera.pitch
+        unfocused.yaw = camera.yaw + math.pi/2
         unfocused.aspect = camera.aspect
         unfocused.fov = camera.fov
         return unfocused
@@ -569,7 +569,7 @@ class UnfocusedCamera:
         return view
 
     def projection(self) -> mat4:
-        return glm.perspective(90, self.aspect, 0.1, 5000)
+        return glm.perspective(self.fov, self.aspect, 0.1, 5000)
 
     def translate(self, translation: vec3) -> None:
         self.x += translation.x
@@ -613,7 +613,7 @@ class FocusedCamera:
         self.z: float = 0.5
         self.pitch: float = math.pi / 2
         self.yaw: float = 0.0
-        self.distance: float = 2.0
+        self.distance: float = 10.0
         self.fov: float = 90.0
         self.aspect: float = 16 / 9
 
@@ -623,23 +623,23 @@ class FocusedCamera:
         focused.x = camera.x
         focused.y = camera.y
         focused.z = camera.z
-        focused.pitch = camera.pitch,
-        focused.yaw = camera.yaw
+        focused.pitch = camera.pitch
+        focused.yaw = camera.yaw - math.pi/2
         focused.aspect = camera.aspect
         focused.fov = camera.fov
         return focused
 
     def view(self) -> mat4:
-        eye_x = self.x + math.cos(self.yaw) * math.sin(self.pitch)
-        eye_y = self.y + math.sin(self.yaw) * math.sin(self.pitch)
-        eye_z = self.z + math.cos(self.pitch)
+        eye_x = self.x + math.cos(self.yaw) * math.sin(self.pitch) * 10
+        eye_y = self.y + math.sin(self.yaw) * math.sin(self.pitch) * 10
+        eye_z = self.z + math.cos(self.pitch) * 10
 
         eye = vec3(eye_x, eye_y, eye_z)
         centre = vec3(self.x, self.y, self.z)
         return glm.lookAt(eye, centre, vec3(0, 0, 1))
 
     def projection(self) -> mat4:
-        return glm.perspective(90, 16 / 9, 0.1, 5000)
+        return glm.perspective(self.fov, self.aspect, 0.1, 5000)
 
     def translate(self, translation: vec3) -> None:
         self.x += translation.x
@@ -656,16 +656,16 @@ class FocusedCamera:
             self.pitch = 0.001
 
     def forward(self, ignoreZ: bool = True) -> vec3:
-        eye_x = -math.cos(self.yaw) * math.sin(self.pitch)
-        eye_y = -math.sin(self.yaw) * math.sin(self.pitch)
-        eye_z = 0 if ignoreZ else math.sin(self.pitch)
-        return glm.normalize(vec3(eye_x, eye_y, eye_z))
+        eye_x = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
+        eye_y = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
+        eye_z = 0 if ignoreZ else math.sin(self.pitch - math.pi / 2)
+        return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
     def sideward(self, ignoreZ: bool = True) -> vec3:
-        eye_x = math.sin(self.yaw) * math.sin(self.pitch)
-        eye_y = -math.cos(self.yaw) * math.sin(self.pitch)
-        eye_z = 0 if ignoreZ else math.sin(self.pitch)
-        return glm.normalize(vec3(eye_x, eye_y, eye_z))
+        eye_x = math.cos(-self.yaw) * math.cos(self.pitch - math.pi / 2)
+        eye_y = math.sin(-self.yaw) * math.cos(self.pitch - math.pi / 2)
+        eye_z = 0 if ignoreZ else math.sin(self.pitch - math.pi / 2)
+        return glm.normalize(-vec3(eye_y, eye_x, eye_z))
 
     def upward(self, ignoreXY: bool = True) -> vec3:
         if not ignoreXY:
