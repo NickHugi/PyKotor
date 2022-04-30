@@ -3,21 +3,15 @@ from __future__ import annotations
 import json
 import math
 from abc import ABC, abstractmethod
-from enum import IntEnum
-from typing import Set, List, Union, Callable, Any, Optional
+from typing import Set, List, Union, Any, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
 from pykotor.common.geometry import Vector2, Vector3
-from pykotor.gl.scene import Scene
 from pykotor.resource.generics.git import GITInstance
 
 from tools.module.me_widgets import ModuleRenderer
-
-MB_L = QtCore.Qt.LeftButton
-MB_M = QtCore.Qt.MiddleButton
-MB_R = QtCore.Qt.RightButton
 
 
 def getMouseCode(string: str):
@@ -41,25 +35,6 @@ def getKeyCode(string: str):
         return KEY_MAP[string]
     else:
         return QKeySequence(string)[0]
-
-
-KEY_CTRL = QtCore.Qt.Key_Control
-KEY_Z = QtCore.Qt.Key_Z
-KEY_Q = QtCore.Qt.Key_Q
-KEY_W = QtCore.Qt.Key_W
-KEY_A = QtCore.Qt.Key_A
-KEY_S = QtCore.Qt.Key_S
-KEY_D = QtCore.Qt.Key_D
-KEY_0 = QtCore.Qt.Key_0
-KEY_1 = QtCore.Qt.Key_1
-KEY_2 = QtCore.Qt.Key_2
-KEY_3 = QtCore.Qt.Key_3
-KEY_4 = QtCore.Qt.Key_4
-KEY_5 = QtCore.Qt.Key_5
-KEY_6 = QtCore.Qt.Key_6
-KEY_7 = QtCore.Qt.Key_7
-KEY_8 = QtCore.Qt.Key_8
-KEY_9 = QtCore.Qt.Key_9
 
 
 class ModuleEditorControls(ABC):
@@ -231,24 +206,8 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                 for effectJSON in effectsJSON:
                     args = effectsJSON[effectJSON]
 
-                    if effectJSON == "alterCameraPosition":
-                        effect = DCEffectAlterCameraPosition(*args)
-                    elif effectJSON == "setCameraPosition":
-                        effect = DCEffectSetCameraPosition(*args)
-                    elif effectJSON == "alterCameraRotation":
-                        effect = DCEffectAlterCameraRotation(*args)
-                    elif effectJSON == "setCameraRotation":
-                        effect = DCEffectSetCameraRotation(*args)
-                    elif effectJSON == "alterObjectPosition":
-                        effect = DCEffectAlterObjectPosition(*args)
-                    elif effectJSON == "alterObjectRotation":
-                        effect = DCEffectAlterObjectRotation(*args)
-                    elif effectJSON == "selectObjectAtMouse":
-                        effect = DCEffectSelectObjectAtMouse()
-                    elif effectJSON == "openContextMenu":
-                        effect = DCEffectOpenContextMenu()
-                    elif effectJSON == "setVariable":
-                        effect = DCEffectSetVariable(*args)
+                    if effectJSON in DC_EFFECT_MAP.keys():
+                        effect = DC_EFFECT_MAP[effectJSON](*args)
                     else:
                         raise ValueError("Unknown effect '{}'.".format(effectJSON))
 
@@ -307,18 +266,18 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
         ]
 
         self.mouseMoveEvents: List[DCItem] = [
-            DCItem({KEY_CTRL}, {MB_L}, [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)]),
-            DCItem({KEY_CTRL}, {MB_M}, [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")]),
-            DCItem(set(),      {MB_L}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
-            DCItem(set(),      {MB_M}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")])
+            DCItem({getKeyCode("CTRL")}, {getMouseCode("LEFT")}, [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)]),
+            DCItem({getKeyCode("CTRL")}, {getMouseCode("MIDDLE")}, [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")]),
+            DCItem(set(),      {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
+            DCItem(set(),      {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")])
         ]
         self.mousePressEvents: List[DCItem] = [
-            DCItem(set(), {MB_L}, [DCEffectSelectObjectAtMouse()]),
-            DCItem(set(), {MB_R}, [DCEffectOpenContextMenu()])
+            DCItem(set(), {getMouseCode("LEFT")}, [DCEffectSelectObjectAtMouse()]),
+            DCItem(set(), {getMouseCode("RIGHT")}, [DCEffectOpenContextMenu()])
         ]
         self.mouseReleaseEvents: List[DCItem] = []
         self.mouseScrollEvents: List[DCItem] = [
-            DCItem({KEY_CTRL}, set(), [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")])
+            DCItem({getKeyCode("CTRL")}, set(), [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")])
         ]
         self.keyPressEvents: List[DCItem] = [
             DCItem({getKeyCode("1")}, set(), [DCEffectSetCameraRotation(0, "crp")]),
@@ -567,3 +526,16 @@ class DCEffectSetVariable(DCEffect):
         controls.setValue(self.name, self.value)
 
 # endregion
+
+
+DC_EFFECT_MAP = {
+    "alterCameraPosition": DCEffectAlterCameraPosition,
+    "alterCameraRotation": DCEffectAlterCameraRotation,
+    "setCameraPosition": DCEffectSetCameraPosition,
+    "setCameraRotation": DCEffectSetCameraRotation,
+    "alterObjectPosition": DCEffectAlterObjectPosition,
+    "alterObjectRotation": DCEffectAlterObjectRotation,
+    "selectObjectAtMouse": DCEffectSelectObjectAtMouse,
+    "openContextMenu": DCEffectOpenContextMenu,
+    "setVariable": DCEffectSetVariable
+}
