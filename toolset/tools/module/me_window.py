@@ -372,6 +372,7 @@ class ModuleEditor(QMainWindow):
             menu.addAction("Remove").triggered.connect(self.removeSelectedInstances)
 
         menu.popup(self.ui.mainRenderer.mapToGlobal(point))
+        menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
