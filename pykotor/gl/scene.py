@@ -52,7 +52,7 @@ class Scene:
         self.objects: List[RenderObject] = []
         self.selection: List[RenderObject] = []
         self.module: Module = module
-        self.camera: Camera = Camera()
+        self.camera: UnfocusedCamera = UnfocusedCamera()
 
         self.textures["NULL"] = Texture.from_color()
 
@@ -537,15 +537,27 @@ class RenderObject:
         return self._boundary
 
 
-class Camera:
+class UnfocusedCamera:
     def __init__(self):
-        self.x: float = 40.0
-        self.y: float = 130.0
-        self.z: float = 0.5
-        self.pitch: float = math.pi /2
+        self.x: float = 0.0
+        self.y: float = 0.0
+        self.z: float = 0.0
+        self.pitch: float = math.pi / 2
         self.yaw: float = 0.0
         self.fov: float = 90.0
         self.aspect: float = 16 / 9
+
+    @staticmethod
+    def from_focused(camera: FocusedCamera) -> UnfocusedCamera:
+        unfocused = UnfocusedCamera()
+        unfocused.x = camera.x
+        unfocused.y = camera.y
+        unfocused.z = camera.z
+        unfocused.pitch = camera.pitch,
+        unfocused.yaw = camera.yaw
+        unfocused.aspect = camera.aspect
+        unfocused.fov = camera.fov
+        return unfocused
 
     def view(self) -> mat4:
         up = vec3(0, 0, 1)
@@ -604,6 +616,18 @@ class FocusedCamera:
         self.distance: float = 2.0
         self.fov: float = 90.0
         self.aspect: float = 16 / 9
+
+    @staticmethod
+    def from_unfocused(camera: UnfocusedCamera) -> FocusedCamera:
+        focused = FocusedCamera()
+        focused.x = camera.x
+        focused.y = camera.y
+        focused.z = camera.z
+        focused.pitch = camera.pitch,
+        focused.yaw = camera.yaw
+        focused.aspect = camera.aspect
+        focused.fov = camera.fov
+        return focused
 
     def view(self) -> mat4:
         eye_x = self.x + math.cos(self.yaw) * math.sin(self.pitch)
