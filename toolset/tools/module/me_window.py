@@ -408,6 +408,7 @@ class InsertInstanceDialog(QDialog):
         self.ui.reuseResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.copyResourceRadio.toggled.connect(self.onResourceRadioToggled)
         self.ui.resrefEdit.textEdited.connect(self.onResRefEdited)
+        self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
 
     def _setupLocationSelect(self) -> None:
         self.ui.locationSelect.addItem(self._installation.override_path())
@@ -500,6 +501,12 @@ class InsertInstanceDialog(QDialog):
 
     def onResRefEdited(self, text: str) -> None:
         self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(self.isValidResref(text))
+
+    def onResourceFilterChanged(self) -> None:
+        text = self.ui.resourceFilter.text()
+        for row in range(self.ui.resourceList.count()):
+            item = self.ui.resourceList.item(row)
+            item.setHidden(text not in item.text())
 
     def isValidResref(self, text: str) -> bool:
         return self._module.resource(text, self._restype) is None and text != ""
