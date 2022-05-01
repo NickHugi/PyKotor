@@ -105,14 +105,15 @@ class ModuleEditor(QMainWindow):
     def _setupControlsMenu(self) -> None:
         self.ui.menuControls.clear()
         folder = "./controls/3d/"
-        for path in os.listdir(folder):
-            controls = DynamicModuleEditorControls(self.ui.mainRenderer)
-            controls.load(folder + path)
-            self.customControls[path] = controls
+        if os.path.exists(folder):
+            for path in [path for path in os.listdir(folder) if path.endswith(".json")]:
+                controls = DynamicModuleEditorControls(self.ui.mainRenderer)
+                controls.load(folder + path)
+                self.customControls[path] = controls
 
-            action = QAction(controls.name, self)
-            action.triggered.connect(lambda _, c=controls: self.activateCustomControls(c))
-            self.ui.menuControls.addAction(action)
+                action = QAction(controls.name, self)
+                action.triggered.connect(lambda _, c=controls: self.activateCustomControls(c))
+                self.ui.menuControls.addAction(action)
 
     def _refreshWindowTitle(self) -> None:
         title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
