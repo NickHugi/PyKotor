@@ -9,6 +9,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
 from pykotor.common.geometry import Vector2, Vector3
+from pykotor.gl.scene import FocusedCamera, UnfocusedCamera
 from pykotor.resource.generics.git import GITInstance
 
 from tools.module.me_widgets import ModuleRenderer
@@ -40,6 +41,7 @@ def getKeyCode(string: str):
 class ModuleEditorControls(ABC):
     def __init__(self, renderer: ModuleRenderer):
         self.renderer: ModuleRenderer = renderer
+        self.cameraStyle: str = "UNFOCUSED"
         self.variables: List[DCVariable] = []
 
     @abstractmethod
@@ -114,7 +116,7 @@ class ModuleEditorControls(ABC):
 
     def alterCameraRotation(self, yaw: float, pitch: float) -> None:
         self.renderer.scene.camera.yaw += yaw
-        self.renderer.scene.camera.pitch += pitch
+        self.renderer.scene.camera.pitch = min(math.pi-0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
 
     def setCameraRotation(self, yaw: float, pitch: float) -> None:
         self.renderer.scene.camera.yaw = yaw
@@ -127,10 +129,26 @@ class ModuleEditorControls(ABC):
         x, y = self.renderer.cursor().pos().x(), self.renderer.cursor().pos().y()
         self.renderer.customContextMenuRequested.emit(self.renderer.mapFromGlobal(QPoint(x, y)))
 
+    def unfocusCamera(self) -> None:
+        if isinstance(self.renderer.scene.camera, FocusedCamera):
+            self.cameraStyle = "UNFOCUSED"
+            self.renderer.scene.camera = UnfocusedCamera.from_focused(self.renderer.scene.camera)
+            self.renderer.scene.camera.aspect = self.renderer.width() / self.renderer.height()
+
+    def focusCamera(self) -> None:
+        if isinstance(self.renderer.scene.camera, UnfocusedCamera):
+            self.cameraStyle = "FOCUSED"
+            self.renderer.scene.camera = FocusedCamera.from_unfocused(self.renderer.scene.camera)
+            self.renderer.scene.camera.aspect = self.renderer.width() / self.renderer.height()
+
+    def alterCameraZoom(self, amount: float):
+        if isinstance(self.renderer.scene.camera, FocusedCamera):
+            self.renderer.scene.camera.distance = max(0, self.renderer.scene.camera.distance + amount)
+
 
 class DynamicModuleEditorControls(ModuleEditorControls):
 
-    def __init__(self, renderer: ModuleRenderer):
+    def __init__(self, renderer: ModuleRenderer, filepath: str = None):
         super().__init__(renderer)
 
         self.name: str = ""
@@ -142,6 +160,9 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyPressEvents: List[DCItem] = []
         self.keyReleaseEvents: List[DCItem] = []
         # self.keyHoldEvents: List[DCItem] = []
+
+        if filepath is not None:
+            self.load(filepath)
 
     def load(self, filepath: str) -> None:
         self.variables: List[DCVariable] = []
@@ -156,6 +177,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         rootJSON = json.load(f)
 
         self.name = rootJSON["name"]
+        self.cameraStyle = rootJSON["style"]
 
         for name, variableJSON in rootJSON["variables"].items():
             data_type = variableJSON["type"]
@@ -191,15 +213,21 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             else:
                 raise ValueError("Unknown event '{}'.".format(controlJSON["event"]))
 
-            keys = set()
-            for keyJSON in controlJSON["keys"]:
-                key = keyJSON if isinstance(keyJSON, int) else getKeyCode(keyJSON)
-                keys.add(key)
+            if controlJSON["keys"] is None:
+                keys = None
+            else:
+                keys = set()
+                for keyJSON in controlJSON["keys"]:
+                    key = keyJSON if isinstance(keyJSON, int) else getKeyCode(keyJSON)
+                    keys.add(key)
 
-            mouse = set()
-            for mouseJSON in controlJSON["mouse"]:
-                key = mouseJSON if isinstance(mouseJSON, int) else getMouseCode(mouseJSON)
-                mouse.add(key)
+            if controlJSON["mouse"] is None:
+                mouse = None
+            else:
+                mouse = set()
+                for mouseJSON in controlJSON["mouse"]:
+                    key = mouseJSON if isinstance(mouseJSON, int) else getMouseCode(mouseJSON)
+                    mouse.add(key)
 
             effects = []
             for effectsJSON in controlJSON["effects"]:
@@ -207,7 +235,10 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                     args = effectsJSON[effectJSON]
 
                     if effectJSON in DC_EFFECT_MAP.keys():
-                        effect = DC_EFFECT_MAP[effectJSON](*args)
+                        try:
+                            effect = DC_EFFECT_MAP[effectJSON](*args)
+                        except TypeError:
+                            raise ValueError("Invalid number of arguments for '{}'.".format(effectJSON))
                     else:
                         raise ValueError("Unknown effect '{}'.".format(effectJSON))
 
@@ -216,38 +247,44 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             array.append(DCItem(keys, mouse, effects))
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        # TODO: This is a hacky way of making sure it is the right camera type
+        if isinstance(self.renderer.scene.camera, FocusedCamera) and self.cameraStyle == "UNFOCUSED":
+            self.unfocusCamera()
+        if isinstance(self.renderer.scene.camera, UnfocusedCamera) and self.cameraStyle == "FOCUSED":
+            self.focusCamera()
+
         for event in self.mouseMoveEvents:
-            if event.mouse == buttons and event.keys == keys:
+            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.mouseScrollEvents:
-            if event.mouse == buttons and event.keys == keys:
+            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.mousePressEvents:
-            if event.mouse == buttons and event.keys == keys:
+            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
     def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.mouseReleaseEvents:
-            if event.mouse == buttons and event.keys == keys:
+            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
     def onKeyPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.keyPressEvents:
-            if event.mouse == buttons and event.keys == keys:
+            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
     def onKeyReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.keyReleaseEvents:
-            if event.mouse == buttons and event.keys == keys:
+            if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
@@ -385,26 +422,36 @@ class DCEffect(ABC):
     @staticmethod
     def determineFloat(value: Union[float, str], controls: ModuleEditorControls, dx: float, dy: float) -> float:
         if isinstance(value, str):
+            output = 0.0
+            modifier = 1.0
+            if value.startswith("-"):
+                modifier = -1.0
+                value = value[1:]
+
             if value == "dx":
-                return dx
+                output = dx
             elif value == "dy":
-                return dy
-            elif value == "cx":
+                output = dy
+            elif value == "cpdx":
                 forward = dy * controls.renderer.scene.camera.forward()
                 sideward = dx * controls.renderer.scene.camera.sideward()
-                return forward.x + sideward.x
-            elif value == "cy":
+                output = forward.x + sideward.x
+            elif value == "cpdy":
                 forward = dy * controls.renderer.scene.camera.forward()
                 sideward = dx * controls.renderer.scene.camera.sideward()
-                return forward.y + sideward.y
-            elif value == "cz":
-                ...
+                output = forward.y + sideward.y
+            elif value == "cpx":
+                forward = controls.renderer.scene.camera.forward()
+                output = forward.x
+            elif value == "cpy":
+                forward = controls.renderer.scene.camera.forward()
+                output = forward.y
             elif value == "cry":
-                return controls.renderer.scene.camera.yaw
+                output = controls.renderer.scene.camera.yaw
             elif value == "crp":
-                return controls.renderer.scene.camera.pitch
-            else:
-                return 0
+                output = controls.renderer.scene.camera.pitch
+
+            return output * modifier
         elif isinstance(value, float) or isinstance(value, int):
             return value
         else:
@@ -469,6 +516,18 @@ class DCEffectSetCameraRotation(DCEffect):
         controls.setCameraRotation(yaw, pitch)
 
 
+# alterCameraZoom
+class DCEffectAlterCameraZoom(DCEffect):
+    def __init__(self, sensitivityVar: Optional[str], amount: Union[float, str]):
+        self.sensitivityVar: Optional[str] = sensitivityVar
+        self.amount: Union[float, str] = amount
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        amount = super().determineFloat(self.amount, controls, dx, dy)
+        sensitivity = controls.getValue(self.sensitivityVar) if self.sensitivityVar is not None else 1.0
+        controls.alterCameraZoom(amount * sensitivity)
+
+
 # alterObjectPosition
 class DCEffectAlterObjectPosition(DCEffect):
     def __init__(self, sensitivityVar: Optional[str], snapToWalkmesh: bool, x: Union[float, str], y: Union[float, str], z: Union[float, str]):
@@ -525,17 +584,31 @@ class DCEffectSetVariable(DCEffect):
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
         controls.setValue(self.name, self.value)
 
+
+# changeCameraFocus
+class DCEffectChangeCameraFocus(DCEffect):
+    def __init__(self, focus: Optional[bool]):
+        self.focus: Optional[bool] = focus
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        if (self.focus is True) or (self.focus is None and controls.cameraStyle == "UNFOCUSED"):
+            controls.focusCamera()
+        elif (self.focus is False) or (self.focus is None and controls.cameraStyle == "FOCUSED"):
+            controls.unfocusCamera()
+
 # endregion
 
 
 DC_EFFECT_MAP = {
     "alterCameraPosition": DCEffectAlterCameraPosition,
     "alterCameraRotation": DCEffectAlterCameraRotation,
+    "alterCameraZoom": DCEffectAlterCameraZoom,
     "setCameraPosition": DCEffectSetCameraPosition,
     "setCameraRotation": DCEffectSetCameraRotation,
     "alterObjectPosition": DCEffectAlterObjectPosition,
     "alterObjectRotation": DCEffectAlterObjectRotation,
     "selectObjectAtMouse": DCEffectSelectObjectAtMouse,
     "openContextMenu": DCEffectOpenContextMenu,
-    "setVariable": DCEffectSetVariable
+    "setVariable": DCEffectSetVariable,
+    "changeCameraFocus": DCEffectChangeCameraFocus
 }
