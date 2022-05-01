@@ -10,9 +10,10 @@
 from abc import ABC
 from copy import copy
 from enum import IntEnum
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple, Any
 
 from pykotor.resource.formats.twoda import TwoDA, TwoDARow
+from pykotor.tslpatcher.memory import PatcherMemory
 
 
 class CriticalException(Exception):
@@ -54,20 +55,49 @@ class Target:
 
 
 class Modifications2DA:
-    def __init__(self, twoda: TwoDA):
+    def __init__(self, twoda: TwoDA, memory: PatcherMemory):
         self.twoda: TwoDA = twoda
+        self.memory: PatcherMemory = memory
         self.rows: List[Manipulation2DA] = []
 
     def apply(self) -> None:
         for row in self.rows:
-            row.apply(self.twoda)
+            row.apply(self.twoda, self.memory)
 
 
 class Manipulation2DA(ABC):
     def __init__(self):
         ...
 
-    def apply(self, twoda: TwoDA):
+    def _split_modifiers(self, modifiers: Dict[str, str]) -> Tuple[Dict[str, str], Dict[int, str], Optional[str], Optional[str]]:
+        """
+        This will split the modifiers dictionary into a tuple containing three values: The dictionary mapping column
+        headers to new values, the 2DA memory values if not available, and the row label or None.
+        """
+        new_values = {}
+        memory_values = {}
+        row_label = None
+        new_row_label = None
+
+        for header, value in modifiers.items():
+            if header.startswith("2DAMEMORY"):
+                memory_index = int(header.replace("2DAMEMORY", ""))
+                memory_values[memory_index] = value
+            elif header == "RowLabel":
+                row_label = value
+            elif header == "NewRowLabel":
+                new_row_label = value
+            else:
+                new_values[header] = value
+
+        return new_values, memory_values, row_label, new_row_label
+
+    def _check_memory(self, value: Any, memory: PatcherMemory) -> Any:
+        if value.startswith("2DAMEMORY"):
+            value = int(value.replace("2DAMEMORY", ""))
+        return value
+
+    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         ...
 
 
@@ -89,14 +119,24 @@ class ChangeRow2DA(Manipulation2DA):
 
         self._row: Optional[TwoDARow] = None
 
-    def apply(self, twoda: TwoDA):
+    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         source_row = self.target.search(twoda)
 
         if source_row is None:
-            raise ValueError()
+            raise WarningException()
 
-        source_row.update_values(self.modifiers)
+        new_values, memory_values, row_label, new_row_label = self._split_modifiers(self.modifiers)
+        source_row.update_values(new_values)
         self._row = source_row
+
+        for index, value in memory_values.items():
+            if value == "RowIndex":
+                value = twoda.row_index(source_row)
+            elif value == "RowLabel":
+                value = source_row.label()
+            elif value in twoda.get_headers():
+                value = source_row.get_string(value)
+            memory.memory_2da[index] = value
 
 
 class AddRow2DA(Manipulation2DA):
@@ -113,15 +153,14 @@ class AddRow2DA(Manipulation2DA):
 
         self._row: Optional[TwoDARow] = None
 
-    def apply(self, twoda: TwoDA):
-        modifiers = copy(self.modifiers)
-        row_label = str(twoda.get_height())
-        if "RowLabel" in modifiers:
-            row_label = modifiers["RowLabel"]
-            modifiers.pop("RowLabel")
-
-        index = twoda.add_row(row_label, modifiers)
+    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+        new_values, memory_values, row_label, new_row_label = self._split_modifiers(self.modifiers)
+        index = twoda.add_row(row_label, new_values)
         self._row = twoda.get_row(index)
+
+        for index, value in memory_values.items():
+            value = index if value == "RowIndex" else value
+            memory.memory_2da[index] = value
 
 
 class CopyRow2DA(Manipulation2DA):
@@ -144,7 +183,7 @@ class CopyRow2DA(Manipulation2DA):
 
         self._row: Optional[TwoDARow] = None
 
-    def apply(self, twoda: TwoDA):
+    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         source_row = self.target.search(twoda)
 
         #if self.exclusive_column is not None and self.exclusive_column not in twoda:
@@ -159,20 +198,29 @@ class CopyRow2DA(Manipulation2DA):
 
         # Determine the the row label for the copied row.
         # Has no effect if it updates an existing row instead.
-        modifiers = copy(self.modifiers)
-        row_label = str(twoda.get_height())
-        if "NewRowLabel" in modifiers:
-            row_label = modifiers["NewRowLabel"]
-            modifiers.pop("NewRewLabel")
+        new_values, memory_values, row_label, new_row_label = self._split_modifiers(self.modifiers)
+        if row_label is None:
+            row_label = str(twoda.get_height())
+        if new_row_label is not None:
+            row_label = new_row_label
 
         if target_row is not None:
             # If the row already exists (based on exclusive_column) then we update the cells
-            target_row.update_values(modifiers)
+            target_row.update_values(new_values)
             self._row = target_row
         else:
             # Otherwise we add the a new row instead.
-            index = twoda.add_row(row_label, modifiers)
+            index = twoda.add_row(row_label, new_values)
             self._row = twoda.get_row(index)
+
+        for index, value in memory_values.items():
+            if value == "RowIndex":
+                value = twoda.row_index(source_row)
+            elif value == "RowLabel":
+                value = source_row.label()
+            elif value in twoda.get_headers():
+                value = source_row.get_string(value)
+            memory.memory_2da[index] = value
 
 
 class AddColumn2DA(Manipulation2DA):
@@ -195,15 +243,29 @@ class AddColumn2DA(Manipulation2DA):
         self.default: str = ""
         self.index_insert: Dict[int, str] = {}
         self.label_insert: Dict[str, str] = {}
+        self.memory_saves: Dict[int, str] = {}
 
-    def apply(self, twoda: TwoDA) -> None:
+    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         twoda.add_column(self.header)
         for row in twoda:
             row.set_string(self.header, self.default)
 
         for row_index, value in self.index_insert.items():
+            value = self._check_memory(value, memory)
             twoda.get_row(row_index).set_string(self.header, value)
 
         for row_label, value in self.label_insert.items():
+            value = self._check_memory(value, memory)
             twoda.find_row(row_label).set_string(self.header, value)
 
+        # TODO: Not quite sure I understood section 3.3.2.4.1 on what should actually happen here
+        for memory_index, value in self.memory_saves.items():
+            if value.startswith("I"):
+                # TODO: Exception handling
+                cell = twoda.get_row(int(value[1:])).get_string(self.header)
+                memory.memory_2da[memory_index] = cell
+            elif value.startswith("L"):
+                cell = twoda.find_row(value[1:]).get_string(self.header)
+                memory.memory_2da[memory_index] = cell
+            else:
+                raise WarningException()

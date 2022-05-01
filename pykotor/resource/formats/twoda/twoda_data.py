@@ -172,6 +172,16 @@ class TwoDA:
                 return row
         return None
 
+    def row_index(
+            self,
+            row: TwoDARow
+    ) -> Optional[int]:
+        for i, searching in enumerate(self):
+            if searching == row:
+                return i
+        else:
+            return None
+
     def add_row(
             self,
             row_label: Optional[str] = None,
