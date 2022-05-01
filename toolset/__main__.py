@@ -1,9 +1,11 @@
 import sys
+import os
 sys.path.append('.')
 sys.path.append('..')
+if os.path.exists("./toolset") and getattr(sys, 'frozen', False) == False:
+    os.chdir("./toolset")
 
 import multiprocessing
-import os
 import traceback
 from types import TracebackType
 
