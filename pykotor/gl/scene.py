@@ -348,6 +348,9 @@ class Scene:
         glClearColor(1.0, 1.0, 1.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        if self.backface_culling:
+            glEnable(GL_CULL_FACE)
+
         self.picker_shader.use()
         self.picker_shader.set_matrix4("view", self.camera.view())
         self.picker_shader.set_matrix4("projection", self.camera.projection())
