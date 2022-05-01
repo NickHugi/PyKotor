@@ -309,14 +309,23 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
+        self.menuView = QtWidgets.QMenu(self.menubar)
+        self.menuView.setObjectName("menuView")
+        self.menuControls = QtWidgets.QMenu(self.menuView)
+        self.menuControls.setObjectName("menuControls")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.actionSave = QtWidgets.QAction(MainWindow)
         self.actionSave.setObjectName("actionSave")
+        self.actiona = QtWidgets.QAction(MainWindow)
+        self.actiona.setObjectName("actiona")
         self.menuFile.addAction(self.actionSave)
+        self.menuControls.addAction(self.actiona)
+        self.menuView.addAction(self.menuControls.menuAction())
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuView.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -325,6 +334,9 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
+        self.menuView.setTitle(_translate("MainWindow", "View"))
+        self.menuControls.setTitle(_translate("MainWindow", "Controls"))
         self.actionSave.setText(_translate("MainWindow", "Save GIT"))
+        self.actiona.setText(_translate("MainWindow", "Placeholdewr"))
 from toolset.tools.module.me_widgets import ModuleRenderer
 import resources_rc

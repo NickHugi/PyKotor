@@ -17,6 +17,9 @@ from data.installation import HTInstallation
 
 
 class ModuleRenderer(QOpenGLWidget):
+    sceneInitalized = QtCore.pyqtSignal()
+    """Signal emitted when scene has been initialized."""
+
     mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
@@ -80,6 +83,7 @@ class ModuleRenderer(QOpenGLWidget):
         if not self._init:
             self._init = True
             self.scene = Scene(self._module, self._installation)
+            self.sceneInitalized.emit()
 
         if self.doSelect:
             self.doSelect = False

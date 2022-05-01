@@ -2,7 +2,7 @@ import math
 import os
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from typing import Optional, Set
+from typing import Optional, Set, List, Dict
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
@@ -30,7 +30,7 @@ from pykotor.resource.generics.utw import bytes_utw, UTW
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from pykotor.gl.scene import Scene, RenderObject
+from pykotor.gl.scene import Scene, RenderObject, FocusedCamera
 
 from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
 
@@ -41,14 +41,6 @@ class ModuleEditor(QMainWindow):
 
         self._installation: HTInstallation = installation
         self._module: Module = module
-
-        from tools.module import moduleeditor_ui
-        self.ui = moduleeditor_ui.Ui_MainWindow()
-        self.ui.setupUi(self)
-        self._setupSignals()
-
-        self.ui.mainRenderer.init(installation, module)
-
         self.hideCreatures: bool = False
         self.hidePlaceables: bool = False
         self.hideDoors: bool = False
@@ -59,12 +51,18 @@ class ModuleEditor(QMainWindow):
         self.hideStores: bool = False
         self.hideCameras: bool = False
 
-        self.cameraControls: ModuleEditorControls = HolocronModuleEditorControls(self.ui.mainRenderer)
-        if os.path.exists("./controls/3d/aurora.json"):
-            self.cameraControls = DynamicModuleEditorControls(self.ui.mainRenderer)
-            self.cameraControls.load("./controls/3d/aurora.json")
+        from tools.module import moduleeditor_ui
+        self.ui = moduleeditor_ui.Ui_MainWindow()
+        self.ui.setupUi(self)
+        self._setupSignals()
 
-        self.snapToWalkmesh: bool = True
+        self.customControls: Dict[str, DynamicModuleEditorControls] = {}
+        self.activeControls: ModuleEditorControls = HolocronModuleEditorControls(self.ui.mainRenderer)
+
+        self.ui.mainRenderer.init(installation, module)
+        self._setupControlsMenu()
+        if "aurora.json" in self.customControls:
+            self.activateCustomControls(self.customControls["aurora.json"])
 
         self._refreshWindowTitle()
         self.rebuildResourceTree()
@@ -97,11 +95,24 @@ class ModuleEditor(QMainWindow):
 
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
 
+        self.ui.mainRenderer.sceneInitalized.connect(self.onRendererSceneInitialized)
         self.ui.mainRenderer.mousePressed.connect(self.onRendererMousePressed)
         self.ui.mainRenderer.mouseMoved.connect(self.onRendererMouseMoved)
         self.ui.mainRenderer.mouseScrolled.connect(self.onRendererMouseScrolled)
         self.ui.mainRenderer.objectSelected.connect(self.onRendererObjectSelected)
         self.ui.mainRenderer.customContextMenuRequested.connect(self.onRendererContextMenu)
+
+    def _setupControlsMenu(self) -> None:
+        self.ui.menuControls.clear()
+        folder = "./controls/3d/"
+        for path in os.listdir(folder):
+            controls = DynamicModuleEditorControls(self.ui.mainRenderer)
+            controls.load(folder + path)
+            self.customControls[path] = controls
+
+            action = QAction(controls.name, self)
+            action.triggered.connect(lambda _, c=controls: self.activateCustomControls(c))
+            self.ui.menuControls.addAction(action)
 
     def _refreshWindowTitle(self) -> None:
         title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
@@ -109,6 +120,9 @@ class ModuleEditor(QMainWindow):
 
     def saveGit(self) -> None:
         self._module.git().save()
+
+    def activateCustomControls(self, controls: DynamicModuleEditorControls) -> None:
+        self.activeControls = controls
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
@@ -341,13 +355,13 @@ class ModuleEditor(QMainWindow):
         self.ui.mainRenderer.scene.selection.clear()
 
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        self.cameraControls.onMouseMoved(screen, delta, buttons, keys)
+        self.activeControls.onMouseMoved(screen, delta, buttons, keys)
 
     def onRendererMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        self.cameraControls.onMouseScrolled(delta, buttons, keys)
+        self.activeControls.onMouseScrolled(delta, buttons, keys)
 
     def onRendererMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        self.cameraControls.onMousePressed(screen, buttons, keys)
+        self.activeControls.onMousePressed(screen, buttons, keys)
 
     def onRendererObjectSelected(self, obj: RenderObject) -> None:
         if obj is not None:
@@ -375,13 +389,17 @@ class ModuleEditor(QMainWindow):
         menu.popup(self.ui.mainRenderer.mapToGlobal(point))
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
+    def onRendererSceneInitialized(self) -> None:
+        if self.activeControls.cameraStyle == "FOCUSED":
+            self.ui.mainRenderer.scene.camera = FocusedCamera.from_unfocused(self.ui.mainRenderer.scene.camera)
+
     def keyPressEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
-        self.cameraControls.onKeyPressed(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
+        self.activeControls.onKeyPressed(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
-        self.cameraControls.onKeyReleased(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
+        self.activeControls.onKeyReleased(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
 
 class InsertInstanceDialog(QDialog):
