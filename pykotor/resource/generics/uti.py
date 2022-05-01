@@ -146,10 +146,9 @@ def dismantle_uti(
         if prop.upgrade_type is not None:
             properties_struct.set_uint8("UpgradeType", prop.upgrade_type)
 
-    if uti.is_armor():
-        root.set_uint8("ModelVariation", uti.model_variation)
-        root.set_uint8("BodyVariation", uti.body_variation)
-        root.set_uint8("TextureVar", uti.texture_variation)
+    root.set_uint8("ModelVariation", uti.model_variation)
+    root.set_uint8("BodyVariation", uti.body_variation)
+    root.set_uint8("TextureVar", uti.texture_variation)
 
     if game == Game.K2:
         root.set_uint8("UpgradeLevel", uti.upgrade_level)
