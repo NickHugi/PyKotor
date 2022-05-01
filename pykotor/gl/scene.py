@@ -630,13 +630,19 @@ class FocusedCamera:
         return focused
 
     def view(self) -> mat4:
-        eye_x = self.x + math.cos(self.yaw) * math.sin(self.pitch) * 10
-        eye_y = self.y + math.sin(self.yaw) * math.sin(self.pitch) * 10
-        eye_z = self.z + math.cos(self.pitch) * 10
+        up = vec3(0, 0, 1)
+        pitch = glm.vec3(1, 0, 0)
 
-        eye = vec3(eye_x, eye_y, eye_z)
-        centre = vec3(self.x, self.y, self.z)
-        return glm.lookAt(eye, centre, vec3(0, 0, 1))
+        x, y, z = self.x, self.y, self.z
+        x += math.cos(self.yaw) * math.cos(self.pitch - math.pi/2) * self.distance
+        y += math.sin(self.yaw) * math.cos(self.pitch - math.pi/2) * self.distance
+        z += math.sin(self.pitch - math.pi/2) * self.distance
+
+        camera = glm.translate(mat4(), vec3(x, y, z))
+        camera = glm.rotate(camera, self.yaw + math.pi/2, up)
+        camera = glm.rotate(camera, math.pi - self.pitch, pitch)
+        view = glm.inverse(camera)
+        return view
 
     def projection(self) -> mat4:
         return glm.perspective(self.fov, self.aspect, 0.1, 5000)
