@@ -55,14 +55,13 @@ class Target:
 
 
 class Modifications2DA:
-    def __init__(self, twoda: TwoDA, memory: PatcherMemory):
-        self.twoda: TwoDA = twoda
-        self.memory: PatcherMemory = memory
+    def __init__(self, filename: str):
+        self.filename: str = filename
         self.rows: List[Manipulation2DA] = []
 
-    def apply(self) -> None:
+    def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         for row in self.rows:
-            row.apply(self.twoda, self.memory)
+            row.apply(twoda, memory)
 
 
 class Manipulation2DA(ABC):
@@ -149,14 +148,27 @@ class AddRow2DA(Manipulation2DA):
     def __init__(self):
         super().__init__()
         self.identifier: str = ""
+        self.exclusive_column: Optional[str] = ""
         self.modifiers: Dict[str, str] = {}
 
         self._row: Optional[TwoDARow] = None
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+        target_row = None
+
+        if self.exclusive_column is not None:
+            exclusive_value = self.modifiers[self.exclusive_column]
+            for row in twoda:
+                if row.get_string(self.exclusive_column) == exclusive_value:
+                    target_row = row
+
         new_values, memory_values, row_label, new_row_label = self._split_modifiers(self.modifiers)
-        index = twoda.add_row(row_label, new_values)
-        self._row = twoda.get_row(index)
+
+        if target_row is None:
+            index = twoda.add_row(row_label, new_values)
+            self._row = twoda.get_row(index)
+        else:
+            target_row.update_values(new_values)
 
         for index, value in memory_values.items():
             value = index if value == "RowIndex" else value
@@ -258,7 +270,6 @@ class AddColumn2DA(Manipulation2DA):
             value = self._check_memory(value, memory)
             twoda.find_row(row_label).set_string(self.header, value)
 
-        # TODO: Not quite sure I understood section 3.3.2.4.1 on what should actually happen here
         for memory_index, value in self.memory_saves.items():
             if value.startswith("I"):
                 # TODO: Exception handling
