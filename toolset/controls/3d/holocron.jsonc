@@ -30,7 +30,7 @@
 			"event": "MOUSE_MOVE",
 			"keys": ["CTRL"],
 			"mouse": ["LEFT"],
-			"effects": [ { "alterCameraPosition": ["panCamSensitivity", "cpdx", "cpdy", 0.0] } ]
+			"effects": [ { "alterCameraPosition": ["panCamSensitivity", "cpdxFlat", "cpdyFlat", 0.0] } ]
 		},
 		{
 			"event": "MOUSE_MOVE",
@@ -42,7 +42,7 @@
 			"event": "MOUSE_MOVE",
 			"keys": [],
 			"mouse": ["LEFT"],
-			"effects": [ { "alterObjectPosition": ["panObjSensitivity", true, "cpdx", "cpdy", 0.0] } ]
+			"effects": [ { "alterObjectPosition": ["panObjSensitivity", true, "cpdxFlat", "cpdyFlat", 0.0] } ]
 		},
 		{
 			"event": "MOUSE_MOVE",

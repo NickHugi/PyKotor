@@ -61,8 +61,8 @@ class ModuleEditor(QMainWindow):
 
         self.ui.mainRenderer.init(installation, module)
         self._setupControlsMenu()
-        if "aurora.json" in self.customControls:
-            self.activateCustomControls(self.customControls["aurora.json"])
+        if "aurora.jsonc" in self.customControls:
+            self.activateCustomControls(self.customControls["aurora.jsonc"])
 
         self._refreshWindowTitle()
         self.rebuildResourceTree()
@@ -106,14 +106,20 @@ class ModuleEditor(QMainWindow):
         self.ui.menuControls.clear()
         folder = "./controls/3d/"
         if os.path.exists(folder):
-            for path in [path for path in os.listdir(folder) if path.endswith(".json")]:
-                controls = DynamicModuleEditorControls(self.ui.mainRenderer)
-                controls.load(folder + path)
-                self.customControls[path] = controls
+            for path in [path for path in os.listdir(folder) if path.endswith(".json") or path.endswith(".jsonc")]:
+                with suppress(Exception):
+                    controls = DynamicModuleEditorControls(self.ui.mainRenderer)
+                    controls.load(folder + path)
+                    self.customControls[path] = controls
 
-                action = QAction(controls.name, self)
-                action.triggered.connect(lambda _, c=controls: self.activateCustomControls(c))
-                self.ui.menuControls.addAction(action)
+                    action = QAction(controls.name, self)
+                    action.triggered.connect(lambda _, c=controls: self.activateCustomControls(c))
+                    self.ui.menuControls.addAction(action)
+
+            self.ui.menuControls.addSeparator()
+            action = QAction("Reload", self)
+            action.triggered.connect(self._setupControlsMenu)
+            self.ui.menuControls.addAction(action)
 
     def _refreshWindowTitle(self) -> None:
         title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
@@ -322,17 +328,7 @@ class ModuleEditor(QMainWindow):
             self.ui.mainRenderer.scene.select(instance)
 
             self.selectResouceItem(item.data(QtCore.Qt.UserRole))
-
-            camera = self.ui.mainRenderer.scene.camera
-            newCamPos = Vector3.from_vector3(instance.position)
-
-            ax = -math.cos(camera.yaw)*math.sin(camera.pitch)*math.sin(0) - math.sin(camera.yaw)*math.cos(0)
-            ay = -math.sin(camera.yaw)*math.sin(camera.pitch)*math.sin(0) + math.cos(camera.yaw)*math.cos(0)
-            az = math.cos(camera.pitch)*math.sin(0)
-            angleVec3 = Vector3(ax, ay, az).normal()
-
-            newCamPos -= angleVec3*2
-            camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z+1
+            self.ui.mainRenderer.snapCameraToPoint(instance.position)
 
     def addInstance(self, instance: GITInstance) -> None:
         instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y,

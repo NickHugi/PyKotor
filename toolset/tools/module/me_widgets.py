@@ -8,7 +8,7 @@ from PyQt5.QtGui import QWheelEvent, QResizeEvent, QMouseEvent, QKeyEvent
 from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.module import Module
-from pykotor.gl.scene import Scene
+from pykotor.gl.scene import Scene, FocusedCamera
 from pykotor.resource.formats.bwm import BWMFace
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
@@ -78,6 +78,22 @@ class ModuleRenderer(QOpenGLWidget):
 
     def resetMouseButtons(self) -> None:
         self._mouseDown.clear()
+
+    def snapCameraToPoint(self, point: Vector3, distance: float = 3.0):
+        camera = self.scene.camera
+        newCamPos = Vector3.from_vector3(point)
+
+        if isinstance(camera, FocusedCamera):
+            camera.x, camera.y, camera.z = point.x, point.y, point.z+1.0
+            camera.distance = distance
+        else:
+            ax = -math.cos(camera.yaw) * math.sin(camera.pitch) * math.sin(0) - math.sin(camera.yaw) * math.cos(0)
+            ay = -math.sin(camera.yaw) * math.sin(camera.pitch) * math.sin(0) + math.cos(camera.yaw) * math.cos(0)
+            az = math.cos(camera.pitch) * math.sin(0)
+            angleVec3 = Vector3(ax, ay, az).normal()
+
+            newCamPos -= angleVec3 * distance
+            camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z + 1
 
     def paintGL(self) -> None:
         if not self._init:

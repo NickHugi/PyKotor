@@ -5,6 +5,7 @@ import math
 from abc import ABC, abstractmethod
 from typing import Set, List, Union, Any, Optional
 
+from jsmin import jsmin
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
@@ -173,8 +174,8 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyPressEvents = []
         self.keyReleaseEvents = []
 
-        f = open(filepath, )
-        rootJSON = json.load(f)
+        f = open(filepath, "rb")
+        rootJSON = json.loads(jsmin(f.read().decode()))
 
         self.name = rootJSON["name"]
         self.cameraStyle = rootJSON["style"]
@@ -432,20 +433,46 @@ class DCEffect(ABC):
                 output = dx
             elif value == "dy":
                 output = dy
+
+            elif value == "cpdxFlat":
+                forward = -dy * controls.renderer.scene.camera.forward()
+                sideward = dx * controls.renderer.scene.camera.sideward()
+                output = -(forward.x + sideward.x)
+            elif value == "cpdyFlat":
+                forward = -dy * controls.renderer.scene.camera.forward()
+                sideward = dx * controls.renderer.scene.camera.sideward()
+                output = -(forward.y + sideward.y)
+
             elif value == "cpdx":
-                forward = dy * controls.renderer.scene.camera.forward()
-                sideward = dx * controls.renderer.scene.camera.sideward()
-                output = forward.x + sideward.x
+                sideward = dx * controls.renderer.scene.camera.sideward(False)
+                upward = dy * controls.renderer.scene.camera.upward(False)
+                output = -(upward.x + sideward.x)
             elif value == "cpdy":
-                forward = dy * controls.renderer.scene.camera.forward()
-                sideward = dx * controls.renderer.scene.camera.sideward()
-                output = forward.y + sideward.y
-            elif value == "cpx":
+                sideward = dx * controls.renderer.scene.camera.sideward(False)
+                upward = dy * controls.renderer.scene.camera.upward(False)
+                output = -(upward.y + sideward.y)
+            elif value == "cpdz":
+                sideward = dx * controls.renderer.scene.camera.sideward(False)
+                upward = dy * controls.renderer.scene.camera.upward(False)
+                output = -(upward.z + sideward.z)
+
+            elif value == "cpxFlat":
                 forward = controls.renderer.scene.camera.forward()
                 output = forward.x
-            elif value == "cpy":
+            elif value == "cpyFlat":
                 forward = controls.renderer.scene.camera.forward()
                 output = forward.y
+
+            elif value == "cpx":
+                forward = controls.renderer.scene.camera.sideward(False)
+                output = forward.x
+            elif value == "cpy":
+                forward = controls.renderer.scene.camera.sideward(False)
+                output = forward.y
+            elif value == "cpz":
+                forward = controls.renderer.scene.camera.sideward(False)
+                output = forward.z
+
             elif value == "cry":
                 output = controls.renderer.scene.camera.yaw
             elif value == "crp":
@@ -596,6 +623,16 @@ class DCEffectChangeCameraFocus(DCEffect):
         elif (self.focus is False) or (self.focus is None and controls.cameraStyle == "FOCUSED"):
             controls.unfocusCamera()
 
+
+# snapCameraToObject
+class DCEffectSnapCameraToObject(DCEffect):
+    def __init__(self, distance: float):
+        self.distance: float = distance
+
+    def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
+        if controls.renderer.scene.selection:
+            controls.renderer.snapCameraToPoint(controls.renderer.scene.selection[0].position(), self.distance)
+
 # endregion
 
 
@@ -610,5 +647,6 @@ DC_EFFECT_MAP = {
     "selectObjectAtMouse": DCEffectSelectObjectAtMouse,
     "openContextMenu": DCEffectOpenContextMenu,
     "setVariable": DCEffectSetVariable,
-    "changeCameraFocus": DCEffectChangeCameraFocus
+    "changeCameraFocus": DCEffectChangeCameraFocus,
+    "snapCameraToObject": DCEffectSnapCameraToObject
 }
