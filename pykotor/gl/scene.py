@@ -595,18 +595,16 @@ class UnfocusedCamera:
         return -glm.normalize(vec3(eye_y, eye_x, eye_z))
 
     def sideward(self, ignoreZ: bool = True) -> vec3:
-        eye_x = math.cos(self.yaw) * math.cos(self.pitch - math.pi/2)
-        eye_y = math.sin(self.yaw) * math.cos(self.pitch - math.pi/2)
-        eye_z = 0 if ignoreZ else math.sin(self.pitch - math.pi/2)
-        return glm.normalize(-vec3(eye_x, eye_y, eye_z))
+        return glm.normalize(glm.cross(self.forward(ignoreZ), vec3(0.0, 0.0, 1.0)))
 
     def upward(self, ignoreXY: bool = True) -> vec3:
         if not ignoreXY:
-            raise NotImplementedError
-        eye_y = 0 if ignoreXY else math.cos(self.pitch) * math.sin(self.yaw)
-        eye_x = 0 if ignoreXY else math.cos(self.yaw) * math.cos(self.pitch)
-        eye_z = 1
-        return glm.normalize(vec3(eye_y, eye_x, eye_z))
+            forward = self.forward(False)
+            sideward = self.sideward(False)
+            cross = glm.cross(forward, sideward)
+            return glm.normalize(cross)
+        else:
+            return glm.normalize(vec3(0, 0, 1))
 
 
 class FocusedCamera:
