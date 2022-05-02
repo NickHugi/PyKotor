@@ -94,7 +94,7 @@ class Scene:
             for creature in copy(self.git.creatures):
                 if identifier.resname == creature.resref and identifier.restype == ResourceType.UTC:
                     del self.objects[creature]
-            for placeable in copy(self.git.creatures):
+            for placeable in copy(self.git.placeables):
                 if identifier.resname == placeable.resref and identifier.restype == ResourceType.UTP:
                     del self.objects[placeable]
             for door in copy(self.git.doors):
