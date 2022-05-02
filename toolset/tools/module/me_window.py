@@ -30,6 +30,7 @@ from pykotor.resource.generics.utw import bytes_utw, UTW
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
+from misc.help.help import HelpWindow
 from pykotor.gl.scene import Scene, RenderObject, FocusedCamera
 
 from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
@@ -70,6 +71,7 @@ class ModuleEditor(QMainWindow):
 
     def _setupSignals(self) -> None:
         self.ui.actionSave.triggered.connect(self.saveGit)
+        self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
 
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceTreeContextMenu)
 
@@ -124,6 +126,10 @@ class ModuleEditor(QMainWindow):
     def _refreshWindowTitle(self) -> None:
         title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
         self.setWindowTitle(title)
+
+    def showHelpWindow(self) -> None:
+        window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
+        window.show()
 
     def saveGit(self) -> None:
         self._module.git().save()

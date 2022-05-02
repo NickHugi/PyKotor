@@ -18,7 +18,7 @@ from misc.asyncloader import AsyncLoader
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
 
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget, startingPage: str = None):
         super().__init__(parent)
 
         self.version: Optional[int] = None
@@ -33,6 +33,9 @@ class HelpWindow(QMainWindow):
 
         if self.ENABLE_UPDATES:
             self.checkForUpdates()
+
+        if startingPage:
+            self.displayFile(startingPage)
 
     def _setupSignals(self) -> None:
         self.ui.contentsTree.clicked.connect(self.onContentsClicked)
@@ -102,7 +105,7 @@ class HelpWindow(QMainWindow):
             text = BinaryReader.load_file(filepath).decode()
             html = markdown.markdown(text, extensions=['tables', 'fenced_code', 'codehilite']) if filepath.endswith(".md") else text
             self.ui.textDisplay.setHtml(html)
-        except (IOError, FileNotFoundError):
+        except (IOError, FileNotFoundError) as e:
             QMessageBox(QMessageBox.Critical, "Failed to open help file", "Could not access '{}'.".format(filepath)).exec_()
 
     def onContentsClicked(self) -> None:
