@@ -160,11 +160,13 @@ class ModuleRenderer(QOpenGLWidget):
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, e.buttons(), self._keysDown)
 
-    def keyPressEvent(self, e: QKeyEvent) -> None:
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         self._keysDown.add(e.key())
-        self.parent().keyPressEvent(e)
+        if bubble:
+            self.window().keyPressEvent(e, False)
 
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         self._keysDown.discard(e.key())
-        self.parent().keyReleaseEvent(e)
+        if bubble:
+            self.window().keyReleaseEvent(e, False)
     # endregion

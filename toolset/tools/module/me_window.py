@@ -394,12 +394,16 @@ class ModuleEditor(QMainWindow):
         if self.activeControls.cameraStyle == "FOCUSED":
             self.ui.mainRenderer.scene.camera = FocusedCamera.from_unfocused(self.ui.mainRenderer.scene.camera)
 
-    def keyPressEvent(self, e: QKeyEvent) -> None:
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         super().keyPressEvent(e)
+        if bubble:
+            self.ui.mainRenderer.keyPressEvent(e, False)
         self.activeControls.onKeyPressed(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:
-        super().keyPressEvent(e)
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+        super().keyReleaseEvent(e)
+        if bubble:
+            self.ui.mainRenderer.keyReleaseEvent(e, False)
         self.activeControls.onKeyReleased(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
 
