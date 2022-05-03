@@ -46,12 +46,6 @@ class TwoDAEditor(Editor):
         self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
-        QShortcut("Ctrl+F", self).activated.connect(self.toggleFilter)
-        QShortcut("Ctrl+C", self).activated.connect(self.copySelection)
-        QShortcut("Ctrl+V", self).activated.connect(self.pasteSelection)
-        QShortcut("Ctrl+I", self).activated.connect(self.insertRow)
-        QShortcut("Ctrl+D", self).activated.connect(self.removeSelectedRows)
-
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
         self.model = QStandardItemModel(self)

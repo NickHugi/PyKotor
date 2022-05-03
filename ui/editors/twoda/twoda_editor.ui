@@ -77,7 +77,7 @@
     <addaction name="actionToggleFilter"/>
     <addaction name="separator"/>
     <addaction name="actionInsertRow"/>
-    <addaction name="actionDuplicate_Row"/>
+    <addaction name="actionDuplicateRow"/>
     <addaction name="actionRemoveRows"/>
     <addaction name="separator"/>
     <addaction name="actionRedoRowLabels"/>
@@ -120,35 +120,56 @@
    <property name="text">
     <string>Toggle Filter</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
+   </property>
   </action>
   <action name="actionCopy">
    <property name="text">
     <string>Copy</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
    </property>
   </action>
   <action name="actionPaste">
    <property name="text">
     <string>Paste</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
   </action>
   <action name="actionInsertRow">
    <property name="text">
     <string>Insert Row</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
    </property>
   </action>
   <action name="actionRemoveRows">
    <property name="text">
     <string>Remove Rows</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Del</string>
+   </property>
   </action>
   <action name="actionRedoRowLabels">
    <property name="text">
     <string>Redo Row Labels</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
   </action>
-  <action name="actionDuplicate_Row">
+  <action name="actionDuplicateRow">
    <property name="text">
     <string>Duplicate Row</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
    </property>
   </action>
  </widget>
