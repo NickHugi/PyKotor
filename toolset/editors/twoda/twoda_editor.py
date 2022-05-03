@@ -30,6 +30,12 @@ class TwoDAEditor(Editor):
         self.proxyModel = SortFilterProxyModel(self)
         self.proxyModel.setSourceModel(self.model)
 
+        self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
+                                                          "QHeaderView::section:checked { color: #000000; }")
+        #self.ui.twodaTable.horizontalHeader().setStyleSheet("QHeaderView::section:checked { color: #555555; }")
+        #self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section:checked { color: #555555; }")
+        #self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section:checked { background-color: #555555; }")
+
         self.new()
 
     def _setupSignals(self) -> None:
@@ -72,7 +78,7 @@ class TwoDAEditor(Editor):
                     else:
                         self.model.setItem(i, j, QStandardItem(row.get_string(header)))
 
-            self.model.setVerticalHeaderLabels(["   " for i in range(twoda.get_height())])
+            self.model.setVerticalHeaderLabels([" ⯈ " for i in range(twoda.get_height())])
             self.ui.twodaTable.setModel(self.proxyModel)
 
             self.proxyModel.setSourceModel(self.model)
@@ -170,7 +176,7 @@ class TwoDAEditor(Editor):
         font.setBold(True)
         self.model.item(rowIndex, 0).setFont(font)
         self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
-        self.model.setVerticalHeaderItem(rowIndex, QStandardItem("   "))
+        self.model.setVerticalHeaderItem(rowIndex, QStandardItem(" ⯈ "))
 
     def removeSelectedRows(self) -> None:
         """
