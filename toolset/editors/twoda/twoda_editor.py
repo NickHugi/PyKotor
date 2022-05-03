@@ -159,7 +159,7 @@ class TwoDAEditor(Editor):
 
     def insertRow(self) -> None:
         """
-        Inserts a new row, copying values of the selected row, at the end of the table.
+        Inserts a new row at the end of the table.
         """
         rowIndex = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for i in range(self.model.columnCount())])
@@ -171,6 +171,9 @@ class TwoDAEditor(Editor):
         self.model.setVerticalHeaderItem(rowIndex, QStandardItem(" ⯈ "))
 
     def duplicateRow(self) -> None:
+        """
+        Inserts a new row, copying values of the selected row, at the end of the table.
+        """
         if self.ui.twodaTable.selectedIndexes():
             copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
 
@@ -187,11 +190,13 @@ class TwoDAEditor(Editor):
         """
         Removes the rows the user has selected.
         """
-        for i in range(self.model.rowCount())[::-1]:
-            for j in range(self.model.columnCount()):
-                if self.ui.twodaTable.selectionModel().isSelected(self.model.index(i, j)):
-                    self.model.removeRow(i)
-                    continue
+        rows = set()
+
+        for index in self.ui.twodaTable.selectedIndexes():
+            rows.add(index.row())
+
+        for row in sorted(rows, reverse=True):
+            self.model.removeRow(row)
 
     def redoRowLabels(self) -> None:
         """
