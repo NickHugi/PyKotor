@@ -163,11 +163,12 @@ class IndoorMapBuilder(QMainWindow):
     def onKitSelected(self) -> None:
         kit: Kit = self.ui.kitSelect.currentData()
 
-        self.ui.componentList.clear()
-        for component in kit.components:
-            item = QListWidgetItem(component.name)
-            item.setData(QtCore.Qt.UserRole, component)
-            self.ui.componentList.addItem(item)
+        if kit is not None:
+            self.ui.componentList.clear()
+            for component in kit.components:
+                item = QListWidgetItem(component.name)
+                item.setData(QtCore.Qt.UserRole, component)
+                self.ui.componentList.addItem(item)
 
     def onComponentSelected(self, item: QListWidgetItem) -> None:
         if item is None:
