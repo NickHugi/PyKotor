@@ -25,7 +25,7 @@ class JRLEditor(Editor):
     # It would be nice at some point to create our own implementation of QAbstractItemModel that automatically mirrors
     # the JRL object.
 
-    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)

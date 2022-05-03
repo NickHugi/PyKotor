@@ -1,4 +1,5 @@
 from contextlib import suppress
+from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog
@@ -12,7 +13,7 @@ from editors.editor import Editor, LocalizedStringDialog
 
 
 class UTIEditor(Editor):
-    def __init__(self, parent: QWidget, installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTI]
         super().__init__(parent, "Item Editor", "item", supported, supported, installation)
 

@@ -25,7 +25,7 @@ _TEXT_SUBSTRING_ROLE = QtCore.Qt.UserRole + 2
 
 
 class GFFEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
         supported = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
                      ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                      ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,

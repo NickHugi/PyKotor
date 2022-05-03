@@ -1,3 +1,5 @@
+from typing import Optional
+
 from PyQt5.QtWidgets import QWidget, QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -9,7 +11,7 @@ from editors.editor import Editor, LocalizedStringDialog
 
 
 class UTEEditor(Editor):
-    def __init__(self, parent: QWidget, installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 

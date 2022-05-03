@@ -1,4 +1,5 @@
 from contextlib import suppress
+from typing import Optional
 
 from PyQt5.QtWidgets import QWidget
 from pykotor.common.misc import ResRef
@@ -16,7 +17,7 @@ from editors.inventory_editor import InventoryEditor
 
 
 class UTPEditor(Editor):
-    def __init__(self, parent: QWidget, installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
 

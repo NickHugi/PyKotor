@@ -11,7 +11,7 @@ from editors.editor import Editor
 
 
 class TXTEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
         supported = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)

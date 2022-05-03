@@ -14,7 +14,7 @@ from editors.editor import Editor
 
 
 class TLKEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 

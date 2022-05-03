@@ -23,7 +23,7 @@ from editors.inventory_editor import InventoryEditor
 
 
 class UTCEditor(Editor):
-    def __init__(self, parent: QWidget, installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation)
 

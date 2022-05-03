@@ -12,7 +12,7 @@ from editors.editor import Editor
 
 
 class TPCEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
         supported = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 

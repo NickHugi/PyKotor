@@ -1,3 +1,5 @@
+from typing import Optional
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QIODevice, QBuffer
 from PyQt5.QtGui import QCloseEvent
@@ -13,7 +15,7 @@ from editors.editor import Editor, LocalizedStringDialog
 
 
 class UTSEditor(Editor):
-    def __init__(self, parent: QWidget, installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTS]
         super().__init__(parent, "Sound Editor", "sound", supported, supported, installation)
 

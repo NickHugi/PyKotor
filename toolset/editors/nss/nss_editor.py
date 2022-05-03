@@ -25,7 +25,7 @@ class NSSEditor(Editor):
     TAB_SIZE = 4
     TAB_AS_SPACE = True
 
-    def __init__(self, parent: QWidget, installation: Optional[HTInstallation]):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation]):
         supported = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 

@@ -23,7 +23,7 @@ from editors.git.git_dialogs import openInstanceDialog
 
 
 class GITEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 

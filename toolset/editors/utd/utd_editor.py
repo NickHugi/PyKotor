@@ -1,3 +1,5 @@
+from typing import Optional
+
 from PyQt5.QtWidgets import QWidget
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -11,7 +13,7 @@ from editors.editor import Editor, LocalizedStringDialog
 
 
 class UTDEditor(Editor):
-    def __init__(self, parent: QWidget, installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation)
 

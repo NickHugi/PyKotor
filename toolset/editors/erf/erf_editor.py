@@ -16,7 +16,7 @@ from editors.editor import Editor
 
 
 class ERFEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.ERF, ResourceType.MOD, ResourceType.RIM]
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)

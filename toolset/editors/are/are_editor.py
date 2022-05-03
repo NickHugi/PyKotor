@@ -14,7 +14,7 @@ from misc.longspinbox import LongSpinBox
 
 
 class AREEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
         self.resize(400, 250)

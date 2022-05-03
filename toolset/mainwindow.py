@@ -104,6 +104,11 @@ class ToolWindow(QMainWindow):
 
         self.installations = {}
 
+        # Opening up new windows such as the editors will be garbage collected if they are in the local scope and
+        # therefore immediatley close. Setting their parents as the main window will make the main window always appear
+        # behind and you cannot alt-tab between them. Therefore we store all windows in this list:
+        self.windows: List = []
+
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
 
@@ -839,125 +844,126 @@ class ToolWindow(QMainWindow):
         editor = None
 
         if restype in [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]:
-            editor = TwoDAEditor(self, self.active)
+            editor = TwoDAEditor(None, self.active)
 
         if restype in [ResourceType.SSF, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
-            editor = SSFEditor(self, self.active)
+            editor = SSFEditor(None, self.active)
 
         if restype in [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
-            editor = TLKEditor(self, self.active)
+            editor = TLKEditor(None, self.active)
 
         if restype in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]:
-            editor = BWMEditor(self, self.active)
+            editor = BWMEditor(None, self.active)
 
         if restype in [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.BMP, ResourceType.PNG]:
-            editor = TPCEditor(self, self.active)
+            editor = TPCEditor(None, self.active)
 
         if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
-            editor = TXTEditor(self)
+            editor = TXTEditor(None)
 
         if restype in [ResourceType.NSS]:
             if self.active:
-                editor = NSSEditor(self, self.active)
+                editor = NSSEditor(None, self.active)
             else:
-                editor = TXTEditor(self, self.active)
+                editor = TXTEditor(None, self.active)
 
         if restype in [ResourceType.NCS]:
             if self.active:
-                editor = NSSEditor(self, self.active)
+                editor = NSSEditor(None, self.active)
 
         if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
             if self.active is None:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = DLGEditor(self, self.active)
+                editor = DLGEditor(None, self.active)
 
         if restype in [ResourceType.UTC, ResourceType.UTC_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTCEditor(self, self.active)
+                editor = UTCEditor(None, self.active)
 
         if restype in [ResourceType.UTP, ResourceType.UTP_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTPEditor(self, self.active)
+                editor = UTPEditor(None, self.active)
 
         if restype in [ResourceType.UTD, ResourceType.UTD_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTDEditor(self, self.active)
+                editor = UTDEditor(None, self.active)
 
         if restype in [ResourceType.UTS, ResourceType.UTS_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTSEditor(self, self.active)
+                editor = UTSEditor(None, self.active)
 
         if restype in [ResourceType.UTT, ResourceType.UTT_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTTEditor(self, self.active)
+                editor = UTTEditor(None, self.active)
 
         if restype in [ResourceType.UTM, ResourceType.UTM_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTMEditor(self, self.active)
+                editor = UTMEditor(None, self.active)
 
         if restype in [ResourceType.UTW, ResourceType.UTW_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTWEditor(self, self.active)
+                editor = UTWEditor(None, self.active)
 
         if restype in [ResourceType.UTE, ResourceType.UTE_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTEEditor(self, self.active)
+                editor = UTEEditor(None, self.active)
 
         if restype in [ResourceType.UTI, ResourceType.UTI_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = UTIEditor(self, self.active)
+                editor = UTIEditor(None, self.active)
 
         if restype in [ResourceType.JRL, ResourceType.JRL_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = JRLEditor(self, self.active)
+                editor = JRLEditor(None, self.active)
 
         if restype in [ResourceType.ARE, ResourceType.ARE_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = AREEditor(self, self.active)
+                editor = AREEditor(None, self.active)
 
         if restype in [ResourceType.GIT, ResourceType.GIT_XML]:
             if self.active is None or not gffSpecialized:
-                editor = GFFEditor(self, self.active)
+                editor = GFFEditor(None, self.active)
             else:
-                editor = GITEditor(self, self.active)
+                editor = GITEditor(None, self.active)
 
         if restype in [ResourceType.GFF, ResourceType.GFF_XML, ResourceType.ITP, ResourceType.ITP_XML,
                        ResourceType.GUI, ResourceType.GUI_XML, ResourceType.IFO, ResourceType.IFO_XML]:
-            editor = GFFEditor(self, self.active)
+            editor = GFFEditor(None, self.active)
 
         if restype in [ResourceType.WAV, ResourceType.MP3]:
             editor = AudioPlayer(self)
 
         if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
-            editor = ERFEditor(self, self.active)
+            editor = ERFEditor(None, self.active)
 
         if editor is not None:
             try:
                 editor.load(filepath, resref, restype, data)
                 editor.show()
+                self.openWindow(editor)
                 return filepath, editor
             except Exception as e:
                 QMessageBox(QMessageBox.Critical, "An unknown error occured",
@@ -969,6 +975,14 @@ class ToolWindow(QMainWindow):
                         QMessageBox.Ok, self).show()
         return None, None
     # endregion
+
+    def openWindow(self, window: QWidget) -> None:
+        def removeFromList(e):
+            QWidget.closeEvent(window, e)
+            self.windows.remove(window)
+
+        self.windows.append(window)
+        window.closeEvent = removeFromList
 
 
 class ResourceModel(QStandardItemModel):

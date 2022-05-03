@@ -31,7 +31,7 @@ class Editor(QMainWindow):
     savedFile = QtCore.pyqtSignal(object, object, object, object)
     loadedFile = QtCore.pyqtSignal(object, object, object, object)
 
-    def __init__(self, parent, title: str, iconName: str, readSupported: List[ResourceType],
+    def __init__(self, parent: Optional[QWidget], title: str, iconName: str, readSupported: List[ResourceType],
                  writeSupported: List[ResourceType], installation: Optional[HTInstallation] = None):
         super().__init__(parent)
 

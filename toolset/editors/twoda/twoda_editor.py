@@ -13,7 +13,7 @@ from editors.editor import Editor
 
 
 class TwoDAEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)

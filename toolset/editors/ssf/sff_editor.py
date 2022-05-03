@@ -11,7 +11,7 @@ from editors.editor import Editor
 
 
 class SSFEditor(Editor):
-    def __init__(self, parent: QWidget, installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
         supported = [ResourceType.SSF]
         super().__init__(parent, "Soundset Editor", "soundset", supported, supported, installation)
 
