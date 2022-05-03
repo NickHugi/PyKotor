@@ -27,7 +27,6 @@ class UTEEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
-        self.ui.nameChangeButton.clicked.connect(self.changeName)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.infiniteRespawnCheckbox.stateChanged.connect(self.setInfiniteRespawn)
@@ -37,6 +36,7 @@ class UTEEditor(Editor):
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
+        self.ui.nameEdit.setInstallation(installation)
 
         factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
@@ -57,7 +57,7 @@ class UTEEditor(Editor):
         self._ute = ute
 
         # Basic
-        self._loadLocstring(self.ui.nameEdit, ute.name)
+        self.ui.nameEdit.setLocstring(ute.name)
         self.ui.tagEdit.setText(ute.tag)
         self.ui.resrefEdit.setText(ute.resref.get())
         self.ui.difficultySelect.setCurrentIndex(ute.difficulty_id)
@@ -93,7 +93,7 @@ class UTEEditor(Editor):
         ute = self._ute
 
         # Basic
-        ute.name = self.ui.nameEdit.locstring
+        ute.name = self.ui.nameEdit.locstring()
         ute.tag = self.ui.tagEdit.text()
         ute.resref = ResRef(self.ui.resrefEdit.text())
         ute.difficulty_id = self.ui.difficultySelect.currentIndex()
