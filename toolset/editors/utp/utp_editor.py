@@ -1,7 +1,7 @@
 from contextlib import suppress
 from typing import Optional
 
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QMessageBox
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
@@ -17,9 +17,9 @@ from editors.inventory_editor import InventoryEditor
 
 
 class UTPEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
         supported = [ResourceType.UTP]
-        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation)
+        super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
 
         from editors.utp import utp_editor_ui
         self.ui = utp_editor_ui.Ui_MainWindow()
@@ -210,18 +210,37 @@ class UTPEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
-    def editConversation(self) -> None:
+    def editConversation(
+            self
+    ) -> None:
         resname = self.ui.conversationEdit.text()
-        filepath, data = self._installation.resource(resname, ResourceType.DLG)
+        data, filepath = None, None
 
-        if data is None:
-            data = bytearray()
+        if resname == "":
+            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor",
+                        "Conversation field cannot be blank.").exec_()
+            return
 
-            write_gff(dismantle_dlg(DLG()), data)
-            filepath = self._installation.override_path() + resname + ".dlg"
-            BinaryWriter.dump(filepath, data)
+        search = self._installation.resource(resname, ResourceType.DLG)
 
-        self.parent().openResourceEditor(filepath, resname, ResourceType.DLG, data)
+        if search is None:
+            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
+                                 "Do you wish to create a file in the override?",
+                                 QMessageBox.Yes | QMessageBox.No).exec_()
+            if QMessageBox.Yes == msgbox:
+                data = bytearray()
+
+                write_gff(dismantle_dlg(DLG()), data)
+                filepath = self._installation.override_path() + resname + ".dlg"
+                writer = BinaryWriter.to_file(filepath)
+                writer.write_bytes(data)
+                writer.close()
+        else:
+            resname, restype, filepath, data = search
+
+        if data is not None:
+            self._mainwindow.openResourceEditor(filepath, resname, ResourceType.DLG, data)
+            self._installation.reload_override("")
 
     def openInventory(self) -> None:
         capsules = []
