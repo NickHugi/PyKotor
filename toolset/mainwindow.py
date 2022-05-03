@@ -191,9 +191,9 @@ class ToolWindow(QMainWindow):
         self.ui.actionInstructions.triggered.connect(self.openInstructionsWindow)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
-        self.ui.actionDiscordDeadlyStream.clicked.connect(lambda: self.openLink("https://discord.com/invite/bRWyshn"))
-        self.ui.actionDiscordKotOR.clicked.connect(lambda: self.openLink("http://discord.gg/kotor"))
-        self.ui.actionDiscordHolocronToolset.clicked.connect(lambda: self.openLink("https://discord.gg/3ME278a9tQ"))
+        self.ui.actionDiscordDeadlyStream.triggered.connect(lambda: self.openLink("https://discord.com/invite/bRWyshn"))
+        self.ui.actionDiscordKotOR.triggered.connect(lambda: self.openLink("http://discord.gg/kotor"))
+        self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: self.openLink("https://discord.gg/3ME278a9tQ"))
 
         self.ui.coreTree.doubleClicked.connect(self.openFromSelected)
         self.ui.modulesTree.doubleClicked.connect(self.openFromSelected)
@@ -375,9 +375,6 @@ class ToolWindow(QMainWindow):
         Opens the instructions window.
         """
         HelpWindow(self).show()
-
-    def openDiscordDialog(self) -> None:
-        DiscordDialog(self).show()
 
     def openAboutDialog(self) -> None:
         """
