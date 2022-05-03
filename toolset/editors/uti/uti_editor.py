@@ -33,9 +33,11 @@ class UTIEditor(Editor):
     def _setupSignals(self) -> None:
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
-        self.ui.editPropertyButton.clicked.connect(self.editProperty)
+        self.ui.editPropertyButton.clicked.connect(self.editSelectedProperty)
         self.ui.removePropertyButton.clicked.connect(self.removeSelectedProperty)
         self.ui.addPropertyButton.clicked.connect(self.addSelectedProperty)
+        self.ui.availablePropertyList.doubleClicked.connect(self.onAvaialblePropertyListDoubleClicked)
+        self.ui.assignedPropertiesList.doubleClicked.connect(self.onAssignedPropertyListDoubleClicked)
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
@@ -165,7 +167,7 @@ class UTIEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_itm_000")
 
-    def editProperty(self) -> None:
+    def editSelectedProperty(self) -> None:
         if self.ui.assignedPropertiesList.selectedItems():
             utiProperty = self.ui.assignedPropertiesList.selectedItems()[0].data(QtCore.Qt.UserRole)
             dialog = PropertyEditor(self._installation, utiProperty)
@@ -217,6 +219,14 @@ class UTIEditor(Editor):
             text = "{}".format(propName)
 
         return text
+
+    def onAvaialblePropertyListDoubleClicked(self) -> None:
+        for item in self.ui.availablePropertyList.selectedItems():
+            if item.childCount() == 0:
+                self.addSelectedProperty()
+
+    def onAssignedPropertyListDoubleClicked(self) -> None:
+        self.editSelectedProperty()
 
     @staticmethod
     def propertyName(installation: HTInstallation, prop: int):
