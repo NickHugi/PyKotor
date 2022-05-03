@@ -207,10 +207,9 @@ class Scene:
 
         for sound in self.git.sounds:
             if sound not in self.objects:
-                genBoundary = lambda: Empty(self)
                 with suppress(Exception):
                     uts = self.module.sound(sound.resref.get()).resource()
-                    genBoundary = lambda: Boundary.from_circle(self, uts.max_distance)
+                    genBoundary = lambda boundary=Boundary.from_circle(self, uts.max_distance): boundary
 
                 position = vec3(sound.position.x, sound.position.y, sound.position.z)
                 rotation = vec3(0, 0, 0)
@@ -224,7 +223,7 @@ class Scene:
             if encounter not in self.objects:
                 position = vec3(encounter.position.x, encounter.position.y, encounter.position.z)
                 rotation = vec3(0, 0, 0)
-                genBoundary = lambda: Boundary(self, encounter.geometry.points)
+                genBoundary = lambda boundary=Boundary(self, encounter.geometry.points): boundary
                 obj = RenderObject("encounter", position, rotation, data=encounter, genBoundary=genBoundary)
                 self.objects[encounter] = obj
             else:
@@ -235,7 +234,7 @@ class Scene:
             if trigger not in self.objects:
                 position = vec3(trigger.position.x, trigger.position.y, trigger.position.z)
                 rotation = vec3(0, 0, 0)
-                genBoundary = lambda: Boundary(self, trigger.geometry.points)
+                genBoundary = lambda boundary=Boundary(self, trigger.geometry.points): boundary
                 obj = RenderObject("trigger", position, rotation, data=trigger, genBoundary=genBoundary)
                 self.objects[trigger] = obj
             else:
