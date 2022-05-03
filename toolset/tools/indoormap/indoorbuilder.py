@@ -24,6 +24,7 @@ from pykotor.resource.type import ResourceType
 from config import UPDATE_INFO_LINK
 from data.installation import HTInstallation
 from misc.asyncloader import AsyncLoader
+from misc.help.help import HelpWindow
 from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit, KitDoor, load_kits
 from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
 from tools.indoormap.indoorsettings import IndoorMapSettings
@@ -60,6 +61,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_())
         self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
+        self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
 
         self.ui.mapRenderer.customContextMenuRequested.connect(self.onContextMenu)
         self.ui.mapRenderer.mouseMoved.connect(self.onMouseMoved)
@@ -102,6 +104,10 @@ class IndoorMapBuilder(QMainWindow):
         obj = self.ui.mapRenderer.roomUnderMouse()
 
         self.statusBar().showMessage("X: {}, Y: {}, Object: {}".format(world.x, world.y, obj.component.name if obj else ""))
+
+    def showHelpWindow(self) -> None:
+        window = HelpWindow(self, "./help/tools/2-mapBuilder.md")
+        window.show()
 
     def save(self) -> None:
         self._map.generateMinimap()

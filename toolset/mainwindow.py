@@ -967,7 +967,7 @@ class ToolWindow(QMainWindow):
                 return filepath, editor
             except Exception as e:
                 QMessageBox(QMessageBox.Critical, "An unknown error occured",
-                            "Report the error on the toolset thread on Deadlystream and include the log file.",
+                            str(e),
                             QMessageBox.Ok, self).show()
                 raise e
         else:

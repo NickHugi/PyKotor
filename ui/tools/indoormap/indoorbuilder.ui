@@ -103,8 +103,15 @@
     </property>
     <addaction name="actionDeleteSelected"/>
    </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionInstructions"/>
+   </widget>
    <addaction name="menuNew"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen">
@@ -150,6 +157,11 @@
   <action name="actionDownloadKits">
    <property name="text">
     <string>Download Kits</string>
+   </property>
+  </action>
+  <action name="actionInstructions">
+   <property name="text">
+    <string>Instructions</string>
    </property>
   </action>
  </widget>
