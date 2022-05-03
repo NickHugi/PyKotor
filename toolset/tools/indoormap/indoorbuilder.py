@@ -217,6 +217,9 @@ class IndoorMapBuilder(QMainWindow):
                                          self.ui.mapRenderer._cursorFlipX, self.ui.mapRenderer._cursorFlipY)
                     self._map.rooms.append(room)
                     self._map.rebuildRoomConnections()
+                    self.ui.mapRenderer._cursorRotation = 0.0
+                    self.ui.mapRenderer._cursorFlipX = False
+                    self.ui.mapRenderer._cursorFlipY = False
                 if QtCore.Qt.Key_Shift not in keys:
                     self.ui.mapRenderer.setCursorComponent(None)
                     self.ui.componentList.clearSelection()
