@@ -31,8 +31,15 @@ class Editor(QMainWindow):
     savedFile = QtCore.pyqtSignal(object, object, object, object)
     loadedFile = QtCore.pyqtSignal(object, object, object, object)
 
-    def __init__(self, parent: Optional[QWidget], title: str, iconName: str, readSupported: List[ResourceType],
-                 writeSupported: List[ResourceType], installation: Optional[HTInstallation] = None):
+    def __init__(
+            self,
+            parent: Optional[QWidget],
+            title: str, iconName: str,
+            readSupported: List[ResourceType],
+            writeSupported: List[ResourceType],
+            installation: Optional[HTInstallation] = None,
+            mainwindow: Optional[QMainWindow] = None
+    ):
         super().__init__(parent)
 
         self._filepath: Optional[str] = None
@@ -42,7 +49,8 @@ class Editor(QMainWindow):
         self._readSupported: List[ResourceType] = readSupported
         self._writeSupported: List[ResourceType] = writeSupported
         self._config: Configuration = Configuration()
-        self._installation: Optional[Installation] = installation
+        self._installation: Optional[HTInstallation] = installation
+        self._mainwindow = mainwindow
 
         self._editorTitle = title
         self.setWindowTitle(title)

@@ -881,7 +881,7 @@ class ToolWindow(QMainWindow):
             if self.active is None or not gffSpecialized:
                 editor = GFFEditor(None, self.active)
             else:
-                editor = UTCEditor(None, self.active)
+                editor = UTCEditor(None, self.active, mainwindow=self)
 
         if restype in [ResourceType.UTP, ResourceType.UTP_XML]:
             if self.active is None or not gffSpecialized:

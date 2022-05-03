@@ -3,7 +3,7 @@ from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage, QTransform
-from PyQt5.QtWidgets import QWidget, QListWidgetItem
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMessageBox
 from pykotor.common.language import Language, Gender
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -23,9 +23,9 @@ from editors.inventory_editor import InventoryEditor
 
 
 class UTCEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
         supported = [ResourceType.UTC]
-        super().__init__(parent, "Creature Editor", "creature", supported, supported, installation)
+        super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
         from editors.utc import utc_editor_ui
         self.ui = utc_editor_ui.Ui_MainWindow()
@@ -406,25 +406,31 @@ class UTCEditor(Editor):
 
     def editConversation(self) -> None:
         resname = self.ui.conversationEdit.text()
-        filepath, data = self._installation.resource(resname, ResourceType.DLG)
+        data, filepath = None, None
 
-        if data is None:
-            data = bytearray()
+        if resname == "":
+            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            return
 
-            blank_dlg = DLG()
-            starter = DLGLink()
-            entry = DLGEntry()
-            entry.text.set(Language.ENGLISH, Gender.MALE, "")
-            starter.node = entry
-            blank_dlg.starters.append(starter)
+        search = self._installation.resource(resname, ResourceType.DLG)
 
-            write_gff(dismantle_dlg(blank_dlg), data)
-            filepath = self._installation.override_path() + resname + ".dlg"
-            writer = BinaryWriter.to_file(filepath)
-            writer.write_bytes(data)
-            writer.close()
+        if search is None:
+            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
+                              "Do you wish to create a file in the override?",
+                              QMessageBox.Yes | QMessageBox.No).exec_()
+            if QMessageBox.Yes == msgbox:
+                data = bytearray()
 
-        self.parent().openResourceEditor(filepath, resname, ResourceType.DLG, data)
+                write_gff(dismantle_dlg(DLG()), data)
+                filepath = self._installation.override_path() + resname + ".dlg"
+                writer = BinaryWriter.to_file(filepath)
+                writer.write_bytes(data)
+                writer.close()
+        else:
+            resname, restype, filepath, data = search
+
+        if data is not None:
+            self._mainwindow.openResourceEditor(filepath, resname, ResourceType.DLG, data)
 
     def openInventory(self) -> None:
         droid = self.ui.raceSelect.currentIndex() == 0
