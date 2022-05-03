@@ -278,6 +278,8 @@ class PropertyEditor(QDialog):
 
         self.ui.costSelectButton.clicked.connect(self.selectCost)
         self.ui.parameterSelectButton.clicked.connect(self.selectParam)
+        self.ui.costList.doubleClicked.connect(self.selectCost)
+        self.ui.parameterList.doubleClicked.connect(self.selectParam)
 
         self._installation = installation
         self._utiProperty: UTIProperty = utiProperty
