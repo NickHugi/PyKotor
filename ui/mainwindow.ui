@@ -556,8 +556,16 @@
     <property name="title">
      <string>Help</string>
     </property>
+    <widget class="QMenu" name="menuDiscord">
+     <property name="title">
+      <string>Discord</string>
+     </property>
+     <addaction name="actionDiscordHolocronToolset"/>
+     <addaction name="actionDiscordKotOR"/>
+     <addaction name="actionDiscordDeadlyStream"/>
+    </widget>
     <addaction name="actionHelpAbout"/>
-    <addaction name="actionDiscord"/>
+    <addaction name="menuDiscord"/>
     <addaction name="actionInstructions"/>
     <addaction name="actionHelpUpdates"/>
    </widget>
@@ -878,9 +886,19 @@
     <string>Instructions</string>
    </property>
   </action>
-  <action name="actionDiscord">
+  <action name="actionDiscordHolocronToolset">
    <property name="text">
-    <string>Discord</string>
+    <string>Holocron Toolset</string>
+   </property>
+  </action>
+  <action name="actionDiscordKotOR">
+   <property name="text">
+    <string>r/KotOR</string>
+   </property>
+  </action>
+  <action name="actionDiscordDeadlyStream">
+   <property name="text">
+    <string>Deadly Stream</string>
    </property>
   </action>
  </widget>

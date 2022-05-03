@@ -13,8 +13,9 @@ from typing import Optional, List, Union, Tuple, Dict
 
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QTimer
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, QResizeEvent
+from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QTimer, QUrl
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, \
+    QResizeEvent, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView, QMenu
 from pykotor.common.module import Module
@@ -58,7 +59,6 @@ from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.audio_player import AudioPlayer
-from misc.help.discord import DiscordDialog
 from misc.help.help import HelpWindow
 from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
@@ -191,7 +191,9 @@ class ToolWindow(QMainWindow):
         self.ui.actionInstructions.triggered.connect(self.openInstructionsWindow)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
-        self.ui.actionDiscord.triggered.connect(self.openDiscordDialog)
+        self.ui.actionDiscordDeadlyStream.clicked.connect(lambda: self.openLink("https://discord.com/invite/bRWyshn"))
+        self.ui.actionDiscordKotOR.clicked.connect(lambda: self.openLink("http://discord.gg/kotor"))
+        self.ui.actionDiscordHolocronToolset.clicked.connect(lambda: self.openLink("https://discord.gg/3ME278a9tQ"))
 
         self.ui.coreTree.doubleClicked.connect(self.openFromSelected)
         self.ui.modulesTree.doubleClicked.connect(self.openFromSelected)
@@ -218,6 +220,10 @@ class ToolWindow(QMainWindow):
                 menu.addAction("Open with Specialized Editor").triggered.connect(open2)
 
         menu.popup(self.currentDataView().mapToGlobal(point))
+
+    def openLink(self, link: str) -> None:
+        url = QUrl(link)
+        QDesktopServices.openUrl(url)
 
     # region Events
     def closeEvent(self, e: QCloseEvent) -> None:
