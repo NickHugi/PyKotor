@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>645</width>
-    <height>450</height>
+    <width>635</width>
+    <height>454</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,7 +47,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>645</width>
+     <width>635</width>
      <height>21</height>
     </rect>
    </property>
@@ -77,6 +77,7 @@
     <addaction name="actionToggleFilter"/>
     <addaction name="separator"/>
     <addaction name="actionInsertRow"/>
+    <addaction name="actionDuplicate_Row"/>
     <addaction name="actionRemoveRows"/>
     <addaction name="separator"/>
     <addaction name="actionRedoRowLabels"/>
@@ -143,6 +144,11 @@
   <action name="actionRedoRowLabels">
    <property name="text">
     <string>Redo Row Labels</string>
+   </property>
+  </action>
+  <action name="actionDuplicate_Row">
+   <property name="text">
+    <string>Duplicate Row</string>
    </property>
   </action>
  </widget>

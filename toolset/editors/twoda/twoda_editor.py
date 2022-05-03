@@ -32,9 +32,6 @@ class TwoDAEditor(Editor):
 
         self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
                                                           "QHeaderView::section:checked { color: #000000; }")
-        #self.ui.twodaTable.horizontalHeader().setStyleSheet("QHeaderView::section:checked { color: #555555; }")
-        #self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section:checked { color: #555555; }")
-        #self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section:checked { background-color: #555555; }")
 
         self.new()
 
@@ -45,6 +42,7 @@ class TwoDAEditor(Editor):
         self.ui.actionPaste.triggered.connect(self.pasteSelection)
 
         self.ui.actionInsertRow.triggered.connect(self.insertRow)
+        self.ui.actionDuplicateRow.triggered.connect(self.duplicateRow)
         self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
@@ -167,7 +165,7 @@ class TwoDAEditor(Editor):
 
     def insertRow(self) -> None:
         """
-        Inserts a new row at the end of the table.
+        Inserts a new row, copying values of the selected row, at the end of the table.
         """
         rowIndex = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for i in range(self.model.columnCount())])
@@ -177,6 +175,19 @@ class TwoDAEditor(Editor):
         self.model.item(rowIndex, 0).setFont(font)
         self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
         self.model.setVerticalHeaderItem(rowIndex, QStandardItem(" ⯈ "))
+
+    def duplicateRow(self) -> None:
+        if self.ui.twodaTable.selectedIndexes():
+            copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
+
+            rowIndex = self.model.rowCount()
+            self.model.appendRow([QStandardItem(self.model.item(copyRow, i)) for i in range(self.model.columnCount())])
+            self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
+            font = self.model.item(rowIndex, 0).font()
+            font.setBold(True)
+            self.model.item(rowIndex, 0).setFont(font)
+            self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
+            self.model.setVerticalHeaderItem(rowIndex, QStandardItem(" ⯈ "))
 
     def removeSelectedRows(self) -> None:
         """
