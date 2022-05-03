@@ -283,11 +283,12 @@ class PropertyEditor(QDialog):
         self._utiProperty: UTIProperty = utiProperty
 
         costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
-        costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
-        for i in range(costtable.get_height()):
-            item = QListWidgetItem(UTIEditor.costName(installation, utiProperty.cost_table, i))
-            item.setData(QtCore.Qt.UserRole, i)
-            self.ui.costList.addItem(item)
+        if utiProperty.cost_table != 255:
+            costtable = installation.htGetCache2DA(costtableList.get_cell(utiProperty.cost_table, "name"))
+            for i in range(costtable.get_height()):
+                item = QListWidgetItem(UTIEditor.costName(installation, utiProperty.cost_table, i))
+                item.setData(QtCore.Qt.UserRole, i)
+                self.ui.costList.addItem(item)
 
         if utiProperty.param1 != 0xFF:
             paramList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
