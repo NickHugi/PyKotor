@@ -303,9 +303,8 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def openModuleEditor(self) -> None:
-        filepath = QFileDialog.getOpenFileName(self, "Select a module")[0]
+        filepath = QFileDialog.getOpenFileName(self, "Select a module", self.active.module_path())[0]
         if filepath:
-            print("A ->", Module.get_root(filepath))
             module = Module(Module.get_root(filepath), self.active)
             designer = ModuleEditor(self, self.active, module)
             designer.show()
