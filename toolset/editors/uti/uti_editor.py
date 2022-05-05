@@ -192,7 +192,6 @@ class UTIEditor(Editor):
                 utiProperty.param1 = itemprops.get_row(propertyId).get_integer("param1resref", 255)
                 utiProperty.param1_value = 0
                 utiProperty.chance_appear = 100
-                utiProperty.upgrade_type = 0
 
                 text = self.propertySummary(utiProperty)
                 item = QListWidgetItem(text)
