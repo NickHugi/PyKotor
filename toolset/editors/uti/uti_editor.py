@@ -2,7 +2,7 @@ from contextlib import suppress
 from typing import Optional
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog, QShortcut
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uti import UTI, dismantle_uti, UTIProperty, read_uti
@@ -27,6 +27,8 @@ class UTIEditor(Editor):
         self._setupInstallation(installation)
 
         self.ui.descEdit.setInstallation(installation)
+
+        QShortcut("Del", self).activated.connect(self.onDelShortcut)
 
         self.new()
 
@@ -226,6 +228,10 @@ class UTIEditor(Editor):
 
     def onAssignedPropertyListDoubleClicked(self) -> None:
         self.editSelectedProperty()
+
+    def onDelShortcut(self) -> None:
+        if self.ui.assignedPropertiesList.hasFocus():
+            self.removeSelectedProperty()
 
     @staticmethod
     def propertyName(installation: HTInstallation, prop: int):
