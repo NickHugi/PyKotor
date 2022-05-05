@@ -63,6 +63,7 @@ class UTIEditor(Editor):
             subtypeResname = itemProperties.get_cell(i, "subtyperesref")
             if subtypeResname == "":
                 item.setData(0, QtCore.Qt.UserRole, i)
+                item.setData(0, QtCore.Qt.UserRole + 1, i)
                 continue
 
             subtype = installation.htGetCache2DA(subtypeResname)
