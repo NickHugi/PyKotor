@@ -433,13 +433,14 @@ class ToolWindow(QMainWindow):
         Reloads the files stored in the currently selected module and updates the data model.
         """
         module = self.ui.modulesCombo.currentData()
-        self.active.reload_module(module)
+        if module is not None:
+            self.active.reload_module(module)
 
-        self.modulesModel.clear()
-        for resource in self.active.module_resources(module):
-            self.modulesModel.addResource(resource)
+            self.modulesModel.clear()
+            for resource in self.active.module_resources(module):
+                self.modulesModel.addResource(resource)
 
-        self.resizeColumns()
+            self.resizeColumns()
 
     def refreshModuleList(self, reload: bool = True) -> None:
         """
@@ -801,7 +802,7 @@ class ToolWindow(QMainWindow):
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
         for resource in resources:
             filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data())
-            if editor is not None and resource.filepath():
+            if editor is not None:
                 editor.savedFile.connect(self.reloadModule)
 
     def openFromFile(self) -> None:

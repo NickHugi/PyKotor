@@ -94,7 +94,7 @@ class Editor(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(iconPath)))
 
     def encapsulated(self) -> bool:
-        return self._filepath.endswith(".rim") or self._filepath.endswith(".erf") or self._filepath.endswith(".mod")
+        return self._filepath.endswith(".rim") or self._filepath.endswith(".erf") or self._filepath.endswith(".mod") or self._filepath.endswith(".bif")
 
     def refreshWindowTitle(self) -> None:
         installationName = "No Installation" if self._installation is None else self._installation.name
@@ -226,6 +226,9 @@ class Editor(QMainWindow):
         else:
             setText(self._installation.talktable().string(locstring.stringref))
             textbox.setStyleSheet(className + " {background-color: #fffded;}")
+
+    def filepath(self) -> None:
+        return self._filepath
 
 
 class SaveToModuleDialog(QDialog):
