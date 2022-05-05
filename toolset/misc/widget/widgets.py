@@ -25,7 +25,7 @@ class LocalizedStringLineEdit(QWidget):
         self._locstring: LocalizedString = LocalizedString.from_invalid()
 
         self.ui.editButton.clicked.connect(self.editLocstring)
-        self.ui.locstringText.mouseDoubleClickEvent = lambda: self.editLocstring()
+        self.ui.locstringText.mouseDoubleClickEvent = lambda _: self.editLocstring()
 
     def setInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
