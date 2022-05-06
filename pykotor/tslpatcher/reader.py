@@ -15,8 +15,15 @@ class ConfigReader:
         self.ini.optionxform = str
         self.ini.read(config.input_path + "/changes.ini")
         self.config = config
+        self.load_stringref()
         self.load_2da()
         return self.config
+
+    def load_stringref(self) -> None:
+        stringrefs = dict(self.ini["TLKList"].items())
+        for name, value in stringrefs.items():
+            identifier = int(name[6:])
+            self.config.patches_str[identifier] = int(value)
 
     def load_2da(self) -> None:
         files = dict(self.ini["2DAList"].items())
