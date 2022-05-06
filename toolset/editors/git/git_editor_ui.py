@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'editors\git\git_editor.ui'
+# Form implementation generated from reading ui file '.\ui\editors\git\git_editor.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -14,13 +14,17 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(800, 565)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.centralwidget)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.verticalLayout = QtWidgets.QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
+        self.filterEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.filterEdit.setText("")
+        self.filterEdit.setObjectName("filterEdit")
+        self.verticalLayout.addWidget(self.filterEdit)
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
         self.listWidget.setObjectName("listWidget")
         self.verticalLayout.addWidget(self.listWidget)
@@ -358,6 +362,7 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.filterEdit.setPlaceholderText(_translate("MainWindow", "filter..."))
         self.menuNew.setTitle(_translate("MainWindow", "File"))
         self.menuEdit.setTitle(_translate("MainWindow", "Edit"))
         self.menuView.setTitle(_translate("MainWindow", "View"))
@@ -373,3 +378,13 @@ class Ui_MainWindow(object):
         self.actionDeleteSelected.setText(_translate("MainWindow", "Delete Selected"))
 from toolset.misc.walkmesh.renderer import WalkmeshRenderer
 import resources_rc
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())

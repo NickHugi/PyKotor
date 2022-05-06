@@ -60,6 +60,7 @@ class WalkmeshRenderer(QWidget):
 
         self.hideGeomPoints: bool = True
 
+        self.instanceFilter: str = ""
         self.hideCreatures: bool = True
         self.hidePlaceables: bool = True
         self.hideDoors: bool = True
@@ -537,27 +538,43 @@ class WalkmeshRenderer(QWidget):
         painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
         if self._git is not None:
             for creature in self._git.creatures if not self.hideCreatures else []:
+                if self.instanceFilter.lower() not in creature.resref.get().lower() and creature.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapCreature, creature.position.x, creature.position.y, 3.142+self._camRotation, 1/16)
 
             for door in self._git.doors if not self.hideDoors else []:
+                if self.instanceFilter.lower() not in door.resref.get().lower() and door.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapDoor, door.position.x, door.position.y, 3.142+self._camRotation, 1/16)
 
             for placeable in self._git.placeables if not self.hidePlaceables else []:
+                if self.instanceFilter.lower() not in placeable.resref.get().lower() and placeable.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapPlaceable, placeable.position.x, placeable.position.y, 3.142+self._camRotation, 1/16)
 
             for merchant in self._git.stores if not self.hideStores else []:
+                if self.instanceFilter.lower() not in merchant.resref.get().lower() and merchant.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapMerchant, merchant.position.x, merchant.position.y, 3.142+self._camRotation, 1/16)
 
             for waypoint in self._git.waypoints if not self.hideWaypoints else []:
+                if self.instanceFilter.lower() not in waypoint.resref.get().lower() and waypoint.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapWaypoint, waypoint.position.x, waypoint.position.y, 3.142+self._camRotation, 1/16)
 
             for sound in self._git.sounds if not self.hideSounds else []:
+                if self.instanceFilter.lower() not in sound.resref.get().lower() and sound.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapSound, sound.position.x, sound.position.y, 3.142+self._camRotation, 1/16)
 
             for encounter in self._git.encounters if not self.hideEncounters else []:
+                if self.instanceFilter.lower() not in encounter.resref.get().lower() and encounter.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapEncounter, encounter.position.x, encounter.position.y, 3.142+self._camRotation, 1/16)
 
             for trigger in self._git.triggers if not self.hideTriggers else []:
+                if self.instanceFilter.lower() not in trigger.resref.get().lower() and trigger.resref.get() != "":
+                    continue
                 self._drawImage(painter, self._pixmapTrigger, trigger.position.x, trigger.position.y, 3.142+self._camRotation, 1/16)
 
             for camera in self._git.cameras if not self.hideCameras else []:

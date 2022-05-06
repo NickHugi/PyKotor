@@ -78,6 +78,7 @@ class GITEditor(Editor):
         self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
         self.ui.renderArea.customContextMenuRequested.connect(self.onContextMenu)
 
+        self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
         self.ui.listWidget.itemSelectionChanged.connect(self.onItemSelectionChanged)
 
         self.ui.viewCreatureCheck.toggled.connect(self.updateInstanceVisibility)
@@ -157,6 +158,9 @@ class GITEditor(Editor):
     def onContextMenu(self, point: QPoint) -> None:
         self._mode.onContextMenu(point)
 
+    def onFilterEdited(self) -> None:
+        self._mode.onFilterEdited()
+
     def onItemSelectionChanged(self) -> None:
         self._mode.onItemSelectionChanged()
 
@@ -204,6 +208,10 @@ class _Mode(ABC):
         ...
 
     @abstractmethod
+    def onFilterEdited(self) -> None:
+        ...
+
+    @abstractmethod
     def onItemSelectionChanged(self) -> None:
         ...
 
@@ -243,7 +251,12 @@ class _InstanceMode(_Mode):
     def rebuildInstanceList(self) -> None:
         self._ui.listWidget.clear()
         for instance in self._editor.git().instances():
-            if self._ui.renderArea.isInstanceVisible(instance):
+            if (
+                    self._ui.renderArea.isInstanceVisible(instance)
+                    and (instance.reference() is None
+                         or self._ui.filterEdit.text() in instance.reference().get()
+                         or instance.reference() == "")
+            ):
                 icon = QIcon(self._ui.renderArea.instancePixmap(instance))
                 reference = "" if instance.reference() is None else instance.reference().get()
                 text = "[{}] {}".format(self._editor.git().index(instance), reference)
@@ -344,6 +357,10 @@ class _InstanceMode(_Mode):
 
         menu.popup(self._ui.renderArea.mapToGlobal(point))
 
+    def onFilterEdited(self) -> None:
+        self._ui.renderArea.instanceFilter = self._ui.filterEdit.text()
+        self.rebuildInstanceList()
+
     def onItemSelectionChanged(self) -> None:
         if self._ui.listWidget.selectedItems():
             item = self._ui.listWidget.selectedItems()[0]
@@ -443,6 +460,9 @@ class _GeometryMode(_Mode):
         menu.addAction("Finish Editing").triggered.connect(lambda: self._editor.setMode(_InstanceMode(self._editor)))
 
         menu.popup(self._ui.renderArea.mapToGlobal(point))
+
+    def onFilterEdited(self) -> None:
+        ...
 
     def onItemSelectionChanged(self) -> None:
         ...
