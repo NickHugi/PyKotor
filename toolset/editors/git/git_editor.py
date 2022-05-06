@@ -9,7 +9,7 @@ import chardet
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QIcon, QPixmap, QColor, QKeySequence, QKeyEvent
-from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem
+from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheckBox
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -91,6 +91,16 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
 
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCreatureCheck)
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewPlaceableCheck)
+        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewDoorCheck)
+        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewSoundCheck)
+        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewTriggerCheck)
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewEncounterCheck)
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewWaypointCheck)
+        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCameraCheck)
+        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewStoreCheck)
+
         self.ui.actionDeleteSelected.triggered.connect(lambda: self._mode.removeSelected())
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
@@ -163,6 +173,19 @@ class GITEditor(Editor):
 
     def onItemSelectionChanged(self) -> None:
         self._mode.onItemSelectionChanged()
+
+    def onInstanceVisiblityDoubleClick(self, checkbox: QCheckBox) -> None:
+        self.ui.viewCreatureCheck.setChecked(False)
+        self.ui.viewPlaceableCheck.setChecked(False)
+        self.ui.viewDoorCheck.setChecked(False)
+        self.ui.viewSoundCheck.setChecked(False)
+        self.ui.viewTriggerCheck.setChecked(False)
+        self.ui.viewEncounterCheck.setChecked(False)
+        self.ui.viewWaypointCheck.setChecked(False)
+        self.ui.viewCameraCheck.setChecked(False)
+        self.ui.viewStoreCheck.setChecked(False)
+
+        checkbox.setChecked(True)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
