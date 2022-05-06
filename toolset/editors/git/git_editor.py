@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from contextlib import suppress
+from copy import deepcopy
 from enum import Enum
 from typing import Optional, Set, Dict
 
@@ -331,6 +332,12 @@ class _InstanceMode(_Mode):
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         underMouse = self._ui.renderArea.instancesUnderMouse()
         currentSelecton = self._ui.renderArea.selectedInstances()
+
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Alt in keys:
+            if self._ui.renderArea.instancesUnderMouse():
+                original = self._ui.renderArea.instancesUnderMouse()[0]
+                duplicate = deepcopy(original)
+                self._editor.git().add(duplicate)
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if currentSelecton and currentSelecton[0] in underMouse:
