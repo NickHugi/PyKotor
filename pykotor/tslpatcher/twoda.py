@@ -135,6 +135,9 @@ class ChangeRow2DA(Manipulation2DA):
                 value = source_row.label()
             elif value in twoda.get_headers():
                 value = source_row.get_string(value)
+            elif value.startswith("StrRef"):
+                token = int(value[:6])
+                value = memory.memory_str[token]
             memory.memory_2da[index] = value
 
 
@@ -171,7 +174,11 @@ class AddRow2DA(Manipulation2DA):
             target_row.update_values(new_values)
 
         for index, value in memory_values.items():
-            value = index if value == "RowIndex" else value
+            if value == "RowIndex":
+                value = index
+            elif value.startswith("StrRef"):
+                token = int(value[:6])
+                value = memory.memory_str[token]
             memory.memory_2da[index] = value
 
 
@@ -232,6 +239,9 @@ class CopyRow2DA(Manipulation2DA):
                 value = source_row.label()
             elif value in twoda.get_headers():
                 value = source_row.get_string(value)
+            elif value.startswith("StrRef"):
+                token = int(value[:6])
+                value = memory.memory_str[token]
             memory.memory_2da[index] = value
 
 
@@ -271,6 +281,10 @@ class AddColumn2DA(Manipulation2DA):
             twoda.find_row(row_label).set_string(self.header, value)
 
         for memory_index, value in self.memory_saves.items():
+            if value.startswith("StrRef"):
+                token = int(value[:6])
+                value = memory.memory_str[token]
+
             if value.startswith("I"):
                 # TODO: Exception handling
                 cell = twoda.get_row(int(value[1:])).get_string(self.header)
