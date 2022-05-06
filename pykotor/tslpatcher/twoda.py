@@ -138,6 +138,10 @@ class ChangeRow2DA(Manipulation2DA):
             elif value.startswith("StrRef"):
                 token = int(value[:6])
                 value = memory.memory_str[token]
+            elif value.startswith("2DAMEMORY"):
+                token = int(value[:9])
+                value = memory.memory_2da[token]
+
             memory.memory_2da[index] = value
 
 
@@ -179,6 +183,9 @@ class AddRow2DA(Manipulation2DA):
             elif value.startswith("StrRef"):
                 token = int(value[:6])
                 value = memory.memory_str[token]
+            elif value.startswith("2DAMEMORY"):
+                token = int(value[:9])
+                value = memory.memory_2da[token]
             memory.memory_2da[index] = value
 
 
@@ -242,6 +249,9 @@ class CopyRow2DA(Manipulation2DA):
             elif value.startswith("StrRef"):
                 token = int(value[:6])
                 value = memory.memory_str[token]
+            elif value.startswith("2DAMEMORY"):
+                token = int(value[:9])
+                value = memory.memory_2da[token]
             memory.memory_2da[index] = value
 
 
@@ -284,6 +294,9 @@ class AddColumn2DA(Manipulation2DA):
             if value.startswith("StrRef"):
                 token = int(value[:6])
                 value = memory.memory_str[token]
+            elif value.startswith("2DAMEMORY"):
+                token = int(value[:9])
+                value = memory.memory_2da[token]
 
             if value.startswith("I"):
                 # TODO: Exception handling
