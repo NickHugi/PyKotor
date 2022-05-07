@@ -212,11 +212,11 @@ class ToolWindow(QMainWindow):
             resource = resources[0]
             if resource.restype() in self.GFF_TYPES:
                 open1 = lambda: self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                       resource.data(), gffSpecialized=False)
+                                                        resource.data(reload=True), gffSpecialized=False)
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
                 open2 = lambda: self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                        resource.data(), gffSpecialized=True)
+                                                        resource.data(reload=True), gffSpecialized=True)
                 menu.addAction("Open with Specialized Editor").triggered.connect(open2)
 
         menu.popup(self.currentDataView().mapToGlobal(point))
@@ -801,7 +801,7 @@ class ToolWindow(QMainWindow):
         """
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
         for resource in resources:
-            filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data())
+            filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data(reload=False))
             if editor is not None:
                 editor.savedFile.connect(self.reloadModule)
 
