@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\ui\editors\git\git_editor.ui'
+# Form implementation generated from reading ui file 'editors\git\git_editor.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -23,6 +23,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.filterEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.filterEdit.setText("")
+        self.filterEdit.setMaxLength(16)
         self.filterEdit.setObjectName("filterEdit")
         self.verticalLayout.addWidget(self.filterEdit)
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
@@ -309,7 +310,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setStretch(1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
         self.menubar.setObjectName("menubar")
         self.menuNew = QtWidgets.QMenu(self.menubar)
         self.menuNew.setObjectName("menuNew")
@@ -378,13 +379,3 @@ class Ui_MainWindow(object):
         self.actionDeleteSelected.setText(_translate("MainWindow", "Delete Selected"))
 from toolset.misc.walkmesh.renderer import WalkmeshRenderer
 import resources_rc
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
