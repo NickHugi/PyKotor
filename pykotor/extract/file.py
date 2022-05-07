@@ -72,7 +72,9 @@ class FileResource:
         return self._offset
 
     def data(
-            self
+            self,
+            *,
+            reload: bool = False
     ) -> bytes:
         """
         Opens the file the resource is located at and returns the bytes data of the resource.
@@ -80,6 +82,17 @@ class FileResource:
         Returns:
             Bytes data of the resource.
         """
+        if reload:
+            if self._filepath.lower().endswith(".mod") or self._filepath.lower().endswith(".erf") or self._filepath.lower().endswith(".rim"):
+                from pykotor.extract.capsule import Capsule
+                capsule = Capsule(self._filepath)
+                res = capsule.info(self._resname, self._restype)
+                self._offset = res.offset()
+                self._size = res.size()
+            elif not self._filepath.lower().endswith(".bif"):
+                self._offset = 0
+                self._size = os.path.getsize(self._filepath)
+
         with open(self._filepath, 'rb') as file:
             file.seek(self._offset)
             return file.read(self._size)
