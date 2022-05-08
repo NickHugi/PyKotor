@@ -57,6 +57,9 @@
         </item>
         <item>
          <widget class="QCheckBox" name="viewCreatureCheck">
+          <property name="toolTip">
+           <string>Creatures</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckbox {
 	spacing: 0px;
@@ -96,6 +99,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewDoorCheck">
+          <property name="toolTip">
+           <string>Doors</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/door.png);
@@ -131,6 +137,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewPlaceableCheck">
+          <property name="toolTip">
+           <string>Placeables</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/placeable.png);
@@ -166,6 +175,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewStoreCheck">
+          <property name="toolTip">
+           <string>Merchants</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/merchant.png);
@@ -201,6 +213,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewSoundCheck">
+          <property name="toolTip">
+           <string>Sounds</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/sound.png);
@@ -236,6 +251,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewWaypointCheck">
+          <property name="toolTip">
+           <string>Waypoints</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/waypoint.png);
@@ -271,6 +289,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewCameraCheck">
+          <property name="toolTip">
+           <string>Cameras</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/camera.png);
@@ -306,6 +327,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewEncounterCheck">
+          <property name="toolTip">
+           <string>Encounters</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/encounter.png);
@@ -341,6 +365,9 @@ QCheckBox::indicator:checked:hover {
         </item>
         <item>
          <widget class="QCheckBox" name="viewTriggerCheck">
+          <property name="toolTip">
+           <string>Triggers</string>
+          </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
     image: url(:/images/icons/k1/trigger.png);
