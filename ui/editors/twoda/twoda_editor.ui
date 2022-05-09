@@ -48,7 +48,7 @@
      <x>0</x>
      <y>0</y>
      <width>635</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -82,7 +82,20 @@
     <addaction name="separator"/>
     <addaction name="actionRedoRowLabels"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <widget class="QMenu" name="menuSetRowHeader">
+     <property name="title">
+      <string>Set Row Header</string>
+     </property>
+     <addaction name="actionplaceholder"/>
+    </widget>
+    <addaction name="menuSetRowHeader"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuView"/>
    <addaction name="menuEdit"/>
    <addaction name="menuTools"/>
   </widget>
@@ -170,6 +183,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionplaceholder">
+   <property name="text">
+    <string>placeholder</string>
    </property>
   </action>
  </widget>

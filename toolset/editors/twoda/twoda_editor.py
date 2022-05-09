@@ -1,10 +1,13 @@
+from __future__ import annotations
+
+from enum import IntEnum
 from typing import Optional
 
 import pyperclip as pyperclip
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
-from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget
+from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget, QAction
 from pykotor.resource.formats.twoda import TwoDA, write_2da, read_2da
 from pykotor.resource.type import ResourceType
 
@@ -30,8 +33,10 @@ class TwoDAEditor(Editor):
         self.proxyModel = SortFilterProxyModel(self)
         self.proxyModel.setSourceModel(self.model)
 
-        self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
-                                                          "QHeaderView::section:checked { color: #000000; }")
+        self.verticalHeaderOption: VerticalHeaderOption = VerticalHeaderOption.NONE
+        self.verticalHeaderColumn: str = ""
+
+        self.model.itemChanged.connect(self.resetVerticalHeaders)
 
         self.new()
 
@@ -70,8 +75,31 @@ class TwoDAEditor(Editor):
                     else:
                         self.model.setItem(i, j, QStandardItem(row.get_string(header)))
 
-            self.model.setVerticalHeaderLabels([" ⯈ " for i in range(twoda.get_height())])
+            self.resetVerticalHeaders()
             self.ui.twodaTable.setModel(self.proxyModel)
+
+            # region Menu: Set Row Header
+            self.ui.menuSetRowHeader.clear()
+
+            action = QAction("None", self)
+            action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.NONE))
+            self.ui.menuSetRowHeader.addAction(action)
+
+            action = QAction("Row Index", self)
+            action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_INDEX))
+            self.ui.menuSetRowHeader.addAction(action)
+
+            action = QAction("Row Label", self)
+            action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_LABEL))
+            self.ui.menuSetRowHeader.addAction(action)
+
+            self.ui.menuSetRowHeader.addSeparator()
+
+            for header in headers[1:]:
+                action = QAction(header, self)
+                action.triggered.connect(lambda _, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
+                self.ui.menuSetRowHeader.addAction(action)
+            # endregion
 
             self.proxyModel.setSourceModel(self.model)
             for i in range(twoda.get_height()):
@@ -93,7 +121,6 @@ class TwoDAEditor(Editor):
             for j, header in enumerate(twoda.get_headers()):
                 twoda.set_cell(i, header, self.model.item(i, j+1).text())
 
-        print(self._restype)
         data = bytearray()
         write_2da(twoda, data, self._restype)
         return data
@@ -168,7 +195,7 @@ class TwoDAEditor(Editor):
         font.setBold(True)
         self.model.item(rowIndex, 0).setFont(font)
         self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
-        self.model.setVerticalHeaderItem(rowIndex, QStandardItem(" ⯈ "))
+        self.resetVerticalHeaders()
 
     def duplicateRow(self) -> None:
         """
@@ -184,7 +211,7 @@ class TwoDAEditor(Editor):
             font.setBold(True)
             self.model.item(rowIndex, 0).setFont(font)
             self.model.item(rowIndex, 0).setBackground(self.palette().midlight())
-            self.model.setVerticalHeaderItem(rowIndex, QStandardItem(" ⯈ "))
+            self.resetVerticalHeaders()
 
     def removeSelectedRows(self) -> None:
         """
@@ -205,6 +232,33 @@ class TwoDAEditor(Editor):
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
+    def setVerticalHeaderOption(self, option: VerticalHeaderOption, column: Optional[str] = None) -> None:
+        self.verticalHeaderOption = option
+        self.verticalHeaderColumn = column
+        self.resetVerticalHeaders()
+
+    def resetVerticalHeaders(self) -> None:
+        self.ui.twodaTable.verticalHeader().setStyleSheet("")
+        headers = []
+
+        if self.verticalHeaderOption == VerticalHeaderOption.ROW_INDEX:
+            headers = [str(i) for i in range(self.model.rowCount())]
+        elif self.verticalHeaderOption == VerticalHeaderOption.ROW_LABEL:
+            headers = [self.model.item(i, 0).text() for i in range(self.model.rowCount())]
+        elif self.verticalHeaderOption == VerticalHeaderOption.CELL_VALUE:
+            columnIndex = 0
+            for i in range(self.model.columnCount()):
+                if self.model.horizontalHeaderItem(i).text() == self.verticalHeaderColumn:
+                    columnIndex = i
+            headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
+        elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
+            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
+                                                              "QHeaderView::section:checked { color: #000000; }")
+            headers = ["⯈" for _ in range(self.model.rowCount())]
+
+        for i in range(self.model.rowCount()):
+            self.model.setVerticalHeaderItem(i, QStandardItem(headers[i]))
+
 
 class SortFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, parent):
@@ -220,3 +274,10 @@ class SortFilterProxyModel(QSortFilterProxyModel):
             if self.sourceModel().data(index) is not None and pattern in self.sourceModel().data(index).lower():
                 return True
         return False
+
+
+class VerticalHeaderOption(IntEnum):
+    ROW_INDEX = 0
+    ROW_LABEL = 1
+    CELL_VALUE = 2
+    NONE = 3
