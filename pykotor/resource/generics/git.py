@@ -879,7 +879,7 @@ def dismantle_git(
 
     creature_list = root.set_list("Creature List", GFFList())
     for creature in git.creatures:
-        bearing = Vector2.from_angle(creature.bearing)
+        bearing = Vector2.from_angle(creature.bearing + math.pi/2)
 
         creature_struct = creature_list.add(GITCreature.GFF_STRUCT_ID)
         creature_struct.set_resref("TemplateResRef", creature.resref)
@@ -954,7 +954,7 @@ def dismantle_git(
 
     store_list = root.set_list("StoreList", GFFList())
     for store in git.stores:
-        bearing = Vector2.from_angle(store.bearing)
+        bearing = Vector2.from_angle(creature.bearing + math.pi/2)
 
         store_struct = store_list.add(GITStore.GFF_STRUCT_ID)
         store_struct.set_resref("ResRef", store.resref)
@@ -990,7 +990,7 @@ def dismantle_git(
 
     waypoint_list = root.set_list("WaypointList", GFFList())
     for waypoint in git.waypoints:
-        bearing = Vector2.from_angle(waypoint.bearing)
+        bearing = Vector2.from_angle(waypoint.bearing + math.pi/2)
 
         waypoint_struct = waypoint_list.add(GITWaypoint.GFF_STRUCT_ID)
 
