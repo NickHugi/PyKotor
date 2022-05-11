@@ -34,6 +34,7 @@ from misc.help.help import HelpWindow
 from pykotor.gl.scene import Scene, RenderObject, FocusedCamera
 
 from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
+from utils.window import openResourceEditor
 
 
 class ModuleEditor(QMainWindow):
@@ -181,8 +182,8 @@ class ModuleEditor(QMainWindow):
         self.ui.resourceTree.setSortingEnabled(True)
 
     def openModuleResource(self, resource: ModuleResource) -> None:
-        editor = self.parent().openResourceEditor(resource.active(), resource.resname(), resource.restype(),
-                                                  resource.data())[1]
+        editor = openResourceEditor(resource.active(), resource.resname(), resource.restype(), resource.data(),
+                                    self._installation, self)[1]
 
         if editor is None:
             QMessageBox(QMessageBox.Critical,

@@ -66,6 +66,7 @@ from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 from tools.indoormap.indoorbuilder import IndoorMapBuilder
 from tools.module.me_window import ModuleEditor
+from utils.window import openResourceEditor
 
 
 class ToolWindow(QMainWindow):
@@ -211,12 +212,12 @@ class ToolWindow(QMainWindow):
         if len(resources) == 1:
             resource = resources[0]
             if resource.restype() in self.GFF_TYPES:
-                open1 = lambda: self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                        resource.data(reload=True), gffSpecialized=False)
+                open1 = lambda: openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
+                                                   resource.data(reload=True), self.active, self, gffSpecialized=False)
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
-                open2 = lambda: self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                        resource.data(reload=True), gffSpecialized=True)
+                open2 = lambda: openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
+                                                   resource.data(reload=True), self.active, self, gffSpecialized=True)
                 menu.addAction("Open with Specialized Editor").triggered.connect(open2)
 
         menu.popup(self.currentDataView().mapToGlobal(point))
@@ -240,7 +241,7 @@ class ToolWindow(QMainWindow):
                 with open(filepath, 'rb') as file:
                     resref, restype = ResourceIdentifier.from_path(filepath)
                     data = file.read()
-                    self.openResourceEditor(filepath, resref, restype, data)
+                    openResourceEditor(filepath, resref, restype, data, self.active, self)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
         if e.mimeData().hasUrls():
@@ -329,11 +330,11 @@ class ToolWindow(QMainWindow):
         """
         filepath = self.active.path() + "dialog.tlk"
         data = BinaryReader.load_file(filepath)
-        self.openResourceEditor(filepath, "dialog", ResourceType.TLK, data)
+        openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self) -> None:
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-        self.openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data)
+        openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data, self.active, self)
 
     def openGeometryEditor(self) -> None:
         editor = GeometryEditor(self, self.active)
@@ -801,7 +802,8 @@ class ToolWindow(QMainWindow):
         """
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
         for resource in resources:
-            filepath, editor = self.openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data(reload=False))
+            filepath, editor = openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
+                                                  resource.data(reload=False), self.active, self)
             if editor is not None:
                 editor.savedFile.connect(self.reloadModule)
 
@@ -814,178 +816,10 @@ class ToolWindow(QMainWindow):
                 restype = ResourceType.from_extension(restype_ext)
                 with open(filepath, 'rb') as file:
                     data = file.read()
-                self.openResourceEditor(filepath, resref, restype, data)
+                openResourceEditor(filepath, resref, restype, data, self.active, self)
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
-
-    def openResourceEditor(self,
-            filepath: str,
-            resref: str,
-            restype: ResourceType,
-            data: bytes,
-            *,
-            gffSpecialized: bool = None
-    ) -> Union[Tuple[str, Editor], Tuple[str, subprocess.Popen], Tuple[None, None]]:
-        """
-        Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
-        the editor, otherwise it returns None
-
-        Args:
-            filepath: Path to the resource.
-            resref: The ResRef.
-            restype: The resource type.
-            data: The resource data.
-            gffSpecialized: Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
-
-        Returns:
-            Either the Editor object if using an internal editor, the filepath if using a external editor or None if
-            no editor was successfully opened.
-        """
-        if gffSpecialized is None:
-            gffSpecialized = self.config.gffSpecializedEditors
-
-        editor = None
-
-        if restype in [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]:
-            editor = TwoDAEditor(None, self.active)
-
-        if restype in [ResourceType.SSF, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
-            editor = SSFEditor(None, self.active)
-
-        if restype in [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]:
-            editor = TLKEditor(None, self.active)
-
-        if restype in [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]:
-            editor = BWMEditor(None, self.active)
-
-        if restype in [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.BMP, ResourceType.PNG]:
-            editor = TPCEditor(None, self.active)
-
-        if restype in [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS]:
-            editor = TXTEditor(None)
-
-        if restype in [ResourceType.NSS]:
-            if self.active:
-                editor = NSSEditor(None, self.active)
-            else:
-                editor = TXTEditor(None, self.active)
-
-        if restype in [ResourceType.NCS]:
-            if self.active:
-                editor = NSSEditor(None, self.active)
-
-        if restype in [ResourceType.DLG, ResourceType.DLG_XML]:
-            if self.active is None:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = DLGEditor(None, self.active)
-
-        if restype in [ResourceType.UTC, ResourceType.UTC_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTCEditor(None, self.active, mainwindow=self)
-
-        if restype in [ResourceType.UTP, ResourceType.UTP_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTPEditor(None, self.active, mainwindow=self)
-
-        if restype in [ResourceType.UTD, ResourceType.UTD_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTDEditor(None, self.active, mainwindow=self)
-
-        if restype in [ResourceType.UTS, ResourceType.UTS_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTSEditor(None, self.active)
-
-        if restype in [ResourceType.UTT, ResourceType.UTT_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTTEditor(None, self.active)
-
-        if restype in [ResourceType.UTM, ResourceType.UTM_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTMEditor(None, self.active)
-
-        if restype in [ResourceType.UTW, ResourceType.UTW_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTWEditor(None, self.active)
-
-        if restype in [ResourceType.UTE, ResourceType.UTE_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTEEditor(None, self.active)
-
-        if restype in [ResourceType.UTI, ResourceType.UTI_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = UTIEditor(None, self.active)
-
-        if restype in [ResourceType.JRL, ResourceType.JRL_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = JRLEditor(None, self.active)
-
-        if restype in [ResourceType.ARE, ResourceType.ARE_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = AREEditor(None, self.active)
-
-        if restype in [ResourceType.GIT, ResourceType.GIT_XML]:
-            if self.active is None or not gffSpecialized:
-                editor = GFFEditor(None, self.active)
-            else:
-                editor = GITEditor(None, self.active)
-
-        if restype in [ResourceType.GFF, ResourceType.GFF_XML, ResourceType.ITP, ResourceType.ITP_XML,
-                       ResourceType.GUI, ResourceType.GUI_XML, ResourceType.IFO, ResourceType.IFO_XML]:
-            editor = GFFEditor(None, self.active)
-
-        if restype in [ResourceType.WAV, ResourceType.MP3]:
-            editor = AudioPlayer(self)
-
-        if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
-            editor = ERFEditor(None, self.active)
-
-        if editor is not None:
-            try:
-                editor.load(filepath, resref, restype, data)
-                editor.show()
-                self.openWindow(editor)
-                return filepath, editor
-            except Exception as e:
-                QMessageBox(QMessageBox.Critical, "An unknown error occured",
-                            str(e),
-                            QMessageBox.Ok, self).show()
-                raise e
-        else:
-            QMessageBox(QMessageBox.Critical, "Failed to open file", "The selected file is not yet supported.",
-                        QMessageBox.Ok, self).show()
-        return None, None
     # endregion
-
-    def openWindow(self, window: QWidget) -> None:
-        def removeFromList(e):
-            QWidget.closeEvent(window, e)
-            self.windows.remove(window)
-
-        self.windows.append(window)
-        window.closeEvent = removeFromList
 
 
 class ResourceModel(QStandardItemModel):

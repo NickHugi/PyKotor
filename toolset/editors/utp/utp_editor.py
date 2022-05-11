@@ -14,6 +14,7 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
 from editors.inventory_editor import InventoryEditor
+from utils.window import openResourceEditor
 
 
 class UTPEditor(Editor):
@@ -239,7 +240,7 @@ class UTPEditor(Editor):
             resname, restype, filepath, data = search
 
         if data is not None:
-            self._mainwindow.openResourceEditor(filepath, resname, ResourceType.DLG, data)
+            openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
             self._installation.reload_override("")
 
     def openInventory(self) -> None:

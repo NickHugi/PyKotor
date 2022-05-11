@@ -10,6 +10,7 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
+from utils.window import openResourceEditor
 
 
 class UTDEditor(Editor):
@@ -218,4 +219,4 @@ class UTDEditor(Editor):
             self._installation.reload_override("")
 
         if data is not None:
-            self._mainwindow.openResourceEditor(filepath, resname, ResourceType.DLG, data)
+            openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)

@@ -9,6 +9,7 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from misc import search_result_ui
 from misc.asyncloader import AsyncBatchLoader
+from utils.window import openResourceEditor
 
 
 class FileSearcher(QDialog):
@@ -124,4 +125,5 @@ class FileResults(QDialog):
         item = self.ui.resultList.currentItem()
         if item:
             resource: FileResource = item.data(QtCore.Qt.UserRole)
-            self.parent().openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data())
+            openResourceEditor(resource.filepath(), resource.resname(), resource.restype(), resource.data(),
+                               self.installation, self.window().parent())

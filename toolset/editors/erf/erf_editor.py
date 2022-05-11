@@ -13,6 +13,7 @@ from pykotor.resource.type import ResourceType
 from data.configuration import Configuration
 from data.installation import HTInstallation
 from editors.editor import Editor
+from utils.window import openResourceEditor
 
 
 class ERFEditor(Editor):
@@ -172,8 +173,8 @@ class ERFEditor(Editor):
                             QMessageBox.Ok, self).exec_()
                 continue
 
-            tempPath, editor = self.parent().openResourceEditor(self._filepath, resource.resref.get(), resource.restype,
-                                                                resource.data)
+            tempPath, editor = openResourceEditor(self._filepath, resource.resref.get(), resource.restype, resource.data,
+                                                  self._installation, self)
             editor.savedFile.connect(self.resourceSaved)
 
     def refresh(self) -> None:
