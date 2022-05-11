@@ -27,6 +27,7 @@ class Ui_MainWindow(object):
         self.filterEdit.setObjectName("filterEdit")
         self.verticalLayout.addWidget(self.filterEdit)
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
+        self.listWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.listWidget.setObjectName("listWidget")
         self.verticalLayout.addWidget(self.listWidget)
         self.horizontalLayout_3.addLayout(self.verticalLayout)

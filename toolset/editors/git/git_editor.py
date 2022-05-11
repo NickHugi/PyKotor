@@ -10,7 +10,7 @@ import chardet
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QIcon, QPixmap, QColor, QKeySequence, QKeyEvent
-from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheckBox
+from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheckBox, QAction
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -19,8 +19,10 @@ from pykotor.resource.generics.git import read_git, GIT, GITInstance, GITCreatur
     GITWaypoint, GITSound, GITStore, GITPlaceable, GITDoor, bytes_git
 from pykotor.resource.type import ResourceType
 
+from data.installation import HTInstallation
 from editors.editor import Editor
 from editors.git.git_dialogs import openInstanceDialog
+from utils.window import openResourceEditor
 
 
 class GITEditor(Editor):
@@ -36,7 +38,7 @@ class GITEditor(Editor):
         self._setupHotkeys()
 
         self._git: GIT = GIT()
-        self._mode: _Mode = _InstanceMode(self)
+        self._mode: _Mode = _InstanceMode(self, installation)
         self._geomInstance: Optional[GITInstance] = None  # Used to track which trigger/encounter you are editing
 
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
@@ -81,6 +83,7 @@ class GITEditor(Editor):
 
         self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
         self.ui.listWidget.itemSelectionChanged.connect(self.onItemSelectionChanged)
+        self.ui.listWidget.customContextMenuRequested.connect(self.onItemContextMenu)
 
         self.ui.viewCreatureCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewPlaceableCheck.toggled.connect(self.updateInstanceVisibility)
@@ -188,6 +191,9 @@ class GITEditor(Editor):
 
         checkbox.setChecked(True)
 
+    def onItemContextMenu(self, point: QPoint) -> None:
+        self._mode.onItemContextMenu(point)
+
     def keyPressEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
         self.ui.renderArea.keyPressEvent(e)
@@ -198,8 +204,10 @@ class GITEditor(Editor):
 
 
 class _Mode(ABC):
-    def __init__(self, editor: GITEditor):
+    def __init__(self, editor: GITEditor, installation: HTInstallation):
         self._editor: GITEditor = editor
+        self._installation: HTInstallation = installation
+
         from editors.git import git_editor_ui
         self._ui: git_editor_ui = editor.ui
 
@@ -239,10 +247,14 @@ class _Mode(ABC):
     def onItemSelectionChanged(self) -> None:
         ...
 
+    @abstractmethod
+    def onItemContextMenu(self, point: QPoint) -> None:
+        ...
+
 
 class _InstanceMode(_Mode):
-    def __init__(self, editor: GITEditor):
-        super(_InstanceMode, self).__init__(editor)
+    def __init__(self, editor: GITEditor, installation: HTInstallation):
+        super(_InstanceMode, self).__init__(editor, installation)
         self._ui.renderArea.hideGeomPoints = True
         self.updateInstanceVisibility()
 
@@ -312,6 +324,10 @@ class _InstanceMode(_Mode):
         instance = self._ui.renderArea.selectedInstances()[0]
         openInstanceDialog(self._editor, instance)
         self.rebuildInstanceList()
+
+    def editResource(self, instance: GITInstance) -> None:
+        res = self._installation.resource(instance.reference().get(), instance.extension())
+        openResourceEditor(res.filepath, res.resname, res.restype, res.data, self._installation, self._editor)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         worldDelta = self._ui.renderArea.toWorldDelta(delta.x, delta.y)
@@ -398,10 +414,23 @@ class _InstanceMode(_Mode):
             self._ui.renderArea.setCameraPosition(instance.position.x, instance.position.y)
             self._ui.renderArea.selectInstance(instance)
 
+    def onItemContextMenu(self, point: QPoint) -> None:
+        if not self._ui.listWidget.selectedItems():
+            return
+
+        instance = self._ui.listWidget.selectedItems()[0].data(QtCore.Qt.UserRole)
+        menu = QMenu(self._ui.listWidget)
+
+        editResourceAction = QAction("Edit Resource", menu)
+        editResourceAction.triggered.connect(lambda: self.editResource(instance))
+        menu.addAction(editResourceAction)
+
+        menu.popup(self._ui.listWidget.mapToGlobal(point))
+
 
 class _GeometryMode(_Mode):
-    def __init__(self, editor: GITEditor, instance: GITInstance):
-        super(_GeometryMode, self).__init__(editor)
+    def __init__(self, editor: GITEditor, installation: HTInstallation):
+        super(_GeometryMode, self).__init__(editor, installation)
 
         self._ui.renderArea.hideCreatures = True
         self._ui.renderArea.hideDoors = True
@@ -495,4 +524,7 @@ class _GeometryMode(_Mode):
         ...
 
     def onItemSelectionChanged(self) -> None:
+        ...
+
+    def onItemContextMenu(self, point: QPoint) -> None:
         ...
