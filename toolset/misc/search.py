@@ -7,6 +7,7 @@ from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
+from misc import search_result_ui
 from misc.asyncloader import AsyncBatchLoader
 
 
