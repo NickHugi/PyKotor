@@ -11,6 +11,8 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QIcon, QPixmap, QColor, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheckBox, QAction
+from pykotor.common.language import LocalizedString
+
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -18,6 +20,7 @@ from pykotor.resource.formats.lyt import LYT, read_lyt
 from pykotor.resource.generics.git import read_git, GIT, GITInstance, GITCreature, GITTrigger, GITEncounter, GITCamera, \
     GITWaypoint, GITSound, GITStore, GITPlaceable, GITDoor, bytes_git
 from pykotor.resource.type import ResourceType
+from pykotor.tools.generic import extract_name
 
 from data.installation import HTInstallation
 from editors.editor import Editor
@@ -26,7 +29,7 @@ from utils.window import openResourceEditor
 
 
 class GITEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
@@ -40,6 +43,9 @@ class GITEditor(Editor):
         self._git: GIT = GIT()
         self._mode: _Mode = _InstanceMode(self, installation)
         self._geomInstance: Optional[GITInstance] = None  # Used to track which trigger/encounter you are editing
+
+        self.instanceLabels: str = "resref"  # What label to use for instances in the list
+        self.instanceLabelsBuffer: Dict = {}
 
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: QColor(255, 0, 0, 40),
@@ -105,10 +111,16 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCameraCheck)
         self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewStoreCheck)
 
+        # Edit
         self.ui.actionDeleteSelected.triggered.connect(lambda: self._mode.removeSelected())
+        # View
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
         self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
+        # View -> Instance Labels
+        self.ui.actionUseResref.triggered.connect(lambda _: self.setInstanceLabelType("resref"))
+        self.ui.actionUseName.triggered.connect(lambda _: self.setInstanceLabelType("name"))
+        self.ui.actionUseTag.triggered.connect(lambda _: self.setInstanceLabelType("tag"))
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -159,6 +171,11 @@ class GITEditor(Editor):
 
     def updateInstanceVisibility(self) -> None:
         self._mode.updateInstanceVisibility()
+
+    def setInstanceLabelType(self, labelType) -> None:
+        self.instanceLabels = labelType
+        # Force the instance list to rebuild
+        self.updateInstanceVisibility()
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         self._mode.onMouseMoved(screen, delta, buttons, keys)
@@ -258,6 +275,24 @@ class _InstanceMode(_Mode):
         self._ui.renderArea.hideGeomPoints = True
         self.updateInstanceVisibility()
 
+    def getInstanceLabel(self, instance: GITInstance) -> str:
+        index = self._editor.git().index(instance)
+        reference = "" if instance.reference() is None else instance.reference().get()
+
+        label = reference
+        # Make sure its not a camera (as camera's are not linked to resources)
+        if instance.extension() is not None and self._editor.instanceLabels != "resref":
+            res = self._installation.resource(reference, instance.extension())
+
+            if self._editor.instanceLabels == "name" and res is not None:
+                name = extract_name(res.data, LocalizedString.from_english(reference))
+                label = self._installation.string(name)
+            elif self._editor.instanceLabels == "tag" and res is not None:
+                tag = extract_name(res.data, LocalizedString.from_english(reference))
+                label = self._installation.string(tag)
+
+        return "[{}] {}".format(index, label)
+
     def updateStatusBar(self) -> None:
         screen = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
         world = self._ui.renderArea.toWorldCoords(screen.x(), screen.y())
@@ -294,8 +329,7 @@ class _InstanceMode(_Mode):
                          or instance.reference() == "")
             ):
                 icon = QIcon(self._ui.renderArea.instancePixmap(instance))
-                reference = "" if instance.reference() is None else instance.reference().get()
-                text = "[{}] {}".format(self._editor.git().index(instance), reference)
+                text = self.getInstanceLabel(instance)
                 item = QListWidgetItem(icon, text)
                 item.setData(QtCore.Qt.UserRole, instance)
                 self._ui.listWidget.addItem(item)
@@ -373,15 +407,18 @@ class _InstanceMode(_Mode):
         menu = QMenu(self._editor)
         world = self._ui.renderArea.toWorldCoords(point.x(), point.y())
 
+        # Show "Remove" action if instances are selected
         if self._ui.renderArea.selectedInstances():
             menu.addAction("Remove").triggered.connect(self.removeSelected)
 
+        # Show "Edit Instance"+"Edit Geometry" action if a single instance is selected
         if len(self._ui.renderArea.selectedInstances()) == 1:
             menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
             instance = self._ui.renderArea.selectedInstances()[0]
             if isinstance(instance, GITEncounter) or isinstance(instance, GITTrigger):
                 menu.addAction("Edit Geometry").triggered.connect(lambda: self._editor.setMode(_GeometryMode(self._editor, instance)))
 
+        # If no instances are selected then show the actions to add new instances
         if len(self._ui.renderArea.selectedInstances()) == 0:
             menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y)))
             menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y)))
@@ -394,6 +431,9 @@ class _InstanceMode(_Mode):
             menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(world.x, world.y)))
 
         menu.addSeparator()
+
+        # If there are instances under the mouse, add actions for each one of them. If the player triggers on of them
+        # the selection will change appropriately.
         for instance in self._ui.renderArea.instancesUnderMouse():
             icon = QIcon(self._ui.renderArea.instancePixmap(instance))
             reference = "" if instance.reference() is None else instance.reference().get()

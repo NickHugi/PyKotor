@@ -464,9 +464,19 @@ QCheckBox::indicator:checked:hover {
     <property name="title">
      <string>View</string>
     </property>
+    <widget class="QMenu" name="menuInstanceLabels">
+     <property name="title">
+      <string>Instance Labels</string>
+     </property>
+     <addaction name="actionUseResref"/>
+     <addaction name="actionUseName"/>
+     <addaction name="actionUseTag"/>
+    </widget>
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
     <addaction name="actionRecentreCamera"/>
+    <addaction name="separator"/>
+    <addaction name="menuInstanceLabels"/>
    </widget>
    <addaction name="menuNew"/>
    <addaction name="menuEdit"/>
@@ -521,6 +531,21 @@ QCheckBox::indicator:checked:hover {
   <action name="actionDeleteSelected">
    <property name="text">
     <string>Delete Selected</string>
+   </property>
+  </action>
+  <action name="actionUseResref">
+   <property name="text">
+    <string>ResRef</string>
+   </property>
+  </action>
+  <action name="actionUseName">
+   <property name="text">
+    <string>Name</string>
+   </property>
+  </action>
+  <action name="actionUseTag">
+   <property name="text">
+    <string>Tag</string>
    </property>
   </action>
  </widget>
