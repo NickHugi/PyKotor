@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="images">
+    <file>icons/lock.png</file>
     <file>icons/k1/camera.png</file>
     <file>icons/k2/camera.png</file>
     <file>icons/kx/camera.png</file>

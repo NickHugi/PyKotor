@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 565)
+        MainWindow.resize(836, 641)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout(self.centralwidget)
@@ -27,6 +27,7 @@ class Ui_MainWindow(object):
         self.filterEdit.setObjectName("filterEdit")
         self.verticalLayout.addWidget(self.filterEdit)
         self.listWidget = QtWidgets.QListWidget(self.centralwidget)
+        self.listWidget.setMaximumSize(QtCore.QSize(200, 16777215))
         self.listWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.listWidget.setObjectName("listWidget")
         self.verticalLayout.addWidget(self.listWidget)
@@ -34,11 +35,52 @@ class Ui_MainWindow(object):
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_2.setSpacing(0)
+        self.horizontalLayout_2.setSpacing(2)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem)
+        self.lockInstancesCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.lockInstancesCheck.setMaximumSize(QtCore.QSize(28, 16777215))
+        self.lockInstancesCheck.setStyleSheet("QCheckbox {\n"
+"    spacing: 0px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator {\n"
+"    image: url(:/images/icons/lock.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
+        self.lockInstancesCheck.setText("")
+        self.lockInstancesCheck.setChecked(False)
+        self.lockInstancesCheck.setObjectName("lockInstancesCheck")
+        self.horizontalLayout_2.addWidget(self.lockInstancesCheck)
+        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label.setMaximumSize(QtCore.QSize(16777215, 28))
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.label.setFont(font)
+        self.label.setObjectName("label")
+        self.horizontalLayout_2.addWidget(self.label)
         self.viewCreatureCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewCreatureCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewCreatureCheck.setStyleSheet("QCheckbox {\n"
 "    spacing: 0px;\n"
 "}\n"
@@ -71,6 +113,7 @@ class Ui_MainWindow(object):
         self.viewCreatureCheck.setObjectName("viewCreatureCheck")
         self.horizontalLayout_2.addWidget(self.viewCreatureCheck)
         self.viewDoorCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewDoorCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewDoorCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/door.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -99,6 +142,7 @@ class Ui_MainWindow(object):
         self.viewDoorCheck.setObjectName("viewDoorCheck")
         self.horizontalLayout_2.addWidget(self.viewDoorCheck)
         self.viewPlaceableCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewPlaceableCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewPlaceableCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/placeable.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -127,6 +171,7 @@ class Ui_MainWindow(object):
         self.viewPlaceableCheck.setObjectName("viewPlaceableCheck")
         self.horizontalLayout_2.addWidget(self.viewPlaceableCheck)
         self.viewStoreCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewStoreCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewStoreCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/merchant.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -155,6 +200,7 @@ class Ui_MainWindow(object):
         self.viewStoreCheck.setObjectName("viewStoreCheck")
         self.horizontalLayout_2.addWidget(self.viewStoreCheck)
         self.viewSoundCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewSoundCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewSoundCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/sound.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -183,6 +229,7 @@ class Ui_MainWindow(object):
         self.viewSoundCheck.setObjectName("viewSoundCheck")
         self.horizontalLayout_2.addWidget(self.viewSoundCheck)
         self.viewWaypointCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewWaypointCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewWaypointCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/waypoint.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -211,6 +258,7 @@ class Ui_MainWindow(object):
         self.viewWaypointCheck.setObjectName("viewWaypointCheck")
         self.horizontalLayout_2.addWidget(self.viewWaypointCheck)
         self.viewCameraCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewCameraCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewCameraCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/camera.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -239,6 +287,7 @@ class Ui_MainWindow(object):
         self.viewCameraCheck.setObjectName("viewCameraCheck")
         self.horizontalLayout_2.addWidget(self.viewCameraCheck)
         self.viewEncounterCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewEncounterCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewEncounterCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/encounter.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -267,6 +316,7 @@ class Ui_MainWindow(object):
         self.viewEncounterCheck.setObjectName("viewEncounterCheck")
         self.horizontalLayout_2.addWidget(self.viewEncounterCheck)
         self.viewTriggerCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewTriggerCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewTriggerCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/trigger.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -311,7 +361,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_3.setStretch(1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 836, 22))
         self.menubar.setObjectName("menubar")
         self.menuNew = QtWidgets.QMenu(self.menubar)
         self.menuNew.setObjectName("menuNew")
@@ -319,8 +369,8 @@ class Ui_MainWindow(object):
         self.menuEdit.setObjectName("menuEdit")
         self.menuView = QtWidgets.QMenu(self.menubar)
         self.menuView.setObjectName("menuView")
-        self.menuWaypointLabels = QtWidgets.QMenu(self.menuView)
-        self.menuWaypointLabels.setObjectName("menuWaypointLabels")
+        self.menuWaypoint_Labels = QtWidgets.QMenu(self.menuView)
+        self.menuWaypoint_Labels.setObjectName("menuWaypoint_Labels")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -345,12 +395,6 @@ class Ui_MainWindow(object):
         self.actionRecentreCamera.setObjectName("actionRecentreCamera")
         self.actionDeleteSelected = QtWidgets.QAction(MainWindow)
         self.actionDeleteSelected.setObjectName("actionDeleteSelected")
-        self.actionUseResref = QtWidgets.QAction(MainWindow)
-        self.actionUseResref.setObjectName("actionUseResref")
-        self.actionUseName = QtWidgets.QAction(MainWindow)
-        self.actionUseName.setObjectName("actionUseName")
-        self.actionUseTag = QtWidgets.QAction(MainWindow)
-        self.actionUseTag.setObjectName("actionUseTag")
         self.actionUseWaypointResRef = QtWidgets.QAction(MainWindow)
         self.actionUseWaypointResRef.setObjectName("actionUseWaypointResRef")
         self.actionUseWaypointName = QtWidgets.QAction(MainWindow)
@@ -365,14 +409,14 @@ class Ui_MainWindow(object):
         self.menuNew.addSeparator()
         self.menuNew.addAction(self.actionExit)
         self.menuEdit.addAction(self.actionDeleteSelected)
-        self.menuWaypointLabels.addAction(self.actionUseWaypointResRef)
-        self.menuWaypointLabels.addAction(self.actionUseWaypointName)
-        self.menuWaypointLabels.addAction(self.actionUseWaypointTag)
+        self.menuWaypoint_Labels.addAction(self.actionUseWaypointResRef)
+        self.menuWaypoint_Labels.addAction(self.actionUseWaypointName)
+        self.menuWaypoint_Labels.addAction(self.actionUseWaypointTag)
         self.menuView.addAction(self.actionZoomIn)
         self.menuView.addAction(self.actionZoomOut)
         self.menuView.addAction(self.actionRecentreCamera)
         self.menuView.addSeparator()
-        self.menuView.addAction(self.menuWaypointLabels.menuAction())
+        self.menuView.addAction(self.menuWaypoint_Labels.menuAction())
         self.menubar.addAction(self.menuNew.menuAction())
         self.menubar.addAction(self.menuEdit.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
@@ -384,6 +428,8 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.filterEdit.setPlaceholderText(_translate("MainWindow", "filter..."))
+        self.lockInstancesCheck.setToolTip(_translate("MainWindow", "Creatures"))
+        self.label.setText(_translate("MainWindow", "|"))
         self.viewCreatureCheck.setToolTip(_translate("MainWindow", "Creatures"))
         self.viewDoorCheck.setToolTip(_translate("MainWindow", "Doors"))
         self.viewPlaceableCheck.setToolTip(_translate("MainWindow", "Placeables"))
@@ -396,7 +442,7 @@ class Ui_MainWindow(object):
         self.menuNew.setTitle(_translate("MainWindow", "File"))
         self.menuEdit.setTitle(_translate("MainWindow", "Edit"))
         self.menuView.setTitle(_translate("MainWindow", "View"))
-        self.menuWaypointLabels.setTitle(_translate("MainWindow", "Waypoint Labels"))
+        self.menuWaypoint_Labels.setTitle(_translate("MainWindow", "Waypoint Labels"))
         self.actionNew.setText(_translate("MainWindow", "New"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionSave.setText(_translate("MainWindow", "Save"))
@@ -407,9 +453,6 @@ class Ui_MainWindow(object):
         self.actionZoomOut.setText(_translate("MainWindow", "Zoom Out"))
         self.actionRecentreCamera.setText(_translate("MainWindow", "Reset Camera"))
         self.actionDeleteSelected.setText(_translate("MainWindow", "Delete Selected"))
-        self.actionUseResref.setText(_translate("MainWindow", "ResRef"))
-        self.actionUseName.setText(_translate("MainWindow", "Name"))
-        self.actionUseTag.setText(_translate("MainWindow", "Tag"))
         self.actionUseWaypointResRef.setText(_translate("MainWindow", "ResRef"))
         self.actionUseWaypointName.setText(_translate("MainWindow", "Name"))
         self.actionUseWaypointTag.setText(_translate("MainWindow", "Tag"))

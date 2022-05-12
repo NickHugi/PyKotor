@@ -381,7 +381,7 @@ class _InstanceMode(_Mode):
             self._ui.renderArea.panCamera(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             self._ui.renderArea.rotateCamera(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys:
+        elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys and not self._ui.lockInstancesCheck.isChecked():
             for instance in self._ui.renderArea.selectedInstances():
                 instance.move(worldDelta.x, worldDelta.y, 0.0)
                 # Snap the instance on top of the walkmesh, if there is no walkmesh underneath it will snap Z to 0
