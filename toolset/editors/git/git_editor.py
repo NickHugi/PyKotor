@@ -44,8 +44,7 @@ class GITEditor(Editor):
         self._mode: _Mode = _InstanceMode(self, installation)
         self._geomInstance: Optional[GITInstance] = None  # Used to track which trigger/encounter you are editing
 
-        self.instanceLabels: str = "resref"  # What label to use for instances in the list
-        self.instanceLabelsBuffer: Dict = {}
+        self.waypointLabelType: str = "resref"  # What label to use for waypoints in the instance list
 
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: QColor(255, 0, 0, 40),
@@ -117,10 +116,10 @@ class GITEditor(Editor):
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
         self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
-        # View -> Instance Labels
-        self.ui.actionUseResref.triggered.connect(lambda _: self.setInstanceLabelType("resref"))
-        self.ui.actionUseName.triggered.connect(lambda _: self.setInstanceLabelType("name"))
-        self.ui.actionUseTag.triggered.connect(lambda _: self.setInstanceLabelType("tag"))
+        # View -> Waypoint Labels
+        self.ui.actionUseWaypointResRef.triggered.connect(lambda _: self.setWaypointLabelType("resref"))
+        self.ui.actionUseWaypointName.triggered.connect(lambda _: self.setWaypointLabelType("name"))
+        self.ui.actionUseWaypointTag.triggered.connect(lambda _: self.setWaypointLabelType("tag"))
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -172,8 +171,8 @@ class GITEditor(Editor):
     def updateInstanceVisibility(self) -> None:
         self._mode.updateInstanceVisibility()
 
-    def setInstanceLabelType(self, labelType) -> None:
-        self.instanceLabels = labelType
+    def setWaypointLabelType(self, labelType) -> None:
+        self.waypointLabelType = labelType
         # Force the instance list to rebuild
         self.updateInstanceVisibility()
 
@@ -280,6 +279,17 @@ class _InstanceMode(_Mode):
         reference = "" if instance.reference() is None else instance.reference().get()
 
         label = reference
+
+        if isinstance(instance, GITWaypoint):
+            if self._editor.waypointLabelType == "tag":
+                label = instance.tag
+            elif self._editor.waypointLabelType == "name":
+                label = self._installation.string(instance.name)
+
+        # Some old code that allowed to user to display Tags/Names instead of the ResRef potentially to readded at a
+        # later too. Its currently not optimized.
+        '''
+        label = reference
         # Make sure its not a camera (as camera's are not linked to resources)
         if instance.extension() is not None and self._editor.instanceLabels != "resref":
             res = self._installation.resource(reference, instance.extension())
@@ -290,6 +300,7 @@ class _InstanceMode(_Mode):
             elif self._editor.instanceLabels == "tag" and res is not None:
                 tag = extract_name(res.data, LocalizedString.from_english(reference))
                 label = self._installation.string(tag)
+        '''
 
         return "[{}] {}".format(index, label)
 

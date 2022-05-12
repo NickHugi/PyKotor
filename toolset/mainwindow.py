@@ -65,6 +65,7 @@ from misc.search import FileSearcher, FileResults
 from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 from tools.indoormap.indoorbuilder import IndoorMapBuilder
+from tools.module.me_window import ModuleEditor
 from utils.window import openResourceEditor
 
 
