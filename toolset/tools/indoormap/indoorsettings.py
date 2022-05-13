@@ -3,8 +3,6 @@ from typing import List
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from data.installation import HTInstallation
-from editors.editor import Editor
-from tools.indoormap import indoorsettings_ui
 from tools.indoormap.indoorkit import Kit
 from tools.indoormap.indoormap import IndoorMap
 
@@ -13,7 +11,8 @@ class IndoorMapSettings(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, indoorMap: IndoorMap, kits: List[Kit]):
         super().__init__(parent)
 
-        self.ui = indoorsettings_ui.Ui_Dialog()
+        from tools.indoormap import ui_indoorsettings
+        self.ui = ui_indoorsettings.Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.nameEdit.setInstallation(installation)
 

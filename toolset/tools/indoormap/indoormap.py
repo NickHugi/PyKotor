@@ -3,12 +3,10 @@ from __future__ import annotations
 import json
 import math
 from copy import copy, deepcopy
-from time import sleep
-from typing import List, Optional, Tuple, NamedTuple
+from typing import List, Optional, NamedTuple
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QPainter, QTransform, QColor, QImage
-from PyQt5.QtWidgets import QMessageBox
 from pykotor.common.geometry import Vector3, Vector2, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef, Color
@@ -26,7 +24,7 @@ from pykotor.resource.formats.vis.vis_auto import bytes_vis
 from pykotor.resource.generics.are import ARE, bytes_are, ARENorthAxis
 from pykotor.resource.generics.git import GIT, bytes_git, GITDoor
 from pykotor.resource.generics.ifo import IFO, bytes_ifo
-from pykotor.resource.generics.utd import UTD, bytes_utd
+from pykotor.resource.generics.utd import bytes_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 

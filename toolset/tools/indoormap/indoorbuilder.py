@@ -14,18 +14,14 @@ from PyQt5.QtGui import QImage, QPixmap, QPaintEvent, QTransform, QPainter, QCol
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMainWindow, QFileDialog, QMessageBox, QDialog, QFormLayout, \
     QPushButton, QMenu
 from pykotor.common.geometry import Vector3, Vector2
-from pykotor.common.misc import Color
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.extract.installation import Installation
-from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace
-from pykotor.resource.generics.utd import read_utd
-from pykotor.resource.type import ResourceType
+from pykotor.resource.formats.bwm import BWMFace
 
 from config import UPDATE_INFO_LINK
 from data.installation import HTInstallation
 from misc.asyncloader import AsyncLoader
 from misc.help.help import HelpWindow
-from tools.indoormap.indoorkit import KitComponent, KitComponentHook, Kit, KitDoor, load_kits
+from tools.indoormap.indoorkit import KitComponent, Kit, load_kits
 from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
 from tools.indoormap.indoorsettings import IndoorMapSettings
 
@@ -39,8 +35,8 @@ class IndoorMapBuilder(QMainWindow):
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
-        from tools.indoormap import indoorbuilder_ui
-        self.ui = indoorbuilder_ui.Ui_MainWindow()
+        from tools.indoormap import ui_indoorbuilder
+        self.ui = ui_indoorbuilder.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupHotkeys()
@@ -699,8 +695,8 @@ class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from tools.indoormap import indoordownloader_ui
-        self.ui = indoordownloader_ui.Ui_Dialog()
+        from tools.indoormap import ui_indoordownloader
+        self.ui = ui_indoordownloader.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupDownloads()
 

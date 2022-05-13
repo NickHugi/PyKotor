@@ -1,9 +1,9 @@
-from typing import Optional, Any
+from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QColor, QPixmap, QImage
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QColorDialog, QLabel, QComboBox, QMenu, QDialog
+from PyQt5.QtWidgets import QWidget, QColorDialog, QComboBox, QMenu, QDialog
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Color
 
@@ -17,8 +17,8 @@ class LocalizedStringLineEdit(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from misc.widget import locstringlineedit_ui
-        self.ui = locstringlineedit_ui.Ui_Form()
+        from misc.widget import ui_locstringlineedit
+        self.ui = ui_locstringlineedit.Ui_Form()
         self.ui.setupUi(self)
 
         self._installation: Optional[HTInstallation] = None

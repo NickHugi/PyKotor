@@ -4,8 +4,7 @@ from PyQt5.QtWidgets import QAbstractSpinBox
 
 class LongSpinBox(QAbstractSpinBox):
     """
-    Implementation of QAbstractSpinBox that allows for values that exceed a signed 32-bit integer of which QSpinBox is
-    restrected to.
+    Implementation of QAbstractSpinBox that allows for values that exceed a signed 32-bit integer.
     """
     valueChanged = QtCore.pyqtSignal(object)
 

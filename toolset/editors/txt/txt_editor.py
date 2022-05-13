@@ -1,8 +1,6 @@
 from typing import Optional
 
 import chardet
-from PyQt5 import QtCore
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit
 from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
@@ -18,8 +16,8 @@ class TXTEditor(Editor):
 
         self._wordWrap: bool = False
 
-        from editors.txt import txt_editor_ui
-        self.ui = txt_editor_ui.Ui_MainWindow()
+        from editors.txt import ui_txt_editor
+        self.ui = ui_txt_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

@@ -15,8 +15,8 @@ class AudioPlayer(QMainWindow):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from misc import audio_player_ui
-        self.ui = audio_player_ui.Ui_MainWindow()
+        from misc import ui_audio_player
+        self.ui = ui_audio_player.Ui_MainWindow()
         self.ui.setupUi(self)
 
         self.player = QMediaPlayer(self)

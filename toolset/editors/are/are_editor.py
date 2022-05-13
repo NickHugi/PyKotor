@@ -22,8 +22,8 @@ class AREEditor(Editor):
         self._are: ARE = ARE()
 
 
-        from editors.are import are_editor_ui
-        self.ui = are_editor_ui.Ui_MainWindow()
+        from editors.are import ui_are_editor
+        self.ui = ui_are_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

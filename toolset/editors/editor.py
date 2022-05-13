@@ -8,9 +8,10 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPixmap, QIcon
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QListWidgetItem, \
     QShortcut, QLineEdit, QWidget, QPlainTextEdit
+
+from editors import ui_savetomodule, ui_loadfrommodule, ui_locstring
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.erf import write_erf, read_erf, ERFType
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
@@ -18,7 +19,6 @@ from pykotor.resource.type import ResourceType
 
 from data.configuration import Configuration
 from data.installation import HTInstallation
-from editors import savetomodule_ui, loadfrommodule_ui, locstring_ui
 
 
 class Editor(QMainWindow):
@@ -238,7 +238,7 @@ class SaveToModuleDialog(QDialog):
     def __init__(self, resref, restype, supported):
         super().__init__()
 
-        self.ui = savetomodule_ui.Ui_Dialog()
+        self.ui = ui_savetomodule.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.resrefEdit.setText(resref)
@@ -259,7 +259,7 @@ class LoadFromModuleDialog(QDialog):
     def __init__(self, capsule: Capsule, supported):
         super().__init__()
 
-        self.ui = loadfrommodule_ui.Ui_Dialog()
+        self.ui = ui_loadfrommodule.Ui_Dialog()
         self.ui.setupUi(self)
 
         for resource in capsule:
@@ -281,10 +281,10 @@ class LoadFromModuleDialog(QDialog):
 
 
 class LocalizedStringDialog(QDialog):
-    def __init__(self, parent: QWidget, installation: Installation, locstring: LocalizedString):
+    def __init__(self, parent: QWidget, installation: HTInstallation, locstring: LocalizedString):
         super().__init__(parent)
 
-        self.ui = locstring_ui.Ui_Dialog()
+        self.ui = ui_locstring.Ui_Dialog()
         self.ui.setupUi(self)
         self.setWindowTitle("{} - {} - Localized String Editor".format(installation.talktable().language().name.title(), installation.name))
 

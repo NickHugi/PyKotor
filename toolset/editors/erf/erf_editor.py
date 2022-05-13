@@ -1,9 +1,9 @@
 import os
-from typing import Optional, Callable, List, Union
+from typing import Optional, List, Union
 
 from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import QItemSelection, QThread, QMimeData
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QPixmap, QIcon, QDragLeaveEvent
+from PyQt5.QtCore import QMimeData
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import read_erf, ERF, ERFType, write_erf, ERFResource
@@ -22,8 +22,8 @@ class ERFEditor(Editor):
         super().__init__(parent, "ERF Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from editors.erf import erf_editor_ui
-        self.ui = erf_editor_ui.Ui_MainWindow()
+        from editors.erf import ui_erf_editor
+        self.ui = ui_erf_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

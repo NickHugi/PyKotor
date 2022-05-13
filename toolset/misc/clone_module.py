@@ -22,8 +22,8 @@ class CloneModuleDialog(QDialog):
     def __init__(self, parent: QWidget, active: HTInstallation, installations: Dict[str, HTInstallation]):
         super().__init__(parent)
 
-        from misc import clone_module_ui
-        self.ui = clone_module_ui.Ui_Dialog()
+        from misc import ui_clone_module
+        self.ui = ui_clone_module.Ui_Dialog()
         self.ui.setupUi(self)
 
         self._active: HTInstallation = active

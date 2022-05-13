@@ -1,6 +1,5 @@
 from typing import Optional
 
-from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QFileDialog, QWidget
 from pykotor.extract.installation import Installation
 from pykotor.extract.talktable import TalkTable
@@ -17,8 +16,8 @@ class SSFEditor(Editor):
 
         self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
 
-        from editors.ssf import sff_editor_ui
-        self.ui = sff_editor_ui.Ui_MainWindow()
+        from editors.ssf import ui_sff_editor
+        self.ui = ui_sff_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

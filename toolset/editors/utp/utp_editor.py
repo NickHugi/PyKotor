@@ -22,8 +22,8 @@ class UTPEditor(Editor):
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
 
-        from editors.utp import utp_editor_ui
-        self.ui = utp_editor_ui.Ui_MainWindow()
+        from editors.utp import ui_utp_editor
+        self.ui = ui_utp_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

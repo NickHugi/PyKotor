@@ -2,8 +2,8 @@ from time import sleep
 from typing import List, Optional
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QThread, QItemSelection
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
+from PyQt5.QtCore import QSortFilterProxyModel, QThread
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QShortcut, QDialog, QProgressBar, QVBoxLayout, QWidget
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import read_tlk, TLK, TLKEntry, write_tlk
@@ -18,8 +18,8 @@ class TLKEditor(Editor):
         supported = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
-        from editors.tlk import tlk_editor_ui
-        self.ui = tlk_editor_ui.Ui_MainWindow()
+        from editors.tlk import ui_tlk_editor
+        self.ui = ui_tlk_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

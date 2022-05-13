@@ -3,24 +3,20 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from copy import deepcopy
-from enum import Enum
 from typing import Optional, Set, Dict
 
-import chardet
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QIcon, QPixmap, QColor, QKeySequence, QKeyEvent
+from PyQt5.QtGui import QIcon, QColor, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheckBox, QAction
-from pykotor.common.language import LocalizedString
 
-from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.common.geometry import Vector2, SurfaceMaterial
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import LYT, read_lyt
 from pykotor.resource.generics.git import read_git, GIT, GITInstance, GITCreature, GITTrigger, GITEncounter, GITCamera, \
     GITWaypoint, GITSound, GITStore, GITPlaceable, GITDoor, bytes_git
 from pykotor.resource.type import ResourceType
-from pykotor.tools.generic import extract_name
 
 from data.installation import HTInstallation
 from editors.editor import Editor
@@ -33,8 +29,8 @@ class GITEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
 
-        from editors.git import git_editor_ui
-        self.ui = git_editor_ui.Ui_MainWindow()
+        from editors.git import ui_git_editor
+        self.ui = ui_git_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
@@ -224,8 +220,8 @@ class _Mode(ABC):
         self._editor: GITEditor = editor
         self._installation: HTInstallation = installation
 
-        from editors.git import git_editor_ui
-        self._ui: git_editor_ui = editor.ui
+        from editors.git import ui_git_editor
+        self._ui: ui_git_editor = editor.ui
 
     @abstractmethod
     def removeSelected(self) -> None:

@@ -28,8 +28,8 @@ class UTCEditor(Editor):
         supported = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
-        from editors.utc import utc_editor_ui
-        self.ui = utc_editor_ui.Ui_MainWindow()
+        from editors.utc import ui_utc_editor
+        self.ui = ui_utc_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

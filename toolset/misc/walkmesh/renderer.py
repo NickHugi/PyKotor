@@ -1,10 +1,10 @@
 import math
 from copy import copy
-from typing import List, Optional, Dict, Set, Tuple, NamedTuple
+from typing import List, Optional, Dict, Set, NamedTuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer, QPointF, QRectF
-from PyQt5.QtGui import QPixmap, QPaintEvent, QPainter, QWheelEvent, QMouseEvent, QColor, QPainterPath, QPen, QBrush, \
+from PyQt5.QtGui import QPixmap, QPaintEvent, QPainter, QWheelEvent, QMouseEvent, QColor, QPainterPath, QPen, \
     QKeyEvent, QTransform
 from PyQt5.QtWidgets import QWidget
 from pykotor.common.geometry import Vector3, Vector2, SurfaceMaterial

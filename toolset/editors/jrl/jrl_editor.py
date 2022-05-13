@@ -4,12 +4,12 @@ from PyQt5.QtCore import QItemSelection, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
 from PyQt5.QtWidgets import QWidget, QMenu, QShortcut, QTreeView
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.jrl import JRL, JRLQuest, JRLEntry, dismantle_jrl, JRLQuestPriority, \
-    read_jrl
+from pykotor.resource.generics.jrl import JRL, JRLQuest, JRLEntry, dismantle_jrl, JRLQuestPriority, read_jrl
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
+
 
 class JRLEditor(Editor):
     """
@@ -30,8 +30,8 @@ class JRLEditor(Editor):
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
 
-        from editors.jrl import jrl_editor_ui
-        self.ui = jrl_editor_ui.Ui_MainWindow()
+        from editors.jrl import ui_jrl_editor
+        self.ui = ui_jrl_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

@@ -21,8 +21,8 @@ class UTMEditor(Editor):
 
         self._utm = UTM()
 
-        from editors.utm import utm_editor_ui
-        self.ui = utm_editor_ui.Ui_MainWindow()
+        from editors.utm import ui_utm_editor
+        self.ui = ui_utm_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

@@ -19,8 +19,8 @@ class UTIEditor(Editor):
 
         self._uti = UTI()
 
-        from editors.uti import uti_editor_ui
-        self.ui = uti_editor_ui.Ui_MainWindow()
+        from editors.uti import ui_uti_editor
+        self.ui = ui_uti_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
@@ -278,8 +278,8 @@ class PropertyEditor(QDialog):
     def __init__(self, installation: HTInstallation, utiProperty: UTIProperty):
         super().__init__()
 
-        from editors.uti import property_editor_ui
-        self.ui = property_editor_ui.Ui_Dialog()
+        from editors.uti import ui_property_editor
+        self.ui = ui_property_editor.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.costSelectButton.clicked.connect(self.selectCost)

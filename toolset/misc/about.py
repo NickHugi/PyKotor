@@ -7,8 +7,8 @@ class About(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from misc import about_ui
-        self.ui = about_ui.Ui_Dialog()
+        from misc import ui_about
+        self.ui = ui_about.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.closeButton.clicked.connect(self.close)

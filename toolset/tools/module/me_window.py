@@ -1,20 +1,17 @@
-import math
 import os
-from abc import ABC, abstractmethod
 from contextlib import suppress
-from typing import Optional, Set, List, Dict
+from typing import Set, Dict
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QTimer
-from PyQt5.QtGui import QPixmap, QIcon, QWheelEvent, QMouseEvent, QKeyEvent, QResizeEvent, QColor
-from PyQt5.QtWidgets import QMainWindow, QWidget, QOpenGLWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
+from PyQt5.QtCore import QPoint
+from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent, QColor
+from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
     QMessageBox, QDialog, QDialogButtonBox, QCheckBox
-from pykotor.common.geometry import Vector3, Vector2
+from pykotor.common.geometry import Vector2
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
-from pykotor.extract.file import ResourceIdentifier, FileResource
-from pykotor.resource.formats.bwm import BWMFace
+from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
@@ -31,7 +28,7 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from misc.help.help import HelpWindow
-from pykotor.gl.scene import Scene, RenderObject, FocusedCamera
+from pykotor.gl.scene import RenderObject, FocusedCamera
 
 from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
 from utils.window import openResourceEditor
@@ -53,8 +50,8 @@ class ModuleEditor(QMainWindow):
         self.hideStores: bool = False
         self.hideCameras: bool = False
 
-        from tools.module import moduleeditor_ui
-        self.ui = moduleeditor_ui.Ui_MainWindow()
+        from tools.module import ui_moduleeditor
+        self.ui = ui_moduleeditor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
 
@@ -422,8 +419,8 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b''
         self.filepath: str = ""
 
-        from tools.module import insert_instance_ui
-        self.ui = insert_instance_ui.Ui_Dialog()
+        from tools.module import ui_insert_instance
+        self.ui = ui_insert_instance.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupLocationSelect()

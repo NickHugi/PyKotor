@@ -18,8 +18,8 @@ class UTDEditor(Editor):
         supported = [ResourceType.UTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
 
-        from editors.utd import utd_editor_ui
-        self.ui = utd_editor_ui.Ui_MainWindow()
+        from editors.utd import ui_utd_editor
+        self.ui = ui_utd_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
@@ -189,15 +189,12 @@ class UTDEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_dor_000")
 
-    def editConversation(
-            self
-    ) -> None:
+    def editConversation(self) -> None:
         resname = self.ui.conversationEdit.text()
         data, filepath = None, None
 
         if resname == "":
-            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor",
-                        "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
             return
 
         search = self._installation.resource(resname, ResourceType.DLG)

@@ -1,11 +1,11 @@
 from PyQt5.QtGui import QColor, QPixmap, QImage, QIcon
 from PyQt5.QtWidgets import QDialog, QWidget, QColorDialog, QLabel
-from pykotor.common.geometry import Vector3, Vector2
+from pykotor.common.geometry import Vector3
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITEncounter, GITTrigger, GITSound, \
     GITStore, GITWaypoint, GITCamera, GITInstance
 
-from editors.git import instance1_dialog_ui, instance2_dialog_ui, instance4_dialog_ui, instance3_dialog_ui
+from editors.git import ui_instance1_dialog, ui_instance2_dialog, ui_instance4_dialog, ui_instance3_dialog
 from misc.longspinbox import LongSpinBox
 
 
@@ -39,7 +39,7 @@ class CreatureDialog(QDialog):
     def __init__(self, parent: QWidget, creature: GITCreature):
         super().__init__(parent)
 
-        self.ui = instance1_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance1_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Creature")
@@ -66,7 +66,7 @@ class PlaceableDialog(QDialog):
     def __init__(self, parent: QWidget, placeable: GITPlaceable):
         super().__init__(parent)
 
-        self.ui = instance2_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance2_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Placeable")
@@ -110,7 +110,7 @@ class DoorDialog(QDialog):
     def __init__(self, parent: QWidget, door: GITDoor):
         super().__init__(parent)
 
-        self.ui = instance2_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance2_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Door")
@@ -154,7 +154,7 @@ class EncounterDialog(QDialog):
     def __init__(self, parent: QWidget, encounter: GITEncounter):
         super().__init__(parent)
 
-        self.ui = instance4_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance4_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Encounter")
@@ -179,7 +179,7 @@ class TriggerDialog(QDialog):
     def __init__(self, parent: QWidget, trigger: GITTrigger):
         super().__init__(parent)
 
-        self.ui = instance4_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance4_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Trigger")
@@ -204,7 +204,7 @@ class SoundDialog(QDialog):
     def __init__(self, parent: QWidget, sound: GITSound):
         super().__init__(parent)
 
-        self.ui = instance4_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance4_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Sound")
@@ -229,7 +229,7 @@ class StoreDialog(QDialog):
     def __init__(self, parent: QWidget, store: GITStore):
         super().__init__(parent)
 
-        self.ui = instance4_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance4_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Store")
@@ -254,7 +254,7 @@ class WaypointDialog(QDialog):
     def __init__(self, parent: QWidget, waypoint: GITWaypoint):
         super().__init__(parent)
 
-        self.ui = instance4_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance4_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Waypoint")
@@ -279,7 +279,7 @@ class CameraDialog(QDialog):
     def __init__(self, parent: QWidget, camera: GITCamera):
         super().__init__(parent)
 
-        self.ui = instance3_dialog_ui.Ui_Dialog()
+        self.ui = ui_instance3_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Camera")

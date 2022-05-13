@@ -15,8 +15,8 @@ class UTWEditor(Editor):
         supported = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
-        from editors.utw import utw_editor_ui
-        self.ui = utw_editor_ui.Ui_MainWindow()
+        from editors.utw import ui_utw_editor
+        self.ui = ui_utw_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

@@ -4,10 +4,9 @@ from enum import IntEnum
 from typing import Optional
 
 import pyperclip as pyperclip
-from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap
-from PyQt5.QtWidgets import QShortcut, QMessageBox, QWidget, QAction
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QMessageBox, QWidget, QAction
 from pykotor.resource.formats.twoda import TwoDA, write_2da, read_2da
 from pykotor.resource.type import ResourceType
 
@@ -21,8 +20,8 @@ class TwoDAEditor(Editor):
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
 
-        from editors.twoda import twoda_editor_ui
-        self.ui = twoda_editor_ui.Ui_MainWindow()
+        from editors.twoda import ui_twoda_editor
+        self.ui = ui_twoda_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

@@ -1,4 +1,3 @@
-import operator
 from typing import Dict, List, Optional
 
 from PyQt5 import QtCore
@@ -7,7 +6,6 @@ from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from misc import search_result_ui
 from misc.asyncloader import AsyncBatchLoader
 from utils.window import openResourceEditor
 
@@ -20,8 +18,8 @@ class FileSearcher(QDialog):
     def __init__(self, parent: QWidget, installations: Dict[str, HTInstallation]):
         super().__init__(parent)
 
-        from misc import search_ui
-        self.ui = search_ui.Ui_Dialog()
+        from misc import ui_search
+        self.ui = ui_search.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.results = []
@@ -98,7 +96,9 @@ class FileSearcher(QDialog):
 class FileResults(QDialog):
     def __init__(self, parent: QWidget, results: List[FileResource], installation: HTInstallation):
         super().__init__(parent)
-        self.ui = search_result_ui.Ui_Dialog()
+
+        from misc import ui_search_result
+        self.ui = ui_search_result.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.openButton.clicked.connect(self.open)

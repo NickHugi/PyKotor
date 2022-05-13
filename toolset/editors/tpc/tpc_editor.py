@@ -2,7 +2,7 @@ import io
 from typing import Optional
 
 from PIL import Image, ImageOps
-from PyQt5.QtGui import QPixmap, QImage, QTransform, QIcon
+from PyQt5.QtGui import QPixmap, QImage, QTransform
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import read_tpc, TPCTextureFormat, TPC, write_tpc
@@ -16,8 +16,8 @@ class TPCEditor(Editor):
         supported = [ResourceType.TPC, ResourceType.TGA, ResourceType.JPG, ResourceType.PNG, ResourceType.BMP]
         super().__init__(parent, "Texture Viewer", "none", supported, supported, installation)
 
-        from editors.tpc import tpc_editor_ui
-        self.ui = tpc_editor_ui.Ui_MainWindow()
+        from editors.tpc import ui_tpc_editor
+        self.ui = ui_tpc_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

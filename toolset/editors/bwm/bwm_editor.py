@@ -1,15 +1,11 @@
-import math
 import struct
-from typing import Optional, Tuple, Dict, List, Set
+from typing import Optional, Dict, Set
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer, QPoint
-from PyQt5.QtGui import QIcon, QPixmap, QPaintEvent, QPainter, QPen, QColor, QPainterPath, QBrush, QMouseEvent, QImage, \
-    QWheelEvent, QKeyEvent
+from PyQt5.QtGui import QIcon, QPixmap, QColor, QImage
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QShortcut
-from pykotor.common.geometry import Vector3, SurfaceMaterial, Vector2
+from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.resource.formats.bwm import read_bwm, BWM, BWMFace, write_bwm
-from pykotor.resource.generics.git import GITTrigger, GIT
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -25,8 +21,8 @@ class BWMEditor(Editor):
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
-        from editors.bwm import bwm_editor_ui
-        self.ui = bwm_editor_ui.Ui_MainWindow()
+        from editors.bwm import ui_bwm_editor
+        self.ui = ui_bwm_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

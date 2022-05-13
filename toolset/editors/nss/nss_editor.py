@@ -29,8 +29,8 @@ class NSSEditor(Editor):
         supported = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
-        from editors.nss import nss_editor_ui
-        self.ui = nss_editor_ui.Ui_MainWindow()
+        from editors.nss import ui_nss_editor
+        self.ui = ui_nss_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

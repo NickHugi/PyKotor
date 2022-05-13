@@ -15,8 +15,8 @@ class UTTEditor(Editor):
         supported = [ResourceType.UTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
-        from editors.utt import utt_editor_ui
-        self.ui = utt_editor_ui.Ui_MainWindow()
+        from editors.utt import ui_utt_editor
+        self.ui = ui_utt_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()

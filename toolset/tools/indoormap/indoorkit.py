@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import List, Dict, Tuple, NamedTuple
+from typing import List, Dict, NamedTuple
 
 from PyQt5.QtGui import QImage
 from pykotor.common.geometry import Vector3

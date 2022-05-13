@@ -11,13 +11,13 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm, BWM
 from pykotor.resource.formats.gff import read_gff, write_gff
 from pykotor.resource.formats.lyt import read_lyt, LYT
-from pykotor.resource.generics.git import GIT, construct_git, GITTrigger, dismantle_git, GITInstance
+from pykotor.resource.generics.git import GIT, construct_git, GITTrigger, dismantle_git
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor
-from misc import edit_trigger_ui
-from misc.triggers import geometry_editor_ui
+from misc import ui_edit_trigger
+from misc.triggers import ui_geometry_editor
 
 _TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1
 _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2
@@ -33,7 +33,7 @@ class GeometryEditor(Editor):
         supported = [ResourceType.GIT]
         super().__init__(parent, "Geometry Editor", "trigger", supported, supported, installation)
 
-        self.ui = geometry_editor_ui.Ui_MainWindow()
+        self.ui = ui_geometry_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
@@ -309,7 +309,7 @@ class GeometryEditor(Editor):
 class EditTriggerDialog(QDialog):
     def __init__(self, parent: QWidget, trigger: GITTrigger):
         super().__init__(parent)
-        self.ui = edit_trigger_ui.Ui_Dialog()
+        self.ui = ui_edit_trigger.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.trigger: GITTrigger = trigger
@@ -329,7 +329,7 @@ class EditTriggerDialog(QDialog):
 class EditVector3Dialog(QDialog):
     def __init__(self, parent: QWidget, vector: Vector3):
         super().__init__(parent)
-        self.ui = edit_trigger_ui.Ui_Dialog()
+        self.ui = ui_edit_trigger.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.vector: Vector3 = vector

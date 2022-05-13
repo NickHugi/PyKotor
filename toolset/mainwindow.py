@@ -8,7 +8,7 @@ import traceback
 from contextlib import suppress
 from distutils.version import StrictVersion
 from time import sleep
-from typing import Optional, List, Union, Tuple, Dict
+from typing import Optional, List, Dict
 
 
 import requests
@@ -22,30 +22,18 @@ from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.erf import read_erf, ERFType, write_erf
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
-from pykotor.resource.formats.rim import write_rim, read_rim
 from pykotor.resource.formats.tpc import read_tpc, write_tpc, TPCTextureFormat, TPC
 from pykotor.resource.type import ResourceType
-from watchdog.events import FileSystemEventHandler, FileModifiedEvent
-from watchdog.observers import Observer
 
 from config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
-from editors.are.are_editor import AREEditor
-from editors.bwm.bwm_editor import BWMEditor
 from editors.dlg.dlg_editor import DLGEditor
-from editors.editor import Editor
 from editors.erf.erf_editor import ERFEditor
 from editors.gff.gff_editor import GFFEditor
-from editors.git.git_editor import GITEditor
-from editors.jrl.jrl_editor import JRLEditor
 from editors.nss.nss_editor import NSSEditor
 from editors.ssf.sff_editor import SSFEditor
-from editors.tlk.tlk_editor import TLKEditor
-from editors.tpc.tpc_editor import TPCEditor
-from editors.twoda.twoda_editor import TwoDAEditor
 from editors.txt.txt_editor import TXTEditor
 from editors.utc.utc_editor import UTCEditor
 from editors.utd.utd_editor import UTDEditor
@@ -58,7 +46,6 @@ from editors.utt.utt_editor import UTTEditor
 from editors.utw.utw_editor import UTWEditor
 from misc.about import About
 from misc.asyncloader import AsyncLoader, AsyncBatchLoader
-from misc.audio_player import AudioPlayer
 from misc.help.help import HelpWindow
 from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
@@ -78,8 +65,8 @@ class ToolWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        import mainwindow_ui
-        self.ui = mainwindow_ui.Ui_MainWindow()
+        import ui_mainwindow
+        self.ui = ui_mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
 

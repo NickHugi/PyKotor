@@ -1,9 +1,8 @@
-from contextlib import suppress
 from typing import Any, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange, QSortFilterProxyModel, QModelIndex
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor, QIcon, QPixmap
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor
 from PyQt5.QtWidgets import QListWidgetItem, QMenu, QWidget, QFileDialog, QShortcut
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString, Language, Gender
@@ -35,8 +34,8 @@ class GFFEditor(Editor):
 
         self._talktable: Optional[TalkTable] = installation.talktable() if installation else None
 
-        from editors.gff import gff_editor_ui
-        self.ui = gff_editor_ui.Ui_MainWindow()
+        from editors.gff import ui_gff_editor
+        self.ui = ui_gff_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
@@ -399,7 +398,7 @@ class GFFEditor(Editor):
         ftype = GFFFieldType(ftypeId)
         proxyIndex = self.ui.treeView.selectedIndexes()[0]
         sourceIndex = self.proxyModel.mapToSource(proxyIndex)
-        item = self.model.itemFromIndex(index)
+        item = self.model.itemFromIndex(sourceIndex)
         item.setData(ftype, _TYPE_NODE_ROLE)
 
         numeric = isinstance(item.data(_VALUE_NODE_ROLE), int) or isinstance(item.data(_VALUE_NODE_ROLE), float)

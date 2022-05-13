@@ -3,19 +3,20 @@ from typing import Optional, List
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelection, QBuffer, QIODevice, QPoint, QItemSelectionModel
-from PyQt5.QtGui import QIcon, QPixmap, QStandardItemModel, QStandardItem, QColor, QBrush
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QBrush
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QPlainTextEdit, QMenu, QMessageBox, QShortcut, QDialog
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
-from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.gff import read_gff, write_gff
-from pykotor.resource.generics.dlg import DLG, construct_dlg, DLGLink, DLGNode, DLGReply, DLGEntry, dismantle_dlg, \
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.generics.dlg import DLG, DLGLink, DLGNode, DLGReply, DLGEntry, dismantle_dlg, \
     DLGConversationType, DLGComputerType, DLGAnimation, DLGStunt, read_dlg
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from editors.editor import Editor, LocalizedStringDialog
+
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
@@ -26,8 +27,8 @@ class DLGEditor(Editor):
         supported = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
-        from editors.dlg import dlg_editor_ui
-        self.ui = dlg_editor_ui.Ui_MainWindow()
+        from editors.dlg import ui_dlg_editor
+        self.ui = ui_dlg_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
@@ -736,8 +737,8 @@ class EditAnimationDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, animation: DLGAnimation = DLGAnimation()):
         super().__init__(parent)
 
-        from editors.dlg import edit_animation_ui
-        self.ui = edit_animation_ui.Ui_Dialog()
+        from editors.dlg import ui_edit_animation
+        self.ui = ui_edit_animation.Ui_Dialog()
         self.ui.setupUi(self)
 
         animations_list = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
@@ -772,8 +773,8 @@ class CutsceneModelDialog(QDialog):
     def __init__(self, parent: QWidget, stunt: DLGStunt = DLGStunt()):
         super().__init__(parent)
 
-        from editors.dlg import edit_model_ui
-        self.ui = edit_model_ui.Ui_Dialog()
+        from editors.dlg import ui_edit_model
+        self.ui = ui_edit_model.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.participantEdit.setText(stunt.participant)

@@ -1,7 +1,6 @@
 from typing import Optional, Tuple, Union
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
-from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
 
 from data.configuration import Configuration

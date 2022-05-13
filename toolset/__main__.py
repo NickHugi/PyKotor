@@ -2,7 +2,7 @@ import sys
 import os
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QFont
+
 
 sys.path.append('.')
 sys.path.append('..')
