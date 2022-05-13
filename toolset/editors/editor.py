@@ -104,7 +104,9 @@ class Editor(QMainWindow):
         elif self.encapsulated():
             self.setWindowTitle("{}/{}.{} - {} - {}".format(os.path.basename(self._filepath), self._resref, self._restype.extension, installationName, self._editorTitle))
         else:
-            self.setWindowTitle("{}.{} - {} - {}".format(self._resref, self._restype.extension, installationName, self._editorTitle))
+            folders = os.path.normpath(self._filepath).split(os.sep)
+            folder = folders[-2] if len(folders) >= 2 else ""
+            self.setWindowTitle("{}/{}.{} - {} - {}".format(folder, self._resref, self._restype.extension, installationName, self._editorTitle))
 
     def saveAs(self) -> None:
         filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
