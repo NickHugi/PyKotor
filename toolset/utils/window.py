@@ -18,6 +18,7 @@ def addWindow(window: QWidget) -> None:
 
     windows.append(window)
     window.closeEvent = removeFromList
+    window.show()
 
 
 def openResourceEditor(

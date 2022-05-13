@@ -18,13 +18,13 @@ from misc.asyncloader import AsyncLoader
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
 
-    def __init__(self, parent: QWidget, startingPage: str = None):
+    def __init__(self, parent: Optional[QWidget], startingPage: str = None):
         super().__init__(parent)
 
         self.version: Optional[int] = None
 
-        from misc.help import helpwindow_ui
-        self.ui = helpwindow_ui.Ui_MainWindow()
+        from misc.help import ui_helpwindow
+        self.ui = ui_helpwindow.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
         self._setupContents()

@@ -1,6 +1,6 @@
 import os
 from contextlib import suppress
-from typing import Set, Dict
+from typing import Set, Dict, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
@@ -35,7 +35,7 @@ from utils.window import openResourceEditor
 
 
 class ModuleEditor(QMainWindow):
-    def __init__(self, parent: QWidget, installation: HTInstallation, module: Module):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation, module: Module):
         super().__init__(parent)
 
         self._installation: HTInstallation = installation

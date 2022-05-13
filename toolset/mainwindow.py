@@ -53,7 +53,7 @@ from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 from tools.indoormap.indoorbuilder import IndoorMapBuilder
 from tools.module.me_window import ModuleEditor
-from utils.window import openResourceEditor
+from utils.window import openResourceEditor, addWindow
 
 
 class ToolWindow(QMainWindow):
@@ -300,8 +300,8 @@ class ToolWindow(QMainWindow):
         filepath = QFileDialog.getOpenFileName(self, "Select a module", self.active.module_path())[0]
         if filepath:
             module = Module(Module.get_root(filepath), self.active)
-            designer = ModuleEditor(self, self.active, module)
-            designer.show()
+            designer = ModuleEditor(None, self.active, module)
+            addWindow(designer)
 
     def openSettingsDialog(self) -> None:
         """
@@ -362,7 +362,8 @@ class ToolWindow(QMainWindow):
         """
         Opens the instructions window.
         """
-        HelpWindow(self).show()
+        window = HelpWindow(None)
+        addWindow(window)
 
     def openAboutDialog(self) -> None:
         """
