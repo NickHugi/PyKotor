@@ -796,9 +796,9 @@ class ToolWindow(QMainWindow):
                 editor.savedFile.connect(self.reloadModule)
 
     def openFromFile(self) -> None:
-        filepath, filter = QFileDialog.getOpenFileName(self, "Open a file")
+        filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
 
-        if filepath != "":
+        for filepath in filepaths:
             try:
                 resref, restype_ext = os.path.basename(filepath).split('.', 1)
                 restype = ResourceType.from_extension(restype_ext)
