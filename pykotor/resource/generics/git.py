@@ -926,9 +926,9 @@ def dismantle_git(
         for spawn in encounter.spawn_points:
             spawn_struct = spawn_list.add(GITEncounter.GFF_SPAWN_STRUCT_ID)
             spawn_struct.set_single("Orientation", spawn.orientation)
-            spawn_struct.set_single("X", spawn.position.x)
-            spawn_struct.set_single("Y", spawn.position.y)
-            spawn_struct.set_single("Z", spawn.position.z)
+            spawn_struct.set_single("X", spawn.x)
+            spawn_struct.set_single("Y", spawn.y)
+            spawn_struct.set_single("Z", spawn.z)
 
     placeable_list = root.set_list("Placeable List", GFFList())
     for placeable in git.placeables:
