@@ -1,5 +1,3 @@
-from xml.etree.ElementTree import ParseError
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFF, GFFBinaryReader, GFFBinaryWriter, GFFContent, GFFXMLWriter, GFFXMLReader
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType

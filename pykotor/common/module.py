@@ -3,10 +3,10 @@ from __future__ import annotations
 import os.path
 from contextlib import suppress
 from copy import copy
-from typing import List, TypeVar, Generic, Optional, Dict, Any
+from typing import List, TypeVar, Generic, Optional, Any
 
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
-from pykotor.resource.formats.erf import ERF, write_erf, read_erf, ERFType
+from pykotor.resource.formats.erf import write_erf, read_erf, ERFType
 from pykotor.resource.formats.rim import read_rim, write_rim
 
 from pykotor.resource.formats.vis.vis_auto import bytes_vis
@@ -26,20 +26,20 @@ from pykotor.resource.formats.lyt.lyt_auto import read_lyt, bytes_lyt
 from pykotor.resource.formats.mdl import MDL
 from pykotor.resource.formats.tpc import read_tpc, TPC
 from pykotor.resource.formats.vis import read_vis, VIS
-from pykotor.resource.generics.are import ARE, construct_are, read_are, bytes_are
-from pykotor.resource.generics.dlg import construct_dlg, read_dlg, bytes_dlg
-from pykotor.resource.generics.git import GIT, construct_git, read_git, bytes_git
-from pykotor.resource.generics.ifo import IFO, construct_ifo, read_ifo, bytes_ifo
-from pykotor.resource.generics.pth import construct_pth, read_pth, bytes_pth
-from pykotor.resource.generics.utc import UTC, construct_utc, read_utc, bytes_utc
-from pykotor.resource.generics.utd import UTD, construct_utd, read_utd, bytes_utd
-from pykotor.resource.generics.ute import UTE, construct_ute, read_ute, bytes_ute
-from pykotor.resource.generics.uti import UTI, construct_uti, read_uti, bytes_uti
-from pykotor.resource.generics.utm import UTM, construct_utm, read_utm, bytes_utm
-from pykotor.resource.generics.utp import UTP, construct_utp, read_utp, bytes_utp
-from pykotor.resource.generics.uts import construct_uts, read_uts, bytes_uts, UTS
-from pykotor.resource.generics.utt import UTT, construct_utt, read_utt, bytes_utt
-from pykotor.resource.generics.utw import UTW, construct_utw, read_utw, bytes_utw
+from pykotor.resource.generics.are import ARE, read_are, bytes_are
+from pykotor.resource.generics.dlg import read_dlg, bytes_dlg
+from pykotor.resource.generics.git import GIT, read_git, bytes_git
+from pykotor.resource.generics.ifo import IFO, read_ifo, bytes_ifo
+from pykotor.resource.generics.pth import read_pth, bytes_pth
+from pykotor.resource.generics.utc import UTC, read_utc, bytes_utc
+from pykotor.resource.generics.utd import UTD, read_utd, bytes_utd
+from pykotor.resource.generics.ute import UTE, read_ute, bytes_ute
+from pykotor.resource.generics.uti import UTI, read_uti, bytes_uti
+from pykotor.resource.generics.utm import UTM, read_utm, bytes_utm
+from pykotor.resource.generics.utp import UTP, read_utp, bytes_utp
+from pykotor.resource.generics.uts import read_uts, bytes_uts, UTS
+from pykotor.resource.generics.utt import UTT, read_utt, bytes_utt
+from pykotor.resource.generics.utw import UTW, read_utw, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.model import list_textures, list_lightmaps
 
