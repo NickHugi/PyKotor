@@ -564,7 +564,7 @@ class _GeometryMode(_Mode):
             menu.addAction("Insert").triggered.connect(self.insertPointAtMouse)
 
         menu.addSeparator()
-        menu.addAction("Finish Editing").triggered.connect(lambda: self._editor.setMode(_InstanceMode(self._editor)))
+        menu.addAction("Finish Editing").triggered.connect(lambda: self._editor.setMode(_InstanceMode(self._editor, self._installation)))
 
         menu.popup(self._ui.renderArea.mapToGlobal(point))
 

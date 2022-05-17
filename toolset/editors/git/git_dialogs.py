@@ -5,10 +5,10 @@ from data.installation import HTInstallation
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITEncounter, GITTrigger, GITSound, \
-    GITStore, GITWaypoint, GITCamera, GITInstance
+    GITStore, GITWaypoint, GITCamera, GITInstance, GITModuleLink
 
 from editors.git import ui_instance1_dialog, ui_instance2_dialog, ui_instance4_dialog, ui_instance3_dialog, \
-    ui_instance5_dialog
+    ui_instance5_dialog, ui_instance7_dialog, ui_instance6_dialog
 from misc.longspinbox import LongSpinBox
 
 
@@ -22,7 +22,7 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
     elif isinstance(instance, GITPlaceable):
         dialog = PlaceableDialog(parent, instance)
     elif isinstance(instance, GITTrigger):
-        dialog = TriggerDialog(parent, instance)
+        dialog = TriggerDialog(parent, instance, installation)
     elif isinstance(instance, GITCamera):
         dialog = CameraDialog(parent, instance)
     elif isinstance(instance, GITEncounter):
@@ -154,7 +154,7 @@ class DoorDialog(QDialog):
         self.door.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
         self.door.linked_to = self.ui.linkToTagEdit.text()
         self.door.linked_to_module = ResRef(self.ui.linkToModuleEdit.text())
-        self.door.linked_to_flags = 0 if self.ui.noTransCheck.isChecked() else 1 if self.ui.toDoorCheck.isChecked() else 2
+        self.door.linked_to_flags = GITModuleLink(0 if self.ui.noTransCheck.isChecked() else 1 if self.ui.toDoorCheck.isChecked() else 2)
         self.door.transition_destination = self.ui.transNameEdit.locstring()
 
     def doorCheckboxesChanged(self, state: bool) -> None:
@@ -201,28 +201,42 @@ class EncounterDialog(QDialog):
 
 
 class TriggerDialog(QDialog):
-    def __init__(self, parent: QWidget, trigger: GITTrigger):
+    def __init__(self, parent: QWidget, trigger: GITTrigger, installation: HTInstallation):
         super().__init__(parent)
 
-        self.ui = ui_instance4_dialog.Ui_Dialog()
+        self.ui = ui_instance6_dialog.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.ui.transNameEdit.setInstallation(installation)
 
         self.setWindowTitle("Edit Trigger")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/trigger.png")))
 
         self.ui.resrefEdit.setText(trigger.resref.get())
+        self.ui.tagEdit.setText(trigger.tag)
         self.ui.xPosSpin.setValue(trigger.position.x)
         self.ui.yPosSpin.setValue(trigger.position.y)
         self.ui.zPosSpin.setValue(trigger.position.z)
+        self.ui.linkToTagEdit.setText(trigger.linked_to)
+        self.ui.linkToModuleEdit.setText(trigger.linked_to_module.get())
+        self.ui.noTransCheck.setChecked(trigger.linked_to_flags == 0)
+        self.ui.toDoorCheck.setChecked(trigger.linked_to_flags == 1)
+        self.ui.toWaypointCheck.setChecked(trigger.linked_to_flags == 2)
+        self.ui.transNameEdit.setLocstring(trigger.transition_destination)
 
         self.trigger: GITTrigger = trigger
 
     def accept(self) -> None:
         super().accept()
         self.trigger.resref = ResRef(self.ui.resrefEdit.text())
+        self.trigger.tag = self.ui.tagEdit.text()
         self.trigger.position.x = self.ui.xPosSpin.value()
         self.trigger.position.y = self.ui.yPosSpin.value()
         self.trigger.position.z = self.ui.zPosSpin.value()
+        self.trigger.linked_to = self.ui.linkToTagEdit.text()
+        self.trigger.linked_to_module = ResRef(self.ui.linkToModuleEdit.text())
+        self.trigger.linked_to_flags = GITModuleLink(0 if self.ui.noTransCheck.isChecked() else 1 if self.ui.toDoorCheck.isChecked() else 2)
+        self.trigger.transition_destination = self.ui.transNameEdit.locstring()
 
 
 class SoundDialog(QDialog):
@@ -279,13 +293,14 @@ class WaypointDialog(QDialog):
     def __init__(self, parent: QWidget, waypoint: GITWaypoint):
         super().__init__(parent)
 
-        self.ui = ui_instance4_dialog.Ui_Dialog()
+        self.ui = ui_instance7_dialog.Ui_Dialog()
         self.ui.setupUi(self)
 
         self.setWindowTitle("Edit Waypoint")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/waypoint.png")))
 
         self.ui.resrefEdit.setText(waypoint.resref.get())
+        self.ui.tagEdit.setText(waypoint.tag)
         self.ui.xPosSpin.setValue(waypoint.position.x)
         self.ui.yPosSpin.setValue(waypoint.position.y)
         self.ui.zPosSpin.setValue(waypoint.position.z)
@@ -295,6 +310,7 @@ class WaypointDialog(QDialog):
     def accept(self) -> None:
         super().accept()
         self.waypoint.resref = ResRef(self.ui.resrefEdit.text())
+        self.waypoint.tag = self.ui.tagEdit.text()
         self.waypoint.position.x = self.ui.xPosSpin.value()
         self.waypoint.position.y = self.ui.yPosSpin.value()
         self.waypoint.position.z = self.ui.zPosSpin.value()
