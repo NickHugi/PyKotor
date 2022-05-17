@@ -369,6 +369,12 @@ class _InstanceMode(_Mode):
 
     def editResource(self, instance: GITInstance) -> None:
         res = self._installation.resource(instance.reference().get(), instance.extension())
+        if not res:
+            filepath = "{}/{}.{}".format(self._installation.override_path(), instance.reference().get(), instance.extension().extension)
+            with open(filepath, "wb") as f:
+                f.write(instance.blank())
+            self._installation.reload_override("")
+            res = self._installation.resource(instance.reference().get(), instance.extension())
         openResourceEditor(res.filepath, res.resname, res.restype, res.data, self._installation, self._editor)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
