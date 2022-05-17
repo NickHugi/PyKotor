@@ -117,6 +117,10 @@ class Module:
         for resource in self._installation.chitin_resources():
             if resource.resname() == self._id:
                 self.add_locations(resource.resname(), resource.restype(), [resource.filepath()])
+        for directory in self._installation.override_list():
+            for resource in self._installation.override_resources(directory):
+                if resource.resname() == self._id:
+                    self.add_locations(resource.resname(), resource.restype(), [resource.filepath()])
 
         # Any resource linked in the GIT not present in the module files
         original = self.git().active()
