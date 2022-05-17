@@ -44,6 +44,8 @@ class GFFBinaryReader(ResourceReader):
         if file_version != "V3.2":
             raise ValueError("The GFF version of the file is unsupported.")
 
+        self._gff.content = GFFContent(file_type)
+
         self._struct_offset = self._reader.read_uint32()
         struct_count = self._reader.read_uint32()
         self._field_offset = self._reader.read_uint32()
