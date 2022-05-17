@@ -363,7 +363,7 @@ class _InstanceMode(_Mode):
 
     def editSelectedInstance(self) -> None:
         instance = self._ui.renderArea.selectedInstances()[0]
-        openInstanceDialog(self._editor, instance)
+        openInstanceDialog(self._editor, instance, self._installation)
         self.rebuildInstanceList()
 
     def editResource(self, instance: GITInstance) -> None:
