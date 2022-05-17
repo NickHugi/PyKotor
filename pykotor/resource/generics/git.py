@@ -10,6 +10,14 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
 from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFContent, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
+from pykotor.resource.generics.utc import bytes_utc, UTC
+from pykotor.resource.generics.utd import UTD, bytes_utd
+from pykotor.resource.generics.ute import UTE, bytes_ute
+from pykotor.resource.generics.utm import UTM, bytes_utm
+from pykotor.resource.generics.utp import bytes_utp, UTP
+from pykotor.resource.generics.uts import UTS, bytes_uts
+from pykotor.resource.generics.utt import bytes_utt, UTT
+from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
 
 
@@ -192,6 +200,12 @@ class GITInstance(ABC):
         ...
 
     @abstractmethod
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        ...
+
+    @abstractmethod
     def move(
             self,
             x: float,
@@ -256,6 +270,11 @@ class GITCamera(GITInstance):
     ) -> Optional[ResRef]:
         return None
 
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return None
+
     def extension(
             self
     ) -> Optional[ResourceType]:
@@ -302,6 +321,11 @@ class GITCreature(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_utc(UTC())
 
     def extension(
             self
@@ -356,6 +380,11 @@ class GITDoor(GITInstance):
             roll: float
     ) -> None:
         self.bearing += yaw
+
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_utd(UTD())
 
     def reference(
             self
@@ -425,6 +454,11 @@ class GITEncounter(GITInstance):
     ) -> Optional[ResRef]:
         return self.resref
 
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_ute(UTE())
+
     def extension(
             self
     ) -> Optional[ResourceType]:
@@ -472,6 +506,11 @@ class GITPlaceable(GITInstance):
             self
     ) -> Optional[ResRef]:
         return self.resref
+
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_utp(UTP())
 
     def extension(
             self
@@ -524,6 +563,11 @@ class GITSound(GITInstance):
     ) -> Optional[ResRef]:
         return self.resref
 
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_uts(UTS())
+
     def classification(
             self
     ) -> str:
@@ -570,6 +614,11 @@ class GITStore(GITInstance):
             self
     ) -> Optional[ResourceType]:
         return ResourceType.UTM
+
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_utm(UTM())
     
     def classification(
             self
@@ -623,6 +672,11 @@ class GITTrigger(GITInstance):
             self
     ) -> Optional[ResourceType]:
         return ResourceType.UTT
+
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_utt(UTT())
 
     def classification(
             self
@@ -686,6 +740,11 @@ class GITWaypoint(GITInstance):
             self
     ) -> Optional[ResourceType]:
         return ResourceType.UTW
+
+    def blank(
+            self
+    ) -> Optional[bytes]:
+        return bytes_utw(UTW())
 
     def classification(
             self
@@ -1004,8 +1063,7 @@ def dismantle_git(
         waypoint_struct.set_single("YOrientation", bearing.y)
         waypoint_struct.set_uint8("MapNoteEnabled", waypoint.map_note_enabled)
         waypoint_struct.set_uint8("HasMapNote", 0 if waypoint.map_note is None else 1)
-        waypoint_struct.set_locstring("MapNote",
-                                      LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note)
+        waypoint_struct.set_locstring("MapNote", LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note)
 
     return gff
 
