@@ -424,7 +424,12 @@ class _InstanceMode(_Mode):
             instance = self._ui.renderArea.selectedInstances()[0]
 
             menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
-            menu.addAction("Edit Resource").triggered.connect(lambda: self.editResource(instance))
+
+            actionEditResource = menu.addAction("Edit Resource")
+            actionEditResource.triggered.connect(lambda: self.editResource(instance))
+            actionEditResource.setEnabled(not isinstance(instance, GITCamera))
+            menu.addAction(actionEditResource)
+
             if isinstance(instance, GITEncounter) or isinstance(instance, GITTrigger):
                 menu.addAction("Edit Geometry").triggered.connect(lambda: self._editor.setMode(_GeometryMode(self._editor, instance)))
 
@@ -471,9 +476,10 @@ class _InstanceMode(_Mode):
         instance = self._ui.listWidget.selectedItems()[0].data(QtCore.Qt.UserRole)
         menu = QMenu(self._ui.listWidget)
 
-        editResourceAction = QAction("Edit Resource", menu)
-        editResourceAction.triggered.connect(lambda: self.editResource(instance))
-        menu.addAction(editResourceAction)
+        actionEditResource = menu.addAction("Edit Resource")
+        actionEditResource.triggered.connect(lambda: self.editResource(instance))
+        actionEditResource.setEnabled(not isinstance(instance, GITCamera))
+        menu.addAction(actionEditResource)
 
         menu.popup(self._ui.listWidget.mapToGlobal(point))
 
