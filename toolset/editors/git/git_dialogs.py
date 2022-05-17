@@ -123,9 +123,9 @@ class DoorDialog(QDialog):
 
         self.ui.colorButton.clicked.connect(lambda: self.changeColor(self.ui.colorSpin))
         self.ui.colorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.color))
-        self.ui.noTransCheck.stateChanged.connect(self.doorCheckboxesChanged)
-        self.ui.toDoorCheck.stateChanged.connect(self.doorCheckboxesChanged)
-        self.ui.toWaypointCheck.stateChanged.connect(self.doorCheckboxesChanged)
+        self.ui.noTransCheck.toggled.connect(self.doorCheckboxesChanged)
+        self.ui.toDoorCheck.toggled.connect(self.doorCheckboxesChanged)
+        self.ui.toWaypointCheck.toggled.connect(self.doorCheckboxesChanged)
 
         self.ui.resrefEdit.setText(door.resref.get())
         self.ui.xPosSpin.setValue(door.position.x)
