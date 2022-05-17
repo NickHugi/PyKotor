@@ -330,6 +330,8 @@ class IndoorMap:
             roomData = {}
             roomData["position"] = [*room.position]
             roomData["rotation"] = room.rotation
+            roomData["flip_x"] = room.flip_x
+            roomData["flip_y"] = room.flip_y
             roomData["kit"] = room.component.kit.name
             roomData["component"] = room.component.name
             data["rooms"].append(roomData)
@@ -372,7 +374,9 @@ class IndoorMap:
 
                 position = Vector3(roomData["position"][0], roomData["position"][1], roomData["position"][2])
                 rotation = roomData["rotation"]
-                room = IndoorMapRoom(sComponent, position, rotation)
+                flip_x = bool(roomData["flip_x"] if "flip_x" in roomData else False)
+                flip_y = bool(roomData["flip_y"] if "flip_y" in roomData else False)
+                room = IndoorMapRoom(sComponent, position, rotation, flip_x, flip_y)
                 self.rooms.append(room)
         except KeyError:
             raise ValueError("Map file is corrupted.")
