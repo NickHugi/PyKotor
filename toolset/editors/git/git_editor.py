@@ -267,6 +267,7 @@ class _Mode(ABC):
 
 class _InstanceMode(_Mode):
     def __init__(self, editor: GITEditor, installation: HTInstallation):
+        print("inst", installation)
         super(_InstanceMode, self).__init__(editor, installation)
         self._ui.renderArea.hideGeomPoints = True
         self.updateInstanceVisibility()
@@ -437,7 +438,7 @@ class _InstanceMode(_Mode):
             menu.addAction(actionEditResource)
 
             if isinstance(instance, GITEncounter) or isinstance(instance, GITTrigger):
-                menu.addAction("Edit Geometry").triggered.connect(lambda: self._editor.setMode(_GeometryMode(self._editor, instance)))
+                menu.addAction("Edit Geometry").triggered.connect(lambda: self._editor.setMode(_GeometryMode(self._editor, self._installation)))
 
         # If no instances are selected then show the actions to add new instances
         if len(self._ui.renderArea.selectedInstances()) == 0:
