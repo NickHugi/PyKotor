@@ -421,8 +421,10 @@ class _InstanceMode(_Mode):
 
         # Show "Edit Instance"+"Edit Geometry" action if a single instance is selected
         if len(self._ui.renderArea.selectedInstances()) == 1:
-            menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
             instance = self._ui.renderArea.selectedInstances()[0]
+
+            menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
+            menu.addAction("Edit Resource").triggered.connect(lambda: self.editResource(instance))
             if isinstance(instance, GITEncounter) or isinstance(instance, GITTrigger):
                 menu.addAction("Edit Geometry").triggered.connect(lambda: self._editor.setMode(_GeometryMode(self._editor, instance)))
 
