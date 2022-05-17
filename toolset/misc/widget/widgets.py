@@ -54,8 +54,8 @@ class ColorEdit(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from misc.widget import coloredit_ui
-        self.ui = coloredit_ui.Ui_Form()
+        from misc.widget import ui_coloredit
+        self.ui = ui_coloredit.Ui_Form()
         self.ui.setupUi(self)
 
         self._color: Color = Color(255, 255, 255)
