@@ -68,6 +68,7 @@ class GITEditor(Editor):
 
         self.ui.renderArea.materialColors = self.materialColors
         self.ui.renderArea.hideWalkmeshEdges = True
+        self.ui.renderArea.highlightBoundaries = False
 
         self.new()
 
