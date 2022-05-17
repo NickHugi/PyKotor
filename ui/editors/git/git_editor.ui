@@ -74,7 +74,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Creatures</string>
+           <string>Lock all instances in place</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckbox {
@@ -140,7 +140,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Creatures</string>
+           <string>Show Creatures</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckbox {
@@ -188,7 +188,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Doors</string>
+           <string>Show Doors</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
@@ -232,7 +232,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Placeables</string>
+           <string>Show Placeables</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
@@ -276,7 +276,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Merchants</string>
+           <string>Show Merchants</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
@@ -320,7 +320,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Sounds</string>
+           <string>Show Sounds</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
@@ -364,7 +364,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Waypoints</string>
+           <string>Show Waypoints</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
@@ -408,7 +408,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Cameras</string>
+           <string>Show Cameras</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
@@ -452,7 +452,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Encounters</string>
+           <string>Show Encounters</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
@@ -496,7 +496,7 @@ QCheckBox::indicator:checked:hover {
            </size>
           </property>
           <property name="toolTip">
-           <string>Triggers</string>
+           <string>Show Triggers</string>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox::indicator {
