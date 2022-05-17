@@ -128,6 +128,7 @@ class DoorDialog(QDialog):
         self.ui.toWaypointCheck.toggled.connect(self.doorCheckboxesChanged)
 
         self.ui.resrefEdit.setText(door.resref.get())
+        self.ui.tagEdit.setText(door.tag)
         self.ui.xPosSpin.setValue(door.position.x)
         self.ui.yPosSpin.setValue(door.position.y)
         self.ui.zPosSpin.setValue(door.position.z)
@@ -145,6 +146,7 @@ class DoorDialog(QDialog):
     def accept(self) -> None:
         super().accept()
         self.door.resref = ResRef(self.ui.resrefEdit.text())
+        self.door.tag = self.ui.tagEdit.text()
         self.door.position.x = self.ui.xPosSpin.value()
         self.door.position.y = self.ui.yPosSpin.value()
         self.door.position.z = self.ui.zPosSpin.value()
