@@ -403,6 +403,8 @@ class _InstanceMode(_Mode):
                 original = self._ui.renderArea.instancesUnderMouse()[0]
                 duplicate = deepcopy(original)
                 self._editor.git().add(duplicate)
+                self.rebuildInstanceList()
+                self.selectInstanceItem(original)
 
         # Do not change the selection if the selected instance if its still underneath the mouse
         if currentSelecton and currentSelecton[0] in underMouse:
