@@ -484,6 +484,9 @@ class _InstanceMode(_Mode):
         instance = self._ui.listWidget.selectedItems()[0].data(QtCore.Qt.UserRole)
         menu = QMenu(self._ui.listWidget)
 
+        menu.addAction("Remove").triggered.connect(self.removeSelected)
+        menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
+
         actionEditResource = menu.addAction("Edit Resource")
         actionEditResource.triggered.connect(lambda: self.editResource(instance))
         actionEditResource.setEnabled(not isinstance(instance, GITCamera))
