@@ -711,6 +711,7 @@ class GITWaypoint(GITInstance):
         self.name: LocalizedString = LocalizedString.from_invalid()
         self.map_note: Optional[LocalizedString] = LocalizedString.from_invalid()
         self.map_note_enabled: bool = False
+        self.has_map_note: bool = False
         self.bearing: float = 0.0
 
     def move(
@@ -895,8 +896,8 @@ def construct_git(
         waypoint.position.y = waypoint_struct.acquire("YPosition", 0.0)
         waypoint.position.z = waypoint_struct.acquire("ZPosition", 0.0)
 
-        has_map_note = waypoint_struct.acquire("HasMapNote", 0)
-        if has_map_note:
+        waypoint.has_map_note = waypoint_struct.acquire("HasMapNote", 0)
+        if waypoint.has_map_note:
             waypoint.map_note = waypoint_struct.acquire("MapNote", LocalizedString.from_invalid())
             waypoint.map_note_enabled = waypoint_struct.acquire("MapNoteEnabled", 0)
 
@@ -1062,7 +1063,7 @@ def dismantle_git(
         waypoint_struct.set_single("XOrientation", bearing.x)
         waypoint_struct.set_single("YOrientation", bearing.y)
         waypoint_struct.set_uint8("MapNoteEnabled", waypoint.map_note_enabled)
-        waypoint_struct.set_uint8("HasMapNote", 0 if waypoint.map_note is None else 1)
+        waypoint_struct.set_uint8("HasMapNote", waypoint.has_map_note)
         waypoint_struct.set_locstring("MapNote", LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note)
 
     return gff
