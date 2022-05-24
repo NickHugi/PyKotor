@@ -426,8 +426,8 @@ class WalkmeshRenderer(QWidget):
             screen_w = self.width()
             screen_h = self.height()
 
-        scale_w = screen_w / world_w
-        scale_h = screen_h / world_h
+        scale_w = screen_w / world_w if world_w != 0 else 0
+        scale_h = screen_h / world_h if world_h != 0 else 0
         camScale = min(scale_w, scale_h)
 
         self._camScale = camScale
