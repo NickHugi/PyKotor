@@ -30,7 +30,7 @@ def openInstanceDialog(parent: QWidget, instance: GITInstance, installation: HTI
     elif isinstance(instance, GITSound):
         dialog = SoundDialog(parent, instance)
     elif isinstance(instance, GITWaypoint):
-        dialog = WaypointDialog(parent, instance)
+        dialog = WaypointDialog(parent, instance, installation)
     elif isinstance(instance, GITStore):
         dialog = StoreDialog(parent, instance)
 
@@ -290,20 +290,29 @@ class StoreDialog(QDialog):
 
 
 class WaypointDialog(QDialog):
-    def __init__(self, parent: QWidget, waypoint: GITWaypoint):
+    def __init__(self, parent: QWidget, waypoint: GITWaypoint, installation: HTInstallation):
         super().__init__(parent)
 
         self.ui = ui_instance7_dialog.Ui_Dialog()
         self.ui.setupUi(self)
+
+        self.ui.nameEdit.setInstallation(installation)
+        self.ui.mapNoteEdit.setInstallation(installation)
 
         self.setWindowTitle("Edit Waypoint")
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/k1/waypoint.png")))
 
         self.ui.resrefEdit.setText(waypoint.resref.get())
         self.ui.tagEdit.setText(waypoint.tag)
+        self.ui.nameEdit.setLocstring(waypoint.name)
         self.ui.xPosSpin.setValue(waypoint.position.x)
         self.ui.yPosSpin.setValue(waypoint.position.y)
         self.ui.zPosSpin.setValue(waypoint.position.z)
+        self.ui.bearingSpin.setValue(waypoint.bearing)
+
+        self.ui.mapNoteEdit.setLocstring(waypoint.map_note)
+        self.ui.hasMapNoteCheck.setChecked(waypoint.has_map_note)
+        self.ui.mapNoteEnableCheck.setChecked(waypoint.map_note_enabled)
 
         self.waypoint: GITWaypoint = waypoint
 

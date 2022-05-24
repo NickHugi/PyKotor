@@ -267,7 +267,6 @@ class _Mode(ABC):
 
 class _InstanceMode(_Mode):
     def __init__(self, editor: GITEditor, installation: HTInstallation):
-        print("inst", installation)
         super(_InstanceMode, self).__init__(editor, installation)
         self._ui.renderArea.hideGeomPoints = True
         self.updateInstanceVisibility()
