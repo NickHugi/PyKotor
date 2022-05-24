@@ -135,7 +135,6 @@ class UTCEditor(Editor):
         self.ui.powerList.setSortingEnabled(True)
         self.ui.powerList.sortItems(QtCore.Qt.AscendingOrder)
 
-        self.ui.noReorientateCheckbox.setVisible(installation.tsl)
         self.ui.noBlockCheckbox.setVisible(installation.tsl)
         self.ui.hologramCheckbox.setVisible(installation.tsl)
         self.ui.k2onlyBox.setVisible(installation.tsl)
@@ -228,7 +227,6 @@ class UTCEditor(Editor):
             item.setCheckState(QtCore.Qt.Checked)
 
         # Powers
-
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             item.setCheckState(QtCore.Qt.Unchecked)
