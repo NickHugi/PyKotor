@@ -1014,7 +1014,7 @@ def dismantle_git(
 
     store_list = root.set_list("StoreList", GFFList())
     for store in git.stores:
-        bearing = Vector2.from_angle(creature.bearing + math.pi/2)
+        bearing = Vector2.from_angle(store.bearing + math.pi/2)
 
         store_struct = store_list.add(GITStore.GFF_STRUCT_ID)
         store_struct.set_resref("ResRef", store.resref)
