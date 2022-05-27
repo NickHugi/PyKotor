@@ -114,7 +114,7 @@ class UTCEditor(Editor):
             text = installation.talktable().string(stringref) if stringref != 0 else feat.get_string("label")
             text = "[Unused Feat ID: {}]".format(feat.label()) if text == "" else text
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, feat.label())
+            item.setData(QtCore.Qt.UserRole, int(feat.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.featList.addItem(item)
@@ -128,7 +128,7 @@ class UTCEditor(Editor):
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
             text = "[Unused Power ID: {}]".format(power.label()) if text == "" else text
             item = QListWidgetItem(text)
-            item.setData(QtCore.Qt.UserRole, power.label())
+            item.setData(QtCore.Qt.UserRole, int(power.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.ui.powerList.addItem(item)
