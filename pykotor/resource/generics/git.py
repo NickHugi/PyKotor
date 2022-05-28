@@ -921,8 +921,11 @@ def dismantle_git(
     properties_struct = root.set_struct("AreaProperties", GFFStruct())
     properties_struct.set_int32("AmbientSndDayVol", git.ambient_volume)
     properties_struct.set_int32("AmbientSndDay", git.ambient_sound_id)
+    properties_struct.set_int32("AmbientSndNitVol", git.ambient_volume)
+    properties_struct.set_int32("AmbientSndNight", git.ambient_sound_id)
     properties_struct.set_int32("EnvAudio", git.env_audio)
-    properties_struct.set_uint32("MusicDay", git.music_standard_id)
+    properties_struct.set_int32("MusicDay", git.music_standard_id)
+    properties_struct.set_int32("MusicNight", git.music_standard_id)
     properties_struct.set_int32("MusicBattle", git.music_battle_id)
     properties_struct.set_int32("MusicDelay", git.music_delay)
 
