@@ -148,7 +148,8 @@ class InventoryEditor(QDialog):
         self.equipment = {}
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():
             # Very hacky, but isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
-            if 'DropFrame' in str(type(widget)):
+            # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
+            if 'DropFrame' in str(type(widget)) and widget.resname:
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
 
     def buildItems(self) -> None:
