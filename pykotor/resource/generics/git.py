@@ -356,7 +356,7 @@ class GITDoor(GITInstance):
         super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
-        self.tweak_color: Optional[Color] = Color.WHITE
+        self.tweak_color: Optional[Color] = None
         self.linked_to: str = ""
         self.linked_to_flags: GITModuleLink = GITModuleLink.NoLink
         self.linked_to_module: ResRef = ResRef.from_blank()
@@ -482,7 +482,7 @@ class GITPlaceable(GITInstance):
         super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
-        self.tweak_color: Optional[Color] = Color.WHITE
+        self.tweak_color: Optional[Color] = None
 
     def move(
             self,
