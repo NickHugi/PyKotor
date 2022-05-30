@@ -1,2 +1,2 @@
 UPDATE_INFO_LINK = "https://pastebin.com/raw/tUJCGgrX"
-PROGRAM_VERSION = "2.0.5"
+PROGRAM_VERSION = "2.0.6"
