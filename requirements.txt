@@ -7,7 +7,7 @@ PyKotorGL>=1.1.2
 pyperclip==1.8.2
 PyQt5==5.15.6
 PyQt5-Qt5==5.15.2
-PyQt5-sip==12.9.0
+PyQt5-sip==12.10.1
 requests==2.27.1
 urllib3==1.26.8
 watchdog==2.1.6
@@ -15,3 +15,4 @@ Pillow==9.0.1
 numpy==1.22.2
 Markdown==3.3.6
 jsmin==3.0.1
+requests==2.27.1
