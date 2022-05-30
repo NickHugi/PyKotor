@@ -320,6 +320,7 @@ class ToolWindow(QMainWindow):
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self) -> None:
+        self.active.reload_override("")
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data, self.active, self)
 
@@ -791,7 +792,7 @@ class ToolWindow(QMainWindow):
         resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
         for resource in resources:
             filepath, editor = openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                  resource.data(reload=False), self.active, self)
+                                                  resource.data(reload=True), self.active, self)
             if editor is not None:
                 editor.savedFile.connect(self.reloadModule)
 
