@@ -18,6 +18,8 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImag
     QResizeEvent, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView, QMenu
+from pykotor.tools import model
+
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
@@ -767,7 +769,7 @@ class ToolWindow(QMainWindow):
                     filepath = filepath.replace(".mdl", ".ascii.mdl")
 
                 if extractTexturesMDL:
-                    for texture in mdl.all_textures():
+                    for texture in model.list_textures(data):
                         try:
                             tpc = self.active.texture(texture)
                             if extractTXI:
