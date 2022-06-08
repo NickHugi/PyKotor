@@ -760,10 +760,10 @@ class ToolWindow(QMainWindow):
                     filepath = filepath.replace(".tpc", ".tga")
 
             if resource.restype() == ResourceType.MDL and manipulateMDL:
-                mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
-                mdl = read_mdl(data, 0, 0, mdxData, 0, 0)
-
                 if decompileMDL:
+                    mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
+                    mdl = read_mdl(data, 0, 0, mdxData, 0, 0)
+
                     data = bytearray()
                     write_mdl(mdl, data, ResourceType.MDL_ASCII)
                     filepath = filepath.replace(".mdl", ".ascii.mdl")
