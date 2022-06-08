@@ -719,16 +719,16 @@ class ToolWindow(QMainWindow):
             # Player saves resources with original name to a specific directory
             folderpath = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
             if folderpath:
-                tasks = []
+                loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
+
                 for resource in resources:
                     filename = resource.resname() + "." + resource.restype().extension
                     filepath = folderpath + "/" + filename
-                    tasks.append(lambda a=resource, b=filepath: self._extractResource(a, b))
+                    loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
 
-                loader = AsyncBatchLoader(self, "Extracting Resources", tasks, "Failed to Extract Resources")
                 loader.exec_()
 
-    def _extractResource(self, resource: FileResource, filepath: str) -> None:
+    def _extractResource(self, resource: FileResource, filepath: str, loader: AsyncBatchLoader) -> None:
         try:
             data = resource.data()
             folderpath = os.path.dirname(filepath) + "/"
@@ -769,17 +769,20 @@ class ToolWindow(QMainWindow):
                     filepath = filepath.replace(".mdl", ".ascii.mdl")
 
                 if extractTexturesMDL:
-                    for texture in model.list_textures(data):
-                        try:
-                            tpc = self.active.texture(texture)
-                            if extractTXI:
-                                with open(folderpath + texture + ".txi", 'wb') as file:
-                                    file.write(tpc.txi.encode('ascii'))
-                            file_format = ResourceType.TGA if decompileTPC else ResourceType.TPC
-                            extension = "tga" if file_format == ResourceType.TGA else "tpc"
-                            write_tpc(tpc, "{}{}.{}".format(folderpath, texture, extension), file_format)
-                        except Exception as e:
-                            self.error.emit("Could not find or extract tpc: " + texture)
+                    try:
+                        for texture in model.list_textures(data):
+                            try:
+                                tpc = self.active.texture(texture)
+                                if extractTXI:
+                                    with open(folderpath + texture + ".txi", 'wb') as file:
+                                        file.write(tpc.txi.encode('ascii'))
+                                file_format = ResourceType.TGA if decompileTPC else ResourceType.TPC
+                                extension = "tga" if file_format == ResourceType.TGA else "tpc"
+                                write_tpc(tpc, "{}{}.{}".format(folderpath, texture, extension), file_format)
+                            except Exception as e:
+                                loader.errors.append(ValueError("Could not find or extract tpc: " + texture))
+                    except:
+                        loader.errors.append(ValueError("Could not determine textures used in model: " + resource.resname()))
 
             with open(filepath, 'wb') as file:
                 file.write(data)
