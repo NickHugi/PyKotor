@@ -30,7 +30,7 @@ from pykotor.resource.generics.are import ARE, read_are, bytes_are
 from pykotor.resource.generics.dlg import read_dlg, bytes_dlg
 from pykotor.resource.generics.git import GIT, read_git, bytes_git
 from pykotor.resource.generics.ifo import IFO, read_ifo, bytes_ifo
-from pykotor.resource.generics.pth import read_pth, bytes_pth
+from pykotor.resource.generics.pth import read_pth, bytes_pth, PTH
 from pykotor.resource.generics.utc import UTC, read_utc, bytes_utc
 from pykotor.resource.generics.utd import UTD, read_utd, bytes_utd
 from pykotor.resource.generics.ute import UTE, read_ute, bytes_ute
@@ -234,6 +234,13 @@ class Module:
     ) -> ModuleResource[GIT]:
         for filename, resource in self.resources.items():
             if resource.resname().lower() == self._id and resource.restype() == ResourceType.GIT:
+                return resource
+
+    def pth(
+            self
+    ) -> ModuleResource[PTH]:
+        for filename, resource in self.resources.items():
+            if resource.resname().lower() == self._id and resource.restype() == ResourceType.PTH:
                 return resource
 
     def info(

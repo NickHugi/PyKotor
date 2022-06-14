@@ -38,7 +38,7 @@ def clone_module(
     oldModule = Module(root, installation)
     newModule = ERF(ERFType.MOD)
 
-    ifo = oldModule.info.resource()
+    ifo = oldModule.info().resource()
     oldIdentifier = ifo.identifier.get()
     ifo.identifier.set(identifier)
     ifo.mod_name = LocalizedString.from_english(identifier.upper())
@@ -48,22 +48,22 @@ def clone_module(
     write_gff(dismantle_ifo(ifo), ifo_data)
     newModule.set("module", ResourceType.IFO, ifo_data)
 
-    are = oldModule.static.resource()
+    are = oldModule.are().resource()
     are.name = LocalizedString.from_english(name)
     are_data = bytearray()
     write_gff(dismantle_are(are), are_data)
     newModule.set(identifier, ResourceType.ARE, are_data)
 
-    lyt = oldModule.layout.resource()
-    vis = oldModule.visibility.resource()
+    lyt = oldModule.layout().resource()
+    vis = oldModule.vis().resource()
 
     if keepPathing:
-        pth = oldModule.path.resource()
+        pth = oldModule.pth().resource()
         pth_data = bytearray()
         write_gff(dismantle_pth(pth), pth_data)
         newModule.set(identifier, ResourceType.PTH, pth_data)
 
-    git = oldModule.dynamic.resource()
+    git = oldModule.git().resource()
     git.creatures = []
     git.encounters = []
     git.stores = []
@@ -78,7 +78,7 @@ def clone_module(
             door.resref.set(newResname)
             door.tag = newResname
 
-            utd = oldModule.doors[oldResname].resource()
+            utd = oldModule.door(oldResname).resource()
             data = bytearray()
             write_gff(dismantle_utd(utd), data)
             newModule.set(newResname, ResourceType.UTD, data)
@@ -92,7 +92,7 @@ def clone_module(
             placeable.resref.set(newResname)
             placeable.tag = newResname
 
-            utp = oldModule.placeables[oldResname].resource()
+            utp = oldModule.placeable(oldResname).resource()
             data = bytearray()
             write_gff(dismantle_utp(utp), data)
             newModule.set(newResname, ResourceType.UTP, data)
@@ -106,7 +106,7 @@ def clone_module(
             sound.resref.set(newResname)
             sound.tag = newResname
 
-            uts = oldModule.sounds[oldResname].resource()
+            uts = oldModule.sound(oldResname).resource()
             data = bytearray()
             write_gff(dismantle_uts(uts), data)
             newModule.set(newResname, ResourceType.UTS, data)
