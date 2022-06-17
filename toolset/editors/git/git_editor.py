@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from copy import deepcopy
@@ -330,7 +331,15 @@ class _InstanceMode(_Mode):
 
     def rebuildInstanceList(self) -> None:
         self._ui.listWidget.clear()
-        for instance in self._editor.git().instances():
+
+        # We will split cameras from the rest of the instances so they can be sorted seperately
+        cameras = [camera for camera in self._editor.git().instances() if isinstance(camera, GITCamera)]
+        instances = [instance for instance in self._editor.git().instances() if not isinstance(instance, GITCamera)]
+
+        cameras = sorted(cameras, key=operator.attrgetter('camera_id'))
+
+        # Join the two lists back together and add all items to the list
+        for instance in cameras + instances:
             if (
                     self._ui.renderArea.isInstanceVisible(instance)
                     and (instance.reference() is None
