@@ -124,7 +124,8 @@ def clone_module(
         newModelName = oldModelName.lower().replace(oldIdentifier, identifier)
 
         room.model = newModelName
-        vis.rename_room(oldModelName, newModelName)
+        if vis.room_exists(oldModelName):
+            vis.rename_room(oldModelName, newModelName)
 
         mdlData = installation.resource(oldModelName, ResourceType.MDL).data
         mdxData = installation.resource(oldModelName, ResourceType.MDX).data
