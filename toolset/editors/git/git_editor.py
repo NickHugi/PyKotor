@@ -273,9 +273,10 @@ class _InstanceMode(_Mode):
 
     def getInstanceLabel(self, instance: GITInstance) -> str:
         index = self._editor.git().index(instance)
-        reference = "" if instance.reference() is None else instance.reference().get()
-
-        label = reference
+        if isinstance(instance, GITCamera):
+            label = "CameraID=" + str(instance.camera_id)
+        else:
+            label = instance.reference().get()
 
         if isinstance(instance, GITWaypoint):
             if self._editor.waypointLabelType == "tag":
