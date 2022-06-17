@@ -58,7 +58,9 @@ class CloneModuleDialog(QDialog):
             QMessageBox(QMessageBox.Information, "This may take a while", "You have selected to create copies of the "
                         "texture. This process may add a few extra minutes to the waiting time.").exec_()
 
-        AsyncLoader(self, "Creating module", l, "Failed to create module").exec_()
+        if AsyncLoader(self, "Creating module", l, "Failed to create module").exec_():
+            QMessageBox(QMessageBox.Information, "Clone Successful",
+                        "You can now warp to the cloned module '{}'.".format(identifier)).exec_()
 
     def loadModules(self) -> None:
         options: Dict[str, ModuleOption] = {}
