@@ -11,6 +11,7 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QIcon, QColor, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheckBox, QAction
 
+from editors.git.git_settings import GITSettings
 from pykotor.common.geometry import Vector2, SurfaceMaterial
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
@@ -26,6 +27,8 @@ from utils.window import openResourceEditor
 
 
 class GITEditor(Editor):
+    settingsUpdated = QtCore.pyqtSignal(object)
+
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.GIT]
         super().__init__(parent, "GIT Editor", "git", supported, supported, installation)
@@ -41,7 +44,7 @@ class GITEditor(Editor):
         self._mode: _Mode = _InstanceMode(self, installation)
         self._geomInstance: Optional[GITInstance] = None  # Used to track which trigger/encounter you are editing
 
-        self.waypointLabelType: str = "resref"  # What label to use for waypoints in the instance list
+        self.settings = GITSettings(self)
 
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: QColor(255, 0, 0, 40),
@@ -98,15 +101,15 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.toggled.connect(self.updateInstanceVisibility)
         self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
 
-        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCreatureCheck)
-        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewPlaceableCheck)
-        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewDoorCheck)
-        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewSoundCheck)
-        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewTriggerCheck)
-        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewEncounterCheck)
-        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewWaypointCheck)
-        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCameraCheck)
-        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewStoreCheck)
+        self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCreatureCheck)
+        self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewPlaceableCheck)
+        self.ui.viewDoorCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewDoorCheck)
+        self.ui.viewSoundCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewSoundCheck)
+        self.ui.viewTriggerCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewTriggerCheck)
+        self.ui.viewEncounterCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewEncounterCheck)
+        self.ui.viewWaypointCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewWaypointCheck)
+        self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)
+        self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
 
         # Edit
         self.ui.actionDeleteSelected.triggered.connect(lambda: self._mode.removeSelected())
@@ -115,9 +118,12 @@ class GITEditor(Editor):
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
         self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
         # View -> Waypoint Labels
-        self.ui.actionUseWaypointResRef.triggered.connect(lambda _: self.setWaypointLabelType("resref"))
-        self.ui.actionUseWaypointName.triggered.connect(lambda _: self.setWaypointLabelType("name"))
-        self.ui.actionUseWaypointTag.triggered.connect(lambda _: self.setWaypointLabelType("tag"))
+        self.ui.actionUseWaypointResRef.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "resref"))
+        self.ui.actionUseWaypointResRef.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseWaypointName.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "name"))
+        self.ui.actionUseWaypointName.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseWaypointTag.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "tag"))
+        self.ui.actionUseWaypointTag.triggered.connect(self.updateInstanceVisibility)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -166,33 +172,7 @@ class GITEditor(Editor):
     def updateStatusBar(self) -> None:
         self._mode.updateStatusBar()
 
-    def updateInstanceVisibility(self) -> None:
-        self._mode.updateInstanceVisibility()
-
-    def setWaypointLabelType(self, labelType) -> None:
-        self.waypointLabelType = labelType
-        # Force the instance list to rebuild
-        self.updateInstanceVisibility()
-
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        self._mode.onMouseMoved(screen, delta, buttons, keys)
-
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        self._mode.onMouseScrolled(delta, buttons, keys)
-
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        self._mode.onMousePressed(screen, buttons, keys)
-
-    def onContextMenu(self, point: QPoint) -> None:
-        self._mode.onContextMenu(point)
-
-    def onFilterEdited(self) -> None:
-        self._mode.onFilterEdited()
-
-    def onItemSelectionChanged(self) -> None:
-        self._mode.onItemSelectionChanged()
-
-    def onInstanceVisiblityDoubleClick(self, checkbox: QCheckBox) -> None:
+    def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox) -> None:
         self.ui.viewCreatureCheck.setChecked(False)
         self.ui.viewPlaceableCheck.setChecked(False)
         self.ui.viewDoorCheck.setChecked(False)
@@ -205,8 +185,30 @@ class GITEditor(Editor):
 
         checkbox.setChecked(True)
 
+    # region Instance State Events
+    def updateInstanceVisibility(self) -> None:
+        self._mode.updateInstanceVisibility()
+
+    def onContextMenu(self, point: QPoint) -> None:
+        self._mode.onContextMenu(point)
+
+    def onFilterEdited(self) -> None:
+        self._mode.onFilterEdited()
+
+    def onItemSelectionChanged(self) -> None:
+        self._mode.onItemSelectionChanged()
+
     def onItemContextMenu(self, point: QPoint) -> None:
         self._mode.onItemContextMenu(point)
+
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        self._mode.onMouseMoved(screen, delta, buttons, keys)
+
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        self._mode.onMouseScrolled(delta, buttons, keys)
+
+    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        self._mode.onMousePressed(screen, buttons, keys)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
@@ -215,6 +217,7 @@ class GITEditor(Editor):
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         super().keyPressEvent(e)
         self.ui.renderArea.keyReleaseEvent(e)
+    # endregion
 
 
 class _Mode(ABC):
@@ -280,9 +283,9 @@ class _InstanceMode(_Mode):
             label = instance.reference().get()
 
         if isinstance(instance, GITWaypoint):
-            if self._editor.waypointLabelType == "tag":
+            if self._editor.settings.waypointLabel == "tag":
                 label = instance.tag
-            elif self._editor.waypointLabelType == "name":
+            elif self._editor.settings.waypointLabel == "name":
                 label = self._installation.string(instance.name)
 
         # Some old code that allowed to user to display Tags/Names instead of the ResRef potentially to readded at a
