@@ -10,6 +10,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QIcon, QColor, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheckBox, QAction
+from pykotor.extract.file import ResourceIdentifier
 
 from editors.git.git_settings import GITSettings
 from pykotor.common.geometry import Vector2, SurfaceMaterial
@@ -23,6 +24,7 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from editors.editor import Editor
 from editors.git.git_dialogs import openInstanceDialog
+from pykotor.tools.template import extract_name, extract_tag
 from utils.window import openResourceEditor
 
 
@@ -69,6 +71,8 @@ class GITEditor(Editor):
             SurfaceMaterial.NON_WALK_GRASS: QColor(255, 0, 0, 40),
             SurfaceMaterial.TRIGGER: QColor(0x999900)
         }
+        self.nameBuffer: Dict[ResourceIdentifier, str] = {}
+        self.tagBuffer: Dict[ResourceIdentifier, str] = {}
 
         self.ui.renderArea.materialColors = self.materialColors
         self.ui.renderArea.hideWalkmeshEdges = True
@@ -117,6 +121,13 @@ class GITEditor(Editor):
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
         self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
+        # View -> Creature Labels
+        self.ui.actionUseCreatureResRef.triggered.connect(lambda: setattr(self.settings, "doorLabel", "resref"))
+        self.ui.actionUseCreatureResRef.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseCreatureTag.triggered.connect(lambda: setattr(self.settings, "doorLabel", "tag"))
+        self.ui.actionUseCreatureTag.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseCreatureName.triggered.connect(lambda: setattr(self.settings, "doorLabel", "name"))
+        self.ui.actionUseCreatureName.triggered.connect(self.updateInstanceVisibility)
         # View -> Door Labels
         self.ui.actionUseDoorResRef.triggered.connect(lambda: setattr(self.settings, "doorLabel", "resref"))
         self.ui.actionUseDoorResRef.triggered.connect(self.updateInstanceVisibility)
@@ -285,13 +296,33 @@ class _InstanceMode(_Mode):
         self._ui.renderArea.hideGeomPoints = True
         self.updateInstanceVisibility()
 
+    def _getBufferedName(self, resid: ResourceIdentifier) -> str:
+        if resid not in self._editor.nameBuffer:
+            res = self._installation.resource(resid.resname, resid.restype)
+            self._editor.nameBuffer[resid] = self._installation.string(extract_name(res.data))
+        return self._editor.nameBuffer[resid] if resid in self._editor.nameBuffer else resid.resname
+
+    def _getBufferedTag(self, resid: ResourceIdentifier) -> str:
+        if resid not in self._editor.tagBuffer:
+            res = self._installation.resource(resid.resname, resid.restype)
+            self._editor.tagBuffer[resid] = extract_tag(res.data)
+        return self._editor.tagBuffer[resid] if resid in self._editor.tagBuffer else resid.resname
+
     def getInstanceLabel(self, instance: GITInstance) -> str:
         index = self._editor.git().index(instance)
+        resref = None if instance.reference() is None else instance.reference().get()
+
         if isinstance(instance, GITCamera):
             label = "CameraID=" + str(instance.camera_id)
         else:
-            label = instance.reference().get()
+            label = resref
 
+        if isinstance(instance, GITCreature):
+            resid = ResourceIdentifier(resref, ResourceType.UTC)
+            if self._editor.settings.doorLabel == "tag":
+                label = self._getBufferedTag(resid)
+            elif self._editor.settings.doorLabel == "name":
+                label = self._getBufferedName(resid)
         if isinstance(instance, GITDoor):
             if self._editor.settings.doorLabel == "tag":
                 label = instance.tag
@@ -303,22 +334,6 @@ class _InstanceMode(_Mode):
         elif isinstance(instance, GITTrigger):
             if self._editor.settings.triggerLabel == "tag":
                 label = instance.tag
-
-        # Some old code that allowed to user to display Tags/Names instead of the ResRef potentially to readded at a
-        # later too. Its currently not optimized.
-        '''
-        label = reference
-        # Make sure its not a camera (as camera's are not linked to resources)
-        if instance.extension() is not None and self._editor.instanceLabels != "resref":
-            res = self._installation.resource(reference, instance.extension())
-
-            if self._editor.instanceLabels == "name" and res is not None:
-                name = extract_name(res.data, LocalizedString.from_english(reference))
-                label = self._installation.string(name)
-            elif self._editor.instanceLabels == "tag" and res is not None:
-                tag = extract_name(res.data, LocalizedString.from_english(reference))
-                label = self._installation.string(tag)
-        '''
 
         return "[{}] {}".format(index, label)
 

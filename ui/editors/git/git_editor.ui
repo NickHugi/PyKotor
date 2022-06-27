@@ -612,10 +612,19 @@ QCheckBox::indicator:checked:hover {
      <addaction name="actionUseDoorResRef"/>
      <addaction name="actionUseDoorTag"/>
     </widget>
+    <widget class="QMenu" name="menuCreatureLabels">
+     <property name="title">
+      <string>Creature Labels</string>
+     </property>
+     <addaction name="actionUseCreatureResRef"/>
+     <addaction name="actionUseCreatureName"/>
+     <addaction name="actionUseCreatureTag"/>
+    </widget>
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
     <addaction name="actionRecentreCamera"/>
     <addaction name="separator"/>
+    <addaction name="menuCreatureLabels"/>
     <addaction name="menuDoorLabels"/>
     <addaction name="menuWaypointLabels"/>
     <addaction name="menuTriggerLabels"/>
@@ -706,6 +715,21 @@ QCheckBox::indicator:checked:hover {
    </property>
   </action>
   <action name="actionUseDoorTag">
+   <property name="text">
+    <string>Tag</string>
+   </property>
+  </action>
+  <action name="actionUseCreatureResRef">
+   <property name="text">
+    <string>ResRef</string>
+   </property>
+  </action>
+  <action name="actionUseCreatureName">
+   <property name="text">
+    <string>Name</string>
+   </property>
+  </action>
+  <action name="actionUseCreatureTag">
    <property name="text">
     <string>Tag</string>
    </property>
