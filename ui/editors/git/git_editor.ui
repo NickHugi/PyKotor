@@ -590,7 +590,7 @@ QCheckBox::indicator:checked:hover {
     <property name="title">
      <string>View</string>
     </property>
-    <widget class="QMenu" name="menuWaypoint_Labels">
+    <widget class="QMenu" name="menuWaypointLabels">
      <property name="title">
       <string>Waypoint Labels</string>
      </property>
@@ -598,11 +598,19 @@ QCheckBox::indicator:checked:hover {
      <addaction name="actionUseWaypointName"/>
      <addaction name="actionUseWaypointTag"/>
     </widget>
+    <widget class="QMenu" name="menuTriggerLabels">
+     <property name="title">
+      <string>Trigger Labels</string>
+     </property>
+     <addaction name="actionUseTriggerResRef"/>
+     <addaction name="actionUseTriggerTag"/>
+    </widget>
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
     <addaction name="actionRecentreCamera"/>
     <addaction name="separator"/>
-    <addaction name="menuWaypoint_Labels"/>
+    <addaction name="menuWaypointLabels"/>
+    <addaction name="menuTriggerLabels"/>
    </widget>
    <addaction name="menuNew"/>
    <addaction name="menuEdit"/>
@@ -670,6 +678,16 @@ QCheckBox::indicator:checked:hover {
    </property>
   </action>
   <action name="actionUseWaypointTag">
+   <property name="text">
+    <string>Tag</string>
+   </property>
+  </action>
+  <action name="actionUseTriggerResRef">
+   <property name="text">
+    <string>ResRef</string>
+   </property>
+  </action>
+  <action name="actionUseTriggerTag">
    <property name="text">
     <string>Tag</string>
    </property>

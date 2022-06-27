@@ -124,6 +124,11 @@ class GITEditor(Editor):
         self.ui.actionUseWaypointName.triggered.connect(self.updateInstanceVisibility)
         self.ui.actionUseWaypointTag.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "tag"))
         self.ui.actionUseWaypointTag.triggered.connect(self.updateInstanceVisibility)
+        # View -> Trigger Labels
+        self.ui.actionUseTriggerResRef.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "resref"))
+        self.ui.actionUseTriggerResRef.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseTriggerTag.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "tag"))
+        self.ui.actionUseTriggerTag.triggered.connect(self.updateInstanceVisibility)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -287,6 +292,9 @@ class _InstanceMode(_Mode):
                 label = instance.tag
             elif self._editor.settings.waypointLabel == "name":
                 label = self._installation.string(instance.name)
+        elif isinstance(instance, GITTrigger):
+            if self._editor.settings.triggerLabel == "tag":
+                label = instance.tag
 
         # Some old code that allowed to user to display Tags/Names instead of the ResRef potentially to readded at a
         # later too. Its currently not optimized.
