@@ -117,6 +117,11 @@ class GITEditor(Editor):
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
         self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
+        # View -> Door Labels
+        self.ui.actionUseDoorResRef.triggered.connect(lambda: setattr(self.settings, "doorLabel", "resref"))
+        self.ui.actionUseDoorResRef.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseDoorTag.triggered.connect(lambda: setattr(self.settings, "doorLabel", "tag"))
+        self.ui.actionUseDoorTag.triggered.connect(self.updateInstanceVisibility)
         # View -> Waypoint Labels
         self.ui.actionUseWaypointResRef.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "resref"))
         self.ui.actionUseWaypointResRef.triggered.connect(self.updateInstanceVisibility)
@@ -287,7 +292,10 @@ class _InstanceMode(_Mode):
         else:
             label = instance.reference().get()
 
-        if isinstance(instance, GITWaypoint):
+        if isinstance(instance, GITDoor):
+            if self._editor.settings.doorLabel == "tag":
+                label = instance.tag
+        elif isinstance(instance, GITWaypoint):
             if self._editor.settings.waypointLabel == "tag":
                 label = instance.tag
             elif self._editor.settings.waypointLabel == "name":

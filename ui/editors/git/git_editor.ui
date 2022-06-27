@@ -605,10 +605,18 @@ QCheckBox::indicator:checked:hover {
      <addaction name="actionUseTriggerResRef"/>
      <addaction name="actionUseTriggerTag"/>
     </widget>
+    <widget class="QMenu" name="menuDoorLabels">
+     <property name="title">
+      <string>Door Labels</string>
+     </property>
+     <addaction name="actionUseDoorResRef"/>
+     <addaction name="actionUseDoorTag"/>
+    </widget>
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
     <addaction name="actionRecentreCamera"/>
     <addaction name="separator"/>
+    <addaction name="menuDoorLabels"/>
     <addaction name="menuWaypointLabels"/>
     <addaction name="menuTriggerLabels"/>
    </widget>
@@ -688,6 +696,16 @@ QCheckBox::indicator:checked:hover {
    </property>
   </action>
   <action name="actionUseTriggerTag">
+   <property name="text">
+    <string>Tag</string>
+   </property>
+  </action>
+  <action name="actionUseDoorResRef">
+   <property name="text">
+    <string>ResRef</string>
+   </property>
+  </action>
+  <action name="actionUseDoorTag">
    <property name="text">
     <string>Tag</string>
    </property>
