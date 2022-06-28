@@ -5,6 +5,8 @@ from abc import abstractmethod, ABC
 from enum import IntEnum
 from typing import List, Optional
 
+from pykotor.extract.file import ResourceIdentifier
+
 from pykotor.common.geometry import Vector2, Vector3, Vector4, Polygon3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, Color, ResRef
@@ -188,15 +190,9 @@ class GITInstance(ABC):
         self.position: Vector3 = Vector3(x, y, z)
 
     @abstractmethod
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        ...
-
-    @abstractmethod
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
+    ) -> Optional[ResourceIdentifier]:
         ...
 
     @abstractmethod
@@ -265,19 +261,14 @@ class GITCamera(GITInstance):
     ) -> None:
         ...
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
+    ) -> Optional[ResourceIdentifier]:
         return None
 
     def blank(
             self
     ) -> Optional[bytes]:
-        return None
-
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
         return None
 
     def classification(
@@ -317,10 +308,10 @@ class GITCreature(GITInstance):
     ) -> None:
         self.bearing += yaw
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        return self.resref
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTC)
 
     def blank(
             self
@@ -386,15 +377,10 @@ class GITDoor(GITInstance):
     ) -> Optional[bytes]:
         return bytes_utd(UTD())
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        return self.resref
-
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
-        return ResourceType.UTD
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTD)
 
     def classification(
             self
@@ -449,20 +435,15 @@ class GITEncounter(GITInstance):
     ) -> None:
         raise ValueError("Encounters cannot be rotated.")
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        return self.resref
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTE)
 
     def blank(
             self
     ) -> Optional[bytes]:
         return bytes_ute(UTE())
-
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
-        return ResourceType.UTE
 
     def classification(
             self
@@ -502,20 +483,15 @@ class GITPlaceable(GITInstance):
     ) -> None:
         self.bearing += yaw
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        return self.resref
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTP)
 
     def blank(
             self
     ) -> Optional[bytes]:
         return bytes_utp(UTP())
-
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
-        return ResourceType.UTP
 
     def classification(
             self
@@ -553,15 +529,10 @@ class GITSound(GITInstance):
     ) -> None:
         raise ValueError("Sounds cannot be rotated.")
 
-    def extension(
+    def identifier(
             self
-    ) -> Optional[ResourceType]:
-        return ResourceType.UTS
-
-    def reference(
-            self
-    ) -> Optional[ResRef]:
-        return self.resref
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTS)
 
     def blank(
             self
@@ -605,15 +576,10 @@ class GITStore(GITInstance):
     ) -> None:
         self.bearing += yaw
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        return self.resref
-    
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
-        return ResourceType.UTM
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTM)
 
     def blank(
             self
@@ -663,15 +629,10 @@ class GITTrigger(GITInstance):
     ) -> None:
         raise ValueError("Triggers cannot be rotated.")
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        return self.resref
-
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
-        return ResourceType.UTT
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTT)
 
     def blank(
             self
@@ -732,15 +693,10 @@ class GITWaypoint(GITInstance):
     ) -> None:
         self.bearing += yaw
 
-    def reference(
+    def identifier(
             self
-    ) -> Optional[ResRef]:
-        return self.resref
-
-    def extension(
-            self
-    ) -> Optional[ResourceType]:
-        return ResourceType.UTW
+    ) -> Optional[ResourceIdentifier]:
+        return ResourceIdentifier(self.resref.get(), ResourceType.UTW)
 
     def blank(
             self
