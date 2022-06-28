@@ -151,6 +151,13 @@ class GITEditor(Editor):
         self.ui.actionUseMerchantResName.triggered.connect(self.updateInstanceVisibility)
         self.ui.actionUseMerchantResTag.triggered.connect(lambda: setattr(self.settings, "storeLabel", "res_tag"))
         self.ui.actionUseMerchantResTag.triggered.connect(self.updateInstanceVisibility)
+        # View -> Sound Labels
+        self.ui.actionUseSoundResRef.triggered.connect(lambda: setattr(self.settings, "soundLabel", "resref"))
+        self.ui.actionUseSoundResRef.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseSoundResName.triggered.connect(lambda: setattr(self.settings, "soundLabel", "res_name"))
+        self.ui.actionUseSoundResName.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseSoundResTag.triggered.connect(lambda: setattr(self.settings, "soundLabel", "res_tag"))
+        self.ui.actionUseSoundResTag.triggered.connect(self.updateInstanceVisibility)
         # View -> Waypoint Labels
         self.ui.actionUseWaypointResRef.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "resref"))
         self.ui.actionUseWaypointResRef.triggered.connect(self.updateInstanceVisibility)
@@ -162,6 +169,13 @@ class GITEditor(Editor):
         self.ui.actionUseWaypointResName.triggered.connect(self.updateInstanceVisibility)
         self.ui.actionUseWaypointResTag.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "res_tag"))
         self.ui.actionUseWaypointResTag.triggered.connect(self.updateInstanceVisibility)
+        # View -> Encounter Labels
+        self.ui.actionUseEncounterResRef.triggered.connect(lambda: setattr(self.settings, "encounterLabel", "resref"))
+        self.ui.actionUseEncounterResRef.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseEncounterResName.triggered.connect(lambda: setattr(self.settings, "encounterLabel", "res_name"))
+        self.ui.actionUseEncounterResName.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseEncounterResTag.triggered.connect(lambda: setattr(self.settings, "encounterLabel", "res_tag"))
+        self.ui.actionUseEncounterResTag.triggered.connect(self.updateInstanceVisibility)
         # View -> Trigger Labels
         self.ui.actionUseTriggerResRef.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "resref"))
         self.ui.actionUseTriggerResRef.triggered.connect(self.updateInstanceVisibility)
@@ -367,6 +381,11 @@ class _InstanceMode(_Mode):
                 label = self._getBufferedName(resid)
             elif self._editor.settings.storeLabel == "res_tag":
                 label = self._getBufferedTag(resid)
+        elif isinstance(instance, GITSound):
+            if self._editor.settings.soundLabel == "res_name":
+                label = self._getBufferedName(resid)
+            elif self._editor.settings.soundLabel == "res_tag":
+                label = self._getBufferedTag(resid)
         elif isinstance(instance, GITWaypoint):
             if self._editor.settings.waypointLabel == "tag":
                 label = instance.tag
@@ -375,6 +394,11 @@ class _InstanceMode(_Mode):
             elif self._editor.settings.waypointLabel == "res_name":
                 label = self._getBufferedName(resid)
             elif self._editor.settings.waypointLabel == "res_tag":
+                label = self._getBufferedTag(resid)
+        elif isinstance(instance, GITEncounter):
+            if self._editor.settings.encounterLabel == "res_name":
+                label = self._getBufferedName(resid)
+            elif self._editor.settings.encounterLabel == "res_tag":
                 label = self._getBufferedTag(resid)
         elif isinstance(instance, GITTrigger):
             if self._editor.settings.triggerLabel == "tag":
