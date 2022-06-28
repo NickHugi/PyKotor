@@ -638,6 +638,15 @@ QCheckBox::indicator:checked:hover {
      <addaction name="actionUsePlaceableResName"/>
      <addaction name="actionUsePlaceableResTag"/>
     </widget>
+    <widget class="QMenu" name="menuMerchantLabels">
+     <property name="title">
+      <string>Merchant Labels</string>
+     </property>
+     <addaction name="actionUseMerchantResRef"/>
+     <addaction name="separator"/>
+     <addaction name="actionUseMerchantResName"/>
+     <addaction name="actionUseMerchantResTag"/>
+    </widget>
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
     <addaction name="actionRecentreCamera"/>
@@ -645,6 +654,7 @@ QCheckBox::indicator:checked:hover {
     <addaction name="menuCreatureLabels"/>
     <addaction name="menuDoorLabels"/>
     <addaction name="menuPlaceableLabels"/>
+    <addaction name="menuMerchantLabels"/>
     <addaction name="menuWaypointLabels"/>
     <addaction name="menuTriggerLabels"/>
    </widget>
@@ -796,6 +806,21 @@ QCheckBox::indicator:checked:hover {
   <action name="actionUsePlaceableResName">
    <property name="text">
     <string>Name (UTC)</string>
+   </property>
+  </action>
+  <action name="actionUseMerchantResRef">
+   <property name="text">
+    <string>ResRef</string>
+   </property>
+  </action>
+  <action name="actionUseMerchantResName">
+   <property name="text">
+    <string>Name (UTM)</string>
+   </property>
+  </action>
+  <action name="actionUseMerchantResTag">
+   <property name="text">
+    <string>Tag (UTM)</string>
    </property>
   </action>
  </widget>

@@ -144,6 +144,13 @@ class GITEditor(Editor):
         self.ui.actionUsePlaceableResName.triggered.connect(self.updateInstanceVisibility)
         self.ui.actionUsePlaceableResTag.triggered.connect(lambda: setattr(self.settings, "placeableLabel", "res_tag"))
         self.ui.actionUsePlaceableResTag.triggered.connect(self.updateInstanceVisibility)
+        # View -> Merchant Labels
+        self.ui.actionUseMerchantResRef.triggered.connect(lambda: setattr(self.settings, "storeLabel", "resref"))
+        self.ui.actionUseMerchantResRef.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseMerchantResName.triggered.connect(lambda: setattr(self.settings, "storeLabel", "res_name"))
+        self.ui.actionUseMerchantResName.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseMerchantResTag.triggered.connect(lambda: setattr(self.settings, "storeLabel", "res_tag"))
+        self.ui.actionUseMerchantResTag.triggered.connect(self.updateInstanceVisibility)
         # View -> Waypoint Labels
         self.ui.actionUseWaypointResRef.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "resref"))
         self.ui.actionUseWaypointResRef.triggered.connect(self.updateInstanceVisibility)
@@ -354,6 +361,11 @@ class _InstanceMode(_Mode):
             if self._editor.settings.placeableLabel == "res_name":
                 label = self._getBufferedName(resid)
             elif self._editor.settings.placeableLabel == "res_tag":
+                label = self._getBufferedTag(resid)
+        elif isinstance(instance, GITStore):
+            if self._editor.settings.storeLabel == "res_name":
+                label = self._getBufferedName(resid)
+            elif self._editor.settings.storeLabel == "res_tag":
                 label = self._getBufferedTag(resid)
         elif isinstance(instance, GITWaypoint):
             if self._editor.settings.waypointLabel == "tag":
