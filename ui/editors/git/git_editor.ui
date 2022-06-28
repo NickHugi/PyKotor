@@ -597,6 +597,9 @@ QCheckBox::indicator:checked:hover {
      <addaction name="actionUseWaypointResRef"/>
      <addaction name="actionUseWaypointName"/>
      <addaction name="actionUseWaypointTag"/>
+     <addaction name="separator"/>
+     <addaction name="actionUseWaypointResName"/>
+     <addaction name="actionUseWaypointResTag"/>
     </widget>
     <widget class="QMenu" name="menuTriggerLabels">
      <property name="title">
@@ -604,6 +607,9 @@ QCheckBox::indicator:checked:hover {
      </property>
      <addaction name="actionUseTriggerResRef"/>
      <addaction name="actionUseTriggerTag"/>
+     <addaction name="separator"/>
+     <addaction name="actionUseTriggerResName"/>
+     <addaction name="actionUseTriggerResTag"/>
     </widget>
     <widget class="QMenu" name="menuDoorLabels">
      <property name="title">
@@ -611,6 +617,9 @@ QCheckBox::indicator:checked:hover {
      </property>
      <addaction name="actionUseDoorResRef"/>
      <addaction name="actionUseDoorTag"/>
+     <addaction name="separator"/>
+     <addaction name="actionUseDoorResName"/>
+     <addaction name="actionUseDoorResTag"/>
     </widget>
     <widget class="QMenu" name="menuCreatureLabels">
      <property name="title">
@@ -732,6 +741,36 @@ QCheckBox::indicator:checked:hover {
   <action name="actionUseCreatureTag">
    <property name="text">
     <string>Tag</string>
+   </property>
+  </action>
+  <action name="actionUseDoorResName">
+   <property name="text">
+    <string>Name (UTD)</string>
+   </property>
+  </action>
+  <action name="actionUseDoorResTag">
+   <property name="text">
+    <string>Tag (UTD)</string>
+   </property>
+  </action>
+  <action name="actionUseWaypointResName">
+   <property name="text">
+    <string>Name (UTW)</string>
+   </property>
+  </action>
+  <action name="actionUseWaypointResTag">
+   <property name="text">
+    <string>Tag (UTW)</string>
+   </property>
+  </action>
+  <action name="actionUseTriggerResName">
+   <property name="text">
+    <string>Name (UTT)</string>
+   </property>
+  </action>
+  <action name="actionUseTriggerResTag">
+   <property name="text">
+    <string>Tag (UTT)</string>
    </property>
   </action>
  </widget>

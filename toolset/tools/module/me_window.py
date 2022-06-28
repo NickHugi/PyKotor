@@ -213,7 +213,7 @@ class ModuleEditor(QMainWindow):
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
-                if res.resname() == instance.reference() and res.restype() == instance.extension():
+                if res.resname() == instance.identifier() and res.restype() == instance.identifier().restype:
                     parent.setExpanded(True)
                     item.setSelected(True)
                     self.ui.resourceTree.scrollToItem(item)
@@ -273,8 +273,8 @@ class ModuleEditor(QMainWindow):
             if visibleMapping[type(instance)]:
                 continue
 
-            if instance.reference():
-                resource = self._module.resource(instance.reference().get(), instance.extension())
+            if instance.identifier():
+                resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
                 text = resource.localized_name()
                 if text is None or text.isspace():
                     text = "[{}]".format(resource.resname())
@@ -283,7 +283,7 @@ class ModuleEditor(QMainWindow):
 
             icon = QIcon(iconMapping[type(instance)])
             item = QListWidgetItem(icon, text)
-            item.setToolTip("" if instance.reference() is None else instance.reference().get())
+            item.setToolTip("" if instance.identifier() is None else instance.identifier().resname)
             item.setData(QtCore.Qt.UserRole, instance)
             self.ui.instanceList.addItem(item)
 

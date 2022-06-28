@@ -133,6 +133,10 @@ class GITEditor(Editor):
         self.ui.actionUseDoorResRef.triggered.connect(self.updateInstanceVisibility)
         self.ui.actionUseDoorTag.triggered.connect(lambda: setattr(self.settings, "doorLabel", "tag"))
         self.ui.actionUseDoorTag.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseDoorResName.triggered.connect(lambda: setattr(self.settings, "doorLabel", "res_name"))
+        self.ui.actionUseDoorResName.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseDoorResTag.triggered.connect(lambda: setattr(self.settings, "doorLabel", "res_tag"))
+        self.ui.actionUseDoorResTag.triggered.connect(self.updateInstanceVisibility)
         # View -> Waypoint Labels
         self.ui.actionUseWaypointResRef.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "resref"))
         self.ui.actionUseWaypointResRef.triggered.connect(self.updateInstanceVisibility)
@@ -140,11 +144,19 @@ class GITEditor(Editor):
         self.ui.actionUseWaypointName.triggered.connect(self.updateInstanceVisibility)
         self.ui.actionUseWaypointTag.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "tag"))
         self.ui.actionUseWaypointTag.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseWaypointResName.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "res_name"))
+        self.ui.actionUseWaypointResName.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseWaypointResTag.triggered.connect(lambda: setattr(self.settings, "waypointLabel", "res_tag"))
+        self.ui.actionUseWaypointResTag.triggered.connect(self.updateInstanceVisibility)
         # View -> Trigger Labels
         self.ui.actionUseTriggerResRef.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "resref"))
         self.ui.actionUseTriggerResRef.triggered.connect(self.updateInstanceVisibility)
         self.ui.actionUseTriggerTag.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "tag"))
         self.ui.actionUseTriggerTag.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseTriggerResName.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "res_name"))
+        self.ui.actionUseTriggerResName.triggered.connect(self.updateInstanceVisibility)
+        self.ui.actionUseTriggerResTag.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "res_tag"))
+        self.ui.actionUseTriggerResTag.triggered.connect(self.updateInstanceVisibility)
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
@@ -299,41 +311,54 @@ class _InstanceMode(_Mode):
     def _getBufferedName(self, resid: ResourceIdentifier) -> str:
         if resid not in self._editor.nameBuffer:
             res = self._installation.resource(resid.resname, resid.restype)
-            self._editor.nameBuffer[resid] = self._installation.string(extract_name(res.data))
+            if res is not None:
+                self._editor.nameBuffer[resid] = self._installation.string(extract_name(res.data))
         return self._editor.nameBuffer[resid] if resid in self._editor.nameBuffer else resid.resname
 
     def _getBufferedTag(self, resid: ResourceIdentifier) -> str:
         if resid not in self._editor.tagBuffer:
             res = self._installation.resource(resid.resname, resid.restype)
-            self._editor.tagBuffer[resid] = extract_tag(res.data)
+            if res is not None:
+                self._editor.tagBuffer[resid] = extract_tag(res.data)
         return self._editor.tagBuffer[resid] if resid in self._editor.tagBuffer else resid.resname
 
     def getInstanceLabel(self, instance: GITInstance) -> str:
         index = self._editor.git().index(instance)
-        resref = None if instance.reference() is None else instance.reference().get()
+        resid = None if instance.identifier() is None else instance.identifier()
 
         if isinstance(instance, GITCamera):
             label = "CameraID=" + str(instance.camera_id)
         else:
-            label = resref
+            label = resid.resname
 
         if isinstance(instance, GITCreature):
-            resid = ResourceIdentifier(resref, ResourceType.UTC)
             if self._editor.settings.doorLabel == "tag":
                 label = self._getBufferedTag(resid)
             elif self._editor.settings.doorLabel == "name":
                 label = self._getBufferedName(resid)
-        if isinstance(instance, GITDoor):
+        elif isinstance(instance, GITDoor):
             if self._editor.settings.doorLabel == "tag":
                 label = instance.tag
+            elif self._editor.settings.doorLabel == "res_name":
+                label = self._getBufferedName(resid)
+            elif self._editor.settings.doorLabel == "res_tag":
+                label = self._getBufferedTag(resid)
         elif isinstance(instance, GITWaypoint):
             if self._editor.settings.waypointLabel == "tag":
                 label = instance.tag
             elif self._editor.settings.waypointLabel == "name":
                 label = self._installation.string(instance.name)
+            elif self._editor.settings.waypointLabel == "res_name":
+                label = self._getBufferedName(resid)
+            elif self._editor.settings.waypointLabel == "res_tag":
+                label = self._getBufferedTag(resid)
         elif isinstance(instance, GITTrigger):
             if self._editor.settings.triggerLabel == "tag":
                 label = instance.tag
+            elif self._editor.settings.triggerLabel == "res_name":
+                label = self._getBufferedName(resid)
+            elif self._editor.settings.triggerLabel == "res_tag":
+                label = self._getBufferedTag(resid)
 
         return "[{}] {}".format(index, label)
 
@@ -344,7 +369,7 @@ class _InstanceMode(_Mode):
         reference = ""
         if self._ui.renderArea.instancesUnderMouse():
             instance = self._ui.renderArea.instancesUnderMouse()[0]
-            reference = "" if instance.reference() is None else instance.reference()
+            reference = "" if instance.identifier() is None else instance.identifier().resname
 
         statusFormat = "Mode: Instance Mode, X: {:.2f}, Y: {:.2f}, Z: {:.2f}, ResRef: {}"
         status = statusFormat.format(world.x, world.y, world.z, reference)
@@ -373,12 +398,12 @@ class _InstanceMode(_Mode):
         cameras = sorted(cameras, key=operator.attrgetter('camera_id'))
 
         # Join the two lists back together and add all items to the list
-        for instance in cameras + instances:
+        for instance in instances + cameras:
             if (
                     self._ui.renderArea.isInstanceVisible(instance)
-                    and (instance.reference() is None
-                         or self._ui.filterEdit.text() in instance.reference().get()
-                         or instance.reference() == "")
+                    and (instance.identifier() is None
+                         or self._ui.filterEdit.text() in instance.identifier().resname
+                         or instance.identifier().resname == "")
             ):
                 icon = QIcon(self._ui.renderArea.instancePixmap(instance))
                 text = self.getInstanceLabel(instance)
@@ -412,13 +437,13 @@ class _InstanceMode(_Mode):
         self.rebuildInstanceList()
 
     def editResource(self, instance: GITInstance) -> None:
-        res = self._installation.resource(instance.reference().get(), instance.extension())
+        res = self._installation.resource(instance.identifier().resname, instance.identifier().restype)
         if not res:
-            filepath = "{}/{}.{}".format(self._installation.override_path(), instance.reference().get(), instance.extension().extension)
+            filepath = "{}/{}.{}".format(self._installation.override_path(), instance.identifier().resname, instance.identifier().restype.extension)
             with open(filepath, "wb") as f:
                 f.write(instance.blank())
             self._installation.reload_override("")
-            res = self._installation.resource(instance.reference().get(), instance.extension())
+            res = self._installation.resource(instance.identifier().resname, instance.identifier().restype)
         openResourceEditor(res.filepath, res.resname, res.restype, res.data, self._installation, self._editor)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
@@ -503,7 +528,7 @@ class _InstanceMode(_Mode):
         # the selection will change appropriately.
         for instance in self._ui.renderArea.instancesUnderMouse():
             icon = QIcon(self._ui.renderArea.instancePixmap(instance))
-            reference = "" if instance.reference() is None else instance.reference().get()
+            reference = "" if instance.identifier().resname is None else instance.identifier().resname
             index = self._editor.git().index(instance)
             onTriggered = lambda checked, inst=instance: self._ui.renderArea.selectInstance(inst)
             menu.addAction(icon, "[{}] {}".format(index, reference)).triggered.connect(onTriggered)
