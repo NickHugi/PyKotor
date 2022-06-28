@@ -122,11 +122,11 @@ class GITEditor(Editor):
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
         self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
         # View -> Creature Labels
-        self.ui.actionUseCreatureResRef.triggered.connect(lambda: setattr(self.settings, "doorLabel", "resref"))
+        self.ui.actionUseCreatureResRef.triggered.connect(lambda: setattr(self.settings, "creatureLabel", "resref"))
         self.ui.actionUseCreatureResRef.triggered.connect(self.updateInstanceVisibility)
-        self.ui.actionUseCreatureTag.triggered.connect(lambda: setattr(self.settings, "doorLabel", "tag"))
+        self.ui.actionUseCreatureTag.triggered.connect(lambda: setattr(self.settings, "creatureLabel", "tag"))
         self.ui.actionUseCreatureTag.triggered.connect(self.updateInstanceVisibility)
-        self.ui.actionUseCreatureName.triggered.connect(lambda: setattr(self.settings, "doorLabel", "name"))
+        self.ui.actionUseCreatureName.triggered.connect(lambda: setattr(self.settings, "creatureLabel", "name"))
         self.ui.actionUseCreatureName.triggered.connect(self.updateInstanceVisibility)
         # View -> Door Labels
         self.ui.actionUseDoorResRef.triggered.connect(lambda: setattr(self.settings, "doorLabel", "resref"))
@@ -339,9 +339,9 @@ class _InstanceMode(_Mode):
             label = resid.resname
 
         if isinstance(instance, GITCreature):
-            if self._editor.settings.doorLabel == "tag":
+            if self._editor.settings.creatureLabel == "tag":
                 label = self._getBufferedTag(resid)
-            elif self._editor.settings.doorLabel == "name":
+            elif self._editor.settings.creatureLabel == "name":
                 label = self._getBufferedName(resid)
         elif isinstance(instance, GITDoor):
             if self._editor.settings.doorLabel == "tag":
