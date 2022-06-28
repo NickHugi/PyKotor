@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>836</width>
-    <height>641</height>
+    <width>838</width>
+    <height>648</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -564,7 +564,7 @@ QCheckBox::indicator:checked:hover {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>836</width>
+     <width>838</width>
      <height>22</height>
     </rect>
    </property>
@@ -629,12 +629,22 @@ QCheckBox::indicator:checked:hover {
      <addaction name="actionUseCreatureName"/>
      <addaction name="actionUseCreatureTag"/>
     </widget>
+    <widget class="QMenu" name="menuPlaceableLabels">
+     <property name="title">
+      <string>Placeable Labels</string>
+     </property>
+     <addaction name="actionUsePlaceableResRef"/>
+     <addaction name="separator"/>
+     <addaction name="actionUsePlaceableResName"/>
+     <addaction name="actionUsePlaceableResTag"/>
+    </widget>
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
     <addaction name="actionRecentreCamera"/>
     <addaction name="separator"/>
     <addaction name="menuCreatureLabels"/>
     <addaction name="menuDoorLabels"/>
+    <addaction name="menuPlaceableLabels"/>
     <addaction name="menuWaypointLabels"/>
     <addaction name="menuTriggerLabels"/>
    </widget>
@@ -771,6 +781,21 @@ QCheckBox::indicator:checked:hover {
   <action name="actionUseTriggerResTag">
    <property name="text">
     <string>Tag (UTT)</string>
+   </property>
+  </action>
+  <action name="actionUsePlaceableResRef">
+   <property name="text">
+    <string>ResRef</string>
+   </property>
+  </action>
+  <action name="actionUsePlaceableResTag">
+   <property name="text">
+    <string>Tag (UTC)</string>
+   </property>
+  </action>
+  <action name="actionUsePlaceableResName">
+   <property name="text">
+    <string>Name (UTC)</string>
    </property>
   </action>
  </widget>
