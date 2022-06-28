@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QWidget, QMessageBox, QMenu, QListWidgetItem, QCheck
 from pykotor.extract.file import ResourceIdentifier
 
 from editors.git.git_settings import GITSettings
-from pykotor.common.geometry import Vector2, SurfaceMaterial
+from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.lyt import LYT, read_lyt
@@ -568,7 +568,10 @@ class _InstanceMode(_Mode):
             menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(world.x, world.y)))
             menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(world.x, world.y)))
             menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(world.x, world.y)))
-            menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(world.x, world.y)))
+
+            simpleTrigger = GITTrigger(world.x, world.y)
+            simpleTrigger.geometry.extend([Vector3(0.0, 0.0, 0.0), Vector3(3.0, 0.0, 0.0), Vector3(3.0, 3.0, 0.0), Vector3(0.0, 3.0, 0.0)])
+            menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(simpleTrigger))
 
         menu.addSeparator()
 
