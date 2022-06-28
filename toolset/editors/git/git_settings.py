@@ -4,7 +4,7 @@ from PyQt5.QtCore import QSettings
 
 
 class GITSettings:
-    def __init__(self, editor = None):
+    def __init__(self):
         self.settings = QSettings('HolocronToolset', 'GITEditor')
 
     @property

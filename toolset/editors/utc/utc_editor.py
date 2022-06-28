@@ -4,8 +4,10 @@ from typing import Optional
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage, QTransform
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMessageBox
+
+from editors.utc.utc_settings import UTCSettings
 from pykotor.common.language import Language, Gender
-from pykotor.common.misc import ResRef
+from pykotor.common.misc import ResRef, Game
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -28,12 +30,17 @@ class UTCEditor(Editor):
         supported = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
+        self.settings: UTCSettings = UTCSettings()
+
         from editors.utc import ui_utc_editor
         self.ui = ui_utc_editor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
         self._setupSignals()
         self._setupInstallation(installation)
+
+        self.ui.actionSaveUnusedFields.setChecked(self.settings.saveUnusedFields)
+        self.ui.actionAlwaysSaveK2Fields.setChecked(self.settings.alwaysSaveK2Fields)
 
         self._utc = UTC()
 
@@ -49,6 +56,9 @@ class UTCEditor(Editor):
         self.ui.inventoryButton.clicked.connect(self.openInventory)
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
+
+        self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
+        self.ui.actionAlwaysSaveK2Fields.triggered.connect(lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()))
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
@@ -345,7 +355,8 @@ class UTCEditor(Editor):
                 powers.append(item.data(QtCore.Qt.UserRole))
 
         data = bytearray()
-        gff = dismantle_utc(utc)
+        version = Game.K2 if self.settings.alwaysSaveK2Fields or self._installation.tsl else Game.K1
+        gff = dismantle_utc(utc, version, use_deprecated=self.settings.saveUnusedFields)
         write_gff(gff, data)
 
         return data

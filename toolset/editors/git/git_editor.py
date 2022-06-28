@@ -46,7 +46,7 @@ class GITEditor(Editor):
         self._mode: _Mode = _InstanceMode(self, installation)
         self._geomInstance: Optional[GITInstance] = None  # Used to track which trigger/encounter you are editing
 
-        self.settings = GITSettings(self)
+        self.settings = GITSettings()
 
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: QColor(255, 0, 0, 40),
