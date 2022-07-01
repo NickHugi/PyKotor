@@ -586,7 +586,7 @@ class _InstanceMode(_Mode):
         # the selection will change appropriately.
         for instance in self._ui.renderArea.instancesUnderMouse():
             icon = QIcon(self._ui.renderArea.instancePixmap(instance))
-            reference = "" if instance.identifier().resname is None else instance.identifier().resname
+            reference = "" if instance.identifier() is None else instance.identifier().resname
             index = self._editor.git().index(instance)
             onTriggered = lambda checked, inst=instance: self._ui.renderArea.selectInstance(inst)
             menu.addAction(icon, "[{}] {}".format(index, reference)).triggered.connect(onTriggered)
