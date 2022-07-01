@@ -266,7 +266,11 @@ class GITCamera(GITInstance):
             pitch: float,
             roll: float
     ) -> None:
-        ...
+        rotation = self.orientation.to_euler()
+        rotation.x += pitch
+        rotation.y += roll
+        rotation.z += yaw
+        self.orientation = Vector4.from_euler(rotation.x, rotation.y, rotation.z)
 
     def identifier(
             self
