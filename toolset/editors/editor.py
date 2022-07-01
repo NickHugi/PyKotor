@@ -142,6 +142,8 @@ class Editor(QMainWindow):
             data = self.build()
             self._revert = data
 
+            basename = os.path.basename(self._filepath)
+
             if self._filepath.endswith(".bif"):
                 QMessageBox(QMessageBox.Critical, "Could not save file",
                             "Cannot save resource into a .BIF file, select another destination instead.",
@@ -151,12 +153,20 @@ class Editor(QMainWindow):
                 rim.set(self._resref, self._restype, data)
                 write_rim(rim, self._filepath)
                 self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+
+                # Update installation cache
+                if self._installation is not None:
+                    self._installation.reload_module(basename)
             elif self._filepath.endswith(".erf") or self._filepath.endswith(".mod"):
                 erf = read_erf(self._filepath)
                 erf.erf_type = ERFType.ERF if self._filepath.endswith(".erf") else ERFType.MOD
                 erf.set(self._resref, self._restype, data)
                 write_erf(erf, self._filepath)
                 self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+
+                # Update installation cache
+                if self._installation is not None:
+                    self._installation.reload_module(basename)
             else:
                 with open(self._filepath, 'wb') as file:
                     file.write(data)
