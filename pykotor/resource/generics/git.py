@@ -225,6 +225,13 @@ class GITInstance(ABC):
     ) -> str:
         ...
 
+    def yaw(
+            self
+    ) -> Optional[float]:
+        """
+        Returns the yaw rotation (in radians) of the instance if the instance supports it, otherwise returns None.
+        """
+
 
 class GITCamera(GITInstance):
     GFF_STRUCT_ID = 14
@@ -275,6 +282,11 @@ class GITCamera(GITInstance):
             self
     ) -> str:
         return "Camera"
+
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return self.orientation.to_euler().z
 
 
 class GITCreature(GITInstance):
@@ -327,6 +339,11 @@ class GITCreature(GITInstance):
             self
     ) -> str:
         return "Creature"
+
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return self.bearing
 
 
 class GITModuleLink(IntEnum):
@@ -386,6 +403,11 @@ class GITDoor(GITInstance):
             self
     ) -> str:
         return "Door"
+
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return self.bearing
 
 
 class GITEncounterSpawnPoint:
@@ -450,6 +472,11 @@ class GITEncounter(GITInstance):
     ) -> str:
         return "Encounter"
 
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return None
+
 
 class GITPlaceable(GITInstance):
     GFF_STRUCT_ID = 9
@@ -498,6 +525,11 @@ class GITPlaceable(GITInstance):
     ) -> str:
         return "Placeable"
 
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return self.bearing
+
 
 class GITSound(GITInstance):
     GFF_STRUCT_ID = 6
@@ -543,6 +575,11 @@ class GITSound(GITInstance):
             self
     ) -> str:
         return "Sound"
+
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return None
 
 
 class GITStore(GITInstance):
@@ -590,6 +627,11 @@ class GITStore(GITInstance):
             self
     ) -> str:
         return "Store"
+
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return self.bearing
 
 
 class GITTrigger(GITInstance):
@@ -643,6 +685,11 @@ class GITTrigger(GITInstance):
             self
     ) -> str:
         return "Trigger"
+
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return None
 
 
 class GITTransitionTrigger(GITTrigger):
@@ -707,6 +754,11 @@ class GITWaypoint(GITInstance):
             self
     ) -> str:
         return "Waypoint"
+
+    def yaw(
+            self
+    ) -> Optional[float]:
+        return self.bearing
 
 
 def construct_git(
