@@ -836,9 +836,20 @@ class Vector4:
             y: float,
             z: float
     ):
-        roll = math.radians(x)
-        pitch = math.radians(y)
-        yaw = math.radians(z)
+        """
+        Creates a Vector3 object from x/y/z rotations (in radians).
+
+        Args:
+            x: Roll
+            y: Pitch
+            z: Yaw
+
+        Returns:
+            A new Vector3 object.
+        """
+        roll = x
+        pitch = y
+        yaw = z
 
         qx = math.sin(roll/2) * math.cos(pitch/2) * math.cos(yaw/2) - math.cos(roll/2) * math.sin(pitch/2) * math.sin(yaw/2)
         qy = math.cos(roll/2) * math.sin(pitch/2) * math.cos(yaw/2) + math.sin(roll/2) * math.cos(pitch/2) * math.sin(yaw/2)
@@ -853,7 +864,7 @@ class Vector4:
         yaw = math.atan2(2.0 * (self.y * self.z + self.w * self.x), self.w * self.w - self.x * self.x - self.y * self.y + self.z * self.z)
         pitch = math.asin(-2.0 * (self.x * self.z - self.w * self.y))
         roll = math.atan2(2.0 * (self.x * self.y + self.w * self.z), self.w * self.w + self.x * self.x - self.y * self.y - self.z * self.z)
-        return Vector3(pitch, roll, yaw)
+        return Vector3(roll, pitch, yaw)
 
     def magnitude(
             self
