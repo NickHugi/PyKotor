@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import operator
 from abc import ABC, abstractmethod
 from contextlib import suppress
@@ -496,6 +497,7 @@ class _InstanceMode(_Mode):
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         worldDelta = self._ui.renderArea.toWorldDelta(delta.x, delta.y)
+        world = self._ui.renderArea.toWorldCoords(screen.x, screen.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             self._ui.renderArea.panCamera(-worldDelta.x, -worldDelta.y)
@@ -507,6 +509,11 @@ class _InstanceMode(_Mode):
                 # Snap the instance on top of the walkmesh, if there is no walkmesh underneath it will snap Z to 0
                 getZ = self._ui.renderArea.getZCoord(instance.position.x, instance.position.y)
                 instance.position.z = getZ if getZ != 0.0 else instance.position.z
+        elif QtCore.Qt.MiddleButton in buttons:
+            if self._ui.renderArea.selectedInstances():
+                instance = self._ui.renderArea.selectedInstances()[0]
+                rotation = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
+                instance.rotate(-instance.yaw() + rotation, 0, 0)
 
         self.updateStatusBar()
 
@@ -521,16 +528,16 @@ class _InstanceMode(_Mode):
                 self._editor.git().add(duplicate)
                 self.rebuildInstanceList()
                 self.selectInstanceItem(original)
+        elif QtCore.Qt.LeftButton in buttons:
+            # Do not change the selection if the selected instance if its still underneath the mouse
+            if currentSelecton and currentSelecton[0] in underMouse:
+                return
 
-        # Do not change the selection if the selected instance if its still underneath the mouse
-        if currentSelecton and currentSelecton[0] in underMouse:
-            return
-
-        self._ui.renderArea.clearSelectedInstances()
-        if self._ui.renderArea.instancesUnderMouse():
-            instance = self._ui.renderArea.instancesUnderMouse()[0]
-            self._ui.renderArea.selectInstances([instance])
-            self.selectInstanceItem(instance)
+            self._ui.renderArea.clearSelectedInstances()
+            if self._ui.renderArea.instancesUnderMouse():
+                instance = self._ui.renderArea.instancesUnderMouse()[0]
+                self._ui.renderArea.selectInstances([instance])
+                self.selectInstanceItem(instance)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
