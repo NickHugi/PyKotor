@@ -481,6 +481,7 @@ class WalkmeshRenderer(QWidget):
         painter.save()
         painter.translate(x, y)
         painter.rotate(math.degrees(rotation))
+        painter.scale(-1, 1)
         painter.drawPixmap(QRectF(-trueWidth/2, -trueHeight/2, trueWidth, trueHeight), pixmap, source)
         painter.restore()
 
