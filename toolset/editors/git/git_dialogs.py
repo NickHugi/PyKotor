@@ -1,3 +1,5 @@
+import math
+
 from PyQt5.QtGui import QColor, QPixmap, QImage, QIcon
 from PyQt5.QtWidgets import QDialog, QWidget, QColorDialog, QLabel
 
@@ -52,7 +54,7 @@ class CreatureDialog(QDialog):
         self.ui.xPosSpin.setValue(creature.position.x)
         self.ui.yPosSpin.setValue(creature.position.y)
         self.ui.zPosSpin.setValue(creature.position.y)
-        self.ui.bearingSpin.setValue(creature.bearing)
+        self.ui.bearingSpin.setValue(math.degrees(creature.bearing))
 
         self.creature: GITCreature = creature
 
@@ -62,7 +64,7 @@ class CreatureDialog(QDialog):
         self.creature.position.x = self.ui.xPosSpin.value()
         self.creature.position.y = self.ui.yPosSpin.value()
         self.creature.position.z = self.ui.zPosSpin.value()
-        self.creature.bearing = self.ui.bearingSpin.value()
+        self.creature.bearing = math.radians(self.ui.bearingSpin.value())
 
 
 class PlaceableDialog(QDialog):

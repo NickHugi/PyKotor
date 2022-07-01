@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(330, 123)
+        Dialog.resize(331, 123)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -56,6 +56,8 @@ class Ui_Dialog(object):
         self.label_3.setObjectName("label_3")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_3)
         self.bearingSpin = QtWidgets.QDoubleSpinBox(Dialog)
+        self.bearingSpin.setMinimum(-1000000.0)
+        self.bearingSpin.setMaximum(1000000.0)
         self.bearingSpin.setObjectName("bearingSpin")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.bearingSpin)
         self.verticalLayout.addLayout(self.formLayout)
@@ -75,4 +77,4 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.label.setText(_translate("Dialog", "ResRef:"))
         self.label_2.setText(_translate("Dialog", "Position:"))
-        self.label_3.setText(_translate("Dialog", "Bearing:"))
+        self.label_3.setText(_translate("Dialog", "Rotation:"))
