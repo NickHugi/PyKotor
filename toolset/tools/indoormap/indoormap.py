@@ -202,7 +202,7 @@ class IndoorMap:
             utd.tag = door.resref.get().title().replace("_", "")
             mod.set(door.resref.get(), ResourceType.UTD, bytes_utd(utd))
 
-            orientation = Vector4.from_euler(0, 0, door.bearing)
+            orientation = Vector4.from_euler(0, 0, math.radians(door.bearing))
             lyt.doorhooks.append(LYTDoorHook(roomNames[insert.room], door.resref.get(), insert.position, orientation))
 
             if insert.hook1 and insert.hook2:
