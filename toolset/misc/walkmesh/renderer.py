@@ -621,6 +621,16 @@ class WalkmeshRenderer(QWidget):
                 painter.setPen(QtCore.Qt.NoPen)
                 painter.drawPath(self._buildInstanceBoundsPoints(instance))
 
+            # Draw an arrow representing the instance rotation (where applicable)
+            if instance.yaw() is not None:
+                l1px = instance.position.x + math.cos(instance.yaw() + math.pi/2) * 1.1
+                l1py = instance.position.y + math.sin(instance.yaw() + math.pi/2) * 1.1
+                l2px = instance.position.x + math.cos(instance.yaw() + math.pi/2) * 1.3
+                l2py = instance.position.y + math.sin(instance.yaw() + math.pi/2) * 1.3
+                painter.setBrush(QtCore.Qt.NoBrush)
+                painter.setPen(QPen(QColor(255, 255, 255, 255), 0.15))
+                painter.drawLine(QPointF(l1px, l1py), QPointF(l2px, l2py))
+
         # Highlight selected geometry points
         for geomPoint in self._geomPointsSelected:
             point = geomPoint.point + geomPoint.instance.position
