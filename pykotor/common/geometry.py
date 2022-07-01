@@ -847,6 +847,14 @@ class Vector4:
 
         return Vector4(qx, qy, qz, qw)
 
+    def to_euler(
+            self
+    ) -> Vector3:
+        yaw = math.atan2(2.0 * (self.y * self.z + self.w * self.x), self.w * self.w - self.x * self.x - self.y * self.y + self.z * self.z)
+        pitch = math.asin(-2.0 * (self.x * self.z - self.w * self.y))
+        roll = math.atan2(2.0 * (self.x * self.y + self.w * self.z), self.w * self.w + self.x * self.x - self.y * self.y - self.z * self.z)
+        return Vector3(pitch, roll, yaw)
+
     def magnitude(
             self
     ) -> float:
