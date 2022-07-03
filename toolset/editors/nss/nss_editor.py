@@ -8,6 +8,8 @@ from PyQt5.QtCore import QSize, QRect, QRegExp
 from PyQt5.QtGui import QPaintEvent, QResizeEvent, QColor, QTextFormat, QPainter, \
     QFontMetricsF, QSyntaxHighlighter, QTextDocument, QTextCharFormat, QFont
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QTextEdit, QListWidgetItem, QMessageBox, QShortcut
+
+from globalsettings import GlobalSettings
 from pykotor.common.script import ScriptFunction
 from pykotor.common.scriptdefs import TSL_FUNCTIONS, TSL_CONSTANTS, KOTOR_FUNCTIONS, KOTOR_CONSTANTS
 from pykotor.common.stream import BinaryWriter
@@ -15,7 +17,6 @@ from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 
-from data.configuration import Configuration, NoConfigurationSetError
 from data.installation import HTInstallation
 from editors.editor import Editor
 from utils.script import decompileScript, compileScript
@@ -36,7 +37,7 @@ class NSSEditor(Editor):
         self._setupSignals()
 
         self._length: int = 0
-        self._config: Configuration = Configuration()
+        self._global_settings: GlobalSettings = GlobalSettings()
         self._highlighter: SyntaxHighlighter = SyntaxHighlighter(self.ui.codeEdit.document(), installation)
         self.setInstallation(self._installation)
 

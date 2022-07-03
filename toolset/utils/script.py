@@ -2,9 +2,9 @@ import os
 import subprocess
 
 from PyQt5.QtWidgets import QFileDialog
-from pykotor.common.stream import BinaryWriter, BinaryReader
 
-from data.configuration import Configuration, NoConfigurationSetError
+from globalsettings import NoConfigurationSetError, GlobalSettings
+from pykotor.common.stream import BinaryWriter, BinaryReader
 
 
 def decompileScript(compiled: bytes, tsl: bool) -> str:
@@ -28,25 +28,23 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
     Returns:
         The string of the decompiled script.
     """
-    config = Configuration()
+    global_settings = GlobalSettings()
 
-    if not os.path.exists(config.extractPath):
-        config.extractPath = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-        config.save()
-        if not os.path.exists(config.extractPath):
+    if not os.path.exists(global_settings.extractPath):
+        global_settings.extractPath = QFileDialog.getExistingDirectory(None, "Select a temp directory")
+        if not os.path.exists(global_settings.extractPath):
             raise NoConfigurationSetError("Temp directory has not been set or is invalid.")
 
-    if not os.path.exists(config.ncsDecompilerPath):
-        config.ncsDecompilerPath, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
-        config.save()
-        if not os.path.exists(config.ncsDecompilerPath):
+    if not os.path.exists(global_settings.ncsDecompilerPath):
+        global_settings.ncsDecompilerPath, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
+        if not os.path.exists(global_settings.ncsDecompilerPath):
             raise NoConfigurationSetError("NCS Decompiler has not been set or is invalid.")
 
-    tempCompiledPath = "{}/tempscript.ncs".format(config.extractPath)
+    tempCompiledPath = "{}/tempscript.ncs".format(global_settings.extractPath)
     BinaryWriter.dump(tempCompiledPath, compiled)
 
     gameIndex = "--kotor2" if tsl else "--kotor"
-    command = [config.ncsDecompilerPath, gameIndex, tempCompiledPath]
+    command = [global_settings.ncsDecompilerPath, gameIndex, tempCompiledPath]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
     output = process.communicate()[0].decode()
@@ -79,26 +77,24 @@ def compileScript(source: str, tsl: bool) -> bytes:
     Returns:
         Bytes object of the compiled script.
     """
-    config = Configuration()
+    global_settings = GlobalSettings()
 
-    if not os.path.exists(config.extractPath):
-        config.extractPath = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-        config.save()
-        if not os.path.exists(config.extractPath):
+    if not os.path.exists(global_settings.extractPath):
+        global_settings.extractPath = QFileDialog.getExistingDirectory(None, "Select a temp directory")
+        if not os.path.exists(global_settings.extractPath):
             raise NoConfigurationSetError("Temp directory has not been set or is invalid.")
 
-    if not os.path.exists(config.nssCompilerPath):
-        config.nssCompilerPath, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
-        config.save()
-        if not os.path.exists(config.nssCompilerPath):
+    if not os.path.exists(global_settings.nssCompilerPath):
+        global_settings.nssCompilerPath, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
+        if not os.path.exists(global_settings.nssCompilerPath):
             raise NoConfigurationSetError("NCS Compiler has not been set or is invalid.")
 
-    tempSourcePath = "{}/tempscript.nss".format(config.extractPath)
-    tempCompiledPath = "{}/tempscript.ncs".format(config.extractPath)
+    tempSourcePath = "{}/tempscript.nss".format(global_settings.extractPath)
+    tempCompiledPath = "{}/tempscript.ncs".format(global_settings.extractPath)
     BinaryWriter.dump(tempSourcePath, source.encode())
 
     gameIndex = "2" if tsl else "1"
-    command = [config.nssCompilerPath, "-c", tempSourcePath, "--outputdir", config.extractPath, "-g", gameIndex]
+    command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
     output = process.communicate()[0].decode()

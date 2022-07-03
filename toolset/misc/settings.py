@@ -1,7 +1,7 @@
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QDialog
 
-from data.configuration import Configuration, InstallationConfig
+from globalsettings import GlobalSettings
 
 
 class Settings(QDialog):
@@ -16,7 +16,7 @@ class Settings(QDialog):
         self._setupSignals()
 
         self.applied: bool = False
-        self.config: Configuration = Configuration()
+        self.global_settings: GlobalSettings = GlobalSettings()
 
         self.loadPaths()
         self.loadTools()
@@ -46,20 +46,18 @@ class Settings(QDialog):
         """
         self.applied = True
 
-        self.config.installations = []
         for i in range(self.pathsModel.rowCount()):
             item = self.pathsModel.item(i, 0)
-            installation = InstallationConfig(item.text(), item.data()['path'], item.data()['tsl'])
-            self.config.installations.append(installation)
+            installation = self.global_settings.installations()[item.text()]
+            installation.path = item.data()['path']
+            installation.tsl = item.data()['tsl']
 
-        self.config.gffSpecializedEditors = self.ui.utxToolCombo.currentIndex() == 1
+        self.global_settings.gffSpecializedEditors = self.ui.utxToolCombo.currentIndex() == 1
 
-        self.config.nssCompilerPath = self.ui.nssCompToolEdit.text()
-        self.config.ncsDecompilerPath = self.ui.ncsToolEdit.text()
+        self.global_settings.nssCompilerPath = self.ui.nssCompToolEdit.text()
+        self.global_settings.ncsDecompilerPath = self.ui.ncsToolEdit.text()
 
-        self.config.extractPath = self.ui.tempMiscEdit.text()
-
-        self.config.save()
+        self.global_settings.extractPath = self.ui.tempMiscEdit.text()
 
     def cancel(self) -> None:
         """
@@ -107,19 +105,19 @@ class Settings(QDialog):
             self.ui.pathFrame.setEnabled(False)
 
     def loadPaths(self) -> None:
-        for installation in self.config.installations:
+        for installation in self.global_settings.installations().values():
             item = QStandardItem(installation.name)
             item.setData({'path': installation.path, 'tsl': installation.tsl})
             self.pathsModel.appendRow(item)
 
     def loadTools(self) -> None:
-        if self.config.gffSpecializedEditors:
+        if self.global_settings.gffSpecializedEditors:
             self.ui.utxToolCombo.setCurrentIndex(1)
         else:
             self.ui.utxToolCombo.setCurrentIndex(0)
 
-        self.ui.nssCompToolEdit.setText(self.config.nssCompilerPath)
-        self.ui.ncsToolEdit.setText(self.config.ncsDecompilerPath)
+        self.ui.nssCompToolEdit.setText(self.global_settings.nssCompilerPath)
+        self.ui.ncsToolEdit.setText(self.global_settings.ncsDecompilerPath)
 
     def loadMisc(self) -> None:
-        self.ui.tempMiscEdit.setText(self.config.extractPath)
+        self.ui.tempMiscEdit.setText(self.global_settings.extractPath)

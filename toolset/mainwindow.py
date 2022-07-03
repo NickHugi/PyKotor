@@ -18,6 +18,8 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImag
     QResizeEvent, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView, QMenu
+
+from globalsettings import GlobalSettings
 from pykotor.tools import model
 
 from pykotor.common.module import Module
@@ -29,7 +31,6 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc, TPCTextureFormat, 
 from pykotor.resource.type import ResourceType
 
 from config import PROGRAM_VERSION, UPDATE_INFO_LINK
-from data.configuration import Configuration, InstallationConfig
 from data.installation import HTInstallation
 from editors.dlg.dlg_editor import DLGEditor
 from editors.erf.erf_editor import ERFEditor
@@ -75,22 +76,20 @@ class ToolWindow(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
 
         self.active: Optional[HTInstallation] = None
-        self.config = Configuration()
+        self.settings: GlobalSettings = GlobalSettings()
 
-        firstTime = self.config.firstTime
+        firstTime = self.settings.firstTime
         if firstTime:
-            self.config.installations = []
-            self.config.installations.append(InstallationConfig("KotOR", "", False))
-            self.config.installations.append(InstallationConfig("TSL", "", True))
+            self.settings.installations = []
+            self.settings.installations.append(InstallationConfig("KotOR", "", False))
+            self.settings.installations.append(InstallationConfig("TSL", "", True))
 
-            self.config.firstTime = False
+            self.settings.firstTime = False
 
             with suppress(Exception):
                 extractPath = os.path.realpath('.') + "/ext"
                 os.mkdir(extractPath)
-                self.config.extractPath = extractPath
-
-            self.config.save()
+                self.settings.extractPath = extractPath
 
         self.installations = {}
 
@@ -447,19 +446,13 @@ class ToolWindow(QMainWindow):
         self._modules_list[self.active.name] = QStandardItemModel(self)
         self._modules_list[self.active.name].appendRow(QStandardItem("[None]"))
 
-        if self.config.showModuleNames:
-            areaNames = self.active.module_names()
-            sortedKeys = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
+        areaNames = self.active.module_names()
+        sortedKeys = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
 
-            for module in sortedKeys:
-                item = QStandardItem("{} [{}]".format(areaNames[module], module))
-                item.setData(module, QtCore.Qt.UserRole)
-                self._modules_list[self.active.name].appendRow(item)
-        else:
-            for module in sorted(self.active.modules_list()):
-                item = QStandardItem(module)
-                item.setData(module, QtCore.Qt.UserRole)
-                self._modules_list[self.active.name].appendRow()
+        for module in sortedKeys:
+            item = QStandardItem("{} [{}]".format(areaNames[module], module))
+            item.setData(module, QtCore.Qt.UserRole)
+            self._modules_list[self.active.name].appendRow(item)
 
         self.ui.modulesCombo.setModel(self._modules_list[self.active.name])
     # endregion
@@ -536,8 +529,6 @@ class ToolWindow(QMainWindow):
 
     # region Other
     def reloadSettings(self) -> None:
-        self.config.reload()
-        self.ui.mdlDecompileCheckbox.setVisible(self.config.mdlAllowDecompile)
         self.reloadInstallations()
 
     def selectResource(self, tree: QTreeView, resource: FileResource) -> None:
@@ -586,7 +577,8 @@ class ToolWindow(QMainWindow):
         self.ui.gameCombo.clear()
         self.ui.gameCombo.addItem("[None]")
 
-        for installation in self.config.installations:
+        print(self.settings.installations().values())
+        for installation in self.settings.installations().values():
             self.ui.gameCombo.addItem(installation.name)
 
     def changeActiveInstallation(self, index: int) -> None:
@@ -614,8 +606,8 @@ class ToolWindow(QMainWindow):
         self.ui.sidebar.setEnabled(True)
 
         name = self.ui.gameCombo.itemText(index)
-        path = self.config.installation(name).path
-        tsl = self.config.installation(name).tsl
+        path = self.settings.installations()[name].path
+        tsl = self.settings.installations()[name].tsl
 
         # If the user has not set a path for the particular game yet, ask them too.
         if path == "":
@@ -631,9 +623,7 @@ class ToolWindow(QMainWindow):
                 loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
 
                 if loader.exec_():
-                    self.config.installation(name).path = path
-                    self.config.save()
-
+                    self.settings.installations()[name].path = path
                     self.installations[name] = loader.value
 
             # If the data has been successfully been loaded, dump the data into the models

@@ -1,9 +1,10 @@
 from typing import Optional, Tuple, Union
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
+
+from globalsettings import GlobalSettings
 from pykotor.resource.type import ResourceType
 
-from data.configuration import Configuration
 from data.installation import HTInstallation
 
 
@@ -72,10 +73,8 @@ def openResourceEditor(
     from editors.utw.utw_editor import UTWEditor
     from misc.audio_player import AudioPlayer
 
-    config = Configuration()
-
     if gffSpecialized is None:
-        gffSpecialized = config.gffSpecializedEditors
+        gffSpecialized = GlobalSettings().gffSpecializedEditors
 
     editor = None
 

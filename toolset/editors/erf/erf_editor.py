@@ -5,12 +5,13 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
+
+from globalsettings import GlobalSettings
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import read_erf, ERF, ERFType, write_erf, ERFResource
 from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
 
-from data.configuration import Configuration
 from data.installation import HTInstallation
 from editors.editor import Editor
 from utils.window import openResourceEditor
@@ -233,8 +234,7 @@ class ERFEditorTable(QTableView):
             event.ignore()
 
     def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
-        config = Configuration()
-        tempDir = config.extractPath
+        tempDir = GlobalSettings().extractPath
 
         if not tempDir or not os.path.exists(tempDir) or not os.path.isdir(tempDir):
             return

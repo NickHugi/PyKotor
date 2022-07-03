@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QLis
     QShortcut, QLineEdit, QWidget, QPlainTextEdit
 
 from editors import ui_savetomodule, ui_loadfrommodule, ui_locstring
+from globalsettings import GlobalSettings
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.erf import write_erf, read_erf, ERFType
@@ -17,7 +18,6 @@ from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
-from data.configuration import Configuration
 from data.installation import HTInstallation
 
 
@@ -48,7 +48,7 @@ class Editor(QMainWindow):
         self._revert: Optional[bytes] = None
         self._readSupported: List[ResourceType] = readSupported
         self._writeSupported: List[ResourceType] = writeSupported
-        self._config: Configuration = Configuration()
+        self._global_settings: GlobalSettings = GlobalSettings()
         self._installation: Optional[HTInstallation] = installation
         self._mainwindow = mainwindow
 
