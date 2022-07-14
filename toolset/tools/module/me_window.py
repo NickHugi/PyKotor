@@ -334,9 +334,9 @@ class ModuleEditor(QMainWindow):
             self.selectResouceItem(item.data(QtCore.Qt.UserRole))
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
 
-    def addInstance(self, instance: GITInstance) -> None:
-        instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y,
-                                                                 self.ui.mainRenderer.scene.camera.z).z
+    def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True) -> None:
+        if walkmeshSnap:
+            instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y, self.ui.mainRenderer.scene.camera.z).z
 
         if not isinstance(instance, GITCamera):
             dialog = InsertInstanceDialog(self, self._installation, self._module, instance.extension())
@@ -375,13 +375,17 @@ class ModuleEditor(QMainWindow):
         world = self.ui.mainRenderer.walkmeshPoint(self.ui.mainRenderer.scene.camera.x, self.ui.mainRenderer.scene.camera.y)
 
         if len(self.ui.mainRenderer.scene.selection) == 0:
+            view = self.ui.mainRenderer.scene.camera.truePosition()
+            rot = self.ui.mainRenderer.scene.camera
+            menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(world.x, world.y)))
+            menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 69), False))
+            menu.addSeparator()
             menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y)))
             menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y)))
             menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(world.x, world.y)))
             menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(world.x, world.y)))
             menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(world.x, world.y)))
             menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(world.x, world.y)))
-            menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(world.x, world.y)))
             menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(world.x, world.y)))
             menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(world.x, world.y)))
         else:
