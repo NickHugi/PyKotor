@@ -676,3 +676,10 @@ class FocusedCamera:
             return glm.normalize(cross)
         else:
             return glm.normalize(vec3(0, 0, 1))
+
+    def truePosition(self) -> vec3:
+        x, y, z = self.x, self.y, self.z
+        x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
+        y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
+        z += math.sin(self.pitch - math.pi / 2) * self.distance
+        return vec3(x, y, z)
