@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHea
     QTreeView, QMenu
 
 from globalsettings import GlobalSettings
+from misc.settings.dialog import SettingsDialog
 from pykotor.tools import model
 
 from pykotor.common.module import Module
@@ -52,7 +53,6 @@ from misc.asyncloader import AsyncLoader, AsyncBatchLoader
 from misc.help.help import HelpWindow
 from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
-from misc.settings import Settings
 from misc.clone_module import CloneModuleDialog
 from tools.indoormap.indoorbuilder import IndoorMapBuilder
 from tools.module.me_window import ModuleEditor
@@ -308,7 +308,7 @@ class ToolWindow(QMainWindow):
         """
         Opens the Settings dialog and refresh installation combo list if changes.
         """
-        if Settings().exec_():
+        if SettingsDialog(self).exec_():
             self.reloadSettings()
 
     def openActiveTalktable(self) -> None:

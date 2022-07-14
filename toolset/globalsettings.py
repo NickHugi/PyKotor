@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict, Any
 
 from PyQt5.QtCore import QSettings
@@ -75,7 +76,8 @@ class GlobalSettings:
 
     @property
     def nssCompilerPath(self) -> str:
-        return self.settings.value("nssCompilerPath", "", str)
+        default = "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp"
+        return self.settings.value("nssCompilerPath", default, str)
 
     @nssCompilerPath.setter
     def nssCompilerPath(self, value: str) -> None:
