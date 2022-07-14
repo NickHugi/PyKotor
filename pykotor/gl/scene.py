@@ -243,14 +243,12 @@ class Scene:
 
         for camera in self.git.cameras:
             if camera not in self.objects:
-                position = vec3(camera.position.x, camera.position.y, camera.position.z)
-                rotation = glm.eulerAngles(quat(camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w))
-                obj = RenderObject("camera", position, rotation, data=camera)
+                obj = RenderObject("camera", vec3(), vec3(), data=camera)
                 self.objects[camera] = obj
-            else:
-                self.objects[camera].set_position(camera.position.x, camera.position.y, camera.position.z)
-                euler = glm.eulerAngles(quat(camera.orientation.x, camera.orientation.y, camera.orientation.z, camera.orientation.w))
-                self.objects[camera].set_rotation(euler.x, euler.y, euler.z)
+
+            self.objects[camera].set_position(camera.position.x, camera.position.y, camera.position.z)
+            euler = glm.eulerAngles(quat(camera.orientation.w, camera.orientation.x, camera.orientation.y, camera.orientation.z))
+            self.objects[camera].set_rotation(euler.y, euler.z-math.pi/2, -euler.x+math.pi/2)
 
         # Detect if GIT still exists; if they do not then remove them from the render list
         for obj in copy(self.objects):
