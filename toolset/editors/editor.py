@@ -8,12 +8,14 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPixmap, QIcon
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QListWidgetItem, \
     QShortcut, QLineEdit, QWidget, QPlainTextEdit
+from pykotor.common.module import Module
 
 from editors import ui_savetomodule, ui_loadfrommodule, ui_locstring
 from globalsettings import GlobalSettings
+from misc.dialog.rim_save_dialog import RimSaveDialog, RimSaveOption
 from pykotor.common.language import LocalizedString, Language, Gender
 from pykotor.extract.capsule import Capsule
-from pykotor.resource.formats.erf import write_erf, read_erf, ERFType
+from pykotor.resource.formats.erf import write_erf, read_erf, ERFType, ERF
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
@@ -143,21 +145,39 @@ class Editor(QMainWindow):
             self._revert = data
 
             basename = os.path.basename(self._filepath)
+            self.refreshWindowTitle()
 
             if self._filepath.endswith(".bif"):
                 QMessageBox(QMessageBox.Critical, "Could not save file",
                             "Cannot save resource into a .BIF file, select another destination instead.",
                             QMessageBox.Ok, self).show()
             elif self._filepath.endswith(".rim"):
-                rim = read_rim(self._filepath)
-                rim.set(self._resref, self._restype, data)
-                write_rim(rim, self._filepath)
-                self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+                if self._global_settings.disableRIMSaving:
+                    dialog = RimSaveDialog(self)
+                    dialog.exec_()
+                    if dialog.option == RimSaveOption.MOD:
+                        folderpath = os.path.dirname(self._filepath) + "/"
+                        filename = Module.get_root(self._filepath) + ".mod"
+                        self._filepath = folderpath + filename
+                        # Re-save with the updated filepath
+                        self.save()
+                    elif dialog.option == RimSaveOption.Override:
+                        self._filepath = self._installation.override_path() + self._resref + "." + self._restype.extension
+                        self.save()
+                else:
+                    rim = read_rim(self._filepath)
+                    rim.set(self._resref, self._restype, data)
+                    write_rim(rim, self._filepath)
+                    self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
-                # Update installation cache
-                if self._installation is not None:
-                    self._installation.reload_module(basename)
+                    # Update installation cache
+                    if self._installation is not None:
+                        self._installation.reload_module(basename)
             elif self._filepath.endswith(".erf") or self._filepath.endswith(".mod"):
+                # Create the mod file if it does not exist.
+                if not os.path.exists(self._filepath):
+                    write_erf(ERF(), self._filepath, ResourceType.MOD if self._filepath.endswith(".mod") else ResourceType.ERF)
+
                 erf = read_erf(self._filepath)
                 erf.erf_type = ERFType.ERF if self._filepath.endswith(".erf") else ERFType.MOD
                 erf.set(self._resref, self._restype, data)

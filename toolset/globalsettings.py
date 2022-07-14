@@ -93,7 +93,7 @@ class GlobalSettings:
     # region Bools
     @property
     def disableRIMSaving(self) -> bool:
-        return self.settings.value("disableRIMSaving", "", bool)
+        return self.settings.value("disableRIMSaving", True, bool)
 
     @disableRIMSaving.setter
     def disableRIMSaving(self, value: bool) -> None:
