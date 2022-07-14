@@ -127,9 +127,6 @@ class Scene:
 
         for door in self.git.doors:
             if door not in self.objects:
-                position = vec3(door.position.x, door.position.y, door.position.z)
-                rotation = vec3(0, 0, door.bearing)
-
                 try:
                     utd = self.module.door(door.resref.get()).resource()
                     model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
@@ -137,16 +134,13 @@ class Scene:
                     # If failed to load creature models, use an empty model instead
                     model_name = "empty"
 
-                self.objects[door] = RenderObject(model_name, position, rotation, data=door)
-            else:
-                self.objects[door].set_position(door.position.x, door.position.y, door.position.z)
-                self.objects[door].set_rotation(0, 0, door.bearing)
+                self.objects[door] = RenderObject(model_name, vec3(), vec3(), data=door)
+
+            self.objects[door].set_position(door.position.x, door.position.y, door.position.z)
+            self.objects[door].set_rotation(0, 0, door.bearing)
 
         for placeable in self.git.placeables:
             if placeable not in self.objects:
-                position = vec3(placeable.position.x, placeable.position.y, placeable.position.z)
-                rotation = vec3(0, 0, placeable.bearing)
-
                 try:
                     utp = self.module.placeable(placeable.resref.get()).resource()
                     model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
@@ -154,20 +148,17 @@ class Scene:
                     # If failed to load creature models, use an empty model instead
                     model_name = "empty"
 
-                self.objects[placeable] = RenderObject(model_name, position, rotation, data=placeable)
-            else:
-                self.objects[placeable].set_position(placeable.position.x, placeable.position.y, placeable.position.z)
-                self.objects[placeable].set_rotation(0, 0, placeable.bearing)
+                self.objects[placeable] = RenderObject(model_name, vec3(), vec3(), data=placeable)
+
+            self.objects[placeable].set_position(placeable.position.x, placeable.position.y, placeable.position.z)
+            self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
         for creature in self.git.creatures:
             if creature not in self.objects:
-                position = vec3(creature.position.x, creature.position.y, creature.position.z)
-                rotation = vec3(0, 0, creature.bearing)
-
                 try:
                     utc = self.module.creature(creature.resref.get()).resource()
                     body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
-                    obj = RenderObject(body_model, position, rotation, data=creature)
+                    obj = RenderObject(body_model, vec3(), vec3(), data=creature)
 
                     head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
                     if head_str:
@@ -178,32 +169,28 @@ class Scene:
                         obj.children.append(head_obj)
                 except Exception:
                     # If failed to load creature models, use an empty model instead
-                    obj = RenderObject("empty", position, rotation, data=creature)
+                    obj = RenderObject("empty", vec3(), vec3(), data=creature)
 
                 self.objects[creature] = obj
-            else:
-                self.objects[creature].set_position(creature.position.x, creature.position.y, creature.position.z)
-                self.objects[creature].set_rotation(0, 0, creature.bearing)
+
+            self.objects[creature].set_position(creature.position.x, creature.position.y, creature.position.z)
+            self.objects[creature].set_rotation(0, 0, creature.bearing)
 
         for waypoint in self.git.waypoints:
             if waypoint not in self.objects:
-                position = vec3(waypoint.position.x, waypoint.position.y, waypoint.position.z)
-                rotation = vec3(0, 0, waypoint.bearing)
-                obj = RenderObject("waypoint", position, rotation, data=waypoint)
+                obj = RenderObject("waypoint", vec3(), vec3(), data=waypoint)
                 self.objects[waypoint] = obj
-            else:
-                self.objects[waypoint].set_position(waypoint.position.x, waypoint.position.y, waypoint.position.z)
-                self.objects[waypoint].set_rotation(0, 0, waypoint.bearing)
+
+            self.objects[waypoint].set_position(waypoint.position.x, waypoint.position.y, waypoint.position.z)
+            self.objects[waypoint].set_rotation(0, 0, waypoint.bearing)
 
         for store in self.git.stores:
             if store not in self.objects:
-                position = vec3(store.position.x, store.position.y, store.position.z)
-                rotation = vec3(0, 0, store.bearing)
-                obj = RenderObject("store", position, rotation, data=store)
+                obj = RenderObject("store", vec3(), vec3(), data=store)
                 self.objects[store] = obj
-            else:
-                self.objects[store].set_position(store.position.x, store.position.y, store.position.z)
-                self.objects[store].set_rotation(0, 0, store.bearing)
+
+            self.objects[store].set_position(store.position.x, store.position.y, store.position.z)
+            self.objects[store].set_rotation(0, 0, store.bearing)
 
         for sound in self.git.sounds:
             if sound not in self.objects:
@@ -211,35 +198,29 @@ class Scene:
                     uts = self.module.sound(sound.resref.get()).resource()
                     genBoundary = lambda boundary=Boundary.from_circle(self, uts.max_distance): boundary
 
-                position = vec3(sound.position.x, sound.position.y, sound.position.z)
-                rotation = vec3(0, 0, 0)
-                obj = RenderObject("sound", position, rotation, data=sound, genBoundary=genBoundary)
+                obj = RenderObject("sound", vec3(), vec3(), data=sound, genBoundary=genBoundary)
                 self.objects[sound] = obj
-            else:
-                self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
-                self.objects[sound].set_rotation(0, 0, 0)
+
+            self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
+            self.objects[sound].set_rotation(0, 0, 0)
 
         for encounter in self.git.encounters:
             if encounter not in self.objects:
-                position = vec3(encounter.position.x, encounter.position.y, encounter.position.z)
-                rotation = vec3(0, 0, 0)
                 genBoundary = lambda boundary=Boundary(self, encounter.geometry.points): boundary
-                obj = RenderObject("encounter", position, rotation, data=encounter, genBoundary=genBoundary)
+                obj = RenderObject("encounter", vec3(), vec3(), data=encounter, genBoundary=genBoundary)
                 self.objects[encounter] = obj
-            else:
-                self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
-                self.objects[encounter].set_rotation(0, 0, 0)
+
+            self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
+            self.objects[encounter].set_rotation(0, 0, 0)
 
         for trigger in self.git.triggers:
             if trigger not in self.objects:
-                position = vec3(trigger.position.x, trigger.position.y, trigger.position.z)
-                rotation = vec3(0, 0, 0)
                 genBoundary = lambda boundary=Boundary(self, trigger.geometry.points): boundary
-                obj = RenderObject("trigger", position, rotation, data=trigger, genBoundary=genBoundary)
+                obj = RenderObject("trigger", vec3(), vec3(), data=trigger, genBoundary=genBoundary)
                 self.objects[trigger] = obj
-            else:
-                self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
-                self.objects[trigger].set_rotation(0, 0, 0)
+
+            self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
+            self.objects[trigger].set_rotation(0, 0, 0)
 
         for camera in self.git.cameras:
             if camera not in self.objects:
