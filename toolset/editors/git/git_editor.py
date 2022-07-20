@@ -353,7 +353,6 @@ class _InstanceMode(_Mode):
         return self._editor.tagBuffer[resid] if resid in self._editor.tagBuffer else resid.resname
 
     def getInstanceLabel(self, instance: GITInstance) -> str:
-        index = self._editor.git().index(instance)
         resid = None if instance.identifier() is None else instance.identifier()
 
         if isinstance(instance, GITCamera):
@@ -412,6 +411,46 @@ class _InstanceMode(_Mode):
 
         return "{}".format(label)
 
+    def getInstanceTooltip(self, instance: GITInstance) -> str:
+        index = self._editor.git().index(instance)
+
+        if isinstance(instance, GITCamera):
+            return "Camera ID: {}\nList Index: {}".format(
+                instance.camera_id,
+                index)
+        elif isinstance(instance, GITCreature):
+            return "ResRef: {}\nList Index: {}".format(
+                instance.identifier().resname,
+                index)
+        elif isinstance(instance, GITDoor):
+            return "ResRef: {}\nTag (GIT): {}\nList Index: {}\n".format(
+                instance.identifier().resname,
+                instance.tag,
+                index)
+        elif isinstance(instance, GITStore):
+            return "ResRef: {}\nList Index: {}".format(
+                instance.identifier().resname,
+                index)
+        elif isinstance(instance, GITSound):
+            return "ResRef: {}\nList Index: {}".format(
+                instance.identifier().resname,
+                index)
+        elif isinstance(instance, GITWaypoint):
+            return "ResRef: {}\nTag (GIT): {}\nList Index: {}".format(
+                instance.identifier().resname,
+                instance.tag,
+                index)
+        elif isinstance(instance, GITEncounter):
+            return "ResRef: {}\nSpawn Count: {}\nList Index: {}".format(
+                instance.identifier().resname,
+                len(instance.spawn_points),
+                index)
+        elif isinstance(instance, GITTrigger):
+            return "ResRef: {}\nTag (GIT): {}\nList Index: {}".format(
+                instance.identifier().resname,
+                instance.tag,
+                index)
+
     def updateStatusBar(self) -> None:
         screen = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
         world = self._ui.renderArea.toWorldCoords(screen.x(), screen.y())
@@ -459,6 +498,7 @@ class _InstanceMode(_Mode):
                 text = self.getInstanceLabel(instance)
                 item = QListWidgetItem(icon, text)
                 item.setData(QtCore.Qt.UserRole, instance)
+                item.setToolTip(self.getInstanceTooltip(instance))
                 self._ui.listWidget.addItem(item)
 
     def selectInstanceItem(self, instance: GITInstance) -> None:
