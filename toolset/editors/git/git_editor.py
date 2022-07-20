@@ -356,7 +356,7 @@ class _InstanceMode(_Mode):
         resid = None if instance.identifier() is None else instance.identifier()
 
         if isinstance(instance, GITCamera):
-            label = "CameraID=" + str(instance.camera_id)
+            label = "ID " + str(instance.camera_id)
         else:
             label = resid.resname
 
@@ -409,7 +409,7 @@ class _InstanceMode(_Mode):
             elif self._editor.settings.triggerLabel == "res_tag":
                 label = self._getBufferedTag(resid)
 
-        return "[{}] {}".format(index, label)
+        return "{}".format(label)
 
     def updateStatusBar(self) -> None:
         screen = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
@@ -440,20 +440,12 @@ class _InstanceMode(_Mode):
     def rebuildInstanceList(self) -> None:
         self._ui.listWidget.clear()
 
-        # We will split cameras from the rest of the instances so they can be sorted seperately
-        cameras = [camera for camera in self._editor.git().instances() if isinstance(camera, GITCamera)]
-        instances = [instance for instance in self._editor.git().instances() if not isinstance(instance, GITCamera)]
+        for instance in self._editor.git().instances():
+            filterSource = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
+            isVisible = self._ui.renderArea.isInstanceVisible(instance)
+            isFiltered = self._ui.filterEdit.text() in filterSource
 
-        cameras = sorted(cameras, key=operator.attrgetter('camera_id'))
-
-        # Join the two lists back together and add all items to the list
-        for instance in instances + cameras:
-            if (
-                    self._ui.renderArea.isInstanceVisible(instance)
-                    and (instance.identifier() is None
-                         or self._ui.filterEdit.text() in instance.identifier().resname
-                         or instance.identifier().resname == "")
-            ):
+            if isVisible and isFiltered:
                 icon = QIcon(self._ui.renderArea.instancePixmap(instance))
                 text = self.getInstanceLabel(instance)
                 item = QListWidgetItem(icon, text)
