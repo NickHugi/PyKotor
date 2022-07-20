@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import operator
+import random
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from copy import deepcopy
@@ -440,7 +441,15 @@ class _InstanceMode(_Mode):
     def rebuildInstanceList(self) -> None:
         self._ui.listWidget.clear()
 
-        for instance in self._editor.git().instances():
+        def instanceSort(inst):
+            textToSort = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname.lower()
+            textToSort = textToSort if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
+            return textToSort
+
+        instances = self._editor.git().instances()
+        instances = sorted(instances, key=instanceSort)
+
+        for instance in instances:
             filterSource = str(instance.camera_id) if isinstance(instance, GITCamera) else instance.identifier().resname
             isVisible = self._ui.renderArea.isInstanceVisible(instance)
             isFiltered = self._ui.filterEdit.text() in filterSource
