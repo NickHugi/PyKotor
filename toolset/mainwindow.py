@@ -93,11 +93,6 @@ class ToolWindow(QMainWindow):
 
         self.installations = {}
 
-        # Opening up new windows such as the editors will be garbage collected if they are in the local scope and
-        # therefore immediatley close. Setting their parents as the main window will make the main window always appear
-        # behind and you cannot alt-tab between them. Therefore we store all windows in this list:
-        self.windows: List = []
-
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
 
