@@ -95,7 +95,7 @@ def compileScript(source: str, tsl: bool) -> bytes:
 
     gameIndex = "2" if tsl else "1"
     command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
 
     output = process.communicate()[0].decode()
     output = output[output.index("Compiling: tempscript.nss") + 25:]
