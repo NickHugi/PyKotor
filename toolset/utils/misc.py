@@ -1,5 +1,8 @@
 from typing import List
 
+from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QDesktopServices
+
 
 def get_nums(string_input: str) -> List[int]:
     """
@@ -20,3 +23,8 @@ def get_nums(string_input: str) -> List[int]:
             nums.append(int(string))
             string = ""
     return nums
+
+
+def openLink(link: str) -> None:
+    url = QUrl(link)
+    QDesktopServices.openUrl(url)

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>478</width>
+    <width>512</width>
     <height>471</height>
    </rect>
   </property>
@@ -36,40 +36,20 @@
           <string>Core</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_2">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
-           <widget class="QLineEdit" name="coreSearchEdit">
-            <property name="placeholderText">
-             <string>search...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTreeView" name="coreTree">
-            <property name="contextMenuPolicy">
-             <enum>Qt::CustomContextMenu</enum>
-            </property>
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="alternatingRowColors">
-             <bool>true</bool>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
-            </property>
-            <property name="sortingEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="allColumnsShowFocus">
-             <bool>true</bool>
-            </property>
-            <attribute name="headerShowSortIndicator" stdset="0">
-             <bool>true</bool>
-            </attribute>
-            <attribute name="headerStretchLastSection">
-             <bool>true</bool>
-            </attribute>
-           </widget>
+           <widget class="ResourceList" name="coreWidget" native="true"/>
           </item>
          </layout>
         </widget>
@@ -77,107 +57,24 @@
          <attribute name="title">
           <string>Modules</string>
          </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout">
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="4,1">
-            <item>
-             <widget class="QComboBox" name="modulesCombo">
-              <property name="maxVisibleItems">
-               <number>18</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="moduleRefreshButton">
-              <property name="minimumSize">
-               <size>
-                <width>70</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>70</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Refresh the list of modules.</string>
-              </property>
-              <property name="text">
-               <string>Refresh</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <item>
-             <widget class="QLineEdit" name="moduleSearchEdit">
-              <property name="placeholderText">
-               <string>search...</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="moduleReloadButton">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>70</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>70</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Reload the active module.</string>
-              </property>
-              <property name="text">
-               <string>Reload</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QTreeView" name="modulesTree">
-            <property name="contextMenuPolicy">
-             <enum>Qt::CustomContextMenu</enum>
-            </property>
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="alternatingRowColors">
-             <bool>true</bool>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
-            </property>
-            <property name="sortingEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="allColumnsShowFocus">
-             <bool>true</bool>
-            </property>
-            <attribute name="headerShowSortIndicator" stdset="0">
-             <bool>false</bool>
-            </attribute>
-           </widget>
+         <layout class="QGridLayout" name="gridLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <item row="0" column="0" rowspan="2" colspan="2">
+           <widget class="ResourceList" name="modulesWidget" native="true"/>
           </item>
          </layout>
         </widget>
@@ -186,119 +83,23 @@
           <string>Override</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
           <item>
-           <widget class="QFrame" name="overrideFolderFrame">
-            <property name="frameShape">
-             <enum>QFrame::NoFrame</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Plain</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,0">
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QComboBox" name="overrideFolderCombo"/>
-             </item>
-             <item>
-              <widget class="QPushButton" name="overrideRefreshButton">
-               <property name="minimumSize">
-                <size>
-                 <width>70</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>70</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="toolTip">
-                <string>Refresh the list of modules.</string>
-               </property>
-               <property name="text">
-                <string>Refresh</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="Line" name="overrideLine">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QLineEdit" name="overrideSearchEdit">
-              <property name="placeholderText">
-               <string>search...</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="overrideReloadButton">
-              <property name="minimumSize">
-               <size>
-                <width>70</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>70</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Refresh the list of files in the override folder.</string>
-              </property>
-              <property name="text">
-               <string>Reload</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QTreeView" name="overrideTree">
-            <property name="contextMenuPolicy">
-             <enum>Qt::CustomContextMenu</enum>
-            </property>
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="alternatingRowColors">
-             <bool>true</bool>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
-            </property>
-            <property name="sortingEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="allColumnsShowFocus">
-             <bool>true</bool>
-            </property>
-            <attribute name="headerShowSortIndicator" stdset="0">
-             <bool>false</bool>
-            </attribute>
-           </widget>
+           <widget class="ResourceList" name="overrideWidget" native="true"/>
           </item>
          </layout>
         </widget>
@@ -308,61 +109,7 @@
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
-           <widget class="QComboBox" name="texturesCombo"/>
-          </item>
-          <item>
-           <widget class="Line" name="textureLine">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="textureSearchEdit">
-            <property name="placeholderText">
-             <string>search...</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="TexturesView" name="texturesList">
-            <property name="editTriggers">
-             <set>QAbstractItemView::NoEditTriggers</set>
-            </property>
-            <property name="showDropIndicator" stdset="0">
-             <bool>false</bool>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>64</width>
-              <height>64</height>
-             </size>
-            </property>
-            <property name="isWrapping" stdset="0">
-             <bool>true</bool>
-            </property>
-            <property name="resizeMode">
-             <enum>QListView::Adjust</enum>
-            </property>
-            <property name="layoutMode">
-             <enum>QListView::Batched</enum>
-            </property>
-            <property name="gridSize">
-             <size>
-              <width>92</width>
-              <height>92</height>
-             </size>
-            </property>
-            <property name="viewMode">
-             <enum>QListView::IconMode</enum>
-            </property>
-            <property name="uniformItemSizes">
-             <bool>true</bool>
-            </property>
-           </widget>
+           <widget class="TextureList" name="texturesWidget" native="true"/>
           </item>
          </layout>
         </widget>
@@ -503,8 +250,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>478</width>
-     <height>21</height>
+     <width>512</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -726,7 +473,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/placeable.png</normaloff>:/images/icons/kx/placeable.png</iconset>
    </property>
    <property name="text">
@@ -738,7 +485,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/door.png</normaloff>:/images/icons/kx/door.png</iconset>
    </property>
    <property name="text">
@@ -750,7 +497,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/waypoint.png</normaloff>:/images/icons/kx/waypoint.png</iconset>
    </property>
    <property name="text">
@@ -762,7 +509,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/trigger.png</normaloff>:/images/icons/kx/trigger.png</iconset>
    </property>
    <property name="text">
@@ -774,7 +521,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/encounter.png</normaloff>:/images/icons/kx/encounter.png</iconset>
    </property>
    <property name="text">
@@ -786,7 +533,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/sound.png</normaloff>:/images/icons/kx/sound.png</iconset>
    </property>
    <property name="text">
@@ -798,7 +545,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/merchant.png</normaloff>:/images/icons/kx/merchant.png</iconset>
    </property>
    <property name="text">
@@ -810,7 +557,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/item.png</normaloff>:/images/icons/kx/item.png</iconset>
    </property>
    <property name="text">
@@ -822,7 +569,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/dialog.png</normaloff>:/images/icons/kx/dialog.png</iconset>
    </property>
    <property name="text">
@@ -834,7 +581,7 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resources.qrc">
+    <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/icons/kx/script.png</normaloff>:/images/icons/kx/script.png</iconset>
    </property>
    <property name="text">
@@ -904,13 +651,20 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>TexturesView</class>
-   <extends>QListView</extends>
-   <header location="global">toolset.mainwindow</header>
+   <class>ResourceList</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.windows.main.main_widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TextureList</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.windows.main.main_widgets</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../resources/resources.qrc"/>
+  <include location="../../../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

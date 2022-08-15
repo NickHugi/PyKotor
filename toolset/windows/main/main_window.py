@@ -56,7 +56,9 @@ from misc.search import FileSearcher, FileResults
 from misc.clone_module import CloneModuleDialog
 from tools.indoormap.indoorbuilder import IndoorMapBuilder
 from tools.module.me_window import ModuleEditor
+from utils.misc import openLink
 from utils.window import openResourceEditor, addWindow
+from windows.main.main_widgets import ResourceList
 
 
 class ToolWindow(QMainWindow):
@@ -68,17 +70,22 @@ class ToolWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        import ui_mainwindow
-        self.ui = ui_mainwindow.Ui_MainWindow()
+        import windows.main.ui_mainwindow
+        self.ui = windows.main.ui_mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
+
+        self.ui.coreWidget.hideSection()
 
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
 
         self.active: Optional[HTInstallation] = None
         self.settings: GlobalSettings = GlobalSettings()
 
-        firstTime = self.settings.firstTime
+        self.installations = {}
+        self.reloadSettings()
+
+        '''firstTime = self.settings.firstTime
         if firstTime:
             self.settings.installations = []
             self.settings.installations.append(InstallationConfig("KotOR", "", False))
@@ -87,63 +94,39 @@ class ToolWindow(QMainWindow):
             self.settings.firstTime = False
 
             with suppress(Exception):
-                extractPath = os.path.realpath('.') + "/ext"
+                extractPath = os.path.realpath('../..') + "/ext"
                 os.mkdir(extractPath)
                 self.settings.extractPath = extractPath
-
-        self.installations = {}
-
-        self.ui.resourceTabs.setEnabled(False)
-        self.ui.sidebar.setEnabled(False)
-
-        self._core_models: Dict[str, ResourceModel] = {}
-        self.ui.coreTree.setModel(ResourceModel())
-        self.ui.coreTree.header().resizeSection(1, 40)
-        self.ui.coreTree.setSortingEnabled(True)
-        self.ui.coreTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
-
-        self.modulesModel = ResourceModel()
-        self.ui.modulesTree.setModel(self.modulesModel.proxyModel())
-        self.ui.modulesTree.header().resizeSection(1, 40)
-        self.ui.modulesTree.setSortingEnabled(True)
-        self.ui.modulesTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
-        self._modules_list: Dict[str, QStandardItemModel] = {}
-        self.ui.modulesCombo.setModel(QStandardItemModel())
-
-        self.overrideModel = ResourceModel()
-        self.ui.overrideTree.setModel(self.overrideModel.proxyModel())
-        self.ui.overrideTree.header().resizeSection(1, 40)
-        self.ui.overrideTree.setSortingEnabled(True)
-        self.ui.overrideTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         self.texturesModel = TextureListModel()
         self.ui.texturesList.setModel(self.texturesModel.proxyModel())
 
-        self.reloadSettings()
-
-        self.checkForUpdates(True)
+        self.installations = {}
+        self.checkForUpdates(True)'''
 
     def _setupSignals(self) -> None:
         self.ui.resourceTabs.currentChanged.connect(self.resizeColumns)
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
-        self.ui.extractButton.clicked.connect(self.extractFromSelected)
-        self.ui.openButton.clicked.connect(self.openFromSelected)
 
-        self.ui.coreSearchEdit.textEdited.connect(self.filterDataModel)
+        self.ui.coreWidget.requestExtractResource.connect(self.onExtractResources)
+        self.ui.coreWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.moduleSearchEdit.textEdited.connect(self.filterDataModel)
-        self.ui.moduleReloadButton.clicked.connect(self.reloadModule)
-        self.ui.moduleRefreshButton.clicked.connect(lambda: self.refreshModuleList(True))
-        self.ui.modulesCombo.currentIndexChanged.connect(lambda index: self.changeModule(self._modules_list[self.active.name].index(index, 0).data(QtCore.Qt.UserRole)))
+        self.ui.modulesWidget.sectionChanged.connect(self.onModuleChanged)
+        self.ui.modulesWidget.requestReload.connect(self.onModuleReload)
+        self.ui.modulesWidget.requestRefresh.connect(self.onModuleRefresh)
+        self.ui.modulesWidget.requestExtractResource.connect(self.onExtractResources)
+        self.ui.modulesWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.overrideSearchEdit.textEdited.connect(self.filterDataModel)
-        self.ui.overrideRefreshButton.clicked.connect(self.refreshOverrideList)
-        self.ui.overrideReloadButton.clicked.connect(self.reloadOverride)
-        self.ui.overrideFolderCombo.currentTextChanged.connect(self.changeOverrideFolder)
+        self.ui.overrideWidget.sectionChanged.connect(self.onOverrideChanged)
+        self.ui.overrideWidget.requestReload.connect(self.onOverrideReload)
+        self.ui.overrideWidget.requestRefresh.connect(self.onOverrideRefresh)
+        self.ui.overrideWidget.requestExtractResource.connect(self.onExtractResources)
+        self.ui.overrideWidget.requestOpenResource.connect(self.onOpenResources)
 
-        self.ui.texturesCombo.currentTextChanged.connect(self.changeTexturePack)
-        self.ui.textureSearchEdit.textEdited.connect(self.filterDataModel)
-        self.ui.textureSearchEdit.textEdited.connect(self.ui.texturesList.loadVisibleTextures)
+        self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
+
+        self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources()))
+        self.ui.openButton.clicked.connect(lambda: self.onOpenResources(self.getActiveResourceWidget().selectedResources()))
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
@@ -175,43 +158,68 @@ class ToolWindow(QMainWindow):
         self.ui.actionInstructions.triggered.connect(self.openInstructionsWindow)
         self.ui.actionHelpUpdates.triggered.connect(self.checkForUpdates)
         self.ui.actionHelpAbout.triggered.connect(self.openAboutDialog)
-        self.ui.actionDiscordDeadlyStream.triggered.connect(lambda: self.openLink("https://discord.com/invite/bRWyshn"))
-        self.ui.actionDiscordKotOR.triggered.connect(lambda: self.openLink("http://discord.gg/kotor"))
-        self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: self.openLink("https://discord.gg/3ME278a9tQ"))
+        self.ui.actionDiscordDeadlyStream.triggered.connect(lambda: openLink("https://discord.com/invite/bRWyshn"))
+        self.ui.actionDiscordKotOR.triggered.connect(lambda: openLink("http://discord.gg/kotor"))
+        self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: openLink("https://discord.gg/3ME278a9tQ"))
 
-        self.ui.coreTree.doubleClicked.connect(self.openFromSelected)
-        self.ui.modulesTree.doubleClicked.connect(self.openFromSelected)
-        self.ui.overrideTree.doubleClicked.connect(self.openFromSelected)
-        self.ui.texturesList.doubleClicked.connect(self.openFromSelected)
+    # region Signal callbacks
+    def onModuleChanged(self, newModuleFile: str) -> None:
+        self.ui.modulesWidget.setResources(self.active.module_resources(newModuleFile))
 
-        self.ui.coreTree.customContextMenuRequested.connect(self.onResourceContextMenu)
-        self.ui.modulesTree.customContextMenuRequested.connect(self.onResourceContextMenu)
-        self.ui.overrideTree.customContextMenuRequested.connect(self.onResourceContextMenu)
+    def onModuleReload(self, moduleFile: str) -> None:
+        self.active.reload_module(moduleFile)
+        self.ui.modulesWidget.setResources(self.active.module_resources(moduleFile))
 
-    def onResourceContextMenu(self, point: QPoint) -> None:
-        menu = QMenu(self)
+    def onModuleRefresh(self) -> None:
+        self.refreshModuleList()
 
-        resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
+    def onOverrideChanged(self, newDirectory: str) -> None:
+        self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
+
+    def onOverrideReload(self, directory) -> None:
+        self.active.reload_override(directory)
+        self.ui.overrideWidget.setResources(self.active.override_resources(directory))
+
+    def onOverrideRefresh(self) -> None:
+        self.refreshOverrideList()
+
+    def onTexturesChanged(self, newTexturepack: str) -> None:
+        self.ui.texturesWidget.setResources(self.active.texturepack_resources(newTexturepack))
+
+    def onExtractResources(self, resources: List[FileResource]) -> None:
         if len(resources) == 1:
-            resource = resources[0]
-            if resource.restype() in self.GFF_TYPES:
-                open1 = lambda: openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                   resource.data(reload=True), self.active, self, gffSpecialized=False)
-                menu.addAction("Open with GFF Editor").triggered.connect(open1)
+            # Player saves resource with a specific name
+            default = resources[0].resname() + "." + resources[0].restype().extension
+            filepath = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
-                open2 = lambda: openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                   resource.data(reload=True), self.active, self, gffSpecialized=True)
-                menu.addAction("Open with Specialized Editor").triggered.connect(open2)
+            if filepath:
+                tasks = [lambda: self._extractResource(resources[0], filepath)]
+                loader = AsyncBatchLoader(self, "Extracting Resources", tasks, "Failed to Extract Resources")
+                loader.exec_()
 
-        menu.popup(self.currentDataView().mapToGlobal(point))
+        elif len(resources) >= 1:
+            # Player saves resources with original name to a specific directory
+            folderpath = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
+            if folderpath:
+                loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
 
-    def openLink(self, link: str) -> None:
-        url = QUrl(link)
-        QDesktopServices.openUrl(url)
+                for resource in resources:
+                    filename = resource.resname() + "." + resource.restype().extension
+                    filepath = folderpath + "/" + filename
+                    loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
+
+                loader.exec_()
+
+    def onOpenResources(self, resources: List[FileResource], useSpecializedEditor: bool = False) -> None:
+        for resource in resources:
+            filepath, editor = openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
+                                                  resource.data(reload=True), self.active, self,
+                                                  gffSpecialized=useSpecializedEditor)
+    # endregion
 
     # region Events
     def closeEvent(self, e: QCloseEvent) -> None:
-        self.ui.texturesList.stop()
+        self.ui.texturesWidget.doTerminations()
 
     def resizeEvent(self, size: QtGui.QResizeEvent) -> None:
         super().resizeEvent(size)
@@ -396,75 +404,42 @@ class ToolWindow(QMainWindow):
                             "Check if you are connected to the internet.", QMessageBox.Ok, self).exec_()
     # endregion
 
-    # region Modules Tab
-    def changeModule(self, module: str) -> None:
-        """
-        Updates the items in the module tree to the module specified.
-        """
+    # region Other
+    def reloadSettings(self) -> None:
+        self.reloadInstallations()
 
-        self.modulesModel.clear()
-        self.ui.moduleReloadButton.setEnabled(True)
-
-        if self.active is None or module is None or module == "" or module == "[None]":
-            self.ui.moduleReloadButton.setEnabled(False)
-            return
-
-        for resource in self.active.module_resources(module):
-            self.modulesModel.addResource(resource)
-
-        self.resizeColumns()
-
-    def reloadModule(self) -> None:
-        """
-        Reloads the files stored in the currently selected module and updates the data model.
-        """
-        module = self.ui.modulesCombo.currentData()
-        if module is not None:
-            self.active.reload_module(module)
-
-            self.modulesModel.clear()
-            for resource in self.active.module_resources(module):
-                self.modulesModel.addResource(resource)
-
-            self.resizeColumns()
+    def getActiveResourceWidget(self) -> ResourceList:
+        if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
+            return self.ui.coreWidget
+        elif self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
+            return self.ui.modulesWidget
+        elif self.ui.resourceTabs.currentWidget() is self.ui.overrideTab:
+            return self.ui.overrideWidget
+        elif self.ui.resourceTabs.currentWidget() is self.ui.texturesTab:
+            raise Exception
 
     def refreshModuleList(self, reload: bool = True) -> None:
         """
         Refreshes the list of modules in the modulesCombo combobox.
         """
+        # Do nothing if no installation is currently loaded
         if self.active is None:
             return
 
+        # If specified the user can forcibly reload the resource list for every module
         if reload:
             self.active.load_modules()
-
-        self._modules_list[self.active.name] = QStandardItemModel(self)
-        self._modules_list[self.active.name].appendRow(QStandardItem("[None]"))
 
         areaNames = self.active.module_names()
         sortedKeys = sorted(areaNames, key=lambda key: areaNames.get(key).lower())
 
+        modules = []
         for module in sortedKeys:
             item = QStandardItem("{} [{}]".format(areaNames[module], module))
             item.setData(module, QtCore.Qt.UserRole)
-            self._modules_list[self.active.name].appendRow(item)
+            modules.append(item)
 
-        self.ui.modulesCombo.setModel(self._modules_list[self.active.name])
-    # endregion
-
-    # region Override Tab
-    def changeOverrideFolder(self, folder: str) -> None:
-        self.overrideModel.clear()
-
-        if self.active is None:
-            return
-
-        folder = "" if folder == "[Root]" else folder
-
-        for resource in self.active.override_resources(folder):
-            self.overrideModel.addResource(resource)
-
-        self.resizeColumns()
+        self.ui.modulesWidget.setSections(modules)
 
     def refreshOverrideList(self) -> None:
         """
@@ -472,62 +447,26 @@ class ToolWindow(QMainWindow):
         """
         self.active.load_override()
 
-        self.ui.overrideFolderCombo.clear()
-        self.ui.overrideFolderCombo.addItem("[Root]")
+        sections = []
         for directory in self.active.override_list():
-            if directory == "":
-                continue
-            self.ui.overrideFolderCombo.addItem(directory)
+            section = QStandardItem(directory if directory != "" else "[Root]")
+            section.setData(directory, QtCore.Qt.UserRole)
+            sections.append(section)
+        self.ui.overrideWidget.setSections(sections)
 
-    def reloadOverride(self) -> None:
-        """
-        Reloads the files stored in the active installation's override folder and updates the respective data model.
-        """
-        folder = self.ui.overrideFolderCombo.currentText()
-        folder = "" if folder == "[Root]" else folder
-
-        self.active.reload_override(folder)
-
-        self.overrideModel.clear()
-        for resource in self.active.override_resources(folder):
-            self.overrideModel.addResource(resource)
-
-        self.resizeColumns()
-    # endregion
-
-    # region Textures Tab
     def refreshTexturePackList(self):
-        self.ui.texturesCombo.clear()
+        self.active.load_textures()
+
+        sections = []
         for texturepack in self.active.texturepacks_list():
-            self.ui.texturesCombo.addItem(texturepack)
+            section = QStandardItem(texturepack)
+            section.setData(texturepack, QtCore.Qt.UserRole)
+            sections.append(section)
 
-    def changeTexturePack(self, texturepack: str):
-        self.texturesModel = TextureListModel()
-        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
-
-        if texturepack == "":
-            return
-
-        self.texturesModel.proxyModel().setFilterFixedString(self.ui.textureSearchEdit.text())
-        image = QImage(bytes([0 for i in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
-        icon = QIcon(QPixmap.fromImage(image))
-
-        for texture in self.active.texturepack_resources(texturepack):
-            if texture.restype() in [ResourceType.TPC, ResourceType.TGA]:
-                item = QStandardItem(icon, texture.resname())
-                item.setToolTip(texture.resname())
-                item.resource = texture
-                item.setData(False, QtCore.Qt.UserRole)  # Mark as unloaded
-                self.texturesModel.appendRow(item)
-        self.ui.texturesList.setInstallation(self.active)
-    # endregion
-
-    # region Other
-    def reloadSettings(self) -> None:
-        self.reloadInstallations()
+        self.ui.texturesWidget.setSections(sections)
 
     def selectResource(self, tree: QTreeView, resource: FileResource) -> None:
-        model: ResourceModel = tree.model().sourceModel()
+        model = tree.model().sourceModel()
 
         def select(parent, child):
             tree.expand(parent)
@@ -555,7 +494,7 @@ class ToolWindow(QMainWindow):
                 QTimer.singleShot(0, lambda: select(parentIndex, itemIndex))
 
     def resizeColumns(self) -> None:
-        self.ui.coreTree.setColumnWidth(1, 10)
+        '''self.ui.coreTree.setColumnWidth(1, 10)
         self.ui.coreTree.setColumnWidth(0, self.ui.coreTree.width() - 80)
         self.ui.coreTree.header().setSectionResizeMode(QHeaderView.Fixed)
         self.ui.modulesTree.setColumnWidth(1, 10)
@@ -563,7 +502,7 @@ class ToolWindow(QMainWindow):
         self.ui.modulesTree.header().setSectionResizeMode(QHeaderView.Fixed)
         self.ui.overrideTree.setColumnWidth(1, 10)
         self.ui.overrideTree.setColumnWidth(0, self.ui.overrideTree.width() - 80)
-        self.ui.overrideTree.header().setSectionResizeMode(QHeaderView.Fixed)
+        self.ui.overrideTree.header().setSectionResizeMode(QHeaderView.Fixed)'''
 
     def reloadInstallations(self) -> None:
         """
@@ -572,7 +511,6 @@ class ToolWindow(QMainWindow):
         self.ui.gameCombo.clear()
         self.ui.gameCombo.addItem("[None]")
 
-        print(self.settings.installations().values())
         for installation in self.settings.installations().values():
             self.ui.gameCombo.addItem(installation.name)
 
@@ -587,8 +525,8 @@ class ToolWindow(QMainWindow):
         """
         self.ui.gameCombo.setCurrentIndex(index)
 
-        self.ui.modulesCombo.setModel(QStandardItemModel())
-        self.ui.overrideFolderCombo.clear()
+        self.ui.modulesWidget.setSections([])
+        self.ui.overrideWidget.setSections([])
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
         self.active = None
@@ -625,93 +563,16 @@ class ToolWindow(QMainWindow):
             if name in self.installations:
                 self.active = self.installations[name]
 
-                if name not in self._core_models:
-                    self._core_models[name] = ResourceModel()
-                    [self._core_models[name].addResource(resource) for resource in self.active.chitin_resources()]
-                self.ui.coreTree.setModel(self._core_models[name].proxyModel())
-                self._core_models[name].proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
-                self._core_models[name].proxyModel().setFilterFixedString(self.ui.coreSearchEdit.text())
+                self.ui.coreWidget.setResources(self.active.chitin_resources())
 
-                if name not in self._modules_list:
-                    self.refreshModuleList(False)
-                else:
-                    self.ui.modulesCombo.setModel(self._modules_list[name])
-
+                self.refreshModuleList(False)
                 self.refreshOverrideList()
-                self.ui.overrideFolderFrame.setVisible(self.active.tsl)
-                self.ui.overrideLine.setVisible(self.active.tsl)
-
                 self.refreshTexturePackList()
+                self.ui.texturesWidget.setInstallation(self.active)
 
                 self.updateMenus()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
-
-    def currentDataView(self) -> QAbstractItemView:
-        """
-        Returns the QTreeView object that is currently being shown on the resourceTabs.
-        """
-        if self.ui.resourceTabs.currentIndex() == 0:
-            return self.ui.coreTree
-        if self.ui.resourceTabs.currentIndex() == 1:
-            return self.ui.modulesTree
-        if self.ui.resourceTabs.currentIndex() == 2:
-            return self.ui.overrideTree
-        if self.ui.resourceTabs.currentIndex() == 3:
-            return self.ui.texturesList
-
-    def currentDataModel(self) -> ResourceModel:
-        """
-        Returns the QTreeView object that is currently being shown on the resourceTabs.
-        """
-        if self.ui.resourceTabs.currentIndex() == 0:
-            return self.ui.coreTree.model().parent()
-        if self.ui.resourceTabs.currentIndex() == 1:
-            return self.modulesModel
-        if self.ui.resourceTabs.currentIndex() == 2:
-            return self.overrideModel
-        if self.ui.resourceTabs.currentIndex() == 3:
-            return self.texturesModel
-
-    def filterDataModel(self, text: str) -> None:
-        """
-        Filters the data model that is currently shown on the resourceTabs.
-
-        Args:
-            text: The text to filter through.
-        """
-        self.currentDataView().model().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        self.currentDataView().model().setFilterFixedString(text)
-
-    def extractFromSelected(self) -> None:
-        """
-        Extracts the resources from the items selected in the tree of the currently open resourceTabs tab.
-        """
-
-        resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
-
-        if len(resources) == 1:
-            # Player saves resource with a specific name
-            default = resources[0].resname() + "." + resources[0].restype().extension
-            filepath = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
-
-            if filepath:
-                tasks = [lambda: self._extractResource(resources[0], filepath)]
-                loader = AsyncBatchLoader(self, "Extracting Resources", tasks, "Failed to Extract Resources")
-                loader.exec_()
-
-        elif len(resources) >= 1:
-            # Player saves resources with original name to a specific directory
-            folderpath = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
-            if folderpath:
-                loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
-
-                for resource in resources:
-                    filename = resource.resname() + "." + resource.restype().extension
-                    filepath = folderpath + "/" + filename
-                    loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
-
-                loader.exec_()
 
     def _extractResource(self, resource: FileResource, filepath: str, loader: AsyncBatchLoader) -> None:
         try:
@@ -775,17 +636,6 @@ class ToolWindow(QMainWindow):
             traceback.print_exc()
             raise Exception("Failed to extract resource: " + resource.resname() + "." + resource.restype().extension)
 
-    def openFromSelected(self) -> None:
-        """
-        Opens the resources from the items selected in the tree of the currently open resourceTabs tab.
-        """
-        resources = self.currentDataModel().resourceFromIndexes(self.currentDataView().selectedIndexes())
-        for resource in resources:
-            filepath, editor = openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
-                                                  resource.data(reload=True), self.active, self)
-            if editor is not None:
-                editor.savedFile.connect(self.reloadModule)
-
     def openFromFile(self) -> None:
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
 
@@ -800,232 +650,3 @@ class ToolWindow(QMainWindow):
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
     # endregion
 
-
-class ResourceModel(QStandardItemModel):
-    """
-    A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources
-    while sorting the into categories.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self._categoryItems: Dict[str, QStandardItem] = {}
-        self._proxyModel = QSortFilterProxyModel(self)
-        self._proxyModel.setSourceModel(self)
-        self._proxyModel.setRecursiveFilteringEnabled(True)
-        self.setColumnCount(2)
-        self.setHorizontalHeaderLabels(["ResRef", "Type"])
-
-    def proxyModel(self) -> QSortFilterProxyModel:
-        return self._proxyModel
-
-    def clear(self) -> None:
-        super().clear()
-        self._categoryItems = {}
-        self.setColumnCount(2)
-        self.setHorizontalHeaderLabels(["ResRef", "Type"])
-
-    def _getCategoryItem(self, resourceType: ResourceType) -> QStandardItem:
-        if resourceType.category not in self._categoryItems:
-            categoryItem = QStandardItem(resourceType.category)
-            categoryItem.setSelectable(False)
-            unusedItem = QStandardItem("")
-            unusedItem.setSelectable(False)
-            self._categoryItems[resourceType.category] = categoryItem
-            self.appendRow([categoryItem, unusedItem])
-        return self._categoryItems[resourceType.category]
-
-    def addResource(self, resource: FileResource) -> None:
-        item1 = QStandardItem(resource.resname())
-        item1.resource = resource
-        item2 = QStandardItem(resource.restype().extension.upper())
-        self._getCategoryItem(resource.restype()).appendRow([item1, item2])
-
-    def resourceFromIndexes(self, indexes: List[QModelIndex], proxy: bool = True) -> List[FileResource]:
-        items = []
-        for index in indexes:
-            sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
-            items.append(self.itemFromIndex(sourceIndex))
-        return self.resourceFromItems(items)
-
-    def resourceFromItems(self, items: List[QStandardItem]) -> List[FileResource]:
-        return [item.resource for item in items if hasattr(item, 'resource')]
-
-    def allResourcesItems(self) -> List[QStandardItem]:
-        """
-        Returns a list of all QStandardItem objects in the model that represents resource files.
-        """
-        resources = []
-        for category in self._categoryItems.values():
-            for i in range(category.rowCount()):
-                resources.append(category.child(i, 0))
-        return resources
-
-
-class ProcessCloseListener(QThread):
-    closed = QtCore.pyqtSignal()
-
-    def __init__(self, process: subprocess.Popen):
-        super().__init__()
-        self._process = process
-
-    def run(self):
-        self._process.wait()
-        self.closed.emit()
-
-
-class TexturesView(QListView):
-    iconUpdate = QtCore.pyqtSignal(object, object)
-
-    def __init__(self, parent: QWidget):
-        super().__init__(parent)
-        self.verticalScrollBar().valueChanged.connect(self.loadVisibleTextures)
-        self._installation: Optional[HTInstallation] = None
-
-        self._taskQueue = multiprocessing.JoinableQueue()
-        self._resultQueue = multiprocessing.Queue()
-        self._consumers: List[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for i in range(multiprocessing.cpu_count())]
-        [consumer.start() for consumer in self._consumers]
-        self.iconUpdate.connect(self.onIconUpdate)
-
-        self._scanner = QThread(self)
-        self._scanner.run = self.scan
-        self._scanner.start()
-
-    def onIconUpdate(self, item, icon):
-        item.setIcon(icon)
-
-    def scan(self) -> None:
-        while True:
-            for row, resname, width, height, data in iter(self._resultQueue.get, None):
-                image = QImage(data, width, height, QImage.Format_RGB888)
-                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-                proxyModel: QSortFilterProxyModel = self.model()
-                sourceModel: QStandardItemModel = proxyModel.sourceModel()
-                item = sourceModel.item(row, 0)
-                if item is not None:
-                    self.iconUpdate.emit(item, QIcon(pixmap))
-
-            sleep(0.1)
-
-    def resizeEvent(self, e: QResizeEvent) -> None:
-        super(TexturesView, self).resizeEvent(e)
-        self.loadVisibleTextures()
-
-    def stop(self):
-        self._scanner.terminate()
-        [consumer.terminate() for consumer in self._consumers]
-
-    def setInstallation(self, installation: HTInstallation):
-        self._installation = installation
-
-        self.loadVisibleTextures()
-
-    def loadVisibleTextures(self) -> None:
-        for item in self.getVisibleItems():
-            if item is None or item.data(QtCore.Qt.UserRole):
-                continue
-
-            tpc = self._installation.texture(item.text(), [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA])
-            tpc = TPC() if tpc is None else tpc
-
-            task = TextureListTask(item.row(), tpc, item.text())
-            self._taskQueue.put(task)
-            item.setData(True, QtCore.Qt.UserRole)
-
-    def getVisibleItems(self):
-        if self.model().rowCount() == 0:
-            return []
-
-        scanWidth = self.parent().parent().width() if self.viewport().width() < 100 else self.viewport().width()
-        scanHeight = self.parent().parent().height() if self.viewport().height() < 100 else self.viewport().height()
-
-        proxyModel: QSortFilterProxyModel = self.model()
-        model: QStandardItemModel = self.model().sourceModel()
-
-        firstItem = None
-        firstIndex = None
-
-        for y in range(2, 92, 2):
-            for x in range(2, 92, 2):
-                proxyIndex = self.indexAt(QPoint(x, y))
-                index = proxyModel.mapToSource(proxyIndex)
-                item = model.itemFromIndex(index)
-                if not firstItem and item:
-                    firstItem = item
-                    firstIndex = proxyIndex
-                    break
-
-        items = []
-
-        if firstItem:
-            startRow = firstItem.row()
-            widthCount = scanWidth // 92
-            heightCount = scanHeight // 92 + 2
-            numVisible = min(proxyModel.rowCount(), widthCount * heightCount)
-
-            for i in range(numVisible):
-                proxyIndex = proxyModel.index(firstIndex.row() + i, 0)
-                sourceIndex = proxyModel.mapToSource(proxyIndex)
-                item = model.itemFromIndex(sourceIndex)
-                items.append(item)
-
-        return items
-
-
-class TextureListModel(QStandardItemModel):
-    def __init__(self):
-        super().__init__()
-        self._proxyModel = QSortFilterProxyModel(self)
-        self._proxyModel.setSourceModel(self)
-        self._proxyModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
-
-    def proxyModel(self) -> QSortFilterProxyModel:
-        return self._proxyModel
-
-    def resourceFromIndexes(self, indexes: List[QModelIndex], proxy: bool = True) -> List[FileResource]:
-        items = []
-        for index in indexes:
-            sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
-            items.append(self.itemFromIndex(sourceIndex))
-        return self.resourceFromItems(items)
-
-    def resourceFromItems(self, items: List[QStandardItem]) -> List[FileResource]:
-        return [item.resource for item in items if hasattr(item, 'resource')]
-
-
-class TextureListConsumer(multiprocessing.Process):
-    def __init__(self, taskQueue, resultQueue):
-        multiprocessing.Process.__init__(self)
-        self.taskQueue: multiprocessing.JoinableQueue = taskQueue
-        self.resultQueue: multiprocessing.Queue = resultQueue
-
-    def run(self):
-        proc_name = self.name
-        while True:
-            next_task = self.taskQueue.get()
-
-            answer = next_task()
-            self.taskQueue.task_done()
-            self.resultQueue.put(answer)
-
-
-class TextureListTask:
-    def __init__(self, row, tpc, resname):
-        self.row = row
-        self.tpc = tpc
-        self.resname = resname
-
-    def __repr__(self):
-        return str(self.row)
-
-    def __call__(self, *args, **kwargs):
-        width, height, data = self.tpc.convert(TPCTextureFormat.RGB, self.bestMipmap(self.tpc))
-        return self.row, self.resname, width, height, data
-
-    def bestMipmap(self, tpc: TPC) -> int:
-        for i in range(tpc.mipmap_count()):
-            size = tpc.get(i).width
-            if size <= 64:
-                return i
-        return 0

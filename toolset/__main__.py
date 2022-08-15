@@ -1,9 +1,6 @@
 import sys
 import os
 
-from PyQt5 import QtCore
-
-
 sys.path.append('.')
 sys.path.append('..')
 if os.path.exists("./toolset") and getattr(sys, 'frozen', False) == False:
@@ -16,12 +13,12 @@ from types import TracebackType
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
-from mainwindow import ToolWindow
+from windows.main.main_window import ToolWindow
 
 
 os.environ['QT_MULTIMEDIA_PREFERRED_PLUGINS'] = 'windowsmediafoundation'
 
-os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+#os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
 # os.environ["QT_SCALE_FACTOR"] = "1"
 
