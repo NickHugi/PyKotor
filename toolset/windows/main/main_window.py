@@ -7,6 +7,7 @@ import subprocess
 import traceback
 from contextlib import suppress
 from distutils.version import StrictVersion
+from pathlib import Path
 from time import sleep
 from typing import Optional, List, Dict
 
@@ -18,6 +19,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImag
     QResizeEvent, QDesktopServices
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView, QMenu
+from watchdog.events import FileSystemEventHandler
 
 from globalsettings import GlobalSettings
 from misc.settings.dialog import SettingsDialog
@@ -60,8 +62,15 @@ from utils.misc import openLink
 from utils.window import openResourceEditor, addWindow
 from windows.main.main_widgets import ResourceList
 
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
 
 class ToolWindow(QMainWindow):
+    moduleFilesUpdated = QtCore.pyqtSignal(object)
+
+    overrideFilesUpdate = QtCore.pyqtSignal(object)
+
     GFF_TYPES = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
                  ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
                  ResourceType.DLG, ResourceType.GUI, ResourceType.ARE, ResourceType.IFO, ResourceType.GIT,
@@ -70,19 +79,19 @@ class ToolWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.dogObserver = None
+        self.dogHandler = FolderObserver(self)
+        self.active: Optional[HTInstallation] = None
+        self.settings: GlobalSettings = GlobalSettings()
+        self.installations = {}
+
         import windows.main.ui_mainwindow
         self.ui = windows.main.ui_mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
 
         self.ui.coreWidget.hideSection()
-
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
-
-        self.active: Optional[HTInstallation] = None
-        self.settings: GlobalSettings = GlobalSettings()
-
-        self.installations = {}
         self.reloadSettings()
 
         '''firstTime = self.settings.firstTime
@@ -532,6 +541,9 @@ class ToolWindow(QMainWindow):
         self.active = None
         self.updateMenus()
 
+        if self.dogObserver is not None:
+            self.dogObserver.stop()
+
         if index <= 0:
             return
 
@@ -571,6 +583,9 @@ class ToolWindow(QMainWindow):
                 self.ui.texturesWidget.setInstallation(self.active)
 
                 self.updateMenus()
+                self.dogObserver = Observer()
+                self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)
+                self.dogObserver.start()
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
 
@@ -649,4 +664,20 @@ class ToolWindow(QMainWindow):
             except ValueError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to open file", str(e)).exec_()
     # endregion
+
+
+class FolderObserver(FileSystemEventHandler):
+    def __init__(self, window: ToolWindow):
+        self.window = window
+
+    def on_any_event(self, event):
+        modulePath = str(Path(self.window.active.module_path()))
+        overridePath = str(Path(self.window.active.override_path()))
+        modifiedPath = str(Path(event.src_path))
+
+        if modulePath in modifiedPath:
+            self.window.moduleFilesUpdated.emit(modifiedPath)
+        elif overridePath in modifiedPath:
+            self.window.overrideFilesUpdate.emit(modifiedPath)
+
 
