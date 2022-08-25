@@ -6,6 +6,7 @@ import os
 import subprocess
 import traceback
 from contextlib import suppress
+from datetime import datetime, timedelta
 from distutils.version import StrictVersion
 from pathlib import Path
 from time import sleep
@@ -67,9 +68,9 @@ from watchdog.events import FileSystemEventHandler
 
 
 class ToolWindow(QMainWindow):
-    moduleFilesUpdated = QtCore.pyqtSignal(object)
+    moduleFilesUpdated = QtCore.pyqtSignal(object, object)
 
-    overrideFilesUpdate = QtCore.pyqtSignal(object)
+    overrideFilesUpdate = QtCore.pyqtSignal(object, object)
 
     GFF_TYPES = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
                  ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
@@ -116,6 +117,9 @@ class ToolWindow(QMainWindow):
     def _setupSignals(self) -> None:
         self.ui.resourceTabs.currentChanged.connect(self.resizeColumns)
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
+
+        self.moduleFilesUpdated.connect(self.onModuleFileUpdated)
+        self.overrideFilesUpdate.connect(self.onOverrideFileUpdated)
 
         self.ui.coreWidget.requestExtractResource.connect(self.onExtractResources)
         self.ui.coreWidget.requestOpenResource.connect(self.onOpenResources)
@@ -172,6 +176,12 @@ class ToolWindow(QMainWindow):
         self.ui.actionDiscordHolocronToolset.triggered.connect(lambda: openLink("https://discord.gg/3ME278a9tQ"))
 
     # region Signal callbacks
+    def onModuleFileUpdated(self, changedFile: str, eventType: str) -> None:
+        if eventType == "deleted":
+            self.onModuleRefresh()
+        else:
+            self.onModuleReload(changedFile)
+
     def onModuleChanged(self, newModuleFile: str) -> None:
         self.ui.modulesWidget.setResources(self.active.module_resources(newModuleFile))
 
@@ -181,6 +191,12 @@ class ToolWindow(QMainWindow):
 
     def onModuleRefresh(self) -> None:
         self.refreshModuleList()
+
+    def onOverrideFileUpdated(self, changedDir: str, eventType: str) -> None:
+        if eventType == "deleted":
+            self.onOverrideRefresh()
+        else:
+            self.onOverrideReload(changedDir)
 
     def onOverrideChanged(self, newDirectory: str) -> None:
         self.ui.overrideWidget.setResources(self.active.override_resources(newDirectory))
@@ -669,15 +685,27 @@ class ToolWindow(QMainWindow):
 class FolderObserver(FileSystemEventHandler):
     def __init__(self, window: ToolWindow):
         self.window = window
+        self.lastModified = datetime.now()
 
     def on_any_event(self, event):
+        if datetime.now() - self.lastModified < timedelta(seconds=1):
+            return
+        else:
+            self.lastModified = datetime.now()
+
         modulePath = str(Path(self.window.active.module_path()))
         overridePath = str(Path(self.window.active.override_path()))
-        modifiedPath = str(Path(event.src_path))
+        modifiedPath = str(Path(event.src_path.replace("\\", "/")))
 
-        if modulePath in modifiedPath:
-            self.window.moduleFilesUpdated.emit(modifiedPath)
-        elif overridePath in modifiedPath:
-            self.window.overrideFilesUpdate.emit(modifiedPath)
+        isDir = Path(modifiedPath).is_dir()
+
+        if modulePath in modifiedPath and not isDir:
+            moduleFile = os.path.basename(modifiedPath)
+            self.window.moduleFilesUpdated.emit(moduleFile, event.event_type)
+        elif overridePath in modifiedPath and not isDir:
+            overrideDir = os.path.dirname(modifiedPath).replace(overridePath, "")
+            if overrideDir.startswith("\\") or overrideDir.startswith("//"):
+                overrideDir = overrideDir[1:]
+            self.window.overrideFilesUpdate.emit(overrideDir, event.event_type)
 
 
