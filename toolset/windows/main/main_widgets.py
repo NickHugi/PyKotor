@@ -72,9 +72,26 @@ class ResourceList(MainWindowList):
         self.ui.refreshButton.setVisible(False)
 
     def setResources(self, resources: List[FileResource]) -> None:
-        self.modulesModel.clear()
+        allResources = self.modulesModel.allResourcesItems()
+
+        # Add any missing resources to the list
         for resource in resources:
-            self.modulesModel.addResource(resource)
+            for item in allResources:
+                if item.resource == resource:
+                    break
+            else:
+                self.modulesModel.addResource(resource)
+
+        # Remove any resources that should no longer be in the list
+        for item in allResources:
+            if item.resource not in resources:
+                item.parent().removeRow(item.row())
+
+        # Remove unused categories
+        for row in range(0, self.modulesModel.rowCount(), -1):
+            item = self.modulesModel.item(row)
+            if item.rowCount() == 0:
+                self.modulesModel.removeRow(row)
 
     def setSections(self, sections: List[QStandardItem]) -> None:
         self.sectionModel.clear()
