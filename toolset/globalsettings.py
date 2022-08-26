@@ -111,7 +111,7 @@ class GlobalSettings:
 
     @property
     def gffSpecializedEditors(self) -> bool:
-        return self.settings.value("gffSpecializedEditors", "", bool)
+        return self.settings.value("gffSpecializedEditors", True, bool)
 
     @gffSpecializedEditors.setter
     def gffSpecializedEditors(self, value: bool) -> None:

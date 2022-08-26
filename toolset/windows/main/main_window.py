@@ -235,7 +235,7 @@ class ToolWindow(QMainWindow):
 
                 loader.exec_()
 
-    def onOpenResources(self, resources: List[FileResource], useSpecializedEditor: bool = False) -> None:
+    def onOpenResources(self, resources: List[FileResource], useSpecializedEditor: bool = None) -> None:
         for resource in resources:
             filepath, editor = openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
                                                   resource.data(reload=True), self.active, self,
