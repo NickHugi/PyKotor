@@ -62,6 +62,7 @@ class ResourceList(MainWindowList):
         self.ui.reloadButton.clicked.connect(self.onReloadClicked)
         self.ui.refreshButton.clicked.connect(self.onRefreshClicked)
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceContextMenu)
+        self.ui.resourceTree.doubleClicked.connect(self.onResourceDoubleClicked)
 
     def hideReloadButton(self) -> None:
         self.ui.reloadButton.setVisible(False)
@@ -126,6 +127,9 @@ class ResourceList(MainWindowList):
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
         menu.popup(self.ui.resourceTree.mapToGlobal(point))
+
+    def onResourceDoubleClicked(self) -> None:
+        self.requestOpenResource.emit(self.selectedResources(), None)
 
 
 class ResourceModel(QStandardItemModel):
