@@ -89,10 +89,7 @@ class ResourceList(MainWindowList):
                 item.parent().removeRow(item.row())
 
         # Remove unused categories
-        for row in range(0, self.modulesModel.rowCount(), -1):
-            item = self.modulesModel.item(row)
-            if item.rowCount() == 0:
-                self.modulesModel.removeRow(row)
+        self.modulesModel.removeUnusedCategories()
 
     def setSections(self, sections: List[QStandardItem]) -> None:
         self.sectionModel.clear()
@@ -191,6 +188,13 @@ class ResourceModel(QStandardItemModel):
             for i in range(category.rowCount()):
                 resources.append(category.child(i, 0))
         return resources
+
+    def removeUnusedCategories(self):
+        for row in range(self.rowCount())[::-1]:
+            item = self.item(row)
+            if item.rowCount() == 0:
+                del self._categoryItems[item.text()]
+                self.removeRow(row)
 
 
 class TextureList(MainWindowList):
