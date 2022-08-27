@@ -8,6 +8,8 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPixmap, QIcon
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QListWidgetItem, \
     QShortcut, QLineEdit, QWidget, QPlainTextEdit
+
+from misc.dialog.bif_save_dialog import BifSaveDialog, BifSaveOption
 from pykotor.common.module import Module
 
 from editors import ui_savetomodule, ui_loadfrommodule, ui_locstring
@@ -144,61 +146,82 @@ class Editor(QMainWindow):
             data = self.build()
             self._revert = data
 
-            basename = os.path.basename(self._filepath)
             self.refreshWindowTitle()
 
             if self._filepath.endswith(".bif"):
-                QMessageBox(QMessageBox.Critical, "Could not save file",
-                            "Cannot save resource into a .BIF file, select another destination instead.",
-                            QMessageBox.Ok, self).show()
+                self._saveEndsWithBif(data)
             elif self._filepath.endswith(".rim"):
-                if self._global_settings.disableRIMSaving:
-                    dialog = RimSaveDialog(self)
-                    dialog.exec_()
-                    if dialog.option == RimSaveOption.MOD:
-                        folderpath = os.path.dirname(self._filepath) + "/"
-                        filename = Module.get_root(self._filepath) + ".mod"
-                        self._filepath = folderpath + filename
-                        # Re-save with the updated filepath
-                        self.save()
-                    elif dialog.option == RimSaveOption.Override:
-                        self._filepath = self._installation.override_path() + self._resref + "." + self._restype.extension
-                        self.save()
-                else:
-                    rim = read_rim(self._filepath)
-                    rim.set(self._resref, self._restype, data)
-                    write_rim(rim, self._filepath)
-                    self.savedFile.emit(self._filepath, self._resref, self._restype, data)
-
-                    # Update installation cache
-                    if self._installation is not None:
-                        self._installation.reload_module(basename)
+                self._saveEndsWithRim(data)
             elif self._filepath.endswith(".erf") or self._filepath.endswith(".mod"):
-                # Create the mod file if it does not exist.
-                if not os.path.exists(self._filepath):
-                    write_erf(ERF(), self._filepath, ResourceType.MOD if self._filepath.endswith(".mod") else ResourceType.ERF)
-
-                erf = read_erf(self._filepath)
-                erf.erf_type = ERFType.ERF if self._filepath.endswith(".erf") else ERFType.MOD
-                erf.set(self._resref, self._restype, data)
-                write_erf(erf, self._filepath)
-                self.savedFile.emit(self._filepath, self._resref, self._restype, data)
-
-                # Update installation cache
-                if self._installation is not None:
-                    self._installation.reload_module(basename)
+                self._saveEndsWithErf(data)
             else:
-                with open(self._filepath, 'wb') as file:
-                    file.write(data)
-                self.savedFile.emit(self._filepath, self._resref, self._restype, data)
-
+                self._saveEndsWithOther(data)
         except Exception as e:
             with open("errorlog.txt", 'a') as file:
                 lines = traceback.format_exception(type(e), e, e.__traceback__)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
-            print(''.join(lines))
             QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
+
+    def _saveEndsWithBif(self, data: bytes):
+        dialog = BifSaveDialog(self)
+        dialog.exec_()
+        if dialog.option == BifSaveOption.MOD:
+            filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", ".MOD File (*.mod)", "")
+            dialog2 = SaveToModuleDialog(self._resref, self._restype, self._writeSupported)
+            if dialog2.exec_():
+                self._resref = dialog2.resref()
+                self._restype = dialog2.restype()
+                self._filepath = filepath
+                self.save()
+        elif dialog.option == BifSaveOption.Override:
+            self._filepath = self._installation.override_path() + self._resref + "." + self._restype.extension
+            self.save()
+
+    def _saveEndsWithRim(self, data: bytes):
+        if self._global_settings.disableRIMSaving:
+            dialog = RimSaveDialog(self)
+            dialog.exec_()
+            if dialog.option == RimSaveOption.MOD:
+                folderpath = os.path.dirname(self._filepath) + "/"
+                filename = Module.get_root(self._filepath) + ".mod"
+                self._filepath = folderpath + filename
+                # Re-save with the updated filepath
+                self.save()
+            elif dialog.option == RimSaveOption.Override:
+                self._filepath = self._installation.override_path() + self._resref + "." + self._restype.extension
+                self.save()
+        else:
+            rim = read_rim(self._filepath)
+            rim.set(self._resref, self._restype, data)
+            write_rim(rim, self._filepath)
+            self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+
+            # Update installation cache
+            if self._installation is not None:
+                basename = os.path.basename(self._filepath)
+                self._installation.reload_module(basename)
+
+    def _saveEndsWithErf(self, data: bytes):
+        # Create the mod file if it does not exist.
+        if not os.path.exists(self._filepath):
+            write_erf(ERF(), self._filepath, ResourceType.MOD if self._filepath.endswith(".mod") else ResourceType.ERF)
+
+        erf = read_erf(self._filepath)
+        erf.erf_type = ERFType.ERF if self._filepath.endswith(".erf") else ERFType.MOD
+        erf.set(self._resref, self._restype, data)
+        write_erf(erf, self._filepath)
+        self.savedFile.emit(self._filepath, self._resref, self._restype, data)
+
+        # Update installation cache
+        if self._installation is not None:
+            basename = os.path.basename(self._filepath)
+            self._installation.reload_module(basename)
+
+    def _saveEndsWithOther(self, data: bytes):
+        with open(self._filepath, 'wb') as file:
+            file.write(data)
+        self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
     def open(self):
         filepath, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
