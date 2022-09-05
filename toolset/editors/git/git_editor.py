@@ -194,15 +194,13 @@ class GITEditor(Editor):
         order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
         result = self._installation.resource(resref, ResourceType.LYT, order)
         if result:
-            m = QMessageBox(QMessageBox.Information,
-                            "Found the corresponding LYT file.",
-                            "Would you like to load it?\n" + result.filepath,
-                            QMessageBox.Yes | QMessageBox.No,
-                            self)
-            if m.exec():
-                self.loadLayout(read_lyt(result.data))
+            self.loadLayout(read_lyt(result.data))
 
-        self._git = read_git(data)
+        git = read_git(data)
+        self._loadGIT(git)
+
+    def _loadGIT(self, git: GIT):
+        self._git = git
         self.ui.renderArea.setGit(self._git)
         self.updateInstanceVisibility()
         self.ui.renderArea.centerCamera()
