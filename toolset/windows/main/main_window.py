@@ -562,8 +562,12 @@ class ToolWindow(QMainWindow):
         """
         self.ui.gameCombo.setCurrentIndex(index)
 
+        self.ui.coreWidget.setResources([])
         self.ui.modulesWidget.setSections([])
+        self.ui.modulesWidget.setResources([])
         self.ui.overrideWidget.setSections([])
+        self.ui.overrideWidget.setResources([])
+
         self.ui.resourceTabs.setEnabled(False)
         self.ui.sidebar.setEnabled(False)
         self.active = None
