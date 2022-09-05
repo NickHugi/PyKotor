@@ -339,7 +339,7 @@ class ModuleEditor(QMainWindow):
             instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y, self.ui.mainRenderer.scene.camera.z).z
 
         if not isinstance(instance, GITCamera):
-            dialog = InsertInstanceDialog(self, self._installation, self._module, instance.extension())
+            dialog = InsertInstanceDialog(self, self._installation, self._module, instance.identifier().restype)
 
             if dialog.exec_():
                 self.rebuildResourceTree()
