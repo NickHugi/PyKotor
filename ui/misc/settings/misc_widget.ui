@@ -37,6 +37,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="mergeRimCheck">
+         <property name="text">
+          <string>Merge RIM files in the Modules tab of the Main Window.</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="Line" name="line">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>

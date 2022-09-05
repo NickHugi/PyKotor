@@ -20,6 +20,7 @@ class MiscWidget(QWidget):
 
     def setupValues(self) -> None:
         self.ui.saveRimCheck.setChecked(not self.settings.disableRIMSaving)
+        self.ui.mergeRimCheck.setChecked(self.settings.joinRIMsTogether)
         self.ui.tempDirEdit.setText(self.settings.extractPath)
         self.ui.gffEditorCombo.setCurrentIndex(1 if self.settings.gffSpecializedEditors else 0)
         self.ui.ncsToolEdit.setText(self.settings.ncsDecompilerPath)
@@ -27,8 +28,11 @@ class MiscWidget(QWidget):
 
     def save(self) -> None:
         self.settings.disableRIMSaving = not self.ui.saveRimCheck.isChecked()
+        self.settings.joinRIMsTogether = self.ui.mergeRimCheck.isChecked()
         self.settings.extractPath = self.ui.tempDirEdit.text()
         self.settings.gffSpecializedEditors = bool(self.ui.gffEditorCombo.currentIndex())
+        self.settings.ncsDecompilerPath = self.ui.ncsToolEdit.text()
+        self.settings.nssCompilerPath = self.ui.nssCompEdit.text()
 
 
 class InstallationsWidget(QWidget):

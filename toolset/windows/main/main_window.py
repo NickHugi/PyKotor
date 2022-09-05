@@ -183,11 +183,18 @@ class ToolWindow(QMainWindow):
             self.onModuleReload(changedFile)
 
     def onModuleChanged(self, newModuleFile: str) -> None:
-        self.ui.modulesWidget.setResources(self.active.module_resources(newModuleFile))
+        self.onModuleReload(newModuleFile)
 
     def onModuleReload(self, moduleFile: str) -> None:
+        resources = self.active.module_resources(moduleFile)
+
+        # Some users may choose to have their RIM files for the same module merged into a single option for the
+        # dropdown menu.
+        if self.settings.joinRIMsTogether and moduleFile.endswith(".rim"):
+            resources += self.active.module_resources(moduleFile.replace(".rim", "_s.rim"))
+
         self.active.reload_module(moduleFile)
-        self.ui.modulesWidget.setResources(self.active.module_resources(moduleFile))
+        self.ui.modulesWidget.setResources(resources)
 
     def onModuleRefresh(self) -> None:
         self.refreshModuleList()
@@ -460,6 +467,11 @@ class ToolWindow(QMainWindow):
 
         modules = []
         for module in sortedKeys:
+            # Some users may choose to have their RIM files for the same module merged into a single option for the
+            # dropdown menu.
+            if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
+                continue
+
             item = QStandardItem("{} [{}]".format(areaNames[module], module))
             item.setData(module, QtCore.Qt.UserRole)
             modules.append(item)

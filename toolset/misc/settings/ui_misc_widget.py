@@ -28,6 +28,9 @@ class Ui_Form(object):
         self.saveRimCheck = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
         self.saveRimCheck.setObjectName("saveRimCheck")
         self.verticalLayout.addWidget(self.saveRimCheck)
+        self.mergeRimCheck = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+        self.mergeRimCheck.setObjectName("mergeRimCheck")
+        self.verticalLayout.addWidget(self.mergeRimCheck)
         self.line = QtWidgets.QFrame(self.scrollAreaWidgetContents)
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
@@ -90,6 +93,7 @@ class Ui_Form(object):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
         self.saveRimCheck.setText(_translate("Form", "Allow saving resources to RIM files."))
+        self.mergeRimCheck.setText(_translate("Form", "Merge RIM files in the Modules tab of the Main Window."))
         self.label.setText(_translate("Form", "Temp Directory:"))
         self.label_5.setText(_translate("Form", "GFF Files:"))
         self.gffEditorCombo.setItemText(0, _translate("Form", "GFF Editor"))

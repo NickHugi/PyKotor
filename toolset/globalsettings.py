@@ -116,6 +116,14 @@ class GlobalSettings:
     @gffSpecializedEditors.setter
     def gffSpecializedEditors(self, value: bool) -> None:
         self.settings.setValue('gffSpecializedEditors', value)
+
+    @property
+    def joinRIMsTogether(self) -> bool:
+        return self.settings.value('joinRIMsTogether', False, bool)
+
+    @joinRIMsTogether.setter
+    def joinRIMsTogether(self, value: bool) -> None:
+        self.settings.setValue('joinRIMsTogether', value)
     # endregion
 
 
