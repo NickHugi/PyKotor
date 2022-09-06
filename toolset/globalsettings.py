@@ -124,6 +124,14 @@ class GlobalSettings:
     @joinRIMsTogether.setter
     def joinRIMsTogether(self, value: bool) -> None:
         self.settings.setValue('joinRIMsTogether', value)
+
+    @property
+    def greyRIMText(self) -> bool:
+        return self.settings.value('greyRIMText', True, bool)
+
+    @greyRIMText.setter
+    def greyRIMText(self, value: bool) -> None:
+        self.settings.setValue('greyRIMText', value)
     # endregion
 
 

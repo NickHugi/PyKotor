@@ -17,7 +17,7 @@ import requests
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QTimer, QUrl
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, \
-    QResizeEvent, QDesktopServices
+    QResizeEvent, QDesktopServices, QColor
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
     QTreeView, QMenu
 from watchdog.events import FileSystemEventHandler
@@ -474,6 +474,11 @@ class ToolWindow(QMainWindow):
 
             item = QStandardItem("{} [{}]".format(areaNames[module], module))
             item.setData(module, QtCore.Qt.UserRole)
+
+            # Some users may choose to have items representing RIM files to have grey text.
+            if self.settings.greyRIMText and module.endswith(".rim"):
+                item.setForeground(self.palette().shadow())
+
             modules.append(item)
 
         self.ui.modulesWidget.setSections(modules)
