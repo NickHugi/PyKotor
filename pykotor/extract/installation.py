@@ -115,7 +115,7 @@ class Installation:
         Returns:
             The path to the root folder.
         """
-        return self._path
+        return self._path.replace("\\", "/")
 
     def module_path(
             self
@@ -132,7 +132,7 @@ class Installation:
                 module_path += folder + "/"
         if module_path == self._path:
             raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return module_path
+        return module_path.replace("\\", "/")
 
     def override_path(
             self
@@ -149,7 +149,7 @@ class Installation:
                 override_path += folder + "/"
         if override_path == self._path:
             raise ValueError("Could not find override folder in '{}'.".format(self._path))
-        return override_path
+        return override_path.replace("\\", "/")
 
     def lips_path(
             self
@@ -166,7 +166,7 @@ class Installation:
                 lips_path += folder + "/"
         if lips_path == self._path:
             raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return lips_path
+        return lips_path.replace("\\", "/")
 
     def texturepacks_path(
             self
@@ -183,7 +183,7 @@ class Installation:
                 texturepacks_path += folder + "/"
         if texturepacks_path == self._path:
             raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return texturepacks_path
+        return texturepacks_path.replace("\\", "/")
 
     def rims_path(
             self
@@ -200,7 +200,7 @@ class Installation:
                 path += folder + "/"
         if path == self._path:
             raise ValueError("Could not find rims folder in '{}'.".format(self._path))
-        return path
+        return path.replace("\\", "/")
 
     def streammusic_path(
             self
@@ -217,7 +217,7 @@ class Installation:
                 path += folder + "/"
         if path == self._path:
             raise ValueError("Could not find StreamMusic folder in '{}'.".format(self._path))
-        return path
+        return path.replace("\\", "/")
 
     def streamsounds_path(
             self
@@ -234,7 +234,7 @@ class Installation:
                 path += folder + "/"
         if path == self._path:
             raise ValueError("Could not find StreamSounds folder in '{}'.".format(self._path))
-        return path
+        return path.replace("\\", "/")
 
     def streamvoice_path(
             self
@@ -253,7 +253,7 @@ class Installation:
                 path += folder + "/"
         if path == self._path:
             raise ValueError("Could not find voice over folder in '{}'.".format(self._path))
-        return path
+        return path.replace("\\", "/")
     # endregion
 
     # region Load Data
@@ -709,7 +709,7 @@ class Installation:
             for capsule in values:
                 for query in queries:
                     if capsule.exists(query.resname, query.restype):
-                        resource = capsule.info(query.resname, query.restype)
+                        resource = capsule.info(query.resname, query.restype, reload=True)
                         location = LocationResult(resource.filepath(), resource.offset(), resource.size())
                         locations[resource.identifier()].append(location)
 
