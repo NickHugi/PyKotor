@@ -955,6 +955,7 @@ class BinaryWriter(ABC):
     def write_string(
             self,
             value: str,
+            encoding: str = "windows-1252",
             *,
             big: bool = False,
             prefix_length: int = 0,
@@ -967,6 +968,7 @@ class BinaryWriter(ABC):
 
         Args:
             value: The string to be written.
+            encoding: The string encoding.
             prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
             big: Write the prefix length integer as big endian.
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
@@ -1750,6 +1752,7 @@ class BinaryWriterBytearray(BinaryWriter):
     def write_string(
             self,
             value: str,
+            encoding: str = "windows-1252",
             *,
             big: bool = False,
             prefix_length: int = 0,
@@ -1787,7 +1790,7 @@ class BinaryWriterBytearray(BinaryWriter):
                 value += padding
             value = value[:string_length]
 
-        encoded = value.encode('ascii')
+        encoded = value.encode(encoding)
         self._ba[self._position:self._position + len(encoded)] = encoded
         self._position += len(encoded)
 
