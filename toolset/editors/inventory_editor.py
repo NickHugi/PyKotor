@@ -250,11 +250,22 @@ class InventoryEditor(QDialog):
             menu.addSeparator()
             menu.addAction(removeAction)
         else:
-            noItemAction = QAction("No item")
+            noItemAction = QAction("No Item")
             noItemAction.setEnabled(False)
             menu.addAction(noItemAction)
 
+        menu.addSeparator()
+        setItemAction = QAction("Set Item ResRef")
+        setItemAction.triggered.connect(lambda: self.promptSetItemResRefDialog(widget))
+        menu.addAction(setItemAction)
+
         menu.exec_(widget.mapToGlobal(point))
+
+    def promptSetItemResRefDialog(self, widget: DropFrame) -> None:
+        dialog = SetItemResRefDialog()
+
+        if dialog.exec_():
+            self.setEquipment(widget.slot, dialog.resref())
 
 
 class ItemContainer:
@@ -587,3 +598,14 @@ class ItemModel(QStandardItemModel):
         item.setData(slots, _SLOTS_ROLE)
         self._getCategoryItem(category).appendRow(item)
 
+
+class SetItemResRefDialog(QDialog):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+
+        from editors import ui_setitemresref
+        self.ui = ui_setitemresref.Ui_Dialog()
+        self.ui.setupUi(self)
+
+    def resref(self) -> str:
+        return self.ui.resrefEdit.text()
