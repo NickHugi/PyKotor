@@ -11,7 +11,7 @@ class ModuleDesignerSettings:
     # region Ints
     @property
     def fieldOfView(self) -> int:
-        return self.settings.value('fieldOfView', 90, int)
+        return self.settings.value('fieldOfView', 80, int)
 
     @fieldOfView.setter
     def fieldOfView(self, value: int) -> None:
