@@ -52,6 +52,7 @@ class ResourceList(MainWindowList):
         self.modulesModel = ResourceModel()
         self.modulesModel.proxyModel().setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.ui.resourceTree.setModel(self.modulesModel.proxyModel())
+        self.ui.resourceTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
         self.sectionModel = QStandardItemModel()
         self.ui.sectionCombo.setModel(self.sectionModel)
