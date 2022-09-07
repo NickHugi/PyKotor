@@ -79,6 +79,9 @@ class ResourceList(MainWindowList):
         for resource in resources:
             for item in allResources:
                 if item.resource == resource:
+                    # Update the resource reference. Important when to a new module that share a resource
+                    # with the same name and restype with the old one.
+                    item.resource = resource
                     break
             else:
                 self.modulesModel.addResource(resource)
