@@ -174,7 +174,12 @@ class ToolWindow(QMainWindow):
         if eventType == "deleted":
             self.onModuleRefresh()
         else:
-            self.onModuleReload(changedFile)
+            # Reload the resource cache for the module
+            self.active.reload_module(changedFile)
+            # If the current module opened is the file which was updated, then we
+            # should refresh the ui.
+            if self.ui.modulesWidget.currentSection() == changedFile:
+                self.onModuleReload(changedFile)
 
     def onModuleChanged(self, newModuleFile: str) -> None:
         self.onModuleReload(newModuleFile)

@@ -73,6 +73,9 @@ class ResourceList(MainWindowList):
         self.ui.sectionCombo.setVisible(False)
         self.ui.refreshButton.setVisible(False)
 
+    def currentSection(self) -> str:
+        return self.ui.sectionCombo.currentData()
+
     def setResources(self, resources: List[FileResource]) -> None:
         allResources = self.modulesModel.allResourcesItems()
 
