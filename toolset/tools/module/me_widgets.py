@@ -14,6 +14,7 @@ from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
+from tools.module.me_settings import ModuleDesignerSettings
 
 
 class ModuleRenderer(QOpenGLWidget):
@@ -42,6 +43,7 @@ class ModuleRenderer(QOpenGLWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.scene: Optional[Scene] = None
+        self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self._module: Optional[Module] = None
         self._installation: Optional[HTInstallation] = None
         self._init = False
@@ -99,6 +101,7 @@ class ModuleRenderer(QOpenGLWidget):
         if not self._init:
             self._init = True
             self.scene = Scene(self._module, self._installation)
+            self.scene.camera.fov = self.settings.fieldOfView
             self.sceneInitalized.emit()
 
         if self.doSelect:

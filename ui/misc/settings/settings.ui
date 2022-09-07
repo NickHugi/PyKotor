@@ -41,6 +41,11 @@
       </item>
       <item>
        <property name="text">
+        <string>Module Designer</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
         <string>Misc</string>
        </property>
       </item>
@@ -53,19 +58,26 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
-      <widget class="QWidget" name="miscPage">
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="1">
-         <widget class="MiscWidget" name="miscWidget" native="true"/>
-        </item>
-       </layout>
-      </widget>
       <widget class="QWidget" name="installationsPage">
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="0" column="0">
          <widget class="InstallationsWidget" name="installationsWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="moduleDesignerPage">
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <widget class="ModuleDesignerWidget" name="moduleDesignerWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="miscPage">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="1">
+         <widget class="MiscWidget" name="miscWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -94,6 +106,12 @@
   </customwidget>
   <customwidget>
    <class>InstallationsWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">misc.settings.pages</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ModuleDesignerWidget</class>
    <extends>QWidget</extends>
    <header location="global">misc.settings.pages</header>
    <container>1</container>

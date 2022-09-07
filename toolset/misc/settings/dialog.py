@@ -13,7 +13,8 @@ class SettingsDialog(QDialog):
 
         self.pageDict = {
             "Installations": self.ui.installationsPage,
-            "Misc": self.ui.miscPage
+            "Misc": self.ui.miscPage,
+            "Module Designer": self.ui.moduleDesignerPage
         }
 
     def pageChanged(self, pageTreeItem: QTreeWidgetItem) -> None:
@@ -24,4 +25,5 @@ class SettingsDialog(QDialog):
         super().accept()
 
         self.ui.miscWidget.save()
+        self.ui.moduleDesignerWidget.save()
         self.ui.installationsWidget.save()

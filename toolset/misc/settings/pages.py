@@ -3,6 +3,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget
 
 from globalsettings import GlobalSettings
+from tools.module.me_settings import ModuleDesignerSettings
 
 
 class MiscWidget(QWidget):
@@ -112,3 +113,23 @@ class InstallationsWidget(QWidget):
             self.ui.pathNameEdit.setText(item.text())
             self.ui.pathDirEdit.setText(item.data()['path'])
             self.ui.pathTslCheckbox.setChecked(bool(item.data()['tsl']))
+
+
+class ModuleDesignerWidget(QWidget):
+    editedSignal = QtCore.pyqtSignal()
+
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+
+        self.settings = ModuleDesignerSettings()
+
+        from misc.settings import ui_module_editor_widget
+        self.ui = ui_module_editor_widget.Ui_Form()
+        self.ui.setupUi(self)
+        self.setupValues()
+
+    def setupValues(self) -> None:
+        self.ui.fovSpin.setValue(self.settings.fieldOfView)
+
+    def save(self) -> None:
+        self.settings.fieldOfView = self.ui.fovSpin.value()
