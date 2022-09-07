@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QPoint, QThread, QTimer
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QImage, QIcon, QPixmap, QTransform, QResizeEvent, QCloseEvent
-from PyQt5.QtWidgets import QWidget, QListView, QMenu
+from PyQt5.QtWidgets import QWidget, QListView, QMenu, QHeaderView
 
 from data.installation import HTInstallation
 from pykotor.extract.installation import SearchLocation
@@ -153,6 +153,12 @@ class ResourceList(MainWindowList):
 
     def onResourceDoubleClicked(self) -> None:
         self.requestOpenResource.emit(self.selectedResources(), None)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self.ui.resourceTree.setColumnWidth(1, 10)
+        self.ui.resourceTree.setColumnWidth(0, self.ui.resourceTree.width() - 80)
+        self.ui.resourceTree.header().setSectionResizeMode(QHeaderView.Fixed)
 
 
 class ResourceModel(QStandardItemModel):

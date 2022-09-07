@@ -102,7 +102,6 @@ class ToolWindow(QMainWindow):
         self.checkForUpdates(True)
 
     def _setupSignals(self) -> None:
-        self.ui.resourceTabs.currentChanged.connect(self.resizeColumns)
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
 
         self.moduleFilesUpdated.connect(self.onModuleFileUpdated)
@@ -244,10 +243,6 @@ class ToolWindow(QMainWindow):
     # region Events
     def closeEvent(self, e: QCloseEvent) -> None:
         self.ui.texturesWidget.doTerminations()
-
-    def resizeEvent(self, size: QtGui.QResizeEvent) -> None:
-        super().resizeEvent(size)
-        self.resizeColumns()
 
     def dropEvent(self, e: QtGui.QDropEvent) -> None:
         if e.mimeData().hasUrls():
@@ -524,17 +519,6 @@ class ToolWindow(QMainWindow):
                 if folder in resource.filepath() and len(subfolder) < len(folder):
                     subfolder = folder
             self.changeOverrideFolder(subfolder)
-
-    def resizeColumns(self) -> None:
-        '''self.ui.coreTree.setColumnWidth(1, 10)
-        self.ui.coreTree.setColumnWidth(0, self.ui.coreTree.width() - 80)
-        self.ui.coreTree.header().setSectionResizeMode(QHeaderView.Fixed)
-        self.ui.modulesTree.setColumnWidth(1, 10)
-        self.ui.modulesTree.setColumnWidth(0, self.ui.modulesTree.width() - 80)
-        self.ui.modulesTree.header().setSectionResizeMode(QHeaderView.Fixed)
-        self.ui.overrideTree.setColumnWidth(1, 10)
-        self.ui.overrideTree.setColumnWidth(0, self.ui.overrideTree.width() - 80)
-        self.ui.overrideTree.header().setSectionResizeMode(QHeaderView.Fixed)'''
 
     def reloadInstallations(self) -> None:
         """
