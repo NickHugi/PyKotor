@@ -5,7 +5,7 @@ from time import sleep
 from typing import Dict, List, Optional
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QPoint, QThread
+from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QPoint, QThread, QTimer
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QImage, QIcon, QPixmap, QTransform, QResizeEvent, QCloseEvent
 from PyQt5.QtWidgets import QWidget, QListView, QMenu
 
@@ -76,6 +76,11 @@ class ResourceList(MainWindowList):
     def currentSection(self) -> str:
         return self.ui.sectionCombo.currentData()
 
+    def changeSection(self, section: str) -> None:
+        for i in range(self.ui.sectionCombo.count()):
+            if section in self.ui.sectionCombo.itemText(i):
+                self.ui.sectionCombo.setCurrentIndex(i)
+
     def setResources(self, resources: List[FileResource]) -> None:
         allResources = self.modulesModel.allResourcesItems()
 
@@ -102,6 +107,20 @@ class ResourceList(MainWindowList):
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
+
+    def setResourceSelection(self, resource: FileResource) -> None:
+        model = self.ui.resourceTree.model().sourceModel()
+
+        def select(parent, child):
+            self.ui.resourceTree.expand(parent)
+            self.ui.resourceTree.scrollTo(child)
+            self.ui.resourceTree.setCurrentIndex(child)
+
+        for item in model.allResourcesItems():
+            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
+                parentIndex = model.proxyModel().mapFromSource(item.parent().index())
+                itemIndex = model.proxyModel().mapFromSource(item.index())
+                QTimer.singleShot(0, lambda: select(parentIndex, itemIndex))
 
     def selectedResources(self) -> List[FileResource]:
         return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())

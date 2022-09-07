@@ -377,12 +377,12 @@ class ToolWindow(QMainWindow):
                 # Open relevant tab then select resource in the tree
                 if self.active.module_path() in selection.filepath():
                     self.ui.resourceTabs.setCurrentIndex(1)
-                    self.selectResource(self.ui.modulesTree, selection)
+                    self.selectResource(self.ui.modulesWidget, selection)
                 elif self.active.override_path() in selection.filepath():
                     self.ui.resourceTabs.setCurrentIndex(2)
-                    self.selectResource(self.ui.overrideTree, selection)
+                    self.selectResource(self.ui.overrideWidget, selection)
                 elif selection.filepath().endswith(".bif"):
-                    self.selectResource(self.ui.coreTree, selection)
+                    self.selectResource(self.ui.coreWidget, selection)
 
     def openIndoorMapBuilder(self) -> None:
         IndoorMapBuilder(self, self.active).show()
@@ -499,33 +499,31 @@ class ToolWindow(QMainWindow):
 
         self.ui.texturesWidget.setSections(sections)
 
+    def changeModule(self, module: str) -> None:
+        # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
+        # need to account for this.
+        if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
+            module = module.replace("_s.rim", ".rim")
+
+        self.ui.modulesWidget.changeSection(module)
+
     def selectResource(self, tree: QTreeView, resource: FileResource) -> None:
-        model = tree.model().sourceModel()
-
-        def select(parent, child):
-            tree.expand(parent)
-            tree.scrollTo(child)
-            tree.setCurrentIndex(child)
-
-        if tree == self.ui.coreTree:
-            self.ui.resourceTabs.setCurrentIndex(0)
-        elif tree == self.ui.modulesTree:
-            self.ui.resourceTabs.setCurrentIndex(1)
+        if tree == self.ui.coreWidget:
+            self.ui.resourceTabs.setCurrentWidget(self.ui.coreTab)
+            self.ui.coreWidget.setResourceSelection(resource)
+        elif tree == self.ui.modulesWidget:
+            self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
+            self.ui.modulesWidget.setResourceSelection(resource)
             filename = os.path.basename(resource.filepath())
             self.changeModule(filename)
-        elif tree == self.ui.overrideTree:
-            self.ui.resourceTabs.setCurrentIndex(2)
+        elif tree == self.ui.overrideWidget:
+            self.ui.resourceTabs.setCurrentIndex(self.ui.overrideTab)
+            self.ui.overrideWidget.setResourceSelection(resource)
             subfolder = ""
             for folder in self.active.override_list():
                 if folder in resource.filepath() and len(subfolder) < len(folder):
                     subfolder = folder
             self.changeOverrideFolder(subfolder)
-
-        for item in model.allResourcesItems():
-            if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
-                parentIndex = model.proxyModel().mapFromSource(item.parent().index())
-                itemIndex = model.proxyModel().mapFromSource(item.index())
-                QTimer.singleShot(0, lambda: select(parentIndex, itemIndex))
 
     def resizeColumns(self) -> None:
         '''self.ui.coreTree.setColumnWidth(1, 10)
