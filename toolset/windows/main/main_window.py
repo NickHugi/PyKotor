@@ -92,6 +92,7 @@ class ToolWindow(QMainWindow):
         self._setupSignals()
 
         self.ui.coreWidget.hideSection()
+        self.ui.coreWidget.hideReloadButton()
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
         self.reloadSettings()
 
