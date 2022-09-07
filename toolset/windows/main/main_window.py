@@ -1,26 +1,19 @@
 from __future__ import annotations
 
 import json
-import multiprocessing
 import os
-import subprocess
 import traceback
 from contextlib import suppress
 from datetime import datetime, timedelta
 from distutils.version import StrictVersion
 from pathlib import Path
-from time import sleep
-from typing import Optional, List, Dict
-
+from typing import Optional, List
 
 import requests
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QThread, QPoint, QTimer, QUrl
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QIcon, QPixmap, QImage, QCloseEvent, QTransform, \
-    QResizeEvent, QDesktopServices, QColor
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QWidget, QMessageBox, QHeaderView, QAbstractItemView, QListView, \
-    QTreeView, QMenu
-from watchdog.events import FileSystemEventHandler
+from PyQt5.QtCore import QTimer
+from PyQt5.QtGui import QStandardItem, QIcon, QPixmap, QCloseEvent
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QTreeView
 
 from globalsettings import GlobalSettings
 from misc.settings.dialog import SettingsDialog
@@ -31,7 +24,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
-from pykotor.resource.formats.tpc import read_tpc, write_tpc, TPCTextureFormat, TPC
+from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 
 from config import PROGRAM_VERSION, UPDATE_INFO_LINK
@@ -57,8 +50,8 @@ from misc.help.help import HelpWindow
 from misc.triggers.geometry_editor import GeometryEditor
 from misc.search import FileSearcher, FileResults
 from misc.clone_module import CloneModuleDialog
-from tools.indoormap.indoorbuilder import IndoorMapBuilder
-from tools.module.me_window import ModuleEditor
+from windows.indoormap.indoorbuilder import IndoorMapBuilder
+from windows.module.me_window import ModuleEditor
 from utils.misc import openLink
 from utils.window import openResourceEditor, addWindow
 from windows.main.main_widgets import ResourceList

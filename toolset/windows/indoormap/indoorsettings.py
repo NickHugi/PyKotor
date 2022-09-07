@@ -3,15 +3,15 @@ from typing import List
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from data.installation import HTInstallation
-from tools.indoormap.indoorkit import Kit
-from tools.indoormap.indoormap import IndoorMap
+from windows.indoormap.indoorkit import Kit
+from windows.indoormap.indoormap import IndoorMap
 
 
 class IndoorMapSettings(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, indoorMap: IndoorMap, kits: List[Kit]):
         super().__init__(parent)
 
-        from tools.indoormap import ui_indoorsettings
+        from windows.indoormap import ui_indoorsettings
         self.ui = ui_indoorsettings.Ui_Dialog()
         self.ui.setupUi(self)
         self.ui.nameEdit.setInstallation(installation)

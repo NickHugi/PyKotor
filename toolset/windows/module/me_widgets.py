@@ -14,7 +14,7 @@ from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from tools.module.me_settings import ModuleDesignerSettings
+from windows.module.me_settings import ModuleDesignerSettings
 
 
 class ModuleRenderer(QOpenGLWidget):

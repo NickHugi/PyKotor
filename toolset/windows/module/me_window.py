@@ -30,7 +30,7 @@ from data.installation import HTInstallation
 from misc.help.help import HelpWindow
 from pykotor.gl.scene import RenderObject, FocusedCamera
 
-from tools.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
+from windows.module.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
 from utils.window import openResourceEditor
 
 
@@ -50,7 +50,7 @@ class ModuleEditor(QMainWindow):
         self.hideStores: bool = False
         self.hideCameras: bool = False
 
-        from tools.module import ui_moduleeditor
+        from windows.module import ui_moduleeditor
         self.ui = ui_moduleeditor.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
@@ -423,7 +423,7 @@ class InsertInstanceDialog(QDialog):
         self.data: bytes = b''
         self.filepath: str = ""
 
-        from tools.module import ui_insert_instance
+        from windows.module import ui_insert_instance
         self.ui = ui_insert_instance.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupSignals()

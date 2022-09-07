@@ -3,7 +3,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget
 
 from globalsettings import GlobalSettings
-from tools.module.me_settings import ModuleDesignerSettings
+from windows.module.me_settings import ModuleDesignerSettings
 
 
 class MiscWidget(QWidget):

@@ -21,9 +21,9 @@ from config import UPDATE_INFO_LINK
 from data.installation import HTInstallation
 from misc.asyncloader import AsyncLoader
 from misc.help.help import HelpWindow
-from tools.indoormap.indoorkit import KitComponent, Kit, load_kits
-from tools.indoormap.indoormap import IndoorMap, IndoorMapRoom
-from tools.indoormap.indoorsettings import IndoorMapSettings
+from windows.indoormap.indoorkit import KitComponent, Kit, load_kits
+from windows.indoormap.indoormap import IndoorMap, IndoorMapRoom
+from windows.indoormap.indoorsettings import IndoorMapSettings
 
 
 class IndoorMapBuilder(QMainWindow):
@@ -35,7 +35,7 @@ class IndoorMapBuilder(QMainWindow):
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
-        from tools.indoormap import ui_indoorbuilder
+        from windows.indoormap import ui_indoorbuilder
         self.ui = ui_indoorbuilder.Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
@@ -695,7 +695,7 @@ class KitDownloader(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from tools.indoormap import ui_indoordownloader
+        from windows.indoormap import ui_indoordownloader
         self.ui = ui_indoordownloader.Ui_Dialog()
         self.ui.setupUi(self)
         self._setupDownloads()

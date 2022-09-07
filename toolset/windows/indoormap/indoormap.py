@@ -29,7 +29,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 
 from data.installation import HTInstallation
-from tools.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor, Kit
+from windows.indoormap.indoorkit import KitComponent, KitComponentHook, KitDoor, Kit
 
 
 # TODO: This code is a mess and is in need of a serious rewrite
