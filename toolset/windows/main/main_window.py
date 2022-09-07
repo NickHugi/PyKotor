@@ -96,24 +96,17 @@ class ToolWindow(QMainWindow):
         self.setWindowIcon(QIcon(QPixmap(":/images/icons/sith.png")))
         self.reloadSettings()
 
-        '''firstTime = self.settings.firstTime
+        firstTime = self.settings.firstTime
         if firstTime:
-            self.settings.installations = []
-            self.settings.installations.append(InstallationConfig("KotOR", "", False))
-            self.settings.installations.append(InstallationConfig("TSL", "", True))
-
             self.settings.firstTime = False
 
+            # Create a directory used for dumping temp files
             with suppress(Exception):
-                extractPath = os.path.realpath('../..') + "/ext"
+                extractPath = os.path.realpath('../..') + "/temp"
                 os.mkdir(extractPath)
                 self.settings.extractPath = extractPath
 
-        self.texturesModel = TextureListModel()
-        self.ui.texturesList.setModel(self.texturesModel.proxyModel())
-
-        self.installations = {}
-        self.checkForUpdates(True)'''
+        self.checkForUpdates(True)
 
     def _setupSignals(self) -> None:
         self.ui.resourceTabs.currentChanged.connect(self.resizeColumns)
