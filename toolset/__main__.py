@@ -13,7 +13,7 @@ from types import TracebackType
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
-from windows.main.main_window import ToolWindow
+from gui.windows.main import ToolWindow
 
 
 os.environ['QT_MULTIMEDIA_PREFERRED_PLUGINS'] = 'windowsmediafoundation'

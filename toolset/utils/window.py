@@ -49,29 +49,29 @@ def openResourceEditor(
         no editor was successfully opened.
     """
     # To avoid circular imports, these need to be placed within the function
-    from editors.git.git_editor import GITEditor
-    from editors.are.are_editor import AREEditor
-    from editors.bwm.bwm_editor import BWMEditor
-    from editors.dlg.dlg_editor import DLGEditor
-    from editors.erf.erf_editor import ERFEditor
-    from editors.gff.gff_editor import GFFEditor
-    from editors.jrl.jrl_editor import JRLEditor
-    from editors.nss.nss_editor import NSSEditor
-    from editors.ssf.sff_editor import SSFEditor
-    from editors.tlk.tlk_editor import TLKEditor
-    from editors.tpc.tpc_editor import TPCEditor
-    from editors.twoda.twoda_editor import TwoDAEditor
-    from editors.txt.txt_editor import TXTEditor
-    from editors.utc.utc_editor import UTCEditor
-    from editors.utd.utd_editor import UTDEditor
-    from editors.ute.ute_editor import UTEEditor
-    from editors.uti.uti_editor import UTIEditor
-    from editors.utm.utm_editor import UTMEditor
-    from editors.utp.utp_editor import UTPEditor
-    from editors.uts.uts_editor import UTSEditor
-    from editors.utt.utt_editor import UTTEditor
-    from editors.utw.utw_editor import UTWEditor
-    from misc.audio_player import AudioPlayer
+    from gui.editors.git import GITEditor
+    from gui.editors.are import AREEditor
+    from gui.editors.bwm import BWMEditor
+    from gui.editors.dlg import DLGEditor
+    from gui.editors.erf import ERFEditor
+    from gui.editors.gff import GFFEditor
+    from gui.editors.jrl import JRLEditor
+    from gui.editors.nss import NSSEditor
+    from gui.editors.ssf import SSFEditor
+    from gui.editors.tlk import TLKEditor
+    from gui.editors.tpc import TPCEditor
+    from gui.editors.twoda import TwoDAEditor
+    from gui.editors.txt import TXTEditor
+    from gui.editors.utc import UTCEditor
+    from gui.editors.utd import UTDEditor
+    from gui.editors.ute import UTEEditor
+    from gui.editors.uti import UTIEditor
+    from gui.editors.utm import UTMEditor
+    from gui.editors.utp import UTPEditor
+    from gui.editors.uts import UTSEditor
+    from gui.editors.utt import UTTEditor
+    from gui.editors.utw import UTWEditor
+    from gui.windows.audio_player import AudioPlayer
 
     if gffSpecialized is None:
         gffSpecialized = GlobalSettings().gffSpecializedEditors

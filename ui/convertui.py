@@ -7,8 +7,9 @@ target_dir = "../toolset/"
 for filepath in glob.iglob("**/*", recursive=True):
     if filepath.endswith(".ui"):
         directory = os.path.dirname(filepath).replace("\\", "/")
-        filename = "ui_" + os.path.basename(filepath).replace(".ui", ".py")
-        new_path = (target_dir + directory + "/" + filename).replace('//', '/')
+        filename = "" + os.path.basename(filepath).replace(".ui", ".py")
+        new_path = (target_dir + "/uic/" + directory + "/" + filename).replace('//', '/')
+        print(new_path, target_dir, directory)
         os.system("pyuic5 {} -o {}".format(filepath, new_path))
 
 

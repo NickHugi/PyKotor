@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>970</width>
+    <height>651</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewCreatureCheck">
+        <property name="toolTip">
+         <string>Creatures</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckbox {
+	spacing: 0px;
+}
+
+QCheckBox::indicator {
+    image: url(:/images/icons/k1/creature.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewDoorCheck">
+        <property name="toolTip">
+         <string>Doors</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/door.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewPlaceableCheck">
+        <property name="toolTip">
+         <string>Placeables</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/placeable.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewStoreCheck">
+        <property name="toolTip">
+         <string>Merchants</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/merchant.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewSoundCheck">
+        <property name="toolTip">
+         <string>Sounds</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/sound.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewWaypointCheck">
+        <property name="toolTip">
+         <string>Waypoints</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/waypoint.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewCameraCheck">
+        <property name="toolTip">
+         <string>Cameras</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/camera.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewEncounterCheck">
+        <property name="toolTip">
+         <string>Encounters</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/encounter.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="viewTriggerCheck">
+        <property name="toolTip">
+         <string>Triggers</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckBox::indicator {
+    image: url(:/images/icons/k1/trigger.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0">
+      <item>
+       <widget class="QTreeWidget" name="resourceTree">
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
+        </property>
+        <property name="headerHidden">
+         <bool>true</bool>
+        </property>
+        <column>
+         <property name="text">
+          <string notr="true">1</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item>
+       <widget class="ModuleRenderer" name="mainRenderer">
+        <property name="mouseTracking">
+         <bool>true</bool>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::StrongFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListWidget" name="instanceList">
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>970</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionSave"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <widget class="QMenu" name="menuControls">
+     <property name="title">
+      <string>Controls</string>
+     </property>
+     <addaction name="actiona"/>
+    </widget>
+    <addaction name="menuControls"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionInstructions"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuView"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save GIT</string>
+   </property>
+  </action>
+  <action name="actiona">
+   <property name="text">
+    <string>Placeholdewr</string>
+   </property>
+  </action>
+  <action name="actionInstructions">
+   <property name="text">
+    <string>Instructions</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ModuleRenderer</class>
+   <extends>QOpenGLWidget</extends>
+   <header location="global">toolset.gui.widgets.module_renderer</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../../../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
