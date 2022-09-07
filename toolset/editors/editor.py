@@ -23,6 +23,7 @@ from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
+from pykotor.tools import module
 
 
 class Editor(QMainWindow):
@@ -205,7 +206,7 @@ class Editor(QMainWindow):
     def _saveEndsWithErf(self, data: bytes):
         # Create the mod file if it does not exist.
         if not os.path.exists(self._filepath):
-            write_erf(ERF(), self._filepath, ResourceType.MOD if self._filepath.endswith(".mod") else ResourceType.ERF)
+            module.rim_to_mod(self._filepath)
 
         erf = read_erf(self._filepath)
         erf.erf_type = ERFType.ERF if self._filepath.endswith(".erf") else ERFType.MOD
