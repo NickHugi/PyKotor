@@ -1,12 +1,14 @@
 import os
 from contextlib import suppress
-from typing import Set, Dict, Optional
+from typing import Set, Dict, Optional, List
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSettings
 from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
     QMessageBox, QCheckBox
+
+from gui.dialogs.insert_instance import InsertInstanceDialog
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module, ModuleResource
@@ -39,6 +41,8 @@ class ModuleDesigner(QMainWindow):
         self.hideSounds: bool = False
         self.hideStores: bool = False
         self.hideCameras: bool = False
+
+        self.selectedInstances: List[GITInstance] = []
 
         from toolset.uic.windows.module_designer import Ui_MainWindow
         self.ui = Ui_MainWindow()
@@ -194,7 +198,7 @@ class ModuleDesigner(QMainWindow):
         resource.activate(location)
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-    def selectResouceItem(self, instance: GITInstance, clearExisting: bool = True) -> None:
+    def selectResourceItem(self, instance: GITInstance, clearExisting: bool = True) -> None:
         if clearExisting:
             self.ui.resourceTree.clearSelection()
 
@@ -321,7 +325,7 @@ class ModuleDesigner(QMainWindow):
             instance: GITInstance = item.data(QtCore.Qt.UserRole)
             self.ui.mainRenderer.scene.select(instance)
 
-            self.selectResouceItem(item.data(QtCore.Qt.UserRole))
+            self.selectResourceItem(item.data(QtCore.Qt.UserRole))
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
 
     def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True) -> None:
@@ -354,11 +358,13 @@ class ModuleDesigner(QMainWindow):
     def onRendererMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         self.activeControls.onMousePressed(screen, buttons, keys)
 
-    def onRendererObjectSelected(self, obj: RenderObject) -> None:
-        if obj is not None:
-            data = obj.data
-            self.selectInstanceItemOnList(data)
-            self.selectResouceItem(data)
+    def onRendererObjectSelected(self, instance: GITInstance) -> None:
+        if instance is not None:
+            self.selectedInstances = [instance]
+
+            self.ui.mainRenderer.scene.select(instance, True)
+            self.selectInstanceItemOnList(instance)
+            self.selectResourceItem(instance)
 
     def onRendererContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self)

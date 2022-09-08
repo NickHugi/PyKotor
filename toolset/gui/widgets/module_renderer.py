@@ -111,8 +111,7 @@ class ModuleRenderer(QOpenGLWidget):
             obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
 
             if obj is not None and isinstance(obj.data, GITInstance):
-                self.scene.select(obj)
-                self.objectSelected.emit(obj)
+                self.objectSelected.emit(obj.data)
             else:
                 self.scene.selection.clear()
                 self.objectSelected.emit(None)
