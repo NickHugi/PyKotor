@@ -39,8 +39,8 @@ class InventoryEditor(QDialog):
                  hide_equipment: bool = False, is_store: bool = False):
         super().__init__(parent)
 
-        from toolset.uic.dialogs import inventory
-        self.ui = inventory.Ui_Dialog()
+        from toolset.uic.dialogs.inventory import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.contentsTable.is_store = is_store
