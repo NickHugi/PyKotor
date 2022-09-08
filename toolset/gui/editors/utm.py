@@ -2,6 +2,8 @@ from contextlib import suppress
 from typing import Optional
 
 from PyQt5.QtWidgets import QWidget
+
+from gui.dialogs.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -10,7 +12,7 @@ from pykotor.resource.generics.utm import UTM, dismantle_utm, read_utm
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from gui.editor import Editor, LocalizedStringDialog
+from gui.editor import Editor
 from gui.dialogs.inventory import InventoryEditor
 
 

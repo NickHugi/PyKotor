@@ -1,6 +1,8 @@
 from typing import Optional
 
 from PyQt5.QtWidgets import QWidget, QMessageBox
+
+from gui.dialogs.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import write_gff
@@ -9,7 +11,7 @@ from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from gui.editor import Editor, LocalizedStringDialog
+from gui.editor import Editor
 from utils.window import openResourceEditor
 
 

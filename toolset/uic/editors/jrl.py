@@ -133,7 +133,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.splitter, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 948, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 948, 22))
         self.menubar.setObjectName("menubar")
         self.menuNew = QtWidgets.QMenu(self.menubar)
         self.menuNew.setObjectName("menuNew")
@@ -188,6 +188,6 @@ class Ui_MainWindow(object):
         self.actionNew.setText(_translate("MainWindow", "New"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-from toolset.editors.editor import HTPlainTextEdit
 from toolset.gui.widgets.combobox_2da import ComboBox2DA
 from toolset.gui.widgets.locstring_edit import LocalizedStringLineEdit
+from toolset.gui.widgets.plaintext_edit import HTPlainTextEdit

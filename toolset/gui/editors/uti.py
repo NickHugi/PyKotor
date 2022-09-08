@@ -3,13 +3,15 @@ from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog, QShortcut
+
+from gui.dialogs.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uti import UTI, dismantle_uti, UTIProperty, read_uti
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from gui.editor import Editor, LocalizedStringDialog
+from gui.editor import Editor
 
 
 class UTIEditor(Editor):

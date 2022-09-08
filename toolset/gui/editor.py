@@ -1,24 +1,24 @@
 import os
 import traceback
 from abc import abstractmethod
-from copy import deepcopy
 from typing import List, Union, Optional
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QKeyEvent, QMouseEvent, QPixmap, QIcon
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QListWidgetItem, \
     QShortcut, QLineEdit, QWidget, QPlainTextEdit
 
+from gui.dialogs.load_from_module import LoadFromModuleDialog
 from gui.dialogs.save_to_bif import BifSaveDialog, BifSaveOption
+from gui.dialogs.save_to_module import SaveToModuleDialog
 from pykotor.common.module import Module
 
 from globalsettings import GlobalSettings
 from toolset.gui.dialogs.save_to_rim import RimSaveDialog, RimSaveOption
-from pykotor.common.language import LocalizedString, Language, Gender
+from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.erf import write_erf, read_erf, ERFType
 from pykotor.resource.formats.rim import read_rim, write_rim
-from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -284,131 +284,3 @@ class Editor(QMainWindow):
 
     def filepath(self) -> None:
         return self._filepath
-
-
-class SaveToModuleDialog(QDialog):
-    """
-    SaveToModuleDialog lets the user specify a ResRef and a resource type when saving to a module.
-    """
-    def __init__(self, resref, restype, supported):
-        super().__init__()
-
-        from toolset.uic.dialogs.save_to_module import Ui_Dialog
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
-
-        self.ui.resrefEdit.setText(resref)
-        self.ui.typeCombo.addItems([restype.extension.upper() for restype in supported])
-        self.ui.typeCombo.setCurrentIndex(supported.index(restype))
-
-    def resref(self) -> str:
-        return self.ui.resrefEdit.text()
-
-    def restype(self) -> ResourceType:
-        return ResourceType.from_extension(self.ui.typeCombo.currentText().lower())
-
-
-class LoadFromModuleDialog(QDialog):
-    """
-    LoadFromModuleDialog lets the user select a resource from a ERF or RIM.
-    """
-    def __init__(self, capsule: Capsule, supported):
-        super().__init__()
-
-        from toolset.uic.dialogs.load_from_module import Ui_Dialog
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
-
-        for resource in capsule:
-            if resource.restype() not in supported:
-                continue
-            filename = resource.resname() + "." + resource.restype().extension
-            item = QListWidgetItem(filename)
-            item.resource = resource
-            self.ui.resourceList.addItem(item)
-
-    def resref(self) -> str:
-        return self.ui.resourceList.currentItem().resource.resname()
-
-    def restype(self) -> ResourceType:
-        return self.ui.resourceList.currentItem().resource.restype()
-
-    def data(self) -> bytes:
-        return self.ui.resourceList.currentItem().resource.data()
-
-
-class LocalizedStringDialog(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, locstring: LocalizedString):
-        super().__init__(parent)
-
-        from toolset.uic.dialogs.locstring import Ui_Dialog
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
-        self.setWindowTitle("{} - {} - Localized String Editor".format(installation.talktable().language().name.title(), installation.name))
-
-        self.ui.stringrefSpin.valueChanged.connect(self.stringrefChanged)
-        self.ui.stringrefNewButton.clicked.connect(self.newTlkString)
-        self.ui.stringrefNoneButton.clicked.connect(self.noTlkString)
-        self.ui.maleRadio.clicked.connect(self.substringChanged)
-        self.ui.femaleRadio.clicked.connect(self.substringChanged)
-        self.ui.languageSelect.currentIndexChanged.connect(self.substringChanged)
-        self.ui.stringEdit.textChanged.connect(self.stringEdited)
-
-        self._installation = installation
-        self.locstring = deepcopy(locstring)
-        self.ui.stringrefSpin.setValue(locstring.stringref)
-
-    def accept(self) -> None:
-        if self.locstring.stringref != -1:
-            tlk = read_tlk(self._installation.path() + "dialog.tlk")
-            if len(tlk) <= self.locstring.stringref:
-                tlk.resize(self.locstring.stringref + 1)
-            tlk.get(self.locstring.stringref).text = self.ui.stringEdit.toPlainText()
-            write_tlk(tlk, self._installation.path() + "dialog.tlk")
-        super().accept()
-
-    def reject(self) -> None:
-        super().reject()
-
-    def stringrefChanged(self, stringref: int) -> None:
-        self.ui.substringFrame.setVisible(stringref == -1)
-        self.locstring.stringref = stringref
-
-        if stringref == -1:
-            language = Language(self.ui.languageSelect.currentIndex())
-            gender = Gender(int(self.ui.femaleRadio.isChecked()))
-            text = self.locstring.get(language, gender) if self.locstring.get(language, gender) is not None else ""
-            self.ui.stringEdit.setPlainText(text)
-        else:
-            self.ui.stringEdit.setPlainText(self._installation.talktable().string(stringref))
-
-    def newTlkString(self):
-        self.ui.stringrefSpin.setValue(self._installation.talktable().size())
-
-    def noTlkString(self) -> None:
-        self.ui.stringrefSpin.setValue(-1)
-
-    def substringChanged(self) -> None:
-        language = Language(self.ui.languageSelect.currentIndex())
-        gender = Gender(int(self.ui.femaleRadio.isChecked()))
-        text = self.locstring.get(language, gender) if self.locstring.get(language, gender) is not None else ""
-        self.ui.stringEdit.setPlainText(text)
-
-    def stringEdited(self) -> None:
-        if self.locstring.stringref == -1:
-            language = Language(self.ui.languageSelect.currentIndex())
-            gender = Gender(int(self.ui.femaleRadio.isChecked()))
-            self.locstring.set(language, gender, self.ui.stringEdit.toPlainText())
-
-
-class HTPlainTextEdit(QPlainTextEdit):
-    keyReleased = QtCore.pyqtSignal()
-    doubleClicked = QtCore.pyqtSignal()
-
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:
-        super().keyReleaseEvent(e)
-        self.keyReleased.emit()
-
-    def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
-        super().mouseDoubleClickEvent(e)
-        self.doubleClicked.emit()

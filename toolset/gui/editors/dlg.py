@@ -6,6 +6,9 @@ from PyQt5.QtCore import QItemSelection, QBuffer, QIODevice, QPoint, QItemSelect
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QBrush
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QPlainTextEdit, QMenu, QMessageBox, QShortcut, QDialog
+
+from gui.dialogs.locstring import LocalizedStringDialog
+from gui.editor import Editor
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
@@ -15,7 +18,6 @@ from pykotor.resource.generics.dlg import DLG, DLGLink, DLGNode, DLGReply, DLGEn
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from gui.editor import Editor, LocalizedStringDialog
 
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
@@ -737,8 +739,8 @@ class EditAnimationDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, animation: DLGAnimation = DLGAnimation()):
         super().__init__(parent)
 
-        from editors.dlg import ui_edit_animation
-        self.ui = ui_edit_animation.Ui_Dialog()
+        from toolset.uic.dialogs.edit_animation import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         animations_list = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
@@ -773,8 +775,8 @@ class CutsceneModelDialog(QDialog):
     def __init__(self, parent: QWidget, stunt: DLGStunt = DLGStunt()):
         super().__init__(parent)
 
-        from editors.dlg import ui_edit_model
-        self.ui = ui_edit_model.Ui_Dialog()
+        from toolset.uic.dialogs.edit_model import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.participantEdit.setText(stunt.participant)

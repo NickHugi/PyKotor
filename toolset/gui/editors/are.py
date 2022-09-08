@@ -2,6 +2,8 @@ from typing import Optional
 
 from PyQt5.QtGui import QPixmap, QColor, QImage
 from PyQt5.QtWidgets import QWidget, QColorDialog, QLabel
+
+from gui.dialogs.locstring import LocalizedStringDialog
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -9,7 +11,7 @@ from pykotor.resource.generics.are import ARE, dismantle_are, ARENorthAxis, AREW
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from gui.editor import Editor, LocalizedStringDialog
+from gui.editor import Editor
 from gui.widgets.long_spinbox import LongSpinBox
 
 

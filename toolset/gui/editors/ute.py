@@ -1,13 +1,15 @@
 from typing import Optional
 
 from PyQt5.QtWidgets import QWidget, QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
+
+from gui.dialogs.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, dismantle_ute, UTECreature, read_ute
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from gui.editor import Editor, LocalizedStringDialog
+from gui.editor import Editor
 
 
 class UTEEditor(Editor):

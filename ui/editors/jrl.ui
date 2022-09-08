@@ -228,7 +228,7 @@
      <x>0</x>
      <y>0</y>
      <width>948</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuNew">
@@ -291,7 +291,7 @@
   <customwidget>
    <class>HTPlainTextEdit</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">toolset.editors.editor</header>
+   <header location="global">toolset.gui.widgets.plaintext_edit</header>
   </customwidget>
  </customwidgets>
  <resources/>

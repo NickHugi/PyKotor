@@ -5,13 +5,15 @@ from PyQt5.QtCore import QIODevice, QBuffer
 from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QWidget, QMessageBox, QListWidgetItem
+
+from gui.dialogs.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-from gui.editor import Editor, LocalizedStringDialog
+from gui.editor import Editor
 
 
 class UTSEditor(Editor):
