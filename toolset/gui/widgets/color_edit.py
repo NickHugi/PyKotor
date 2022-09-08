@@ -7,19 +7,29 @@ class ColorEdit(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
+        self._color: Color = Color(255, 255, 255)
+        self.allowAlpha: bool = False
+
         from toolset.uic.widgets.color_edit import Ui_Form
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-
-        self._color: Color = Color(255, 255, 255)
 
         self.ui.editButton.clicked.connect(self.openColorDialog)
         self.ui.colorSpin.valueChanged.connect(self._onColorChange)
 
     def openColorDialog(self) -> None:
-        qcolor = QColorDialog.getColor(QColor(self.ui.colorSpin.value()))
-        color = Color(qcolor.red()/255, qcolor.green()/255, qcolor.blue()/255)
-        self.ui.colorSpin.setValue(color.rgb_integer())
+        initColor = QColor(self.ui.colorSpin.value())
+        dialog = QColorDialog(QColor(initColor.blue(), initColor.green(), initColor.red()))
+        dialog.setOption(QColorDialog.ShowAlphaChannel, on=self.allowAlpha)
+
+        if dialog.exec_():
+            qcolor = dialog.selectedColor()
+            if self.allowAlpha:
+                color = Color(qcolor.redF(), qcolor.greenF(), qcolor.blueF())
+                self.ui.colorSpin.setValue(color.rgb_integer() + (qcolor.alpha() << 24))
+            else:
+                color = Color(qcolor.redF(), qcolor.greenF(), qcolor.blueF())
+                self.ui.colorSpin.setValue(color.rgb_integer())
 
     def _onColorChange(self, value: int) -> None:
         color = Color.from_bgr_integer(value)
