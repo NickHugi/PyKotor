@@ -528,40 +528,18 @@
              <item row="0" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_9">
                <item>
-                <widget class="QLabel" name="fogColor">
+                <widget class="ColorEdit" name="fogColorEdit" native="true">
                  <property name="minimumSize">
                   <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: black;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="LongSpinBox" name="fogColorSpin"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="fogColorButton">
-                 <property name="maximumSize">
-                  <size>
-                   <width>24</width>
+                   <width>0</width>
                    <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>...</string>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>20</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -625,40 +603,18 @@
              <item row="0" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_11">
                <item>
-                <widget class="QLabel" name="lightAmbientColor">
+                <widget class="ColorEdit" name="ambientColorEdit" native="true">
                  <property name="minimumSize">
                   <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: black;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="LongSpinBox" name="lightAmbientSpin"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="lightAmbientButton">
-                 <property name="maximumSize">
-                  <size>
-                   <width>24</width>
+                   <width>0</width>
                    <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>...</string>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>20</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -681,40 +637,18 @@
              <item row="1" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_12">
                <item>
-                <widget class="QLabel" name="lightDiffuseColor">
+                <widget class="ColorEdit" name="diffuseColorEdit" native="true">
                  <property name="minimumSize">
                   <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: black;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="LongSpinBox" name="lightDiffuseSpin"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="lightDiffuseButton">
-                 <property name="maximumSize">
-                  <size>
-                   <width>24</width>
+                   <width>0</width>
                    <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>...</string>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>20</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -723,40 +657,18 @@
              <item row="2" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_13">
                <item>
-                <widget class="QLabel" name="lightDynamicColor">
+                <widget class="ColorEdit" name="dynamicColorEdit" native="true">
                  <property name="minimumSize">
                   <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: black;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="LongSpinBox" name="lightDynamicSpin"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="lightDynamicButton">
-                 <property name="maximumSize">
-                  <size>
-                   <width>24</width>
+                   <width>0</width>
                    <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>...</string>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>20</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -930,40 +842,18 @@
              <item row="1" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout">
                <item>
-                <widget class="QLabel" name="grassDiffuseColor">
+                <widget class="ColorEdit" name="grassDiffuseEdit" native="true">
                  <property name="minimumSize">
                   <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: black;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="LongSpinBox" name="grassDiffuseSpin"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="grassDiffuseButton">
-                 <property name="maximumSize">
-                  <size>
-                   <width>24</width>
+                   <width>0</width>
                    <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>...</string>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>20</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -979,40 +869,18 @@
              <item row="3" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_2">
                <item>
-                <widget class="QLabel" name="grassEmissiveColor">
+                <widget class="ColorEdit" name="grassEmissiveEdit" native="true">
                  <property name="minimumSize">
                   <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: black;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="LongSpinBox" name="grassEmissiveSpin"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="grassEmissiveButton">
-                 <property name="maximumSize">
-                  <size>
-                   <width>24</width>
+                   <width>0</width>
                    <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>...</string>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>20</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -1028,40 +896,18 @@
              <item row="2" column="1">
               <layout class="QHBoxLayout" name="horizontalLayout_3">
                <item>
-                <widget class="QLabel" name="grassAmbientColor">
+                <widget class="ColorEdit" name="grassAmbientEdit" native="true">
                  <property name="minimumSize">
                   <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background: black;</string>
-                 </property>
-                 <property name="text">
-                  <string/>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="LongSpinBox" name="grassAmbientSpin"/>
-               </item>
-               <item>
-                <widget class="QPushButton" name="grassAmbientButton">
-                 <property name="maximumSize">
-                  <size>
-                   <width>24</width>
+                   <width>0</width>
                    <height>20</height>
                   </size>
                  </property>
-                 <property name="text">
-                  <string>...</string>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>20</height>
+                  </size>
                  </property>
                 </widget>
                </item>
@@ -1135,40 +981,18 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_25">
                  <item>
-                  <widget class="QLabel" name="dirtColor2">
+                  <widget class="ColorEdit" name="dirtColor1Edit" native="true">
                    <property name="minimumSize">
                     <size>
-                     <width>16</width>
-                     <height>16</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16</width>
-                     <height>16</height>
-                    </size>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">background: black;</string>
-                   </property>
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="LongSpinBox" name="dirtColor2Spin"/>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="dirtColor2Button">
-                   <property name="maximumSize">
-                    <size>
-                     <width>24</width>
+                     <width>0</width>
                      <height>20</height>
                     </size>
                    </property>
-                   <property name="text">
-                    <string>...</string>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>20</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
@@ -1177,40 +1001,18 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_24">
                  <item>
-                  <widget class="QLabel" name="dirtColor1">
+                  <widget class="ColorEdit" name="dirtColor2Edit" native="true">
                    <property name="minimumSize">
                     <size>
-                     <width>16</width>
-                     <height>16</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16</width>
-                     <height>16</height>
-                    </size>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">background: black;</string>
-                   </property>
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="LongSpinBox" name="dirtColor1Spin"/>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="dirtColor1Button">
-                   <property name="maximumSize">
-                    <size>
-                     <width>24</width>
+                     <width>0</width>
                      <height>20</height>
                     </size>
                    </property>
-                   <property name="text">
-                    <string>...</string>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>20</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
@@ -1219,40 +1021,18 @@
                <item>
                 <layout class="QHBoxLayout" name="horizontalLayout_18">
                  <item>
-                  <widget class="QLabel" name="dirtColor3">
+                  <widget class="ColorEdit" name="dirtColor3Edit" native="true">
                    <property name="minimumSize">
                     <size>
-                     <width>16</width>
-                     <height>16</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16</width>
-                     <height>16</height>
-                    </size>
-                   </property>
-                   <property name="styleSheet">
-                    <string notr="true">background: black;</string>
-                   </property>
-                   <property name="text">
-                    <string/>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="LongSpinBox" name="dirtColor3Spin"/>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="dirtColor3Button">
-                   <property name="maximumSize">
-                    <size>
-                     <width>24</width>
+                     <width>0</width>
                      <height>20</height>
                     </size>
                    </property>
-                   <property name="text">
-                    <string>...</string>
+                   <property name="maximumSize">
+                    <size>
+                     <width>16777215</width>
+                     <height>20</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
@@ -1476,7 +1256,7 @@
      <x>0</x>
      <y>0</y>
      <width>393</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuNew">
@@ -1537,9 +1317,10 @@
    <header location="global">toolset.gui.widgets.combobox_2da</header>
   </customwidget>
   <customwidget>
-   <class>LongSpinBox</class>
-   <extends>QSpinBox</extends>
-   <header location="global">toolset.gui.widgets.long_spinbox</header>
+   <class>ColorEdit</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.color_edit</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -30,31 +30,14 @@ class AREEditor(Editor):
         self._setupSignals()
         self._setupInstallation(installation)
 
+        self.ui.dirtColor1Edit.allowAlpha = True
+        self.ui.dirtColor2Edit.allowAlpha = True
+        self.ui.dirtColor3Edit.allowAlpha = True
+
         self.new()
 
     def _setupSignals(self) -> None:
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
-
-        self.ui.fogColorButton.clicked.connect(lambda: self.changeColor(self.ui.fogColorSpin))
-        self.ui.fogColorSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.fogColor))
-        self.ui.lightAmbientButton.clicked.connect(lambda: self.changeColor(self.ui.lightAmbientSpin))
-        self.ui.lightAmbientSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.lightAmbientColor))
-        self.ui.lightDiffuseButton.clicked.connect(lambda: self.changeColor(self.ui.lightDiffuseSpin))
-        self.ui.lightDiffuseSpin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.lightDiffuseColor))
-        self.ui.lightDynamicButton.clicked.connect(lambda: self.changeColor(self.ui.lightDynamicSpin))
-        self.ui.lightDynamicSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.lightDynamicColor))
-        self.ui.grassAmbientButton.clicked.connect(lambda: self.changeColor(self.ui.grassAmbientSpin))
-        self.ui.grassAmbientSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.grassAmbientColor))
-        self.ui.grassDiffuseButton.clicked.connect(lambda: self.changeColor(self.ui.grassDiffuseSpin))
-        self.ui.grassDiffuseSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.grassDiffuseColor))
-        self.ui.grassEmissiveButton.clicked.connect(lambda: self.changeColor(self.ui.grassEmissiveSpin))
-        self.ui.grassEmissiveSpin.valueChanged.connect( lambda value: self.redoColorImage(value, self.ui.grassEmissiveColor))
-        self.ui.dirtColor1Button.clicked.connect(lambda: self.changeColor(self.ui.dirtColor1Spin))
-        self.ui.dirtColor1Spin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.dirtColor1))
-        self.ui.dirtColor2Button.clicked.connect(lambda: self.changeColor(self.ui.dirtColor2Spin))
-        self.ui.dirtColor2Spin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.dirtColor2))
-        self.ui.dirtColor3Button.clicked.connect(lambda: self.changeColor(self.ui.dirtColor3Spin))
-        self.ui.dirtColor3Spin.valueChanged.connect(lambda value: self.redoColorImage(value, self.ui.dirtColor3))
 
     def _setupInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
@@ -67,10 +50,8 @@ class AREEditor(Editor):
         [self.ui.cameraStyleSelect.addItem(label.title()) for label in cameras.get_column("name")]
 
         self.ui.dirtGroup.setVisible(installation.tsl)
-        self.ui.grassEmissiveSpin.setVisible(installation.tsl)
-        self.ui.grassEmissiveButton.setVisible(installation.tsl)
+        self.ui.grassEmissiveEdit.setVisible(installation.tsl)
         self.ui.grassEmissiveLabel.setVisible(installation.tsl)
-        self.ui.grassEmissiveColor.setVisible(installation.tsl)
         self.ui.snowCheck.setVisible(installation.tsl)
         self.ui.rainCheck.setVisible(installation.tsl)
         self.ui.lightningCheck.setVisible(installation.tsl)
@@ -111,12 +92,12 @@ class AREEditor(Editor):
 
         # Weather
         self.ui.fogEnabledCheck.setChecked(are.fog_enabled)
-        self.ui.fogColorSpin.setValue(are.fog_color.rgb_integer())
+        self.ui.fogColorEdit.setColor(are.fog_color)
         self.ui.fogNearSpin.setValue(are.fog_near)
         self.ui.fogFarSpin.setValue(are.fog_far)
-        self.ui.lightAmbientSpin.setValue(are.sun_ambient.rgb_integer())
-        self.ui.lightDiffuseSpin.setValue(are.sun_diffuse.rgb_integer())
-        self.ui.lightDynamicSpin.setValue(are.dynamic_light.rgb_integer())
+        self.ui.ambientColorEdit.setColor(are.sun_ambient)
+        self.ui.diffuseColorEdit.setColor(are.sun_diffuse)
+        self.ui.dynamicColorEdit.setColor(are.dynamic_light)
         self.ui.windPowerSelect.setCurrentIndex(are.wind_power)
         self.ui.rainCheck.setChecked(are.chance_rain == 100)
         self.ui.snowCheck.setChecked(are.chance_snow == 100)
@@ -126,18 +107,18 @@ class AREEditor(Editor):
 
         # Terrain
         self.ui.grassTextureEdit.setText(are.grass_texture.get())
-        self.ui.grassDiffuseSpin.setValue(are.grass_diffuse.rgb_integer())
-        self.ui.grassAmbientSpin.setValue(are.grass_ambient.rgb_integer())
-        self.ui.grassEmissiveSpin.setValue(are.grass_emissive.rgb_integer())
+        self.ui.grassDiffuseEdit.setColor(are.grass_diffuse)
+        self.ui.grassAmbientEdit.setColor(are.grass_ambient)
+        self.ui.grassEmissiveEdit.setColor(are.grass_emissive)
         self.ui.grassDensitySpin.setValue(are.grass_density)
         self.ui.grassSizeSpin.setValue(are.grass_size)
         self.ui.grassProbLLSpin.setValue(are.grass_prob_ll)
         self.ui.grassProbLRSpin.setValue(are.grass_prob_lr)
         self.ui.grassProbULSpin.setValue(are.grass_prob_ul)
         self.ui.grassProbURSpin.setValue(are.grass_prob_ur)
-        self.ui.dirtColor1Spin.setValue(are.dirty_argb_1.rgb_integer())
-        self.ui.dirtColor2Spin.setValue(are.dirty_argb_2.rgb_integer())
-        self.ui.dirtColor3Spin.setValue(are.dirty_argb_3.rgb_integer())
+        self.ui.dirtColor1Edit.setColor(are.dirty_argb_1)
+        self.ui.dirtColor2Edit.setColor(are.dirty_argb_2)
+        self.ui.dirtColor3Edit.setColor(are.dirty_argb_3)
         self.ui.dirtFormula1Spin.setValue(are.dirty_formula_1)
         self.ui.dirtFormula2Spin.setValue(are.dirty_formula_2)
         self.ui.dirtFormula3Spin.setValue(are.dirty_formula_3)
@@ -183,12 +164,12 @@ class AREEditor(Editor):
 
         # Weather
         are.fog_enabled = self.ui.fogEnabledCheck.isChecked()
-        are.fog_color = Color.from_rgb_integer(self.ui.fogColorSpin.value())
+        are.fog_color = self.ui.fogColorEdit.color()
         are.fog_near = self.ui.fogNearSpin.value()
         are.fog_far = self.ui.fogFarSpin.value()
-        are.sun_ambient = Color.from_rgb_integer(self.ui.lightAmbientSpin.value())
-        are.sun_diffuse = Color.from_rgb_integer(self.ui.lightDiffuseSpin.value())
-        are.dynamic_light = Color.from_rgb_integer(self.ui.lightDynamicSpin.value())
+        are.sun_ambient = self.ui.ambientColorEdit.color()
+        are.sun_diffuse = self.ui.diffuseColorEdit.color()
+        are.dynamic_light = self.ui.dynamicColorEdit.color()
         are.wind_power = AREWindPower(self.ui.windPowerSelect.currentIndex())
         are.chance_rain = 100 if self.ui.rainCheck.isChecked() else 0
         are.chance_snow = 100 if self.ui.snowCheck.isChecked() else 0
@@ -198,18 +179,18 @@ class AREEditor(Editor):
 
         # Terrain
         are.grass_texture = ResRef(self.ui.grassTextureEdit.text())
-        are.grass_diffuse = Color.from_rgb_integer(self.ui.grassDiffuseSpin.value())
-        are.grass_ambient = Color.from_rgb_integer(self.ui.grassAmbientSpin.value())
-        are.grass_emissive = Color.from_rgb_integer(self.ui.grassEmissiveSpin.value())
+        are.grass_diffuse = self.ui.grassDiffuseEdit.color()
+        are.grass_ambient = self.ui.ambientColorEdit.color()
+        are.grass_emissive = self.ui.grassEmissiveEdit.color()
         are.grass_size = self.ui.grassSizeSpin.value()
         are.grass_density = self.ui.grassDensitySpin.value()
         are.grass_prob_ll = self.ui.grassProbLLSpin.value()
         are.grass_prob_lr = self.ui.grassProbLRSpin.value()
         are.grass_prob_ul = self.ui.grassProbULSpin.value()
         are.grass_prob_ur = self.ui.grassProbURSpin.value()
-        are.dirty_argb_1 = Color.from_rgb_integer(self.ui.dirtColor1Spin.value())
-        are.dirty_argb_2 = Color.from_rgb_integer(self.ui.dirtColor2Spin.value())
-        are.dirty_argb_3 = Color.from_rgb_integer(self.ui.dirtColor3Spin.value())
+        are.dirty_argb_1 = self.ui.dirtColor1Edit.color()
+        are.dirty_argb_2 = self.ui.dirtColor2Edit.color()
+        are.dirty_argb_3 = self.ui.dirtColor3Edit.color()
         are.dirty_formula_1 = self.ui.dirtFormula1Spin.value()
         are.dirty_formula_2 = self.ui.dirtFormula2Spin.value()
         are.dirty_formula_3 = self.ui.dirtFormula3Spin.value()
