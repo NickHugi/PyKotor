@@ -76,7 +76,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setStretch(1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -125,4 +125,4 @@ class Ui_MainWindow(object):
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionCompile.setText(_translate("MainWindow", "Compile"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-from toolset.editors.nss.nss_editor import CodeEditor
+from toolset.gui.editors.nss import CodeEditor

@@ -109,7 +109,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -168,7 +168,7 @@
   <customwidget>
    <class>CodeEditor</class>
    <extends>QPlainTextEdit</extends>
-   <header location="global">toolset.editors.nss.nss_editor</header>
+   <header location="global">toolset.gui.editors.nss</header>
   </customwidget>
  </customwidgets>
  <resources/>
