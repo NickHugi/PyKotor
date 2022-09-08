@@ -33,7 +33,9 @@ class CameraDialog(QDialog):
 
     def accept(self) -> None:
         super().accept()
-        self.camera.position = Vector3(self.ui.xPosSpin.value(), self.ui.xPosSpin.value(), self.ui.zPosSpin.value())
+        self.camera.position.x = self.ui.xPosSpin.value()
+        self.camera.position.y = self.ui.yPosSpin.value()
+        self.camera.position.z = self.ui.zPosSpin.value()
         self.camera.orientation.x = self.ui.xOrientSpin.value()
         self.camera.orientation.y = self.ui.yOrientSpin.value()
         self.camera.orientation.z = self.ui.wOrientSpin.value()
