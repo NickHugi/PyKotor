@@ -213,8 +213,8 @@ class ToolWindow(QMainWindow):
             filepath = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
             if filepath:
-                tasks = [lambda: self._extractResource(resources[0], filepath)]
-                loader = AsyncBatchLoader(self, "Extracting Resources", tasks, "Failed to Extract Resources")
+                loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
+                loader.addTask(lambda: self._extractResource(resources[0], filepath))
                 loader.exec_()
 
         elif len(resources) >= 1:
