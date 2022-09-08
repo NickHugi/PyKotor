@@ -17,8 +17,12 @@ def get_ui_files():
 def compile_ui(ignore_timestamp: bool = False):
     for ui_source in get_ui_files():
         directory = os.path.dirname(ui_source).replace("\\", "/")
-        filename = "" + os.path.basename(ui_source).replace(".ui", ".py")
+        filename = os.path.basename(ui_source).replace(".ui", ".py")
         ui_target = (UI_TARGET_DIR + directory + "/" + filename).replace('//', '/')
+
+        if not os.path.exists(UI_TARGET_DIR + directory):
+            os.makedirs(UI_TARGET_DIR + directory)
+            print("mkdir", UI_TARGET_DIR + directory)
 
         # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
         source_timestamp = os.path.getmtime(ui_source)
