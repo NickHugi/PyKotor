@@ -18,8 +18,10 @@ class ColorEdit(QWidget):
         self.ui.colorSpin.valueChanged.connect(self._onColorChange)
 
     def openColorDialog(self) -> None:
-        initColor = QColor(self.ui.colorSpin.value())
-        dialog = QColorDialog(QColor(initColor.blue(), initColor.green(), initColor.red()))
+        initColor = Color.from_rgba_integer(self.ui.colorSpin.value())
+        initQColor = QColor(initColor.r*255, initColor.g*255, initColor.b*255, initColor.a*255)
+
+        dialog = QColorDialog(QColor(initQColor.red(), initQColor.green(), initQColor.blue(), initQColor.alpha()))
         dialog.setOption(QColorDialog.ShowAlphaChannel, on=self.allowAlpha)
 
         if dialog.exec_():
@@ -32,16 +34,18 @@ class ColorEdit(QWidget):
                 self.ui.colorSpin.setValue(color.rgb_integer())
 
     def _onColorChange(self, value: int) -> None:
-        color = Color.from_bgr_integer(value)
-        self._color.r, self._color.g, self._color.b = color.r, color.g, color.b
+        color = Color.from_rgba_integer(value)
+        self._color.r, self._color.g, self._color.b, self._color.a = color.r, color.g, color.b, color.a
+        if not self.allowAlpha:
+            self._color.a = 0.0
         r, g, b = int(color.r * 255), int(color.g * 255), int(color.b * 255)
         data = bytes([b, g, r] * 16 * 16)
-        pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_RGB888))
+        pixmap = QPixmap.fromImage(QImage(data, 16, 16, QImage.Format_BGR888))
         self.ui.colorLabel.setPixmap(pixmap)
 
     def setColor(self, color: Color) -> None:
         self._color: Color = color
-        self.ui.colorSpin.setValue(color.rgb_integer())
+        self.ui.colorSpin.setValue(color.rgba_integer() if self.allowAlpha else color.rgb_integer())
 
     def color(self) -> Color:
         return self._color

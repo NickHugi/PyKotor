@@ -14,6 +14,7 @@ class LongSpinBox(QAbstractSpinBox):
         self._max = 4294967295
 
         self.lineEdit().editingFinished.connect(self.clampLineEdit)
+        self.lineEdit().textEdited.connect(lambda: self.valueChanged.emit(self.value()))
 
     def stepUp(self) -> None:
         self.setValue(self.value() + 1)
