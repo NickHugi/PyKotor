@@ -274,9 +274,6 @@ class TextureList(MainWindowList):
     def setInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
 
-        if self._installation is not None:
-            self.onTextureListScrolled()
-
     def setResources(self, resources: List[FileResource]) -> None:
         blankImage = QImage(bytes([0 for i in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
         blankIcon = QIcon(QPixmap.fromImage(blankImage))
@@ -311,6 +308,7 @@ class TextureList(MainWindowList):
 
         scanWidth = self.ui.resourceList.viewport().width()
         scanHeight = self.ui.resourceList.viewport().height()
+        print(scanWidth, scanHeight)
 
         proxyModel = self.texturesProxyModel
         model = self.texturesModel
@@ -382,6 +380,10 @@ class TextureList(MainWindowList):
 
     def onResourceDoubleClicked(self) -> None:
         self.requestOpenResource.emit(self.selectedResources(), None)
+
+    def resizeEvent(self, a0: QResizeEvent) -> None:
+        # Trigger the scroll slot method - this will cause any newly visible icons to load.
+        self.onTextureListScrolled()
 
 
 class TextureListConsumer(multiprocessing.Process):
