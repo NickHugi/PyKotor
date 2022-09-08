@@ -278,8 +278,8 @@ class PropertyEditor(QDialog):
     def __init__(self, installation: HTInstallation, utiProperty: UTIProperty):
         super().__init__()
 
-        from editors.uti import ui_property_editor
-        self.ui = ui_property_editor.Ui_Dialog()
+        from toolset.uic.dialogs.property import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.costSelectButton.clicked.connect(self.selectCost)
