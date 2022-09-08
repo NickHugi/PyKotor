@@ -304,17 +304,17 @@ def construct_are(
     are.player_only = root.acquire("PlayerOnly", 0)
     are.player_vs_player = root.acquire("PlayerVsPlayer", 0)
 
-    are.sun_ambient = Color.from_bgr_integer(root.acquire("SunAmbientColor", 0))
-    are.sun_diffuse = Color.from_bgr_integer(root.acquire("SunDiffuseColor", 0))
-    are.dynamic_light = Color.from_bgr_integer(root.acquire("DynAmbientColor", 0))
-    are.fog_color = Color.from_bgr_integer(root.acquire("SunFogColor", 0))
-    are.grass_ambient = Color.from_bgr_integer(root.acquire("Grass_Ambient", 0))
-    are.grass_diffuse = Color.from_bgr_integer(root.acquire("Grass_Diffuse", 0))
+    are.sun_ambient = Color.from_rgb_integer(root.acquire("SunAmbientColor", 0))
+    are.sun_diffuse = Color.from_rgb_integer(root.acquire("SunDiffuseColor", 0))
+    are.dynamic_light = Color.from_rgb_integer(root.acquire("DynAmbientColor", 0))
+    are.fog_color = Color.from_rgb_integer(root.acquire("SunFogColor", 0))
+    are.grass_ambient = Color.from_rgb_integer(root.acquire("Grass_Ambient", 0))
+    are.grass_diffuse = Color.from_rgb_integer(root.acquire("Grass_Diffuse", 0))
 
-    are.grass_emissive = Color.from_bgr_integer(root.acquire("Grass_Emissive", 0))
-    are.dirty_argb_1 = Color.from_bgr_integer(root.acquire("DirtyARGBOne", 0))
-    are.dirty_argb_2 = Color.from_bgr_integer(root.acquire("DirtyARGBTwo", 0))
-    are.dirty_argb_3 = Color.from_bgr_integer(root.acquire("DirtyARGBThree", 0))
+    are.grass_emissive = Color.from_rgb_integer(root.acquire("Grass_Emissive", 0))
+    are.dirty_argb_1 = Color.from_rgb_integer(root.acquire("DirtyARGBOne", 0))
+    are.dirty_argb_2 = Color.from_rgb_integer(root.acquire("DirtyARGBTwo", 0))
+    are.dirty_argb_3 = Color.from_rgb_integer(root.acquire("DirtyARGBThree", 0))
 
     return are
 
@@ -344,12 +344,12 @@ def dismantle_are(
 
     root.set_uint32("Version", are.version)
 
-    root.set_uint32("SunAmbientColor", are.sun_ambient.bgr_integer())
-    root.set_uint32("SunDiffuseColor", are.sun_diffuse.bgr_integer())
-    root.set_uint32("DynAmbientColor", are.dynamic_light.bgr_integer())
-    root.set_uint32("SunFogColor", are.fog_color.bgr_integer())
-    root.set_uint32("Grass_Ambient", are.grass_ambient.bgr_integer())
-    root.set_uint32("Grass_Diffuse", are.grass_diffuse.bgr_integer())
+    root.set_uint32("SunAmbientColor", are.sun_ambient.rgb_integer())
+    root.set_uint32("SunDiffuseColor", are.sun_diffuse.rgb_integer())
+    root.set_uint32("DynAmbientColor", are.dynamic_light.rgb_integer())
+    root.set_uint32("SunFogColor", are.fog_color.rgb_integer())
+    root.set_uint32("Grass_Ambient", are.grass_ambient.rgb_integer())
+    root.set_uint32("Grass_Diffuse", are.grass_diffuse.rgb_integer())
 
     root.set_string("Tag", are.tag)
     root.set_locstring("Name", are.name)
@@ -381,10 +381,10 @@ def dismantle_are(
     root.set_resref("OnUserDefined", are.on_user_defined)
 
     if game == Game.K2:
-        root.set_int32("DirtyARGBOne", are.dirty_argb_1.bgr_integer())
-        root.set_int32("DirtyARGBTwo", are.dirty_argb_2.bgr_integer())
-        root.set_int32("DirtyARGBThree", are.dirty_argb_3.bgr_integer())
-        root.set_uint32("Grass_Emissive", are.grass_emissive.bgr_integer())
+        root.set_int32("DirtyARGBOne", are.dirty_argb_1.rgb_integer())
+        root.set_int32("DirtyARGBTwo", are.dirty_argb_2.rgb_integer())
+        root.set_int32("DirtyARGBThree", are.dirty_argb_3.rgb_integer())
+        root.set_uint32("Grass_Emissive", are.grass_emissive.rgb_integer())
 
         root.set_int32("ChanceRain", are.chance_rain)
         root.set_int32("ChanceSnow", are.chance_snow)

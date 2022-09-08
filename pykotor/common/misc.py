@@ -190,6 +190,26 @@ class Color:
         return Color(red, green, blue)
 
     @classmethod
+    def from_rgba_integer(
+            cls,
+            integer: int
+    ) -> Color:
+        """
+        Returns a Color by decoding the specified integer.
+
+        Args:
+            integer: RGB integer.
+
+        Returns:
+            A new Color instance.
+        """
+        red = (0x000000FF & integer) / 255
+        green = ((0x0000FF00 & integer) >> 8) / 255
+        blue = ((0x00FF0000 & integer) >> 16) / 255
+        alpha = ((0xFF000000 & integer) >> 24) / 255
+        return Color(red, green, blue, alpha)
+
+    @classmethod
     def from_bgr_integer(
             cls,
             integer: int
@@ -259,6 +279,21 @@ class Color:
         green = int(self.g * 255) << 8
         blue = int(self.b * 255) << 16
         return red + green + blue
+
+    def rgba_integer(
+            self
+    ) -> int:
+        """
+        Returns a RGB integer encoded from the color components.
+
+        Returns:
+            A integer representing a color.
+        """
+        red = int(self.r * 255) << 0
+        green = int(self.g * 255) << 8
+        blue = int(self.b * 255) << 16
+        alpha = int(self.a * 255) << 24
+        return red + green + blue + alpha
 
     def bgr_integer(
             self
