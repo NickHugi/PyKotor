@@ -1,8 +1,10 @@
 from PyQt5 import QtCore
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget
+from pykotor.common.misc import Color
 
 from globalsettings import GlobalSettings
+from gui.editors.git import GITSettings
 from gui.windows.module_designer import ModuleDesignerSettings
 
 
@@ -133,3 +135,83 @@ class ModuleDesignerWidget(QWidget):
 
     def save(self) -> None:
         self.settings.fieldOfView = self.ui.fovSpin.value()
+
+
+class GITWidget(QWidget):
+    editedSignal = QtCore.pyqtSignal()
+
+    def __init__(self, parent: QWidget):
+        super().__init__(parent)
+
+        self.settings = GITSettings()
+
+        from toolset.uic.widgets.settings.git import Ui_Form
+        self.ui = Ui_Form()
+        self.ui.setupUi(self)
+        self.setupValues()
+
+        self.ui.undefinedColorEdit.allowAlpha = True
+        self.ui.dirtColorEdit.allowAlpha = True
+        self.ui.obscuringColorEdit.allowAlpha = True
+        self.ui.grassColorEdit.allowAlpha = True
+        self.ui.stoneColorEdit.allowAlpha = True
+        self.ui.woodColorEdit.allowAlpha = True
+        self.ui.waterColorEdit.allowAlpha = True
+        self.ui.nonWalkColorEdit.allowAlpha = True
+        self.ui.transparentColorEdit.allowAlpha = True
+        self.ui.carpetColorEdit.allowAlpha = True
+        self.ui.metalColorEdit.allowAlpha = True
+        self.ui.puddlesColorEdit.allowAlpha = True
+        self.ui.swampColorEdit.allowAlpha = True
+        self.ui.mudColorEdit.allowAlpha = True
+        self.ui.leavesColorEdit.allowAlpha = True
+        self.ui.lavaColorEdit.allowAlpha = True
+        self.ui.bottomlessPitColorEdit.allowAlpha = True
+        self.ui.deepWaterColorEdit.allowAlpha = True
+        self.ui.doorColorEdit.allowAlpha = True
+        self.ui.nonWalkGrassColorEdit.allowAlpha = True
+
+    def setupValues(self) -> None:
+        self.ui.undefinedColorEdit.setColor(Color.from_rgba_integer(self.settings.undefinedMaterialColour))
+        self.ui.dirtColorEdit.setColor(Color.from_rgba_integer(self.settings.dirtMaterialColour))
+        self.ui.obscuringColorEdit.setColor(Color.from_rgba_integer(self.settings.obscuringMaterialColour))
+        self.ui.grassColorEdit.setColor(Color.from_rgba_integer(self.settings.grassMaterialColour))
+        self.ui.stoneColorEdit.setColor(Color.from_rgba_integer(self.settings.stoneMaterialColour))
+        self.ui.woodColorEdit.setColor(Color.from_rgba_integer(self.settings.woodMaterialColour))
+        self.ui.waterColorEdit.setColor(Color.from_rgba_integer(self.settings.waterMaterialColour))
+        self.ui.nonWalkColorEdit.setColor(Color.from_rgba_integer(self.settings.nonWalkMaterialColour))
+        self.ui.transparentColorEdit.setColor(Color.from_rgba_integer(self.settings.transparentMaterialColour))
+        self.ui.carpetColorEdit.setColor(Color.from_rgba_integer(self.settings.carpetMaterialColour))
+        self.ui.metalColorEdit.setColor(Color.from_rgba_integer(self.settings.metalMaterialColour))
+        self.ui.puddlesColorEdit.setColor(Color.from_rgba_integer(self.settings.puddlesMaterialColour))
+        self.ui.swampColorEdit.setColor(Color.from_rgba_integer(self.settings.swampMaterialColour))
+        self.ui.mudColorEdit.setColor(Color.from_rgba_integer(self.settings.mudMaterialColour))
+        self.ui.leavesColorEdit.setColor(Color.from_rgba_integer(self.settings.leavesMaterialColour))
+        self.ui.lavaColorEdit.setColor(Color.from_rgba_integer(self.settings.lavaMaterialColour))
+        self.ui.bottomlessPitColorEdit.setColor(Color.from_rgba_integer(self.settings.bottomlessPitMaterialColour))
+        self.ui.deepWaterColorEdit.setColor(Color.from_rgba_integer(self.settings.deepWaterMaterialColour))
+        self.ui.doorColorEdit.setColor(Color.from_rgba_integer(self.settings.doorMaterialColour))
+        self.ui.nonWalkGrassColorEdit.setColor(Color.from_rgba_integer(self.settings.nonWalkGrassMaterialColour))
+
+    def save(self) -> None:
+        self.settings.undefinedMaterialColour = self.ui.undefinedColorEdit.color().rgba_integer()
+        self.settings.dirtMaterialColour = self.ui.dirtColorEdit.color().rgba_integer()
+        self.settings.obscuringMaterialColour = self.ui.obscuringColorEdit.color().rgba_integer()
+        self.settings.grassMaterialColour = self.ui.grassColorEdit.color().rgba_integer()
+        self.settings.stoneMaterialColour = self.ui.stoneColorEdit.color().rgba_integer()
+        self.settings.woodMaterialColour = self.ui.woodColorEdit.color().rgba_integer()
+        self.settings.waterMaterialColour = self.ui.waterColorEdit.color().rgba_integer()
+        self.settings.nonWalkMaterialColour = self.ui.nonWalkColorEdit.color().rgba_integer()
+        self.settings.transparentMaterialColour = self.ui.transparentColorEdit.color().rgba_integer()
+        self.settings.carpetMaterialColour = self.ui.carpetColorEdit.color().rgba_integer()
+        self.settings.metalMaterialColour = self.ui.metalColorEdit.color().rgba_integer()
+        self.settings.puddlesMaterialColour = self.ui.puddlesColorEdit.color().rgba_integer()
+        self.settings.swampMaterialColour = self.ui.swampColorEdit.color().rgba_integer()
+        self.settings.mudMaterialColour = self.ui.mudColorEdit.color().rgba_integer()
+        self.settings.leavesMaterialColour = self.ui.leavesColorEdit.color().rgba_integer()
+        self.settings.lavaMaterialColour = self.ui.lavaColorEdit.color().rgba_integer()
+        self.settings.bottomlessPitMaterialColour = self.ui.bottomlessPitColorEdit.color().rgba_integer()
+        self.settings.deepWaterMaterialColour = self.ui.deepWaterColorEdit.color().rgba_integer()
+        self.settings.doorMaterialColour = self.ui.doorColorEdit.color().rgba_integer()
+        self.settings.nonWalkGrassMaterialColour = self.ui.nonWalkGrassColorEdit.color().rgba_integer()
+

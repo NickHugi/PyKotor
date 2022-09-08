@@ -31,6 +31,7 @@ class Ui_Dialog(object):
         item_0 = QtWidgets.QTreeWidgetItem(self.settingsTree)
         item_0 = QtWidgets.QTreeWidgetItem(self.settingsTree)
         item_0 = QtWidgets.QTreeWidgetItem(self.settingsTree)
+        item_0 = QtWidgets.QTreeWidgetItem(self.settingsTree)
         self.settingsStack = QtWidgets.QStackedWidget(self.splitter)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(1)
@@ -64,6 +65,11 @@ class Ui_Dialog(object):
         self.settingsStack.addWidget(self.miscPage)
         self.gitEditorPage = QtWidgets.QWidget()
         self.gitEditorPage.setObjectName("gitEditorPage")
+        self.gridLayout_4 = QtWidgets.QGridLayout(self.gitEditorPage)
+        self.gridLayout_4.setObjectName("gridLayout_4")
+        self.gitEditorWidget = GITWidget(self.gitEditorPage)
+        self.gitEditorWidget.setObjectName("gitEditorWidget")
+        self.gridLayout_4.addWidget(self.gitEditorWidget, 0, 0, 1, 1)
         self.settingsStack.addWidget(self.gitEditorPage)
         self.verticalLayout.addWidget(self.splitter)
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
@@ -73,7 +79,7 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.buttonBox)
 
         self.retranslateUi(Dialog)
-        self.settingsStack.setCurrentIndex(0)
+        self.settingsStack.setCurrentIndex(3)
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
         self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -85,7 +91,8 @@ class Ui_Dialog(object):
         __sortingEnabled = self.settingsTree.isSortingEnabled()
         self.settingsTree.setSortingEnabled(False)
         self.settingsTree.topLevelItem(0).setText(0, _translate("Dialog", "Installations"))
-        self.settingsTree.topLevelItem(1).setText(0, _translate("Dialog", "Module Designer"))
-        self.settingsTree.topLevelItem(2).setText(0, _translate("Dialog", "Misc"))
+        self.settingsTree.topLevelItem(1).setText(0, _translate("Dialog", "GIT Editor"))
+        self.settingsTree.topLevelItem(2).setText(0, _translate("Dialog", "Module Designer"))
+        self.settingsTree.topLevelItem(3).setText(0, _translate("Dialog", "Misc"))
         self.settingsTree.setSortingEnabled(__sortingEnabled)
-from misc.settings.pages import InstallationsWidget, MiscWidget, ModuleDesignerWidget
+from toolset.gui.widgets.settings.pages import GITWidget, InstallationsWidget, MiscWidget, ModuleDesignerWidget

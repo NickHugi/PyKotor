@@ -41,6 +41,11 @@
       </item>
       <item>
        <property name="text">
+        <string>GIT Editor</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
         <string>Module Designer</string>
        </property>
       </item>
@@ -58,7 +63,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="installationsPage">
        <layout class="QGridLayout" name="gridLayout_2">
@@ -81,7 +86,13 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="gitEditorPage"/>
+      <widget class="QWidget" name="gitEditorPage">
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <widget class="GITWidget" name="gitEditorWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </widget>
    </item>
@@ -101,19 +112,25 @@
   <customwidget>
    <class>MiscWidget</class>
    <extends>QWidget</extends>
-   <header location="global">misc.settings.pages</header>
+   <header location="global">toolset.gui.widgets.settings.pages</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>InstallationsWidget</class>
    <extends>QWidget</extends>
-   <header location="global">misc.settings.pages</header>
+   <header location="global">toolset.gui.widgets.settings.pages</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ModuleDesignerWidget</class>
    <extends>QWidget</extends>
-   <header location="global">misc.settings.pages</header>
+   <header location="global">toolset.gui.widgets.settings.pages</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>GITWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.settings.pages</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

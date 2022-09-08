@@ -20,7 +20,7 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QLineEdit" name="filterEdit">
@@ -50,7 +50,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -633,6 +633,7 @@ QCheckBox::indicator:checked:hover {
       <string>Creature Labels</string>
      </property>
      <addaction name="actionUseCreatureResRef"/>
+     <addaction name="separator"/>
      <addaction name="actionUseCreatureName"/>
      <addaction name="actionUseCreatureTag"/>
     </widget>
@@ -782,12 +783,12 @@ QCheckBox::indicator:checked:hover {
   </action>
   <action name="actionUseCreatureName">
    <property name="text">
-    <string>Name</string>
+    <string>Name (UTC)</string>
    </property>
   </action>
   <action name="actionUseCreatureTag">
    <property name="text">
-    <string>Tag</string>
+    <string>Tag (UTC)</string>
    </property>
   </action>
   <action name="actionUseDoorResName">
@@ -890,7 +891,7 @@ QCheckBox::indicator:checked:hover {
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../../../resources/resources.qrc"/>
+  <include location="../../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

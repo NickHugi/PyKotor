@@ -13,6 +13,7 @@ class SettingsDialog(QDialog):
 
         self.pageDict = {
             "Installations": self.ui.installationsPage,
+            "GIT Editor": self.ui.gitEditorPage,
             "Misc": self.ui.miscPage,
             "Module Designer": self.ui.moduleDesignerPage
         }
@@ -25,5 +26,6 @@ class SettingsDialog(QDialog):
         super().accept()
 
         self.ui.miscWidget.save()
+        self.ui.gitEditorWidget.save()
         self.ui.moduleDesignerWidget.save()
         self.ui.installationsWidget.save()

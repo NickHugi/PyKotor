@@ -22,24 +22,24 @@ class Ui_MainWindow(object):
         self.splitter = QtWidgets.QSplitter(self.centralwidget)
         self.splitter.setOrientation(QtCore.Qt.Horizontal)
         self.splitter.setObjectName("splitter")
-        self.widget = QtWidgets.QWidget(self.splitter)
-        self.widget.setObjectName("widget")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.widget)
+        self.layoutWidget = QtWidgets.QWidget(self.splitter)
+        self.layoutWidget.setObjectName("layoutWidget")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.layoutWidget)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.filterEdit = QtWidgets.QLineEdit(self.widget)
+        self.filterEdit = QtWidgets.QLineEdit(self.layoutWidget)
         self.filterEdit.setText("")
         self.filterEdit.setMaxLength(16)
         self.filterEdit.setObjectName("filterEdit")
         self.verticalLayout.addWidget(self.filterEdit)
-        self.listWidget = QtWidgets.QListWidget(self.widget)
+        self.listWidget = QtWidgets.QListWidget(self.layoutWidget)
         self.listWidget.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.listWidget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.listWidget.setObjectName("listWidget")
         self.verticalLayout.addWidget(self.listWidget)
-        self.widget1 = QtWidgets.QWidget(self.splitter)
-        self.widget1.setObjectName("widget1")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.widget1)
+        self.layoutWidget1 = QtWidgets.QWidget(self.splitter)
+        self.layoutWidget1.setObjectName("layoutWidget1")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.layoutWidget1)
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
@@ -47,7 +47,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem)
-        self.lockInstancesCheck = QtWidgets.QCheckBox(self.widget1)
+        self.lockInstancesCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.lockInstancesCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.lockInstancesCheck.setStyleSheet("QCheckbox {\n"
 "    spacing: 0px;\n"
@@ -80,14 +80,14 @@ class Ui_MainWindow(object):
         self.lockInstancesCheck.setChecked(False)
         self.lockInstancesCheck.setObjectName("lockInstancesCheck")
         self.horizontalLayout_2.addWidget(self.lockInstancesCheck)
-        self.label = QtWidgets.QLabel(self.widget1)
+        self.label = QtWidgets.QLabel(self.layoutWidget1)
         self.label.setMaximumSize(QtCore.QSize(16777215, 28))
         font = QtGui.QFont()
         font.setPointSize(12)
         self.label.setFont(font)
         self.label.setObjectName("label")
         self.horizontalLayout_2.addWidget(self.label)
-        self.viewCreatureCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewCreatureCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewCreatureCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewCreatureCheck.setStyleSheet("QCheckbox {\n"
 "    spacing: 0px;\n"
@@ -120,7 +120,7 @@ class Ui_MainWindow(object):
         self.viewCreatureCheck.setChecked(True)
         self.viewCreatureCheck.setObjectName("viewCreatureCheck")
         self.horizontalLayout_2.addWidget(self.viewCreatureCheck)
-        self.viewDoorCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewDoorCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewDoorCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewDoorCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/door.png);\n"
@@ -149,7 +149,7 @@ class Ui_MainWindow(object):
         self.viewDoorCheck.setChecked(True)
         self.viewDoorCheck.setObjectName("viewDoorCheck")
         self.horizontalLayout_2.addWidget(self.viewDoorCheck)
-        self.viewPlaceableCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewPlaceableCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewPlaceableCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewPlaceableCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/placeable.png);\n"
@@ -178,7 +178,7 @@ class Ui_MainWindow(object):
         self.viewPlaceableCheck.setChecked(True)
         self.viewPlaceableCheck.setObjectName("viewPlaceableCheck")
         self.horizontalLayout_2.addWidget(self.viewPlaceableCheck)
-        self.viewStoreCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewStoreCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewStoreCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewStoreCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/merchant.png);\n"
@@ -207,7 +207,7 @@ class Ui_MainWindow(object):
         self.viewStoreCheck.setChecked(True)
         self.viewStoreCheck.setObjectName("viewStoreCheck")
         self.horizontalLayout_2.addWidget(self.viewStoreCheck)
-        self.viewSoundCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewSoundCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewSoundCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewSoundCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/sound.png);\n"
@@ -236,7 +236,7 @@ class Ui_MainWindow(object):
         self.viewSoundCheck.setChecked(True)
         self.viewSoundCheck.setObjectName("viewSoundCheck")
         self.horizontalLayout_2.addWidget(self.viewSoundCheck)
-        self.viewWaypointCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewWaypointCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewWaypointCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewWaypointCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/waypoint.png);\n"
@@ -265,7 +265,7 @@ class Ui_MainWindow(object):
         self.viewWaypointCheck.setChecked(True)
         self.viewWaypointCheck.setObjectName("viewWaypointCheck")
         self.horizontalLayout_2.addWidget(self.viewWaypointCheck)
-        self.viewCameraCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewCameraCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewCameraCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewCameraCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/camera.png);\n"
@@ -294,7 +294,7 @@ class Ui_MainWindow(object):
         self.viewCameraCheck.setChecked(True)
         self.viewCameraCheck.setObjectName("viewCameraCheck")
         self.horizontalLayout_2.addWidget(self.viewCameraCheck)
-        self.viewEncounterCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewEncounterCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewEncounterCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewEncounterCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/encounter.png);\n"
@@ -323,7 +323,7 @@ class Ui_MainWindow(object):
         self.viewEncounterCheck.setChecked(True)
         self.viewEncounterCheck.setObjectName("viewEncounterCheck")
         self.horizontalLayout_2.addWidget(self.viewEncounterCheck)
-        self.viewTriggerCheck = QtWidgets.QCheckBox(self.widget1)
+        self.viewTriggerCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewTriggerCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewTriggerCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/trigger.png);\n"
@@ -353,7 +353,7 @@ class Ui_MainWindow(object):
         self.viewTriggerCheck.setObjectName("viewTriggerCheck")
         self.horizontalLayout_2.addWidget(self.viewTriggerCheck)
         self.verticalLayout_2.addLayout(self.horizontalLayout_2)
-        self.renderArea = WalkmeshRenderer(self.widget1)
+        self.renderArea = WalkmeshRenderer(self.layoutWidget1)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -497,6 +497,7 @@ class Ui_MainWindow(object):
         self.menuDoorLabels.addAction(self.actionUseDoorResName)
         self.menuDoorLabels.addAction(self.actionUseDoorResTag)
         self.menuCreatureLabels.addAction(self.actionUseCreatureResRef)
+        self.menuCreatureLabels.addSeparator()
         self.menuCreatureLabels.addAction(self.actionUseCreatureName)
         self.menuCreatureLabels.addAction(self.actionUseCreatureTag)
         self.menuPlaceableLabels.addAction(self.actionUsePlaceableResRef)
@@ -578,8 +579,8 @@ class Ui_MainWindow(object):
         self.actionUseDoorResRef.setText(_translate("MainWindow", "ResRef"))
         self.actionUseDoorTag.setText(_translate("MainWindow", "Tag"))
         self.actionUseCreatureResRef.setText(_translate("MainWindow", "ResRef"))
-        self.actionUseCreatureName.setText(_translate("MainWindow", "Name"))
-        self.actionUseCreatureTag.setText(_translate("MainWindow", "Tag"))
+        self.actionUseCreatureName.setText(_translate("MainWindow", "Name (UTC)"))
+        self.actionUseCreatureTag.setText(_translate("MainWindow", "Tag (UTC)"))
         self.actionUseDoorResName.setText(_translate("MainWindow", "Name (UTD)"))
         self.actionUseDoorResTag.setText(_translate("MainWindow", "Tag (UTD)"))
         self.actionUseWaypointResName.setText(_translate("MainWindow", "Name (UTW)"))

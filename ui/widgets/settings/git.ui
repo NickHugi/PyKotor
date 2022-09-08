@@ -6,237 +6,516 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>369</width>
-    <height>324</height>
+    <width>348</width>
+    <height>463</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Creature Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="comboBox">
-       <item>
-        <property name="text">
-         <string>Name (UTC)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTC)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Door Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Placeable Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>Store Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Sound Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>Camera Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_7">
-       <property name="text">
-        <string>Encounter Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label_8">
-       <property name="text">
-        <string>Trigger Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label_9">
-       <property name="text">
-        <string>Waypoint Label</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QComboBox" name="comboBox_2">
-       <item>
-        <property name="text">
-         <string>Tag (GIT)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Name (UTD)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTD)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QComboBox" name="comboBox_3">
-       <item>
-        <property name="text">
-         <string>Name (UTP)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTP)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QComboBox" name="comboBox_4">
-       <item>
-        <property name="text">
-         <string>Name (UTM)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTM)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QComboBox" name="comboBox_5">
-       <item>
-        <property name="text">
-         <string>Name (UTS)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTS)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="5" column="1">
-      <widget class="QComboBox" name="comboBox_6">
-       <item>
-        <property name="text">
-         <string>Name (GIT)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (GIT)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Name (UTW)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTW)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="6" column="1">
-      <widget class="QComboBox" name="comboBox_7">
-       <item>
-        <property name="text">
-         <string>Struct ID</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="7" column="1">
-      <widget class="QComboBox" name="comboBox_8">
-       <item>
-        <property name="text">
-         <string>Name (UTE)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTE)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="8" column="1">
-      <widget class="QComboBox" name="comboBox_9">
-       <item>
-        <property name="text">
-         <string>Tag (GIT)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Name (UTT)</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Tag (UTT)</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>22</height>
-      </size>
-     </property>
-    </spacer>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>311</width>
+        <height>567</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>Walkmesh Colours</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <layout class="QFormLayout" name="formLayout_2">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Undefined:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="ColorEdit" name="undefinedColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_11">
+              <property name="text">
+               <string>Dirt:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="14" column="0">
+             <widget class="QLabel" name="label_12">
+              <property name="text">
+               <string>Leaves:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_13">
+              <property name="text">
+               <string>Mud:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="12" column="0">
+             <widget class="QLabel" name="label_14">
+              <property name="text">
+               <string>Swamp:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="0">
+             <widget class="QLabel" name="label_15">
+              <property name="text">
+               <string>Puddles:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="10" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>Metal:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_17">
+              <property name="text">
+               <string>Carpet:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="0">
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>Transparent:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_19">
+              <property name="text">
+               <string>Non-Walk:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_20">
+              <property name="text">
+               <string>Water:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_21">
+              <property name="text">
+               <string>Wood:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_22">
+              <property name="text">
+               <string>Stone:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_23">
+              <property name="text">
+               <string>Grass:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_24">
+              <property name="text">
+               <string>Obscuring:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="15" column="0">
+             <widget class="QLabel" name="label_25">
+              <property name="text">
+               <string>Lava:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="16" column="0">
+             <widget class="QLabel" name="label_26">
+              <property name="text">
+               <string>Bottomless Pit:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="17" column="0">
+             <widget class="QLabel" name="label_27">
+              <property name="text">
+               <string>Deep Water:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="18" column="0">
+             <widget class="QLabel" name="label_28">
+              <property name="text">
+               <string>Door:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="19" column="0">
+             <widget class="QLabel" name="label_29">
+              <property name="text">
+               <string>Non-Walk Grass:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="ColorEdit" name="dirtColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="ColorEdit" name="obscuringColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="ColorEdit" name="grassColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="ColorEdit" name="stoneColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="ColorEdit" name="woodColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="ColorEdit" name="waterColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="ColorEdit" name="nonWalkColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <widget class="ColorEdit" name="transparentColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="ColorEdit" name="carpetColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="10" column="1">
+             <widget class="ColorEdit" name="metalColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="1">
+             <widget class="ColorEdit" name="puddlesColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="12" column="1">
+             <widget class="ColorEdit" name="swampColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="1">
+             <widget class="ColorEdit" name="mudColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="14" column="1">
+             <widget class="ColorEdit" name="leavesColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="15" column="1">
+             <widget class="ColorEdit" name="lavaColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="16" column="1">
+             <widget class="ColorEdit" name="bottomlessPitColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="17" column="1">
+             <widget class="ColorEdit" name="deepWaterColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="18" column="1">
+             <widget class="ColorEdit" name="doorColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="19" column="1">
+             <widget class="ColorEdit" name="nonWalkGrassColorEdit" native="true">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ColorEdit</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.color_edit</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
