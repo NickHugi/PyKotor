@@ -121,6 +121,7 @@ class ToolWindow(QMainWindow):
         self.ui.overrideWidget.requestOpenResource.connect(self.onOpenResources)
 
         self.ui.texturesWidget.sectionChanged.connect(self.onTexturesChanged)
+        self.ui.texturesWidget.requestOpenResource.connect(self.onOpenResources)
 
         self.ui.extractButton.clicked.connect(lambda: self.onExtractResources(self.getActiveResourceWidget().selectedResources()))
         self.ui.openButton.clicked.connect(lambda: self.onOpenResources(self.getActiveResourceWidget().selectedResources()))
@@ -427,7 +428,7 @@ class ToolWindow(QMainWindow):
         elif self.ui.resourceTabs.currentWidget() is self.ui.overrideTab:
             return self.ui.overrideWidget
         elif self.ui.resourceTabs.currentWidget() is self.ui.texturesTab:
-            raise Exception
+            return self.ui.texturesWidget
 
     def refreshModuleList(self, reload: bool = True) -> None:
         """

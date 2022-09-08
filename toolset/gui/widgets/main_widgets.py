@@ -264,6 +264,7 @@ class TextureList(MainWindowList):
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
         self.ui.sectionCombo.currentIndexChanged.connect(self.onSectionChanged)
         self.ui.resourceList.verticalScrollBar().valueChanged.connect(self.onTextureListScrolled)
+        self.ui.resourceList.doubleClicked.connect(self.onResourceDoubleClicked)
         self.iconUpdate.connect(self.onIconUpdate)
 
     def doTerminations(self) -> None:
@@ -285,6 +286,7 @@ class TextureList(MainWindowList):
             item = QStandardItem(blankIcon, resource.resname())
             item.setToolTip(resource.resname())
             item.setData(False, QtCore.Qt.UserRole)
+            item.setData(resource, QtCore.Qt.UserRole + 1)
             self.texturesModel.appendRow(item)
 
         if self._installation is not None:
@@ -296,7 +298,12 @@ class TextureList(MainWindowList):
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
     def selectedResources(self) -> List[FileResource]:
-        return self.modulesModel.resourceFromIndexes(self.ui.resourceList.selectedIndexes())
+        resources = []
+        for proxyIndex in self.ui.resourceList.selectedIndexes():
+            sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)
+            item = self.texturesModel.item(sourceIndex.row())
+            resources.append(item.data(QtCore.Qt.UserRole + 1))
+        return resources
 
     def visibleItems(self) -> List[QStandardItem]:
         if self.texturesModel.rowCount() == 0:
@@ -349,7 +356,7 @@ class TextureList(MainWindowList):
             sleep(0.1)
 
     def onFilterStringUpdated(self) -> None:
-        self.modulesModel.proxyModel().setFilterFixedString(self.ui.searchEdit.text())
+        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
 
     def onSectionChanged(self) -> None:
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
@@ -372,6 +379,9 @@ class TextureList(MainWindowList):
     def onIconUpdate(self, item, icon):
         with suppress(RuntimeError):
             item.setIcon(icon)
+
+    def onResourceDoubleClicked(self) -> None:
+        self.requestOpenResource.emit(self.selectedResources(), None)
 
 
 class TextureListConsumer(multiprocessing.Process):
