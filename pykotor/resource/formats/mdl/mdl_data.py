@@ -187,7 +187,7 @@ class MDLNode:
         self.name: str = ""
         self.node_id: int = -1
         self.position: Vector3 = Vector3.from_null()
-        self.orientation: Vector4 = Vector4.from_null()
+        self.orientation: Vector4 = Vector4(0, 0, 0, 1)
 
         self.light: Optional[MDLLight] = None
         self.emitter: Optional[MDLEmitter] = None
@@ -333,6 +333,13 @@ class MDLMesh:
         self.texture_2: str = ""
         self.saber_unknowns: Tuple[int, int, int, int, int, int, int, int] = (3, 0, 0, 0, 0, 0, 0, 0)
         self.animate_uv: bool = False
+
+        self.radius: float = 0.0
+        self.bb_min: Vector3 = Vector3.from_null()
+        self.bb_max: Vector3 = Vector3.from_null()
+        self.average: Vector3 = Vector3.from_null()
+        self.area: float = 0.0
+
         self.uv_direction_x: float = 0.0
         self.uv_direction_y: float = 0.0
         self.uv_jitter: float = 0.0
@@ -356,6 +363,11 @@ class MDLMesh:
         self.dirt_texture: int = 0
         self.dirt_coordinate_space: int = 0
         self.hide_in_hologram: bool = False
+
+    def gen_normals(
+            self
+    ):
+        ...
 
 
 class MDLSkin:

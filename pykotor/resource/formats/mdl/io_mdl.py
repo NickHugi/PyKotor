@@ -549,7 +549,10 @@ class _NodeHeader:
         self.offset_to_root = reader.read_uint32()
         self.offset_to_parent = reader.read_uint32()
         self.position = reader.read_vector3()
-        self.orientation = reader.read_vector4()
+        self.orientation.w = reader.read_single()
+        self.orientation.x = reader.read_single()
+        self.orientation.y = reader.read_single()
+        self.orientation.z = reader.read_single()
         self.offset_to_children = reader.read_uint32()
         self.children_count = reader.read_uint32()
         self.children_count2 = reader.read_uint32()
@@ -572,7 +575,10 @@ class _NodeHeader:
         writer.write_uint32(self.offset_to_root)
         writer.write_uint32(self.offset_to_parent)
         writer.write_vector3(self.position)
-        writer.write_vector4(self.orientation)
+        writer.write_single(self.orientation.w)
+        writer.write_single(self.orientation.x)
+        writer.write_single(self.orientation.y)
+        writer.write_single(self.orientation.z)
         writer.write_uint32(self.offset_to_children)
         writer.write_uint32(self.children_count)
         writer.write_uint32(self.children_count2)
@@ -637,7 +643,7 @@ class _TrimeshHeader:
         self.offset_to_counters: int = 0
         self.counters_count: int = 0
         self.counters_count2: int = 0
-        self.unknown1: bytes = b'\x00' * 12
+        self.unknown1: bytes = b'\xFF\xFF\xFF\xFF' + b'\xFF\xFF\xFF\xFF' + b'\x00\x00\x00\x00'
         self.saber_unknowns: bytes = b'\x00' * 8
         self.unknown2: int = 0
         self.uv_direction: Vector2 = Vector2.from_null()
@@ -647,17 +653,17 @@ class _TrimeshHeader:
         self.mdx_data_bitmap: int = 0
         self.mdx_vertex_offset: int = 0
         self.mdx_normal_offset: int = 0
-        self.mdx_color_offset: int = 0
+        self.mdx_color_offset: int = 0xFFFFFFFF
         self.mdx_texture1_offset: int = 0
         self.mdx_texture2_offset: int = 0
-        self.unknown3: int = 0
-        self.unknown4: int = 0
-        self.unknown5: int = 0
-        self.unknown6: int = 0
-        self.unknown7: int = 0
-        self.unknown8: int = 0
+        self.unknown3: int = 0xFFFFFFFF
+        self.unknown4: int = 0xFFFFFFFF
+        self.unknown5: int = 0xFFFFFFFF
+        self.unknown6: int = 0xFFFFFFFF
+        self.unknown7: int = 0xFFFFFFFF
+        self.unknown8: int = 0xFFFFFFFF
         self.vertex_count: int = 0
-        self.texture_count: int = 0
+        self.texture_count: int = 1
         self.has_lightmap: int = 0
         self.rotate_texture: int = 0
         self.background: int = 0
@@ -1308,6 +1314,12 @@ class MDLBinaryReader:
             node.mesh.ambient = Color.from_bgr_vector3(bin_node.trimesh.ambient)
             node.mesh.texture_1 = bin_node.trimesh.texture1
             node.mesh.texture_2 = bin_node.trimesh.texture2
+            node.mesh.bb_min = bin_node.trimesh.bounding_box_min
+            node.mesh.bb_max = bin_node.trimesh.bounding_box_max
+            node.mesh.radius = bin_node.trimesh.radius
+            node.mesh.average = bin_node.trimesh.average
+            node.mesh.area = bin_node.trimesh.total_area
+            node.mesh.saber_unknowns = bin_node.trimesh.saber_unknowns
 
             node.mesh.vertex_positions = bin_node.trimesh.vertices
 
@@ -1459,8 +1471,11 @@ class MDLBinaryWriter:
             target_ext: TARGET_TYPES
     ):
         self._mdl = mdl
-        self._writer = BinaryWriter.to_auto(target)
-        self._writer_ext = None if target_ext is None else BinaryWriter.to_auto(target_ext)
+
+        self._target = target
+        self._target_ext = target_ext
+        self._writer = BinaryWriter.to_bytearray()
+        self._writer_ext = BinaryWriter.to_bytearray()
 
         self.game: Game = Game.K1
 
@@ -1489,10 +1504,6 @@ class MDLBinaryWriter:
         self._file_header = _ModelHeader()
 
         self._update_all_data()
-
-        for i, bin_node in enumerate(self._bin_nodes):
-            if bin_node.trimesh:
-                self._update_mdx(bin_node, self._mdl_nodes[i])
 
         self._calc_top_offsets()
         self._calc_inner_offsets()
@@ -1525,8 +1536,37 @@ class MDLBinaryWriter:
         bin_node.header.name_id = self._names.index(mdl_node.name)
         bin_node.header.node_id = self._get_node_id(bin_node)
 
+        # Determine the appropriate function pointer values to write
+        if self.game == Game.K1:
+            if mdl_node.skin:
+                fp0 = _TrimeshHeader.K1_SKIN_FUNCTION_POINTER0
+                fp1 = _TrimeshHeader.K1_SKIN_FUNCTION_POINTER1
+            elif mdl_node.dangly:
+                fp0 = _TrimeshHeader.K1_DANGLY_FUNCTION_POINTER0
+                fp1 = _TrimeshHeader.K1_DANGLY_FUNCTION_POINTER1
+            else:
+                fp0 = _TrimeshHeader.K1_FUNCTION_POINTER0
+                fp1 = _TrimeshHeader.K1_FUNCTION_POINTER1
+        else:
+            if mdl_node.skin:
+                fp0 = _TrimeshHeader.K2_SKIN_FUNCTION_POINTER0
+                fp1 = _TrimeshHeader.K2_SKIN_FUNCTION_POINTER1
+            elif mdl_node.dangly:
+                fp0 = _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER0
+                fp1 = _TrimeshHeader.K2_DANGLY_FUNCTION_POINTER1
+            else:
+                fp0 = _TrimeshHeader.K2_FUNCTION_POINTER0
+                fp1 = _TrimeshHeader.K2_FUNCTION_POINTER1
+
         if mdl_node.mesh:
             bin_node.trimesh = _TrimeshHeader()
+            bin_node.trimesh.function_pointer0 = fp0
+            bin_node.trimesh.function_pointer1 = fp1
+            bin_node.trimesh.average = mdl_node.mesh.average
+            bin_node.trimesh.radius = mdl_node.mesh.radius
+            bin_node.trimesh.bounding_box_max = mdl_node.mesh.bb_max
+            bin_node.trimesh.bounding_box_min = mdl_node.mesh.bb_min
+            bin_node.trimesh.total_area = mdl_node.mesh.area
             bin_node.trimesh.texture1 = mdl_node.mesh.texture_1
             bin_node.trimesh.texture2 = mdl_node.mesh.texture_2
             bin_node.trimesh.diffuse = mdl_node.mesh.diffuse.bgr_vector3()
@@ -1546,6 +1586,7 @@ class MDLBinaryWriter:
             bin_node.trimesh.render = mdl_node.mesh.render
             bin_node.trimesh.dirt_enabled = mdl_node.mesh.dirt_enabled
             bin_node.trimesh.dirt_texture = mdl_node.mesh.dirt_texture
+            bin_node.trimesh.saber_unknowns = mdl_node.mesh.saber_unknowns
             # bin_node.trimesh.dirt_worldspace = mdl_node.mesh.dirt_worldspace
             # bin_node.trimesh.hologram = mdl_node.mesh.hide_in_hologram
             # bin_node.trimesh.tangent_space = mdl_node.mesh.tangent_space
@@ -1554,7 +1595,7 @@ class MDLBinaryWriter:
             bin_node.trimesh.vertex_count = len(mdl_node.mesh.vertex_positions)
             bin_node.trimesh.vertices = mdl_node.mesh.vertex_positions
 
-            bin_node.trimesh.indices_counts = [bin_node.trimesh.vertex_count]
+            bin_node.trimesh.indices_counts = [len(mdl_node.mesh.faces)*3]
             bin_node.trimesh.indices_counts_count = bin_node.trimesh.indices_counts_count2 = 1
 
             bin_node.trimesh.indices_offsets = [0]  # Placeholder to be updated with offsets - do not remove line
@@ -1599,7 +1640,7 @@ class MDLBinaryWriter:
                 bin_node.w_controller_data.extend(row.data)
 
         bin_node.header.controller_count = bin_node.header.controller_count2 = len(mdl_node.controllers)
-        bin_node.header.controller_data_length = bin_node.header.controller_data_length = len(
+        bin_node.header.controller_data_length = bin_node.header.controller_data_length2 = len(
             bin_node.w_controller_data)
 
     def _update_anim(
@@ -1646,7 +1687,7 @@ class MDLBinaryWriter:
         bin_node.trimesh.mdx_vertex_offset = 0xFFFFFFFF
         bin_node.trimesh.mdx_normal_offset = 0xFFFFFFFF
         bin_node.trimesh.mdx_texture1_offset = 0xFFFFFFFF
-        bin_node.trimesh.mdx_texture1_offset = 0xFFFFFFFF
+        bin_node.trimesh.mdx_texture2_offset = 0xFFFFFFFF
         bin_node.trimesh.mdx_data_bitmap = 0
 
         suboffset = 0
@@ -1685,7 +1726,7 @@ class MDLBinaryWriter:
 
         # Why does the mdl/mdx format have this? I have no idea.
         if mdl_node.mesh.vertex_positions:
-            self._writer_ext.write_vector3(Vector3.from_null())
+            self._writer_ext.write_vector3(Vector3(10000000, 10000000, 10000000))
         if mdl_node.mesh.vertex_normals:
             self._writer_ext.write_vector3(Vector3.from_null())
         if mdl_node.mesh.vertex_uv1:
@@ -1758,8 +1799,8 @@ class MDLBinaryWriter:
         bin_node.header.offset_to_children = node_offset + bin_node.children_offsets_offset(self.game)
         bin_node.header.offset_to_controllers = node_offset + bin_node.controllers_offset(self.game)
         bin_node.header.offset_to_controller_data = node_offset + bin_node.controller_data_offset(self.game)
-        bin_node.header.offset_to_root = self._node_offsets[0] if index != 0 else 0
-        bin_node.header.offset_to_parent = 0
+        bin_node.header.offset_to_root = 0
+        bin_node.header.offset_to_parent = self._node_offsets[0] if index != 0 else 0
 
         if bin_node.trimesh:
             bin_node.trimesh.offset_to_counters = node_offset + bin_node.inverted_counters_offset(self.game)
@@ -1828,11 +1869,17 @@ class MDLBinaryWriter:
     def _write_all(
             self
     ):
+        for i, bin_node in enumerate(self._bin_nodes):
+            if bin_node.trimesh:
+                self._update_mdx(bin_node, self._mdl_nodes[i])
+
         self._file_header.geometry.function_pointer0 = _GeometryHeader.K1_FUNCTION_POINTER0
         self._file_header.geometry.function_pointer1 = _GeometryHeader.K1_FUNCTION_POINTER1
         self._file_header.geometry.model_name = self._mdl.name
         self._file_header.geometry.node_count = len(self._mdl_nodes)  # TODO: need to include supermodel in count
         self._file_header.geometry.geometry_type = 2
+        self._file_header.offset_to_super_root = self._file_header.geometry.root_node_offset
+        self._file_header.mdx_size = self._writer_ext.size()
 
         # TODO self._file_header.model_type = 0
         # TODO self._file_header.fog = 0
@@ -1846,9 +1893,6 @@ class MDLBinaryWriter:
         # TODO self._file_header.mdx_offset
         self._file_header.name_offsets_count = self._file_header.name_offsets_count2 = len(self._names)
 
-        self._writer.write_uint32(0)
-        self._writer.write_uint32(0)
-        self._writer.write_uint32(0)
         self._file_header.write(self._writer)
 
         for name_offset in self._name_offsets:
@@ -1861,3 +1905,14 @@ class MDLBinaryWriter:
 
         [bin_anim.write(self._writer, self.game) for bin_anim in self._bin_anims]
         [bin_node.write(self._writer, self.game) for bin_node in self._bin_nodes]
+
+        # Write to MDL
+        mdl_writer = BinaryWriter.to_auto(self._target)
+        mdl_writer.write_uint32(0)
+        mdl_writer.write_uint32(self._writer.size())
+        mdl_writer.write_uint32(self._writer_ext.size())
+        mdl_writer.write_bytes(self._writer.data())
+
+        # Write to MDX
+        if self._target_ext is not None:
+            BinaryWriter.to_auto(self._target_ext).write_bytes(self._writer_ext.data())
