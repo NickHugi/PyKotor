@@ -240,15 +240,19 @@ class GITCamera(GITInstance):
             self,
             x: float = 0.0,
             y: float = 0.0,
-            z: float = 0.0
+            z: float = 0.0,
+            yaw: float = 0.0,
+            pitch: float = 0.0,
+            roll: float = 0.0,
+            camera_id: int = 0
     ):
         super().__init__(x, y, z)
-        self.camera_id = 0
-        self.fov: float = 0
+        self.camera_id = camera_id
+        self.fov: float = 45
         self.height: float = 0.0
         self.mic_range: float = 0.0
         self.pitch: float = 0.0
-        self.orientation: Vector4 = Vector4.from_null()
+        self.orientation: Vector4 = Vector4.from_euler(math.pi/2-yaw, roll, math.pi-pitch)
 
     def move(
             self,
