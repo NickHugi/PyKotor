@@ -85,7 +85,7 @@ class GITEditor(Editor):
 
         def intColorToQColor(intvalue):
             color = Color.from_rgba_integer(intvalue)
-            return QColor(color.r*255, color.g*255, color.b*255, color.a*255)
+            return QColor(int(color.r*255), int(color.g*255), int(color.b*255), int(color.a*255))
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
@@ -546,9 +546,9 @@ class _InstanceMode(_Mode):
         self._ui.listWidget.blockSignals(False)
 
     def removeSelected(self) -> None:
-        for instance in self._ui.renderArea.selectedInstances():
+        for instance in self._ui.renderArea.instanceSelection.all():
             self._editor.git().remove(instance)
-        self._ui.renderArea.clearSelectedInstances()
+        self._ui.renderArea.instanceSelection.clear()
         self.rebuildInstanceList()
 
     def addInstance(self, instance: GITInstance):
@@ -556,7 +556,7 @@ class _InstanceMode(_Mode):
         self.rebuildInstanceList()
 
     def editSelectedInstance(self) -> None:
-        instance = self._ui.renderArea.selectedInstances()[0]
+        instance = self._ui.renderArea.instanceSelection.get(0)
         openInstanceDialog(self._editor, instance, self._installation)
         self.rebuildInstanceList()
 
@@ -579,14 +579,14 @@ class _InstanceMode(_Mode):
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             self._ui.renderArea.camera.nudgeRotation(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys and not self._ui.lockInstancesCheck.isChecked():
-            for instance in self._ui.renderArea.selectedInstances():
+            for instance in self._ui.renderArea.instanceSelection.all():
                 instance.move(worldDelta.x, worldDelta.y, 0.0)
                 # Snap the instance on top of the walkmesh, if there is no walkmesh underneath it will snap Z to 0
                 getZ = self._ui.renderArea.getZCoord(instance.position.x, instance.position.y)
                 instance.position.z = getZ if getZ != 0.0 else instance.position.z
         elif QtCore.Qt.MiddleButton in buttons:
-            if self._ui.renderArea.selectedInstances():
-                instance = self._ui.renderArea.selectedInstances()[0]
+            if not self._ui.renderArea.instanceSelection.isEmpty():
+                instance = self._ui.renderArea.instanceSelection.get(0)
                 rotation = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
                 instance.rotate(-instance.yaw() + rotation, 0, 0)
 
@@ -594,7 +594,7 @@ class _InstanceMode(_Mode):
 
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         underMouse = self._ui.renderArea.instancesUnderMouse()
-        currentSelecton = self._ui.renderArea.selectedInstances()
+        currentSelection = self._ui.renderArea.instanceSelection.all()
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Alt in keys:
             if self._ui.renderArea.instancesUnderMouse():
@@ -605,13 +605,13 @@ class _InstanceMode(_Mode):
                 self.selectInstanceItem(original)
         elif QtCore.Qt.LeftButton in buttons:
             # Do not change the selection if the selected instance if its still underneath the mouse
-            if currentSelecton and currentSelecton[0] in underMouse:
+            if currentSelection and currentSelection[0] in underMouse:
                 return
 
-            self._ui.renderArea.clearSelectedInstances()
+            self._ui.renderArea.instanceSelection.clear()
             if self._ui.renderArea.instancesUnderMouse():
                 instance = self._ui.renderArea.instancesUnderMouse()[0]
-                self._ui.renderArea.selectInstances([instance])
+                self._ui.renderArea.instanceSelection.select([instance])
                 self.selectInstanceItem(instance)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
@@ -623,12 +623,12 @@ class _InstanceMode(_Mode):
         world = self._ui.renderArea.toWorldCoords(point.x(), point.y())
 
         # Show "Remove" action if instances are selected
-        if self._ui.renderArea.selectedInstances():
+        if not self._ui.renderArea.instanceSelection.isEmpty():
             menu.addAction("Remove").triggered.connect(self.removeSelected)
 
         # Show "Edit Instance"+"Edit Geometry" action if a single instance is selected
-        if len(self._ui.renderArea.selectedInstances()) == 1:
-            instance = self._ui.renderArea.selectedInstances()[0]
+        if self._ui.renderArea.instanceSelection.count() == 1:
+            instance = self._ui.renderArea.instanceSelection.get(0)
 
             menu.addAction("Edit Instance").triggered.connect(self.editSelectedInstance)
 
@@ -641,7 +641,7 @@ class _InstanceMode(_Mode):
                 menu.addAction("Edit Geometry").triggered.connect(lambda: self._editor.setMode(_GeometryMode(self._editor, self._installation)))
 
         # If no instances are selected then show the actions to add new instances
-        if len(self._ui.renderArea.selectedInstances()) == 0:
+        if self._ui.renderArea.instanceSelection.count() == 0:
             menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y)))
             menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y)))
             menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(world.x, world.y)))
@@ -713,7 +713,7 @@ class _GeometryMode(_Mode):
         self._ui.renderArea.hideGeomPoints = False
 
     def removeSelected(self) -> None:
-        geomPoints = self._ui.renderArea.selectedGeomPoints()
+        geomPoints = self._ui.renderArea.geometrySelection.all()
         for geomPoint in geomPoints:
             geomPoint.instance.geometry.remove(geomPoint.point)
 
@@ -721,7 +721,7 @@ class _GeometryMode(_Mode):
         screen = self._ui.renderArea.mapFromGlobal(self._editor.cursor().pos())
         world = self._ui.renderArea.toWorldCoords(screen.x(), screen.y())
 
-        instance = self._ui.renderArea.selectedInstances()[0]
+        instance = self._ui.renderArea.instanceSelection.get(0)
         point = world - instance.position
         instance.geometry.points.append(point)
 
@@ -735,7 +735,7 @@ class _GeometryMode(_Mode):
         pointIndex = ""
         if self._ui.renderArea.geomPointsUnderMouse():
             with suppress(ValueError):
-                instance = self._ui.renderArea.selectedInstances()[0]
+                instance = self._ui.renderArea.instanceSelection.get(0)
                 pointIndex = instance.geometry.points.index(self._ui.renderArea.geomPointsUnderMouse()[0].point)
 
         statusFormat = "Mode: Geometry Mode, X: {:.2f}, Y: {:.2f}, Z: {:.2f}, Point: {}"
@@ -753,8 +753,8 @@ class _GeometryMode(_Mode):
             self._ui.renderArea.camera.nudgePosition(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
             self._ui.renderArea.camera.nudgeRotation(delta.x / 50)
-        elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys and self._ui.renderArea.selectedGeomPoints():
-            instance, point = self._ui.renderArea.selectedGeomPoints()[0]
+        elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys and self._ui.renderArea.geometrySelection.all():
+            instance, point = self._ui.renderArea.geometrySelection.get(0)
             point.x += worldDelta.x
             point.y += worldDelta.y
             point.z = self._ui.renderArea.toWorldCoords(instance.position.x, instance.position.y).z
@@ -764,9 +764,9 @@ class _GeometryMode(_Mode):
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self._ui.renderArea.geomPointsUnderMouse():
             point = self._ui.renderArea.geomPointsUnderMouse()[0]
-            self._ui.renderArea.selectGeomPoint(point)
+            self._ui.renderArea.geometrySelection.select([point])
         else:
-            self._ui.renderArea.clearSelectedGeomPoints()
+            self._ui.renderArea.geometrySelection.clear()
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
@@ -775,13 +775,13 @@ class _GeometryMode(_Mode):
     def onContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self._editor)
 
-        if self._ui.renderArea.selectedGeomPoints():
+        if not self._ui.renderArea.geometrySelection.isEmpty():
             menu.addAction("Remove").triggered.connect(self.removeSelected)
 
-        if len(self._ui.renderArea.selectedGeomPoints()) == 1:
+        if self._ui.renderArea.geometrySelection.count() == 1:
             menu.addAction("Edit").triggered.connect(self.editSelectedPoint)
 
-        if len(self._ui.renderArea.selectedGeomPoints()) == 0:
+        if self._ui.renderArea.geometrySelection.count() == 0:
             menu.addAction("Insert").triggered.connect(self.insertPointAtMouse)
 
         menu.addSeparator()
