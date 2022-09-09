@@ -215,7 +215,7 @@ class ToolWindow(QMainWindow):
 
             if filepath:
                 loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
-                loader.addTask(lambda: self._extractResource(resources[0], filepath))
+                loader.addTask(lambda: self._extractResource(resources[0], filepath, loader))
                 loader.exec_()
 
         elif len(resources) >= 1:
