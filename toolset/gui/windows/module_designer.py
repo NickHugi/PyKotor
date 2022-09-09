@@ -3,12 +3,13 @@ from contextlib import suppress
 from typing import Set, Dict, Optional, List
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSettings
+from PyQt5.QtCore import QPoint, QSettings, QTimer
 from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
     QMessageBox, QCheckBox, QFileDialog
 
 from gui.dialogs.insert_instance import InsertInstanceDialog
+from gui.dialogs.select_module import SelectModuleDialog
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module, ModuleResource
@@ -59,6 +60,8 @@ class ModuleDesigner(QMainWindow):
         self._refreshWindowTitle()
         self.rebuildResourceTree()
         self.rebuildInstanceList()
+
+        QTimer().singleShot(33, self.openModule)
 
     def _setupSignals(self) -> None:
         self.ui.actionOpen.triggered.connect(self.openModule)
@@ -123,16 +126,12 @@ class ModuleDesigner(QMainWindow):
         self.setWindowTitle(title)
 
     def openModule(self) -> None:
-        filepath, _ = QFileDialog.getOpenFileName(self, "Select module to open", self._installation.module_path(),
-                                                  "Module File (*.mod *.rim *.erf)")
+        dialog = SelectModuleDialog(self, self._installation)
 
-        if filepath:
-            try:
-                self.unloadModule()
-                self._module = Module(Module.get_root(filepath), self._installation)
-                self.ui.mainRenderer.init(self._installation, self._module)
-            except ValueError as e:
-                QMessageBox(QMessageBox.Critical, "Failed to open module", str(e)).exec_()
+        if dialog.exec_():
+            self.unloadModule()
+            self._module = Module(dialog.module, self._installation)
+            self.ui.mainRenderer.init(self._installation, self._module)
 
     def unloadModule(self) -> None:
         self._module = None

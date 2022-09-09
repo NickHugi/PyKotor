@@ -251,7 +251,7 @@
      <x>0</x>
      <y>0</y>
      <width>512</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -283,7 +283,6 @@
     </widget>
     <addaction name="menuNew"/>
     <addaction name="openAction"/>
-    <addaction name="actionEditModule"/>
     <addaction name="separator"/>
     <addaction name="actionSettings"/>
     <addaction name="separator"/>
@@ -293,6 +292,8 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionModuleDesigner"/>
+    <addaction name="separator"/>
     <addaction name="actionEditTLK"/>
     <addaction name="actionEditJRL"/>
     <addaction name="separator"/>
@@ -646,6 +647,14 @@
   <action name="actionDiscordDeadlyStream">
    <property name="text">
     <string>Deadly Stream</string>
+   </property>
+  </action>
+  <action name="actionModuleDesigner">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Module Designer</string>
    </property>
   </action>
  </widget>

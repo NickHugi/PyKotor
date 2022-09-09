@@ -128,7 +128,6 @@ class ToolWindow(QMainWindow):
 
         self.ui.openAction.triggered.connect(self.openFromFile)
         self.ui.actionSettings.triggered.connect(self.openSettingsDialog)
-        self.ui.actionEditModule.triggered.connect(self.openModuleEditor)
         self.ui.actionExit.triggered.connect(self.close)
         self.ui.actionNewDLG.triggered.connect(lambda: DLGEditor(self, self.active).show())
         self.ui.actionNewNSS.triggered.connect(lambda: NSSEditor(self, self.active).show())
@@ -147,6 +146,7 @@ class ToolWindow(QMainWindow):
         self.ui.actionNewSSF.triggered.connect(lambda: SSFEditor(self, self.active).show())
         self.ui.actionCloneModule.triggered.connect(lambda: CloneModuleDialog(self, self.active, self.installations).exec_())
 
+        self.ui.actionModuleDesigner.triggered.connect(self.openModuleDesigner)
         self.ui.actionEditTLK.triggered.connect(self.openActiveTalktable)
         self.ui.actionEditJRL.triggered.connect(self.openActiveJournal)
         self.ui.actionFileSearch.triggered.connect(self.openFileSearchDialog)
@@ -311,12 +311,12 @@ class ToolWindow(QMainWindow):
         self.ui.actionEditTLK.setEnabled(self.active is not None)
         self.ui.actionEditJRL.setEnabled(self.active is not None)
         self.ui.actionFileSearch.setEnabled(self.active is not None)
-        self.ui.actionEditModule.setEnabled(self.active is not None)
+        self.ui.actionModuleDesigner.setEnabled(self.active is not None)
         self.ui.actionIndoorMapBuilder.setEnabled(self.active is not None)
 
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
-    def openModuleEditor(self) -> None:
+    def openModuleDesigner(self) -> None:
         designer = ModuleDesigner(None, self.active)
         addWindow(designer)
 
