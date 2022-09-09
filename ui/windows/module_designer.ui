@@ -447,6 +447,7 @@ QCheckBox::indicator:checked:hover {
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -487,6 +488,11 @@ QCheckBox::indicator:checked:hover {
     <string>Instructions</string>
    </property>
   </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -495,8 +501,6 @@ QCheckBox::indicator:checked:hover {
    <header location="global">toolset.gui.widgets.module_renderer</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="../../../resources/resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

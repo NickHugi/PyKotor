@@ -325,6 +325,9 @@ class Ui_MainWindow(object):
         self.actiona.setObjectName("actiona")
         self.actionInstructions = QtWidgets.QAction(MainWindow)
         self.actionInstructions.setObjectName("actionInstructions")
+        self.actionOpen = QtWidgets.QAction(MainWindow)
+        self.actionOpen.setObjectName("actionOpen")
+        self.menuFile.addAction(self.actionOpen)
         self.menuFile.addAction(self.actionSave)
         self.menuControls.addAction(self.actiona)
         self.menuView.addAction(self.menuControls.menuAction())
@@ -355,5 +358,5 @@ class Ui_MainWindow(object):
         self.actionSave.setText(_translate("MainWindow", "Save GIT"))
         self.actiona.setText(_translate("MainWindow", "Placeholdewr"))
         self.actionInstructions.setText(_translate("MainWindow", "Instructions"))
+        self.actionOpen.setText(_translate("MainWindow", "Open"))
 from toolset.gui.widgets.module_renderer import ModuleRenderer
-import resources_rc

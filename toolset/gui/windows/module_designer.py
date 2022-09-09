@@ -6,7 +6,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSettings
 from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
-    QMessageBox, QCheckBox
+    QMessageBox, QCheckBox, QFileDialog
 
 from gui.dialogs.insert_instance import InsertInstanceDialog
 from pykotor.common.geometry import Vector2
@@ -27,11 +27,11 @@ from utils.window import openResourceEditor
 
 
 class ModuleDesigner(QMainWindow):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation, module: Module):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation):
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
-        self._module: Module = module
+        self._module: Optional[Module] = None
         self.hideCreatures: bool = False
         self.hidePlaceables: bool = False
         self.hideDoors: bool = False
@@ -52,7 +52,6 @@ class ModuleDesigner(QMainWindow):
         self.customControls: Dict[str, DynamicModuleEditorControls] = {}
         self.activeControls: ModuleEditorControls = HolocronModuleEditorControls(self.ui.mainRenderer)
 
-        self.ui.mainRenderer.init(installation, module)
         self._setupControlsMenu()
         if "aurora.jsonc" in self.customControls:
             self.activateCustomControls(self.customControls["aurora.jsonc"])
@@ -62,6 +61,7 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
     def _setupSignals(self) -> None:
+        self.ui.actionOpen.triggered.connect(self.openModule)
         self.ui.actionSave.triggered.connect(self.saveGit)
         self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
 
@@ -116,8 +116,28 @@ class ModuleDesigner(QMainWindow):
             self.ui.menuControls.addAction(action)
 
     def _refreshWindowTitle(self) -> None:
-        title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
+        if self._module is None:
+            title = "No Module - {} - Module Editor".format(self._installation.name)
+        else:
+            title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
         self.setWindowTitle(title)
+
+    def openModule(self) -> None:
+        filepath, _ = QFileDialog.getOpenFileName(self, "Select module to open", self._installation.module_path(),
+                                                  "Module File (*.mod *.rim *.erf)")
+
+        if filepath:
+            try:
+                self.unloadModule()
+                self._module = Module(Module.get_root(filepath), self._installation)
+                self.ui.mainRenderer.init(self._installation, self._module)
+            except ValueError as e:
+                QMessageBox(QMessageBox.Critical, "Failed to open module", str(e)).exec_()
+
+    def unloadModule(self) -> None:
+        self._module = None
+        self.ui.mainRenderer.scene = None
+        self.ui.mainRenderer._init = False
 
     def showHelpWindow(self) -> None:
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
@@ -131,6 +151,13 @@ class ModuleDesigner(QMainWindow):
 
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
+        self.ui.resourceTree.setEnabled(True)
+
+        # Only build if module is loaded
+        if self._module is None:
+            self.ui.resourceTree.setEnabled(False)
+            return
+
         categories = {
             ResourceType.UTC: QTreeWidgetItem(["Creatures"]),
             ResourceType.UTP: QTreeWidgetItem(["Placeables"]),
@@ -236,6 +263,14 @@ class ModuleDesigner(QMainWindow):
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
 
     def rebuildInstanceList(self) -> None:
+        self.ui.instanceList.clear()
+        self.ui.instanceList.setEnabled(True)
+
+        # Only build if module is loaded
+        if self._module is None:
+            self.ui.instanceList.setEnabled(False)
+            return
+
         visibleMapping = {
             GITCreature: self.hideCreatures,
             GITPlaceable: self.hidePlaceables,
@@ -248,7 +283,6 @@ class ModuleDesigner(QMainWindow):
             GITCamera: self.hideCameras,
             GITInstance: False
         }
-
         iconMapping = {
             GITCreature: QPixmap(":/images/icons/k1/creature.png"),
             GITPlaceable: QPixmap(":/images/icons/k1/placeable.png"),
@@ -350,15 +384,23 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.scene.selection.clear()
 
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if self._module is None:
+            return
         self.activeControls.onMouseMoved(screen, delta, buttons, keys)
 
     def onRendererMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if self._module is None:
+            return
         self.activeControls.onMouseScrolled(delta, buttons, keys)
 
     def onRendererMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if self._module is None:
+            return
         self.activeControls.onMousePressed(screen, buttons, keys)
 
     def onRendererObjectSelected(self, instance: GITInstance) -> None:
+        if self._module is None:
+            return
         if instance is not None:
             self.selectedInstances = [instance]
 
@@ -367,6 +409,9 @@ class ModuleDesigner(QMainWindow):
             self.selectResourceItem(instance)
 
     def onRendererContextMenu(self, point: QPoint) -> None:
+        if self._module is None:
+            return
+
         menu = QMenu(self)
         world = self.ui.mainRenderer.walkmeshPoint(self.ui.mainRenderer.scene.camera.x, self.ui.mainRenderer.scene.camera.y)
 
@@ -391,8 +436,9 @@ class ModuleDesigner(QMainWindow):
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
     def onRendererSceneInitialized(self) -> None:
-        if self.activeControls.cameraStyle == "FOCUSED":
-            self.ui.mainRenderer.scene.camera = FocusedCamera.from_unfocused(self.ui.mainRenderer.scene.camera)
+        self.rebuildResourceTree()
+        self.rebuildInstanceList()
+        self._refreshWindowTitle()
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         super().keyPressEvent(e)

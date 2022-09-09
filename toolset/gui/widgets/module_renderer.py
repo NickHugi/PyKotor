@@ -100,6 +100,9 @@ class ModuleRenderer(QOpenGLWidget):
             camera.x, camera.y, camera.z = newCamPos.x, newCamPos.y, newCamPos.z + 1
 
     def paintGL(self) -> None:
+        if self._module is None:
+            return
+
         if not self._init:
             self._init = True
             self.scene = Scene(self._module, self._installation)
@@ -158,6 +161,10 @@ class ModuleRenderer(QOpenGLWidget):
     # region Events
     def resizeEvent(self, e: QResizeEvent) -> None:
         super().resizeEvent(e)
+
+        if self.scene is None:
+            return
+
         self.scene.camera.aspect = e.size().width() / e.size().height()
 
     def wheelEvent(self, e: QWheelEvent) -> None:

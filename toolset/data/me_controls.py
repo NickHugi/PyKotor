@@ -248,11 +248,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             array.append(DCItem(keys, mouse, effects))
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        # TODO: This is a hacky way of making sure it is the right camera type
-        if isinstance(self.renderer.scene.camera, FocusedCamera) and self.cameraStyle == "UNFOCUSED":
-            self.unfocusCamera()
-        if isinstance(self.renderer.scene.camera, UnfocusedCamera) and self.cameraStyle == "FOCUSED":
-            self.focusCamera()
+        ...
 
         for event in self.mouseMoveEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
