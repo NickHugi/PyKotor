@@ -28,3 +28,7 @@ def get_nums(string_input: str) -> List[int]:
 def openLink(link: str) -> None:
     url = QUrl(link)
     QDesktopServices.openUrl(url)
+
+
+def clamp(value: float, minValue: float, maxValue: float) -> float:
+    return max(minValue, min(value, maxValue))

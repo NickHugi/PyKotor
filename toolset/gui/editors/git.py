@@ -156,8 +156,8 @@ class GITEditor(Editor):
         # Edit
         self.ui.actionDeleteSelected.triggered.connect(lambda: self._mode.removeSelected())
         # View
-        self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(1))
-        self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.zoomInCamera(-1))
+        self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(1))
+        self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(-1))
         self.ui.actionRecentreCamera.triggered.connect(lambda: self.ui.renderArea.centerCamera())
         # View -> Creature Labels
         self.ui.actionUseCreatureResRef.triggered.connect(lambda: setattr(self.settings, "creatureLabel", "resref"))
@@ -575,9 +575,9 @@ class _InstanceMode(_Mode):
         world = self._ui.renderArea.toWorldCoords(screen.x, screen.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.panCamera(-worldDelta.x, -worldDelta.y)
+            self._ui.renderArea.camera.nudgePosition(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.rotateCamera(delta.x / 50)
+            self._ui.renderArea.camera.nudgeRotation(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys and not self._ui.lockInstancesCheck.isChecked():
             for instance in self._ui.renderArea.selectedInstances():
                 instance.move(worldDelta.x, worldDelta.y, 0.0)
@@ -616,7 +616,7 @@ class _InstanceMode(_Mode):
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.zoomInCamera(delta.y / 50)
+            self._ui.renderArea.camera.nudgeZoom(delta.y / 50)
 
     def onContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self._editor)
@@ -676,7 +676,7 @@ class _InstanceMode(_Mode):
         if self._ui.listWidget.selectedItems():
             item = self._ui.listWidget.selectedItems()[0]
             instance = item.data(QtCore.Qt.UserRole)
-            self._ui.renderArea.setCameraPosition(instance.position.x, instance.position.y)
+            self._ui.renderArea.camera.setPosition(instance.position.x, instance.position.y)
             self._ui.renderArea.selectInstance(instance)
 
     def onItemContextMenu(self, point: QPoint) -> None:
@@ -750,9 +750,9 @@ class _GeometryMode(_Mode):
         worldDelta = self._ui.renderArea.toWorldDelta(delta.x, delta.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.panCamera(-worldDelta.x, -worldDelta.y)
+            self._ui.renderArea.camera.nudgePosition(-worldDelta.x, -worldDelta.y)
         elif QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.rotateCamera(delta.x / 50)
+            self._ui.renderArea.camera.nudgeRotation(delta.x / 50)
         elif QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys and self._ui.renderArea.selectedGeomPoints():
             instance, point = self._ui.renderArea.selectedGeomPoints()[0]
             point.x += worldDelta.x
@@ -770,7 +770,7 @@ class _GeometryMode(_Mode):
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
-            self._ui.renderArea.zoomInCamera(delta.y / 50)
+            self._ui.renderArea.camera.nudgeZoom(delta.y / 50)
 
     def onContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self._editor)
