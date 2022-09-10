@@ -43,3 +43,7 @@ class WaypointDialog(QDialog):
         self.waypoint.position.x = self.ui.xPosSpin.value()
         self.waypoint.position.y = self.ui.yPosSpin.value()
         self.waypoint.position.z = self.ui.zPosSpin.value()
+        self.waypoint.bearing = self.ui.bearingSpin.value()
+        self.waypoint.map_note_enabled = self.ui.mapNoteEnableCheck.isChecked()
+        self.waypoint.has_map_note = self.ui.hasMapNoteCheck.isChecked()
+        self.waypoint.map_note = self.ui.mapNoteEdit.locstring()
