@@ -5,7 +5,7 @@ import math
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from copy import deepcopy
-from typing import Optional, Set, Dict, List, Callable
+from typing import Optional, Set, Dict, List, Callable, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSettings
@@ -836,6 +836,9 @@ class _GeometryMode(_Mode):
     # endregion
 
 
+Bind = Tuple[Set[int], Set[int]]
+
+
 class GITSettings:
     def __init__(self):
         self.settings = QSettings('HolocronToolset', 'GITEditor')
@@ -1076,18 +1079,77 @@ class GITSettings:
         self.settings.setValue('nonWalkGrassMaterialColour', value)
     # endregion
 
+    # region X (Controls)
+    @property
+    def panCameraBind(self) -> Bind:
+        return self.settings.value("panCameraBind", ({QtCore.Qt.Key_Control}, {QtCore.Qt.LeftButton}))
+
+    @panCameraBind.setter
+    def panCameraBind(self, value: Bind) -> None:
+        self.settings.setValue('panCameraBind', value)
+
+    @property
+    def rotateCameraBind(self) -> Bind:
+        return self.settings.value("rotateCameraBind", ({QtCore.Qt.Key_Control}, {QtCore.Qt.MiddleButton}))
+
+    @rotateCameraBind.setter
+    def rotateCameraBind(self, value: Bind) -> None:
+        self.settings.setValue('rotateCameraBind', value)
+
+    @property
+    def zoomCameraBind(self) -> Bind:
+        return self.settings.value("zoomCameraBind", ({QtCore.Qt.Key_Control}, None))
+
+    @zoomCameraBind.setter
+    def zoomCameraBind(self, value: Bind) -> None:
+        self.settings.setValue('zoomCameraBind', value)
+
+    @property
+    def rotateSelectedToPointBind(self) -> Bind:
+        return self.settings.value("rotateSelectedToPoint", (set(), {QtCore.Qt.MiddleButton}))
+
+    @rotateSelectedToPointBind.setter
+    def rotateSelectedToPointBind(self, value: Bind) -> None:
+        self.settings.setValue('rotateSelectedToPoint', value)
+
+    @property
+    def moveSelectedBind(self) -> Bind:
+        return self.settings.value("moveSelectedBind", (set(), {QtCore.Qt.LeftButton}))
+
+    @moveSelectedBind.setter
+    def moveSelectedBind(self, value: Bind) -> None:
+        self.settings.setValue('moveSelectedBind', value)
+
+    @property
+    def selectUnderneathBind(self) -> Bind:
+        return self.settings.value("selectUnderneathBind", (set(), {QtCore.Qt.LeftButton}))
+
+    @selectUnderneathBind.setter
+    def selectUnderneathBind(self, value: Bind) -> None:
+        self.settings.setValue('selectUnderneathBind', value)
+
+    @property
+    def deleteSelectedBind(self) -> Bind:
+        return self.settings.value("deleteSelectedBind", ({QtCore.Qt.Key_Delete}, set()))
+
+    @deleteSelectedBind.setter
+    def deleteSelectedBind(self, value: Bind) -> None:
+        self.settings.setValue('deleteSelectedBind', value)
+    # endregion
+
 
 class GITControlScheme:
     def __init__(self, editor: GITEditor):
         self.editor: GITEditor = editor
+        self.settings: GITSettings = GITSettings()
 
-        self.panCamera: GITControlItem = GITControlItem({QtCore.Qt.Key_Control}, {QtCore.Qt.LeftButton})
-        self.rotateCamera: GITControlItem = GITControlItem({QtCore.Qt.Key_Control}, {QtCore.Qt.MiddleButton})
-        self.zoomCamera: GITControlItem = GITControlItem({QtCore.Qt.Key_Control}, None)
-        self.rotateSelectedToPoint: GITControlItem = GITControlItem(set(), {QtCore.Qt.MiddleButton})
-        self.moveSelected: GITControlItem = GITControlItem(set(), {QtCore.Qt.LeftButton})
-        self.selectUnderneath: GITControlItem = GITControlItem(set(), {QtCore.Qt.LeftButton})
-        self.deleteSelected: GITControlItem = GITControlItem({QtCore.Qt.Key_Delete}, set())
+        self.panCamera: GITControlItem = GITControlItem(self.settings.panCameraBind)
+        self.rotateCamera: GITControlItem = GITControlItem(self.settings.rotateCameraBind)
+        self.zoomCamera: GITControlItem = GITControlItem(self.settings.zoomCameraBind)
+        self.rotateSelectedToPoint: GITControlItem = GITControlItem(self.settings.rotateSelectedToPointBind)
+        self.moveSelected: GITControlItem = GITControlItem(self.settings.moveSelectedBind)
+        self.selectUnderneath: GITControlItem = GITControlItem(self.settings.selectUnderneathBind)
+        self.deleteSelected: GITControlItem = GITControlItem(self.settings.deleteSelectedBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -1120,9 +1182,9 @@ class GITControlScheme:
 
 
 class GITControlItem:
-    def __init__(self, keys, mouse):
-        self.keys: Set[int] = keys
-        self.mouse: Set[int] = mouse
+    def __init__(self, bind: Bind):
+        self.keys: Set[int] = bind[0]
+        self.mouse: Set[int] = bind[1]
 
     def satisfied(self, buttons: Set[int], keys: Set[int]) -> bool:
         return (self.mouse == buttons or self.mouse is None) and (self.keys == keys or self.keys is None)
