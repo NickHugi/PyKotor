@@ -62,6 +62,12 @@ class WalkmeshSelection(Generic[T]):
     def __init__(self):
         self._selection: List[T] = []
 
+    def remove(self, element: T) -> None:
+        self._selection.remove(element)
+
+    def last(self) -> Optional[T]:
+        return self._selection[-1] if self._selection else None
+
     def count(self) -> int:
         return len(self._selection)
 
@@ -77,10 +83,10 @@ class WalkmeshSelection(Generic[T]):
     def clear(self) -> None:
         self._selection.clear()
 
-    def select(self, instances: List[T], clearExisting: bool = True) -> None:
+    def select(self, elements: List[T], clearExisting: bool = True) -> None:
         if clearExisting:
             self._selection.clear()
-        self._selection.extend(instances)
+        self._selection.extend(elements)
 
 
 class WalkmeshRenderer(QWidget):
@@ -576,7 +582,7 @@ class WalkmeshRenderer(QWidget):
             painter.drawEllipse(QPointF(point.x, point.y), 4 / self.camera.zoom(), 4 / self.camera.zoom())
 
     def wheelEvent(self, e: QWheelEvent) -> None:
-        self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
+        self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         coords = Vector2(e.x(), e.y())

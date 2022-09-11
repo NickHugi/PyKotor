@@ -572,7 +572,7 @@ QCheckBox::indicator:checked:hover {
      <x>0</x>
      <y>0</y>
      <width>838</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuNew">
@@ -604,36 +604,28 @@ QCheckBox::indicator:checked:hover {
      <addaction name="actionUseWaypointResRef"/>
      <addaction name="actionUseWaypointName"/>
      <addaction name="actionUseWaypointTag"/>
-     <addaction name="separator"/>
-     <addaction name="actionUseWaypointResName"/>
-     <addaction name="actionUseWaypointResTag"/>
     </widget>
     <widget class="QMenu" name="menuTriggerLabels">
      <property name="title">
       <string>Trigger Labels</string>
      </property>
      <addaction name="actionUseTriggerResRef"/>
+     <addaction name="actionUseTriggerName"/>
      <addaction name="actionUseTriggerTag"/>
-     <addaction name="separator"/>
-     <addaction name="actionUseTriggerResName"/>
-     <addaction name="actionUseTriggerResTag"/>
     </widget>
     <widget class="QMenu" name="menuDoorLabels">
      <property name="title">
       <string>Door Labels</string>
      </property>
      <addaction name="actionUseDoorResRef"/>
+     <addaction name="actionUseDoorName"/>
      <addaction name="actionUseDoorTag"/>
-     <addaction name="separator"/>
-     <addaction name="actionUseDoorResName"/>
-     <addaction name="actionUseDoorResTag"/>
     </widget>
     <widget class="QMenu" name="menuCreatureLabels">
      <property name="title">
       <string>Creature Labels</string>
      </property>
      <addaction name="actionUseCreatureResRef"/>
-     <addaction name="separator"/>
      <addaction name="actionUseCreatureName"/>
      <addaction name="actionUseCreatureTag"/>
     </widget>
@@ -642,36 +634,32 @@ QCheckBox::indicator:checked:hover {
       <string>Placeable Labels</string>
      </property>
      <addaction name="actionUsePlaceableResRef"/>
-     <addaction name="separator"/>
-     <addaction name="actionUsePlaceableResName"/>
-     <addaction name="actionUsePlaceableResTag"/>
+     <addaction name="actionUsePlaceableName"/>
+     <addaction name="actionUsePlaceableTag"/>
     </widget>
     <widget class="QMenu" name="menuMerchantLabels">
      <property name="title">
       <string>Merchant Labels</string>
      </property>
      <addaction name="actionUseMerchantResRef"/>
-     <addaction name="separator"/>
-     <addaction name="actionUseMerchantResName"/>
-     <addaction name="actionUseMerchantResTag"/>
+     <addaction name="actionUseMerchantName"/>
+     <addaction name="actionUseMerchantTag"/>
     </widget>
     <widget class="QMenu" name="menuSound_Labels">
      <property name="title">
       <string>Sound Labels</string>
      </property>
      <addaction name="actionUseSoundResRef"/>
-     <addaction name="separator"/>
-     <addaction name="actionUseSoundResName"/>
-     <addaction name="actionUseSoundResTag"/>
+     <addaction name="actionUseSoundName"/>
+     <addaction name="actionUseSoundTag"/>
     </widget>
     <widget class="QMenu" name="menuEncounterLabels">
      <property name="title">
       <string>Encounter Labels</string>
      </property>
      <addaction name="actionUseEncounterResRef"/>
-     <addaction name="separator"/>
-     <addaction name="actionUseEncounterResName"/>
-     <addaction name="actionUseEncounterResTag"/>
+     <addaction name="actionUseEncounterName"/>
+     <addaction name="actionUseEncounterTag"/>
     </widget>
     <addaction name="actionZoomIn"/>
     <addaction name="actionZoomOut"/>
@@ -783,17 +771,17 @@ QCheckBox::indicator:checked:hover {
   </action>
   <action name="actionUseCreatureName">
    <property name="text">
-    <string>Name (UTC)</string>
+    <string>Name</string>
    </property>
   </action>
   <action name="actionUseCreatureTag">
    <property name="text">
-    <string>Tag (UTC)</string>
+    <string>Tag</string>
    </property>
   </action>
-  <action name="actionUseDoorResName">
+  <action name="actionUseDoorName">
    <property name="text">
-    <string>Name (UTD)</string>
+    <string>Name</string>
    </property>
   </action>
   <action name="actionUseDoorResTag">
@@ -811,9 +799,9 @@ QCheckBox::indicator:checked:hover {
     <string>Tag (UTW)</string>
    </property>
   </action>
-  <action name="actionUseTriggerResName">
+  <action name="actionUseTriggerName">
    <property name="text">
-    <string>Name (UTT)</string>
+    <string>Name</string>
    </property>
   </action>
   <action name="actionUseTriggerResTag">
@@ -826,14 +814,14 @@ QCheckBox::indicator:checked:hover {
     <string>ResRef</string>
    </property>
   </action>
-  <action name="actionUsePlaceableResTag">
+  <action name="actionUsePlaceableTag">
    <property name="text">
-    <string>Tag (UTC)</string>
+    <string>Tag</string>
    </property>
   </action>
-  <action name="actionUsePlaceableResName">
+  <action name="actionUsePlaceableName">
    <property name="text">
-    <string>Name (UTC)</string>
+    <string>Name</string>
    </property>
   </action>
   <action name="actionUseMerchantResRef">
@@ -841,14 +829,14 @@ QCheckBox::indicator:checked:hover {
     <string>ResRef</string>
    </property>
   </action>
-  <action name="actionUseMerchantResName">
+  <action name="actionUseMerchantName">
    <property name="text">
-    <string>Name (UTM)</string>
+    <string>Name</string>
    </property>
   </action>
-  <action name="actionUseMerchantResTag">
+  <action name="actionUseMerchantTag">
    <property name="text">
-    <string>Tag (UTM)</string>
+    <string>Tag</string>
    </property>
   </action>
   <action name="actionUseSoundResRef">
@@ -856,14 +844,14 @@ QCheckBox::indicator:checked:hover {
     <string>ResRef</string>
    </property>
   </action>
-  <action name="actionUseSoundResName">
+  <action name="actionUseSoundName">
    <property name="text">
-    <string>Name (UTS)</string>
+    <string>Name</string>
    </property>
   </action>
-  <action name="actionUseSoundResTag">
+  <action name="actionUseSoundTag">
    <property name="text">
-    <string>Tag (UTS)</string>
+    <string>Tag</string>
    </property>
   </action>
   <action name="actionUseEncounterResRef">
@@ -871,14 +859,14 @@ QCheckBox::indicator:checked:hover {
     <string>ResRef</string>
    </property>
   </action>
-  <action name="actionUseEncounterResName">
+  <action name="actionUseEncounterName">
    <property name="text">
-    <string>Name (UTS)</string>
+    <string>Name</string>
    </property>
   </action>
-  <action name="actionUseEncounterResTag">
+  <action name="actionUseEncounterTag">
    <property name="text">
-    <string>Tag (UTS)</string>
+    <string>Tag</string>
    </property>
   </action>
  </widget>
