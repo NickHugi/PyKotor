@@ -52,7 +52,7 @@ class Scene:
         self.objects: List[RenderObject] = []
         self.selection: List[RenderObject] = []
         self.module: Module = module
-        self.camera: UnfocusedCamera = UnfocusedCamera()
+        self.camera: Camera = Camera()
 
         self.textures["NULL"] = Texture.from_color()
 
@@ -518,74 +518,7 @@ class RenderObject:
         return self._boundary
 
 
-class UnfocusedCamera:
-    def __init__(self):
-        self.x: float = 0.0
-        self.y: float = 0.0
-        self.z: float = 0.0
-        self.pitch: float = math.pi / 2
-        self.yaw: float = 0.0
-        self.fov: float = 90.0
-        self.aspect: float = 16 / 9
-
-    @staticmethod
-    def from_focused(camera: FocusedCamera) -> UnfocusedCamera:
-        unfocused = UnfocusedCamera()
-        unfocused.x = camera.x
-        unfocused.y = camera.y
-        unfocused.z = camera.z
-        unfocused.pitch = camera.pitch
-        unfocused.yaw = camera.yaw + math.pi/2
-        unfocused.aspect = camera.aspect
-        unfocused.fov = camera.fov
-        return unfocused
-
-    def view(self) -> mat4:
-        up = vec3(0, 0, 1)
-        camera = glm.translate(mat4(), vec3(self.x, self.y, self.z))
-        camera = glm.rotate(camera, self.yaw, up)
-        pitch = glm.vec3(1, 0, 0)
-        camera = glm.rotate(camera, self.pitch, pitch)
-        view = glm.inverse(camera)
-        return view
-
-    def projection(self) -> mat4:
-        return glm.perspective(self.fov, self.aspect, 0.1, 5000)
-
-    def translate(self, translation: vec3) -> None:
-        self.x += translation.x
-        self.y += translation.y
-        self.z += translation.z
-
-    def rotate(self, yaw: float, pitch: float):
-        self.pitch += pitch
-        self.yaw += yaw
-
-        if self.pitch > math.pi:
-            self.pitch = math.pi
-        elif self.pitch < 0:
-            self.pitch = 0
-
-    def forward(self, ignoreZ: bool = True) -> vec3:
-        eye_x = -math.cos(self.yaw) * math.cos(self.pitch - math.pi/2)
-        eye_y = math.sin(self.yaw) * math.cos(self.pitch - math.pi/2)
-        eye_z = 0 if ignoreZ else math.sin(self.pitch - math.pi/2)
-        return -glm.normalize(vec3(eye_y, eye_x, eye_z))
-
-    def sideward(self, ignoreZ: bool = True) -> vec3:
-        return glm.normalize(glm.cross(self.forward(ignoreZ), vec3(0.0, 0.0, 1.0)))
-
-    def upward(self, ignoreXY: bool = True) -> vec3:
-        if not ignoreXY:
-            forward = self.forward(False)
-            sideward = self.sideward(False)
-            cross = glm.cross(forward, sideward)
-            return glm.normalize(cross)
-        else:
-            return glm.normalize(vec3(0, 0, 1))
-
-
-class FocusedCamera:
+class Camera:
     def __init__(self):
         self.x: float = 40.0
         self.y: float = 130.0
@@ -595,18 +528,6 @@ class FocusedCamera:
         self.distance: float = 10.0
         self.fov: float = 90.0
         self.aspect: float = 16 / 9
-
-    @staticmethod
-    def from_unfocused(camera: UnfocusedCamera) -> FocusedCamera:
-        focused = FocusedCamera()
-        focused.x = camera.x
-        focused.y = camera.y
-        focused.z = camera.z
-        focused.pitch = camera.pitch
-        focused.yaw = camera.yaw - math.pi/2
-        focused.aspect = camera.aspect
-        focused.fov = camera.fov
-        return focused
 
     def view(self) -> mat4:
         up = vec3(0, 0, 1)
