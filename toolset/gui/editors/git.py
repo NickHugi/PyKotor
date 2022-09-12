@@ -842,6 +842,37 @@ class GITSettings:
     def __init__(self):
         self.settings = QSettings('HolocronToolset', 'GITEditor')
 
+    def resetMaterialColors(self) -> None:
+        self.settings.remove("undefinedMaterialColour")
+        self.settings.remove("dirtMaterialColour")
+        self.settings.remove("obscuringMaterialColour")
+        self.settings.remove("grassMaterialColour")
+        self.settings.remove("stoneMaterialColour")
+        self.settings.remove("woodMaterialColour")
+        self.settings.remove("waterMaterialColour")
+        self.settings.remove("nonWalkMaterialColour")
+        self.settings.remove("transparentMaterialColour")
+        self.settings.remove("carpetMaterialColour")
+        self.settings.remove("metalMaterialColour")
+        self.settings.remove("puddlesMaterialColour")
+        self.settings.remove("swampMaterialColour")
+        self.settings.remove("mudMaterialColour")
+        self.settings.remove("leavesMaterialColour")
+        self.settings.remove("doorMaterialColour")
+        self.settings.remove("lavaMaterialColour")
+        self.settings.remove("bottomlessPitMaterialColour")
+        self.settings.remove("deepWaterMaterialColour")
+        self.settings.remove("nonWalkGrassMaterialColour")
+
+    def resetControls(self) -> None:
+        self.settings.remove("panCameraBind")
+        self.settings.remove("rotateCameraBind")
+        self.settings.remove("zoomCameraBind")
+        self.settings.remove("rotateSelectedToPointBind")
+        self.settings.remove("moveSelectedBind")
+        self.settings.remove("selectUnderneathBind")
+        self.settings.remove("deleteSelectedBind")
+
     # region Strings (Instance Labels)
     @property
     def creatureLabel(self) -> str:
@@ -1129,7 +1160,7 @@ class GITSettings:
 
     @property
     def deleteSelectedBind(self) -> Bind:
-        return self.settings.value("deleteSelectedBind", ({QtCore.Qt.Key_Delete}, set()))
+        return self.settings.value("deleteSelectedBind", ({QtCore.Qt.Key_Delete}, None))
 
     @deleteSelectedBind.setter
     def deleteSelectedBind(self, value: Bind) -> None:

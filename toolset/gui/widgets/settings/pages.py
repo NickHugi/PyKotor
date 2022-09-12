@@ -150,6 +150,9 @@ class GITWidget(QWidget):
         self.ui.setupUi(self)
         self.setupValues()
 
+        self.ui.coloursResetButton.clicked.connect(self.resetColours)
+        self.ui.controlsResetButton.clicked.connect(self.resetControls)
+
         self.ui.undefinedColorEdit.allowAlpha = True
         self.ui.dirtColorEdit.allowAlpha = True
         self.ui.obscuringColorEdit.allowAlpha = True
@@ -171,14 +174,7 @@ class GITWidget(QWidget):
         self.ui.doorColorEdit.allowAlpha = True
         self.ui.nonWalkGrassColorEdit.allowAlpha = True
 
-    def setupValues(self) -> None:
-        self.ui.moveCameraBindEdit.setBind(self.settings.panCameraBind)
-        self.ui.rotateCameraBindEdit.setBind(self.settings.rotateCameraBind)
-        self.ui.zoomCameraBindEdit.setBind(self.settings.zoomCameraBind)
-        self.ui.selectObjectBindEdit.setBind(self.settings.selectUnderneathBind)
-        self.ui.rotateObjectBindEdit.setBind(self.settings.rotateSelectedToPointBind)
-        self.ui.deleteObjectBindEdit.setBind(self.settings.deleteSelectedBind)
-
+    def _setupColourValues(self) -> None:
         self.ui.undefinedColorEdit.setColor(Color.from_rgba_integer(self.settings.undefinedMaterialColour))
         self.ui.dirtColorEdit.setColor(Color.from_rgba_integer(self.settings.dirtMaterialColour))
         self.ui.obscuringColorEdit.setColor(Color.from_rgba_integer(self.settings.obscuringMaterialColour))
@@ -199,6 +195,18 @@ class GITWidget(QWidget):
         self.ui.deepWaterColorEdit.setColor(Color.from_rgba_integer(self.settings.deepWaterMaterialColour))
         self.ui.doorColorEdit.setColor(Color.from_rgba_integer(self.settings.doorMaterialColour))
         self.ui.nonWalkGrassColorEdit.setColor(Color.from_rgba_integer(self.settings.nonWalkGrassMaterialColour))
+
+    def _setupBindValues(self) -> None:
+        self.ui.moveCameraBindEdit.setBind(self.settings.panCameraBind)
+        self.ui.rotateCameraBindEdit.setBind(self.settings.rotateCameraBind)
+        self.ui.zoomCameraBindEdit.setBind(self.settings.zoomCameraBind)
+        self.ui.selectObjectBindEdit.setBind(self.settings.selectUnderneathBind)
+        self.ui.rotateObjectBindEdit.setBind(self.settings.rotateSelectedToPointBind)
+        self.ui.deleteObjectBindEdit.setBind(self.settings.deleteSelectedBind)
+
+    def setupValues(self) -> None:
+        self._setupColourValues()
+        self._setupBindValues()
 
     def save(self) -> None:
         self.settings.panCameraBind = self.ui.moveCameraBindEdit.bind()
@@ -229,3 +237,10 @@ class GITWidget(QWidget):
         self.settings.doorMaterialColour = self.ui.doorColorEdit.color().rgba_integer()
         self.settings.nonWalkGrassMaterialColour = self.ui.nonWalkGrassColorEdit.color().rgba_integer()
 
+    def resetColours(self) -> None:
+        self.settings.resetMaterialColors()
+        self._setupColourValues()
+
+    def resetControls(self) -> None:
+        self.settings.resetControls()
+        self._setupBindValues()
