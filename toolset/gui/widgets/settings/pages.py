@@ -148,10 +148,6 @@ class GITWidget(QWidget):
         from toolset.uic.widgets.settings.git import Ui_Form
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        self.setupValues()
-
-        self.ui.coloursResetButton.clicked.connect(self.resetColours)
-        self.ui.controlsResetButton.clicked.connect(self.resetControls)
 
         self.ui.undefinedColorEdit.allowAlpha = True
         self.ui.dirtColorEdit.allowAlpha = True
@@ -173,6 +169,11 @@ class GITWidget(QWidget):
         self.ui.deepWaterColorEdit.allowAlpha = True
         self.ui.doorColorEdit.allowAlpha = True
         self.ui.nonWalkGrassColorEdit.allowAlpha = True
+
+        self.ui.coloursResetButton.clicked.connect(self.resetColours)
+        self.ui.controlsResetButton.clicked.connect(self.resetControls)
+
+        self.setupValues()
 
     def _setupColourValues(self) -> None:
         self.ui.undefinedColorEdit.setColor(Color.from_rgba_integer(self.settings.undefinedMaterialColour))
