@@ -135,6 +135,7 @@ class GITEditor(Editor):
         self.ui.renderArea.keyPressed.connect(self.onKeyPressed)
 
         self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
+        self.ui.listWidget.doubleClicked.connect(self.moveCameraToSelection)
         self.ui.listWidget.itemSelectionChanged.connect(self.onItemSelectionChanged)
         self.ui.listWidget.customContextMenuRequested.connect(self.onItemContextMenu)
 
@@ -295,6 +296,11 @@ class GITEditor(Editor):
     def enterSpawnMode(self) -> None:
         ...
         # TODO
+
+    def moveCameraToSelection(self):
+        instance = self.ui.renderArea.instanceSelection.last()
+        if instance:
+            self.ui.renderArea.camera.setPosition(instance.position.x, instance.position.y)
 
     # region Mode Calls
     def openListContextMenu(self, item: QListWidgetItem, point: QPoint) -> None:
@@ -605,7 +611,7 @@ class _InstanceMode(_Mode):
             self.setSelection([item.data(QtCore.Qt.UserRole)])
 
     def updateStatusBar(self, world: Vector2) -> None:
-        if self._ui.renderArea.instancesUnderMouse():
+        if self._ui.renderArea.instancesUnderMouse() and self._ui.renderArea.instancesUnderMouse()[-1] is not None:
             instance = self._ui.renderArea.instancesUnderMouse()[-1]
             self._editor.statusBar().showMessage("({:.1f}, {:.1f}) {}".format(world.x, world.y, instance.identifier().resname))
         else:
