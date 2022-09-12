@@ -96,7 +96,7 @@ class ModuleRenderer(QOpenGLWidget):
 
         if not self._init:
             self._init = True
-            self.scene = Scene(self._module, self._installation)
+            self.scene = Scene(self._installation, module=self._module)
             self.scene.camera.fov = self.settings.fieldOfView
             self.sceneInitalized.emit()
 
