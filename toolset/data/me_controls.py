@@ -10,7 +10,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
 from pykotor.common.geometry import Vector2, Vector3
-from pykotor.gl.scene import FocusedCamera, UnfocusedCamera
+from pykotor.gl.scene import Camera
 from pykotor.resource.generics.git import GITInstance
 
 from gui.widgets.module_renderer import ModuleRenderer
@@ -130,20 +130,8 @@ class ModuleEditorControls(ABC):
         x, y = self.renderer.cursor().pos().x(), self.renderer.cursor().pos().y()
         self.renderer.customContextMenuRequested.emit(self.renderer.mapFromGlobal(QPoint(x, y)))
 
-    def unfocusCamera(self) -> None:
-        if isinstance(self.renderer.scene.camera, FocusedCamera):
-            self.cameraStyle = "UNFOCUSED"
-            self.renderer.scene.camera = UnfocusedCamera.from_focused(self.renderer.scene.camera)
-            self.renderer.scene.camera.aspect = self.renderer.width() / self.renderer.height()
-
-    def focusCamera(self) -> None:
-        if isinstance(self.renderer.scene.camera, UnfocusedCamera):
-            self.cameraStyle = "FOCUSED"
-            self.renderer.scene.camera = FocusedCamera.from_unfocused(self.renderer.scene.camera)
-            self.renderer.scene.camera.aspect = self.renderer.width() / self.renderer.height()
-
     def alterCameraZoom(self, amount: float):
-        if isinstance(self.renderer.scene.camera, FocusedCamera):
+        if isinstance(self.renderer.scene.camera, Camera):
             self.renderer.scene.camera.distance = max(0, self.renderer.scene.camera.distance + amount)
 
 
@@ -614,10 +602,7 @@ class DCEffectChangeCameraFocus(DCEffect):
         self.focus: Optional[bool] = focus
 
     def apply(self, controls: ModuleEditorControls, dx: float, dy: float) -> None:
-        if (self.focus is True) or (self.focus is None and controls.cameraStyle == "UNFOCUSED"):
-            controls.focusCamera()
-        elif (self.focus is False) or (self.focus is None and controls.cameraStyle == "FOCUSED"):
-            controls.unfocusCamera()
+        ...
 
 
 # snapCameraToObject

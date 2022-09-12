@@ -21,7 +21,7 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from gui.windows.help import HelpWindow
-from pykotor.gl.scene import RenderObject, FocusedCamera
+from pykotor.gl.scene import RenderObject, Camera
 
 from data.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
 from utils.window import openResourceEditor
