@@ -572,7 +572,7 @@ QCheckBox::indicator:checked:hover {
      <x>0</x>
      <y>0</y>
      <width>838</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuNew">
@@ -586,12 +586,6 @@ QCheckBox::indicator:checked:hover {
     <addaction name="actionRevert"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
-   </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-    <addaction name="actionDeleteSelected"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -675,7 +669,6 @@ QCheckBox::indicator:checked:hover {
     <addaction name="menuTriggerLabels"/>
    </widget>
    <addaction name="menuNew"/>
-   <addaction name="menuEdit"/>
    <addaction name="menuView"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>

@@ -102,6 +102,10 @@ class WalkmeshRenderer(QWidget):
     mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
+    keyPressed = QtCore.pyqtSignal(object, object)  # mouse keys
+
+    keyReleased = QtCore.pyqtSignal(object, object)  # mouse keys
+
     instanceHovered = QtCore.pyqtSignal(object)  # instance
 
     instancePressed = QtCore.pyqtSignal(object)  # instance
@@ -621,7 +625,9 @@ class WalkmeshRenderer(QWidget):
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         self._keysDown.add(e.key())
+        self.keyPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
+        self.keyReleased.emit(self._mouseDown, self._keysDown)
     # endregion

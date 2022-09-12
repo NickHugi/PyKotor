@@ -132,6 +132,7 @@ class GITEditor(Editor):
         self.ui.renderArea.mouseScrolled.connect(self.onMouseScrolled)
         self.ui.renderArea.mouseReleased.connect(self.onMouseReleased)
         self.ui.renderArea.customContextMenuRequested.connect(self.onContextMenu)
+        self.ui.renderArea.keyPressed.connect(self.onKeyPressed)
 
         self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
         self.ui.listWidget.itemSelectionChanged.connect(self.onItemSelectionChanged)
@@ -157,8 +158,6 @@ class GITEditor(Editor):
         self.ui.viewCameraCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewCameraCheck)
         self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
 
-        # Edit
-        self.ui.actionDeleteSelected.triggered.connect(lambda: self._mode.removeSelected())
         # View
         self.ui.actionZoomIn.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(1))
         self.ui.actionZoomOut.triggered.connect(lambda: self.ui.renderArea.camera.nudgeZoom(-1))
@@ -364,12 +363,13 @@ class GITEditor(Editor):
     def onMouseReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         self._controls.onMouseReleased(Vector2(0, 0), buttons, keys)
 
+    def onKeyPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+        self._controls.onKeyboardPressed(buttons, keys)
+
     def keyPressEvent(self, e: QKeyEvent) -> None:
-        super().keyPressEvent(e)
         self.ui.renderArea.keyPressEvent(e)
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
-        super().keyPressEvent(e)
         self.ui.renderArea.keyReleaseEvent(e)
     # endregion
 
