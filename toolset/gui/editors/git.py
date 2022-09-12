@@ -11,6 +11,8 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSettings
 from PyQt5.QtGui import QIcon, QColor, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QMenu, QListWidgetItem, QCheckBox, QDialog
+
+from data.misc import Bind
 from pykotor.common.misc import Color
 
 from gui.dialogs.instance.camera import CameraDialog
@@ -836,9 +838,6 @@ class _GeometryMode(_Mode):
     # endregion
 
 
-Bind = Tuple[Set[int], Set[int]]
-
-
 class GITSettings:
     def __init__(self):
         self.settings = QSettings('HolocronToolset', 'GITEditor')
@@ -1079,7 +1078,7 @@ class GITSettings:
         self.settings.setValue('nonWalkGrassMaterialColour', value)
     # endregion
 
-    # region X (Controls)
+    # region Binds (Controls)
     @property
     def panCameraBind(self) -> Bind:
         return self.settings.value("panCameraBind", ({QtCore.Qt.Key_Control}, {QtCore.Qt.LeftButton}))

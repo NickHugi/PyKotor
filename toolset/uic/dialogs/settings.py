@@ -79,7 +79,7 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.buttonBox)
 
         self.retranslateUi(Dialog)
-        self.settingsStack.setCurrentIndex(3)
+        self.settingsStack.setCurrentIndex(0)
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
         self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)

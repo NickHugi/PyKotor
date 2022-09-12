@@ -63,7 +63,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="installationsPage">
        <layout class="QGridLayout" name="gridLayout_2">

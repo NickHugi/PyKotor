@@ -25,10 +25,79 @@
         <x>0</x>
         <y>0</y>
         <width>311</width>
-        <height>567</height>
+        <height>720</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>Controls</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Move Camera:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="SetBindWidget" name="moveCameraBindEdit" native="true"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Rotate Camera:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Zoom Camera:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Rotate Object:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Select Object:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_6">
+            <property name="text">
+             <string>Delete Object:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="SetBindWidget" name="rotateCameraBindEdit" native="true"/>
+          </item>
+          <item row="2" column="1">
+           <widget class="SetBindWidget" name="zoomCameraBindEdit" native="true"/>
+          </item>
+          <item row="3" column="1">
+           <widget class="SetBindWidget" name="selectObjectBindEdit" native="true"/>
+          </item>
+          <item row="4" column="1">
+           <widget class="SetBindWidget" name="rotateObjectBindEdit" native="true"/>
+          </item>
+          <item row="5" column="1">
+           <widget class="SetBindWidget" name="deleteObjectBindEdit" native="true"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
        <item>
         <widget class="QGroupBox" name="groupBox_2">
          <property name="title">
@@ -513,6 +582,12 @@
    <class>ColorEdit</class>
    <extends>QWidget</extends>
    <header location="global">toolset.gui.widgets.color_edit</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>SetBindWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.set_bind</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
