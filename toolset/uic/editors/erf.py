@@ -58,7 +58,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addLayout(self.horizontalLayout)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 306, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 306, 22))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
         self.menuFile.setObjectName("menuFile")
@@ -103,4 +103,4 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-from toolset.editors.erf.erf_editor import ERFEditorTable
+from toolset.gui.editors.erf import ERFEditorTable

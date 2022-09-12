@@ -109,7 +109,7 @@
      <x>0</x>
      <y>0</y>
      <width>306</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -162,7 +162,7 @@
   <customwidget>
    <class>ERFEditorTable</class>
    <extends>QTableView</extends>
-   <header location="global">toolset.editors.erf.erf_editor</header>
+   <header location="global">toolset.gui.editors.erf</header>
   </customwidget>
  </customwidgets>
  <resources/>
