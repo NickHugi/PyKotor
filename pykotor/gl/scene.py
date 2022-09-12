@@ -40,7 +40,7 @@ SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLo
 class Scene:
     SPECIAL_MODELS = ["waypoint", "store", "sound", "camera", "trigger", "encounter"]
 
-    def __init__(self, module: Module, installation: Installation):
+    def __init__(self, installation: Installation, *, module: Optional[Module] = None):
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -51,7 +51,7 @@ class Scene:
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
         self.objects: List[RenderObject] = []
         self.selection: List[RenderObject] = []
-        self.module: Module = module
+        self.module: Optional[Module] = module
         self.camera: Camera = Camera()
 
         self.textures["NULL"] = Texture.from_color()
@@ -87,6 +87,9 @@ class Scene:
         self.backface_culling: bool = True
 
     def buildCache(self, clearCache: bool = False) -> None:
+        if self.module is None:
+            return
+
         if clearCache:
             self.objects = {}
 
@@ -428,10 +431,15 @@ class Scene:
         return self.models[name]
 
     def jumpToEntryLocation(self) -> None:
-        point = self.module.info().resource().entry_position
-        self.camera.x = point.x
-        self.camera.y = point.y
-        self.camera.z = point.z + 1.8
+        if self.module is None:
+            self.camera.x = 0
+            self.camera.y = 0
+            self.camera.z = 0
+        else:
+            point = self.module.info().resource().entry_position
+            self.camera.x = point.x
+            self.camera.y = point.y
+            self.camera.z = point.z + 1.8
 
 
 class RenderObject:
