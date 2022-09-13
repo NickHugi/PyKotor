@@ -282,5 +282,5 @@ class Editor(QMainWindow):
             setText(self._installation.talktable().string(locstring.stringref))
             textbox.setStyleSheet(className + " {background-color: #fffded;}")
 
-    def filepath(self) -> None:
+    def filepath(self) -> Optional[str]:
         return self._filepath

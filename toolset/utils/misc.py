@@ -1,8 +1,13 @@
-from typing import List
+from typing import List, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices, QKeySequence
+
+from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats.erf import read_erf
+from pykotor.resource.formats.rim import read_rim
+from pykotor.resource.type import ResourceType
 
 
 QtKey = QtCore.Qt.Key
@@ -58,3 +63,21 @@ def getStringFromKey(key: int) -> str:
         return "SHIFT"
     else:
         return QKeySequence(key).toString()
+
+
+def getResourceFromFile(filepath: str, resname: str, restype: ResourceType) -> Optional[bytes]:
+    data = None
+
+    if filepath.endswith(".erf") or filepath.endswith(".mod"):
+        erf = read_erf(filepath)
+        data = erf.get(resname, restype)
+    elif filepath.endswith(".rim"):
+        rim = read_rim(filepath)
+        data = rim.get(resname, restype)
+    else:
+        data = BinaryReader.load_file(filepath)
+
+    if data is None:
+        raise ValueError("Could not find resource in RIM/ERF/MOD.")
+
+    return data

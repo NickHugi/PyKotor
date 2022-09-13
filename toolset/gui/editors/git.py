@@ -25,6 +25,7 @@ from gui.dialogs.instance.sound import SoundDialog
 from gui.dialogs.instance.store import StoreDialog
 from gui.dialogs.instance.trigger import TriggerDialog
 from gui.dialogs.instance.waypoint import WaypointDialog
+from pykotor.common.module import Module
 from pykotor.extract.file import ResourceIdentifier
 
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
@@ -38,6 +39,7 @@ from pykotor.resource.type import ResourceType
 from data.installation import HTInstallation
 from gui.editor import Editor
 from pykotor.tools.template import extract_name, extract_tag
+from utils.misc import getResourceFromFile
 from utils.window import openResourceEditor
 
 
@@ -481,11 +483,24 @@ class _InstanceMode(_Mode):
 
         if selection:
             instance = selection[-1]
-            res = self._installation.resource(instance.identifier().resname, instance.identifier().restype)
-            if not res:
+            resname, restype = instance.identifier()
+            filepath = None
+
+            order = [SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.OVERRIDE]
+            search = self._installation.location(resname, restype, order)
+
+            for result in search:
+                if "/Override/" in result.filepath:
+                    filepath = result.filepath
+                elif Module.get_root(self._editor.filepath()) in result.filepath and (filepath is None or filepath.endswith(".rim")):
+                    filepath = result.filepath
+
+            if filepath:
+                data = getResourceFromFile(filepath, *instance.identifier())
+                openResourceEditor(filepath, resname, restype, data, self._installation, self._editor)
+            else:
                 # TODO Make prompt for override/MOD
                 ...
-            openResourceEditor(res.filepath, res.resname, res.restype, res.data, self._installation, self._editor)
 
     def editSelectedInstanceGeometry(self) -> None:
         if self._ui.renderArea.instanceSelection.last():
