@@ -77,7 +77,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuNew">
@@ -169,7 +169,7 @@
   <customwidget>
    <class>IndoorMapRenderer</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.indoorbuilder</header>
+   <header location="global">toolset.gui.windows.indoor_builder</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

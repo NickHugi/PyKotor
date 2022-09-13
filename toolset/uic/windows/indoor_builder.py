@@ -51,7 +51,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setStretch(1, 3)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
         self.menubar.setObjectName("menubar")
         self.menuNew = QtWidgets.QMenu(self.menubar)
         self.menuNew.setObjectName("menuNew")
@@ -120,4 +120,4 @@ class Ui_MainWindow(object):
         self.actionDeleteSelected.setText(_translate("MainWindow", "Delete Selected"))
         self.actionDownloadKits.setText(_translate("MainWindow", "Download Kits"))
         self.actionInstructions.setText(_translate("MainWindow", "Instructions"))
-from toolset.gui.widgets.indoorbuilder import IndoorMapRenderer
+from toolset.gui.windows.indoor_builder import IndoorMapRenderer
