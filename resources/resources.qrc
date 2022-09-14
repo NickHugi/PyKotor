@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="images">
+    <file>icons/lightmap.png</file>
     <file>icons/backface.png</file>
     <file>icons/lock.png</file>
     <file>icons/k1/camera.png</file>

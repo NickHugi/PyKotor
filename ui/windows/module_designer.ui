@@ -137,6 +137,54 @@ QCheckBox::indicator:checked:hover {
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="lightmapCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Enable lightmaps</string>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QCheckbox {
+	spacing: 0px;
+}
+
+QCheckBox::indicator {
+    image: url(:/images/icons/lightmap.png);
+	border: 1px solid rgba(30, 144, 255, 0.0);
+	width: 26px;
+	height: 26px;
+}
+
+QCheckBox::indicator:unchecked:hover {
+	background: rgba(30, 144, 255, 0.2);
+	border: 1px solid rgba(30, 144, 255, 0.4);
+}
+
+QCheckBox::indicator:checked {
+	background: rgba(30, 144, 255, 0.4);
+	border:1px solid rgba(30, 144, 255, 0.6);
+}
+
+QCheckBox::indicator:checked:hover {
+	background: rgba(30, 144, 255, 0.5);
+	border:1px solid rgba(30, 144, 255, 0.7);
+}
+
+</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="Line" name="line">
         <property name="orientation">
          <enum>Qt::Vertical</enum>

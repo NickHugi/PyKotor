@@ -95,6 +95,39 @@ class Ui_MainWindow(object):
         self.backfaceCheck.setChecked(True)
         self.backfaceCheck.setObjectName("backfaceCheck")
         self.horizontalLayout_2.addWidget(self.backfaceCheck)
+        self.lightmapCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.lightmapCheck.setMaximumSize(QtCore.QSize(28, 16777215))
+        self.lightmapCheck.setStyleSheet("QCheckbox {\n"
+"    spacing: 0px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator {\n"
+"    image: url(:/images/icons/lightmap.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
+        self.lightmapCheck.setText("")
+        self.lightmapCheck.setChecked(True)
+        self.lightmapCheck.setObjectName("lightmapCheck")
+        self.horizontalLayout_2.addWidget(self.lightmapCheck)
         self.line = QtWidgets.QFrame(self.centralwidget)
         self.line.setFrameShape(QtWidgets.QFrame.VLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
@@ -418,6 +451,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.lockInstancesCheck.setToolTip(_translate("MainWindow", "Lock all instances in place"))
         self.backfaceCheck.setToolTip(_translate("MainWindow", "Enable backface culling"))
+        self.lightmapCheck.setToolTip(_translate("MainWindow", "Enable lightmaps"))
         self.viewCreatureCheck.setToolTip(_translate("MainWindow", "Creatures"))
         self.viewDoorCheck.setToolTip(_translate("MainWindow", "Doors"))
         self.viewPlaceableCheck.setToolTip(_translate("MainWindow", "Placeables"))
