@@ -261,6 +261,8 @@ class Scene:
 
         if self.backface_culling:
             glEnable(GL_CULL_FACE)
+        else:
+            glDisable(GL_CULL_FACE)
 
         glDisable(GL_BLEND)
         self.shader.use()
@@ -330,6 +332,8 @@ class Scene:
 
         if self.backface_culling:
             glEnable(GL_CULL_FACE)
+        else:
+            glDisable(GL_CULL_FACE)
 
         self.picker_shader.use()
         self.picker_shader.set_matrix4("view", self.camera.view())
