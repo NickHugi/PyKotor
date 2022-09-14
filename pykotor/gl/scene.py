@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import random
 from contextlib import suppress
 from copy import copy
 from typing import Dict, List, Any, Optional, Union, Callable
@@ -9,8 +8,8 @@ from typing import Dict, List, Any, Optional, Union, Callable
 import glm
 from OpenGL.GL import glReadPixels
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
-    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_RGBA, GL_BLEND, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
-    glDisable, GL_CULL_FACE, GL_CW, GL_BACK, glCullFace, GL_FRONT_AND_BACK
+    GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_BLEND, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
+    glDisable, GL_CULL_FACE, GL_BACK, glCullFace
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
 from pykotor.common.misc import CaseInsensitiveDict
@@ -27,9 +26,9 @@ from pykotor.resource.type import ResourceType
 
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
     PLAIN_VSHADER, PLAIN_FSHADER
-from pykotor.gl.modelreader import gl_load_mdl, gl_load_stitched_model
-from pykotor.gl.model import Model, Cube, Boundary, Empty
-from pykotor.gl.models.predefined import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA, \
+from pykotor.gl.models.read_mdl import gl_load_stitched_model
+from pykotor.gl.models.mdl import Model, Cube, Boundary, Empty
+from pykotor.gl.models.predefined_mdl import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA, \
     SOUND_MDL_DATA, SOUND_MDX_DATA, CAMERA_MDL_DATA, CAMERA_MDX_DATA, TRIGGER_MDL_DATA, TRIGGER_MDX_DATA, \
     ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA
 

@@ -2,10 +2,10 @@ import struct
 from typing import List, Optional
 
 import glm
-from glm import mat4, vec3, quat, vec4
+from glm import mat4, vec3, vec4
 from pykotor.common.stream import BinaryReader
 
-from pykotor.gl.model import Node, Mesh, Model
+from pykotor.gl.models.mdl import Node, Mesh, Model
 
 
 def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: List[str]) -> Node:
