@@ -57,11 +57,54 @@ class Ui_MainWindow(object):
         self.lockInstancesCheck.setChecked(False)
         self.lockInstancesCheck.setObjectName("lockInstancesCheck")
         self.horizontalLayout_2.addWidget(self.lockInstancesCheck)
+        self.line_2 = QtWidgets.QFrame(self.centralwidget)
+        self.line_2.setFrameShape(QtWidgets.QFrame.VLine)
+        self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line_2.setObjectName("line_2")
+        self.horizontalLayout_2.addWidget(self.line_2)
+        self.backfaceCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.backfaceCheck.setMaximumSize(QtCore.QSize(28, 16777215))
+        self.backfaceCheck.setStyleSheet("QCheckbox {\n"
+"    spacing: 0px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator {\n"
+"    image: url(:/images/icons/backface.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
+        self.backfaceCheck.setText("")
+        self.backfaceCheck.setChecked(True)
+        self.backfaceCheck.setObjectName("backfaceCheck")
+        self.horizontalLayout_2.addWidget(self.backfaceCheck)
         self.line = QtWidgets.QFrame(self.centralwidget)
         self.line.setFrameShape(QtWidgets.QFrame.VLine)
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line.setObjectName("line")
         self.horizontalLayout_2.addWidget(self.line)
+        self.line_3 = QtWidgets.QFrame(self.centralwidget)
+        self.line_3.setFrameShape(QtWidgets.QFrame.VLine)
+        self.line_3.setFrameShadow(QtWidgets.QFrame.Sunken)
+        self.line_3.setObjectName("line_3")
+        self.horizontalLayout_2.addWidget(self.line_3)
         self.viewCreatureCheck = QtWidgets.QCheckBox(self.centralwidget)
         self.viewCreatureCheck.setStyleSheet("QCheckbox {\n"
 "    spacing: 0px;\n"
@@ -374,6 +417,7 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.lockInstancesCheck.setToolTip(_translate("MainWindow", "Lock all instances in place"))
+        self.backfaceCheck.setToolTip(_translate("MainWindow", "Enable backface culling"))
         self.viewCreatureCheck.setToolTip(_translate("MainWindow", "Creatures"))
         self.viewDoorCheck.setToolTip(_translate("MainWindow", "Doors"))
         self.viewPlaceableCheck.setToolTip(_translate("MainWindow", "Placeables"))
@@ -390,3 +434,4 @@ class Ui_MainWindow(object):
         self.actionInstructions.setText(_translate("MainWindow", "Instructions"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
 from toolset.gui.widgets.module_renderer import ModuleRenderer
+import resources_rc

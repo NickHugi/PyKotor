@@ -78,6 +78,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.viewWaypointCheck.toggled.connect(self.updateToggles)
         self.ui.viewCameraCheck.toggled.connect(self.updateToggles)
         self.ui.viewStoreCheck.toggled.connect(self.updateToggles)
+        self.ui.backfaceCheck.toggled.connect(self.updateToggles)
 
         self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCreatureCheck)
         self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewPlaceableCheck)
@@ -331,6 +332,8 @@ class ModuleDesigner(QMainWindow):
         self.hideSounds = self.ui.mainRenderer.scene.hide_sounds = not self.ui.viewSoundCheck.isChecked()
         self.hideStores = self.ui.mainRenderer.scene.hide_stores = not self.ui.viewStoreCheck.isChecked()
         self.hideCameras = self.ui.mainRenderer.scene.hide_cameras = not self.ui.viewCameraCheck.isChecked()
+
+        self.ui.mainRenderer.scene.backface_culling = self.ui.backfaceCheck.isChecked()
 
         self.rebuildInstanceList()
 
