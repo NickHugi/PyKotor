@@ -91,12 +91,9 @@ class ModuleRenderer(QOpenGLWidget):
         camera.distance = distance
 
     def paintGL(self) -> None:
-        if self._module is None:
-            return
-
         if not self._init:
             self._init = True
-            self.scene = Scene(self._installation, module=self._module)
+            self.scene = Scene(installation=self._installation, module=self._module)
             self.scene.camera.fov = self.settings.fieldOfView
             self.sceneInitalized.emit()
 
