@@ -484,6 +484,7 @@ class ModuleDesignerControlScheme:
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneath3dBind)
         self.snapCameraToSelected: ControlItem = ControlItem(self.settings.snapCameraToSelected3dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelected3dBind)
+        self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -502,6 +503,8 @@ class ModuleDesignerControlScheme:
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.selectUnderneath.satisfied(buttons, keys):
             self.editor.selectUnderneath()
+        if self.openContextMenu.satisfied(buttons, keys):
+            self.editor.onRendererContextMenu(QPoint(screen.x, screen.y))
 
     def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
