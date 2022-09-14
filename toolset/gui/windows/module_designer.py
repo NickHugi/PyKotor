@@ -47,6 +47,7 @@ class ModuleDesigner(QMainWindow):
         self.hideSounds: bool = False
         self.hideStores: bool = False
         self.hideCameras: bool = False
+        self.lockInstances: bool = False
 
         self.selectedInstances: List[GITInstance] = []
 
@@ -68,15 +69,15 @@ class ModuleDesigner(QMainWindow):
 
         self.ui.resourceTree.customContextMenuRequested.connect(self.onResourceTreeContextMenu)
 
-        self.ui.viewCreatureCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewPlaceableCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewDoorCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewSoundCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewTriggerCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewEncounterCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewWaypointCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewCameraCheck.toggled.connect(self.updateInstanceVisibility)
-        self.ui.viewStoreCheck.toggled.connect(self.updateInstanceVisibility)
+        self.ui.viewCreatureCheck.toggled.connect(self.updateToggles)
+        self.ui.viewPlaceableCheck.toggled.connect(self.updateToggles)
+        self.ui.viewDoorCheck.toggled.connect(self.updateToggles)
+        self.ui.viewSoundCheck.toggled.connect(self.updateToggles)
+        self.ui.viewTriggerCheck.toggled.connect(self.updateToggles)
+        self.ui.viewEncounterCheck.toggled.connect(self.updateToggles)
+        self.ui.viewWaypointCheck.toggled.connect(self.updateToggles)
+        self.ui.viewCameraCheck.toggled.connect(self.updateToggles)
+        self.ui.viewStoreCheck.toggled.connect(self.updateToggles)
 
         self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCreatureCheck)
         self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewPlaceableCheck)
@@ -320,7 +321,7 @@ class ModuleDesigner(QMainWindow):
 
         checkbox.setChecked(True)
 
-    def updateInstanceVisibility(self) -> None:
+    def updateToggles(self) -> None:
         self.hideCreatures = self.ui.mainRenderer.scene.hide_creatures = not self.ui.viewCreatureCheck.isChecked()
         self.hidePlaceables = self.ui.mainRenderer.scene.hide_placeables = not self.ui.viewPlaceableCheck.isChecked()
         self.hideDoors = self.ui.mainRenderer.scene.hide_doors = not self.ui.viewDoorCheck.isChecked()
@@ -330,6 +331,7 @@ class ModuleDesigner(QMainWindow):
         self.hideSounds = self.ui.mainRenderer.scene.hide_sounds = not self.ui.viewSoundCheck.isChecked()
         self.hideStores = self.ui.mainRenderer.scene.hide_stores = not self.ui.viewStoreCheck.isChecked()
         self.hideCameras = self.ui.mainRenderer.scene.hide_cameras = not self.ui.viewCameraCheck.isChecked()
+
         self.rebuildInstanceList()
 
     def onInstanceListDoubleClicked(self) -> None:
@@ -392,6 +394,9 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.doSelect = True
 
     def moveSelected(self, x: float, y: float) -> None:
+        if self.ui.lockInstancesCheck.isChecked():
+            return
+
         forward = -y * self.ui.mainRenderer.scene.camera.forward()
         sideward = x * self.ui.mainRenderer.scene.camera.sideward()
 
@@ -401,6 +406,9 @@ class ModuleDesigner(QMainWindow):
             instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y).z
 
     def rotateSelected(self, x: float, y: float) -> None:
+        if self.ui.lockInstancesCheck.isChecked():
+            return
+
         for instance in self.selectedInstances:
             instance.rotate(x/60, 0.0, 0.0)
     # endregion
