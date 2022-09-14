@@ -8,6 +8,7 @@ from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
     QMessageBox, QCheckBox, QFileDialog
 
+from data.misc import Bind, ControlItem
 from gui.dialogs.insert_instance import InsertInstanceDialog
 from gui.dialogs.select_module import SelectModuleDialog
 from pykotor.common.geometry import Vector2
@@ -24,6 +25,7 @@ from gui.windows.help import HelpWindow
 from pykotor.gl.scene import RenderObject, Camera
 
 from data.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
+from utils.misc import QtKey, QtMouse
 from utils.window import openResourceEditor
 
 
@@ -33,6 +35,8 @@ class ModuleDesigner(QMainWindow):
 
         self._installation: HTInstallation = installation
         self._module: Optional[Module] = None
+        self._controls: ModuleDesignerControlScheme = ModuleDesignerControlScheme(self)
+
         self.hideCreatures: bool = False
         self.hidePlaceables: bool = False
         self.hideDoors: bool = False
@@ -49,13 +53,6 @@ class ModuleDesigner(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
-
-        self.customControls: Dict[str, DynamicModuleEditorControls] = {}
-        self.activeControls: ModuleEditorControls = HolocronModuleEditorControls(self.ui.mainRenderer)
-
-        self._setupControlsMenu()
-        if "aurora.jsonc" in self.customControls:
-            self.activateCustomControls(self.customControls["aurora.jsonc"])
 
         self._refreshWindowTitle()
         self.rebuildResourceTree()
@@ -96,27 +93,9 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.mousePressed.connect(self.onRendererMousePressed)
         self.ui.mainRenderer.mouseMoved.connect(self.onRendererMouseMoved)
         self.ui.mainRenderer.mouseScrolled.connect(self.onRendererMouseScrolled)
+        self.ui.mainRenderer.keyboardPressed.connect(self.onKeyboardPressed)
         self.ui.mainRenderer.objectSelected.connect(self.onRendererObjectSelected)
         self.ui.mainRenderer.customContextMenuRequested.connect(self.onRendererContextMenu)
-
-    def _setupControlsMenu(self) -> None:
-        self.ui.menuControls.clear()
-        folder = "./controls/3d/"
-        if os.path.exists(folder):
-            for path in [path for path in os.listdir(folder) if path.endswith(".json") or path.endswith(".jsonc")]:
-                with suppress(Exception):
-                    controls = DynamicModuleEditorControls(self.ui.mainRenderer)
-                    controls.load(folder + path)
-                    self.customControls[path] = controls
-
-                    action = QAction(controls.name, self)
-                    action.triggered.connect(lambda _, c=controls: self.activateCustomControls(c))
-                    self.ui.menuControls.addAction(action)
-
-            self.ui.menuControls.addSeparator()
-            action = QAction("Reload", self)
-            action.triggered.connect(self._setupControlsMenu)
-            self.ui.menuControls.addAction(action)
 
     def _refreshWindowTitle(self) -> None:
         if self._module is None:
@@ -382,30 +361,72 @@ class ModuleDesigner(QMainWindow):
                 self._module.git().resource().remove(selected.data)
         self.ui.mainRenderer.scene.selection.clear()
 
+    # region State Methods
+    def snapCameraToInstance(self) -> None:
+        for instance in self.selectedInstances:
+            self.ui.mainRenderer.snapCameraToPoint(instance.position)
+            break
+
+    def deleteSelected(self) -> None:
+        for instance in self.selectedInstances:
+            self._module.git().resource().remove(instance)
+
+        self.selectedInstances.clear()
+        self.ui.mainRenderer.scene.selection.clear()
+        self.rebuildInstanceList()
+
+    def moveCamera(self, x: float, y: float) -> None:
+        forward = -y * self.ui.mainRenderer.scene.camera.forward()
+        sideward = x * self.ui.mainRenderer.scene.camera.sideward()
+        self.ui.mainRenderer.scene.camera.x -= (forward.x + sideward.x) / 10
+        self.ui.mainRenderer.scene.camera.y -= (forward.y + sideward.y) / 10
+
+    def rotateCamera(self, yaw: float, pitch: float) -> None:
+        self.ui.mainRenderer.rotateCamera(-yaw/150, pitch/150)
+
+    def zoomCamera(self, amount: float) -> None:
+        self.ui.mainRenderer.scene.camera.distance += amount
+
+    def selectUnderneath(self) -> None:
+        self.ui.mainRenderer.doSelect = True
+
+    def moveSelected(self, x: float, y: float) -> None:
+        forward = -y * self.ui.mainRenderer.scene.camera.forward()
+        sideward = x * self.ui.mainRenderer.scene.camera.sideward()
+
+        for instance in self.selectedInstances:
+            instance.position.x += (forward.x + sideward.x) / 10
+            instance.position.y += (forward.y + sideward.y) / 10
+            instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y).z
+
+    def rotateSelected(self, x: float, y: float) -> None:
+        for instance in self.selectedInstances:
+            instance.rotate(x/60, 0.0, 0.0)
+    # endregion
+
+    # region Signal Callbacks
     def onRendererMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if self._module is None:
-            return
-        self.activeControls.onMouseMoved(screen, delta, buttons, keys)
+        self._controls.onMouseMoved(screen, delta, None, None, buttons, keys)
 
     def onRendererMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if self._module is None:
-            return
-        self.activeControls.onMouseScrolled(delta, buttons, keys)
+        self._controls.onMouseScrolled(delta, buttons, keys)
 
     def onRendererMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if self._module is None:
-            return
-        self.activeControls.onMousePressed(screen, buttons, keys)
+        self._controls.onMousePressed(screen, buttons, keys)
+
+    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+        self._controls.onKeyboardPressed(buttons, keys)
 
     def onRendererObjectSelected(self, instance: GITInstance) -> None:
-        if self._module is None:
-            return
         if instance is not None:
             self.selectedInstances = [instance]
 
             self.ui.mainRenderer.scene.select(instance, True)
             self.selectInstanceItemOnList(instance)
             self.selectResourceItem(instance)
+        else:
+            self.selectedInstances = []
+            self.ui.mainRenderer.scene.selection.clear()
 
     def onRendererContextMenu(self, point: QPoint) -> None:
         if self._module is None:
@@ -438,23 +459,95 @@ class ModuleDesigner(QMainWindow):
         self.rebuildResourceTree()
         self.rebuildInstanceList()
         self._refreshWindowTitle()
+    # endregion
 
+    # region Events
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         super().keyPressEvent(e)
-        if bubble:
-            self.ui.mainRenderer.keyPressEvent(e, False)
-        self.activeControls.onKeyPressed(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         super().keyReleaseEvent(e)
-        if bubble:
-            self.ui.mainRenderer.keyReleaseEvent(e, False)
-        self.activeControls.onKeyReleased(self.ui.mainRenderer.mouseDown(), self.ui.mainRenderer.keysDown())
+    # endregion
 
 
 class ModuleDesignerSettings:
     def __init__(self):
         self.settings = QSettings('HolocronToolset', 'ModuleDesigner')
+
+    def resetControls(self) -> None:
+        self.settings.remove("panCamera3dBind")
+        self.settings.remove("rotateCamera3dBind")
+        self.settings.remove("zoomCamera3dBind")
+        self.settings.remove("rotateSelected3dBind")
+        self.settings.remove("moveSelected3dBind")
+        self.settings.remove("selectUnderneath3dBind")
+        self.settings.remove("deleteSelected3dBind")
+
+    # region Binds (Controls)
+    @property
+    def panCamera3dBind(self) -> Bind:
+        return self.settings.value("panCamera3dBind", ({QtKey.Key_Control}, {QtMouse.LeftButton}))
+
+    @panCamera3dBind.setter
+    def panCamera3dBind(self, value: Bind) -> None:
+        self.settings.setValue('panCamera3dBind', value)
+
+    @property
+    def rotateCamera3dBind(self) -> Bind:
+        return self.settings.value("rotateCamera3dBind", ({QtKey.Key_Control}, {QtMouse.MiddleButton}))
+
+    @rotateCamera3dBind.setter
+    def rotateCamera3dBind(self, value: Bind) -> None:
+        self.settings.setValue('rotateCamera3dBind', value)
+
+    @property
+    def zoomCamera3dBind(self) -> Bind:
+        return self.settings.value("zoomCamera3dBind", ({QtKey.Key_Control}, None))
+
+    @zoomCamera3dBind.setter
+    def zoomCamera3dBind(self, value: Bind) -> None:
+        self.settings.setValue('zoomCamera3dBind', value)
+
+    @property
+    def rotateSelected3dBind(self) -> Bind:
+        return self.settings.value("rotateSelected3dBind", (set(), {QtMouse.MiddleButton}))
+
+    @rotateSelected3dBind.setter
+    def rotateSelected3dBind(self, value: Bind) -> None:
+        self.settings.setValue('rotateSelected3dBind', value)
+
+    @property
+    def moveSelected3dBind(self) -> Bind:
+        return self.settings.value("moveSelected3dBind", (set(), {QtMouse.LeftButton}))
+
+    @moveSelected3dBind.setter
+    def moveSelected3dBind(self, value: Bind) -> None:
+        self.settings.setValue('moveSelected3dBind', value)
+
+    @property
+    def selectUnderneath3dBind(self) -> Bind:
+        return self.settings.value("selectUnderneath3dBind", (set(), {QtMouse.LeftButton}))
+
+    @selectUnderneath3dBind.setter
+    def selectUnderneath3dBind(self, value: Bind) -> None:
+        self.settings.setValue('selectUnderneath3dBind', value)
+
+    @property
+    def snapCameraToSelected3dBind(self) -> Bind:
+        return self.settings.value("snapCameraToSelected3dBind", ({QtKey.Key_Z}, None))
+
+    @snapCameraToSelected3dBind.setter
+    def snapCameraToSelected3dBind(self, value: Bind) -> None:
+        self.settings.setValue('snapCameraToSelected3dBind', value)
+
+    @property
+    def deleteSelected3dBind(self) -> Bind:
+        return self.settings.value("deleteSelected3dBind", ({QtKey.Key_Delete}, None))
+
+    @deleteSelected3dBind.setter
+    def deleteSelected3dBind(self, value: Bind) -> None:
+        self.settings.setValue('deleteSelected3dBind', value)
+    # endregion
 
     # region Ints
     @property
@@ -465,3 +558,48 @@ class ModuleDesignerSettings:
     def fieldOfView(self, value: int) -> None:
         self.settings.setValue('fieldOfView', value)
     # endregion
+
+
+class ModuleDesignerControlScheme:
+    def __init__(self, editor: ModuleDesigner):
+        self.editor: ModuleDesigner = editor
+        self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
+
+        self.panCamera: ControlItem = ControlItem(self.settings.panCamera3dBind)
+        self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera3dBind)
+        self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCamera3dBind)
+        self.rotateSelected: ControlItem = ControlItem(self.settings.rotateSelected3dBind)
+        self.moveSelected: ControlItem = ControlItem(self.settings.moveSelected3dBind)
+        self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneath3dBind)
+        self.snapCameraToSelected: ControlItem = ControlItem(self.settings.snapCameraToSelected3dBind)
+        self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelected3dBind)
+
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if self.zoomCamera.satisfied(buttons, keys):
+            self.editor.zoomCamera(-delta.y/60)
+
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if self.panCamera.satisfied(buttons, keys):
+            self.editor.moveCamera(screenDelta.x, screenDelta.y)
+        if self.rotateCamera.satisfied(buttons, keys):
+            self.editor.rotateCamera(screenDelta.x, screenDelta.y)
+        if self.moveSelected.satisfied(buttons, keys):
+            self.editor.moveSelected(screenDelta.x, screenDelta.y)
+        if self.rotateSelected.satisfied(buttons, keys):
+            self.editor.rotateSelected(screenDelta.x, screenDelta.y)
+
+    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        if self.selectUnderneath.satisfied(buttons, keys):
+            self.editor.selectUnderneath()
+
+    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        ...
+
+    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+        if self.snapCameraToSelected.satisfied(buttons, keys):
+            self.editor.snapCameraToInstance()
+        if self.deleteSelected.satisfied(buttons, keys):
+            self.editor.deleteSelected()
+
+    def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+        ...

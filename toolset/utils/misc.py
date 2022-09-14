@@ -5,6 +5,10 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices, QKeySequence
 
 
+QtKey = QtCore.Qt.Key
+QtMouse = QtCore.Qt.MouseButton
+
+
 def get_nums(string_input: str) -> List[int]:
     """
     Returns the numbers stored within a string. Numbers in a string are seperated by any non-numeric character.

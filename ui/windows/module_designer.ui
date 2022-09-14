@@ -450,18 +450,6 @@ QCheckBox::indicator:checked:hover {
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
    </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>View</string>
-    </property>
-    <widget class="QMenu" name="menuControls">
-     <property name="title">
-      <string>Controls</string>
-     </property>
-     <addaction name="actiona"/>
-    </widget>
-    <addaction name="menuControls"/>
-   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
@@ -469,7 +457,6 @@ QCheckBox::indicator:checked:hover {
     <addaction name="actionInstructions"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuView"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>

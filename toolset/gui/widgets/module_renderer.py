@@ -32,9 +32,9 @@ class ModuleRenderer(QOpenGLWidget):
     mousePressed = QtCore.pyqtSignal(object, object, object)  # screen coords, mouse, keys
     """Signal emitted when a mouse button is pressed on the widget."""
 
-    keyboardPressed = QtCore.pyqtSignal(object, object, object)  # mouse, keys
+    keyboardPressed = QtCore.pyqtSignal(object, object)  # mouse, keys
 
-    keyboardReleased = QtCore.pyqtSignal(object, object, object)  # mouse, keys
+    keyboardReleased = QtCore.pyqtSignal(object, object)  # mouse, keys
 
     objectSelected = QtCore.pyqtSignal(object)
     """Signal emitted when an object has been selected through the renderer."""
@@ -83,7 +83,7 @@ class ModuleRenderer(QOpenGLWidget):
     def resetMouseButtons(self) -> None:
         self._mouseDown.clear()
 
-    def snapCameraToPoint(self, point: Vector3, distance: float = 3.0):
+    def snapCameraToPoint(self, point: Vector3, distance: float = 5.0):
         camera = self.scene.camera
         newCamPos = Vector3.from_vector3(point)
 
@@ -180,6 +180,7 @@ class ModuleRenderer(QOpenGLWidget):
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         self._keysDown.add(e.key())
+        self.keyboardPressed.emit(self._mouseDown, self._keysDown)
         if bubble:
             self.window().keyPressEvent(e, False)
 

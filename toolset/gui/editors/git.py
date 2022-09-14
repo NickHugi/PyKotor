@@ -12,7 +12,7 @@ from PyQt5.QtCore import QPoint, QSettings
 from PyQt5.QtGui import QIcon, QColor, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QMenu, QListWidgetItem, QCheckBox, QDialog
 
-from data.misc import Bind
+from data.misc import Bind, ControlItem
 from pykotor.common.misc import Color
 
 from gui.dialogs.instance.camera import CameraDialog
@@ -1179,20 +1179,19 @@ class GITControlScheme:
         self.editor: GITEditor = editor
         self.settings: GITSettings = GITSettings()
 
-        self.panCamera: GITControlItem = GITControlItem(self.settings.panCameraBind)
-        self.rotateCamera: GITControlItem = GITControlItem(self.settings.rotateCameraBind)
-        self.zoomCamera: GITControlItem = GITControlItem(self.settings.zoomCameraBind)
-        self.rotateSelectedToPoint: GITControlItem = GITControlItem(self.settings.rotateSelectedToPointBind)
-        self.moveSelected: GITControlItem = GITControlItem(self.settings.moveSelectedBind)
-        self.selectUnderneath: GITControlItem = GITControlItem(self.settings.selectUnderneathBind)
-        self.deleteSelected: GITControlItem = GITControlItem(self.settings.deleteSelectedBind)
+        self.panCamera: ControlItem = ControlItem(self.settings.panCameraBind)
+        self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCameraBind)
+        self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCameraBind)
+        self.rotateSelectedToPoint: ControlItem = ControlItem(self.settings.rotateSelectedToPointBind)
+        self.moveSelected: ControlItem = ControlItem(self.settings.moveSelectedBind)
+        self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneathBind)
+        self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelectedBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
             self.editor.zoomCamera(delta.y / 50)
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2,
-                     buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.panCamera.satisfied(buttons, keys):
             self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
         if self.rotateCamera.satisfied(buttons, keys):
@@ -1215,12 +1214,3 @@ class GITControlScheme:
 
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...
-
-
-class GITControlItem:
-    def __init__(self, bind: Bind):
-        self.keys: Set[int] = bind[0]
-        self.mouse: Set[int] = bind[1]
-
-    def satisfied(self, buttons: Set[int], keys: Set[int]) -> bool:
-        return (self.mouse == buttons or self.mouse is None) and (self.keys == keys or self.keys is None)

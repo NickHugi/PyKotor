@@ -130,11 +130,33 @@ class ModuleDesignerWidget(QWidget):
         self.ui.setupUi(self)
         self.setupValues()
 
+    def _setupBindValues(self) -> None:
+        self.ui.moveCameraBindEdit.setBind(self.settings.panCamera3dBind)
+        self.ui.rotateCameraBindEdit.setBind(self.settings.rotateCamera3dBind)
+        self.ui.zoomCameraBindEdit.setBind(self.settings.zoomCamera3dBind)
+        self.ui.moveCameraToSelectionBindEdit.setBind(self.settings.snapCameraToSelected3dBind)
+        self.ui.selectObjectBindEdit.setBind(self.settings.selectUnderneath3dBind)
+        self.ui.rotateObjectBindEdit.setBind(self.settings.rotateSelected3dBind)
+        self.ui.deleteObjectBindEdit.setBind(self.settings.deleteSelected3dBind)
+
     def setupValues(self) -> None:
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
+        self._setupBindValues()
 
     def save(self) -> None:
         self.settings.fieldOfView = self.ui.fovSpin.value()
+
+        self.settings.panCameraBind = self.ui.moveCameraBindEdit.bind()
+        self.settings.rotateCameraBind = self.ui.rotateCameraBindEdit.bind()
+        self.settings.zoomCameraBind = self.ui.zoomCameraBindEdit.bind()
+        self.settings.selectUnderneathBind = self.ui.selectObjectBindEdit.bind()
+        self.settings.rotateSelectedToPointBind = self.ui.rotateObjectBindEdit.bind()
+        self.settings.snapCameraToSelected3dBind = self.ui.moveCameraToSelectionBindEdit.bind()
+        self.settings.deleteSelectedBind = self.ui.deleteObjectBindEdit.bind()
+
+    def resetControls(self) -> None:
+        self.settings.resetControls()
+        self._setupBindValues()
 
 
 class GITWidget(QWidget):
