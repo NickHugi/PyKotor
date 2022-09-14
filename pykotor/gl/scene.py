@@ -84,6 +84,7 @@ class Scene:
         self.hide_trigger_boundaries: bool = True
         self.hide_encounter_boundaries: bool = True
         self.backface_culling: bool = True
+        self.use_lightmap: bool = True
 
     def buildCache(self, clearCache: bool = False) -> None:
         if self.module is None:
@@ -268,6 +269,7 @@ class Scene:
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
+        self.shader.set_bool("enableLightmap", self.use_lightmap)
         group1 = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())

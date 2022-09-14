@@ -11,7 +11,7 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import GL_TEXTURE_2D, glTexParameteri, GL_RGB,
     GL_RGBA, GL_NEAREST_MIPMAP_LINEAR
 from OpenGL.raw.GL.VERSION.GL_1_1 import glBindTexture
 from OpenGL.raw.GL.VERSION.GL_1_3 import glCompressedTexImage2D
-from OpenGL.raw.GL.VERSION.GL_2_0 import GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, glUseProgram
+from OpenGL.raw.GL.VERSION.GL_2_0 import GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, glUseProgram, glUniform1i
 from glm import mat4, vec4, vec3
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 
@@ -49,12 +49,18 @@ out vec4 FragColor;
 
 layout(binding = 0) uniform sampler2D diffuse;
 layout(binding = 1) uniform sampler2D lightmap;
+uniform int enableLightmap;
 
 void main()
 {
     vec4 diffuseColor = texture(diffuse, diffuse_uv);
     vec4 lightmapColor = texture(lightmap, lightmap_uv);
-    FragColor = mix(diffuseColor, lightmapColor, 0.5);
+    
+    if (enableLightmap) {
+        FragColor = mix(diffuseColor, lightmapColor, 0.5);
+    } else {
+        FragColor = diffuseColor;
+    }
 }
 """
 
@@ -139,6 +145,9 @@ class Shader:
 
     def set_vector3(self, uniform: str, vector: vec3):
         glUniform3fv(self.uniform(uniform), 1, glm.value_ptr(vector))
+
+    def set_bool(self, uniform: str, boolean: bool):
+        glUniform1i(self.uniform(uniform), boolean)
 
 
 class Texture:
