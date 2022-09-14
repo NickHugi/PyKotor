@@ -112,25 +112,25 @@
   <customwidget>
    <class>MiscWidget</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.settings.pages</header>
+   <header location="global">toolset.gui.widgets.settings.misc</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>InstallationsWidget</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.settings.pages</header>
+   <header location="global">toolset.gui.widgets.settings.installations</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>ModuleDesignerWidget</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.settings.pages</header>
+   <header location="global">toolset.gui.widgets.settings.module_designer</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>GITWidget</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.settings.pages</header>
+   <header location="global">toolset.gui.widgets.settings.git</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

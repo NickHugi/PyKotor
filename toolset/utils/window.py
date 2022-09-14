@@ -2,11 +2,10 @@ from typing import Optional, Tuple, Union
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
-from globalsettings import GlobalSettings
+from gui.widgets.settings.installations import GlobalSettings
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
-
 
 
 windows = []

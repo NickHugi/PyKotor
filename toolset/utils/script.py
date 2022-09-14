@@ -3,7 +3,7 @@ import subprocess
 
 from PyQt5.QtWidgets import QFileDialog
 
-from globalsettings import NoConfigurationSetError, GlobalSettings
+from gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from pykotor.common.stream import BinaryWriter, BinaryReader
 
 

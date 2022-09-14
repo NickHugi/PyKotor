@@ -14,8 +14,8 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QStandardItem, QIcon, QPixmap, QCloseEvent
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QTreeView
 
-from globalsettings import GlobalSettings
 from gui.dialogs.settings import SettingsDialog
+from gui.widgets.settings.misc import GlobalSettings
 from pykotor.tools import model
 
 from pykotor.common.module import Module

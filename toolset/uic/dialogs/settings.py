@@ -95,4 +95,7 @@ class Ui_Dialog(object):
         self.settingsTree.topLevelItem(2).setText(0, _translate("Dialog", "Module Designer"))
         self.settingsTree.topLevelItem(3).setText(0, _translate("Dialog", "Misc"))
         self.settingsTree.setSortingEnabled(__sortingEnabled)
-from toolset.gui.widgets.settings.pages import GITWidget, InstallationsWidget, MiscWidget, ModuleDesignerWidget
+from toolset.gui.widgets.settings.git import GITWidget
+from toolset.gui.widgets.settings.installations import InstallationsWidget
+from toolset.gui.widgets.settings.misc import MiscWidget
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerWidget

@@ -9,7 +9,7 @@ from PyQt5.QtGui import QPaintEvent, QResizeEvent, QColor, QTextFormat, QPainter
     QFontMetricsF, QSyntaxHighlighter, QTextDocument, QTextCharFormat, QFont
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit, QTextEdit, QListWidgetItem, QMessageBox, QShortcut
 
-from globalsettings import GlobalSettings
+from gui.widgets.settings.installations import GlobalSettings
 from pykotor.common.script import ScriptFunction
 from pykotor.common.scriptdefs import TSL_FUNCTIONS, TSL_CONSTANTS, KOTOR_FUNCTIONS, KOTOR_CONSTANTS
 from pykotor.common.stream import BinaryWriter

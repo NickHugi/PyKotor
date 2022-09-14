@@ -6,7 +6,7 @@ from PyQt5.QtCore import QMimeData
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QShortcut, QTableView
 
-from globalsettings import GlobalSettings
+from gui.widgets.settings.installations import GlobalSettings
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import read_erf, ERF, ERFType, write_erf, ERFResource
 from pykotor.resource.formats.rim import read_rim, write_rim, RIM

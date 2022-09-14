@@ -11,9 +11,9 @@ from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QLis
 from gui.dialogs.load_from_module import LoadFromModuleDialog
 from gui.dialogs.save_to_bif import BifSaveDialog, BifSaveOption
 from gui.dialogs.save_to_module import SaveToModuleDialog
+from gui.widgets.settings.installations import GlobalSettings
 from pykotor.common.module import Module
 
-from globalsettings import GlobalSettings
 from toolset.gui.dialogs.save_to_rim import RimSaveDialog, RimSaveOption
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
