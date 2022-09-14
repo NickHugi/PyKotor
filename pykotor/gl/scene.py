@@ -19,7 +19,7 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.lyt import LYT
 from pykotor.resource.formats.tpc import TPC
-from pykotor.resource.formats.twoda import read_2da
+from pykotor.resource.formats.twoda import read_2da, TwoDA
 from pykotor.resource.generics.git import GIT, GITPlaceable, GITCreature, GITDoor, GITTrigger, GITEncounter, \
     GITWaypoint, GITSound, GITStore, GITCamera, GITInstance
 from pykotor.resource.type import ResourceType
@@ -39,13 +39,13 @@ SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLo
 class Scene:
     SPECIAL_MODELS = ["waypoint", "store", "sound", "camera", "trigger", "encounter"]
 
-    def __init__(self, installation: Installation, *, module: Optional[Module] = None):
+    def __init__(self, *, installation: Optional[Installation] = None, module: Optional[Module] = None):
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glCullFace(GL_BACK)
 
-        self.installation: Installation = installation
+        self.installation: Optional[Installation] = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
         self.objects: List[RenderObject] = []
@@ -66,10 +66,12 @@ class Scene:
 
         self.jumpToEntryLocation()
 
-        self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
-        self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_doors = TwoDA()
+        self.table_placeables = TwoDA()
+        self.table_creatures = TwoDA()
+        self.table_heads = TwoDA()
+        if installation is not None:
+            self.setInstallation(installation)
 
         self.hide_creatures: bool = False
         self.hide_placeables: bool = False
@@ -85,6 +87,12 @@ class Scene:
         self.hide_encounter_boundaries: bool = True
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
+
+    def setInstallation(self, installation: Installation) -> None:
+        self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
     def buildCache(self, clearCache: bool = False) -> None:
         if self.module is None:
