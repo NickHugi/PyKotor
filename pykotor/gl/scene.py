@@ -385,6 +385,9 @@ class Scene:
         return self.textures[name]
 
     def model(self, name: str) -> Model:
+        mdl_data = EMPTY_MDL_DATA
+        mdx_data = EMPTY_MDX_DATA
+
         if name not in self.models:
             if name == "waypoint":
                 mdl_data = WAYPOINT_MDL_DATA
@@ -410,15 +413,12 @@ class Scene:
             elif name == "empty":
                 mdl_data = EMPTY_MDL_DATA
                 mdx_data = EMPTY_MDX_DATA
-            else:
+            elif self.installation is not None:
                 mdl_search = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=self.module.capsules())
                 mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules())
                 if mdl_search and mdx_search:
                     mdl_data = mdl_search.data
                     mdx_data = mdx_search.data
-                else:
-                    mdl_data = EMPTY_MDL_DATA
-                    mdx_data = EMPTY_MDX_DATA
 
             # model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
             try:
