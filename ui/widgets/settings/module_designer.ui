@@ -106,7 +106,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="SetBindWidget" name="moveCameraBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="moveCamera3dBindEdit" native="true"/>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="label_3">
@@ -133,7 +133,7 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="SetBindWidget" name="rotateCameraBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="rotateCamera3dBindEdit" native="true"/>
             </item>
             <item row="3" column="0">
              <widget class="QLabel" name="label_4">
@@ -161,7 +161,7 @@
              </widget>
             </item>
             <item row="3" column="1">
-             <widget class="SetBindWidget" name="zoomCameraBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="zoomCamera3dBindEdit" native="true"/>
             </item>
             <item row="8" column="0">
              <widget class="QLabel" name="label_5">
@@ -188,7 +188,7 @@
              </widget>
             </item>
             <item row="8" column="1">
-             <widget class="SetBindWidget" name="selectObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="selectObject3dBindEdit" native="true"/>
             </item>
             <item row="9" column="0">
              <widget class="QLabel" name="label_6">
@@ -215,7 +215,7 @@
              </widget>
             </item>
             <item row="9" column="1">
-             <widget class="SetBindWidget" name="rotateObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="rotateObject3dBindEdit" native="true"/>
             </item>
             <item row="10" column="0">
              <widget class="QLabel" name="label_7">
@@ -242,7 +242,7 @@
              </widget>
             </item>
             <item row="10" column="1">
-             <widget class="SetBindWidget" name="deleteObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="deleteObject3dBindEdit" native="true"/>
             </item>
             <item row="5" column="0">
              <widget class="QLabel" name="label_8">
@@ -270,7 +270,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="SetBindWidget" name="moveCameraToSelectionBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="moveCameraToSelection3dBindEdit" native="true"/>
             </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_9">
@@ -281,7 +281,7 @@ to Selection</string>
                </size>
               </property>
               <property name="toolTip">
-               <string>Reacts to mouse scrolling.</string>
+               <string>Reacts to mouse movement.</string>
               </property>
               <property name="styleSheet">
                <string notr="true">QLabel:hover {
@@ -370,16 +370,16 @@ to Selection</string>
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="SetBindWidget" name="moveCameraZBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="moveCameraZ3dBindEdit" native="true"/>
             </item>
             <item row="4" column="1">
-             <widget class="SetBindWidget" name="zoomCameraMMBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="zoomCameraMM3dBindEdit" native="true"/>
             </item>
             <item row="6" column="1">
-             <widget class="SetBindWidget" name="moveObjectXYBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="moveObjectXY3dBindEdit" native="true"/>
             </item>
             <item row="7" column="1">
-             <widget class="SetBindWidget" name="moveObjectZBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="moveObjectZ3dBindEdit" native="true"/>
             </item>
            </layout>
           </item>
