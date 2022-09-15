@@ -536,7 +536,7 @@ class ModuleDesignerControlScheme:
         if self.rotateCamera.satisfied(buttons, keys):
             self.editor.rotateCamera(screenDelta.x, screenDelta.y)
         if self.moveSelected.satisfied(buttons, keys):
-            self.editor.moveSelected(screenDelta.x, screenDelta.y)
+            self.editor.moveSelectedToCursor()
         if self.rotateSelected.satisfied(buttons, keys):
             self.editor.rotateSelected(screenDelta.x, screenDelta.y)
 
