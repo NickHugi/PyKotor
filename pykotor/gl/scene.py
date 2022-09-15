@@ -7,11 +7,14 @@ from typing import Dict, List, Any, Optional, Union, Callable
 
 import glm
 from OpenGL.GL import glReadPixels
+from OpenGL.raw.GL.ARB.vertex_shader import GL_FLOAT
 from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST, glClearColor, glClear, \
     GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_BLEND, glBlendFunc, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, \
-    glDisable, GL_CULL_FACE, GL_BACK, glCullFace
+    glDisable, GL_CULL_FACE, GL_BACK, glCullFace, GL_DEPTH_COMPONENT
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
+from pykotor.common.geometry import Vector2, Vector3
+
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
@@ -30,7 +33,8 @@ from pykotor.gl.models.read_mdl import gl_load_stitched_model
 from pykotor.gl.models.mdl import Model, Cube, Boundary, Empty
 from pykotor.gl.models.predefined_mdl import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA, \
     SOUND_MDL_DATA, SOUND_MDX_DATA, CAMERA_MDL_DATA, CAMERA_MDX_DATA, TRIGGER_MDL_DATA, TRIGGER_MDX_DATA, \
-    ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA
+    ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA, \
+    CURSOR_MDX_DATA, CURSOR_MDL_DATA
 
 SEARCH_ORDER_2DA = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -52,6 +56,7 @@ class Scene:
         self.selection: List[RenderObject] = []
         self.module: Optional[Module] = module
         self.camera: Camera = Camera()
+        self.cursor: RenderObject = RenderObject("cursor")
 
         self.textures["NULL"] = Texture.from_color()
 
@@ -87,6 +92,7 @@ class Scene:
         self.hide_encounter_boundaries: bool = True
         self.backface_culling: bool = True
         self.use_lightmap: bool = True
+        self.show_cursor: bool = True
 
     def setInstallation(self, installation: Installation) -> None:
         self.table_doors = read_2da(installation.resource("genericdoors", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
@@ -265,6 +271,7 @@ class Scene:
 
     def render(self) -> None:
         self.buildCache()
+
         glClearColor(0.5, 0.5, 1, 1.0)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -299,7 +306,7 @@ class Scene:
 
         # Draw boundary for selected objects
         glDisable(GL_CULL_FACE)
-        self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.4))
+        self.plain_shader.set_vector4("color", vec4(0.0, 1.0, 0.0, 0.8))
         for obj in self.selection:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
 
@@ -310,6 +317,10 @@ class Scene:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
         for obj in [obj for obj in self.objects.values() if obj.model == "trigger" and not self.hide_trigger_boundaries]:
             obj.boundary(self).draw(self.plain_shader, obj.transform())
+
+        if self.show_cursor:
+            self.plain_shader.set_vector4("color", vec4(1.0, 0.0, 0.0, 0.4))
+            self._render_object(self.plain_shader, self.cursor, mat4())
 
     def _render_object(self, shader: Shader, obj: RenderObject, transform: mat4) -> None:
         if isinstance(obj.data, GITCreature) and self.hide_creatures:
@@ -383,6 +394,27 @@ class Scene:
 
         self.selection.append(target)
 
+    def screenToWorld(self, x: int, y: int) -> Vector3:
+        glClearColor(0.5, 0.5, 1, 1.0)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        if self.backface_culling:
+            glEnable(GL_CULL_FACE)
+        else:
+            glDisable(GL_CULL_FACE)
+
+        glDisable(GL_BLEND)
+        self.shader.use()
+        self.shader.set_matrix4("view", self.camera.view())
+        self.shader.set_matrix4("projection", self.camera.projection())
+        group1 = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
+        for obj in group1:
+            self._render_object(self.shader, obj, mat4())
+
+        zpos = glReadPixels(x, self.camera.height-y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]
+        cursor = glm.unProject(vec3(x, self.camera.height-y, zpos), self.camera.view(), self.camera.projection(), vec4(0, 0, self.camera.width, self.camera.height))
+        return Vector3(cursor.x, cursor.y, cursor.z)
+
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
             try:
@@ -427,6 +459,9 @@ class Scene:
             elif name == "empty":
                 mdl_data = EMPTY_MDL_DATA
                 mdx_data = EMPTY_MDX_DATA
+            elif name == "cursor":
+                mdl_data = CURSOR_MDL_DATA
+                mdx_data = CURSOR_MDX_DATA
             elif self.installation is not None:
                 mdl_search = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=self.module.capsules())
                 mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules())
@@ -544,11 +579,12 @@ class Camera:
         self.x: float = 40.0
         self.y: float = 130.0
         self.z: float = 0.5
+        self.width: int = 1920
+        self.height: int = 1080
         self.pitch: float = math.pi / 2
         self.yaw: float = 0.0
         self.distance: float = 10.0
         self.fov: float = 90.0
-        self.aspect: float = 16 / 9
 
     def view(self) -> mat4:
         up = vec3(0, 0, 1)
@@ -566,7 +602,7 @@ class Camera:
         return view
 
     def projection(self) -> mat4:
-        return glm.perspective(self.fov, self.aspect, 0.1, 5000)
+        return glm.perspective(self.fov, self.width/self.height, 0.1, 5000)
 
     def translate(self, translation: vec3) -> None:
         self.x += translation.x
