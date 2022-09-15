@@ -4,7 +4,7 @@ from typing import Set, Dict, Optional, List
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSettings, QTimer
-from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent
+from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent, QResizeEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
     QMessageBox, QCheckBox, QFileDialog
 
@@ -417,8 +417,6 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.doSelect = True
 
     def moveSelected(self, x: float, y: float) -> None:
-        self.moveSelectedToCursor()
-        return
         if self.ui.lockInstancesCheck.isChecked():
             return
 
