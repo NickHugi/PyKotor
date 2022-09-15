@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>453</width>
-    <height>548</height>
+    <height>767</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,7 +25,7 @@
         <x>0</x>
         <y>0</y>
         <width>433</width>
-        <height>528</height>
+        <height>747</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -49,13 +49,13 @@
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
-          <string>Controls</string>
+          <string>3D Controls</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
-             <widget class="QPushButton" name="controlsResetButton">
+             <widget class="QPushButton" name="controls3dResetButton">
               <property name="text">
                <string>Reset</string>
               </property>
@@ -380,6 +380,235 @@ to Selection</string>
             </item>
             <item row="7" column="1">
              <widget class="SetBindWidget" name="moveObjectZ3dBindEdit" native="true"/>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_2">
+         <property name="title">
+          <string>2D Controls</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QPushButton" name="controls2dResetButton">
+              <property name="text">
+               <string>Reset</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QFormLayout" name="formLayout_2">
+            <property name="verticalSpacing">
+             <number>10</number>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_13">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_14">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse scrolling.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Zoom Camera</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_15">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Rotate Camera</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse presses.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Select Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_17">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_18">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Delete Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_19">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Rotate Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="SetBindWidget" name="moveCamera2dBindEdit" native="true"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="SetBindWidget" name="zoomCamera2dBindEdit" native="true"/>
+            </item>
+            <item row="2" column="1">
+             <widget class="SetBindWidget" name="rotateCamera2dBindEdit" native="true"/>
+            </item>
+            <item row="3" column="1">
+             <widget class="SetBindWidget" name="selectObject2dBindEdit" native="true"/>
+            </item>
+            <item row="4" column="1">
+             <widget class="SetBindWidget" name="moveObject2dBindEdit" native="true"/>
+            </item>
+            <item row="5" column="1">
+             <widget class="SetBindWidget" name="rotateObject2dBindEdit" native="true"/>
+            </item>
+            <item row="6" column="1">
+             <widget class="SetBindWidget" name="deleteObject2dBindEdit" native="true"/>
             </item>
            </layout>
           </item>
