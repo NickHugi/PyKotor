@@ -62,6 +62,39 @@ class Ui_MainWindow(object):
         self.line_2.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_2.setObjectName("line_2")
         self.horizontalLayout_2.addWidget(self.line_2)
+        self.cursorCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.cursorCheck.setMaximumSize(QtCore.QSize(28, 16777215))
+        self.cursorCheck.setStyleSheet("QCheckbox {\n"
+"    spacing: 0px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator {\n"
+"    image: url(:/images/icons/cursor.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
+        self.cursorCheck.setText("")
+        self.cursorCheck.setChecked(True)
+        self.cursorCheck.setObjectName("cursorCheck")
+        self.horizontalLayout_2.addWidget(self.cursorCheck)
         self.backfaceCheck = QtWidgets.QCheckBox(self.centralwidget)
         self.backfaceCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.backfaceCheck.setStyleSheet("QCheckbox {\n"
@@ -450,6 +483,7 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.lockInstancesCheck.setToolTip(_translate("MainWindow", "Lock all instances in place"))
+        self.cursorCheck.setToolTip(_translate("MainWindow", "Display cursor at mouse"))
         self.backfaceCheck.setToolTip(_translate("MainWindow", "Enable backface culling"))
         self.lightmapCheck.setToolTip(_translate("MainWindow", "Enable lightmaps"))
         self.viewCreatureCheck.setToolTip(_translate("MainWindow", "Creatures"))

@@ -80,6 +80,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.viewStoreCheck.toggled.connect(self.updateToggles)
         self.ui.backfaceCheck.toggled.connect(self.updateToggles)
         self.ui.lightmapCheck.toggled.connect(self.updateToggles)
+        self.ui.cursorCheck.toggled.connect(self.updateToggles)
 
         self.ui.viewCreatureCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewCreatureCheck)
         self.ui.viewPlaceableCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisiblityDoubleClick(self.ui.viewPlaceableCheck)
@@ -336,6 +337,7 @@ class ModuleDesigner(QMainWindow):
 
         self.ui.mainRenderer.scene.backface_culling = self.ui.backfaceCheck.isChecked()
         self.ui.mainRenderer.scene.use_lightmap = self.ui.lightmapCheck.isChecked()
+        self.ui.mainRenderer.scene.show_cursor = self.ui.cursorCheck.isChecked()
 
         self.rebuildInstanceList()
 

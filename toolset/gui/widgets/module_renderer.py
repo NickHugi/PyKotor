@@ -107,6 +107,11 @@ class ModuleRenderer(QOpenGLWidget):
                 self.scene.selection.clear()
                 self.objectSelected.emit(None)
 
+        screenCursor = self.mapFromGlobal(self.cursor().pos())
+        worldCursor = self.scene.screenToWorld(screenCursor.x(), screenCursor.y())
+        if screenCursor.x() < self.width() and screenCursor.x() >= 0 and screenCursor.y() < self.height() and screenCursor.y() >= 0:
+            self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
+
         self.scene.render()
 
     # region Accessors
@@ -150,10 +155,8 @@ class ModuleRenderer(QOpenGLWidget):
     def resizeEvent(self, e: QResizeEvent) -> None:
         super().resizeEvent(e)
 
-        if self.scene is None:
-            return
-
-        self.scene.camera.aspect = e.size().width() / e.size().height()
+        self.scene.camera.width = e.size().width()
+        self.scene.camera.height = e.size().height()
 
     def wheelEvent(self, e: QWheelEvent) -> None:
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
