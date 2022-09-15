@@ -104,9 +104,9 @@ class ModuleDesigner(QMainWindow):
 
     def _refreshWindowTitle(self) -> None:
         if self._module is None:
-            title = "No Module - {} - Module Editor".format(self._installation.name)
+            title = "No Module - {} - Module Designer".format(self._installation.name)
         else:
-            title = "{} - {} - Module Editor".format(self._module._id, self._installation.name)
+            title = "{} - {} - Module Designer".format(self._module._id, self._installation.name)
         self.setWindowTitle(title)
 
     def openModule(self) -> None:
@@ -401,6 +401,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.doSelect = True
 
     def moveSelected(self, x: float, y: float) -> None:
+        self.moveSelectedToCursor()
+        return
         if self.ui.lockInstancesCheck.isChecked():
             return
 
@@ -411,6 +413,15 @@ class ModuleDesigner(QMainWindow):
             instance.position.x += (forward.x + sideward.x) / 10
             instance.position.y += (forward.y + sideward.y) / 10
             instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y).z
+
+    def moveSelectedToCursor(self) -> None:
+        if self.ui.lockInstancesCheck.isChecked():
+            return
+
+        for instance in self.selectedInstances:
+            instance.position.x = self.ui.mainRenderer.scene.cursor.position().x
+            instance.position.y = self.ui.mainRenderer.scene.cursor.position().y
+            instance.position.z = self.ui.mainRenderer.scene.cursor.position().z
 
     def rotateSelected(self, x: float, y: float) -> None:
         if self.ui.lockInstancesCheck.isChecked():
