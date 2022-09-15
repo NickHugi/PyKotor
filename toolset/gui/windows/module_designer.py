@@ -479,17 +479,17 @@ class ModuleDesigner(QMainWindow):
         if len(self.ui.mainRenderer.scene.selection) == 0:
             view = self.ui.mainRenderer.scene.camera.truePosition()
             rot = self.ui.mainRenderer.scene.camera
-            menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(world.x, world.y), False))
+            menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), False))
             menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False))
             menu.addSeparator()
-            menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(world.x, world.y), True))
-            menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(world.x, world.y), False))
-            menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(world.x, world.y), False))
-            menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(world.x, world.y), False))
-            menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(world.x, world.y), False))
-            menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(world.x, world.y), False))
-            menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(world.x, world.y), False))
-            menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(world.x, world.y), False))
+            menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), True))
+            menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), False))
+            menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(*world), False))
+            menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(*world), False))
+            menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(*world), False))
+            menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), False))
+            menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), False))
+            menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), False))
         else:
             menu.addAction("Remove").triggered.connect(self.removeSelectedInstances)
 
