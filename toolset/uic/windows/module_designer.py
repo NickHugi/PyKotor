@@ -20,7 +20,7 @@ class Ui_MainWindow(object):
         self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_2.setSpacing(0)
+        self.horizontalLayout_2.setSpacing(4)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem)
@@ -166,12 +166,8 @@ class Ui_MainWindow(object):
         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line.setObjectName("line")
         self.horizontalLayout_2.addWidget(self.line)
-        self.line_3 = QtWidgets.QFrame(self.centralwidget)
-        self.line_3.setFrameShape(QtWidgets.QFrame.VLine)
-        self.line_3.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.line_3.setObjectName("line_3")
-        self.horizontalLayout_2.addWidget(self.line_3)
         self.viewCreatureCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewCreatureCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewCreatureCheck.setStyleSheet("QCheckbox {\n"
 "    spacing: 0px;\n"
 "}\n"
@@ -204,6 +200,7 @@ class Ui_MainWindow(object):
         self.viewCreatureCheck.setObjectName("viewCreatureCheck")
         self.horizontalLayout_2.addWidget(self.viewCreatureCheck)
         self.viewDoorCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewDoorCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewDoorCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/door.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -232,6 +229,7 @@ class Ui_MainWindow(object):
         self.viewDoorCheck.setObjectName("viewDoorCheck")
         self.horizontalLayout_2.addWidget(self.viewDoorCheck)
         self.viewPlaceableCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewPlaceableCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewPlaceableCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/placeable.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -260,6 +258,7 @@ class Ui_MainWindow(object):
         self.viewPlaceableCheck.setObjectName("viewPlaceableCheck")
         self.horizontalLayout_2.addWidget(self.viewPlaceableCheck)
         self.viewStoreCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewStoreCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewStoreCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/merchant.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -288,6 +287,7 @@ class Ui_MainWindow(object):
         self.viewStoreCheck.setObjectName("viewStoreCheck")
         self.horizontalLayout_2.addWidget(self.viewStoreCheck)
         self.viewSoundCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewSoundCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewSoundCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/sound.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -316,6 +316,7 @@ class Ui_MainWindow(object):
         self.viewSoundCheck.setObjectName("viewSoundCheck")
         self.horizontalLayout_2.addWidget(self.viewSoundCheck)
         self.viewWaypointCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewWaypointCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewWaypointCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/waypoint.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -344,6 +345,7 @@ class Ui_MainWindow(object):
         self.viewWaypointCheck.setObjectName("viewWaypointCheck")
         self.horizontalLayout_2.addWidget(self.viewWaypointCheck)
         self.viewCameraCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewCameraCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewCameraCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/camera.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -372,6 +374,7 @@ class Ui_MainWindow(object):
         self.viewCameraCheck.setObjectName("viewCameraCheck")
         self.horizontalLayout_2.addWidget(self.viewCameraCheck)
         self.viewEncounterCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewEncounterCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewEncounterCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/encounter.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
@@ -400,6 +403,7 @@ class Ui_MainWindow(object):
         self.viewEncounterCheck.setObjectName("viewEncounterCheck")
         self.horizontalLayout_2.addWidget(self.viewEncounterCheck)
         self.viewTriggerCheck = QtWidgets.QCheckBox(self.centralwidget)
+        self.viewTriggerCheck.setMaximumSize(QtCore.QSize(28, 16777215))
         self.viewTriggerCheck.setStyleSheet("QCheckBox::indicator {\n"
 "    image: url(:/images/icons/k1/trigger.png);\n"
 "    border: 1px solid rgba(30, 144, 255, 0.0);\n"

@@ -94,7 +94,11 @@ class ModuleRenderer(QOpenGLWidget):
         if not self._init:
             self._init = True
             self.scene = Scene(installation=self._installation, module=self._module)
+
             self.scene.camera.fov = self.settings.fieldOfView
+            self.scene.camera.width = self.width()
+            self.scene.camera.height = self.height()
+
             self.sceneInitalized.emit()
 
         if self.doSelect:

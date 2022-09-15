@@ -18,7 +18,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <property name="spacing">
-       <number>0</number>
+       <number>4</number>
       </property>
       <item>
        <spacer name="horizontalSpacer">
@@ -240,14 +240,13 @@ QCheckBox::indicator:checked:hover {
        </widget>
       </item>
       <item>
-       <widget class="Line" name="line_3">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QCheckBox" name="viewCreatureCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Creatures</string>
         </property>
@@ -290,6 +289,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewDoorCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Doors</string>
         </property>
@@ -328,6 +333,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewPlaceableCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Placeables</string>
         </property>
@@ -366,6 +377,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewStoreCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Merchants</string>
         </property>
@@ -404,6 +421,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewSoundCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Sounds</string>
         </property>
@@ -442,6 +465,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewWaypointCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Waypoints</string>
         </property>
@@ -480,6 +509,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewCameraCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Cameras</string>
         </property>
@@ -518,6 +553,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewEncounterCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Encounters</string>
         </property>
@@ -556,6 +597,12 @@ QCheckBox::indicator:checked:hover {
       </item>
       <item>
        <widget class="QCheckBox" name="viewTriggerCheck">
+        <property name="maximumSize">
+         <size>
+          <width>28</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Triggers</string>
         </property>
