@@ -23,6 +23,7 @@ class SelectModuleDialog(QDialog):
         self.ui.cancelButton.clicked.connect(self.reject)
         self.ui.browseButton.clicked.connect(self.browse)
         self.ui.moduleList.currentRowChanged.connect(self.onRowChanged)
+        self.ui.filterEdit.textEdited.connect(self.onFilterEdited)
 
         self._buildModuleList()
 
@@ -57,3 +58,9 @@ class SelectModuleDialog(QDialog):
 
     def onRowChanged(self) -> None:
         self.ui.openButton.setEnabled(self.ui.moduleList.currentItem() is not None)
+
+    def onFilterEdited(self) -> None:
+        text = self.ui.filterEdit.text()
+        for row in range(self.ui.moduleList.count()):
+            item = self.ui.moduleList.item(row)
+            item.setHidden(not text.lower() in item.text().lower())
