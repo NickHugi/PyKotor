@@ -19,12 +19,18 @@ class ModuleDesignerWidget(QWidget):
         self.ui.setupUi(self)
         self.setupValues()
 
+        self.ui.controlsResetButton.clicked.connect(self.resetControls)
+
     def _setupBindValues(self) -> None:
-        self.ui.moveCameraBindEdit.setBind(self.settings.panCamera3dBind)
+        self.ui.moveCameraBindEdit.setBind(self.settings.panCameraXY3dBind)
+        self.ui.moveCameraZBindEdit.setBind(self.settings.panCameraZ3dBind)
         self.ui.rotateCameraBindEdit.setBind(self.settings.rotateCamera3dBind)
         self.ui.zoomCameraBindEdit.setBind(self.settings.zoomCamera3dBind)
+        self.ui.zoomCameraMMBindEdit.setBind(self.settings.zoomCamera3dMMBind)
         self.ui.moveCameraToSelectionBindEdit.setBind(self.settings.snapCameraToSelected3dBind)
         self.ui.selectObjectBindEdit.setBind(self.settings.selectUnderneath3dBind)
+        self.ui.moveObjectXYBindEdit.setBind(self.settings.moveSelectedXY3dBind)
+        self.ui.moveObjectZBindEdit.setBind(self.settings.moveSelectedZ3dBind)
         self.ui.rotateObjectBindEdit.setBind(self.settings.rotateSelected3dBind)
         self.ui.deleteObjectBindEdit.setBind(self.settings.deleteSelected3dBind)
 
@@ -35,10 +41,14 @@ class ModuleDesignerWidget(QWidget):
     def save(self) -> None:
         self.settings.fieldOfView = self.ui.fovSpin.value()
 
-        self.settings.panCameraBind = self.ui.moveCameraBindEdit.bind()
+        self.settings.panCameraXY3dBind = self.ui.moveCameraBindEdit.bind()
+        self.settings.panCameraZ3dBind = self.ui.moveCameraZBindEdit.bind()
         self.settings.rotateCameraBind = self.ui.rotateCameraBindEdit.bind()
         self.settings.zoomCameraBind = self.ui.zoomCameraBindEdit.bind()
+        self.settings.zoomCameraMMBind = self.ui.zoomCameraMMBindEdit.bind()
         self.settings.selectUnderneathBind = self.ui.selectObjectBindEdit.bind()
+        self.settings.moveSelectedXY3dBind = self.ui.moveObjectXYBindEdit.bind()
+        self.settings.moveSelectedZ3dBind = self.ui.moveObjectZBindEdit.bind()
         self.settings.rotateSelectedToPointBind = self.ui.rotateObjectBindEdit.bind()
         self.settings.snapCameraToSelected3dBind = self.ui.moveCameraToSelectionBindEdit.bind()
         self.settings.deleteSelectedBind = self.ui.deleteObjectBindEdit.bind()
@@ -53,22 +63,34 @@ class ModuleDesignerSettings:
         self.settings = QSettings('HolocronToolset', 'ModuleDesigner')
 
     def resetControls(self) -> None:
-        self.settings.remove("panCamera3dBind")
+        self.settings.remove("panCameraXY3dBind")
+        self.settings.remove("panCameraZ3dBind")
         self.settings.remove("rotateCamera3dBind")
         self.settings.remove("zoomCamera3dBind")
+        self.settings.remove("zoomCamera3dMMBind")
         self.settings.remove("rotateSelected3dBind")
-        self.settings.remove("moveSelected3dBind")
+        self.settings.remove("moveSelectedXY3dBind")
+        self.settings.remove("moveSelectedZ3dBind")
         self.settings.remove("selectUnderneath3dBind")
+        self.settings.remove("snapCameraToSelected3dBind")
         self.settings.remove("deleteSelected3dBind")
 
-    # region Binds (Controls)
+    # region Binds (Controls - 3D)
     @property
-    def panCamera3dBind(self) -> Bind:
-        return self.settings.value("panCamera3dBind", ({QtKey.Key_Control}, {QtMouse.LeftButton}))
+    def panCameraXY3dBind(self) -> Bind:
+        return self.settings.value("panCameraXY3dBind", ({QtKey.Key_Control}, {QtMouse.LeftButton}))
 
-    @panCamera3dBind.setter
-    def panCamera3dBind(self, value: Bind) -> None:
-        self.settings.setValue('panCamera3dBind', value)
+    @panCameraXY3dBind.setter
+    def panCameraXY3dBind(self, value: Bind) -> None:
+        self.settings.setValue('panCameraXY3dBind', value)
+
+    @property
+    def panCameraZ3dBind(self) -> Bind:
+        return self.settings.value("panCameraZ3dBind", ({QtKey.Key_Control}, set()))
+
+    @panCameraZ3dBind.setter
+    def panCameraZ3dBind(self, value: Bind) -> None:
+        self.settings.setValue('panCameraZ3dBind', value)
 
     @property
     def rotateCamera3dBind(self) -> Bind:
@@ -80,11 +102,19 @@ class ModuleDesignerSettings:
 
     @property
     def zoomCamera3dBind(self) -> Bind:
-        return self.settings.value("zoomCamera3dBind", ({QtKey.Key_Control}, None))
+        return self.settings.value("zoomCamera3dBind", (set(), None))
 
     @zoomCamera3dBind.setter
     def zoomCamera3dBind(self, value: Bind) -> None:
         self.settings.setValue('zoomCamera3dBind', value)
+
+    @property
+    def zoomCamera3dMMBind(self) -> Bind:
+        return self.settings.value("zoomCamera3dMMBind", ({QtKey.Key_Control}, {QtMouse.RightButton}))
+
+    @zoomCamera3dMMBind.setter
+    def zoomCamera3dMMBind(self, value: Bind) -> None:
+        self.settings.setValue('zoomCamera3dMMBind', value)
 
     @property
     def rotateSelected3dBind(self) -> Bind:
@@ -95,12 +125,20 @@ class ModuleDesignerSettings:
         self.settings.setValue('rotateSelected3dBind', value)
 
     @property
-    def moveSelected3dBind(self) -> Bind:
-        return self.settings.value("moveSelected3dBind", (set(), {QtMouse.LeftButton}))
+    def moveSelectedXY3dBind(self) -> Bind:
+        return self.settings.value("moveSelectedXY3dBind", (set(), {QtMouse.LeftButton}))
 
-    @moveSelected3dBind.setter
-    def moveSelected3dBind(self, value: Bind) -> None:
-        self.settings.setValue('moveSelected3dBind', value)
+    @moveSelectedXY3dBind.setter
+    def moveSelectedXY3dBind(self, value: Bind) -> None:
+        self.settings.setValue('moveSelectedXY3dBind', value)
+
+    @property
+    def moveSelectedZ3dBind(self) -> Bind:
+        return self.settings.value("moveSelectedZ3dBind", ({QtKey.Key_Shift}, {QtMouse.LeftButton}))
+
+    @moveSelectedZ3dBind.setter
+    def moveSelectedZ3dBind(self, value: Bind) -> None:
+        self.settings.setValue('moveSelectedZ3dBind', value)
 
     @property
     def selectUnderneath3dBind(self) -> Bind:

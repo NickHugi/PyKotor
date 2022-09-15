@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>453</width>
-    <height>318</height>
+    <height>548</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,7 +25,7 @@
         <x>0</x>
         <y>0</y>
         <width>433</width>
-        <height>298</height>
+        <height>528</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -78,71 +78,82 @@
           </item>
           <item>
            <layout class="QFormLayout" name="formLayout">
+            <property name="verticalSpacing">
+             <number>10</number>
+            </property>
             <item row="0" column="0">
              <widget class="QLabel" name="label_2">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
               <property name="text">
-               <string>Move Camera:</string>
+               <string>Move Camera XY</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
             <item row="0" column="1">
              <widget class="SetBindWidget" name="moveCameraBindEdit" native="true"/>
             </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_3">
-              <property name="text">
-               <string>Rotate Camera:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="SetBindWidget" name="rotateCameraBindEdit" native="true"/>
-            </item>
             <item row="2" column="0">
-             <widget class="QLabel" name="label_4">
+             <widget class="QLabel" name="label_3">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
               <property name="text">
-               <string>Zoom Camera:</string>
+               <string>Rotate Camera</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="SetBindWidget" name="zoomCameraBindEdit" native="true"/>
-            </item>
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Select Object:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="SetBindWidget" name="selectObjectBindEdit" native="true"/>
-            </item>
-            <item row="5" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>Rotate Object:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="1">
-             <widget class="SetBindWidget" name="rotateObjectBindEdit" native="true"/>
-            </item>
-            <item row="6" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>Delete Object:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="1">
-             <widget class="SetBindWidget" name="deleteObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="rotateCameraBindEdit" native="true"/>
             </item>
             <item row="3" column="0">
-             <widget class="QLabel" name="label_8">
+             <widget class="QLabel" name="label_4">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse scrolling.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
               <property name="text">
-               <string>Move Camera
-to Selection:</string>
+               <string>Zoom Camera
+(Mouse Scroll)</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
@@ -150,7 +161,225 @@ to Selection:</string>
              </widget>
             </item>
             <item row="3" column="1">
+             <widget class="SetBindWidget" name="zoomCameraBindEdit" native="true"/>
+            </item>
+            <item row="8" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse buttons.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Select Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <widget class="SetBindWidget" name="selectObjectBindEdit" native="true"/>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_6">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Rotate Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="SetBindWidget" name="rotateObjectBindEdit" native="true"/>
+            </item>
+            <item row="10" column="0">
+             <widget class="QLabel" name="label_7">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Delete Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="10" column="1">
+             <widget class="SetBindWidget" name="deleteObjectBindEdit" native="true"/>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera
+to Selection</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
              <widget class="SetBindWidget" name="moveCameraToSelectionBindEdit" native="true"/>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_9">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse scrolling.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Zoom Camera
+(Mouse Movement)</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_10">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse scrolling.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Object XY</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_11">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse scrolling.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Object Z</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_12">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Z</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="SetBindWidget" name="moveCameraZBindEdit" native="true"/>
+            </item>
+            <item row="4" column="1">
+             <widget class="SetBindWidget" name="zoomCameraMMBindEdit" native="true"/>
+            </item>
+            <item row="6" column="1">
+             <widget class="SetBindWidget" name="moveObjectXYBindEdit" native="true"/>
+            </item>
+            <item row="7" column="1">
+             <widget class="SetBindWidget" name="moveObjectZBindEdit" native="true"/>
             </item>
            </layout>
           </item>

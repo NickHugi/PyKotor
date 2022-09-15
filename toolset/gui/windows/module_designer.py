@@ -401,11 +401,12 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.scene.selection.clear()
         self.rebuildInstanceList()
 
-    def moveCamera(self, x: float, y: float) -> None:
+    def moveCamera(self, x: float, y: float, z: float) -> None:
         forward = -y * self.ui.mainRenderer.scene.camera.forward()
         sideward = x * self.ui.mainRenderer.scene.camera.sideward()
         self.ui.mainRenderer.scene.camera.x -= (forward.x + sideward.x) / 10
         self.ui.mainRenderer.scene.camera.y -= (forward.y + sideward.y) / 10
+        self.ui.mainRenderer.scene.camera.z -= z
 
     def rotateCamera(self, yaw: float, pitch: float) -> None:
         self.ui.mainRenderer.rotateCamera(-yaw/150, pitch/150)
@@ -416,7 +417,7 @@ class ModuleDesigner(QMainWindow):
     def selectUnderneath(self) -> None:
         self.ui.mainRenderer.doSelect = True
 
-    def moveSelected(self, x: float, y: float) -> None:
+    def moveSelected(self, x: float, y: float, z: float = None) -> None:
         if self.ui.lockInstancesCheck.isChecked():
             return
 
@@ -426,7 +427,10 @@ class ModuleDesigner(QMainWindow):
         for instance in self.selectedInstances:
             instance.position.x += (forward.x + sideward.x) / 10
             instance.position.y += (forward.y + sideward.y) / 10
-            instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y).z
+            if z is None:
+                instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y).z
+            else:
+                instance.position.z += z
 
     def moveSelectedToCursor(self) -> None:
         if self.ui.lockInstancesCheck.isChecked():
@@ -516,11 +520,14 @@ class ModuleDesignerControlScheme:
         self.editor: ModuleDesigner = editor
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
 
-        self.panCamera: ControlItem = ControlItem(self.settings.panCamera3dBind)
+        self.panXYCamera: ControlItem = ControlItem(self.settings.panCameraXY3dBind)
+        self.panZCamera: ControlItem = ControlItem(self.settings.panCameraZ3dBind)
         self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera3dBind)
         self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCamera3dBind)
+        self.zoomCameraMM: ControlItem = ControlItem(self.settings.zoomCamera3dMMBind)
         self.rotateSelected: ControlItem = ControlItem(self.settings.rotateSelected3dBind)
-        self.moveSelected: ControlItem = ControlItem(self.settings.moveSelected3dBind)
+        self.moveXYSelected: ControlItem = ControlItem(self.settings.moveSelectedXY3dBind)
+        self.moveZSelected: ControlItem = ControlItem(self.settings.moveSelectedZ3dBind)
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneath3dBind)
         self.snapCameraToSelected: ControlItem = ControlItem(self.settings.snapCameraToSelected3dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelected3dBind)
@@ -529,14 +536,20 @@ class ModuleDesignerControlScheme:
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
             self.editor.zoomCamera(-delta.y/60)
+        if self.panZCamera.satisfied(buttons, keys):
+            self.editor.moveCamera(0.0, 0.0, -delta.y/40)
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if self.panCamera.satisfied(buttons, keys):
-            self.editor.moveCamera(screenDelta.x, screenDelta.y)
+        if self.panXYCamera.satisfied(buttons, keys):
+            self.editor.moveCamera(screenDelta.x, screenDelta.y, 0.0)
         if self.rotateCamera.satisfied(buttons, keys):
             self.editor.rotateCamera(screenDelta.x, screenDelta.y)
-        if self.moveSelected.satisfied(buttons, keys):
+        if self.zoomCameraMM.satisfied(buttons, keys):
+            self.editor.zoomCamera(screenDelta.y)
+        if self.moveXYSelected.satisfied(buttons, keys):
             self.editor.moveSelectedToCursor()
+        if self.moveZSelected.satisfied(buttons, keys):
+            self.editor.moveSelected(0, 0, -screenDelta.y/40)
         if self.rotateSelected.satisfied(buttons, keys):
             self.editor.rotateSelected(screenDelta.x, screenDelta.y)
 
