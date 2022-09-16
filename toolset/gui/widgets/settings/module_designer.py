@@ -249,6 +249,176 @@ class ModuleDesignerSettings:
     @deleteObject2dBind.setter
     def deleteObject2dBind(self, value: Bind) -> None:
         self.settings.setValue('deleteObject2dBind', value)
+
+    @property
+    def snapCameraToSelected2dBind(self) -> Bind:
+        return self.settings.value("snapCameraToSelected2dBind", ({QtKey.Key_Z}, set()))
+
+    @snapCameraToSelected2dBind.setter
+    def snapCameraToSelected2dBind(self, value: Bind) -> None:
+        self.settings.setValue('snapCameraToSelected2dBind', value)
+    # endregion
+
+    # region Ints (Material Colours)
+    @property
+    def undefinedMaterialColour(self) -> int:
+        return self.settings.value("undefinedMaterialColour", 671088895, int)
+
+    @undefinedMaterialColour.setter
+    def undefinedMaterialColour(self, value: int) -> None:
+        self.settings.setValue('undefinedMaterialColour', value)
+
+    @property
+    def dirtMaterialColour(self) -> int:
+        return self.settings.value("dirtMaterialColour", 4281084972, int)
+
+    @dirtMaterialColour.setter
+    def dirtMaterialColour(self, value: int) -> None:
+        self.settings.setValue('dirtMaterialColour', value)
+
+    @property
+    def obscuringMaterialColour(self) -> int:
+        return self.settings.value("obscuringMaterialColour", 671088895, int)
+
+    @obscuringMaterialColour.setter
+    def obscuringMaterialColour(self, value: int) -> None:
+        self.settings.setValue('obscuringMaterialColour', value)
+
+    @property
+    def grassMaterialColour(self) -> int:
+        return self.settings.value("grassMaterialColour", 4281084972, int)
+
+    @grassMaterialColour.setter
+    def grassMaterialColour(self, value: int) -> None:
+        self.settings.setValue('grassMaterialColour', value)
+
+    @property
+    def stoneMaterialColour(self) -> int:
+        return self.settings.value("stoneMaterialColour", 4281084972, int)
+
+    @stoneMaterialColour.setter
+    def stoneMaterialColour(self, value: int) -> None:
+        self.settings.setValue('stoneMaterialColour', value)
+
+    @property
+    def woodMaterialColour(self) -> int:
+        return self.settings.value("woodMaterialColour", 4281084972, int)
+
+    @woodMaterialColour.setter
+    def woodMaterialColour(self, value: int) -> None:
+        self.settings.setValue('woodMaterialColour', value)
+
+    @property
+    def waterMaterialColour(self) -> int:
+        return self.settings.value("waterMaterialColour", 4281084972, int)
+
+    @waterMaterialColour.setter
+    def waterMaterialColour(self, value: int) -> None:
+        self.settings.setValue('waterMaterialColour', value)
+
+    @property
+    def nonWalkMaterialColour(self) -> int:
+        return self.settings.value("nonWalkMaterialColour", 671088895, int)
+
+    @nonWalkMaterialColour.setter
+    def nonWalkMaterialColour(self, value: int) -> None:
+        self.settings.setValue('nonWalkMaterialColour', value)
+
+    @property
+    def transparentMaterialColour(self) -> int:
+        return self.settings.value("transparentMaterialColour", 671088895, int)
+
+    @transparentMaterialColour.setter
+    def transparentMaterialColour(self, value: int) -> None:
+        self.settings.setValue('transparentMaterialColour', value)
+
+    @property
+    def carpetMaterialColour(self) -> int:
+        return self.settings.value("carpetMaterialColour", 4281084972, int)
+
+    @carpetMaterialColour.setter
+    def carpetMaterialColour(self, value: int) -> None:
+        self.settings.setValue('carpetMaterialColour', value)
+
+    @property
+    def metalMaterialColour(self) -> int:
+        return self.settings.value("metalMaterialColour", 4281084972, int)
+
+    @metalMaterialColour.setter
+    def metalMaterialColour(self, value: int) -> None:
+        self.settings.setValue('metalMaterialColour', value)
+
+    @property
+    def puddlesMaterialColour(self) -> int:
+        return self.settings.value("puddlesMaterialColour", 4281084972, int)
+
+    @puddlesMaterialColour.setter
+    def puddlesMaterialColour(self, value: int) -> None:
+        self.settings.setValue('puddlesMaterialColour', value)
+
+    @property
+    def swampMaterialColour(self) -> int:
+        return self.settings.value("swampMaterialColour", 4281084972, int)
+
+    @swampMaterialColour.setter
+    def swampMaterialColour(self, value: int) -> None:
+        self.settings.setValue('swampMaterialColour', value)
+
+    @property
+    def mudMaterialColour(self) -> int:
+        return self.settings.value("mudMaterialColour", 4281084972, int)
+
+    @mudMaterialColour.setter
+    def mudMaterialColour(self, value: int) -> None:
+        self.settings.setValue('mudMaterialColour', value)
+
+    @property
+    def leavesMaterialColour(self) -> int:
+        return self.settings.value("leavesMaterialColour", 4281084972, int)
+
+    @leavesMaterialColour.setter
+    def leavesMaterialColour(self, value: int) -> None:
+        self.settings.setValue('leavesMaterialColour', value)
+
+    @property
+    def doorMaterialColour(self) -> int:
+        return self.settings.value("doorMaterialColour", 4281084972, int)
+
+    @doorMaterialColour.setter
+    def doorMaterialColour(self, value: int) -> None:
+        self.settings.setValue('doorMaterialColour', value)
+
+    @property
+    def lavaMaterialColour(self) -> int:
+        return self.settings.value("lavaMaterialColour", 671088895, int)
+
+    @lavaMaterialColour.setter
+    def lavaMaterialColour(self, value: int) -> None:
+        self.settings.setValue('lavaMaterialColour', value)
+
+    @property
+    def bottomlessPitMaterialColour(self) -> int:
+        return self.settings.value("bottomlessPitMaterialColour", 671088895, int)
+
+    @bottomlessPitMaterialColour.setter
+    def bottomlessPitMaterialColour(self, value: int) -> None:
+        self.settings.setValue('bottomlessPitMaterialColour', value)
+
+    @property
+    def deepWaterMaterialColour(self) -> int:
+        return self.settings.value("deepWaterMaterialColour", 671088895, int)
+
+    @deepWaterMaterialColour.setter
+    def deepWaterMaterialColour(self, value: int) -> None:
+        self.settings.setValue('deepWaterMaterialColour', value)
+
+    @property
+    def nonWalkGrassMaterialColour(self) -> int:
+        return self.settings.value("nonWalkGrassMaterialColour", 671088895, int)
+
+    @nonWalkGrassMaterialColour.setter
+    def nonWalkGrassMaterialColour(self, value: int) -> None:
+        self.settings.setValue('nonWalkGrassMaterialColour', value)
     # endregion
 
     # region Ints

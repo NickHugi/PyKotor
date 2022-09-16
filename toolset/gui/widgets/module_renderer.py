@@ -20,7 +20,7 @@ class ModuleRenderer(QOpenGLWidget):
     sceneInitalized = QtCore.pyqtSignal()
     """Signal emitted when scene has been initialized."""
 
-    mouseMoved = QtCore.pyqtSignal(object, object, object, object)  # screen coords, screen delta, mouse, keys
+    mouseMoved = QtCore.pyqtSignal(object, object, object, object, object)  # screen coords, screen delta, world/mouse pos, mouse, keys
     """Signal emitted when mouse is moved over the widget."""
 
     mouseScrolled = QtCore.pyqtSignal(object, object, object)  # screen delta, mouse, keys
@@ -166,10 +166,11 @@ class ModuleRenderer(QOpenGLWidget):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
-        coords = Vector2(e.x(), e.y())
-        coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
-        self._mousePrev = coords
-        self.mouseMoved.emit(coords, coordsDelta, self._mouseDown, self._keysDown)
+        screen = Vector2(e.x(), e.y())
+        screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
+        world = self.scene.cursor.position()
+        self._mousePrev = screen
+        self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         self._mouseDown.add(e.button())
