@@ -21,7 +21,7 @@ class CreatureDialog(QDialog):
         self.ui.resrefEdit.setText(creature.resref.get())
         self.ui.xPosSpin.setValue(creature.position.x)
         self.ui.yPosSpin.setValue(creature.position.y)
-        self.ui.zPosSpin.setValue(creature.position.y)
+        self.ui.zPosSpin.setValue(creature.position.z)
         self.ui.bearingSpin.setValue(math.degrees(creature.bearing))
 
         self.creature: GITCreature = creature

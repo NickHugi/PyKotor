@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QActio
 from data.misc import Bind, ControlItem
 from gui.dialogs.insert_instance import InsertInstanceDialog
 from gui.dialogs.select_module import SelectModuleDialog
+from gui.editors.git import openInstanceDialog
 from gui.widgets.module_renderer import ModuleRenderer
 from gui.widgets.settings.module_designer import ModuleDesignerSettings
 from gui.widgets.walkmesh_renderer import WalkmeshRenderer
@@ -137,7 +138,6 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.mouseScrolled.connect(self.on3dMouseScrolled)
         self.ui.mainRenderer.keyboardPressed.connect(self.on3dKeyboardPressed)
         self.ui.mainRenderer.objectSelected.connect(self.on3dObjectSelected)
-        self.ui.mainRenderer.customContextMenuRequested.connect(self.on3dContextMenu)
 
         self.ui.flatRenderer.mousePressed.connect(self.on2dMousePressed)
         self.ui.flatRenderer.mouseMoved.connect(self.on2dMouseMoved)
@@ -379,6 +379,9 @@ class ModuleDesigner(QMainWindow):
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
 
+    def editInstance(self, instance: GITInstance) -> None:
+        openInstanceDialog(self, instance, self._installation)
+
     # region Selection Manipulations
     def setSelection(self, instances: List[GITInstance]) -> None:
         if instances:
@@ -489,7 +492,7 @@ class ModuleDesigner(QMainWindow):
         else:
             self.setSelection([])
 
-    def on3dContextMenu(self, point: QPoint) -> None:
+    def onContextMenu(self, world: Vector3, point: QPoint) -> None:
         if self._module is None:
             return
 
@@ -511,9 +514,10 @@ class ModuleDesigner(QMainWindow):
             menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), False))
             menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), False))
         else:
+            menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(self.selectedInstances[0]))
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
-        menu.popup(self.ui.mainRenderer.mapToGlobal(point))
+        menu.popup(point)
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
     def on3dSceneInitialized(self) -> None:
@@ -609,7 +613,8 @@ class ModuleDesignerControl3dScheme:
             self.renderer.doSelect = True
 
         if self.openContextMenu.satisfied(buttons, keys):
-            self.editor.on3dContextMenu(QPoint(screen.x, screen.y))
+            world = Vector3(*self.renderer.scene.cursor.position())
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
 
     def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
@@ -669,7 +674,8 @@ class ModuleDesignerControl2dScheme:
                 self.editor.setSelection([])
 
         if self.openContextMenu.satisfied(buttons, keys):
-            ...
+            world = self.renderer.toWorldCoords(screen.x, screen.y)
+            self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
 
     def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
