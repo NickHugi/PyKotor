@@ -185,12 +185,11 @@ class ModuleRenderer(QOpenGLWidget):
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         self._keysDown.add(e.key())
-        self.keyboardPressed.emit(self._mouseDown, self._keysDown)
-        if bubble:
-            self.window().keyPressEvent(e, False)
+        if self.hasFocus():
+            self.keyboardPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         self._keysDown.discard(e.key())
-        if bubble:
-            self.window().keyReleaseEvent(e, False)
+        if self.hasFocus():
+            self.keyboardReleased.emit(self._mouseDown, self._keysDown)
     # endregion

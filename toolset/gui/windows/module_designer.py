@@ -421,7 +421,7 @@ class ModuleDesigner(QMainWindow):
             return
 
         for instance in self.selectedInstances:
-            instance.rotate(x/60, y/60, 0.0)
+            instance.rotate(x/60, 0*y/60, 0.0)
     # endregion
 
     # region Signal Callbacks
@@ -539,17 +539,18 @@ class ModuleDesigner(QMainWindow):
 
     def on2dKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         self._controls2d.onKeyboardPressed(buttons, keys)
-
-    def on2dContextMenu(self, point: QPoint) -> None:
-        ...
     # endregion
 
     # region Events
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         super().keyPressEvent(e)
+        self.ui.mainRenderer.keyPressEvent(e)
+        self.ui.flatRenderer.keyPressEvent(e)
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         super().keyReleaseEvent(e)
+        self.ui.mainRenderer.keyReleaseEvent(e)
+        self.ui.flatRenderer.keyReleaseEvent(e)
     # endregion
 
 
