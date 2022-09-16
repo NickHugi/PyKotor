@@ -20,7 +20,7 @@ from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.lyt import LYT
+from pykotor.resource.formats.lyt import LYT, LYTRoom
 from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import read_2da, TwoDA
 from pykotor.resource.generics.git import GIT, GITPlaceable, GITCreature, GITDoor, GITTrigger, GITEncounter, \
@@ -140,7 +140,7 @@ class Scene:
         for room in self.layout.rooms:
             if room not in self.objects:
                 position = vec3(room.position.x, room.position.y, room.position.z)
-                self.objects[room] = RenderObject(room.model, position)
+                self.objects[room] = RenderObject(room.model, position, data=room)
 
         for door in self.git.doors:
             if door not in self.objects:
@@ -407,7 +407,7 @@ class Scene:
         self.shader.use()
         self.shader.set_matrix4("view", self.camera.view())
         self.shader.set_matrix4("projection", self.camera.projection())
-        group1 = [obj for obj in self.objects.values() if obj.model not in self.SPECIAL_MODELS]
+        group1 = [obj for obj in self.objects.values() if isinstance(obj.data, LYTRoom)]
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
