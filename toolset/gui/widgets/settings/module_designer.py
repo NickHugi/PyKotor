@@ -3,6 +3,7 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QWidget
 
 from data.misc import Bind
+from pykotor.common.misc import Color
 from utils.misc import QtKey, QtMouse
 
 
@@ -17,10 +18,33 @@ class ModuleDesignerWidget(QWidget):
         from toolset.uic.widgets.settings import module_designer
         self.ui = module_designer.Ui_Form()
         self.ui.setupUi(self)
-        self.setupValues()
+
+        self.ui.undefinedColorEdit.allowAlpha = True
+        self.ui.dirtColorEdit.allowAlpha = True
+        self.ui.obscuringColorEdit.allowAlpha = True
+        self.ui.grassColorEdit.allowAlpha = True
+        self.ui.stoneColorEdit.allowAlpha = True
+        self.ui.woodColorEdit.allowAlpha = True
+        self.ui.waterColorEdit.allowAlpha = True
+        self.ui.nonWalkColorEdit.allowAlpha = True
+        self.ui.transparentColorEdit.allowAlpha = True
+        self.ui.carpetColorEdit.allowAlpha = True
+        self.ui.metalColorEdit.allowAlpha = True
+        self.ui.puddlesColorEdit.allowAlpha = True
+        self.ui.swampColorEdit.allowAlpha = True
+        self.ui.mudColorEdit.allowAlpha = True
+        self.ui.leavesColorEdit.allowAlpha = True
+        self.ui.lavaColorEdit.allowAlpha = True
+        self.ui.bottomlessPitColorEdit.allowAlpha = True
+        self.ui.deepWaterColorEdit.allowAlpha = True
+        self.ui.doorColorEdit.allowAlpha = True
+        self.ui.nonWalkGrassColorEdit.allowAlpha = True
 
         self.ui.controls3dResetButton.clicked.connect(self.resetControls3d)
         self.ui.controls2dResetButton.clicked.connect(self.resetControls2d)
+        self.ui.coloursResetButton.clicked.connect(self.resetColours)
+
+        self.setupValues()
 
     def _setupBindValues(self) -> None:
         self.ui.moveCamera3dBindEdit.setBind(self.settings.moveCameraXY3dBind)
@@ -42,9 +66,32 @@ class ModuleDesignerWidget(QWidget):
         self.ui.rotateObject2dBindEdit.setBind(self.settings.rotateObject2dBind)
         self.ui.deleteObject2dBindEdit.setBind(self.settings.deleteObject2dBind)
 
+    def _setupColourValues(self) -> None:
+        self.ui.undefinedColorEdit.setColor(Color.from_rgba_integer(self.settings.undefinedMaterialColour))
+        self.ui.dirtColorEdit.setColor(Color.from_rgba_integer(self.settings.dirtMaterialColour))
+        self.ui.obscuringColorEdit.setColor(Color.from_rgba_integer(self.settings.obscuringMaterialColour))
+        self.ui.grassColorEdit.setColor(Color.from_rgba_integer(self.settings.grassMaterialColour))
+        self.ui.stoneColorEdit.setColor(Color.from_rgba_integer(self.settings.stoneMaterialColour))
+        self.ui.woodColorEdit.setColor(Color.from_rgba_integer(self.settings.woodMaterialColour))
+        self.ui.waterColorEdit.setColor(Color.from_rgba_integer(self.settings.waterMaterialColour))
+        self.ui.nonWalkColorEdit.setColor(Color.from_rgba_integer(self.settings.nonWalkMaterialColour))
+        self.ui.transparentColorEdit.setColor(Color.from_rgba_integer(self.settings.transparentMaterialColour))
+        self.ui.carpetColorEdit.setColor(Color.from_rgba_integer(self.settings.carpetMaterialColour))
+        self.ui.metalColorEdit.setColor(Color.from_rgba_integer(self.settings.metalMaterialColour))
+        self.ui.puddlesColorEdit.setColor(Color.from_rgba_integer(self.settings.puddlesMaterialColour))
+        self.ui.swampColorEdit.setColor(Color.from_rgba_integer(self.settings.swampMaterialColour))
+        self.ui.mudColorEdit.setColor(Color.from_rgba_integer(self.settings.mudMaterialColour))
+        self.ui.leavesColorEdit.setColor(Color.from_rgba_integer(self.settings.leavesMaterialColour))
+        self.ui.lavaColorEdit.setColor(Color.from_rgba_integer(self.settings.lavaMaterialColour))
+        self.ui.bottomlessPitColorEdit.setColor(Color.from_rgba_integer(self.settings.bottomlessPitMaterialColour))
+        self.ui.deepWaterColorEdit.setColor(Color.from_rgba_integer(self.settings.deepWaterMaterialColour))
+        self.ui.doorColorEdit.setColor(Color.from_rgba_integer(self.settings.doorMaterialColour))
+        self.ui.nonWalkGrassColorEdit.setColor(Color.from_rgba_integer(self.settings.nonWalkGrassMaterialColour))
+
     def setupValues(self) -> None:
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
         self._setupBindValues()
+        self._setupColourValues()
 
     def save(self) -> None:
         self.settings.fieldOfView = self.ui.fovSpin.value()
@@ -68,6 +115,27 @@ class ModuleDesignerWidget(QWidget):
         self.settings.rotateObject2dBind = self.ui.rotateObject2dBindEdit.bind()
         self.settings.deleteObject2dBind = self.ui.deleteObject2dBindEdit.bind()
 
+        self.settings.undefinedMaterialColour = self.ui.undefinedColorEdit.color().rgba_integer()
+        self.settings.dirtMaterialColour = self.ui.dirtColorEdit.color().rgba_integer()
+        self.settings.obscuringMaterialColour = self.ui.obscuringColorEdit.color().rgba_integer()
+        self.settings.grassMaterialColour = self.ui.grassColorEdit.color().rgba_integer()
+        self.settings.stoneMaterialColour = self.ui.stoneColorEdit.color().rgba_integer()
+        self.settings.woodMaterialColour = self.ui.woodColorEdit.color().rgba_integer()
+        self.settings.waterMaterialColour = self.ui.waterColorEdit.color().rgba_integer()
+        self.settings.nonWalkMaterialColour = self.ui.nonWalkColorEdit.color().rgba_integer()
+        self.settings.transparentMaterialColour = self.ui.transparentColorEdit.color().rgba_integer()
+        self.settings.carpetMaterialColour = self.ui.carpetColorEdit.color().rgba_integer()
+        self.settings.metalMaterialColour = self.ui.metalColorEdit.color().rgba_integer()
+        self.settings.puddlesMaterialColour = self.ui.puddlesColorEdit.color().rgba_integer()
+        self.settings.swampMaterialColour = self.ui.swampColorEdit.color().rgba_integer()
+        self.settings.mudMaterialColour = self.ui.mudColorEdit.color().rgba_integer()
+        self.settings.leavesMaterialColour = self.ui.leavesColorEdit.color().rgba_integer()
+        self.settings.lavaMaterialColour = self.ui.lavaColorEdit.color().rgba_integer()
+        self.settings.bottomlessPitMaterialColour = self.ui.bottomlessPitColorEdit.color().rgba_integer()
+        self.settings.deepWaterMaterialColour = self.ui.deepWaterColorEdit.color().rgba_integer()
+        self.settings.doorMaterialColour = self.ui.doorColorEdit.color().rgba_integer()
+        self.settings.nonWalkGrassMaterialColour = self.ui.nonWalkGrassColorEdit.color().rgba_integer()
+
     def resetControls3d(self) -> None:
         self.settings.resetControls3d()
         self._setupBindValues()
@@ -75,6 +143,10 @@ class ModuleDesignerWidget(QWidget):
     def resetControls2d(self) -> None:
         self.settings.resetControls2d()
         self._setupBindValues()
+
+    def resetColours(self) -> None:
+        self.settings.resetMaterialColors()
+        self._setupColourValues()
 
 
 class ModuleDesignerSettings:
@@ -102,6 +174,28 @@ class ModuleDesignerSettings:
         self.settings.remove("moveObject2dBind")
         self.settings.remove("rotateObject2dBind")
         self.settings.remove("deleteObject2dBind")
+
+    def resetMaterialColors(self) -> None:
+        self.settings.remove("undefinedMaterialColour")
+        self.settings.remove("dirtMaterialColour")
+        self.settings.remove("obscuringMaterialColour")
+        self.settings.remove("grassMaterialColour")
+        self.settings.remove("stoneMaterialColour")
+        self.settings.remove("woodMaterialColour")
+        self.settings.remove("waterMaterialColour")
+        self.settings.remove("nonWalkMaterialColour")
+        self.settings.remove("transparentMaterialColour")
+        self.settings.remove("carpetMaterialColour")
+        self.settings.remove("metalMaterialColour")
+        self.settings.remove("puddlesMaterialColour")
+        self.settings.remove("swampMaterialColour")
+        self.settings.remove("mudMaterialColour")
+        self.settings.remove("leavesMaterialColour")
+        self.settings.remove("doorMaterialColour")
+        self.settings.remove("lavaMaterialColour")
+        self.settings.remove("bottomlessPitMaterialColour")
+        self.settings.remove("deepWaterMaterialColour")
+        self.settings.remove("nonWalkGrassMaterialColour")
 
     # region Binds (Controls - 3D)
     @property
