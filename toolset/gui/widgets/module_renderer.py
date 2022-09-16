@@ -93,8 +93,8 @@ class ModuleRenderer(QOpenGLWidget):
     def paintGL(self) -> None:
         if not self._init:
             self._init = True
-            self.scene = Scene(installation=self._installation, module=self._module)
 
+            self.scene = Scene(installation=self._installation, module=self._module)
             self.scene.camera.fov = self.settings.fieldOfView
             self.scene.camera.width = self.width()
             self.scene.camera.height = self.height()

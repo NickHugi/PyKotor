@@ -559,8 +559,8 @@ class ModuleDesignerControl3dScheme:
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
 
-        self.panXYCamera: ControlItem = ControlItem(self.settings.panCameraXY3dBind)
-        self.panZCamera: ControlItem = ControlItem(self.settings.panCameraZ3dBind)
+        self.panXYCamera: ControlItem = ControlItem(self.settings.moveCameraXY3dBind)
+        self.panZCamera: ControlItem = ControlItem(self.settings.moveCameraZ3dBind)
         self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera3dBind)
         self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCamera3dBind)
         self.zoomCameraMM: ControlItem = ControlItem(self.settings.zoomCamera3dMMBind)
