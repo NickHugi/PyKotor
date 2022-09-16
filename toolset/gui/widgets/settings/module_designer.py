@@ -46,7 +46,11 @@ class ModuleDesignerWidget(QWidget):
 
         self.setupValues()
 
-    def _setupBindValues(self) -> None:
+    def _setupControlValues(self) -> None:
+        self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
+        self.ui.rotateCameraSensitivity3dEdit.setValue(self.settings.rotateCameraSensitivity3d)
+        self.ui.zoomCameraSensitivity3dEdit.setValue(self.settings.zoomCameraSensitivity3d)
+
         self.ui.moveCamera3dBindEdit.setBind(self.settings.moveCameraXY3dBind)
         self.ui.moveCameraZ3dBindEdit.setBind(self.settings.moveCameraZ3dBind)
         self.ui.rotateCamera3dBindEdit.setBind(self.settings.rotateCamera3dBind)
@@ -58,6 +62,10 @@ class ModuleDesignerWidget(QWidget):
         self.ui.moveObjectZ3dBindEdit.setBind(self.settings.moveSelectedZ3dBind)
         self.ui.rotateObject3dBindEdit.setBind(self.settings.rotateSelected3dBind)
         self.ui.deleteObject3dBindEdit.setBind(self.settings.deleteSelected3dBind)
+
+        self.ui.moveCameraSensitivity2dEdit.setValue(self.settings.moveCameraSensitivity2d)
+        self.ui.rotateCameraSensitivity2dEdit.setValue(self.settings.rotateCameraSensitivity2d)
+        self.ui.zoomCameraSensitivity2dEdit.setValue(self.settings.zoomCameraSensitivity2d)
 
         self.ui.moveCamera2dBindEdit.setBind(self.settings.moveCamera2dBind)
         self.ui.zoomCamera2dBindEdit.setBind(self.settings.zoomCamera2dBind)
@@ -90,7 +98,7 @@ class ModuleDesignerWidget(QWidget):
 
     def setupValues(self) -> None:
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
-        self._setupBindValues()
+        self._setupControlValues()
         self._setupColourValues()
 
     def save(self) -> None:
@@ -138,11 +146,11 @@ class ModuleDesignerWidget(QWidget):
 
     def resetControls3d(self) -> None:
         self.settings.resetControls3d()
-        self._setupBindValues()
+        self._setupControlValues()
 
     def resetControls2d(self) -> None:
         self.settings.resetControls2d()
-        self._setupBindValues()
+        self._setupControlValues()
 
     def resetColours(self) -> None:
         self.settings.resetMaterialColors()
@@ -154,6 +162,9 @@ class ModuleDesignerSettings:
         self.settings = QSettings('HolocronToolset', 'ModuleDesigner')
 
     def resetControls3d(self) -> None:
+        self.settings.remove("moveCameraSensitivity3d")
+        self.settings.remove("rotateCameraSensitivity3d")
+        self.settings.remove("zoomCameraSensitivity3d")
         self.settings.remove("panCameraXY3dBind")
         self.settings.remove("panCameraZ3dBind")
         self.settings.remove("rotateCamera3dBind")
@@ -197,7 +208,33 @@ class ModuleDesignerSettings:
         self.settings.remove("deepWaterMaterialColour")
         self.settings.remove("nonWalkGrassMaterialColour")
 
-    # region Binds (Controls - 3D)
+    # region Int/Binds (Controls - 3D)
+    @property
+    def moveCameraSensitivity3d(self) -> int:
+        return self.settings.value("moveCameraSensitivity3d", 100)
+
+    @moveCameraSensitivity3d.setter
+    def moveCameraSensitivity3d(self, value: int) -> None:
+        self.settings.setValue('moveCameraSensitivity3d', value)
+
+    @property
+    def rotateCameraSensitivity3d(self) -> int:
+        return self.settings.value("rotateCameraSensitivity3d", 100)
+
+    @rotateCameraSensitivity3d.setter
+    def rotateCameraSensitivity3d(self, value: int) -> None:
+        self.settings.setValue('rotateCameraSensitivity3d', value)
+
+    @property
+    def zoomCameraSensitivity3d(self) -> int:
+        return self.settings.value("zoomCameraSensitivity3d", 100)
+
+    @zoomCameraSensitivity3d.setter
+    def zoomCameraSensitivity3d(self, value: int) -> None:
+        self.settings.setValue('zoomCameraSensitivity3d', value)
+
+    ##############################
+
     @property
     def moveCameraXY3dBind(self) -> Bind:
         return self.settings.value("panCameraXY3dBind", ({QtKey.Key_Control}, {QtMouse.LeftButton}))
@@ -287,7 +324,33 @@ class ModuleDesignerSettings:
         self.settings.setValue('deleteSelected3dBind', value)
     # endregion
 
-    # region Binds (Controls - 2D)
+    # region Int/Binds (Controls - 2D)
+    @property
+    def moveCameraSensitivity2d(self) -> int:
+        return self.settings.value("moveCameraSensitivity2d", 100)
+
+    @moveCameraSensitivity2d.setter
+    def moveCameraSensitivity2d(self, value: int) -> None:
+        self.settings.setValue('moveCameraSensitivity2d', value)
+
+    @property
+    def rotateCameraSensitivity2d(self) -> int:
+        return self.settings.value("rotateCameraSensitivity2d", 100)
+
+    @rotateCameraSensitivity2d.setter
+    def rotateCameraSensitivity2d(self, value: int) -> None:
+        self.settings.setValue('rotateCameraSensitivity2d', value)
+
+    @property
+    def zoomCameraSensitivity2d(self) -> int:
+        return self.settings.value("zoomCameraSensitivity2d", 100)
+
+    @zoomCameraSensitivity2d.setter
+    def zoomCameraSensitivity2d(self, value: int) -> None:
+        self.settings.setValue('zoomCameraSensitivity2d', value)
+
+    ##############################
+
     @property
     def moveCamera2dBind(self) -> Bind:
         return self.settings.value("moveCamera2dBind", ({QtKey.Key_Control}, {QtMouse.LeftButton}))

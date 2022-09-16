@@ -575,23 +575,28 @@ class ModuleDesignerControl3dScheme:
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
-            self.renderer.scene.camera.distance += -delta.y/50
+            strength = self.settings.zoomCameraSensitivity3d / 2000
+            self.renderer.scene.camera.distance += -delta.y * strength
 
         if self.panZCamera.satisfied(buttons, keys):
-            self.renderer.scene.camera.z -= -delta.y/40
+            strength = self.settings.moveCameraSensitivity3d / 1000
+            self.renderer.scene.camera.z -= -delta.y * strength
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.panXYCamera.satisfied(buttons, keys):
             forward = -screenDelta.y * self.renderer.scene.camera.forward()
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
-            self.renderer.scene.camera.x -= (forward.x + sideward.x) / 10
-            self.renderer.scene.camera.y -= (forward.y + sideward.y) / 10
+            strength = self.settings.moveCameraSensitivity3d / 1000
+            self.renderer.scene.camera.x -= (forward.x + sideward.x) * strength
+            self.renderer.scene.camera.y -= (forward.y + sideward.y) * strength
 
         if self.rotateCamera.satisfied(buttons, keys):
-            self.renderer.rotateCamera(-screenDelta.x / 150, screenDelta.y / 150)
+            strength = self.settings.moveCameraSensitivity3d / 10000
+            self.renderer.rotateCamera(-screenDelta.x * strength, screenDelta.y * strength)
 
         if self.zoomCameraMM.satisfied(buttons, keys):
-            self.renderer.scene.camera.distance -= screenDelta.y
+            strength = self.settings.zoomCameraSensitivity3d / 5000
+            self.renderer.scene.camera.distance -= screenDelta.y * strength
 
         if self.moveXYSelected.satisfied(buttons, keys):
             if self.editor.ui.lockInstancesCheck.isChecked():
@@ -651,13 +656,17 @@ class ModuleDesignerControl2dScheme:
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
-            self.renderer.camera.nudgeZoom(delta.y / 50)
+            strength = self.settings.moveCameraSensitivity2d / 100 / 50
+            self.renderer.camera.nudgeZoom(delta.y * strength)
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.moveCamera.satisfied(buttons, keys):
-            self.renderer.camera.nudgePosition(-worldDelta.x, -worldDelta.y)
+            strength = self.settings.moveCameraSensitivity2d / 100
+            self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
+
         if self.rotateCamera.satisfied(buttons, keys):
-            self.renderer.camera.nudgeRotation(screenDelta.x / 50)
+            strength = self.settings.rotateCameraSensitivity2d / 100 / 50
+            self.renderer.camera.nudgeRotation(screenDelta.x * strength)
 
         if self.moveSelected.satisfied(buttons, keys):
             self.editor.moveSelected(worldDelta.x, worldDelta.y)
