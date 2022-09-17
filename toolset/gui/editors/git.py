@@ -684,7 +684,7 @@ class _InstanceMode(_Mode):
 
         def instanceSort(inst):
             textToSort = str(inst.camera_id) if isinstance(inst, GITCamera) else inst.identifier().resname.lower()
-            textToSort = textToSort if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
+            textToSort = textToSort.rjust(9, "0") if isinstance(inst, GITCamera) else inst.identifier().restype.extension + textToSort
             return textToSort
         instances = self._git.instances()
         instances = sorted(instances, key=instanceSort)
