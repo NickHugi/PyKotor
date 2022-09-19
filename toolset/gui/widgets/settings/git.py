@@ -3,6 +3,7 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QWidget
 
 from data.misc import Bind
+from data.settings import Settings
 from pykotor.common.misc import Color
 from utils.misc import QtKey, QtMouse
 
@@ -117,9 +118,9 @@ class GITWidget(QWidget):
         self._setupBindValues()
 
 
-class GITSettings:
+class GITSettings(Settings):
     def __init__(self):
-        self.settings = QSettings('HolocronToolset', 'GITEditor')
+        super().__init__("GITEditor")
 
     def resetMaterialColors(self) -> None:
         self.settings.remove("undefinedMaterialColour")
@@ -153,295 +154,154 @@ class GITSettings:
         self.settings.remove("deleteSelectedBind")
 
     # region Strings (Instance Labels)
-    @property
-    def creatureLabel(self) -> str:
-        return self.settings.value("creatureLabel", "", str)
-
-    @creatureLabel.setter
-    def creatureLabel(self, value: str) -> None:
-        self.settings.setValue('creatureLabel', value)
-
-    @property
-    def doorLabel(self) -> str:
-        return self.settings.value("doorLabel", "", str)
-
-    @doorLabel.setter
-    def doorLabel(self, value: str) -> None:
-        self.settings.setValue('doorLabel', value)
-
-    @property
-    def placeableLabel(self) -> str:
-        return self.settings.value("placeableLabel", "", str)
-
-    @placeableLabel.setter
-    def placeableLabel(self, value: str) -> None:
-        self.settings.setValue('placeableLabel', value)
-
-    @property
-    def storeLabel(self) -> str:
-        return self.settings.value("storeLabel", "", str)
-
-    @storeLabel.setter
-    def storeLabel(self, value: str) -> None:
-        self.settings.setValue('storeLabel', value)
-
-    @property
-    def soundLabel(self) -> str:
-        return self.settings.value("soundLabel", "", str)
-
-    @soundLabel.setter
-    def soundLabel(self, value: str) -> None:
-        self.settings.setValue('soundLabel', value)
-
-    @property
-    def waypointLabel(self) -> str:
-        return self.settings.value("waypointLabel", "", str)
-
-    @waypointLabel.setter
-    def waypointLabel(self, value: str) -> None:
-        self.settings.setValue('waypointLabel', value)
-
-    @property
-    def cameraLabel(self) -> str:
-        return self.settings.value("cameraLabel", "", str)
-
-    @cameraLabel.setter
-    def cameraLabel(self, value: str) -> None:
-        self.settings.setValue('cameraLabel', value)
-
-    @property
-    def encounterLabel(self) -> str:
-        return self.settings.value("encounterLabel", "", str)
-
-    @encounterLabel.setter
-    def encounterLabel(self, value: str) -> None:
-        self.settings.setValue('encounterLabel', value)
-
-    @property
-    def triggerLabel(self) -> str:
-        return self.settings.value("triggerLabel", "", str)
-
-    @triggerLabel.setter
-    def triggerLabel(self, value: str) -> None:
-        self.settings.setValue('triggerLabel', value)
+    creatureLabel = Settings._addSetting(
+        "creatureLabel",
+        ""
+    )
+    doorLabel = Settings._addSetting(
+        "doorLabel",
+        ""
+    )
+    placeableLabel = Settings._addSetting(
+        "placeableLabel",
+        ""
+    )
+    storeLabel = Settings._addSetting(
+        "storeLabel",
+        ""
+    )
+    soundLabel = Settings._addSetting(
+        "soundLabel",
+        ""
+    )
+    waypointLabel = Settings._addSetting(
+        "waypointLabel",
+        ""
+    )
+    cameraLabel = Settings._addSetting(
+        "cameraLabel",
+        ""
+    )
+    encounterLabel = Settings._addSetting(
+        "encounterLabel",
+        ""
+    )
+    triggerLabel = Settings._addSetting(
+        "triggerLabel",
+        ""
+    )
     # endregion
 
     # region Ints (Material Colours)
-    @property
-    def undefinedMaterialColour(self) -> int:
-        return self.settings.value("undefinedMaterialColour", 671088895, int)
-
-    @undefinedMaterialColour.setter
-    def undefinedMaterialColour(self, value: int) -> None:
-        self.settings.setValue('undefinedMaterialColour', value)
-
-    @property
-    def dirtMaterialColour(self) -> int:
-        return self.settings.value("dirtMaterialColour", 4281084972, int)
-
-    @dirtMaterialColour.setter
-    def dirtMaterialColour(self, value: int) -> None:
-        self.settings.setValue('dirtMaterialColour', value)
-
-    @property
-    def obscuringMaterialColour(self) -> int:
-        return self.settings.value("obscuringMaterialColour", 671088895, int)
-
-    @obscuringMaterialColour.setter
-    def obscuringMaterialColour(self, value: int) -> None:
-        self.settings.setValue('obscuringMaterialColour', value)
-
-    @property
-    def grassMaterialColour(self) -> int:
-        return self.settings.value("grassMaterialColour", 4281084972, int)
-
-    @grassMaterialColour.setter
-    def grassMaterialColour(self, value: int) -> None:
-        self.settings.setValue('grassMaterialColour', value)
-
-    @property
-    def stoneMaterialColour(self) -> int:
-        return self.settings.value("stoneMaterialColour", 4281084972, int)
-
-    @stoneMaterialColour.setter
-    def stoneMaterialColour(self, value: int) -> None:
-        self.settings.setValue('stoneMaterialColour', value)
-
-    @property
-    def woodMaterialColour(self) -> int:
-        return self.settings.value("woodMaterialColour", 4281084972, int)
-
-    @woodMaterialColour.setter
-    def woodMaterialColour(self, value: int) -> None:
-        self.settings.setValue('woodMaterialColour', value)
-
-    @property
-    def waterMaterialColour(self) -> int:
-        return self.settings.value("waterMaterialColour", 4281084972, int)
-
-    @waterMaterialColour.setter
-    def waterMaterialColour(self, value: int) -> None:
-        self.settings.setValue('waterMaterialColour', value)
-
-    @property
-    def nonWalkMaterialColour(self) -> int:
-        return self.settings.value("nonWalkMaterialColour", 671088895, int)
-
-    @nonWalkMaterialColour.setter
-    def nonWalkMaterialColour(self, value: int) -> None:
-        self.settings.setValue('nonWalkMaterialColour', value)
-
-    @property
-    def transparentMaterialColour(self) -> int:
-        return self.settings.value("transparentMaterialColour", 671088895, int)
-
-    @transparentMaterialColour.setter
-    def transparentMaterialColour(self, value: int) -> None:
-        self.settings.setValue('transparentMaterialColour', value)
-
-    @property
-    def carpetMaterialColour(self) -> int:
-        return self.settings.value("carpetMaterialColour", 4281084972, int)
-
-    @carpetMaterialColour.setter
-    def carpetMaterialColour(self, value: int) -> None:
-        self.settings.setValue('carpetMaterialColour', value)
-
-    @property
-    def metalMaterialColour(self) -> int:
-        return self.settings.value("metalMaterialColour", 4281084972, int)
-
-    @metalMaterialColour.setter
-    def metalMaterialColour(self, value: int) -> None:
-        self.settings.setValue('metalMaterialColour', value)
-
-    @property
-    def puddlesMaterialColour(self) -> int:
-        return self.settings.value("puddlesMaterialColour", 4281084972, int)
-
-    @puddlesMaterialColour.setter
-    def puddlesMaterialColour(self, value: int) -> None:
-        self.settings.setValue('puddlesMaterialColour', value)
-
-    @property
-    def swampMaterialColour(self) -> int:
-        return self.settings.value("swampMaterialColour", 4281084972, int)
-
-    @swampMaterialColour.setter
-    def swampMaterialColour(self, value: int) -> None:
-        self.settings.setValue('swampMaterialColour', value)
-
-    @property
-    def mudMaterialColour(self) -> int:
-        return self.settings.value("mudMaterialColour", 4281084972, int)
-
-    @mudMaterialColour.setter
-    def mudMaterialColour(self, value: int) -> None:
-        self.settings.setValue('mudMaterialColour', value)
-
-    @property
-    def leavesMaterialColour(self) -> int:
-        return self.settings.value("leavesMaterialColour", 4281084972, int)
-
-    @leavesMaterialColour.setter
-    def leavesMaterialColour(self, value: int) -> None:
-        self.settings.setValue('leavesMaterialColour', value)
-
-    @property
-    def doorMaterialColour(self) -> int:
-        return self.settings.value("doorMaterialColour", 4281084972, int)
-
-    @doorMaterialColour.setter
-    def doorMaterialColour(self, value: int) -> None:
-        self.settings.setValue('doorMaterialColour', value)
-
-    @property
-    def lavaMaterialColour(self) -> int:
-        return self.settings.value("lavaMaterialColour", 671088895, int)
-
-    @lavaMaterialColour.setter
-    def lavaMaterialColour(self, value: int) -> None:
-        self.settings.setValue('lavaMaterialColour', value)
-
-    @property
-    def bottomlessPitMaterialColour(self) -> int:
-        return self.settings.value("bottomlessPitMaterialColour", 671088895, int)
-
-    @bottomlessPitMaterialColour.setter
-    def bottomlessPitMaterialColour(self, value: int) -> None:
-        self.settings.setValue('bottomlessPitMaterialColour', value)
-
-    @property
-    def deepWaterMaterialColour(self) -> int:
-        return self.settings.value("deepWaterMaterialColour", 671088895, int)
-
-    @deepWaterMaterialColour.setter
-    def deepWaterMaterialColour(self, value: int) -> None:
-        self.settings.setValue('deepWaterMaterialColour', value)
-
-    @property
-    def nonWalkGrassMaterialColour(self) -> int:
-        return self.settings.value("nonWalkGrassMaterialColour", 671088895, int)
-
-    @nonWalkGrassMaterialColour.setter
-    def nonWalkGrassMaterialColour(self, value: int) -> None:
-        self.settings.setValue('nonWalkGrassMaterialColour', value)
+    undefinedMaterialColour = Settings._addSetting(
+        "undefinedMaterialColour",
+        671088895
+    )
+    dirtMaterialColour = Settings._addSetting(
+        "undefinedMaterialColour",
+        4281084972
+    )
+    obscuringMaterialColour = Settings._addSetting(
+        "obscuringMaterialColour",
+        671088895
+    )
+    grassMaterialColour = Settings._addSetting(
+        "grassMaterialColour",
+        4281084972
+    )
+    stoneMaterialColour = Settings._addSetting(
+        "stoneMaterialColour",
+        4281084972
+    )
+    woodMaterialColour = Settings._addSetting(
+        "woodMaterialColour",
+        4281084972
+    )
+    waterMaterialColour = Settings._addSetting(
+        "waterMaterialColour",
+        4281084972
+    )
+    nonWalkMaterialColour = Settings._addSetting(
+        "nonWalkMaterialColour",
+        671088895
+    )
+    transparentMaterialColour = Settings._addSetting(
+        "transparentMaterialColour",
+        671088895
+    )
+    carpetMaterialColour = Settings._addSetting(
+        "carpetMaterialColour",
+        4281084972
+    )
+    metalMaterialColour = Settings._addSetting(
+        "metalMaterialColour",
+        4281084972
+    )
+    puddlesMaterialColour = Settings._addSetting(
+        "puddlesMaterialColour",
+        4281084972
+    )
+    swampMaterialColour = Settings._addSetting(
+        "swampMaterialColour",
+        4281084972
+    )
+    mudMaterialColour = Settings._addSetting(
+        "mudMaterialColour",
+        4281084972
+    )
+    leavesMaterialColour = Settings._addSetting(
+        "leavesMaterialColour",
+        4281084972
+    )
+    doorMaterialColour = Settings._addSetting(
+        "doorMaterialColour",
+        4281084972
+    )
+    lavaMaterialColour = Settings._addSetting(
+        "lavaMaterialColour",
+        671088895
+    )
+    bottomlessPitMaterialColour = Settings._addSetting(
+        "bottomlessPitMaterialColour",
+        671088895
+    )
+    deepWaterMaterialColour = Settings._addSetting(
+        "deepWaterMaterialColour",
+        671088895
+    )
+    nonWalkGrassMaterialColour = Settings._addSetting(
+        "nonWalkGrassMaterialColour",
+        671088895
+    )
     # endregion
 
     # region Binds (Controls)
-    @property
-    def panCameraBind(self) -> Bind:
-        return self.settings.value("panCameraBind", ({QtKey.Key_Control}, {QtMouse.LeftButton}))
-
-    @panCameraBind.setter
-    def panCameraBind(self, value: Bind) -> None:
-        self.settings.setValue('panCameraBind', value)
-
-    @property
-    def rotateCameraBind(self) -> Bind:
-        return self.settings.value("rotateCameraBind", ({QtKey.Key_Control}, {QtMouse.MiddleButton}))
-
-    @rotateCameraBind.setter
-    def rotateCameraBind(self, value: Bind) -> None:
-        self.settings.setValue('rotateCameraBind', value)
-
-    @property
-    def zoomCameraBind(self) -> Bind:
-        return self.settings.value("zoomCameraBind", ({QtKey.Key_Control}, None))
-
-    @zoomCameraBind.setter
-    def zoomCameraBind(self, value: Bind) -> None:
-        self.settings.setValue('zoomCameraBind', value)
-
-    @property
-    def rotateSelectedToPointBind(self) -> Bind:
-        return self.settings.value("rotateSelectedToPoint", (set(), {QtMouse.MiddleButton}))
-
-    @rotateSelectedToPointBind.setter
-    def rotateSelectedToPointBind(self, value: Bind) -> None:
-        self.settings.setValue('rotateSelectedToPoint', value)
-
-    @property
-    def moveSelectedBind(self) -> Bind:
-        return self.settings.value("moveSelectedBind", (set(), {QtMouse.LeftButton}))
-
-    @moveSelectedBind.setter
-    def moveSelectedBind(self, value: Bind) -> None:
-        self.settings.setValue('moveSelectedBind', value)
-
-    @property
-    def selectUnderneathBind(self) -> Bind:
-        return self.settings.value("selectUnderneathBind", (set(), {QtMouse.LeftButton}))
-
-    @selectUnderneathBind.setter
-    def selectUnderneathBind(self, value: Bind) -> None:
-        self.settings.setValue('selectUnderneathBind', value)
-
-    @property
-    def deleteSelectedBind(self) -> Bind:
-        return self.settings.value("deleteSelectedBind", ({QtKey.Key_Delete}, None))
-
-    @deleteSelectedBind.setter
-    def deleteSelectedBind(self, value: Bind) -> None:
-        self.settings.setValue('deleteSelectedBind', value)
+    panCameraBind = Settings._addSetting(
+        "panCameraBind",
+        ({QtKey.Key_Control}, {QtMouse.LeftButton})
+    )
+    rotateCameraBind = Settings._addSetting(
+        "rotateCameraBind",
+        ({QtKey.Key_Control}, {QtMouse.MiddleButton})
+    )
+    zoomCameraBind = Settings._addSetting(
+        "zoomCameraBind",
+        ({QtKey.Key_Control}, None)
+    )
+    rotateSelectedToPointBind = Settings._addSetting(
+        "rotateSelectedToPointBind",
+        (set(), {QtMouse.MiddleButton})
+    )
+    moveSelectedBind = Settings._addSetting(
+        "moveSelectedBind",
+        (set(), {QtMouse.LeftButton})
+    )
+    selectUnderneathBind = Settings._addSetting(
+        "selectUnderneathBind",
+        (set(), {QtMouse.LeftButton})
+    )
+    deleteSelectedBind = Settings._addSetting(
+        "deleteSelectedBind",
+        ({QtKey.Key_Delete}, None)
+    )
     # endregion

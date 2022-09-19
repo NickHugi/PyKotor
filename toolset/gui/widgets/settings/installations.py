@@ -5,6 +5,8 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget
 
+from data.settings import Settings
+
 
 class InstallationsWidget(QWidget):
     def __init__(self, parent: QWidget):
@@ -127,9 +129,9 @@ class InstallationConfig:
         self._settings.setValue('installations', installations)
 
 
-class GlobalSettings:
+class GlobalSettings(Settings):
     def __init__(self):
-        self.settings = QSettings('HolocronToolset', 'Global')
+        super().__init__("Global")
 
     def installations(self) -> Dict[str, InstallationConfig]:
         if self.settings.value("installations", None) is None:
@@ -145,72 +147,41 @@ class GlobalSettings:
         return installations
 
     # region Strings
-    @property
-    def extractPath(self) -> str:
-        return self.settings.value("extractPath", "", str)
-
-    @extractPath.setter
-    def extractPath(self, value: str) -> None:
-        self.settings.setValue('extractPath', value)
-
-    @property
-    def nssCompilerPath(self) -> str:
-        default = "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp"
-        return self.settings.value("nssCompilerPath", default, str)
-
-    @nssCompilerPath.setter
-    def nssCompilerPath(self, value: str) -> None:
-        self.settings.setValue('nssCompilerPath', value)
-
-    @property
-    def ncsDecompilerPath(self) -> str:
-        return self.settings.value("ncsDecompilerPath", "", str)
-
-    @ncsDecompilerPath.setter
-    def ncsDecompilerPath(self, value: str) -> None:
-        self.settings.setValue('ncsDecompilerPath', value)
+    extractPath = Settings._addSetting(
+        "extractPath",
+        ""
+    )
+    nssCompilerPath = Settings._addSetting(
+        "nssCompilerPath",
+        "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp"
+    )
+    ncsDecompilerPath = Settings._addSetting(
+        "ncsDecompilerPath",
+        ""
+    )
     # endregion
 
     # region Bools
-    @property
-    def disableRIMSaving(self) -> bool:
-        return self.settings.value("disableRIMSaving", True, bool)
-
-    @disableRIMSaving.setter
-    def disableRIMSaving(self, value: bool) -> None:
-        self.settings.setValue('disableRIMSaving', value)
-
-    @property
-    def firstTime(self) -> bool:
-        return self.settings.value("firstTime", "", bool)
-
-    @firstTime.setter
-    def firstTime(self, value: bool) -> None:
-        self.settings.setValue('firstTime', value)
-
-    @property
-    def gffSpecializedEditors(self) -> bool:
-        return self.settings.value("gffSpecializedEditors", True, bool)
-
-    @gffSpecializedEditors.setter
-    def gffSpecializedEditors(self, value: bool) -> None:
-        self.settings.setValue('gffSpecializedEditors', value)
-
-    @property
-    def joinRIMsTogether(self) -> bool:
-        return self.settings.value('joinRIMsTogether', False, bool)
-
-    @joinRIMsTogether.setter
-    def joinRIMsTogether(self, value: bool) -> None:
-        self.settings.setValue('joinRIMsTogether', value)
-
-    @property
-    def greyRIMText(self) -> bool:
-        return self.settings.value('greyRIMText', True, bool)
-
-    @greyRIMText.setter
-    def greyRIMText(self, value: bool) -> None:
-        self.settings.setValue('greyRIMText', value)
+    disableRIMSaving = Settings._addSetting(
+        "disableRIMSaving",
+        False
+    )
+    firstTime = Settings._addSetting(
+        "firstTime",
+        True
+    )
+    gffSpecializedEditors = Settings._addSetting(
+        "gffSpecializedEditors",
+        True
+    )
+    joinRIMsTogether = Settings._addSetting(
+        "joinRIMsTogether",
+        False
+    )
+    greyRIMText = Settings._addSetting(
+        "greyRIMText",
+        True
+    )
     # endregion
 
 

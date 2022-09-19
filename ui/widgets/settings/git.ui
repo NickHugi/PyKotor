@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>348</width>
-    <height>463</height>
+    <width>466</width>
+    <height>773</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,9 +23,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
-        <width>311</width>
-        <height>784</height>
+        <y>-121</y>
+        <width>429</width>
+        <height>874</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -61,6 +61,9 @@
           </item>
           <item>
            <layout class="QFormLayout" name="formLayout">
+            <property name="verticalSpacing">
+             <number>10</number>
+            </property>
             <item row="0" column="0">
              <widget class="QLabel" name="label">
               <property name="text">
@@ -134,6 +137,9 @@
          <layout class="QGridLayout" name="gridLayout_2">
           <item row="1" column="0">
            <layout class="QFormLayout" name="formLayout_2">
+            <property name="verticalSpacing">
+             <number>10</number>
+            </property>
             <item row="0" column="0">
              <widget class="QLabel" name="label_10">
               <property name="text">
@@ -142,7 +148,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="ColorEdit" name="undefinedColorEdit" native="true">
+             <widget class="ColorEdit" name="undefinedMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -291,7 +297,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="ColorEdit" name="dirtColorEdit" native="true">
+             <widget class="ColorEdit" name="dirtMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -307,7 +313,7 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="ColorEdit" name="obscuringColorEdit" native="true">
+             <widget class="ColorEdit" name="obscuringMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -323,7 +329,7 @@
              </widget>
             </item>
             <item row="3" column="1">
-             <widget class="ColorEdit" name="grassColorEdit" native="true">
+             <widget class="ColorEdit" name="grassMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -339,7 +345,7 @@
              </widget>
             </item>
             <item row="4" column="1">
-             <widget class="ColorEdit" name="stoneColorEdit" native="true">
+             <widget class="ColorEdit" name="stoneMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -355,7 +361,7 @@
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="ColorEdit" name="woodColorEdit" native="true">
+             <widget class="ColorEdit" name="woodMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -371,7 +377,7 @@
              </widget>
             </item>
             <item row="6" column="1">
-             <widget class="ColorEdit" name="waterColorEdit" native="true">
+             <widget class="ColorEdit" name="waterMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -387,7 +393,7 @@
              </widget>
             </item>
             <item row="7" column="1">
-             <widget class="ColorEdit" name="nonWalkColorEdit" native="true">
+             <widget class="ColorEdit" name="nonWalkMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -403,7 +409,7 @@
              </widget>
             </item>
             <item row="8" column="1">
-             <widget class="ColorEdit" name="transparentColorEdit" native="true">
+             <widget class="ColorEdit" name="transparentMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -419,7 +425,7 @@
              </widget>
             </item>
             <item row="9" column="1">
-             <widget class="ColorEdit" name="carpetColorEdit" native="true">
+             <widget class="ColorEdit" name="carpetMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -435,7 +441,7 @@
              </widget>
             </item>
             <item row="10" column="1">
-             <widget class="ColorEdit" name="metalColorEdit" native="true">
+             <widget class="ColorEdit" name="metalMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -451,7 +457,7 @@
              </widget>
             </item>
             <item row="11" column="1">
-             <widget class="ColorEdit" name="puddlesColorEdit" native="true">
+             <widget class="ColorEdit" name="puddlesMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -467,7 +473,7 @@
              </widget>
             </item>
             <item row="12" column="1">
-             <widget class="ColorEdit" name="swampColorEdit" native="true">
+             <widget class="ColorEdit" name="swampMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -483,7 +489,7 @@
              </widget>
             </item>
             <item row="13" column="1">
-             <widget class="ColorEdit" name="mudColorEdit" native="true">
+             <widget class="ColorEdit" name="mudMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -499,7 +505,7 @@
              </widget>
             </item>
             <item row="14" column="1">
-             <widget class="ColorEdit" name="leavesColorEdit" native="true">
+             <widget class="ColorEdit" name="leavesMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -515,7 +521,7 @@
              </widget>
             </item>
             <item row="15" column="1">
-             <widget class="ColorEdit" name="lavaColorEdit" native="true">
+             <widget class="ColorEdit" name="lavaMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -531,7 +537,7 @@
              </widget>
             </item>
             <item row="16" column="1">
-             <widget class="ColorEdit" name="bottomlessPitColorEdit" native="true">
+             <widget class="ColorEdit" name="bottomlessPitMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -547,7 +553,7 @@
              </widget>
             </item>
             <item row="17" column="1">
-             <widget class="ColorEdit" name="deepWaterColorEdit" native="true">
+             <widget class="ColorEdit" name="deepWaterMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -563,7 +569,7 @@
              </widget>
             </item>
             <item row="18" column="1">
-             <widget class="ColorEdit" name="doorColorEdit" native="true">
+             <widget class="ColorEdit" name="doorMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -579,7 +585,7 @@
              </widget>
             </item>
             <item row="19" column="1">
-             <widget class="ColorEdit" name="nonWalkGrassColorEdit" native="true">
+             <widget class="ColorEdit" name="nonWalkGrassMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -631,15 +637,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>ColorEdit</class>
-   <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.color_edit</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>SetBindWidget</class>
    <extends>QWidget</extends>
    <header location="global">toolset.gui.widgets.set_bind</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ColorEdit</class>
+   <extends>QWidget</extends>
+   <header location="global">toolset.gui.widgets.color_edit</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
