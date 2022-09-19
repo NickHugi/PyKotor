@@ -5,6 +5,7 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QWidget
 
 from data.misc import Bind
+from data.settings import Settings
 from gui.widgets.color_edit import ColorEdit
 from gui.widgets.set_bind import SetBindWidget
 from pykotor.common.misc import Color
@@ -102,9 +103,9 @@ class ModuleDesignerWidget(QWidget):
         self._setupColourValues()
 
 
-class ModuleDesignerSettings:
+class ModuleDesignerSettings(Settings):
     def __init__(self):
-        self.settings = QSettings('HolocronToolset', 'ModuleDesigner')
+        super().__init__("ModuleDesigner")
 
     def resetControls3d(self) -> None:
         for setting in dir(self):
@@ -121,258 +122,250 @@ class ModuleDesignerSettings:
             if setting.endswith("Colour"):
                 self.settings.remove(setting)
 
-    @staticmethod
-    def _addSetting(name: str, default: Any):
-        prop = property(
-            lambda this: this.settings.value(name, default),
-            lambda this, val: this.settings.setValue(name, val)
-        )
-        return prop
-
     # region Ints/Binds (Controls - 3D)
-    moveCameraSensitivity3d = _addSetting.__get__(object, property)(
+    moveCameraSensitivity3d = Settings._addSetting(
         "moveCameraSensitivity3d",
         100
     )
-    rotateCameraSensitivity3d = _addSetting.__get__(object, property)(
+    rotateCameraSensitivity3d = Settings._addSetting(
         "rotateCameraSensitivity3d",
         100
     )
-    zoomCameraSensitivity3d = _addSetting.__get__(object, property)(
+    zoomCameraSensitivity3d = Settings._addSetting(
         "zoomCameraSensitivity3d",
         100
     )
-    moveCameraXY3dBind = _addSetting.__get__(object, property)(
+    moveCameraXY3dBind = Settings._addSetting(
         "moveCameraXY3dBind",
         ({QtKey.Key_Control}, {QtMouse.LeftButton})
     )
-    moveCameraZ3dBind = _addSetting.__get__(object, property)(
+    moveCameraZ3dBind = Settings._addSetting(
         "moveCameraZ3dBind",
         ({QtKey.Key_Control}, set())
     )
-    rotateCamera3dBind = _addSetting.__get__(object, property)(
+    rotateCamera3dBind = Settings._addSetting(
         "rotateCamera3dBind",
         ({QtKey.Key_Control}, {QtMouse.MiddleButton})
     )
-    zoomCamera3dBind = _addSetting.__get__(object, property)(
+    zoomCamera3dBind = Settings._addSetting(
         "zoomCamera3dBind",
         (set(), None)
     )
-    zoomCameraMM3dBind = _addSetting.__get__(object, property)(
+    zoomCameraMM3dBind = Settings._addSetting(
         "zoomCameraMM3dBind",
         ({QtKey.Key_Control}, {QtMouse.RightButton})
     )
-    rotateSelected3dBind = _addSetting.__get__(object, property)(
+    rotateSelected3dBind = Settings._addSetting(
         "rotateSelected3dBind",
         (set(), {QtMouse.MiddleButton})
     )
-    moveSelectedXY3dBind = _addSetting.__get__(object, property)(
+    moveSelectedXY3dBind = Settings._addSetting(
         "moveSelectedXY3dBind",
         (set(), {QtMouse.LeftButton})
     )
-    moveSelectedZ3dBind = _addSetting.__get__(object, property)(
+    moveSelectedZ3dBind = Settings._addSetting(
         "moveSelectedZ3dBind",
         ({QtKey.Key_Shift}, {QtMouse.LeftButton})
     )
-    rotateObject3dBind = _addSetting.__get__(object, property)(
+    rotateObject3dBind = Settings._addSetting(
         "rotateObject3dBind",
         ({QtKey.Key_Alt}, {QtMouse.LeftButton})
     )
-    selectObject3dBind = _addSetting.__get__(object, property)(
+    selectObject3dBind = Settings._addSetting(
         "selectObject3dBind",
         (set(), {QtMouse.LeftButton})
     )
-    moveCameraToSelected3dBind = _addSetting.__get__(object, property)(
+    moveCameraToSelected3dBind = Settings._addSetting(
         "moveCameraToSelected3dBind",
         ({QtKey.Key_Z}, None)
     )
-    deleteObject3dBind = _addSetting.__get__(object, property)(
+    deleteObject3dBind = Settings._addSetting(
         "deleteObject3dBind",
         ({QtKey.Key_Delete}, None)
     )
-    rotateCameraLeft3dBind = _addSetting.__get__(object, property)(
+    rotateCameraLeft3dBind = Settings._addSetting(
         "rotateCameraLeft3dBind",
         ({QtKey.Key_7}, None)
     )
-    rotateCameraRight3dBind = _addSetting.__get__(object, property)(
+    rotateCameraRight3dBind = Settings._addSetting(
         "rotateCameraRight3dBind",
         ({QtKey.Key_9}, None)
     )
-    rotateCameraUp3dBind = _addSetting.__get__(object, property)(
+    rotateCameraUp3dBind = Settings._addSetting(
         "rotateCameraUp3dBind",
         ({QtKey.Key_1}, None)
     )
-    rotateCameraDown3dBind = _addSetting.__get__(object, property)(
+    rotateCameraDown3dBind = Settings._addSetting(
         "rotateCameraDown3dBind",
         ({QtKey.Key_3}, None)
     )
-    moveCameraBackward3dBind = _addSetting.__get__(object, property)(
+    moveCameraBackward3dBind = Settings._addSetting(
         "moveCameraBackward3dBind",
         ({QtKey.Key_2}, None)
     )
-    moveCameraForward3dBind = _addSetting.__get__(object, property)(
+    moveCameraForward3dBind = Settings._addSetting(
         "moveCameraForward3dBind",
         ({QtKey.Key_8}, None)
     )
-    moveCameraLeft3dBind = _addSetting.__get__(object, property)(
+    moveCameraLeft3dBind = Settings._addSetting(
         "moveCameraLeft3dBind",
         ({QtKey.Key_4}, None)
     )
-    moveCameraRight3dBind = _addSetting.__get__(object, property)(
+    moveCameraRight3dBind = Settings._addSetting(
         "moveCameraRight3dBind",
         ({QtKey.Key_6}, None)
     )
-    moveCameraUp3dBind = _addSetting.__get__(object, property)(
+    moveCameraUp3dBind = Settings._addSetting(
         "moveCameraUp3dBind",
         ({QtKey.Key_Q}, None)
     )
-    moveCameraDown3dBind = _addSetting.__get__(object, property)(
+    moveCameraDown3dBind = Settings._addSetting(
         "moveCameraDown3dBind",
         ({QtKey.Key_E}, None)
     )
-    zoomCameraIn3dBind = _addSetting.__get__(object, property)(
+    zoomCameraIn3dBind = Settings._addSetting(
         "zoomCameraIn3dBind",
         ({QtKey.Key_Plus}, None)
     )
-    zoomCameraOut3dBind = _addSetting.__get__(object, property)(
+    zoomCameraOut3dBind = Settings._addSetting(
         "zoomCameraOut3dBind",
         ({QtKey.Key_Minus}, None)
     )
     # endregion
 
     # region Int/Binds (Controls - 2D)
-    moveCameraSensitivity2d = _addSetting.__get__(object, property)(
+    moveCameraSensitivity2d = Settings._addSetting(
         "moveCameraSensitivity2d",
         100
     )
-    rotateCameraSensitivity2d = _addSetting.__get__(object, property)(
+    rotateCameraSensitivity2d = Settings._addSetting(
         "rotateCameraSensitivity2d",
         100
     )
-    zoomCameraSensitivity2d = _addSetting.__get__(object, property)(
+    zoomCameraSensitivity2d = Settings._addSetting(
         "zoomCameraSensitivity2d",
         100
     )
 
-    moveCamera2dBind = _addSetting.__get__(object, property)(
+    moveCamera2dBind = Settings._addSetting(
         "moveCamera2dBind",
         ({QtKey.Key_Control}, {QtMouse.LeftButton})
     )
-    zoomCamera2dBind = _addSetting.__get__(object, property)(
+    zoomCamera2dBind = Settings._addSetting(
         "zoomCamera2dBind",
         ({QtKey.Key_Control}, set())
     )
-    rotateCamera2dBind = _addSetting.__get__(object, property)(
+    rotateCamera2dBind = Settings._addSetting(
         "rotateCamera2dBind",
         ({QtKey.Key_Control}, {QtMouse.MiddleButton})
     )
-    selectObject2dBind = _addSetting.__get__(object, property)(
+    selectObject2dBind = Settings._addSetting(
         "selectObject2dBind",
         (set(), {QtMouse.LeftButton})
     )
-    moveObject2dBind = _addSetting.__get__(object, property)(
+    moveObject2dBind = Settings._addSetting(
         "moveObject2dBind",
         (set(), {QtMouse.LeftButton})
     )
-    rotateObject2dBind = _addSetting.__get__(object, property)(
+    rotateObject2dBind = Settings._addSetting(
         "rotateObject2dBind",
         (set(), {QtMouse.MiddleButton})
     )
-    deleteObject2dBind = _addSetting.__get__(object, property)(
+    deleteObject2dBind = Settings._addSetting(
         "deleteObject2dBind",
         ({QtKey.Key_Delete}, set())
     )
-    snapCameraToSelected2dBind = _addSetting.__get__(object, property)(
+    snapCameraToSelected2dBind = Settings._addSetting(
         "snapCameraToSelected2dBind",
         ({QtKey.Key_Z}, set())
     )
     # endregion
 
     # region Ints (Material Colours)
-    undefinedMaterialColour = _addSetting.__get__(object, property)(
+    undefinedMaterialColour = Settings._addSetting(
         "undefinedMaterialColour",
         671088895
     )
-    dirtMaterialColour = _addSetting.__get__(object, property)(
+    dirtMaterialColour = Settings._addSetting(
         "undefinedMaterialColour",
         4281084972
     )
-    obscuringMaterialColour = _addSetting.__get__(object, property)(
+    obscuringMaterialColour = Settings._addSetting(
         "obscuringMaterialColour",
         671088895
     )
-    grassMaterialColour = _addSetting.__get__(object, property)(
+    grassMaterialColour = Settings._addSetting(
         "grassMaterialColour",
         4281084972
     )
-    stoneMaterialColour = _addSetting.__get__(object, property)(
+    stoneMaterialColour = Settings._addSetting(
         "stoneMaterialColour",
         4281084972
     )
-    woodMaterialColour = _addSetting.__get__(object, property)(
+    woodMaterialColour = Settings._addSetting(
         "woodMaterialColour",
         4281084972
     )
-    waterMaterialColour = _addSetting.__get__(object, property)(
+    waterMaterialColour = Settings._addSetting(
         "waterMaterialColour",
         4281084972
     )
-    nonWalkMaterialColour = _addSetting.__get__(object, property)(
+    nonWalkMaterialColour = Settings._addSetting(
         "nonWalkMaterialColour",
         671088895
     )
-    transparentMaterialColour = _addSetting.__get__(object, property)(
+    transparentMaterialColour = Settings._addSetting(
         "transparentMaterialColour",
         671088895
     )
-    carpetMaterialColour = _addSetting.__get__(object, property)(
+    carpetMaterialColour = Settings._addSetting(
         "carpetMaterialColour",
         4281084972
     )
-    metalMaterialColour = _addSetting.__get__(object, property)(
+    metalMaterialColour = Settings._addSetting(
         "metalMaterialColour",
         4281084972
     )
-    puddlesMaterialColour = _addSetting.__get__(object, property)(
+    puddlesMaterialColour = Settings._addSetting(
         "puddlesMaterialColour",
         4281084972
     )
-    swampMaterialColour = _addSetting.__get__(object, property)(
+    swampMaterialColour = Settings._addSetting(
         "swampMaterialColour",
         4281084972
     )
-    mudMaterialColour = _addSetting.__get__(object, property)(
+    mudMaterialColour = Settings._addSetting(
         "mudMaterialColour",
         4281084972
     )
-    leavesMaterialColour = _addSetting.__get__(object, property)(
+    leavesMaterialColour = Settings._addSetting(
         "leavesMaterialColour",
         4281084972
     )
-    doorMaterialColour = _addSetting.__get__(object, property)(
+    doorMaterialColour = Settings._addSetting(
         "doorMaterialColour",
         4281084972
     )
-    lavaMaterialColour = _addSetting.__get__(object, property)(
+    lavaMaterialColour = Settings._addSetting(
         "lavaMaterialColour",
         671088895
     )
-    bottomlessPitMaterialColour = _addSetting.__get__(object, property)(
+    bottomlessPitMaterialColour = Settings._addSetting(
         "bottomlessPitMaterialColour",
         671088895
     )
-    deepWaterMaterialColour = _addSetting.__get__(object, property)(
+    deepWaterMaterialColour = Settings._addSetting(
         "deepWaterMaterialColour",
         671088895
     )
-    nonWalkGrassMaterialColour = _addSetting.__get__(object, property)(
+    nonWalkGrassMaterialColour = Settings._addSetting(
         "nonWalkGrassMaterialColour",
         671088895
     )
     # endregion
 
     # region Ints
-    fieldOfView = _addSetting.__get__(object, property)(
+    fieldOfView = Settings._addSetting(
         "fieldOfView",
         70
     )
