@@ -23,9 +23,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>-941</y>
         <width>416</width>
-        <height>1399</height>
+        <height>1688</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -188,7 +188,34 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="SetBindWidget" name="moveCamera3dBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="moveCameraXY3dBindEdit" native="true"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_12">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse movement.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Z</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="SetBindWidget" name="moveCameraZ3dBindEdit" native="true"/>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="label_3">
@@ -245,115 +272,6 @@
             <item row="3" column="1">
              <widget class="SetBindWidget" name="zoomCamera3dBindEdit" native="true"/>
             </item>
-            <item row="8" column="0">
-             <widget class="QLabel" name="label_5">
-              <property name="minimumSize">
-               <size>
-                <width>110</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Reacts to mouse buttons.</string>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QLabel:hover {
-	color: #555;
-}</string>
-              </property>
-              <property name="text">
-               <string>Select Object</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="8" column="1">
-             <widget class="SetBindWidget" name="selectObject3dBindEdit" native="true"/>
-            </item>
-            <item row="9" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="minimumSize">
-               <size>
-                <width>110</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Reacts to mouse movement.</string>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QLabel:hover {
-	color: #555;
-}</string>
-              </property>
-              <property name="text">
-               <string>Rotate Object</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="1">
-             <widget class="SetBindWidget" name="rotateObject3dBindEdit" native="true"/>
-            </item>
-            <item row="10" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="minimumSize">
-               <size>
-                <width>110</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Reacts to keyboard input.</string>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QLabel:hover {
-	color: #555;
-}</string>
-              </property>
-              <property name="text">
-               <string>Delete Object</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="10" column="1">
-             <widget class="SetBindWidget" name="deleteObject3dBindEdit" native="true"/>
-            </item>
-            <item row="5" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="minimumSize">
-               <size>
-                <width>110</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Reacts to keyboard input.</string>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QLabel:hover {
-	color: #555;
-}</string>
-              </property>
-              <property name="text">
-               <string>Move Camera
-to Selection</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="5" column="1">
-             <widget class="SetBindWidget" name="moveCameraToSelection3dBindEdit" native="true"/>
-            </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_9">
               <property name="minimumSize">
@@ -379,7 +297,10 @@ to Selection</string>
               </property>
              </widget>
             </item>
-            <item row="6" column="0">
+            <item row="4" column="1">
+             <widget class="SetBindWidget" name="zoomCameraMM3dBindEdit" native="true"/>
+            </item>
+            <item row="5" column="0">
              <widget class="QLabel" name="label_10">
               <property name="minimumSize">
                <size>
@@ -403,7 +324,10 @@ to Selection</string>
               </property>
              </widget>
             </item>
-            <item row="7" column="0">
+            <item row="5" column="1">
+             <widget class="SetBindWidget" name="moveSelectedXY3dBindEdit" native="true"/>
+            </item>
+            <item row="6" column="0">
              <widget class="QLabel" name="label_11">
               <property name="minimumSize">
                <size>
@@ -427,8 +351,38 @@ to Selection</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_12">
+            <item row="6" column="1">
+             <widget class="SetBindWidget" name="moveSelectedZ3dBindEdit" native="true"/>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_5">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to mouse buttons.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Select Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="SetBindWidget" name="selectObject3dBindEdit" native="true"/>
+            </item>
+            <item row="8" column="0">
+             <widget class="QLabel" name="label_6">
               <property name="minimumSize">
                <size>
                 <width>110</width>
@@ -444,24 +398,401 @@ to Selection</string>
 }</string>
               </property>
               <property name="text">
-               <string>Move Camera Z</string>
+               <string>Rotate Object</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="SetBindWidget" name="moveCameraZ3dBindEdit" native="true"/>
+            <item row="8" column="1">
+             <widget class="SetBindWidget" name="rotateObject3dBindEdit" native="true"/>
             </item>
-            <item row="4" column="1">
-             <widget class="SetBindWidget" name="zoomCameraMM3dBindEdit" native="true"/>
+            <item row="9" column="1">
+             <widget class="Line" name="line_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
             </item>
-            <item row="6" column="1">
-             <widget class="SetBindWidget" name="moveObjectXY3dBindEdit" native="true"/>
+            <item row="11" column="0">
+             <widget class="QLabel" name="label_7">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Delete Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
             </item>
-            <item row="7" column="1">
-             <widget class="SetBindWidget" name="moveObjectZ3dBindEdit" native="true"/>
+            <item row="11" column="1">
+             <widget class="SetBindWidget" name="deleteObject3dBindEdit" native="true"/>
+            </item>
+            <item row="12" column="0">
+             <widget class="QLabel" name="label_46">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Rotate Camera Left</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="12" column="1">
+             <widget class="SetBindWidget" name="rotateCameraLeft3dBindEdit" native="true"/>
+            </item>
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_47">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Rotate Camera Right</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="1">
+             <widget class="SetBindWidget" name="rotateCameraRight3dBindEdit" native="true"/>
+            </item>
+            <item row="14" column="0">
+             <widget class="QLabel" name="label_48">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Rotate Camera Up</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="14" column="1">
+             <widget class="SetBindWidget" name="rotateCameraUp3dBindEdit" native="true"/>
+            </item>
+            <item row="15" column="0">
+             <widget class="QLabel" name="label_49">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Rotate Camera Down</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="15" column="1">
+             <widget class="SetBindWidget" name="rotateCameraDown3dBindEdit" native="true"/>
+            </item>
+            <item row="16" column="0">
+             <widget class="QLabel" name="label_50">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Forward</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="16" column="1">
+             <widget class="SetBindWidget" name="moveCameraForward3dBindEdit" native="true"/>
+            </item>
+            <item row="17" column="0">
+             <widget class="QLabel" name="label_51">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Backward</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="17" column="1">
+             <widget class="SetBindWidget" name="moveCameraBackward3dBindEdit" native="true"/>
+            </item>
+            <item row="18" column="0">
+             <widget class="QLabel" name="label_53">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Left</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="18" column="1">
+             <widget class="SetBindWidget" name="moveCameraLeft3dBindEdit" native="true"/>
+            </item>
+            <item row="19" column="0">
+             <widget class="QLabel" name="label_52">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Right</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="19" column="1">
+             <widget class="SetBindWidget" name="moveCameraRight3dBindEdit" native="true"/>
+            </item>
+            <item row="20" column="0">
+             <widget class="QLabel" name="label_54">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Up</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="20" column="1">
+             <widget class="SetBindWidget" name="moveCameraUp3dBindEdit" native="true"/>
+            </item>
+            <item row="21" column="0">
+             <widget class="QLabel" name="label_55">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera Down</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="21" column="1">
+             <widget class="SetBindWidget" name="moveCameraDown3dBindEdit" native="true"/>
+            </item>
+            <item row="22" column="0">
+             <widget class="QLabel" name="label_56">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Zoom Camera In</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="22" column="1">
+             <widget class="SetBindWidget" name="zoomCameraIn3dBindEdit" native="true"/>
+            </item>
+            <item row="23" column="0">
+             <widget class="QLabel" name="label_57">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Zoom Camera Out</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="23" column="1">
+             <widget class="SetBindWidget" name="zoomCameraOut3dBindEdit" native="true"/>
+            </item>
+            <item row="10" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera
+to Selection</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="10" column="1">
+             <widget class="SetBindWidget" name="moveCameraToSelected3dBindEdit" native="true"/>
             </item>
            </layout>
           </item>
@@ -777,7 +1108,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="ColorEdit" name="undefinedColorEdit" native="true">
+             <widget class="ColorEdit" name="undefinedMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -926,7 +1257,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="ColorEdit" name="dirtColorEdit" native="true">
+             <widget class="ColorEdit" name="dirtMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -942,7 +1273,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="ColorEdit" name="obscuringColorEdit" native="true">
+             <widget class="ColorEdit" name="obscuringMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -958,7 +1289,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="3" column="1">
-             <widget class="ColorEdit" name="grassColorEdit" native="true">
+             <widget class="ColorEdit" name="grassMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -974,7 +1305,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="4" column="1">
-             <widget class="ColorEdit" name="stoneColorEdit" native="true">
+             <widget class="ColorEdit" name="stoneMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -990,7 +1321,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="ColorEdit" name="woodColorEdit" native="true">
+             <widget class="ColorEdit" name="woodMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1006,7 +1337,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="6" column="1">
-             <widget class="ColorEdit" name="waterColorEdit" native="true">
+             <widget class="ColorEdit" name="waterMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1022,7 +1353,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="7" column="1">
-             <widget class="ColorEdit" name="nonWalkColorEdit" native="true">
+             <widget class="ColorEdit" name="nonWalkMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1038,7 +1369,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="8" column="1">
-             <widget class="ColorEdit" name="transparentColorEdit" native="true">
+             <widget class="ColorEdit" name="transparentMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1054,7 +1385,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="9" column="1">
-             <widget class="ColorEdit" name="carpetColorEdit" native="true">
+             <widget class="ColorEdit" name="carpetMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1070,7 +1401,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="10" column="1">
-             <widget class="ColorEdit" name="metalColorEdit" native="true">
+             <widget class="ColorEdit" name="metalMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1086,7 +1417,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="11" column="1">
-             <widget class="ColorEdit" name="puddlesColorEdit" native="true">
+             <widget class="ColorEdit" name="puddlesMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1102,7 +1433,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="12" column="1">
-             <widget class="ColorEdit" name="swampColorEdit" native="true">
+             <widget class="ColorEdit" name="swampMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1118,7 +1449,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="13" column="1">
-             <widget class="ColorEdit" name="mudColorEdit" native="true">
+             <widget class="ColorEdit" name="mudMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1134,7 +1465,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="14" column="1">
-             <widget class="ColorEdit" name="leavesColorEdit" native="true">
+             <widget class="ColorEdit" name="leavesMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1150,7 +1481,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="15" column="1">
-             <widget class="ColorEdit" name="lavaColorEdit" native="true">
+             <widget class="ColorEdit" name="lavaMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1166,7 +1497,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="16" column="1">
-             <widget class="ColorEdit" name="bottomlessPitColorEdit" native="true">
+             <widget class="ColorEdit" name="bottomlessPitMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1182,7 +1513,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="17" column="1">
-             <widget class="ColorEdit" name="deepWaterColorEdit" native="true">
+             <widget class="ColorEdit" name="deepWaterMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1198,7 +1529,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="18" column="1">
-             <widget class="ColorEdit" name="doorColorEdit" native="true">
+             <widget class="ColorEdit" name="doorMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>
@@ -1214,7 +1545,7 @@ to Selection</string>
              </widget>
             </item>
             <item row="19" column="1">
-             <widget class="ColorEdit" name="nonWalkGrassColorEdit" native="true">
+             <widget class="ColorEdit" name="nonWalkGrassMaterialColourEdit" native="true">
               <property name="minimumSize">
                <size>
                 <width>0</width>

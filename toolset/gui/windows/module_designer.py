@@ -564,14 +564,18 @@ class ModuleDesignerControl3dScheme:
         self.panZCamera: ControlItem = ControlItem(self.settings.moveCameraZ3dBind)
         self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera3dBind)
         self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCamera3dBind)
-        self.zoomCameraMM: ControlItem = ControlItem(self.settings.zoomCamera3dMMBind)
+        self.zoomCameraMM: ControlItem = ControlItem(self.settings.zoomCameraMM3dBind)
         self.rotateSelected: ControlItem = ControlItem(self.settings.rotateSelected3dBind)
         self.moveXYSelected: ControlItem = ControlItem(self.settings.moveSelectedXY3dBind)
         self.moveZSelected: ControlItem = ControlItem(self.settings.moveSelectedZ3dBind)
-        self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneath3dBind)
-        self.snapCameraToSelected: ControlItem = ControlItem(self.settings.snapCameraToSelected3dBind)
-        self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelected3dBind)
+        self.selectUnderneath: ControlItem = ControlItem(self.settings.selectObject3dBind)
+        self.snapCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected3dBind)
+        self.deleteSelected: ControlItem = ControlItem(self.settings.deleteObject3dBind)
         self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
+        self.rotateCameraLeft: ControlItem = ControlItem(self.settings.rotateCameraLeft3dBind)
+        self.rotateCameraRight: ControlItem = ControlItem(self.settings.rotateCameraRight3dBind)
+        self.rotateCameraUp: ControlItem = ControlItem(self.settings.rotateCameraUp3dBind)
+        self.rotateCameraDown: ControlItem = ControlItem(self.settings.rotateCameraDown3dBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -633,6 +637,15 @@ class ModuleDesignerControl3dScheme:
 
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
+
+        if self.rotateCameraLeft.satisfied(buttons, keys):
+            self.renderer.rotateCamera(math.pi/4, 0)
+        if self.rotateCameraRight.satisfied(buttons, keys):
+            self.renderer.rotateCamera(-math.pi/4, 0)
+        if self.rotateCameraUp.satisfied(buttons, keys):
+            self.renderer.rotateCamera(0, math.pi/4)
+        if self.rotateCameraDown.satisfied(buttons, keys):
+            self.renderer.rotateCamera(0, -math.pi/4)
 
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...
