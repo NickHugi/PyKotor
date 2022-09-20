@@ -10,7 +10,7 @@ class Settings:
     @staticmethod
     def _addSetting(name: str, default: Any):
         prop = property(
-            lambda this: this.settings.value(name, default),
+            lambda this: this.settings.value(name, default, type(default)),
             lambda this, val: this.settings.setValue(name, val)
         )
         return prop
