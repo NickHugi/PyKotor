@@ -309,17 +309,44 @@ class ModuleDesigner(QMainWindow):
             if visibleMapping[type(instance)]:
                 continue
 
-            if isinstance(instance, GITCamera):
-                text = "Camera #{}".format(instance.camera_id)
-            else:
-                resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
-                text = resource.localized_name()
-                if text is None or text.isspace():
-                    text = "[{}]".format(resource.resname())
+            struct_index = self._module.git().resource().index(instance)
 
             icon = QIcon(iconMapping[type(instance)])
-            item = QListWidgetItem(icon, text)
-            item.setToolTip("" if instance.identifier() is None else instance.identifier().resname)
+            item = QListWidgetItem(icon, "")
+            font = item.font()
+
+            if isinstance(instance, GITCamera):
+                item.setText("Camera #{}".format(instance.camera_id))
+                item.setToolTip("Struct Index: {}\nCamera ID: {}\nFOV: {}".format(
+                    struct_index, instance.camera_id, instance.fov
+                ))
+            else:
+                resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
+                resref = instance.identifier().resname
+                name = resref
+                tag = ""
+
+                if isinstance(instance, GITDoor) or isinstance(instance, GITTrigger) and resource is not None:
+                    # Tag is stored in the GIT
+                    name = resource.localized_name()
+                    tag = instance.tag
+                elif isinstance(instance, GITWaypoint) and resource is not None:
+                    # Name and tag are stored in the GIT
+                    name = self._installation.string(instance.name)
+                    tag = instance.tag
+                elif resource is not None:
+                    name = resource.localized_name()
+                    tag = resource.resource().tag
+
+                if resource is None:
+                    font.setItalic(True)
+
+                item.setText(name)
+                item.setToolTip("Struct Index: {}\nResRef: {}\nName: {}\nTag: {}".format(
+                    struct_index, resref, name, tag
+                ))
+
+            item.setFont(font)
             item.setData(QtCore.Qt.UserRole, instance)
             self.ui.instanceList.addItem(item)
 
