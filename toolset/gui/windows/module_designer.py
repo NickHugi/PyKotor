@@ -440,10 +440,9 @@ class ModuleDesigner(QMainWindow):
         if self.ui.instanceList.selectedItems():
             item = self.ui.instanceList.selectedItems()[0]
             instance: GITInstance = item.data(QtCore.Qt.UserRole)
-            self.ui.mainRenderer.scene.select(instance)
-
-            self.selectResourceItem(item.data(QtCore.Qt.UserRole))
+            self.setSelection([instance])
             self.ui.mainRenderer.snapCameraToPoint(instance.position)
+            self.ui.flatRenderer.snapCameraToPoint(instance.position)
 
     def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox) -> None:
         """

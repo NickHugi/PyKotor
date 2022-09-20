@@ -209,6 +209,10 @@ class WalkmeshRenderer(QWidget):
         """
         self._git = git
 
+    def snapCameraToPoint(self, point: Union[Vector2, Vector3], zoom: int = 5) -> None:
+        self.camera.setPosition(point.x, point.y)
+        self.camera.setZoom(zoom)
+
     def toRenderCoords(self, x: float, y: float) -> Vector2:
         """
         Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
