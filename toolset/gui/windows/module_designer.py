@@ -264,7 +264,7 @@ class ModuleDesigner(QMainWindow):
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
-                if res.resname() == instance.identifier() and res.restype() == instance.identifier().restype:
+                if res.resname() == instance.identifier().resname and res.restype() == instance.identifier().restype:
                     parent.setExpanded(True)
                     item.setSelected(True)
                     self.ui.resourceTree.scrollToItem(item)
@@ -586,7 +586,7 @@ class ModuleDesignerControl3dScheme:
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.z -= -delta.y * strength
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: Set[int], keys: Set[int]) -> None:
         if self.panXYCamera.satisfied(buttons, keys):
             forward = -screenDelta.y * self.renderer.scene.camera.forward()
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
