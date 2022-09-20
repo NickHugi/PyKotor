@@ -625,9 +625,11 @@ class WalkmeshRenderer(QWidget):
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         self._keysDown.add(e.key())
-        self.keyPressed.emit(self._mouseDown, self._keysDown)
+        if self.underMouse():
+            self.keyPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent) -> None:
         self._keysDown.discard(e.key())
-        self.keyReleased.emit(self._mouseDown, self._keysDown)
+        if self.underMouse():
+            self.keyReleased.emit(self._mouseDown, self._keysDown)
     # endregion
