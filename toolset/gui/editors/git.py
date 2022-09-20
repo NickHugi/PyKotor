@@ -749,7 +749,10 @@ class _InstanceMode(_Mode):
     def rotateSelectedToPoint(self, x: float, y: float) -> None:
         for instance in self._ui.renderArea.instanceSelection.all():
             rotation = -math.atan2(x - instance.position.x, y - instance.position.y)
-            instance.rotate(-instance.yaw() + rotation, 0, 0)
+            if isinstance(instance, GITCamera):
+                instance.rotate(instance.yaw() - rotation, 0, 0)
+            else:
+                instance.rotate(-instance.yaw() + rotation, 0, 0)
 
     def moveCamera(self, x: float, y: float) -> None:
         self._ui.renderArea.camera.nudgePosition(x, y)
