@@ -264,7 +264,7 @@ class ModuleDesigner(QMainWindow):
             for j in range(parent.childCount()):
                 item = parent.child(j)
                 res: ModuleResource = item.data(0, QtCore.Qt.UserRole)
-                if res.resname() == instance.identifier().resname and res.restype() == instance.identifier().restype:
+                if instance.identifier() is not None and res.resname() == instance.identifier().resname and res.restype() == instance.identifier().restype:
                     parent.setExpanded(True)
                     item.setSelected(True)
                     self.ui.resourceTree.scrollToItem(item)
@@ -610,7 +610,8 @@ class ModuleDesignerControl3dScheme:
             for instance in self.editor.selectedInstances:
                 instance.position.x = self.renderer.scene.cursor.position().x
                 instance.position.y = self.renderer.scene.cursor.position().y
-                instance.position.z = self.renderer.scene.cursor.position().z
+                if not isinstance(instance, GITCamera):
+                    instance.position.z = self.renderer.scene.cursor.position().z
 
         if self.moveZSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
