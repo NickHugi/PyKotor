@@ -184,9 +184,6 @@ class ModuleDesigner(QMainWindow):
     def saveGit(self) -> None:
         self._module.git().save()
 
-    def activateCustomControls(self, controls: DynamicModuleEditorControls) -> None:
-        self.activeControls = controls
-
     def rebuildResourceTree(self) -> None:
         self.ui.resourceTree.clear()
         self.ui.resourceTree.setEnabled(True)
@@ -247,10 +244,6 @@ class ModuleDesigner(QMainWindow):
                         "Failed to open editor for file: {}.{}".format(resource.resname(), resource.restype().extension))
         else:
             editor.savedFile.connect(lambda: self._onSavedResource(resource))
-
-    def _onSavedResource(self, resource: ModuleResource) -> None:
-        resource.reload()
-        self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
     def copyResourceToOverride(self, resource: ModuleResource) -> None:
         location = "{}/{}.{}".format(self._installation.override_path(), resource.resname(), resource.restype().extension)
@@ -436,6 +429,10 @@ class ModuleDesigner(QMainWindow):
     # endregion
 
     # region Signal Callbacks
+    def _onSavedResource(self, resource: ModuleResource) -> None:
+        resource.reload()
+        self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
+
     def onInstanceListDoubleClicked(self) -> None:
         if self.ui.instanceList.selectedItems():
             item = self.ui.instanceList.selectedItems()[0]
