@@ -749,7 +749,7 @@ class ModuleDesignerControl2dScheme:
 
         if self.snapCameraToSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
-                self.renderer.camera.setPosition(instance.position.x, instance.position.y)
+                self.renderer.snapCameraToPoint(instance.position)
                 break
 
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:

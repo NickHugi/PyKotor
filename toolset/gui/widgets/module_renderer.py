@@ -14,6 +14,7 @@ from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
+from utils.misc import clamp
 
 
 class ModuleRenderer(QOpenGLWidget):
@@ -83,13 +84,6 @@ class ModuleRenderer(QOpenGLWidget):
     def resetMouseButtons(self) -> None:
         self._mouseDown.clear()
 
-    def snapCameraToPoint(self, point: Vector3, distance: float = 5.0):
-        camera = self.scene.camera
-        newCamPos = Vector3.from_vector3(point)
-
-        camera.x, camera.y, camera.z = point.x, point.y, point.z+1.0
-        camera.distance = distance
-
     def paintGL(self) -> None:
         if not self._init:
             self._init = True
@@ -127,6 +121,11 @@ class ModuleRenderer(QOpenGLWidget):
     # endregion
 
     # region Camera Transformations
+    def snapCameraToPoint(self, point: Vector3, distance: float = 6.0):
+        camera = self.scene.camera
+        camera.x, camera.y, camera.z = point.x, point.y, point.z+1.0
+        camera.distance = distance
+
     def panCamera(self, forward: float, right: float, up: float) -> None:
         """
         Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
@@ -153,9 +152,15 @@ class ModuleRenderer(QOpenGLWidget):
             pitch:
         """
         self.scene.camera.rotate(yaw, pitch)
+        if self.scene.camera.pitch < math.pi/2:
+            self.scene.camera.pitch = math.pi/2
+        if self.scene.camera.pitch > math.pi:
+            self.scene.camera.pitch = math.pi
 
     def zoomCamera(self, distance: float) -> None:
         self.scene.camera.distance -= distance
+        if self.scene.camera.distance < 0:
+            self.scene.camera.distance = 0
     # endregion
 
     # region Events
