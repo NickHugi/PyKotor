@@ -430,7 +430,7 @@ class ModuleDesigner(QMainWindow):
             return
 
         for instance in self.selectedInstances:
-            instance.rotate(x/60, 0*y/60, 0.0)
+            instance.rotate(x/60, y/60, 0.0)
     # endregion
 
     # region Signal Callbacks
@@ -697,7 +697,10 @@ class ModuleDesignerControl2dScheme:
         if self.rotateSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
                 rotation = -math.atan2(world.x - instance.position.x, world.y - instance.position.y)
-                instance.rotate(-instance.yaw() + rotation, 0, 0)
+                if isinstance(instance, GITCamera):
+                    instance.rotate(instance.yaw() - rotation, 0, 0)
+                else:
+                    instance.rotate(-instance.yaw() + rotation, 0, 0)
 
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.selectUnderneath.satisfied(buttons, keys):
