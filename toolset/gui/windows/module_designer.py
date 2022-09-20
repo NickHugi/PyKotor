@@ -388,8 +388,10 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
     def editInstance(self, instance: GITInstance) -> None:
-        if openInstanceDialog(self, instance, self._installation) and not isinstance(instance, GITCamera):
-            self.ui.mainRenderer.scene.clearCacheBuffer.append(instance.identifier())
+        if openInstanceDialog(self, instance, self._installation):
+            if not isinstance(instance, GITCamera):
+                self.ui.mainRenderer.scene.clearCacheBuffer.append(instance.identifier())
+            self.rebuildInstanceList()
 
     # region Selection Manipulations
     def setSelection(self, instances: List[GITInstance]) -> None:
