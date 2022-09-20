@@ -1,6 +1,7 @@
 import math
 import os
 from contextlib import suppress
+from time import sleep
 from typing import Set, Dict, Optional, List
 
 from PyQt5 import QtCore
@@ -14,6 +15,7 @@ from gui.dialogs.insert_instance import InsertInstanceDialog
 from gui.dialogs.select_module import SelectModuleDialog
 from gui.editors.git import openInstanceDialog
 from gui.widgets.module_renderer import ModuleRenderer
+from gui.widgets.settings.installations import GlobalSettings
 from gui.widgets.settings.module_designer import ModuleDesignerSettings
 from gui.widgets.walkmesh_renderer import WalkmeshRenderer
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
@@ -30,6 +32,7 @@ from gui.windows.help import HelpWindow
 from pykotor.gl.scene import RenderObject, Camera
 
 from data.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
+from pykotor.tools import module
 from utils.misc import QtKey, QtMouse
 from utils.window import openResourceEditor
 
@@ -156,6 +159,11 @@ class ModuleDesigner(QMainWindow):
 
         if dialog.exec_():
             self.unloadModule()
+
+            mod_filepath = self._installation.module_path() + dialog.module + ".mod"
+            if not os.path.exists(mod_filepath) and GlobalSettings().disableRIMSaving:
+                module.rim_to_mod(mod_filepath)
+                self._installation.load_modules()
 
             self._module = Module(dialog.module, self._installation)
             self.ui.mainRenderer.init(self._installation, self._module)

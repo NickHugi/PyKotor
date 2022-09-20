@@ -164,7 +164,7 @@ class GlobalSettings(Settings):
     # region Bools
     disableRIMSaving = Settings._addSetting(
         "disableRIMSaving",
-        False
+        True
     )
     firstTime = Settings._addSetting(
         "firstTime",
