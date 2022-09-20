@@ -53,6 +53,7 @@ class InsertInstanceDialog(QDialog):
             if capsule.path().endswith(".rim") and GlobalSettings().disableRIMSaving:
                 continue
             self.ui.locationSelect.addItem(capsule.path())
+        self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count()-1)
 
     def _setupResourceList(self) -> None:
         for resource in self._installation.chitin_resources():
