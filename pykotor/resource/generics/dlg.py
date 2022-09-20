@@ -245,7 +245,7 @@ class DLGNode:
         self.links: List[DLGLink] = []
 
         self.camera_angle: int = 0
-        self.delay: int = 0
+        self.delay: int = -1
         self.fade_type: int = 0
         self.listener: str = ""
         self.plot_index: int = 0
