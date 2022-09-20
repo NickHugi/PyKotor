@@ -316,13 +316,13 @@ class ModuleDesigner(QMainWindow):
             if visibleMapping[type(instance)]:
                 continue
 
-            if instance.identifier():
+            if isinstance(instance, GITCamera):
+                text = "Camera #{}".format(instance.camera_id)
+            else:
                 resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
                 text = resource.localized_name()
                 if text is None or text.isspace():
                     text = "[{}]".format(resource.resname())
-            else:
-                text = "Camera #{}".format(self._module.git().resource().index(instance))
 
             icon = QIcon(iconMapping[type(instance)])
             item = QListWidgetItem(icon, text)
