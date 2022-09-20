@@ -8,11 +8,12 @@ from data.misc import Bind
 from data.settings import Settings
 from gui.widgets.color_edit import ColorEdit
 from gui.widgets.set_bind import SetBindWidget
+from gui.widgets.settings.base import SettingsWidget
 from pykotor.common.misc import Color
 from utils.misc import QtKey, QtMouse
 
 
-class ModuleDesignerWidget(QWidget):
+class ModuleDesignerWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
@@ -53,34 +54,31 @@ class ModuleDesignerWidget(QWidget):
 
         self.setupValues()
 
-    def _setupControlValues(self) -> None:
+    def _load3dBindValues(self) -> None:
         self.ui.moveCameraSensitivity3dEdit.setValue(self.settings.moveCameraSensitivity3d)
         self.ui.rotateCameraSensitivity3dEdit.setValue(self.settings.rotateCameraSensitivity3d)
         self.ui.zoomCameraSensitivity3dEdit.setValue(self.settings.zoomCameraSensitivity3d)
 
-        for bindEdit in [widget for widget in dir(self.ui) if "BindEdit" in widget]:
+        for bindEdit in [widget for widget in dir(self.ui) if "3dBindEdit" in widget]:
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
+    def _load2dBindValues(self) -> None:
         self.ui.moveCameraSensitivity2dEdit.setValue(self.settings.moveCameraSensitivity2d)
         self.ui.rotateCameraSensitivity2dEdit.setValue(self.settings.rotateCameraSensitivity2d)
         self.ui.zoomCameraSensitivity2dEdit.setValue(self.settings.zoomCameraSensitivity2d)
 
-    def _setupColourValues(self) -> None:
+        for bindEdit in [widget for widget in dir(self.ui) if "2dBindEdit" in widget]:
+            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+
+    def _loadColourValues(self) -> None:
         for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
             self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
 
-    def _registerBind(self, widget: SetBindWidget, bindName: str) -> None:
-        widget.setBind(getattr(self.settings, bindName))
-        self.binds.append((widget, bindName))
-
-    def _registerColour(self, widget: ColorEdit, colourName: str) -> None:
-        widget.setColor(Color.from_rgba_integer(getattr(self.settings, colourName)))
-        self.colours.append((widget, colourName))
-
     def setupValues(self) -> None:
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
-        self._setupControlValues()
-        self._setupColourValues()
+        self._load3dBindValues()
+        self._load2dBindValues()
+        self._loadColourValues()
 
     def save(self) -> None:
         self.settings.fieldOfView = self.ui.fovSpin.value()
@@ -92,15 +90,15 @@ class ModuleDesignerWidget(QWidget):
 
     def resetControls3d(self) -> None:
         self.settings.resetControls3d()
-        self._setupControlValues()
+        self._load3dBindValues()
 
     def resetControls2d(self) -> None:
         self.settings.resetControls2d()
-        self._setupControlValues()
+        self._load2dBindValues()
 
     def resetColours(self) -> None:
         self.settings.resetMaterialColors()
-        self._setupColourValues()
+        self._loadColourValues()
 
 
 class ModuleDesignerSettings(Settings):

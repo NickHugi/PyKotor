@@ -4,11 +4,12 @@ from PyQt5.QtWidgets import QWidget
 
 from data.misc import Bind
 from data.settings import Settings
+from gui.widgets.settings.base import SettingsWidget
 from pykotor.common.misc import Color
 from utils.misc import QtKey, QtMouse
 
 
-class GITWidget(QWidget):
+class GITWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
@@ -20,26 +21,26 @@ class GITWidget(QWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
-        self.ui.undefinedColorEdit.allowAlpha = True
-        self.ui.dirtColorEdit.allowAlpha = True
-        self.ui.obscuringColorEdit.allowAlpha = True
-        self.ui.grassColorEdit.allowAlpha = True
-        self.ui.stoneColorEdit.allowAlpha = True
-        self.ui.woodColorEdit.allowAlpha = True
-        self.ui.waterColorEdit.allowAlpha = True
-        self.ui.nonWalkColorEdit.allowAlpha = True
-        self.ui.transparentColorEdit.allowAlpha = True
-        self.ui.carpetColorEdit.allowAlpha = True
-        self.ui.metalColorEdit.allowAlpha = True
-        self.ui.puddlesColorEdit.allowAlpha = True
-        self.ui.swampColorEdit.allowAlpha = True
-        self.ui.mudColorEdit.allowAlpha = True
-        self.ui.leavesColorEdit.allowAlpha = True
-        self.ui.lavaColorEdit.allowAlpha = True
-        self.ui.bottomlessPitColorEdit.allowAlpha = True
-        self.ui.deepWaterColorEdit.allowAlpha = True
-        self.ui.doorColorEdit.allowAlpha = True
-        self.ui.nonWalkGrassColorEdit.allowAlpha = True
+        self.ui.undefinedMaterialColourEdit.allowAlpha = True
+        self.ui.dirtMaterialColourEdit.allowAlpha = True
+        self.ui.obscuringMaterialColourEdit.allowAlpha = True
+        self.ui.grassMaterialColourEdit.allowAlpha = True
+        self.ui.stoneMaterialColourEdit.allowAlpha = True
+        self.ui.woodMaterialColourEdit.allowAlpha = True
+        self.ui.waterMaterialColourEdit.allowAlpha = True
+        self.ui.nonWalkMaterialColourEdit.allowAlpha = True
+        self.ui.transparentMaterialColourEdit.allowAlpha = True
+        self.ui.carpetMaterialColourEdit.allowAlpha = True
+        self.ui.metalMaterialColourEdit.allowAlpha = True
+        self.ui.puddlesMaterialColourEdit.allowAlpha = True
+        self.ui.swampMaterialColourEdit.allowAlpha = True
+        self.ui.mudMaterialColourEdit.allowAlpha = True
+        self.ui.leavesMaterialColourEdit.allowAlpha = True
+        self.ui.lavaMaterialColourEdit.allowAlpha = True
+        self.ui.bottomlessPitMaterialColourEdit.allowAlpha = True
+        self.ui.deepWaterMaterialColourEdit.allowAlpha = True
+        self.ui.doorMaterialColourEdit.allowAlpha = True
+        self.ui.nonWalkGrassMaterialColourEdit.allowAlpha = True
 
         self.ui.coloursResetButton.clicked.connect(self.resetColours)
         self.ui.controlsResetButton.clicked.connect(self.resetControls)
@@ -47,26 +48,8 @@ class GITWidget(QWidget):
         self.setupValues()
 
     def _setupColourValues(self) -> None:
-        self.ui.undefinedColorEdit.setColor(Color.from_rgba_integer(self.settings.undefinedMaterialColour))
-        self.ui.dirtColorEdit.setColor(Color.from_rgba_integer(self.settings.dirtMaterialColour))
-        self.ui.obscuringColorEdit.setColor(Color.from_rgba_integer(self.settings.obscuringMaterialColour))
-        self.ui.grassColorEdit.setColor(Color.from_rgba_integer(self.settings.grassMaterialColour))
-        self.ui.stoneColorEdit.setColor(Color.from_rgba_integer(self.settings.stoneMaterialColour))
-        self.ui.woodColorEdit.setColor(Color.from_rgba_integer(self.settings.woodMaterialColour))
-        self.ui.waterColorEdit.setColor(Color.from_rgba_integer(self.settings.waterMaterialColour))
-        self.ui.nonWalkColorEdit.setColor(Color.from_rgba_integer(self.settings.nonWalkMaterialColour))
-        self.ui.transparentColorEdit.setColor(Color.from_rgba_integer(self.settings.transparentMaterialColour))
-        self.ui.carpetColorEdit.setColor(Color.from_rgba_integer(self.settings.carpetMaterialColour))
-        self.ui.metalColorEdit.setColor(Color.from_rgba_integer(self.settings.metalMaterialColour))
-        self.ui.puddlesColorEdit.setColor(Color.from_rgba_integer(self.settings.puddlesMaterialColour))
-        self.ui.swampColorEdit.setColor(Color.from_rgba_integer(self.settings.swampMaterialColour))
-        self.ui.mudColorEdit.setColor(Color.from_rgba_integer(self.settings.mudMaterialColour))
-        self.ui.leavesColorEdit.setColor(Color.from_rgba_integer(self.settings.leavesMaterialColour))
-        self.ui.lavaColorEdit.setColor(Color.from_rgba_integer(self.settings.lavaMaterialColour))
-        self.ui.bottomlessPitColorEdit.setColor(Color.from_rgba_integer(self.settings.bottomlessPitMaterialColour))
-        self.ui.deepWaterColorEdit.setColor(Color.from_rgba_integer(self.settings.deepWaterMaterialColour))
-        self.ui.doorColorEdit.setColor(Color.from_rgba_integer(self.settings.doorMaterialColour))
-        self.ui.nonWalkGrassColorEdit.setColor(Color.from_rgba_integer(self.settings.nonWalkGrassMaterialColour))
+        for colorEdit in [widget for widget in dir(self.ui) if "ColourEdit" in widget]:
+            self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
 
     def _setupBindValues(self) -> None:
         self.ui.moveCameraBindEdit.setBind(self.settings.panCameraBind)
@@ -88,26 +71,26 @@ class GITWidget(QWidget):
         self.settings.rotateSelectedToPointBind = self.ui.rotateObjectBindEdit.bind()
         self.settings.deleteSelectedBind = self.ui.deleteObjectBindEdit.bind()
 
-        self.settings.undefinedMaterialColour = self.ui.undefinedColorEdit.color().rgba_integer()
-        self.settings.dirtMaterialColour = self.ui.dirtColorEdit.color().rgba_integer()
-        self.settings.obscuringMaterialColour = self.ui.obscuringColorEdit.color().rgba_integer()
-        self.settings.grassMaterialColour = self.ui.grassColorEdit.color().rgba_integer()
-        self.settings.stoneMaterialColour = self.ui.stoneColorEdit.color().rgba_integer()
-        self.settings.woodMaterialColour = self.ui.woodColorEdit.color().rgba_integer()
-        self.settings.waterMaterialColour = self.ui.waterColorEdit.color().rgba_integer()
-        self.settings.nonWalkMaterialColour = self.ui.nonWalkColorEdit.color().rgba_integer()
-        self.settings.transparentMaterialColour = self.ui.transparentColorEdit.color().rgba_integer()
-        self.settings.carpetMaterialColour = self.ui.carpetColorEdit.color().rgba_integer()
-        self.settings.metalMaterialColour = self.ui.metalColorEdit.color().rgba_integer()
-        self.settings.puddlesMaterialColour = self.ui.puddlesColorEdit.color().rgba_integer()
-        self.settings.swampMaterialColour = self.ui.swampColorEdit.color().rgba_integer()
-        self.settings.mudMaterialColour = self.ui.mudColorEdit.color().rgba_integer()
-        self.settings.leavesMaterialColour = self.ui.leavesColorEdit.color().rgba_integer()
-        self.settings.lavaMaterialColour = self.ui.lavaColorEdit.color().rgba_integer()
-        self.settings.bottomlessPitMaterialColour = self.ui.bottomlessPitColorEdit.color().rgba_integer()
-        self.settings.deepWaterMaterialColour = self.ui.deepWaterColorEdit.color().rgba_integer()
-        self.settings.doorMaterialColour = self.ui.doorColorEdit.color().rgba_integer()
-        self.settings.nonWalkGrassMaterialColour = self.ui.nonWalkGrassColorEdit.color().rgba_integer()
+        self.settings.undefinedMaterialColour = self.ui.undefinedMaterialColourEdit.color().rgba_integer()
+        self.settings.dirtMaterialColour = self.ui.dirtMaterialColourEdit.color().rgba_integer()
+        self.settings.obscuringMaterialColour = self.ui.obscuringMaterialColourEdit.color().rgba_integer()
+        self.settings.grassMaterialColour = self.ui.grassMaterialColourEdit.color().rgba_integer()
+        self.settings.stoneMaterialColour = self.ui.stoneMaterialColourEdit.color().rgba_integer()
+        self.settings.woodMaterialColour = self.ui.woodMaterialColourEdit.color().rgba_integer()
+        self.settings.waterMaterialColour = self.ui.waterMaterialColourEdit.color().rgba_integer()
+        self.settings.nonWalkMaterialColour = self.ui.nonWalkMaterialColourEdit.color().rgba_integer()
+        self.settings.transparentMaterialColour = self.ui.transparentMaterialColourEdit.color().rgba_integer()
+        self.settings.carpetMaterialColour = self.ui.carpetMaterialColourEdit.color().rgba_integer()
+        self.settings.metalMaterialColour = self.ui.metalMaterialColourEdit.color().rgba_integer()
+        self.settings.puddlesMaterialColour = self.ui.puddlesMaterialColourEdit.color().rgba_integer()
+        self.settings.swampMaterialColour = self.ui.swampMaterialColourEdit.color().rgba_integer()
+        self.settings.mudMaterialColour = self.ui.mudMaterialColourEdit.color().rgba_integer()
+        self.settings.leavesMaterialColour = self.ui.leavesMaterialColourEdit.color().rgba_integer()
+        self.settings.lavaMaterialColour = self.ui.lavaMaterialColourEdit.color().rgba_integer()
+        self.settings.bottomlessPitMaterialColour = self.ui.bottomlessPitMaterialColourEdit.color().rgba_integer()
+        self.settings.deepWaterMaterialColour = self.ui.deepWaterMaterialColourEdit.color().rgba_integer()
+        self.settings.doorMaterialColour = self.ui.doorMaterialColourEdit.color().rgba_integer()
+        self.settings.nonWalkGrassMaterialColour = self.ui.nonWalkGrassMaterialColourEdit.color().rgba_integer()
 
     def resetColours(self) -> None:
         self.settings.resetMaterialColors()
@@ -123,35 +106,14 @@ class GITSettings(Settings):
         super().__init__("GITEditor")
 
     def resetMaterialColors(self) -> None:
-        self.settings.remove("undefinedMaterialColour")
-        self.settings.remove("dirtMaterialColour")
-        self.settings.remove("obscuringMaterialColour")
-        self.settings.remove("grassMaterialColour")
-        self.settings.remove("stoneMaterialColour")
-        self.settings.remove("woodMaterialColour")
-        self.settings.remove("waterMaterialColour")
-        self.settings.remove("nonWalkMaterialColour")
-        self.settings.remove("transparentMaterialColour")
-        self.settings.remove("carpetMaterialColour")
-        self.settings.remove("metalMaterialColour")
-        self.settings.remove("puddlesMaterialColour")
-        self.settings.remove("swampMaterialColour")
-        self.settings.remove("mudMaterialColour")
-        self.settings.remove("leavesMaterialColour")
-        self.settings.remove("doorMaterialColour")
-        self.settings.remove("lavaMaterialColour")
-        self.settings.remove("bottomlessPitMaterialColour")
-        self.settings.remove("deepWaterMaterialColour")
-        self.settings.remove("nonWalkGrassMaterialColour")
+        for setting in dir(self):
+            if setting.endswith("Colour"):
+                self.settings.remove(setting)
 
     def resetControls(self) -> None:
-        self.settings.remove("panCameraBind")
-        self.settings.remove("rotateCameraBind")
-        self.settings.remove("zoomCameraBind")
-        self.settings.remove("rotateSelectedToPointBind")
-        self.settings.remove("moveSelectedBind")
-        self.settings.remove("selectUnderneathBind")
-        self.settings.remove("deleteSelectedBind")
+        for setting in dir(self):
+            if setting.endswith("Bind"):
+                self.settings.remove(setting)
 
     # region Strings (Instance Labels)
     creatureLabel = Settings._addSetting(
