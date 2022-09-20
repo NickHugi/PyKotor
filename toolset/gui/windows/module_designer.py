@@ -586,6 +586,14 @@ class ModuleDesignerControl3dScheme:
         self.rotateCameraRight: ControlItem = ControlItem(self.settings.rotateCameraRight3dBind)
         self.rotateCameraUp: ControlItem = ControlItem(self.settings.rotateCameraUp3dBind)
         self.rotateCameraDown: ControlItem = ControlItem(self.settings.rotateCameraDown3dBind)
+        self.moveCameraUp: ControlItem = ControlItem(self.settings.moveCameraUp3dBind)
+        self.moveCameraDown: ControlItem = ControlItem(self.settings.moveCameraDown3dBind)
+        self.moveCameraForward: ControlItem = ControlItem(self.settings.moveCameraForward3dBind)
+        self.moveCameraBackward: ControlItem = ControlItem(self.settings.moveCameraBackward3dBind)
+        self.moveCameraLeft: ControlItem = ControlItem(self.settings.moveCameraLeft3dBind)
+        self.moveCameraRight: ControlItem = ControlItem(self.settings.moveCameraRight3dBind)
+        self.zoomCameraIn: ControlItem = ControlItem(self.settings.zoomCameraIn3dBind)
+        self.zoomCameraOut: ControlItem = ControlItem(self.settings.zoomCameraOut3dBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -657,6 +665,24 @@ class ModuleDesignerControl3dScheme:
             self.renderer.rotateCamera(0, math.pi/4)
         if self.rotateCameraDown.satisfied(buttons, keys):
             self.renderer.rotateCamera(0, -math.pi/4)
+
+        if self.moveCameraUp.satisfied(buttons, keys):
+            self.renderer.scene.camera.z += 1
+        if self.moveCameraDown.satisfied(buttons, keys):
+            self.renderer.scene.camera.z -= 1
+        if self.moveCameraLeft.satisfied(buttons, keys):
+            self.renderer.panCamera(0, -1, 0)
+        if self.moveCameraRight.satisfied(buttons, keys):
+            self.renderer.panCamera(0, 1, 0)
+        if self.moveCameraForward.satisfied(buttons, keys):
+            self.renderer.panCamera(1, 0, 0)
+        if self.moveCameraBackward.satisfied(buttons, keys):
+            self.renderer.panCamera(-1, 0, 0)
+
+        if self.zoomCameraIn.satisfied(buttons, keys):
+            self.renderer.zoomCamera(1)
+        if self.zoomCameraOut.satisfied(buttons, keys):
+            self.renderer.zoomCamera(-1)
 
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...

@@ -127,22 +127,22 @@ class ModuleRenderer(QOpenGLWidget):
     # endregion
 
     # region Camera Transformations
-    def panCamera(self, x: float, y: float, z: float) -> None:
+    def panCamera(self, forward: float, right: float, up: float) -> None:
         """
         Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
         camera on the x/y plane.
 
         Args:
-            x: Units to move the x coordinate.
-            y: Units to move the y coordinate.
-            z: Units to move the z coordinate.
+            forward: Units to move forwards.
+            right: Units to move to the right.
+            up: Units to move upwards.
         """
-        forward = y * self.scene.camera.forward()
-        sideward = x * self.scene.camera.sideward()
+        forward = forward * self.scene.camera.forward()
+        sideward = right * self.scene.camera.sideward()
 
         self.scene.camera.x += (forward.x + sideward.x)
         self.scene.camera.y += (forward.y + sideward.y)
-        self.scene.camera.z += z
+        self.scene.camera.z += up
 
     def rotateCamera(self, yaw: float, pitch: float) -> None:
         """
@@ -153,6 +153,9 @@ class ModuleRenderer(QOpenGLWidget):
             pitch:
         """
         self.scene.camera.rotate(yaw, pitch)
+
+    def zoomCamera(self, distance: float) -> None:
+        self.scene.camera.distance -= distance
     # endregion
 
     # region Events
