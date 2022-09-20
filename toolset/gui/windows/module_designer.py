@@ -380,7 +380,8 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
     def editInstance(self, instance: GITInstance) -> None:
-        openInstanceDialog(self, instance, self._installation)
+        if openInstanceDialog(self, instance, self._installation):
+            self.ui.mainRenderer.scene.clearCacheBuffer.append(instance.identifier())
 
     # region Selection Manipulations
     def setSelection(self, instances: List[GITInstance]) -> None:
