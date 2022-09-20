@@ -2,6 +2,8 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, \
     QDialog, QDialogButtonBox
+
+from gui.widgets.settings.installations import GlobalSettings
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
@@ -48,6 +50,8 @@ class InsertInstanceDialog(QDialog):
     def _setupLocationSelect(self) -> None:
         self.ui.locationSelect.addItem(self._installation.override_path())
         for capsule in self._module.capsules():
+            if capsule.path().endswith(".rim") and GlobalSettings().disableRIMSaving:
+                continue
             self.ui.locationSelect.addItem(capsule.path())
 
     def _setupResourceList(self) -> None:
