@@ -305,6 +305,8 @@ class ModuleDesigner(QMainWindow):
         }
 
         self.ui.instanceList.clear()
+        items = []
+
         for instance in self._module.git().resource().instances():
             if visibleMapping[type(instance)]:
                 continue
@@ -320,6 +322,7 @@ class ModuleDesigner(QMainWindow):
                 item.setToolTip("Struct Index: {}\nCamera ID: {}\nFOV: {}".format(
                     struct_index, instance.camera_id, instance.fov
                 ))
+                item.setData(QtCore.Qt.UserRole+1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
                 resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
                 resref = instance.identifier().resname
@@ -345,9 +348,13 @@ class ModuleDesigner(QMainWindow):
                 item.setToolTip("Struct Index: {}\nResRef: {}\nName: {}\nTag: {}".format(
                     struct_index, resref, name, tag
                 ))
+                item.setData(QtCore.Qt.UserRole+1, instance.identifier().restype.extension + name)
 
             item.setFont(font)
             item.setData(QtCore.Qt.UserRole, instance)
+            items.append(item)
+
+        for item in sorted(items, key=lambda i: i.data(QtCore.Qt.UserRole+1)):
             self.ui.instanceList.addItem(item)
 
     def selectInstanceItemOnList(self, instance: GITInstance) -> None:
