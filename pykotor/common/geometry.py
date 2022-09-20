@@ -861,9 +861,19 @@ class Vector4:
     def to_euler(
             self
     ) -> Vector3:
-        yaw = math.atan2(2.0 * (self.y * self.z + self.w * self.x), self.w * self.w - self.x * self.x - self.y * self.y + self.z * self.z)
-        pitch = math.asin(-2.0 * (self.x * self.z - self.w * self.y))
-        roll = math.atan2(2.0 * (self.x * self.y + self.w * self.z), self.w * self.w + self.x * self.x - self.y * self.y - self.z * self.z)
+        t0 = 2.0 * (self.w*self.x + self.y*self.z)
+        t1 = 1 - 2*(self.x*self.x + self.y*self.y)
+        roll = math.atan2(t0, t1)
+
+        t2 = 2 * (self.w*self.y - self.z*self.x)
+        t2 = 1 if t2 > 1 else t2
+        t2 = -1 if t2 < -1 else t2
+        pitch = math.asin(t2)
+
+        t3 = 2 * (self.w*self.z + self.x*self.y)
+        t4 = 1 - 2*(self.y*self.y + self.z*self.z)
+        yaw = math.atan2(t3, t4)
+
         return Vector3(roll, pitch, yaw)
 
     def magnitude(
