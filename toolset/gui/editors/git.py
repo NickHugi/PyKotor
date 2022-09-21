@@ -873,7 +873,7 @@ class GITControlScheme:
         self.editor: GITEditor = editor
         self.settings: GITSettings = GITSettings()
 
-        self.panCamera: ControlItem = ControlItem(self.settings.panCameraBind)
+        self.panCamera: ControlItem = ControlItem(self.settings.moveCameraBind)
         self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCameraBind)
         self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCameraBind)
         self.rotateSelectedToPoint: ControlItem = ControlItem(self.settings.rotateSelectedToPointBind)
