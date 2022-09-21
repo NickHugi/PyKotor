@@ -135,6 +135,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.viewStoreCheck.mouseDoubleClickEvent = lambda _: self.onInstanceVisibilityDoubleClick(self.ui.viewStoreCheck)
 
         self.ui.instanceList.doubleClicked.connect(self.onInstanceListDoubleClicked)
+        self.ui.instanceList.customContextMenuRequested.connect(self.onContextMenuSelectionExists)
 
         self.ui.mainRenderer.sceneInitalized.connect(self.on3dSceneInitialized)
         self.ui.mainRenderer.mousePressed.connect(self.on3dMousePressed)
@@ -559,34 +560,45 @@ class ModuleDesigner(QMainWindow):
         if self._module is None:
             return
 
-        menu = QMenu(self)
-        world = self.ui.mainRenderer.scene.cursor.position()
-
         if len(self.ui.mainRenderer.scene.selection) == 0:
-            view = self.ui.mainRenderer.scene.camera.truePosition()
-            rot = self.ui.mainRenderer.scene.camera
-            menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), False))
-            menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False))
-            menu.addSeparator()
-            menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), True))
-            menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), False))
-            menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(*world), False))
-            menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(*world), False))
-            menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(*world), False))
-            menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), False))
-            menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), False))
-            menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), False))
+            self.onContextMenuSelectionNone(world)
         else:
+            self.onContextMenuSelectionExists()
+
+    def onContextMenuSelectionNone(self, world: Vector3):
+        menu = QMenu(self)
+
+        view = self.ui.mainRenderer.scene.camera.truePosition()
+        rot = self.ui.mainRenderer.scene.camera
+        menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), False))
+        menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False))
+        menu.addSeparator()
+        menu.addAction("Insert Creature").triggered.connect(lambda: self.addInstance(GITCreature(*world), True))
+        menu.addAction("Insert Door").triggered.connect(lambda: self.addInstance(GITDoor(*world), False))
+        menu.addAction("Insert Placeable").triggered.connect(lambda: self.addInstance(GITPlaceable(*world), False))
+        menu.addAction("Insert Store").triggered.connect(lambda: self.addInstance(GITStore(*world), False))
+        menu.addAction("Insert Sound").triggered.connect(lambda: self.addInstance(GITSound(*world), False))
+        menu.addAction("Insert Waypoint").triggered.connect(lambda: self.addInstance(GITWaypoint(*world), False))
+        menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), False))
+        menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), False))
+
+        menu.popup(self.cursor().pos())
+        menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
+
+    def onContextMenuSelectionExists(self) -> None:
+        menu = QMenu(self)
+
+        if self.selectedInstances:
             instance = self.selectedInstances[0]
             if isinstance(instance, GITCamera):
-                menu.addAction("Snap Camera to View").triggered.connect(lambda: self.snapCameraToView(instance))
-                menu.addAction("Snap View to Camera").triggered.connect(lambda: self.snapViewToCamera(instance))
+                menu.addAction("Snap Camera to 3D View").triggered.connect(lambda: self.snapCameraToView(instance))
+                menu.addAction("Snap 3D View to Camera").triggered.connect(lambda: self.snapViewToCamera(instance))
                 menu.addSeparator()
 
             menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
-        menu.popup(point)
+        menu.popup(self.cursor().pos())
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
     def on3dSceneInitialized(self) -> None:
