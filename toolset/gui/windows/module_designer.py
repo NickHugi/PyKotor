@@ -19,7 +19,7 @@ from gui.widgets.module_renderer import ModuleRenderer
 from gui.widgets.settings.installations import GlobalSettings
 from gui.widgets.settings.module_designer import ModuleDesignerSettings
 from gui.widgets.walkmesh_renderer import WalkmeshRenderer
-from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3
+from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3, Vector4
 from pykotor.common.misc import ResRef, Color
 from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
@@ -424,6 +424,14 @@ class ModuleDesigner(QMainWindow):
                 self.ui.mainRenderer.scene.clearCacheBuffer.append(instance.identifier())
             self.rebuildInstanceList()
 
+    def snapCameraToView(self, instance: GITCamera) -> None:
+        view = self.ui.mainRenderer.scene.camera.truePosition()
+        rot = self.ui.mainRenderer.scene.camera
+        instance.pitch = 0
+        instance.height = 0
+        instance.position = Vector3(view.x, view.y, view.z)
+        instance.orientation = Vector4.from_euler(math.pi/2-rot.yaw, 0, math.pi-rot.pitch)
+
     # region Selection Manipulations
     def setSelection(self, instances: List[GITInstance]) -> None:
         if instances:
@@ -559,7 +567,12 @@ class ModuleDesigner(QMainWindow):
             menu.addAction("Insert Encounter").triggered.connect(lambda: self.addInstance(GITEncounter(*world), False))
             menu.addAction("Insert Trigger").triggered.connect(lambda: self.addInstance(GITTrigger(*world), False))
         else:
-            menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(self.selectedInstances[0]))
+            instance = self.selectedInstances[0]
+            if isinstance(instance, GITCamera):
+                menu.addAction("Snap Camera to View").triggered.connect(lambda: self.snapCameraToView(instance))
+                menu.addSeparator()
+
+            menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
             menu.addAction("Remove").triggered.connect(self.deleteSelected)
 
         menu.popup(point)
