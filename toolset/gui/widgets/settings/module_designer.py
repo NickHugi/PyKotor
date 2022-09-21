@@ -173,13 +173,13 @@ class ModuleDesignerSettings(Settings):
         "selectObject3dBind",
         (set(), {QtMouse.LeftButton})
     )
-    moveCameraToSelected3dBind = Settings._addSetting(
-        "moveCameraToSelected3dBind",
-        ({QtKey.Key_Z}, None)
-    )
     deleteObject3dBind = Settings._addSetting(
         "deleteObject3dBind",
         ({QtKey.Key_Delete}, None)
+    )
+    moveCameraToSelected3dBind = Settings._addSetting(
+        "moveCameraToSelected3dBind",
+        ({QtKey.Key_Z}, None)
     )
     rotateCameraLeft3dBind = Settings._addSetting(
         "rotateCameraLeft3dBind",
@@ -229,6 +229,10 @@ class ModuleDesignerSettings(Settings):
         "zoomCameraOut3dBind",
         ({QtKey.Key_Minus}, None)
     )
+    duplicateObject3dBind = Settings._addSetting(
+        "snapCameraToSelected2dBind",
+        ({QtKey.Key_Alt}, {QtMouse.LeftButton})
+    )
     # endregion
 
     # region Int/Binds (Controls - 2D)
@@ -273,9 +277,13 @@ class ModuleDesignerSettings(Settings):
         "deleteObject2dBind",
         ({QtKey.Key_Delete}, set())
     )
-    snapCameraToSelected2dBind = Settings._addSetting(
+    moveCameraToSelected2dBind = Settings._addSetting(
         "snapCameraToSelected2dBind",
         ({QtKey.Key_Z}, set())
+    )
+    duplicateObject2dBind = Settings._addSetting(
+        "snapCameraToSelected2dBind",
+        ({QtKey.Key_Alt}, {QtMouse.LeftButton})
     )
     # endregion
 

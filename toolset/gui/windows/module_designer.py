@@ -1,6 +1,7 @@
 import math
 import os
 from contextlib import suppress
+from copy import deepcopy
 from time import sleep
 from typing import Set, Dict, Optional, List
 
@@ -24,7 +25,7 @@ from pykotor.common.module import Module, ModuleResource
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
-    GITSound, GITStore, GITCamera, GITInstance
+    GITSound, GITStore, GITCamera, GITInstance, GIT
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -180,6 +181,9 @@ class ModuleDesigner(QMainWindow):
     def showHelpWindow(self) -> None:
         window = HelpWindow(self, "./help/tools/1-moduleEditor.md")
         window.show()
+
+    def git(self) -> GIT:
+        return self._module.git().resource()
 
     def saveGit(self) -> None:
         self._module.git().save()
@@ -612,6 +616,7 @@ class ModuleDesignerControl3dScheme:
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectObject3dBind)
         self.snapCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected3dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteObject3dBind)
+        self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateObject3dBind)
         self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
         self.rotateCameraLeft: ControlItem = ControlItem(self.settings.rotateCameraLeft3dBind)
         self.rotateCameraRight: ControlItem = ControlItem(self.settings.rotateCameraRight3dBind)
@@ -671,6 +676,14 @@ class ModuleDesignerControl3dScheme:
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.selectUnderneath.satisfied(buttons, keys):
             self.renderer.doSelect = True
+
+        if self.duplicateSelected.satisfied(buttons, keys):
+            if self.editor.selectedInstances:
+                instance = deepcopy(self.editor.selectedInstances[-1])
+                instance.position = self.renderer.scene.cursor.position()
+                self.editor.git().add(instance)
+                self.editor.rebuildInstanceList()
+                self.editor.setSelection([instance])
 
         if self.openContextMenu.satisfied(buttons, keys):
             world = Vector3(*self.renderer.scene.cursor.position())
@@ -732,7 +745,8 @@ class ModuleDesignerControl2dScheme:
         self.moveSelected: ControlItem = ControlItem(self.settings.moveObject2dBind)
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectObject2dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteObject2dBind)
-        self.snapCameraToSelected: ControlItem = ControlItem(self.settings.snapCameraToSelected2dBind)
+        self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateObject2dBind)
+        self.snapCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected2dBind)
         self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
@@ -766,6 +780,15 @@ class ModuleDesignerControl2dScheme:
                 self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
             else:
                 self.editor.setSelection([])
+
+        if self.duplicateSelected.satisfied(buttons, keys):
+            if self.editor.selectedInstances:
+                instance = deepcopy(self.editor.selectedInstances[-1])
+                screen = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
+                instance.position = self.renderer.toWorldCoords(screen.x(), screen.y())
+                self.editor.git().add(instance)
+                self.editor.rebuildInstanceList()
+                self.editor.setSelection([instance])
 
         if self.openContextMenu.satisfied(buttons, keys):
             world = self.renderer.toWorldCoords(screen.x, screen.y)
