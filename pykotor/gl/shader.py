@@ -56,7 +56,7 @@ void main()
     vec4 diffuseColor = texture(diffuse, diffuse_uv);
     vec4 lightmapColor = texture(lightmap, lightmap_uv);
     
-    if (enableLightmap) {
+    if (enableLightmap == 1) {
         FragColor = mix(diffuseColor, lightmapColor, 0.5);
     } else {
         FragColor = diffuseColor;
