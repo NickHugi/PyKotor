@@ -102,7 +102,7 @@
              </widget>
             </item>
             <item row="3" column="1">
-             <widget class="SetBindWidget" name="selectObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="selectUnderneathBindEdit" native="true"/>
             </item>
             <item row="4" column="0">
              <widget class="QLabel" name="label_4">
@@ -112,10 +112,10 @@
              </widget>
             </item>
             <item row="4" column="1">
-             <widget class="SetBindWidget" name="rotateObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="rotateSelectedToPointBindEdit" native="true"/>
             </item>
             <item row="5" column="1">
-             <widget class="SetBindWidget" name="deleteObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="deleteSelectedBindEdit" native="true"/>
             </item>
             <item row="5" column="0">
              <widget class="QLabel" name="label_6">
@@ -132,7 +132,7 @@
              </widget>
             </item>
             <item row="6" column="1">
-             <widget class="SetBindWidget" name="duplicateObjectBindEdit" native="true"/>
+             <widget class="SetBindWidget" name="duplicateSelectedBindEdit" native="true"/>
             </item>
            </layout>
           </item>

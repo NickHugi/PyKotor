@@ -52,47 +52,18 @@ class GITWidget(SettingsWidget):
             self._registerColour(getattr(self.ui, colorEdit), colorEdit[:-4])
 
     def _setupBindValues(self) -> None:
-        self.ui.moveCameraBindEdit.setBind(self.settings.panCameraBind)
-        self.ui.rotateCameraBindEdit.setBind(self.settings.rotateCameraBind)
-        self.ui.zoomCameraBindEdit.setBind(self.settings.zoomCameraBind)
-        self.ui.selectObjectBindEdit.setBind(self.settings.selectUnderneathBind)
-        self.ui.rotateObjectBindEdit.setBind(self.settings.rotateSelectedToPointBind)
-        self.ui.deleteObjectBindEdit.setBind(self.settings.deleteSelectedBind)
-        self.ui.duplicateObjectBindEdit.setBind(self.settings.duplicateSelectedBind)
+        for bindEdit in [widget for widget in dir(self.ui) if "BindEdit" in widget]:
+            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
     def setupValues(self) -> None:
         self._setupColourValues()
         self._setupBindValues()
 
     def save(self) -> None:
-        self.settings.panCameraBind = self.ui.moveCameraBindEdit.bind()
-        self.settings.rotateCameraBind = self.ui.rotateCameraBindEdit.bind()
-        self.settings.zoomCameraBind = self.ui.zoomCameraBindEdit.bind()
-        self.settings.selectUnderneathBind = self.ui.selectObjectBindEdit.bind()
-        self.settings.rotateSelectedToPointBind = self.ui.rotateObjectBindEdit.bind()
-        self.settings.deleteSelectedBind = self.ui.deleteObjectBindEdit.bind()
-        self.settings.duplicateSelectedBind = self.ui.duplicateObjectBindEdit.bind()
-
-        self.settings.undefinedMaterialColour = self.ui.undefinedMaterialColourEdit.color().rgba_integer()
-        self.settings.dirtMaterialColour = self.ui.dirtMaterialColourEdit.color().rgba_integer()
-        self.settings.obscuringMaterialColour = self.ui.obscuringMaterialColourEdit.color().rgba_integer()
-        self.settings.grassMaterialColour = self.ui.grassMaterialColourEdit.color().rgba_integer()
-        self.settings.stoneMaterialColour = self.ui.stoneMaterialColourEdit.color().rgba_integer()
-        self.settings.woodMaterialColour = self.ui.woodMaterialColourEdit.color().rgba_integer()
-        self.settings.waterMaterialColour = self.ui.waterMaterialColourEdit.color().rgba_integer()
-        self.settings.nonWalkMaterialColour = self.ui.nonWalkMaterialColourEdit.color().rgba_integer()
-        self.settings.transparentMaterialColour = self.ui.transparentMaterialColourEdit.color().rgba_integer()
-        self.settings.carpetMaterialColour = self.ui.carpetMaterialColourEdit.color().rgba_integer()
-        self.settings.metalMaterialColour = self.ui.metalMaterialColourEdit.color().rgba_integer()
-        self.settings.puddlesMaterialColour = self.ui.puddlesMaterialColourEdit.color().rgba_integer()
-        self.settings.swampMaterialColour = self.ui.swampMaterialColourEdit.color().rgba_integer()
-        self.settings.mudMaterialColour = self.ui.mudMaterialColourEdit.color().rgba_integer()
-        self.settings.leavesMaterialColour = self.ui.leavesMaterialColourEdit.color().rgba_integer()
-        self.settings.lavaMaterialColour = self.ui.lavaMaterialColourEdit.color().rgba_integer()
-        self.settings.bottomlessPitMaterialColour = self.ui.bottomlessPitMaterialColourEdit.color().rgba_integer()
-        self.settings.deepWaterMaterialColour = self.ui.deepWaterMaterialColourEdit.color().rgba_integer()
-        self.settings.doorMaterialColour = self.ui.doorMaterialColourEdit.color().rgba_integer()
-        self.settings.nonWalkGrassMaterialColour = self.ui.nonWalkGrassMaterialColourEdit.color().rgba_integer()
+        for widget, bindName in self.binds:
+            setattr(self.settings, bindName, widget.bind())
+        for widget, colourName in self.colours:
+            setattr(self.settings, colourName, widget.color().rgba_integer())
 
     def resetColours(self) -> None:
         self.settings.resetMaterialColors()
@@ -240,8 +211,8 @@ class GITSettings(Settings):
     # endregion
 
     # region Binds (Controls)
-    panCameraBind = Settings._addSetting(
-        "panCameraBind",
+    moveCameraBind = Settings._addSetting(
+        "moveCameraBind",
         ({QtKey.Key_Control}, {QtMouse.LeftButton})
     )
     rotateCameraBind = Settings._addSetting(
