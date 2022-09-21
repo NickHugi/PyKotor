@@ -629,7 +629,8 @@ class _InstanceMode(_Mode):
     def updateStatusBar(self, world: Vector2) -> None:
         if self._ui.renderArea.instancesUnderMouse() and self._ui.renderArea.instancesUnderMouse()[-1] is not None:
             instance = self._ui.renderArea.instancesUnderMouse()[-1]
-            self._editor.statusBar().showMessage("({:.1f}, {:.1f}) {}".format(world.x, world.y, instance.identifier().resname))
+            resname = "" if isinstance(instance, GITCamera) else instance.identifier().resname
+            self._editor.statusBar().showMessage("({:.1f}, {:.1f}) {}".format(world.x, world.y, resname))
         else:
             self._editor.statusBar().showMessage("({:.1f}, {:.1f})".format(world.x, world.y))
 
