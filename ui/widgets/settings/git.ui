@@ -23,9 +23,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-121</y>
+        <y>0</y>
         <width>429</width>
-        <height>874</height>
+        <height>897</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -114,6 +114,9 @@
             <item row="4" column="1">
              <widget class="SetBindWidget" name="rotateObjectBindEdit" native="true"/>
             </item>
+            <item row="5" column="1">
+             <widget class="SetBindWidget" name="deleteObjectBindEdit" native="true"/>
+            </item>
             <item row="5" column="0">
              <widget class="QLabel" name="label_6">
               <property name="text">
@@ -121,8 +124,15 @@
               </property>
              </widget>
             </item>
-            <item row="5" column="1">
-             <widget class="SetBindWidget" name="deleteObjectBindEdit" native="true"/>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>Duplicate Object:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="SetBindWidget" name="duplicateObjectBindEdit" native="true"/>
             </item>
            </layout>
           </item>

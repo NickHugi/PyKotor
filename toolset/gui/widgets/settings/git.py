@@ -58,6 +58,7 @@ class GITWidget(SettingsWidget):
         self.ui.selectObjectBindEdit.setBind(self.settings.selectUnderneathBind)
         self.ui.rotateObjectBindEdit.setBind(self.settings.rotateSelectedToPointBind)
         self.ui.deleteObjectBindEdit.setBind(self.settings.deleteSelectedBind)
+        self.ui.duplicateObjectBindEdit.setBind(self.settings.duplicateSelectedBind)
 
     def setupValues(self) -> None:
         self._setupColourValues()
@@ -70,6 +71,7 @@ class GITWidget(SettingsWidget):
         self.settings.selectUnderneathBind = self.ui.selectObjectBindEdit.bind()
         self.settings.rotateSelectedToPointBind = self.ui.rotateObjectBindEdit.bind()
         self.settings.deleteSelectedBind = self.ui.deleteObjectBindEdit.bind()
+        self.settings.duplicateSelectedBind = self.ui.duplicateObjectBindEdit.bind()
 
         self.settings.undefinedMaterialColour = self.ui.undefinedMaterialColourEdit.color().rgba_integer()
         self.settings.dirtMaterialColour = self.ui.dirtMaterialColourEdit.color().rgba_integer()
@@ -265,5 +267,9 @@ class GITSettings(Settings):
     deleteSelectedBind = Settings._addSetting(
         "deleteSelectedBind",
         ({QtKey.Key_Delete}, None)
+    )
+    duplicateSelectedBind = Settings._addSetting(
+        "duplicateSelectedBind",
+        ({QtKey.Key_Alt}, {QtMouse.LeftButton})
     )
     # endregion

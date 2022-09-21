@@ -4,7 +4,7 @@ import ast
 import math
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from copy import deepcopy
+from copy import deepcopy, copy
 from typing import Optional, Set, Dict, List, Callable, Tuple
 
 from PyQt5 import QtCore
@@ -318,8 +318,8 @@ class GITEditor(Editor):
     def deleteSelected(self) -> None:
         self._mode.deleteSelected()
 
-    def duplicateSelected(self) -> None:
-        self._mode.duplicateSelected()
+    def duplicateSelected(self, position: Vector3) -> None:
+        self._mode.duplicateSelected(position)
 
     def moveSelected(self, x: float, y: float) -> None:
         self._mode.moveSelected(x, y)
@@ -421,7 +421,7 @@ class _Mode(ABC):
         ...
 
     @abstractmethod
-    def duplicateSelected(self) -> None:
+    def duplicateSelected(self, position: Vector3) -> None:
         ...
 
     @abstractmethod
@@ -732,9 +732,13 @@ class _InstanceMode(_Mode):
             self._ui.renderArea.instanceSelection.remove(instance)
         self.buildList()
 
-    def duplicateSelected(self) -> None:
-        ...
-        self.buildList()
+    def duplicateSelected(self, position: Vector3) -> None:
+        if self._ui.renderArea.instanceSelection.all():
+            instance = deepcopy(self._ui.renderArea.instanceSelection.all()[-1])
+            instance.position = position
+            self._git.add(instance)
+            self.buildList()
+            self.setSelection([instance])
 
     def moveSelected(self, x: float, y: float) -> None:
         if self._ui.lockInstancesCheck.isChecked():
@@ -839,7 +843,7 @@ class _GeometryMode(_Mode):
         instance = vertex.instance
         instance.geometry.remove(vertex.point)
 
-    def duplicateSelected(self) -> None:
+    def duplicateSelected(self, position: Vector3) -> None:
         pass
 
     def moveSelected(self, x: float, y: float) -> None:
@@ -876,6 +880,7 @@ class GITControlScheme:
         self.moveSelected: ControlItem = ControlItem(self.settings.moveSelectedBind)
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneathBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelectedBind)
+        self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateSelectedBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -894,6 +899,9 @@ class GITControlScheme:
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.selectUnderneath.satisfied(buttons, keys):
             self.editor.selectUnderneath()
+        if self.duplicateSelected.satisfied(buttons, keys):
+            position = self.editor.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            self.editor.duplicateSelected(position)
 
     def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
