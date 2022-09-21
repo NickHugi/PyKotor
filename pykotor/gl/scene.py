@@ -386,6 +386,7 @@ class Scene:
         if clear_existing:
             self.selection.clear()
 
+        self.buildCache()
         if isinstance(target, GITInstance):
             for obj in self.objects.values():
                 if obj.data is target:
