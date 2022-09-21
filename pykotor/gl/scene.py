@@ -371,6 +371,25 @@ class Scene:
             self._picker_render_object(obj, mat4())
 
     def _picker_render_object(self, obj: RenderObject, transform: mat4) -> None:
+        if isinstance(obj.data, GITCreature) and self.hide_creatures:
+            return
+        if isinstance(obj.data, GITPlaceable) and self.hide_placeables:
+            return
+        if isinstance(obj.data, GITDoor) and self.hide_doors:
+            return
+        if isinstance(obj.data, GITTrigger) and self.hide_triggers:
+            return
+        if isinstance(obj.data, GITEncounter) and self.hide_encounters:
+            return
+        if isinstance(obj.data, GITWaypoint) and self.hide_waypoints:
+            return
+        if isinstance(obj.data, GITSound) and self.hide_sounds:
+            return
+        if isinstance(obj.data, GITStore) and self.hide_sounds:
+            return
+        if isinstance(obj.data, GITCamera) and self.hide_cameras:
+            return
+
         model = self.model(obj.model)
         model.draw(self.picker_shader, transform * obj.transform())
         for child in obj.children:
