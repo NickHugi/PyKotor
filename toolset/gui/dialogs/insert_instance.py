@@ -48,11 +48,11 @@ class InsertInstanceDialog(QDialog):
         self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
 
     def _setupLocationSelect(self) -> None:
-        self.ui.locationSelect.addItem(self._installation.override_path())
+        self.ui.locationSelect.addItem(self._installation.override_path(), self._installation.override_path())
         for capsule in self._module.capsules():
             if capsule.path().endswith(".rim") and GlobalSettings().disableRIMSaving:
                 continue
-            self.ui.locationSelect.addItem(capsule.path())
+            self.ui.locationSelect.addItem(capsule.path(), capsule.path())
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count()-1)
 
     def _setupResourceList(self) -> None:
@@ -88,9 +88,11 @@ class InsertInstanceDialog(QDialog):
             self.data = resource.data()
         elif self.ui.copyResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
+            self.filepath = self.ui.locationSelect.currentData()
             self.data = resource.data()
         elif self.ui.createResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
+            self.filepath = self.ui.locationSelect.currentData()
             if self._restype == ResourceType.UTC:
                 self.data = bytes_utc(UTC())
             elif self._restype == ResourceType.UTP:
