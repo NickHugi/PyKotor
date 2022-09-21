@@ -432,6 +432,16 @@ class ModuleDesigner(QMainWindow):
         instance.position = Vector3(view.x, view.y, view.z)
         instance.orientation = Vector4.from_euler(math.pi/2-rot.yaw, 0, math.pi-rot.pitch)
 
+    def snapViewToCamera(self, instance: GITCamera) -> None:
+        camera = self.ui.mainRenderer.scene.camera
+        euler = instance.orientation.to_euler()
+        camera.pitch = math.pi-euler.z
+        camera.yaw = math.pi/2-euler.x
+        camera.x = instance.position.x
+        camera.y = instance.position.y
+        camera.z = instance.position.z
+        camera.distance = 0
+
     # region Selection Manipulations
     def setSelection(self, instances: List[GITInstance]) -> None:
         if instances:
@@ -570,6 +580,7 @@ class ModuleDesigner(QMainWindow):
             instance = self.selectedInstances[0]
             if isinstance(instance, GITCamera):
                 menu.addAction("Snap Camera to View").triggered.connect(lambda: self.snapCameraToView(instance))
+                menu.addAction("Snap View to Camera").triggered.connect(lambda: self.snapViewToCamera(instance))
                 menu.addSeparator()
 
             menu.addAction("Edit Instance").triggered.connect(lambda: self.editInstance(instance))
