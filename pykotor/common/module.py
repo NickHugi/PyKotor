@@ -514,6 +514,8 @@ class ModuleResource(Generic[T]):
             return self._installation.string(res.name)
         elif isinstance(res, UTM):
             return self._installation.string(res.name)
+        elif isinstance(res, UTS):
+            return self._installation.string(res.name)
         else:
             return None
 
