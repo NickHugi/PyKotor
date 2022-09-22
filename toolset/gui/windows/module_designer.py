@@ -655,8 +655,9 @@ class ModuleDesignerControl3dScheme:
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
 
-        self.panXYCamera: ControlItem = ControlItem(self.settings.moveCameraXY3dBind)
-        self.panZCamera: ControlItem = ControlItem(self.settings.moveCameraZ3dBind)
+        self.moveXYCamera: ControlItem = ControlItem(self.settings.moveCameraXY3dBind)
+        self.moveZCamera: ControlItem = ControlItem(self.settings.moveCameraZ3dBind)
+        self.moveCameraPlane: ControlItem = ControlItem(self.settings.moveCameraPlane3dBind)
         self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera3dBind)
         self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCamera3dBind)
         self.zoomCameraMM: ControlItem = ControlItem(self.settings.zoomCameraMM3dBind)
@@ -687,17 +688,25 @@ class ModuleDesignerControl3dScheme:
             strength = self.settings.zoomCameraSensitivity3d / 2000
             self.renderer.scene.camera.distance += -delta.y * strength
 
-        if self.panZCamera.satisfied(buttons, keys):
+        if self.moveZCamera.satisfied(buttons, keys):
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.z -= -delta.y * strength
 
     def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: Set[int], keys: Set[int]) -> None:
-        if self.panXYCamera.satisfied(buttons, keys):
+        if self.moveXYCamera.satisfied(buttons, keys):
             forward = -screenDelta.y * self.renderer.scene.camera.forward()
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.x -= (forward.x + sideward.x) * strength
             self.renderer.scene.camera.y -= (forward.y + sideward.y) * strength
+
+        if self.moveCameraPlane.satisfied(buttons, keys):
+            upward = screenDelta.y * self.renderer.scene.camera.upward(False)
+            sideward = screenDelta.x * self.renderer.scene.camera.sideward()
+            strength = self.settings.moveCameraSensitivity3d / 1000
+            self.renderer.scene.camera.z -= (upward.z + sideward.z) * strength
+            self.renderer.scene.camera.y -= (upward.y + sideward.y) * strength
+            self.renderer.scene.camera.x -= (upward.x + sideward.x) * strength
 
         if self.rotateCamera.satisfied(buttons, keys):
             strength = self.settings.moveCameraSensitivity3d / 10000

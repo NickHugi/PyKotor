@@ -142,6 +142,10 @@ class ModuleDesignerSettings(Settings):
         "moveCameraZ3dBind",
         ({QtKey.Key_Control}, set())
     )
+    moveCameraPlane3dBind = Settings._addSetting(
+        "moveCameraPlane3dBind",
+        ({QtKey.Key_Control, QtKey.Key_Alt}, {QtMouse.LeftButton})
+    )
     rotateCamera3dBind = Settings._addSetting(
         "rotateCamera3dBind",
         ({QtKey.Key_Control}, {QtMouse.MiddleButton})
