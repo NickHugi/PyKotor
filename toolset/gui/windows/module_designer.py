@@ -98,8 +98,8 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.hideWalkmeshEdges = True
         self.ui.flatRenderer.highlightBoundaries = False
 
-        self._controls3d: ModuleDesignerControl3dScheme = ModuleDesignerControl3dScheme(self, self.ui.mainRenderer)
-        self._controls2d: ModuleDesignerControl2dScheme = ModuleDesignerControl2dScheme(self, self.ui.flatRenderer)
+        self._controls3d: ModuleDesignerControls3d = ModuleDesignerControls3d(self, self.ui.mainRenderer)
+        self._controls2d: ModuleDesignerControls2d = ModuleDesignerControls2d(self, self.ui.flatRenderer)
 
         self._refreshWindowTitle()
         self.rebuildResourceTree()
@@ -457,6 +457,12 @@ class ModuleDesigner(QMainWindow):
         camera.z = instance.position.z
         camera.distance = 0
 
+    def toggleFreeCam(self) -> None:
+        if isinstance(self._controls3d, ModuleDesignerControls3d):
+            self._controls3d = ModuleDesignerControlsFreeCam(self, self.ui.mainRenderer)
+        else:
+            self._controls3d = ModuleDesignerControls3d(self, self.ui.mainRenderer)
+
     # region Selection Manipulations
     def setSelection(self, instances: List[GITInstance]) -> None:
         if instances:
@@ -649,7 +655,7 @@ class ModuleDesigner(QMainWindow):
     # endregion
 
 
-class ModuleDesignerControl3dScheme:
+class ModuleDesignerControls3d:
     def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
         self.editor: ModuleDesigner = editor
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
@@ -666,6 +672,7 @@ class ModuleDesignerControl3dScheme:
         self.moveZSelected: ControlItem = ControlItem(self.settings.moveSelectedZ3dBind)
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectObject3dBind)
         self.snapCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected3dBind)
+        self.toggleFreeCam: ControlItem = ControlItem(self.settings.toggleFreeCam3dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteObject3dBind)
         self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateObject3dBind)
         self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
@@ -682,6 +689,11 @@ class ModuleDesignerControl3dScheme:
         self.zoomCameraIn: ControlItem = ControlItem(self.settings.zoomCameraIn3dBind)
         self.zoomCameraOut: ControlItem = ControlItem(self.settings.zoomCameraOut3dBind)
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
+
+        if self.renderer.scene is not None:
+            self.renderer.scene.show_cursor = self.editor.ui.cursorCheck.isChecked()
+        self.renderer.freeCam = False
+        self.renderer.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -753,6 +765,9 @@ class ModuleDesignerControl3dScheme:
         ...
 
     def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+        if self.toggleFreeCam.satisfied(buttons, keys):
+            self.editor.toggleFreeCam()
+
         if self.snapCameraToSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
                 self.renderer.snapCameraToPoint(instance.position)
@@ -795,7 +810,70 @@ class ModuleDesignerControl3dScheme:
         ...
 
 
-class ModuleDesignerControl2dScheme:
+class ModuleDesignerControlsFreeCam:
+    def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
+        self.editor: ModuleDesigner = editor
+        self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
+        self.renderer: ModuleRenderer = renderer
+
+        self.toggleFreeCam: ControlItem = ControlItem(self.settings.toggleFreeCam3dBind)
+        self.moveCameraUp: ControlItem = ControlItem(self.settings.moveCameraUpFcBind)
+        self.moveCameraDown: ControlItem = ControlItem(self.settings.moveCameraDownFcBind)
+        self.moveCameraForward: ControlItem = ControlItem(self.settings.moveCameraForwardFcBind)
+        self.moveCameraBackward: ControlItem = ControlItem(self.settings.moveCameraBackwardFcBind)
+        self.moveCameraLeft: ControlItem = ControlItem(self.settings.moveCameraLeftFcBind)
+        self.moveCameraRight: ControlItem = ControlItem(self.settings.moveCameraRightFcBind)
+
+        self.renderer.scene.show_cursor = False
+        self.renderer.freeCam = True
+        self.renderer.setCursor(QtCore.Qt.CursorShape.BlankCursor)
+
+        rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
+        mouseX = rendererPos.x() + self.renderer.width() / 2
+        mouseY = rendererPos.y() + self.renderer.height() / 2
+        self.renderer.cursor().setPos(mouseX, mouseY)
+
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        ...
+
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: Set[int], keys: Set[int]) -> None:
+        rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
+        mouseX = rendererPos.x() + self.renderer.width() / 2
+        mouseY = rendererPos.y() + self.renderer.height() / 2
+        strength = self.settings.rotateCameraSensitivityFC / 10000
+
+        self.renderer.rotateCamera(-screenDelta.x*strength, screenDelta.y*strength, snapRotations=False)
+        self.renderer.cursor().setPos(mouseX, mouseY)
+
+    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        ...
+
+    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+        ...
+
+    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+        if self.toggleFreeCam.satisfied(buttons, keys):
+            self.editor.toggleFreeCam()
+
+        strength = self.settings.flyCameraSpeedFC / 100
+        if self.moveCameraUp.satisfied(buttons, keys):
+            self.renderer.moveCamera(0, 0, strength)
+        if self.moveCameraDown.satisfied(buttons, keys):
+            self.renderer.moveCamera(0, 0, -strength)
+        if self.moveCameraLeft.satisfied(buttons, keys):
+            self.renderer.moveCamera(0, -strength, 0)
+        if self.moveCameraRight.satisfied(buttons, keys):
+            self.renderer.moveCamera(0, strength, 0)
+        if self.moveCameraForward.satisfied(buttons, keys):
+            self.renderer.moveCamera(strength, 0, 0)
+        if self.moveCameraBackward.satisfied(buttons, keys):
+            self.renderer.moveCamera(-strength, 0, 0)
+
+    def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+        ...
+
+
+class ModuleDesignerControls2d:
     def __init__(self, editor: ModuleDesigner, renderer: WalkmeshRenderer):
         self.editor: ModuleDesigner = editor
         self.renderer: WalkmeshRenderer = renderer

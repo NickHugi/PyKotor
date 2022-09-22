@@ -49,6 +49,7 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.nonWalkGrassMaterialColourEdit.allowAlpha = True
 
         self.ui.controls3dResetButton.clicked.connect(self.resetControls3d)
+        self.ui.controlsFcResetButton.clicked.connect(self.resetControlsFc)
         self.ui.controls2dResetButton.clicked.connect(self.resetControls2d)
         self.ui.coloursResetButton.clicked.connect(self.resetColours)
 
@@ -60,6 +61,13 @@ class ModuleDesignerWidget(SettingsWidget):
         self.ui.zoomCameraSensitivity3dEdit.setValue(self.settings.zoomCameraSensitivity3d)
 
         for bindEdit in [widget for widget in dir(self.ui) if "3dBindEdit" in widget]:
+            self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
+
+    def _loadFcBindValues(self) -> None:
+        self.ui.flySpeedFcEdit.setValue(self.settings.flyCameraSpeedFC)
+        self.ui.rotateCameraSensitivityFcEdit.setValue(self.settings.rotateCameraSensitivity3d)
+
+        for bindEdit in [widget for widget in dir(self.ui) if "FcBindEdit" in widget]:
             self._registerBind(getattr(self.ui, bindEdit), bindEdit[:-4])
 
     def _load2dBindValues(self) -> None:
@@ -77,6 +85,7 @@ class ModuleDesignerWidget(SettingsWidget):
     def setupValues(self) -> None:
         self.ui.fovSpin.setValue(self.settings.fieldOfView)
         self._load3dBindValues()
+        self._loadFcBindValues()
         self._load2dBindValues()
         self._loadColourValues()
 
@@ -91,6 +100,10 @@ class ModuleDesignerWidget(SettingsWidget):
     def resetControls3d(self) -> None:
         self.settings.resetControls3d()
         self._load3dBindValues()
+
+    def resetControlsFc(self) -> None:
+        self.settings.resetControlsFc()
+        self._loadFcBindValues()
 
     def resetControls2d(self) -> None:
         self.settings.resetControls2d()
@@ -110,6 +123,11 @@ class ModuleDesignerSettings(Settings):
             if setting.endswith("3d"):
                 self.settings.remove(setting)
         self.settings.remove("toggleLockInstancesBind")
+
+    def resetControlsFc(self) -> None:
+        for setting in dir(self):
+            if setting.endswith("Fc"):
+                self.settings.remove(setting)
 
     def resetControls2d(self) -> None:
         for setting in dir(self):
@@ -178,6 +196,10 @@ class ModuleDesignerSettings(Settings):
         "selectObject3dBind",
         (set(), {QtMouse.LeftButton})
     )
+    toggleFreeCam3dBind = Settings._addSetting(
+        "toggleFreeCam3dBind",
+        ({QtKey.Key_F}, set())
+    )
     deleteObject3dBind = Settings._addSetting(
         "deleteObject3dBind",
         ({QtKey.Key_Delete}, None)
@@ -237,6 +259,50 @@ class ModuleDesignerSettings(Settings):
     duplicateObject3dBind = Settings._addSetting(
         "snapCameraToSelected2dBind",
         ({QtKey.Key_Alt}, {QtMouse.LeftButton})
+    )
+    # endregion
+
+    # region Int/Binds (Controls - 3D FreeCam)
+    rotateCameraSensitivityFC = Settings._addSetting(
+        "rotateCameraSensitivityFC",
+        100
+    )
+    flyCameraSpeedFC = Settings._addSetting(
+        "flyCameraSpeedFC",
+        100
+    )
+    boostedFlyCameraSpeedFC = Settings._addSetting(
+        "boostedFlyCameraSpeedFC",
+        100
+    )
+
+    moveCameraForwardFcBind = Settings._addSetting(
+        "moveCameraForwardFcBind",
+        ({QtKey.Key_W}, set())
+    )
+    moveCameraBackwardFcBind = Settings._addSetting(
+        "moveCameraBackwardFcBind",
+        ({QtKey.Key_S}, set())
+    )
+    moveCameraLeftFcBind = Settings._addSetting(
+        "moveCameraLeftFcBind",
+        ({QtKey.Key_A}, set())
+    )
+    moveCameraRightFcBind = Settings._addSetting(
+        "moveCameraRightFcBind",
+        ({QtKey.Key_D}, set())
+    )
+    moveCameraUpFcBind = Settings._addSetting(
+        "moveCameraUpFcBind",
+        ({QtKey.Key_Q}, set())
+    )
+    moveCameraDownFcBind = Settings._addSetting(
+        "moveCameraDownFcBind",
+        ({QtKey.Key_E}, set())
+    )
+    boostCameraFcBind = Settings._addSetting(
+        "boostCameraFcBind",
+        ({QtKey.Key_Shift}, set())
     )
     # endregion
 

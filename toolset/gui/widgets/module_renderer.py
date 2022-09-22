@@ -59,6 +59,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._mousePressTime: datetime = datetime.now()
 
         self.doSelect: bool = False  # Set to true to select object at mouse pointer
+        self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
 
     def init(self, installation: HTInstallation, module: Module) -> None:
         self._installation = installation
@@ -146,18 +147,28 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.y += (forward.y + sideward.y)
         self.scene.camera.z += up
 
-    def rotateCamera(self, yaw: float, pitch: float) -> None:
+    def moveCamera(self, forward: float, right: float, up: float) -> None:
+        forward = forward * self.scene.camera.forward(False)
+        sideward = right * self.scene.camera.sideward(False)
+        upward = up * self.scene.camera.upward(False)
+
+        self.scene.camera.x += upward.x + sideward.x + forward.x
+        self.scene.camera.y += upward.y + sideward.y + forward.y
+        self.scene.camera.z += upward.z + sideward.z + forward.z
+
+    def rotateCamera(self, yaw: float, pitch: float, snapRotations: bool = True) -> None:
         """
         Rotates the camera by the angles (radians) specified.
 
         Args:
             yaw:
             pitch:
+            snapRotations:
         """
         self.scene.camera.rotate(yaw, pitch)
-        if self.scene.camera.pitch < math.pi/2:
+        if self.scene.camera.pitch < math.pi/2 and snapRotations:
             self.scene.camera.pitch = math.pi/2
-        if self.scene.camera.pitch > math.pi:
+        if self.scene.camera.pitch > math.pi and snapRotations:
             self.scene.camera.pitch = math.pi
 
     def zoomCamera(self, distance: float) -> None:
@@ -178,7 +189,11 @@ class ModuleRenderer(QOpenGLWidget):
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
         screen = Vector2(e.x(), e.y())
-        screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
+        if self.freeCam:
+            screenDelta = Vector2(screen.x - self.width()/2, screen.y - self.height()/2)
+        else:
+            screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
+
         world = self.scene.cursor.position()
         self._mousePrev = screen
         if datetime.now() - self._mousePressTime > timedelta(milliseconds=60):
