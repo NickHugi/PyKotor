@@ -26,6 +26,9 @@ from pykotor.common.stream import BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.generics.git import GITCreature, GITPlaceable, GITDoor, GITTrigger, GITEncounter, GITWaypoint, \
     GITSound, GITStore, GITCamera, GITInstance, GIT
+from pykotor.resource.generics.utd import read_utd
+from pykotor.resource.generics.utt import read_utt
+from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -399,6 +402,17 @@ class ModuleDesigner(QMainWindow):
                 self.rebuildResourceTree()
                 instance.resref = ResRef(dialog.resname)
                 self._module.git().resource().add(instance)
+
+                if isinstance(instance, GITWaypoint):
+                    utw = read_utw(dialog.data)
+                    instance.tag = utw.tag
+                    instance.name = utw.name
+                elif isinstance(instance, GITTrigger):
+                    utt = read_utt(dialog.data)
+                    instance.tag = utt.tag
+                elif isinstance(instance, GITDoor):
+                    utd = read_utd(dialog.data)
+                    instance.tag = utd.tag
         else:
             self._module.git().resource().add(instance)
         self.rebuildInstanceList()
