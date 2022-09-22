@@ -34,14 +34,14 @@ from pykotor.gl.models.mdl import Model, Cube, Boundary, Empty
 from pykotor.gl.models.predefined_mdl import STORE_MDL_DATA, STORE_MDX_DATA, WAYPOINT_MDL_DATA, WAYPOINT_MDX_DATA, \
     SOUND_MDL_DATA, SOUND_MDX_DATA, CAMERA_MDL_DATA, CAMERA_MDX_DATA, TRIGGER_MDL_DATA, TRIGGER_MDX_DATA, \
     ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA, \
-    CURSOR_MDX_DATA, CURSOR_MDL_DATA
+    CURSOR_MDX_DATA, CURSOR_MDL_DATA, UNKNOWN_MDL_DATA, UNKNOWN_MDX_DATA
 
 SEARCH_ORDER_2DA = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 
 
 class Scene:
-    SPECIAL_MODELS = ["waypoint", "store", "sound", "camera", "trigger", "encounter"]
+    SPECIAL_MODELS = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
     def __init__(self, *, installation: Optional[Installation] = None, module: Optional[Module] = None):
         glEnable(GL_TEXTURE_2D)
@@ -149,7 +149,7 @@ class Scene:
                     model_name = self.table_doors.get_row(utd.appearance_id).get_string("modelname")
                 except Exception:
                     # If failed to load creature models, use an empty model instead
-                    model_name = "empty"
+                    model_name = "unknown"
 
                 self.objects[door] = RenderObject(model_name, vec3(), vec3(), data=door)
 
@@ -163,7 +163,7 @@ class Scene:
                     model_name = self.table_placeables.get_row(utp.appearance_id).get_string("modelname")
                 except Exception:
                     # If failed to load creature models, use an empty model instead
-                    model_name = "empty"
+                    model_name = "unknown"
 
                 self.objects[placeable] = RenderObject(model_name, vec3(), vec3(), data=placeable)
 
@@ -186,7 +186,7 @@ class Scene:
                         obj.children.append(head_obj)
                 except Exception:
                     # If failed to load creature models, use an empty model instead
-                    obj = RenderObject("empty", vec3(), vec3(), data=creature)
+                    obj = RenderObject("unknown", vec3(), vec3(), data=creature)
 
                 self.objects[creature] = obj
 
@@ -482,6 +482,9 @@ class Scene:
             elif name == "cursor":
                 mdl_data = CURSOR_MDL_DATA
                 mdx_data = CURSOR_MDX_DATA
+            elif name == "unknown":
+                mdl_data = UNKNOWN_MDL_DATA
+                mdx_data = UNKNOWN_MDX_DATA
             elif self.installation is not None:
                 mdl_search = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=self.module.capsules())
                 mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules())
