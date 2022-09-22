@@ -1,5 +1,6 @@
 import math
 from copy import copy
+from datetime import datetime, timedelta
 from typing import Optional, Set
 
 from PyQt5 import QtCore
@@ -54,6 +55,8 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown: Set[int] = set()
         self._mouseDown: Set[int] = set()
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
+
+        self._mousePressTime: datetime = datetime.now()
 
         self.doSelect: bool = False  # Set to true to select object at mouse pointer
 
@@ -178,9 +181,11 @@ class ModuleRenderer(QOpenGLWidget):
         screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
         world = self.scene.cursor.position()
         self._mousePrev = screen
-        self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
+        if datetime.now() - self._mousePressTime > timedelta(milliseconds=60):
+            self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
+        self._mousePressTime = datetime.now()
         self._mouseDown.add(e.button())
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
