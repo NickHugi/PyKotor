@@ -109,6 +109,7 @@ class ModuleDesignerSettings(Settings):
         for setting in dir(self):
             if setting.endswith("3d"):
                 self.settings.remove(setting)
+        self.settings.remove("toggleLockInstancesBind")
 
     def resetControls2d(self) -> None:
         for setting in dir(self):
@@ -284,6 +285,13 @@ class ModuleDesignerSettings(Settings):
     duplicateObject2dBind = Settings._addSetting(
         "snapCameraToSelected2dBind",
         ({QtKey.Key_Alt}, {QtMouse.LeftButton})
+    )
+    # endregion
+
+    # region Binds (Controls - Both)
+    toggleLockInstancesBind = Settings._addSetting(
+        "toggleLockInstancesBind",
+        ({QtKey.Key_L}, set())
     )
     # endregion
 

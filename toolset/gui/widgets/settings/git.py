@@ -243,4 +243,8 @@ class GITSettings(Settings):
         "duplicateSelectedBind",
         ({QtKey.Key_Alt}, {QtMouse.LeftButton})
     )
+    toggleLockInstancesBind = Settings._addSetting(
+        "toggleLockInstancesBind",
+        ({QtKey.Key_L}, set())
+    )
     # endregion

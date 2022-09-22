@@ -25,7 +25,7 @@
         <x>0</x>
         <y>0</y>
         <width>429</width>
-        <height>897</height>
+        <height>920</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -114,15 +114,15 @@
             <item row="4" column="1">
              <widget class="SetBindWidget" name="rotateSelectedToPointBindEdit" native="true"/>
             </item>
-            <item row="5" column="1">
-             <widget class="SetBindWidget" name="deleteSelectedBindEdit" native="true"/>
-            </item>
             <item row="5" column="0">
              <widget class="QLabel" name="label_6">
               <property name="text">
                <string>Delete Object:</string>
               </property>
              </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="SetBindWidget" name="deleteSelectedBindEdit" native="true"/>
             </item>
             <item row="6" column="0">
              <widget class="QLabel" name="label_7">
@@ -133,6 +133,16 @@
             </item>
             <item row="6" column="1">
              <widget class="SetBindWidget" name="duplicateSelectedBindEdit" native="true"/>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_8">
+              <property name="text">
+               <string>Toggle Instance Lock:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="SetBindWidget" name="toggleLockInstancesBindEdit" native="true"/>
             </item>
            </layout>
           </item>

@@ -23,9 +23,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-773</y>
+        <y>-279</y>
         <width>416</width>
-        <height>1859</height>
+        <height>1882</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -821,6 +821,33 @@ to Selection</string>
               </property>
              </widget>
             </item>
+            <item row="25" column="0">
+             <widget class="QLabel" name="label_60">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Toggle Instance Lock</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="25" column="1">
+             <widget class="SetBindWidget" name="toggleLockInstancesBindEdit" native="true"/>
+            </item>
            </layout>
           </item>
          </layout>
@@ -1121,33 +1148,6 @@ to Selection</string>
               </property>
              </widget>
             </item>
-            <item row="9" column="0">
-             <widget class="QLabel" name="label_61">
-              <property name="minimumSize">
-               <size>
-                <width>110</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Reacts to keyboard input.</string>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QLabel:hover {
-	color: #555;
-}</string>
-              </property>
-              <property name="text">
-               <string>Delete Object</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="1">
-             <widget class="SetBindWidget" name="deleteObject2dBindEdit" native="true"/>
-            </item>
             <item row="8" column="0">
              <widget class="QLabel" name="label_62">
               <property name="minimumSize">
@@ -1174,6 +1174,33 @@ to Selection</string>
             </item>
             <item row="8" column="1">
              <widget class="SetBindWidget" name="moveCameraToSelected2dBindEdit" native="true"/>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_61">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Delete Object</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="SetBindWidget" name="deleteObject2dBindEdit" native="true"/>
             </item>
            </layout>
           </item>

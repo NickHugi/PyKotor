@@ -680,6 +680,7 @@ class ModuleDesignerControl3dScheme:
         self.moveCameraRight: ControlItem = ControlItem(self.settings.moveCameraRight3dBind)
         self.zoomCameraIn: ControlItem = ControlItem(self.settings.zoomCameraIn3dBind)
         self.zoomCameraOut: ControlItem = ControlItem(self.settings.zoomCameraOut3dBind)
+        self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -778,6 +779,9 @@ class ModuleDesignerControl3dScheme:
         if self.zoomCameraOut.satisfied(buttons, keys):
             self.renderer.zoomCamera(-1)
 
+        if self.toggleInstanceLock.satisfied(buttons, keys):
+            self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
+
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
@@ -798,6 +802,7 @@ class ModuleDesignerControl2dScheme:
         self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateObject2dBind)
         self.snapCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected2dBind)
         self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
+        self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -855,6 +860,9 @@ class ModuleDesignerControl2dScheme:
             for instance in self.editor.selectedInstances:
                 self.renderer.snapCameraToPoint(instance.position)
                 break
+
+        if self.toggleInstanceLock.satisfied(buttons, keys):
+            self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...

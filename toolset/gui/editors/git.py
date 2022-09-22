@@ -881,6 +881,7 @@ class GITControlScheme:
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectUnderneathBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteSelectedBind)
         self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateSelectedBind)
+        self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
@@ -909,6 +910,9 @@ class GITControlScheme:
     def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
+
+        if self.toggleInstanceLock.satisfied(buttons, keys):
+            self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...
