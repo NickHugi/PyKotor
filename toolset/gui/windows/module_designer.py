@@ -863,19 +863,19 @@ class ModuleDesignerControlsFreeCam:
     def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         if self.toggleFreeCam.satisfied(buttons, keys):
             self.editor.toggleFreeCam()
-
+        print(keys)
         strength = self.settings.flyCameraSpeedFC / 100
-        if self.moveCameraUp.satisfied(buttons, keys):
+        if self.moveCameraUp.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(0, 0, strength)
-        if self.moveCameraDown.satisfied(buttons, keys):
+        if self.moveCameraDown.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(0, 0, -strength)
-        if self.moveCameraLeft.satisfied(buttons, keys):
+        if self.moveCameraLeft.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(0, -strength, 0)
-        if self.moveCameraRight.satisfied(buttons, keys):
+        if self.moveCameraRight.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(0, strength, 0)
-        if self.moveCameraForward.satisfied(buttons, keys):
+        if self.moveCameraForward.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(strength, 0, 0)
-        if self.moveCameraBackward.satisfied(buttons, keys):
+        if self.moveCameraBackward.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(-strength, 0, 0)
 
     def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
