@@ -208,6 +208,10 @@ class ModuleDesignerSettings(Settings):
         "moveCameraToSelected3dBind",
         ({QtKey.Key_Z}, None)
     )
+    moveCameraToCursor3dBind = Settings._addSetting(
+        "moveCameraToCursor3dBind",
+        ({QtKey.Key_X}, None)
+    )
     rotateCameraLeft3dBind = Settings._addSetting(
         "rotateCameraLeft3dBind",
         ({QtKey.Key_7}, None)
@@ -257,7 +261,7 @@ class ModuleDesignerSettings(Settings):
         ({QtKey.Key_Minus}, None)
     )
     duplicateObject3dBind = Settings._addSetting(
-        "snapCameraToSelected2dBind",
+        "duplicateObject3dBind",
         ({QtKey.Key_Alt}, {QtMouse.LeftButton})
     )
     # endregion
@@ -353,7 +357,7 @@ class ModuleDesignerSettings(Settings):
         ({QtKey.Key_Z}, set())
     )
     duplicateObject2dBind = Settings._addSetting(
-        "snapCameraToSelected2dBind",
+        "duplicateObject2dBind",
         ({QtKey.Key_Alt}, {QtMouse.LeftButton})
     )
     # endregion

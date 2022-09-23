@@ -671,7 +671,8 @@ class ModuleDesignerControls3d:
         self.moveXYSelected: ControlItem = ControlItem(self.settings.moveSelectedXY3dBind)
         self.moveZSelected: ControlItem = ControlItem(self.settings.moveSelectedZ3dBind)
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectObject3dBind)
-        self.snapCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected3dBind)
+        self.moveCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected3dBind)
+        self.moveCameraToCursor: ControlItem = ControlItem(self.settings.moveCameraToCursor3dBind)
         self.toggleFreeCam: ControlItem = ControlItem(self.settings.toggleFreeCam3dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteObject3dBind)
         self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateObject3dBind)
@@ -768,10 +769,15 @@ class ModuleDesignerControls3d:
         if self.toggleFreeCam.satisfied(buttons, keys):
             self.editor.toggleFreeCam()
 
-        if self.snapCameraToSelected.satisfied(buttons, keys):
+        if self.moveCameraToSelected.satisfied(buttons, keys):
             for instance in self.editor.selectedInstances:
                 self.renderer.snapCameraToPoint(instance.position)
                 break
+        if self.moveCameraToCursor.satisfied(buttons, keys):
+            camera = self.renderer.scene.camera
+            camera.x = self.renderer.scene.cursor.position().x
+            camera.y = self.renderer.scene.cursor.position().y
+            camera.z = self.renderer.scene.cursor.position().z
 
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
