@@ -37,7 +37,7 @@
         <bool>false</bool>
        </attribute>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout" stretch="3,0">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout">
@@ -80,7 +80,7 @@
         <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="currentIndex">
-           <number>0</number>
+           <number>4</number>
           </property>
           <widget class="QWidget" name="fileTab">
            <attribute name="title">
@@ -1200,9 +1200,6 @@
               <item row="1" column="1">
                <widget class="QSpinBox" name="cameraAnimSpin"/>
               </item>
-              <item row="2" column="1">
-               <widget class="QSpinBox" name="cameraAngleSpin"/>
-              </item>
               <item row="3" column="0">
                <widget class="QLabel" name="label_29">
                 <property name="text">
@@ -1212,6 +1209,45 @@
               </item>
               <item row="3" column="1">
                <widget class="QComboBox" name="cameraEffectSelect"/>
+              </item>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="cameraAngleSelect">
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Face</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Shoulder</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Wide Shot</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Animated Camera</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>No Change</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Static Camera</string>
+                 </property>
+                </item>
+               </widget>
               </item>
              </layout>
             </item>
@@ -1405,7 +1441,7 @@
      <x>0</x>
      <y>0</y>
      <width>1135</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFIle">

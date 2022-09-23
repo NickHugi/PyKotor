@@ -97,7 +97,7 @@ class DLGEditor(Editor):
         self.ui.questEdit.textEdited.connect(self.onNodeUpdate)
         self.ui.questEntrySpin.valueChanged.connect(self.onNodeUpdate)
         self.ui.cameraIdSpin.valueChanged.connect(self.onNodeUpdate)
-        self.ui.cameraAngleSpin.valueChanged.connect(self.onNodeUpdate)
+        self.ui.cameraAngleSelect.currentIndexChanged.connect(self.onNodeUpdate)
         self.ui.cameraEffectSelect.currentIndexChanged.connect(self.onNodeUpdate)
         self.ui.nodeUnskippableCheckbox.toggled.connect(self.onNodeUpdate)
         self.ui.nodeIdSpin.valueChanged.connect(self.onNodeUpdate)
@@ -561,7 +561,7 @@ class DLGEditor(Editor):
 
             self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
             self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
-            self.ui.cameraAngleSpin.setValue(node.camera_angle if node.camera_angle is not None else 0)
+            self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
             self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect+1 if node.camera_effect is not None else 0)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
@@ -635,7 +635,7 @@ class DLGEditor(Editor):
             # Camera
             node.camera_id = self.ui.cameraIdSpin.value()
             node.camera_anim = self.ui.cameraAnimSpin.value()
-            node.camera_angle = self.ui.cameraAngleSpin.value()
+            node.camera_angle = self.ui.cameraAngleSelect.currentIndex()
             node.camera_effect = self.ui.cameraEffectSelect.currentData()
 
             # Other
