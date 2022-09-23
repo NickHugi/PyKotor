@@ -1,11 +1,13 @@
+from contextlib import suppress
 from typing import List, Optional, Dict
 
-from PyQt5.QtGui import QStandardItemModel
+from PyQt5.QtGui import QStandardItemModel, QPixmap, QImage, QTransform
 from PyQt5.QtWidgets import QWidget
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.tpc import TPC
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.formats.twoda import TwoDA, read_2da
+from pykotor.resource.generics.uti import UTI
 from pykotor.resource.type import ResourceType
 
 
@@ -113,3 +115,39 @@ class HTInstallation(Installation):
     def htClearCacheTPC(self):
         self._cacheTpc = {}
     # endregion
+
+    def getItemIconFromUTI(self, uti: UTI) -> QPixmap:
+        pixmap = QPixmap(":/images/inventory/unknown.png")
+        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+
+        with suppress(Exception):
+            itemClass = baseitems.get_cell(uti.base_item, "itemclass")
+            variation = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
+            textureResname = "i{}_{}".format(itemClass, str(variation).rjust(3, "0"))
+            texture = self.htGetCacheTPC(textureResname.lower())
+
+            if texture is not None:
+                width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
+                image = QImage(rgba, width, height, QImage.Format_RGBA8888)
+                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                return pixmap
+
+        return pixmap
+
+    def getItemIcon(self, baseItem: int, modelVariation: int, textureVariation: int) -> QPixmap:
+        pixmap = QPixmap(":/images/inventory/unknown.png")
+        baseitems = self.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
+
+        with suppress(Exception):
+            itemClass = baseitems.get_cell(baseItem, "itemclass")
+            variation = modelVariation if modelVariation != 0 else textureVariation
+            textureResname = "i{}_{}".format(itemClass, str(variation).rjust(3, "0"))
+            texture = self.htGetCacheTPC(textureResname.lower())
+
+            if texture is not None:
+                width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
+                image = QImage(rgba, width, height, QImage.Format_RGBA8888)
+                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                return pixmap
+
+        return pixmap

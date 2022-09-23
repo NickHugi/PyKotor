@@ -168,22 +168,7 @@ class InventoryEditor(QDialog):
             self.reject()
 
     def getItemImage(self, uti: Optional[UTI]) -> QPixmap:
-        pixmap = QPixmap(":/images/inventory/unknown.png")
-        baseitems = self._installation.htGetCache2DA(HTInstallation.TwoDA_BASEITEMS)
-
-        with suppress(Exception):
-            itemClass = baseitems.get_cell(uti.base_item, "itemclass")
-            variation = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
-            textureResname = "i{}_{}".format(itemClass, str(variation).rjust(3, "0"))
-            texture = self._installation.htGetCacheTPC(textureResname)
-
-            if texture is not None:
-                width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
-                image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-                return pixmap
-
-        return pixmap
+        return self._installation.getItemIconFromUTI(uti)
 
     def getItem(self, resname: str, filepath: str) -> Tuple[str, str, UTI]:
         uti = None

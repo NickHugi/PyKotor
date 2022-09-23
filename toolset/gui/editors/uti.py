@@ -2,11 +2,13 @@ from contextlib import suppress
 from typing import Optional
 
 from PyQt5 import QtCore
+from PyQt5.QtGui import QPixmap, QImage, QTransform
 from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog, QShortcut
 
 from gui.dialogs.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
+from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.uti import UTI, dismantle_uti, UTIProperty, read_uti
 from pykotor.resource.type import ResourceType
 
@@ -42,6 +44,11 @@ class UTIEditor(Editor):
         self.ui.addPropertyButton.clicked.connect(self.addSelectedProperty)
         self.ui.availablePropertyList.doubleClicked.connect(self.onAvaialblePropertyListDoubleClicked)
         self.ui.assignedPropertiesList.doubleClicked.connect(self.onAssignedPropertyListDoubleClicked)
+
+        self.ui.modelVarSpin.valueChanged.connect(self.onUpdateIcon)
+        self.ui.bodyVarSpin.valueChanged.connect(self.onUpdateIcon)
+        self.ui.textureVarSpin.valueChanged.connect(self.onUpdateIcon)
+        self.ui.baseSelect.currentIndexChanged.connect(self.onUpdateIcon)
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
@@ -223,6 +230,12 @@ class UTIEditor(Editor):
             text = "{}".format(propName)
 
         return text
+
+    def onUpdateIcon(self) -> None:
+        baseItem = self.ui.baseSelect.currentIndex()
+        modelVariation = self.ui.modelVarSpin.value()
+        textureVariation = self.ui.textureVarSpin.value()
+        self.ui.iconLabel.setPixmap(self._installation.getItemIcon(baseItem, modelVariation, textureVariation))
 
     def onAvaialblePropertyListDoubleClicked(self) -> None:
         for item in self.ui.availablePropertyList.selectedItems():
