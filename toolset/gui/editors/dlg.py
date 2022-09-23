@@ -637,6 +637,10 @@ class DLGEditor(Editor):
             node.camera_anim = self.ui.cameraAnimSpin.value()
             node.camera_angle = self.ui.cameraAngleSelect.currentIndex()
             node.camera_effect = self.ui.cameraEffectSelect.currentData()
+            if node.camera_id >= 0 and self.ui.cameraAngleSelect.currentIndex() == 0:
+                self.ui.cameraAngleSelect.setCurrentIndex(6)
+            elif node.camera_id == -1 and self.ui.cameraAngleSelect.currentIndex() == 6:
+                self.ui.cameraAngleSelect.setCurrentIndex(0)
 
             # Other
             node.unskippable = self.ui.nodeUnskippableCheckbox.isChecked()
