@@ -60,6 +60,7 @@ class ModuleRenderer(QOpenGLWidget):
 
         self.doSelect: bool = False  # Set to true to select object at mouse pointer
         self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
+        self.delta: float = 0.0333
 
     def init(self, installation: HTInstallation, module: Module) -> None:
         self._installation = installation
@@ -69,6 +70,8 @@ class ModuleRenderer(QOpenGLWidget):
 
     def loop(self) -> None:
         self.repaint()
+        if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
+            self.keyboardPressed.emit(self._mouseDown, self._keysDown)
         QTimer.singleShot(33, self.loop)
 
     def walkmeshPoint(self, x: float, y: float, default_z: float = 0.0) -> Vector3:
@@ -213,11 +216,11 @@ class ModuleRenderer(QOpenGLWidget):
 
     def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         self._keysDown.add(e.key())
-        if self.underMouse():
+        if self.underMouse() and not self.freeCam:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
 
     def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
         self._keysDown.discard(e.key())
-        if self.underMouse():
+        if self.underMouse() and not self.freeCam:
             self.keyboardReleased.emit(self._mouseDown, self._keysDown)
     # endregion

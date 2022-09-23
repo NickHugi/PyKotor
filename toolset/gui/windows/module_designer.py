@@ -836,6 +836,7 @@ class ModuleDesignerControlsFreeCam:
         self.renderer.scene.show_cursor = False
         self.renderer.freeCam = True
         self.renderer.setCursor(QtCore.Qt.CursorShape.BlankCursor)
+        self.renderer._keysDown.clear()
 
         rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
         mouseX = rendererPos.x() + self.renderer.width() / 2
@@ -863,7 +864,7 @@ class ModuleDesignerControlsFreeCam:
     def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         if self.toggleFreeCam.satisfied(buttons, keys):
             self.editor.toggleFreeCam()
-        print(keys)
+
         strength = self.settings.flyCameraSpeedFC / 100
         if self.moveCameraUp.satisfied(buttons, keys, exactKeys=False):
             self.renderer.moveCamera(0, 0, strength)
