@@ -450,11 +450,11 @@ class ModuleDesigner(QMainWindow):
     def snapViewToCamera(self, instance: GITCamera) -> None:
         camera = self.ui.mainRenderer.scene.camera
         euler = instance.orientation.to_euler()
-        camera.pitch = math.pi-euler.z
+        camera.pitch = math.pi-euler.z - math.radians(instance.pitch)
         camera.yaw = math.pi/2-euler.x
         camera.x = instance.position.x
         camera.y = instance.position.y
-        camera.z = instance.position.z
+        camera.z = instance.position.z + instance.height
         camera.distance = 0
 
     def toggleFreeCam(self) -> None:
