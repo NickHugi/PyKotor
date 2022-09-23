@@ -153,7 +153,7 @@ class ModuleRenderer(QOpenGLWidget):
     def moveCamera(self, forward: float, right: float, up: float) -> None:
         forward = forward * self.scene.camera.forward(False)
         sideward = right * self.scene.camera.sideward(False)
-        upward = up * self.scene.camera.upward(False)
+        upward = -up * self.scene.camera.upward(False)
 
         self.scene.camera.x += upward.x + sideward.x + forward.x
         self.scene.camera.y += upward.y + sideward.y + forward.y
