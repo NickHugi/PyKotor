@@ -673,6 +673,7 @@ class ModuleDesignerControls3d:
         self.selectUnderneath: ControlItem = ControlItem(self.settings.selectObject3dBind)
         self.moveCameraToSelected: ControlItem = ControlItem(self.settings.moveCameraToSelected3dBind)
         self.moveCameraToCursor: ControlItem = ControlItem(self.settings.moveCameraToCursor3dBind)
+        self.moveCameraToEntryPoint: ControlItem = ControlItem(self.settings.moveCameraToEntryPoint3dBind)
         self.toggleFreeCam: ControlItem = ControlItem(self.settings.toggleFreeCam3dBind)
         self.deleteSelected: ControlItem = ControlItem(self.settings.deleteObject3dBind)
         self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateObject3dBind)
@@ -778,6 +779,8 @@ class ModuleDesignerControls3d:
             camera.x = self.renderer.scene.cursor.position().x
             camera.y = self.renderer.scene.cursor.position().y
             camera.z = self.renderer.scene.cursor.position().z
+        if self.moveCameraToEntryPoint.satisfied(buttons, keys):
+            self.renderer.scene.jumpToEntryLocation()
 
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()

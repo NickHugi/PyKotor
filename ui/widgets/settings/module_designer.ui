@@ -25,7 +25,7 @@
         <x>0</x>
         <y>-145</y>
         <width>416</width>
-        <height>2151</height>
+        <height>2189</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -415,7 +415,7 @@
               </property>
              </widget>
             </item>
-            <item row="13" column="0">
+            <item row="14" column="0">
              <widget class="QLabel" name="label_7">
               <property name="minimumSize">
                <size>
@@ -439,10 +439,10 @@
               </property>
              </widget>
             </item>
-            <item row="13" column="1">
+            <item row="14" column="1">
              <widget class="SetBindWidget" name="deleteObject3dBindEdit" native="true"/>
             </item>
-            <item row="14" column="0">
+            <item row="15" column="0">
              <widget class="QLabel" name="label_46">
               <property name="minimumSize">
                <size>
@@ -466,10 +466,10 @@
               </property>
              </widget>
             </item>
-            <item row="14" column="1">
+            <item row="15" column="1">
              <widget class="SetBindWidget" name="rotateCameraLeft3dBindEdit" native="true"/>
             </item>
-            <item row="15" column="0">
+            <item row="16" column="0">
              <widget class="QLabel" name="label_47">
               <property name="minimumSize">
                <size>
@@ -493,10 +493,10 @@
               </property>
              </widget>
             </item>
-            <item row="15" column="1">
+            <item row="16" column="1">
              <widget class="SetBindWidget" name="rotateCameraRight3dBindEdit" native="true"/>
             </item>
-            <item row="16" column="0">
+            <item row="17" column="0">
              <widget class="QLabel" name="label_48">
               <property name="minimumSize">
                <size>
@@ -520,10 +520,10 @@
               </property>
              </widget>
             </item>
-            <item row="16" column="1">
+            <item row="17" column="1">
              <widget class="SetBindWidget" name="rotateCameraUp3dBindEdit" native="true"/>
             </item>
-            <item row="17" column="0">
+            <item row="18" column="0">
              <widget class="QLabel" name="label_49">
               <property name="minimumSize">
                <size>
@@ -547,10 +547,10 @@
               </property>
              </widget>
             </item>
-            <item row="17" column="1">
+            <item row="18" column="1">
              <widget class="SetBindWidget" name="rotateCameraDown3dBindEdit" native="true"/>
             </item>
-            <item row="18" column="0">
+            <item row="19" column="0">
              <widget class="QLabel" name="label_50">
               <property name="minimumSize">
                <size>
@@ -574,10 +574,10 @@
               </property>
              </widget>
             </item>
-            <item row="18" column="1">
+            <item row="19" column="1">
              <widget class="SetBindWidget" name="moveCameraForward3dBindEdit" native="true"/>
             </item>
-            <item row="19" column="0">
+            <item row="20" column="0">
              <widget class="QLabel" name="label_51">
               <property name="minimumSize">
                <size>
@@ -601,10 +601,10 @@
               </property>
              </widget>
             </item>
-            <item row="19" column="1">
+            <item row="20" column="1">
              <widget class="SetBindWidget" name="moveCameraBackward3dBindEdit" native="true"/>
             </item>
-            <item row="20" column="0">
+            <item row="21" column="0">
              <widget class="QLabel" name="label_53">
               <property name="minimumSize">
                <size>
@@ -628,10 +628,10 @@
               </property>
              </widget>
             </item>
-            <item row="20" column="1">
+            <item row="21" column="1">
              <widget class="SetBindWidget" name="moveCameraLeft3dBindEdit" native="true"/>
             </item>
-            <item row="21" column="0">
+            <item row="22" column="0">
              <widget class="QLabel" name="label_52">
               <property name="minimumSize">
                <size>
@@ -655,10 +655,10 @@
               </property>
              </widget>
             </item>
-            <item row="21" column="1">
+            <item row="22" column="1">
              <widget class="SetBindWidget" name="moveCameraRight3dBindEdit" native="true"/>
             </item>
-            <item row="22" column="0">
+            <item row="23" column="0">
              <widget class="QLabel" name="label_54">
               <property name="minimumSize">
                <size>
@@ -682,10 +682,10 @@
               </property>
              </widget>
             </item>
-            <item row="22" column="1">
+            <item row="23" column="1">
              <widget class="SetBindWidget" name="moveCameraUp3dBindEdit" native="true"/>
             </item>
-            <item row="23" column="0">
+            <item row="24" column="0">
              <widget class="QLabel" name="label_55">
               <property name="minimumSize">
                <size>
@@ -709,10 +709,10 @@
               </property>
              </widget>
             </item>
-            <item row="23" column="1">
+            <item row="24" column="1">
              <widget class="SetBindWidget" name="moveCameraDown3dBindEdit" native="true"/>
             </item>
-            <item row="24" column="0">
+            <item row="25" column="0">
              <widget class="QLabel" name="label_56">
               <property name="minimumSize">
                <size>
@@ -736,10 +736,10 @@
               </property>
              </widget>
             </item>
-            <item row="24" column="1">
+            <item row="25" column="1">
              <widget class="SetBindWidget" name="zoomCameraIn3dBindEdit" native="true"/>
             </item>
-            <item row="25" column="0">
+            <item row="26" column="0">
              <widget class="QLabel" name="label_57">
               <property name="minimumSize">
                <size>
@@ -763,7 +763,7 @@
               </property>
              </widget>
             </item>
-            <item row="25" column="1">
+            <item row="26" column="1">
              <widget class="SetBindWidget" name="zoomCameraOut3dBindEdit" native="true"/>
             </item>
             <item row="11" column="0">
@@ -848,6 +848,34 @@ to Cursor</string>
             </item>
             <item row="12" column="1">
              <widget class="SetBindWidget" name="moveCameraToCursor3dBindEdit" native="true"/>
+            </item>
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_70">
+              <property name="minimumSize">
+               <size>
+                <width>110</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="toolTip">
+               <string>Reacts to keyboard input.</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel:hover {
+	color: #555;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move Camera
+to Entry Point</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="1">
+             <widget class="SetBindWidget" name="moveCameraToEntryPoint3dBindEdit" native="true"/>
             </item>
            </layout>
           </item>

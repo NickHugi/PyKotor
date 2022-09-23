@@ -212,6 +212,10 @@ class ModuleDesignerSettings(Settings):
         "moveCameraToCursor3dBind",
         ({QtKey.Key_X}, None)
     )
+    moveCameraToEntryPoint3dBind = Settings._addSetting(
+        "moveCameraToEntryPoint3dBind",
+        ({QtKey.Key_C}, None)
+    )
     rotateCameraLeft3dBind = Settings._addSetting(
         "rotateCameraLeft3dBind",
         ({QtKey.Key_7}, None)
