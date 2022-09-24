@@ -333,19 +333,20 @@ class ModuleDesigner(QMainWindow):
                 item.setData(QtCore.Qt.UserRole+1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
                 resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
+                resourceExists = resource is not None and resource.resource() is not None
                 resref = instance.identifier().resname
                 name = resref
                 tag = ""
 
-                if isinstance(instance, GITDoor) or isinstance(instance, GITTrigger) and resource is not None:
+                if isinstance(instance, GITDoor) or isinstance(instance, GITTrigger) and resourceExists:
                     # Tag is stored in the GIT
                     name = resource.localized_name()
                     tag = instance.tag
-                elif isinstance(instance, GITWaypoint) and resource is not None:
+                elif isinstance(instance, GITWaypoint):
                     # Name and tag are stored in the GIT
                     name = self._installation.string(instance.name)
                     tag = instance.tag
-                elif resource is not None:
+                elif resourceExists:
                     name = resource.localized_name()
                     tag = resource.resource().tag
 
