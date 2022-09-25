@@ -59,6 +59,8 @@ class DLGEditor(Editor):
 
     def _setupSignals(self) -> None:
         # Events to update link/nodes connected to its respective tree view item
+        self.ui.speakerEdit.textEdited.connect(self.onNodeUpdate)
+        self.ui.listenerEdit.textEdited.connect(self.onNodeUpdate)
         self.ui.script1ResrefEdit.textEdited.connect(self.onNodeUpdate)
         self.ui.script1Param1Spin.valueChanged.connect(self.onNodeUpdate)
         self.ui.script1Param2Spin.valueChanged.connect(self.onNodeUpdate)
