@@ -100,6 +100,26 @@ class Scene:
         self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
+    def getCreatureRenderObject(self, instance: GITCreature, utc: Optional[UTC] = None) -> RenderObject:
+        try:
+            if utc is None:
+                utc = self.module.creature(instance.resref.get()).resource()
+            body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
+            obj = RenderObject(body_model, vec3(), vec3(), data=instance)
+
+            head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
+            if head_str:
+                head_id = int(head_str)
+                head_model = self.table_heads.get_row(head_id).get_string("head")
+                head_obj = RenderObject(head_model)
+                head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
+                obj.children.append(head_obj)
+        except Exception:
+            # If failed to load creature models, use an empty model instead
+            obj = RenderObject("unknown", vec3(), vec3(), data=instance)
+
+        return obj
+
     def buildCache(self, clearCache: bool = False) -> None:
         if self.module is None:
             return
@@ -172,23 +192,7 @@ class Scene:
 
         for creature in self.git.creatures:
             if creature not in self.objects:
-                try:
-                    utc = self.module.creature(creature.resref.get()).resource()
-                    body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
-                    obj = RenderObject(body_model, vec3(), vec3(), data=creature)
-
-                    head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
-                    if head_str:
-                        head_id = int(head_str)
-                        head_model = self.table_heads.get_row(head_id).get_string("head")
-                        head_obj = RenderObject(head_model)
-                        head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
-                        obj.children.append(head_obj)
-                except Exception:
-                    # If failed to load creature models, use an empty model instead
-                    obj = RenderObject("unknown", vec3(), vec3(), data=creature)
-
-                self.objects[creature] = obj
+                self.objects[creature] = self.getCreatureRenderObject(creature)
 
             self.objects[creature].set_position(creature.position.x, creature.position.y, creature.position.z)
             self.objects[creature].set_rotation(0, 0, creature.bearing)
