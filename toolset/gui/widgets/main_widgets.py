@@ -120,7 +120,7 @@ class ResourceList(MainWindowList):
             if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
                 parentIndex = model.proxyModel().mapFromSource(item.parent().index())
                 itemIndex = model.proxyModel().mapFromSource(item.index())
-                QTimer.singleShot(0, lambda: select(parentIndex, itemIndex))
+                QTimer.singleShot(1, lambda: select(item.parent().index(), itemIndex))
 
     def selectedResources(self) -> List[FileResource]:
         return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())

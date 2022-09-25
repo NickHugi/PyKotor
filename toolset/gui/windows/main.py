@@ -352,13 +352,6 @@ class ToolWindow(QMainWindow):
             if resultsDialog.exec_() and resultsDialog.selection:
                 selection = resultsDialog.selection
 
-                # Open the installation of the resource
-                index = 0
-                for i, installation in enumerate(self.installations.values()):
-                    if installation is searchDialog.installation:
-                        index = i + 1
-                self.changeActiveInstallation(index)
-
                 # Open relevant tab then select resource in the tree
                 if self.active.module_path() in selection.filepath():
                     self.ui.resourceTabs.setCurrentIndex(1)
@@ -498,17 +491,20 @@ class ToolWindow(QMainWindow):
             self.ui.coreWidget.setResourceSelection(resource)
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
-            self.ui.modulesWidget.setResourceSelection(resource)
             filename = os.path.basename(resource.filepath())
             self.changeModule(filename)
+            self.ui.modulesWidget.setResourceSelection(resource)
         elif tree == self.ui.overrideWidget:
-            self.ui.resourceTabs.setCurrentIndex(self.ui.overrideTab)
+            self.ui.resourceTabs.setCurrentWidget(self.ui.overrideTab)
             self.ui.overrideWidget.setResourceSelection(resource)
             subfolder = ""
             for folder in self.active.override_list():
                 if folder in resource.filepath() and len(subfolder) < len(folder):
                     subfolder = folder
             self.changeOverrideFolder(subfolder)
+
+    def changeOverrideFolder(self, subfolder: str) -> None:
+        self.ui.overrideWidget.changeSection(subfolder)
 
     def reloadInstallations(self) -> None:
         """
