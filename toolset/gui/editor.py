@@ -1,7 +1,7 @@
 import os
 import traceback
 from abc import abstractmethod
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QIcon
@@ -143,19 +143,19 @@ class Editor(QMainWindow):
             return
 
         try:
-            data = self.build()
+            data, data_ext = self.build()
             self._revert = data
 
             self.refreshWindowTitle()
 
             if self._filepath.endswith(".bif"):
-                self._saveEndsWithBif(data)
+                self._saveEndsWithBif(data, data_ext)
             elif self._filepath.endswith(".rim"):
-                self._saveEndsWithRim(data)
+                self._saveEndsWithRim(data, data_ext)
             elif self._filepath.endswith(".erf") or self._filepath.endswith(".mod"):
-                self._saveEndsWithErf(data)
+                self._saveEndsWithErf(data, data_ext)
             else:
-                self._saveEndsWithOther(data)
+                self._saveEndsWithOther(data, data_ext)
         except Exception as e:
             with open("errorlog.txt", 'a') as file:
                 lines = traceback.format_exception(type(e), e, e.__traceback__)
@@ -163,7 +163,7 @@ class Editor(QMainWindow):
                 file.write("\n----------------------\n")
             QMessageBox(QMessageBox.Critical, "Failed to write to file", str(e)).exec_()
 
-    def _saveEndsWithBif(self, data: bytes):
+    def _saveEndsWithBif(self, data: bytes, data_ext: bytes):
         dialog = BifSaveDialog(self)
         dialog.exec_()
         if dialog.option == BifSaveOption.MOD:
@@ -178,7 +178,7 @@ class Editor(QMainWindow):
             self._filepath = self._installation.override_path() + self._resref + "." + self._restype.extension
             self.save()
 
-    def _saveEndsWithRim(self, data: bytes):
+    def _saveEndsWithRim(self, data: bytes, data_ext: bytes):
         if self._global_settings.disableRIMSaving:
             dialog = RimSaveDialog(self)
             dialog.exec_()
@@ -193,7 +193,13 @@ class Editor(QMainWindow):
                 self.save()
         else:
             rim = read_rim(self._filepath)
+
+            # MDL is a special case - we need to save the MDX file with the MDL file.
+            if self._restype == ResourceType.MDL:
+                rim.set(self._resref, ResourceType.MDX, data_ext)
+
             rim.set(self._resref, self._restype, data)
+
             write_rim(rim, self._filepath)
             self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
@@ -202,14 +208,20 @@ class Editor(QMainWindow):
                 basename = os.path.basename(self._filepath)
                 self._installation.reload_module(basename)
 
-    def _saveEndsWithErf(self, data: bytes):
+    def _saveEndsWithErf(self, data: bytes, data_ext: bytes):
         # Create the mod file if it does not exist.
         if not os.path.exists(self._filepath):
             module.rim_to_mod(self._filepath)
 
         erf = read_erf(self._filepath)
         erf.erf_type = ERFType.ERF if self._filepath.endswith(".erf") else ERFType.MOD
+
+        # MDL is a special case - we need to save the MDX file with the MDL file.
+        if self._restype == ResourceType.MDL:
+            erf.set(self._resref, ResourceType.MDX, data_ext)
+
         erf.set(self._resref, self._restype, data)
+
         write_erf(erf, self._filepath)
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
@@ -218,9 +230,15 @@ class Editor(QMainWindow):
             basename = os.path.basename(self._filepath)
             self._installation.reload_module(basename)
 
-    def _saveEndsWithOther(self, data: bytes):
+    def _saveEndsWithOther(self, data: bytes, data_ext: bytes):
         with open(self._filepath, 'wb') as file:
             file.write(data)
+
+        # MDL is a special case - we need to save the MDX file with the MDL file.
+        if self._restype == ResourceType.MDL:
+            with open(self._filepath.replace(".mdl", ".mdx"), 'wb') as file:
+                file.write(data_ext)
+
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
     def open(self):
@@ -241,7 +259,7 @@ class Editor(QMainWindow):
                 self.load(filepath, resref, restype, data)
 
     @abstractmethod
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         ...
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:

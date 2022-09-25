@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget
 
@@ -59,7 +59,7 @@ class UTWEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utw.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         utw = self._utw
 
         utw.name = self.ui.nameEdit.locstring()
@@ -74,7 +74,7 @@ class UTWEditor(Editor):
         gff = dismantle_utw(utw)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

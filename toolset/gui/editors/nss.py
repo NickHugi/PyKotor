@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSize, QRect, QRegExp
@@ -97,9 +97,9 @@ class NSSEditor(Editor):
                 QMessageBox(QMessageBox.Critical, "Filepath is not set", str(e)).exec_()
                 self.new()
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         if self._restype.NSS:
-            return self.ui.codeEdit.toPlainText().encode()
+            return self.ui.codeEdit.toPlainText().encode(), b''
         elif self._restype.NCS:
             compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
 

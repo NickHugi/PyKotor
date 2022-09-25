@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 import chardet
 from PyQt5.QtWidgets import QWidget, QPlainTextEdit
@@ -37,8 +37,8 @@ class TXTEditor(Editor):
             encoding = chardet.detect(data)['encoding']
             self.ui.textEdit.setPlainText(data.decode(encoding))
 
-    def build(self) -> bytes:
-        return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode()
+    def build(self) -> Tuple[bytes, bytes]:
+        return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode(), b''
 
     def new(self) -> None:
         super().new()

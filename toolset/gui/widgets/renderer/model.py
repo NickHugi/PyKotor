@@ -82,6 +82,10 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene.render()
 
+    def clearModel(self) -> None:
+        if self.scene is not None and "model" in self.scene.objects:
+            del self.scene.objects["model"]
+
     def setModel(self, data: bytes, data_ext: bytes) -> None:
         mdl = BinaryReader.from_auto(data, 12)
         mdx = BinaryReader.from_auto(data_ext)
@@ -104,7 +108,7 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.distance += -e.angleDelta().y() * strength
 
         if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
-            strength = self.settings.moveCameraSensitivity3d / 1000
+            strength = self.settings.moveCameraSensitivity3d / 10000
             self.scene.camera.z -= -e.angleDelta().y() * strength
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:

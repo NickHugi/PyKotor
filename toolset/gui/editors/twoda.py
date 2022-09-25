@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Optional
+from typing import Optional, Tuple
 
 import pyperclip as pyperclip
 from PyQt5.QtCore import QSortFilterProxyModel
@@ -108,7 +108,7 @@ class TwoDAEditor(Editor):
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         twoda = TwoDA()
 
         for i in range(self.model.columnCount())[1:]:
@@ -122,7 +122,7 @@ class TwoDAEditor(Editor):
 
         data = bytearray()
         write_2da(twoda, data, self._restype)
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

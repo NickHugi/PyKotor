@@ -1,5 +1,5 @@
 from contextlib import suppress
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
@@ -268,7 +268,7 @@ class UTCEditor(Editor):
         # Comments
         self.ui.comments.setPlainText(utc.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         utc = self._utc
 
         utc.first_name = self.ui.firstnameEdit.locstring()
@@ -359,7 +359,7 @@ class UTCEditor(Editor):
         gff = dismantle_utc(utc, version, use_deprecated=self.settings.saveUnusedFields)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

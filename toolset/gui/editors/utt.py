@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget
 
@@ -55,7 +55,7 @@ class UTTEditor(Editor):
         utt = read_utt(data)
         self._loadUTT(utt)
 
-    def _loadUTT(self, utt: UTT):
+    def _loadUTT(self, utt: UTT) -> None:
         self._utt = utt
 
         # Basic
@@ -92,7 +92,7 @@ class UTTEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         utt = self._utt
 
         # Basic
@@ -133,7 +133,7 @@ class UTTEditor(Editor):
         gff = dismantle_utt(utt)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtGui import QPixmap, QColor, QImage
 from PyQt5.QtWidgets import QWidget, QColorDialog, QLabel, QMessageBox
@@ -31,6 +31,7 @@ class MDLEditor(Editor):
         from toolset.uic.editors.mdl import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self._setupMenus()
         self._setupSignals()
 
         self.ui.modelRenderer.installation = installation
@@ -76,14 +77,18 @@ class MDLEditor(Editor):
         else:
             QMessageBox(QMessageBox.Critical, "Could not find MDL/MDX").exec_()
 
+        self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
+
     def _loadMDL(self, mdl: MDL) -> None:
         self._mdl = mdl
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         data = bytearray()
-        write_mdl(self._mdl, data)
-        return data
+        data_ext = bytearray()
+        write_mdl(self._mdl, data, ResourceType.MDL, data_ext)
+        return data, data_ext
 
     def new(self) -> None:
         super().new()
-        self._loadMDL(MDL())
+        self._mdl = MDL()
+        self.ui.modelRenderer.clearModel()

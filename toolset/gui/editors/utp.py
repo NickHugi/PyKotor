@@ -1,5 +1,5 @@
 from contextlib import suppress
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget, QMessageBox
 
@@ -129,7 +129,7 @@ class UTPEditor(Editor):
 
         self.updateItemCount()
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         utp = self._utp
 
         # Basic
@@ -188,7 +188,7 @@ class UTPEditor(Editor):
         gff = dismantle_utp(utp)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

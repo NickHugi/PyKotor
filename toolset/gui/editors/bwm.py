@@ -1,5 +1,5 @@
 import struct
-from typing import Optional, Dict, Set
+from typing import Optional, Dict, Set, Union, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap, QColor, QImage
@@ -95,10 +95,10 @@ class BWMEditor(Editor):
             addTransItem(face, 2, face.trans2)
             addTransItem(face, 3, face.trans3)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         data = bytearray()
         write_bwm(self._bwm, data)
-        return data
+        return bytes(data), b''
 
     def new(self) -> None:
         super().new()

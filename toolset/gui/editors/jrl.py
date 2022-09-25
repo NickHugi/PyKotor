@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtCore import QItemSelection, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
@@ -101,10 +101,10 @@ class JRLEditor(Editor):
                 self.refreshEntryItem(entryItem)
                 questItem.appendRow(entryItem)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         data = bytearray()
         write_gff(dismantle_jrl(self._jrl), data)
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

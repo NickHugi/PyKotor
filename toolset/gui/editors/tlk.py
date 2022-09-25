@@ -1,5 +1,5 @@
 from time import sleep
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
@@ -78,7 +78,7 @@ class TLKEditor(Editor):
         self.ui.textEdit.setEnabled(False)
         self.ui.soundEdit.setEnabled(False)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         tlk = TLK()
 
         for i in range(self.model.rowCount()):
@@ -88,7 +88,7 @@ class TLKEditor(Editor):
 
         data = bytearray()
         write_tlk(tlk, data, self._restype)
-        return data
+        return data, b''
 
     def insert(self) -> None:
         self.model.appendRow([QStandardItem(""), QStandardItem("")])

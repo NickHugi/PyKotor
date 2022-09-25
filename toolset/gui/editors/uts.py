@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QIODevice, QBuffer
@@ -120,7 +120,7 @@ class UTSEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(uts.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         uts = self._uts
 
         # Basic
@@ -162,7 +162,7 @@ class UTSEditor(Editor):
         gff = dismantle_uts(uts)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

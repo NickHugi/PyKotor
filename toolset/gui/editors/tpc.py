@@ -1,5 +1,5 @@
 import io
-from typing import Optional
+from typing import Optional, Tuple
 
 from PIL import Image, ImageOps
 from PyQt5.QtGui import QPixmap, QImage, QTransform
@@ -62,7 +62,7 @@ class TPCEditor(Editor):
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.txiEdit.setPlainText("")
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         self._tpc.txi = self.ui.txiEdit.toPlainText()
 
         data = bytearray()
@@ -86,4 +86,4 @@ class TPCEditor(Editor):
             image.save(dataIO, "JPEG", quality=80)
             data = dataIO.getvalue()
 
-        return data
+        return data, b''

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union, Tuple
 
 from PyQt5.QtGui import QPixmap, QColor, QImage
 from PyQt5.QtWidgets import QWidget, QColorDialog, QLabel
@@ -138,7 +138,7 @@ class AREEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(are.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         are = self._are
 
         # Basic
@@ -212,7 +212,7 @@ class AREEditor(Editor):
 
         data = bytearray()
         write_gff(dismantle_are(self._are), data)
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

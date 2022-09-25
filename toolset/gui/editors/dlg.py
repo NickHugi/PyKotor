@@ -1,5 +1,5 @@
 from copy import deepcopy, copy
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelection, QBuffer, QIODevice, QPoint, QItemSelectionModel
@@ -182,7 +182,7 @@ class DLGEditor(Editor):
                 self._loadDLGRec(child_item, child_link, seenLink, seenNode)
                 item.appendRow(child_item)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         self._dlg.on_abort = ResRef(self.ui.onAbortEdit.text())
         self._dlg.on_end = ResRef(self.ui.onEndEdit.text())
         self._dlg.vo_id = self.ui.voIdEdit.text()
@@ -200,7 +200,7 @@ class DLGEditor(Editor):
 
         data = bytearray()
         write_gff(dismantle_dlg(self._dlg), data)
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

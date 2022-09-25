@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange, QSortFilterProxyModel, QModelIndex
@@ -129,7 +129,7 @@ class GFFEditor(Editor):
             self.refreshItemText(childNode)
             self._load_struct(childNode, gffSturct)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         try:
             content = GFFContent(self._restype.extension.upper() + " ")
         except ValueError:
@@ -141,7 +141,7 @@ class GFFEditor(Editor):
 
         data = bytearray()
         write_gff(gff, data)
-        return data
+        return data, b''
 
     def _build_struct(self, item: QStandardItem, gffStruct: GFFStruct) -> None:
         for i in range(item.rowCount()):

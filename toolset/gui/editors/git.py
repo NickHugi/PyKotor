@@ -234,15 +234,15 @@ class GITEditor(Editor):
         git = read_git(data)
         self._loadGIT(git)
 
-    def _loadGIT(self, git: GIT):
+    def _loadGIT(self, git: GIT) -> None:
         self._git = git
         self.ui.renderArea.setGit(self._git)
         self.ui.renderArea.centerCamera()
         self._mode = _InstanceMode(self, self._installation, self._git)
         self.updateVisibility()
 
-    def build(self) -> bytes:
-        return bytes_git(self._git)
+    def build(self) -> Tuple[bytes, bytes]:
+        return bytes_git(self._git), b''
 
     def new(self) -> None:
         super().new()

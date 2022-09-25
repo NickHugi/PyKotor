@@ -1,5 +1,5 @@
 from contextlib import suppress
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget
 
@@ -47,7 +47,7 @@ class UTMEditor(Editor):
         utm = read_utm(data)
         self._loadUTM(utm)
 
-    def _loadUTM(self, utm: UTM):
+    def _loadUTM(self, utm: UTM) -> None:
         self._utm = utm
 
         # Basic
@@ -63,7 +63,7 @@ class UTMEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utm.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         utm = self._utm
 
         # Basic
@@ -84,7 +84,7 @@ class UTMEditor(Editor):
         gff = dismantle_utm(utm)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

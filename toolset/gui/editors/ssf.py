@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QFileDialog, QWidget
 from pykotor.extract.installation import Installation
@@ -89,7 +89,7 @@ class SSFEditor(Editor):
         self.ui.rejoinPartyStrrefSpin.setValue(ssf.get(SSFSound.REJOINED_PARTY))
         self.ui.poisonedStrrefSpin.setValue(ssf.get(SSFSound.POISONED))
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         ssf = SSF()
 
         ssf.set(SSFSound.BATTLE_CRY_1, self.ui.battlecry1StrrefSpin.value())
@@ -123,7 +123,7 @@ class SSFEditor(Editor):
 
         data = bytearray()
         write_ssf(ssf, data)
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

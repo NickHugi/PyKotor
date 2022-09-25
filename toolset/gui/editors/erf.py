@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Tuple
 
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import QMimeData
@@ -78,7 +78,7 @@ class ERFEditor(Editor):
             QMessageBox(QMessageBox.Critical, "Unable to load file", "The file specified is not a MOD/ERF type file.",
                         ..., self).show()
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         data = bytearray()
 
         if self._restype == ResourceType.RIM:
@@ -97,7 +97,7 @@ class ERFEditor(Editor):
                 erf.set(resource.resref.get(), resource.restype, resource.data)
             write_erf(erf, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

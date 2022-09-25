@@ -1,5 +1,5 @@
 from contextlib import suppress
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QImage, QTransform
@@ -121,7 +121,7 @@ class UTIEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(uti.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         uti = self._uti
 
         # Basic
@@ -152,7 +152,7 @@ class UTIEditor(Editor):
         gff = dismantle_uti(uti)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()

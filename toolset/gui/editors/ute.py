@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget, QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 
@@ -55,7 +55,7 @@ class UTEEditor(Editor):
         ute = read_ute(data)
         self._loadUTE(ute)
 
-    def _loadUTE(self, ute: UTE):
+    def _loadUTE(self, ute: UTE) -> None:
         self._ute = ute
 
         # Basic
@@ -91,7 +91,7 @@ class UTEEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
 
-    def build(self) -> bytes:
+    def build(self) -> Tuple[bytes, bytes]:
         ute = self._ute
 
         # Basic
@@ -139,7 +139,7 @@ class UTEEditor(Editor):
         gff = dismantle_ute(ute)
         write_gff(gff, data)
 
-        return data
+        return data, b''
 
     def new(self) -> None:
         super().new()
