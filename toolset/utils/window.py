@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Union
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
+from gui.editors.mdl import MDLEditor
 from gui.widgets.settings.installations import GlobalSettings
 from pykotor.resource.type import ResourceType
 
@@ -192,6 +193,9 @@ def openResourceEditor(
 
     if restype in [ResourceType.MOD, ResourceType.ERF, ResourceType.RIM]:
         editor = ERFEditor(None, installation)
+
+    if restype in [ResourceType.MDL, ResourceType.MDX]:
+        editor = MDLEditor(None, installation)
 
     if editor is not None:
         try:
