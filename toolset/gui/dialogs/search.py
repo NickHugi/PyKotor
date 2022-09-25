@@ -97,8 +97,8 @@ class FileResults(QDialog):
     def __init__(self, parent: QWidget, results: List[FileResource], installation: HTInstallation):
         super().__init__(parent)
 
-        from dialogs import ui_search_result
-        self.ui = ui_search_result.Ui_Dialog()
+        from toolset.uic.dialogs.search_result import Ui_Dialog
+        self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         self.ui.openButton.clicked.connect(self.open)
