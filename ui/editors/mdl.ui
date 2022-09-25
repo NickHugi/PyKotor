@@ -16,7 +16,14 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="ModelRenderer" name="modelRenderer"/>
+     <widget class="ModelRenderer" name="modelRenderer">
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -71,7 +78,7 @@
   <customwidget>
    <class>ModelRenderer</class>
    <extends>QOpenGLWidget</extends>
-   <header location="global">toolset.gui.widgets.model_renderer</header>
+   <header location="global">toolset.gui.widgets.renderer.model</header>
   </customwidget>
  </customwidgets>
  <resources/>

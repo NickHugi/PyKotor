@@ -1,9 +1,13 @@
 import math
+from typing import Set
 
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QResizeEvent
+from PyQt5.QtGui import QResizeEvent, QWheelEvent, QMouseEvent, QKeyEvent
 from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 
+from data.misc import ControlItem
+from gui.widgets.settings.module_designer import ModuleDesignerSettings
+from pykotor.common.geometry import Vector2
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
@@ -18,6 +22,29 @@ class ModelRenderer(QOpenGLWidget):
         self.scene: Scene = None
         self.installation: Installation = None
         self._modelToLoad = None
+
+        self._keysDown: Set[int] = set()
+        self._mouseDown: Set[int] = set()
+        self._mousePrev: Vector2 = Vector2(0, 0)
+
+        self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
+        self.moveXYCamera: ControlItem = ControlItem(self.settings.moveCameraXY3dBind)
+        self.moveZCamera: ControlItem = ControlItem(self.settings.moveCameraZ3dBind)
+        self.rotateCamera: ControlItem = ControlItem(self.settings.rotateCamera3dBind)
+        self.zoomCamera: ControlItem = ControlItem(self.settings.zoomCamera3dBind)
+        self.rotateCameraLeft: ControlItem = ControlItem(self.settings.rotateCameraLeft3dBind)
+        self.rotateCameraRight: ControlItem = ControlItem(self.settings.rotateCameraRight3dBind)
+        self.rotateCameraUp: ControlItem = ControlItem(self.settings.rotateCameraUp3dBind)
+        self.rotateCameraDown: ControlItem = ControlItem(self.settings.rotateCameraDown3dBind)
+        self.moveCameraUp: ControlItem = ControlItem(self.settings.moveCameraUp3dBind)
+        self.moveCameraDown: ControlItem = ControlItem(self.settings.moveCameraDown3dBind)
+        self.moveCameraForward: ControlItem = ControlItem(self.settings.moveCameraForward3dBind)
+        self.moveCameraBackward: ControlItem = ControlItem(self.settings.moveCameraBackward3dBind)
+        self.moveCameraLeft: ControlItem = ControlItem(self.settings.moveCameraLeft3dBind)
+        self.moveCameraRight: ControlItem = ControlItem(self.settings.moveCameraRight3dBind)
+        self.zoomCameraIn: ControlItem = ControlItem(self.settings.zoomCameraIn3dBind)
+        self.zoomCameraOut: ControlItem = ControlItem(self.settings.zoomCameraOut3dBind)
+        self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
     def loop(self) -> None:
         self.repaint()
@@ -41,6 +68,12 @@ class ModelRenderer(QOpenGLWidget):
 
         self.scene.render()
 
+    def setModel(self, data: bytes, data_ext: bytes) -> None:
+        mdl = BinaryReader.from_auto(data, 12)
+        mdx = BinaryReader.from_auto(data_ext)
+        self._modelToLoad = mdl, mdx
+
+    # region Events
     def resizeEvent(self, e: QResizeEvent) -> None:
         super().resizeEvent(e)
 
@@ -48,7 +81,67 @@ class ModelRenderer(QOpenGLWidget):
             self.scene.camera.width = e.size().width()
             self.scene.camera.height = e.size().height()
 
-    def setModel(self, data: bytes, data_ext: bytes) -> None:
-        mdl = BinaryReader.from_auto(data, 12)
-        mdx = BinaryReader.from_auto(data_ext)
-        self._modelToLoad = mdl, mdx
+    def wheelEvent(self, e: QWheelEvent) -> None:
+        if self.zoomCamera.satisfied(self._mouseDown, self._keysDown):
+            strength = self.settings.zoomCameraSensitivity3d / 2000
+            self.scene.camera.distance += -e.angleDelta().y() * strength
+
+        if self.moveZCamera.satisfied(self._mouseDown, self._keysDown):
+            strength = self.settings.moveCameraSensitivity3d / 1000
+            self.scene.camera.z -= -e.angleDelta().y() * strength
+
+    def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        screen = Vector2(e.x(), e.y())
+        screenDelta = Vector2(screen.x - self._mousePrev.x, screen.y - self._mousePrev.y)
+        self._mousePrev = screen
+
+        if self.moveXYCamera.satisfied(self._mouseDown, self._keysDown):
+            forward = -screenDelta.y * self.scene.camera.forward()
+            sideward = screenDelta.x * self.scene.camera.sideward()
+            strength = self.settings.moveCameraSensitivity3d / 10000
+            self.scene.camera.x -= (forward.x + sideward.x) * strength
+            self.scene.camera.y -= (forward.y + sideward.y) * strength
+
+        if self.rotateCamera.satisfied(self._mouseDown, self._keysDown):
+            strength = self.settings.moveCameraSensitivity3d / 10000
+            self.scene.camera.rotate(-screenDelta.x * strength, screenDelta.y * strength)
+
+    def mousePressEvent(self, e: QMouseEvent) -> None:
+        self._mouseDown.add(e.button())
+
+    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+        self._mouseDown.discard(e.button())
+
+    def keyPressEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+        self._keysDown.add(e.key())
+
+        if self.rotateCameraLeft.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.rotate(math.pi/4, 0)
+        if self.rotateCameraRight.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.rotate(-math.pi/4, 0)
+        if self.rotateCameraUp.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.rotate(0, math.pi/4)
+        if self.rotateCameraDown.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.rotate(0, -math.pi/4)
+
+        if self.moveCameraUp.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.z += 1
+        if self.moveCameraDown.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.z -= 1
+        if self.moveCameraLeft.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.y -= 1
+        if self.moveCameraRight.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.y += 1
+        if self.moveCameraForward.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.x += 1
+        if self.moveCameraBackward.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.x -= 1
+
+        if self.zoomCameraIn.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.distance += 1
+        if self.zoomCameraOut.satisfied(self._mouseDown, self._keysDown):
+            self.scene.camera.distance -= 1
+
+    def keyReleaseEvent(self, e: QKeyEvent, bubble: bool = True) -> None:
+        self._keysDown.discard(e.key())
+    # endregion
