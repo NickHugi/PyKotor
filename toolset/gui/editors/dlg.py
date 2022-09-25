@@ -613,6 +613,7 @@ class DLGEditor(Editor):
             link.active1_param4 = self.ui.condition1Param1Spin.value()
             link.active1_param5 = self.ui.condition1Param1Spin.value()
             link.active1_param6 = self.ui.condition2Param6Edit.text()
+            link.active1_not = self.ui.condition1NotCheckbox.isChecked()
             link.active2 = ResRef(self.ui.condition2ResrefEdit.text())
             link.active2_param1 = self.ui.condition2Param1Spin.value()
             link.active2_param2 = self.ui.condition2Param2Spin.value()
@@ -620,6 +621,7 @@ class DLGEditor(Editor):
             link.active2_param4 = self.ui.condition2Param4Spin.value()
             link.active2_param5 = self.ui.condition2Param5Spin.value()
             link.active2_param6 = self.ui.condition2Param6Edit.text()
+            link.active2_not = self.ui.condition2NotCheckbox.isChecked()
 
             # Animations
             node.emotion_id = self.ui.emotionSelect.currentIndex()
