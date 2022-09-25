@@ -88,6 +88,9 @@ class ModuleRenderer(QOpenGLWidget):
         z = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
+    def initializeGL(self) -> None:
+        self.scene = Scene()
+
     def resetMouseButtons(self) -> None:
         self._mouseDown.clear()
 
