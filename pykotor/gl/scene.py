@@ -25,6 +25,7 @@ from pykotor.resource.formats.tpc import TPC
 from pykotor.resource.formats.twoda import read_2da, TwoDA
 from pykotor.resource.generics.git import GIT, GITPlaceable, GITCreature, GITDoor, GITTrigger, GITEncounter, \
     GITWaypoint, GITSound, GITStore, GITCamera, GITInstance
+from pykotor.resource.generics.utc import UTC
 from pykotor.resource.type import ResourceType
 
 from pykotor.gl.shader import Shader, KOTOR_VSHADER, KOTOR_FSHADER, Texture, PICKER_FSHADER, PICKER_VSHADER, \
@@ -442,8 +443,10 @@ class Scene:
     def texture(self, name: str) -> Texture:
         if name not in self.textures:
             try:
+                tpc = None
                 # Check the textures linked to the module first
-                tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
+                if self.module is not None:
+                    tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
                 # Otherwise just search through all relevant game files
                 tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA,
                                                        SearchLocation.CHITIN]) if tpc is None else tpc
@@ -490,8 +493,9 @@ class Scene:
                 mdl_data = UNKNOWN_MDL_DATA
                 mdx_data = UNKNOWN_MDX_DATA
             elif self.installation is not None:
-                mdl_search = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=self.module.capsules())
-                mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=self.module.capsules())
+                capsules = [] if self.module is None else self.module.capsules()
+                mdl_search = self.installation.resource(name, ResourceType.MDL, SEARCH_ORDER, capsules=capsules)
+                mdx_search = self.installation.resource(name, ResourceType.MDX, SEARCH_ORDER, capsules=capsules)
                 if mdl_search and mdx_search:
                     mdl_data = mdl_search.data
                     mdx_data = mdx_search.data
