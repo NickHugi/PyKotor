@@ -1,24 +1,22 @@
 import math
 import os
-from contextlib import suppress
 from copy import deepcopy
-from time import sleep
 from typing import Set, Dict, Optional, List
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSettings, QTimer
-from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent, QResizeEvent, QColor
+from PyQt5.QtCore import QPoint, QTimer
+from PyQt5.QtGui import QPixmap, QIcon, QKeyEvent, QColor
 from PyQt5.QtWidgets import QMainWindow, QWidget, QTreeWidgetItem, QMenu, QAction, QListWidgetItem, \
-    QMessageBox, QCheckBox, QFileDialog
+    QMessageBox, QCheckBox
 
-from data.misc import Bind, ControlItem
+from data.misc import ControlItem
 from gui.dialogs.insert_instance import InsertInstanceDialog
 from gui.dialogs.select_module import SelectModuleDialog
 from gui.editors.git import openInstanceDialog
-from gui.widgets.module_renderer import ModuleRenderer
+from gui.widgets.renderer.module import ModuleRenderer
 from gui.widgets.settings.installations import GlobalSettings
 from gui.widgets.settings.module_designer import ModuleDesignerSettings
-from gui.widgets.walkmesh_renderer import WalkmeshRenderer
+from gui.widgets.renderer.walkmesh import WalkmeshRenderer
 from pykotor.common.geometry import Vector2, SurfaceMaterial, Vector3, Vector4
 from pykotor.common.misc import ResRef, Color
 from pykotor.common.module import Module, ModuleResource
@@ -33,11 +31,9 @@ from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
 from gui.windows.help import HelpWindow
-from pykotor.gl.scene import RenderObject, Camera
 
-from data.me_controls import ModuleEditorControls, DynamicModuleEditorControls, HolocronModuleEditorControls
 from pykotor.tools import module
-from utils.misc import QtKey, QtMouse
+from utils.misc import QtMouse
 from utils.window import openResourceEditor
 
 

@@ -13,7 +13,7 @@ from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Camera
 from pykotor.resource.generics.git import GITInstance
 
-from gui.widgets.module_renderer import ModuleRenderer
+from gui.widgets.renderer.module import ModuleRenderer
 
 
 def getMouseCode(string: str):
