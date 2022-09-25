@@ -8,11 +8,12 @@ from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 from data.misc import ControlItem
 from gui.widgets.settings.module_designer import ModuleDesignerSettings
 from pykotor.common.geometry import Vector2
-from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.installation import Installation
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import Scene, RenderObject
+from pykotor.resource.generics.git import GIT, GITCreature
+from pykotor.resource.generics.utc import UTC
 
 
 class ModelRenderer(QOpenGLWidget):
@@ -22,6 +23,7 @@ class ModelRenderer(QOpenGLWidget):
         self.scene: Scene = None
         self.installation: Installation = None
         self._modelToLoad = None
+        self._creatureToLoad = None
 
         self._keysDown: Set[int] = set()
         self._mouseDown: Set[int] = set()
@@ -59,12 +61,21 @@ class ModelRenderer(QOpenGLWidget):
         self.scene.camera.width = self.width()
         self.scene.camera.height = self.height()
         self.scene.show_cursor = False
+
+        self.scene.git = GIT()
+
         QTimer.singleShot(33, self.loop)
 
     def paintGL(self) -> None:
         if self._modelToLoad is not None:
             self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
             self.scene.objects["model"] = RenderObject("model")
+            self._modelToLoad = None
+
+        if self._creatureToLoad is not None:
+            instance = GITCreature()
+            utc = self._creatureToLoad
+            self.scene.objects["model"] = self.scene.getCreatureRenderObject(instance, utc)
 
         self.scene.render()
 
@@ -72,6 +83,9 @@ class ModelRenderer(QOpenGLWidget):
         mdl = BinaryReader.from_auto(data, 12)
         mdx = BinaryReader.from_auto(data_ext)
         self._modelToLoad = mdl, mdx
+
+    def setCreature(self, utc: UTC) -> None:
+        self._creatureToLoad = utc
 
     # region Events
     def resizeEvent(self, e: QResizeEvent) -> None:
