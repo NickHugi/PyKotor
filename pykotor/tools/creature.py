@@ -162,3 +162,32 @@ def get_head_model(
             texture = None
 
     return model, texture
+
+
+def get_mask_model(
+        utc: UTC,
+        installation: Installation,
+) -> Optional[str]:
+    """
+    Returns the model for the mask a creature is wearing.
+
+    The value for the texture will return None if the creature does not have a mask equipped.
+
+    If no value is specified for the appearance or heads parameters then they will be loaded from the given
+    installation.
+
+    Args:
+        utc: UTC object of the target creature.
+        installation: The relevant installation.
+
+    Returns:
+        Returns a name of the mask model.
+    """
+    model = None
+
+    if EquipmentSlot.HEAD in utc.equipment:
+        resref = utc.equipment[EquipmentSlot.HEAD].resref.get()
+        uti = read_uti(installation.resource(resref, ResourceType.UTI).data)
+        model = "I_Mask_" + str(uti.model_variation).rjust(3, "0")
+
+    return model
