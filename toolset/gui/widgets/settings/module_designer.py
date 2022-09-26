@@ -91,6 +91,13 @@ class ModuleDesignerWidget(SettingsWidget):
 
     def save(self) -> None:
         self.settings.fieldOfView = self.ui.fovSpin.value()
+        self.settings.zoomCameraSensitivity3d = self.ui.moveCameraSensitivity3dEdit.value()
+        self.settings.rotateCameraSensitivity3d = self.ui.rotateCameraSensitivity3dEdit.value()
+        self.settings.zoomCameraSensitivity3d = self.ui.zoomCameraSensitivity3dEdit.value()
+
+        self.settings.zoomCameraSensitivity2d = self.ui.moveCameraSensitivity2dEdit.value()
+        self.settings.rotateCameraSensitivity2d = self.ui.rotateCameraSensitivity2dEdit.value()
+        self.settings.zoomCameraSensitivity2d = self.ui.zoomCameraSensitivity2dEdit.value()
 
         for widget, bindName in self.binds:
             setattr(self.settings, bindName, widget.bind())
