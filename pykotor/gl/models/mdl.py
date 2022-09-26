@@ -34,8 +34,8 @@ class Model:
         self._scene: Scene = scene
         self.root: Node = root
 
-    def draw(self, shader: Shader, transform: mat4):
-        self.root.draw(shader, transform)
+    def draw(self, shader: Shader, transform: mat4, *, override_texture: Optional[str] = None):
+        self.root.draw(shader, transform, override_texture)
 
     def find(self, name: str) -> Optional[Node]:
         nodes = [self.root]
@@ -168,14 +168,14 @@ class Node:
         self._rotation = quat(vec3(pitch, yaw, roll))
         self._recalc_transform()
 
-    def draw(self, shader: Shader, transform: mat4):
+    def draw(self, shader: Shader, transform: mat4, override_texture: Optional[str] = None):
         transform = transform * self._transform
 
         if self.mesh and self.render:
-            self.mesh.draw(shader, transform)
+            self.mesh.draw(shader, transform, override_texture)
 
         for child in self.children:
-            child.draw(shader, transform)
+            child.draw(shader, transform, override_texture=override_texture)
 
 
 class Mesh:
@@ -220,11 +220,11 @@ class Mesh:
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindVertexArray(0)
 
-    def draw(self, shader: Shader, transform: mat4):
+    def draw(self, shader: Shader, transform: mat4, override_texture: Optional[str] = None):
         shader.set_matrix4("model", transform)
 
         glActiveTexture(GL_TEXTURE0)
-        self._scene.texture(self.texture).use()
+        self._scene.texture(self.texture if override_texture is None else override_texture).use()
 
         glActiveTexture(GL_TEXTURE1)
         self._scene.texture(self.lightmap).use()

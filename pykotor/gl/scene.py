@@ -13,9 +13,11 @@ from OpenGL.raw.GL.VERSION.GL_1_0 import glEnable, GL_TEXTURE_2D, GL_DEPTH_TEST,
     glDisable, GL_CULL_FACE, GL_BACK, glCullFace, GL_DEPTH_COMPONENT
 from OpenGL.raw.GL.VERSION.GL_1_2 import GL_UNSIGNED_INT_8_8_8_8, GL_BGRA
 from glm import mat4, vec3, quat, vec4
+from pykotor.resource.generics.uti import read_uti
+
 from pykotor.common.geometry import Vector2, Vector3
 
-from pykotor.common.misc import CaseInsensitiveDict
+from pykotor.common.misc import CaseInsensitiveDict, EquipmentSlot
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
@@ -36,6 +38,7 @@ from pykotor.gl.models.predefined_mdl import STORE_MDL_DATA, STORE_MDX_DATA, WAY
     SOUND_MDL_DATA, SOUND_MDX_DATA, CAMERA_MDL_DATA, CAMERA_MDX_DATA, TRIGGER_MDL_DATA, TRIGGER_MDX_DATA, \
     ENCOUNTER_MDL_DATA, ENCOUNTER_MDX_DATA, ENTRY_MDL_DATA, ENTRY_MDX_DATA, EMPTY_MDL_DATA, EMPTY_MDX_DATA, \
     CURSOR_MDX_DATA, CURSOR_MDL_DATA, UNKNOWN_MDL_DATA, UNKNOWN_MDX_DATA
+from pykotor.tools import creature
 
 SEARCH_ORDER_2DA = [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
 SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -76,6 +79,7 @@ class Scene:
         self.table_placeables = TwoDA()
         self.table_creatures = TwoDA()
         self.table_heads = TwoDA()
+        self.table_baseitems = TwoDA()
         if installation is not None:
             self.setInstallation(installation)
 
@@ -100,22 +104,30 @@ class Scene:
         self.table_placeables = read_2da(installation.resource("placeables", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_creatures = read_2da(installation.resource("appearance", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
         self.table_heads = read_2da(installation.resource("heads", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
+        self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
     def getCreatureRenderObject(self, instance: GITCreature, utc: Optional[UTC] = None) -> RenderObject:
         try:
             if utc is None:
                 utc = self.module.creature(instance.resref.get()).resource()
-            body_model = self.table_creatures.get_row(utc.appearance_id).get_string("race")
-            obj = RenderObject(body_model, vec3(), vec3(), data=instance)
+
+            # Find what column in the appearance.2da file to use
+            model, texture = creature.get_model(utc,
+                                                self.installation,
+                                                appearance=self.table_creatures,
+                                                baseitems=self.table_baseitems)
+
+            obj = RenderObject(model, vec3(), vec3(), data=instance, override_texture=texture)
 
             head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
             if head_str:
                 head_id = int(head_str)
                 head_model = self.table_heads.get_row(head_id).get_string("head")
                 head_obj = RenderObject(head_model)
-                head_obj.set_transform(self.model(body_model).find("headhook").global_transform())
+                head_obj.set_transform(self.model(model).find("headhook").global_transform())
                 obj.children.append(head_obj)
-        except Exception:
+        except Exception as e:
+            print(e)
             # If failed to load creature models, use an empty model instead
             obj = RenderObject("unknown", vec3(), vec3(), data=instance)
 
@@ -348,7 +360,7 @@ class Scene:
             return
 
         model = self.model(obj.model)
-        model.draw(shader, transform * obj.transform())
+        model.draw(shader, transform * obj.transform(), override_texture=obj.override_texture)
         for child in obj.children:
             self._render_object(shader, child, obj.transform())
 
@@ -523,7 +535,7 @@ class Scene:
 
 class RenderObject:
     def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None, *, data: Any = None,
-                 genBoundary: Callable[[], Boundary] = None):
+                 genBoundary: Callable[[], Boundary] = None, override_texture: Optional[str] = None):
         self.model: str = model
         self.children: List[RenderObject] = []
         self._transform: mat4 = mat4()
@@ -533,6 +545,7 @@ class RenderObject:
         self._boundary: Optional[Boundary] = None
         self.genBoundary: Optional[Callable[[], Boundary]] = genBoundary
         self.data: Any = data
+        self.override_texture: Optional[str] = override_texture
 
         self._recalc_transform()
 
