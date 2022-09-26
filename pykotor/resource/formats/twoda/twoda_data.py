@@ -331,7 +331,7 @@ class TwoDARow:
             self,
             header: str,
             default: Optional[int] = None
-    ) -> float:
+    ) -> int:
         """
         Returns the integer value for the cell under the specified header. If the value of the cell is an invalid
         integer then a default value is used instead.
