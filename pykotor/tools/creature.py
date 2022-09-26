@@ -112,3 +112,53 @@ def get_weapon_models(
         lhand_model = default_model.replace("001", str(lhand_uti.model_variation).rjust(3, "0"))
 
     return rhand_model, lhand_model
+
+
+def get_head_model(
+        utc: UTC,
+        installation: Installation,
+        *,
+        appearance: Optional[TwoDA] = None,
+        heads: Optional[TwoDA] = None
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Returns the model and texture names for the head used by a creature.
+
+    The value for the texture may be None and the default texture provided by the model should be used instead.
+
+    If no value is specified for the appearance or heads parameters then they will be loaded from the given
+    installation.
+
+    Args:
+        utc: UTC object of the target creature.
+        installation: The relevant installation.
+        appearance: The appearance.2da loaded into a TwoDA object.
+        heads: The heads.2da loaded into a TwoDA object.
+
+    Returns:
+        Returns a tuple containing the name of the model and the texture to apply to the model.
+    """
+    if appearance is None:
+        installation.resource("appearance", ResourceType.TwoDA)
+    if heads is None:
+        installation.resource("heads", ResourceType.TwoDA)
+
+    model = None
+    texture = None
+
+    head_id = appearance.get_row(utc.appearance_id).get_integer("normalhead")
+    if head_id is not None:
+        model = heads.get_row(head_id).get_string("head")
+        if utc.alignment < 10:
+            texture = heads.get_row(head_id).get_string("headtexvvve")
+        elif utc.alignment < 20:
+            texture = heads.get_row(head_id).get_string("headtexvve")
+        elif utc.alignment < 30:
+            texture = heads.get_row(head_id).get_string("headtexve")
+        elif utc.alignment < 40:
+            texture = heads.get_row(head_id).get_string("headtexe")
+
+        if texture == "":
+            texture = None
+
+    return model, texture
