@@ -41,7 +41,7 @@ class Model:
         nodes = [self.root]
         while nodes:
             node = nodes.pop()
-            if node.name == name:
+            if node.name.lower() == name.lower():
                 return node
             nodes.extend(node.children)
         return None

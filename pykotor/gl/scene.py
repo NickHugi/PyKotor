@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import traceback
 from contextlib import suppress
 from copy import copy
 from typing import Dict, List, Any, Optional, Union, Callable
@@ -111,24 +112,37 @@ class Scene:
             if utc is None:
                 utc = self.module.creature(instance.resref.get()).resource()
 
-            # Find what column in the appearance.2da file to use
-            model, texture = creature.get_model(utc,
-                                                self.installation,
-                                                appearance=self.table_creatures,
-                                                baseitems=self.table_baseitems)
+            body_model, body_texture = creature.get_body_model(
+                utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems
+            )
+            head_model, head_texture = creature.get_head_model(
+                utc, self.installation, appearance=self.table_creatures, heads=self.table_heads
+            )
+            rhand_model, lhand_model = creature.get_weapon_models(
+                utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems
+            )
 
-            obj = RenderObject(model, vec3(), vec3(), data=instance, override_texture=texture)
+            obj = RenderObject(body_model, data=instance, override_texture=body_texture)
 
-            head_str = self.table_creatures.get_row(utc.appearance_id).get_string("normalhead")
-            if head_str:
-                head_id = int(head_str)
-                head_model = self.table_heads.get_row(head_id).get_string("head")
-                head_obj = RenderObject(head_model)
-                head_obj.set_transform(self.model(model).find("headhook").global_transform())
+            head_hook = self.model(body_model).find("headhook")
+            if head_model and head_hook:
+                head_obj = RenderObject(head_model, override_texture=head_texture)
+                head_obj.set_transform(head_hook.global_transform())
                 obj.children.append(head_obj)
-        except Exception as e:
-            print(e)
-            # If failed to load creature models, use an empty model instead
+
+            rhand_hook = self.model(body_model).find("rhand")
+            if rhand_model and rhand_hook:
+                rhand_obj = RenderObject(rhand_model)
+                rhand_obj.set_transform(rhand_hook.global_transform())
+                obj.children.append(rhand_obj)
+
+            lhand_hook = self.model(body_model).find("lhand")
+            if lhand_model and lhand_hook:
+                lhand_obj = RenderObject(lhand_model)
+                lhand_obj.set_transform(lhand_hook.global_transform())
+                obj.children.append(lhand_obj)
+        except Exception:
+            # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", vec3(), vec3(), data=instance)
 
         return obj
