@@ -1,3 +1,4 @@
+import traceback
 from typing import Optional, Tuple
 
 from pykotor.extract.installation import Installation
@@ -12,7 +13,7 @@ from pykotor.resource.formats.twoda import TwoDA
 from pykotor.resource.generics.utc import UTC
 
 
-def get_model(
+def get_body_model(
         utc: UTC,
         installation: Installation,
         *,
@@ -42,6 +43,9 @@ def get_model(
         installation.resource("baseitems", ResourceType.TwoDA)
 
     try:
+        if EquipmentSlot.ARMOR not in utc.equipment:
+            raise ValueError("No armor equipped")
+
         armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
         armor_uti = read_uti(installation.resource(armor_resref, ResourceType.UTI).data)
         model_column = "model" + baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
@@ -60,3 +64,51 @@ def get_model(
         override_texture = None
 
     return body_model, override_texture
+
+
+def get_weapon_models(
+        utc: UTC,
+        installation: Installation,
+        *,
+        appearance: Optional[TwoDA] = None,
+        baseitems: Optional[TwoDA] = None
+) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Returns a tuple containing the right-hand weapon model and the left-hand weapon model (in that order).
+
+    If no weapon is equipped in a particular hand the value will return None.
+
+    If no value is specified for the appearance or baseitem parameters then they will be loaded from the given
+    installation.
+
+    Args:
+        utc: UTC object of the target creature.
+        installation: The relevant installation.
+        appearance: The appearance.2da loaded into a TwoDA object.
+        baseitems: The baseitems.2da loaded into a TwoDA object.
+
+    Returns:
+        Returns a tuple containing right-hand and left-hand weapon model names.
+    """
+    if appearance is None:
+        installation.resource("appearance", ResourceType.TwoDA)
+    if baseitems is None:
+        installation.resource("baseitems", ResourceType.TwoDA)
+
+    rhand_model = None
+    lhand_model = None
+
+    rhand_resref = utc.equipment[EquipmentSlot.RIGHT_HAND].resref.get() if EquipmentSlot.RIGHT_HAND in utc.equipment else None
+    lhand_resref = utc.equipment[EquipmentSlot.LEFT_HAND].resref.get() if EquipmentSlot.LEFT_HAND in utc.equipment else None
+
+    if rhand_resref is not None:
+        rhand_uti = read_uti(installation.resource(rhand_resref, ResourceType.UTI).data)
+        default_model = baseitems.get_row(rhand_uti.base_item).get_string("defaultmodel")
+        rhand_model = default_model.replace("001", str(rhand_uti.model_variation).rjust(3, "0"))
+
+    if lhand_resref is not None:
+        lhand_uti = read_uti(installation.resource(lhand_resref, ResourceType.UTI).data)
+        default_model = baseitems.get_row(lhand_uti.base_item).get_string("defaultmodel")
+        lhand_model = default_model.replace("001", str(lhand_uti.model_variation).rjust(3, "0"))
+
+    return rhand_model, lhand_model
