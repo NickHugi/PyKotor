@@ -112,6 +112,8 @@ class Scene:
             if utc is None:
                 utc = self.module.creature(instance.resref.get()).resource()
 
+            head_obj = None
+
             body_model, body_texture = creature.get_body_model(
                 utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems
             )
@@ -120,6 +122,9 @@ class Scene:
             )
             rhand_model, lhand_model = creature.get_weapon_models(
                 utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems
+            )
+            mask_model = creature.get_mask_model(
+                utc, self.installation
             )
 
             obj = RenderObject(body_model, data=instance, override_texture=body_texture)
@@ -141,6 +146,19 @@ class Scene:
                 lhand_obj = RenderObject(lhand_model)
                 lhand_obj.set_transform(lhand_hook.global_transform())
                 obj.children.append(lhand_obj)
+
+            if head_hook is None:
+                mask_hook = self.model(body_model).find("gogglehook")
+            else:
+                mask_hook = self.model(head_model).find("gogglehook")
+            if mask_model and mask_hook:
+                mask_obj = RenderObject(mask_model)
+                mask_obj.set_transform(mask_hook.global_transform())
+                if head_hook is None:
+                    obj.children.append(mask_obj)
+                elif head_obj is not None:
+                    head_obj.children.append(mask_obj)
+
         except Exception:
             # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", vec3(), vec3(), data=instance)
@@ -374,9 +392,10 @@ class Scene:
             return
 
         model = self.model(obj.model)
-        model.draw(shader, transform * obj.transform(), override_texture=obj.override_texture)
+        transform = transform * obj.transform()
+        model.draw(shader, transform, override_texture=obj.override_texture)
         for child in obj.children:
-            self._render_object(shader, child, obj.transform())
+            self._render_object(shader, child, transform)
 
     def picker_render(self) -> None:
         glClearColor(1.0, 1.0, 1.0, 1.0)
