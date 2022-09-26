@@ -70,7 +70,7 @@ class Model:
         return min_point, max_point
 
     def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3) -> None:
-        transform = glm.translate(transform, node._position)
+        transform = transform * glm.translate(node._position)
         transform = transform * glm.mat4_cast(node._rotation)
 
         if node.mesh and node.render:
@@ -123,7 +123,7 @@ class Node:
         ancestors = self.ancestors() + [self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = glm.translate(transform, ancestor._position)
+            transform = transform * glm.translate(ancestor._position)
             transform = transform * glm.mat4_cast(ancestor._rotation)
         position = vec3()
         glm.decompose(transform, vec3(), quat(), position, vec3(), vec4())
@@ -133,7 +133,7 @@ class Node:
         ancestors = self.ancestors() + [self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = glm.translate(transform, ancestor._position)
+            transform = transform * glm.translate(ancestor._position)
             transform = transform * glm.mat4_cast(ancestor._rotation)
         rotation = quat()
         glm.decompose(transform, vec3(), rotation, vec3(), vec3(), vec4())
@@ -143,7 +143,7 @@ class Node:
         ancestors = self.ancestors() + [self]
         transform = mat4()
         for ancestor in ancestors:
-            transform = glm.translate(transform, ancestor._position)
+            transform = transform * glm.translate(ancestor._position)
             transform = transform * glm.mat4_cast(ancestor._rotation)
         return transform
 
@@ -151,7 +151,7 @@ class Node:
         return copy(self._transform)
 
     def _recalc_transform(self) -> None:
-        self._transform = glm.translate(mat4(), self._position)
+        self._transform = mat4() * glm.translate(self._position)
         self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
 
     def position(self) -> vec3:
@@ -179,8 +179,8 @@ class Node:
 
 
 class Mesh:
-    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags, vertex_offset,
-                 normal_offset, texture_offset, lightmap_offset):
+    def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags,
+                 vertex_offset, normal_offset, texture_offset, lightmap_offset):
         self._scene: Scene = scene
         self._node: Node = node
 

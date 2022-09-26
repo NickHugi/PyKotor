@@ -592,7 +592,7 @@ class RenderObject:
         self._rotation = glm.eulerAngles(rotation)
 
     def _recalc_transform(self) -> None:
-        self._transform = glm.translate(mat4(), self._position)
+        self._transform = mat4() * glm.translate(self._position)
         self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
 
     def position(self) -> vec3:
@@ -672,7 +672,7 @@ class Camera:
         y += math.sin(self.yaw) * math.cos(self.pitch - math.pi/2) * self.distance
         z += math.sin(self.pitch - math.pi/2) * self.distance
 
-        camera = glm.translate(mat4(), vec3(x, y, z))
+        camera = mat4() * glm.translate(vec3(x, y, z))
         camera = glm.rotate(camera, self.yaw + math.pi/2, up)
         camera = glm.rotate(camera, math.pi - self.pitch, pitch)
         view = glm.inverse(camera)

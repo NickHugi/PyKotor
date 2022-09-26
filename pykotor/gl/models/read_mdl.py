@@ -148,7 +148,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
         child_offsets = mdl.read_uint32()
         child_count = mdl.read_uint32()
 
-        local_transform = glm.translate(mat4(), position)
+        local_transform = mat4() * glm.translate(position)
         local_transform = local_transform * glm.mat4_cast(rotation)
         transform = transform * local_transform
 
