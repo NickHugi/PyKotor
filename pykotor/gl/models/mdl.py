@@ -151,8 +151,7 @@ class Node:
         return copy(self._transform)
 
     def _recalc_transform(self) -> None:
-        self._transform = mat4() * glm.translate(self._position)
-        self._transform = self._transform * glm.mat4_cast(quat(self._rotation))
+        self._transform = glm.translate(self._position) * glm.mat4_cast(quat(self._rotation))
 
     def position(self) -> vec3:
         return copy(self._position)
@@ -265,6 +264,9 @@ class Cube:
             3, 2, 6,
             6, 7, 3
         ], dtype='int16')
+
+        self.min_point = min_point
+        self.max_point = max_point
 
         self._vao = glGenVertexArrays(1)
         self._vbo = glGenBuffers(1)

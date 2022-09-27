@@ -57,7 +57,7 @@ class Scene:
         self.installation: Optional[Installation] = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
-        self.objects: List[RenderObject] = []
+        self.objects: Dict[Any, RenderObject] = {}
         self.selection: List[RenderObject] = []
         self.module: Optional[Module] = module
         self.camera: Camera = Camera()
@@ -67,7 +67,6 @@ class Scene:
 
         self.git: Optional[GIT] = None
         self.layout: Optional[LYT] = None
-        self.objects: Dict[Any, RenderObject] = {}
         self.clearCacheBuffer: List[ResourceIdentifier] = []
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
@@ -113,6 +112,7 @@ class Scene:
                 utc = self.module.creature(instance.resref.get()).resource()
 
             head_obj = None
+            mask_hook = None
 
             body_model, body_texture = creature.get_body_model(
                 utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems
@@ -149,7 +149,7 @@ class Scene:
 
             if head_hook is None:
                 mask_hook = self.model(body_model).find("gogglehook")
-            else:
+            elif head_model:
                 mask_hook = self.model(head_model).find("gogglehook")
             if mask_model and mask_hook:
                 mask_obj = RenderObject(mask_model)
@@ -159,9 +159,10 @@ class Scene:
                 elif head_obj is not None:
                     head_obj.children.append(mask_obj)
 
-        except Exception:
+        except Exception as e:
+            print(e)
             # If failed to load creature models, use the unknown model instead
-            obj = RenderObject("unknown", vec3(), vec3(), data=instance)
+            obj = RenderObject("unknown", data=instance)
 
         return obj
 
@@ -394,6 +395,7 @@ class Scene:
         model = self.model(obj.model)
         transform = transform * obj.transform()
         model.draw(shader, transform, override_texture=obj.override_texture)
+
         for child in obj.children:
             self._render_object(shader, child, transform)
 
@@ -625,6 +627,11 @@ class RenderObject:
             self._cube_rec(scene, mat4(), self, min_point, max_point)
             self._cube = Cube(scene, min_point, max_point)
         return self._cube
+
+    def radius(self, scene: Scene) -> float:
+        cube = self.cube(scene)
+        return max(abs(cube.min_point.x), abs(cube.min_point.y), abs(cube.min_point.z),
+                   abs(cube.max_point.x), abs(cube.max_point.y), abs(cube.max_point.z))
 
     def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3) -> None:
         obj_min, obj_max = scene.model(obj.model).box()
