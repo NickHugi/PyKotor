@@ -42,26 +42,23 @@ def get_body_model(
     if baseitems is None:
         installation.resource("baseitems", ResourceType.TwoDA)
 
-    try:
-        if EquipmentSlot.ARMOR not in utc.equipment:
-            raise ValueError("No armor equipped")
+    body_model = ""
+    override_texture = None
 
-        armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
-        armor_uti = read_uti(installation.resource(armor_resref, ResourceType.UTI).data)
-        model_column = "model" + baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
-        tex_column = "tex" + baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
+    if appearance.get_row(utc.appearance_id).get_string("modeltype") == "B":
+        body_model = appearance.get_row(utc.appearance_id).get_string("modela")
+        override_texture = body_model = appearance.get_row(utc.appearance_id).get_string("texa")
 
-        # Get the model/texture from under the above columns, if the cell is blank default to the race column
-        body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
-        override_texture = appearance.get_row(utc.appearance_id).get_string(tex_column) + str(armor_uti.texture_variation).rjust(2, "0")
+        if EquipmentSlot.ARMOR in utc.equipment:
+            armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
+            armor_uti = read_uti(installation.resource(armor_resref, ResourceType.UTI).data)
+            model_column = "model" + baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
+            tex_column = "tex" + baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
+            body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
+            override_texture = appearance.get_row(utc.appearance_id).get_string(tex_column) + str(armor_uti.texture_variation).rjust(2, "0")
 
-        if override_texture == "":
-            override_texture = None
-        if body_model.isspace():
-            raise ValueError("Use default race model")
-    except Exception:
+    if body_model == "":
         body_model = appearance.get_row(utc.appearance_id).get_string("race")
-        override_texture = None
 
     return body_model, override_texture
 
