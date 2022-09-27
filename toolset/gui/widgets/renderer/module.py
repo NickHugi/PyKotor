@@ -52,10 +52,10 @@ class ModuleRenderer(QOpenGLWidget):
         self._installation: Optional[HTInstallation] = None
         self._init = False
 
+        self._renderTime: int = 0
         self._keysDown: Set[int] = set()
         self._mouseDown: Set[int] = set()
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
-
         self._mousePressTime: datetime = datetime.now()
 
         self.doSelect: bool = False  # Set to true to select object at mouse pointer
@@ -72,7 +72,9 @@ class ModuleRenderer(QOpenGLWidget):
         self.repaint()
         if self.underMouse() and self.freeCam and len(self._keysDown) > 0:
             self.keyboardPressed.emit(self._mouseDown, self._keysDown)
-        QTimer.singleShot(33, self.loop)
+
+        delay = max(0, 33 - self._renderTime)
+        QTimer.singleShot(delay, self.loop)
 
     def walkmeshPoint(self, x: float, y: float, default_z: float = 0.0) -> Vector3:
         face: Optional[BWMFace] = None
@@ -95,6 +97,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.clear()
 
     def paintGL(self) -> None:
+        start = datetime.now()
         if not self._init:
             self._init = True
 
@@ -121,6 +124,7 @@ class ModuleRenderer(QOpenGLWidget):
             self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
 
         self.scene.render()
+        self._renderTime = int((datetime.now() - start).total_seconds() * 1000)
 
     # region Accessors
     def keysDown(self) -> Set[int]:
