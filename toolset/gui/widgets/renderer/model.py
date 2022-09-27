@@ -79,6 +79,7 @@ class ModelRenderer(QOpenGLWidget):
             instance = GITCreature()
             utc = self._creatureToLoad
             self.scene.objects["model"] = self.scene.getCreatureRenderObject(instance, utc)
+            self._creatureToLoad = None
 
         self.scene.render()
 

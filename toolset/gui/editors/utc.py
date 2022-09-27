@@ -31,18 +31,17 @@ class UTCEditor(Editor):
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
         self.settings: UTCSettings = UTCSettings()
+        self._utc = UTC()
 
         from toolset.uic.editors.utc import Ui_MainWindow
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
-        self._setupSignals()
         self._setupInstallation(installation)
+        self._setupSignals()
 
         self.ui.actionSaveUnusedFields.setChecked(self.settings.saveUnusedFields)
         self.ui.actionAlwaysSaveK2Fields.setChecked(self.settings.alwaysSaveK2Fields)
-
-        self._utc = UTC()
 
         self.new()
 
@@ -56,6 +55,7 @@ class UTCEditor(Editor):
         self.ui.inventoryButton.clicked.connect(self.openInventory)
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
+        self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
 
         self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
         self.ui.actionAlwaysSaveK2Fields.triggered.connect(lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()))
@@ -63,6 +63,7 @@ class UTCEditor(Editor):
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
 
+        self.ui.previewRenderer.installation = installation
         self.ui.firstnameEdit.setInstallation(installation)
         self.ui.lastnameEdit.setInstallation(installation)
 
@@ -159,6 +160,7 @@ class UTCEditor(Editor):
 
     def _loadUTC(self, utc: UTC):
         self._utc = utc
+        self.ui.previewRenderer.setCreature(utc)
 
         # Basic
         self.ui.firstnameEdit.setLocstring(utc.first_name)
@@ -457,6 +459,7 @@ class UTCEditor(Editor):
             self._utc.inventory = inventoryEditor.inventory
             self._utc.equipment = inventoryEditor.equipment
             self.updateItemCount()
+            self.update3dPreview()
 
     def updateItemCount(self) -> None:
         self.ui.inventoryCountLabel.setText("Total Items: {}".format(len(self._utc.inventory)))
@@ -492,6 +495,12 @@ class UTCEditor(Editor):
             if item.checkState() == QtCore.Qt.Checked:
                 summary += item.text() + "\n"
         self.ui.powerSummaryEdit.setPlainText(summary)
+
+    def update3dPreview(self) -> None:
+        if self._installation is not None:
+            data, _ = self.build()
+            utc = read_utc(data)
+            self.ui.previewRenderer.setCreature(utc)
 
 
 class UTCSettings:

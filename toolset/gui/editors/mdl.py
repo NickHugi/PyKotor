@@ -75,7 +75,7 @@ class MDLEditor(Editor):
         if mdl_data and mdx_data:
             self.ui.modelRenderer.setModel(mdl_data, mdx_data)
         else:
-            QMessageBox(QMessageBox.Critical, "Could not find MDL/MDX").exec_()
+            QMessageBox(QMessageBox.Critical, "Could not find MDL/MDX", "").exec_()
 
         self._mdl = read_mdl(mdl_data, 0, 0, mdx_data, 0, 0)
 
