@@ -867,7 +867,7 @@ QCheckBox::indicator:checked:hover {
   <customwidget>
    <class>WalkmeshRenderer</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.walkmesh_renderer</header>
+   <header location="global">toolset.gui.widgets.renderer.walkmesh</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

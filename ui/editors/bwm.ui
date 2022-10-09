@@ -51,7 +51,7 @@
          <x>0</x>
          <y>0</y>
          <width>580</width>
-         <height>539</height>
+         <height>537</height>
         </rect>
        </property>
        <property name="mouseTracking">
@@ -103,7 +103,7 @@ background: #000000;
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -155,7 +155,7 @@ background: #000000;
   <customwidget>
    <class>WalkmeshRenderer</class>
    <extends>QWidget</extends>
-   <header location="global">toolset.gui.widgets.walkmesh_renderer</header>
+   <header location="global">toolset.gui.widgets.renderer.walkmesh</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
