@@ -325,6 +325,7 @@ class UTCEditor(Editor):
         utc.on_notice = ResRef(self.ui.onNoticeEdit.text())
         utc.on_dialog = ResRef(self.ui.onConversationEdit.text())
         utc.on_damaged = ResRef(self.ui.onDamagedEdit.text())
+        utc.on_disturbed = ResRef(self.ui.onDisturbedEdit.text())
         utc.on_death = ResRef(self.ui.onDeathEdit.text())
         utc.on_end_round = ResRef(self.ui.onEndRoundEdit.text())
         utc.on_end_dialog = ResRef(self.ui.onEndConversationEdit.text())
