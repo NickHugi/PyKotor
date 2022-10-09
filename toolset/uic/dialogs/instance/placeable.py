@@ -56,6 +56,7 @@ class Ui_Dialog(object):
         self.label_3.setObjectName("label_3")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_3)
         self.bearingSpin = QtWidgets.QDoubleSpinBox(Dialog)
+        self.bearingSpin.setMinimum(-1000000.0)
         self.bearingSpin.setMaximum(1000000.0)
         self.bearingSpin.setObjectName("bearingSpin")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.bearingSpin)
