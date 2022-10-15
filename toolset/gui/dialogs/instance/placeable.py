@@ -38,7 +38,7 @@ class PlaceableDialog(QDialog):
         self.placeable.position.y = self.ui.yPosSpin.value()
         self.placeable.position.z = self.ui.zPosSpin.value()
         self.placeable.bearing = math.radians(self.ui.bearingSpin.value())
-        self.door.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
+        self.placeable.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
 
     def changeColor(self, colorSpin: LongSpinBox) -> None:
         qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
