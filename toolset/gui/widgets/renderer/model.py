@@ -73,12 +73,15 @@ class ModelRenderer(QOpenGLWidget):
         if self._modelToLoad is not None:
             self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
             self.scene.objects["model"] = RenderObject("model")
+            self.resetCamera()
             self._modelToLoad = None
 
         if self._creatureToLoad is not None:
             instance = GITCreature()
             utc = self._creatureToLoad
+
             self.scene.objects["model"] = self.scene.getCreatureRenderObject(instance, utc)
+            self.resetCamera()
             self._creatureToLoad = None
 
         self.scene.render()
@@ -94,6 +97,16 @@ class ModelRenderer(QOpenGLWidget):
 
     def setCreature(self, utc: UTC) -> None:
         self._creatureToLoad = utc
+
+    def resetCamera(self) -> None:
+        if "model" in self.scene.objects:
+            model = self.scene.objects["model"]
+            self.scene.camera.x = 0
+            self.scene.camera.y = 0
+            self.scene.camera.z = (model.cube(self.scene).max_point.z - model.cube(self.scene).min_point.z) / 2
+            self.scene.camera.pitch = math.pi / 16 * 9
+            self.scene.camera.yaw = math.pi / 16 * 7
+            self.scene.camera.distance = model.radius(self.scene) + 2
 
     # region Events
     def resizeEvent(self, e: QResizeEvent) -> None:
