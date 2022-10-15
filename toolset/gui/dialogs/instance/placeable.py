@@ -1,7 +1,7 @@
 import math
 
 from PyQt5.QtGui import QPixmap, QIcon, QColor, QImage
-from PyQt5.QtWidgets import QDialog, QWidget, QColorDialog, QLabel
+from PyQt5.QtWidgets import QDialog, QWidget, QColorDialog, QLabel, QDoubleSpinBox
 
 from gui.widgets.long_spinbox import LongSpinBox
 from pykotor.common.misc import ResRef, Color
@@ -30,6 +30,10 @@ class PlaceableDialog(QDialog):
         self.ui.colorSpin.setValue(0 if placeable.tweak_color is None else placeable.tweak_color.rgb_integer())
 
         self.placeable: GITPlaceable = placeable
+
+        for widget in [getattr(self.ui, attr) for attr in dir(self.ui)]:
+            if isinstance(widget, QDoubleSpinBox):
+                widget.setDecimals(8)
 
     def accept(self) -> None:
         super().accept()

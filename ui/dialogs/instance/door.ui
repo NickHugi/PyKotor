@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>354</width>
-    <height>294</height>
+    <width>374</width>
+    <height>290</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -31,6 +31,12 @@
      </item>
      <item row="0" column="1">
       <widget class="QLineEdit" name="resrefEdit">
+       <property name="maximumSize">
+        <size>
+         <width>187</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="maxLength">
         <number>16</number>
        </property>
@@ -47,6 +53,18 @@
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QDoubleSpinBox" name="xPosSpin">
+         <property name="maximumSize">
+          <size>
+           <width>90</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="wrapping">
+          <bool>true</bool>
+         </property>
+         <property name="decimals">
+          <number>6</number>
+         </property>
          <property name="minimum">
           <double>-1000000.000000000000000</double>
          </property>
@@ -57,6 +75,18 @@
        </item>
        <item>
         <widget class="QDoubleSpinBox" name="yPosSpin">
+         <property name="maximumSize">
+          <size>
+           <width>90</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="wrapping">
+          <bool>true</bool>
+         </property>
+         <property name="decimals">
+          <number>6</number>
+         </property>
          <property name="minimum">
           <double>-1000000.000000000000000</double>
          </property>
@@ -67,6 +97,18 @@
        </item>
        <item>
         <widget class="QDoubleSpinBox" name="zPosSpin">
+         <property name="maximumSize">
+          <size>
+           <width>90</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="wrapping">
+          <bool>true</bool>
+         </property>
+         <property name="decimals">
+          <number>6</number>
+         </property>
          <property name="minimum">
           <double>-1000000.000000000000000</double>
          </property>
@@ -86,6 +128,15 @@
      </item>
      <item row="3" column="1">
       <widget class="QDoubleSpinBox" name="bearingSpin">
+       <property name="maximumSize">
+        <size>
+         <width>90</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="decimals">
+        <number>6</number>
+       </property>
        <property name="minimum">
         <double>-1000000.000000000000000</double>
        </property>
@@ -126,7 +177,20 @@
         </widget>
        </item>
        <item>
-        <widget class="LongSpinBox" name="colorSpin"/>
+        <widget class="LongSpinBox" name="colorSpin">
+         <property name="minimumSize">
+          <size>
+           <width>90</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>90</width>
+           <height>16777215</height>
+          </size>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="colorButton">
@@ -141,6 +205,19 @@
          </property>
         </widget>
        </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
       </layout>
      </item>
      <item row="1" column="0">
@@ -151,7 +228,14 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="tagEdit"/>
+      <widget class="QLineEdit" name="tagEdit">
+       <property name="maximumSize">
+        <size>
+         <width>187</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -198,6 +282,12 @@
      </item>
      <item row="0" column="1">
       <widget class="QLineEdit" name="linkToModuleEdit">
+       <property name="maximumSize">
+        <size>
+         <width>187</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="maxLength">
         <number>16</number>
        </property>
@@ -211,7 +301,14 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="linkToTagEdit"/>
+      <widget class="QLineEdit" name="linkToTagEdit">
+       <property name="maximumSize">
+        <size>
+         <width>187</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="label_7">
@@ -224,8 +321,14 @@
       <widget class="LocalizedStringLineEdit" name="transNameEdit" native="true">
        <property name="minimumSize">
         <size>
-         <width>0</width>
+         <width>219</width>
          <height>23</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>219</width>
+         <height>16777215</height>
         </size>
        </property>
       </widget>
