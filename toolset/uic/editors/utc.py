@@ -226,7 +226,7 @@ class Ui_MainWindow(object):
         self.label_8 = QtWidgets.QLabel(self.groupBox_4)
         self.label_8.setObjectName("label_8")
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_8)
-        self.raceSelect = QtWidgets.QComboBox(self.groupBox_4)
+        self.raceSelect = ComboBox2DA(self.groupBox_4)
         self.raceSelect.setObjectName("raceSelect")
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.raceSelect)
         self.label_9 = QtWidgets.QLabel(self.groupBox_4)

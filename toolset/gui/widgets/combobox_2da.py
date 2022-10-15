@@ -29,14 +29,19 @@ class ComboBox2DA(QComboBox):
             row = self.count()
         super().addItem(text, row)
 
-    def setItems(self, values: List[str], sortAlphabetically: bool = True) -> None:
+    def setItems(self, values: List[str], sortAlphabetically: bool = True, cleanupStrings: bool = True) -> None:
         self._sortAlphabetically = sortAlphabetically
+        self.clear()
 
         for index, text in enumerate(values):
+            if cleanupStrings:
+                text = text.replace("TRAP_", "")
+                text = text.replace("GENDER_", "")
+                text = text.replace("_", " ")
             super().addItem(text, index)
 
-        if sortAlphabetically:
-            self.model().sort(0)
+        '''if sortAlphabetically:
+            self.model().sort(0)'''
 
     def toggleSort(self) -> None:
         self.disableSort() if self._sortAlphabetically else self.enableSort()
