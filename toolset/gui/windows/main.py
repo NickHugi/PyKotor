@@ -324,7 +324,8 @@ class ToolWindow(QMainWindow):
         """
         Opens the Settings dialog and refresh installation combo list if changes.
         """
-        if SettingsDialog(self).exec_():
+        dialog = SettingsDialog(self)
+        if dialog.exec_() and dialog.installationEdited:
             self.reloadSettings()
 
     def openActiveTalktable(self) -> None:

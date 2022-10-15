@@ -1,6 +1,7 @@
 import os
 from typing import Dict, Any
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget
@@ -9,6 +10,8 @@ from data.settings import Settings
 
 
 class InstallationsWidget(QWidget):
+    edited = QtCore.pyqtSignal()
+
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
@@ -52,12 +55,14 @@ class InstallationsWidget(QWidget):
         item = QStandardItem("New")
         item.setData({'path': '', 'tsl': False})
         self.installationsModel.appendRow(item)
+        self.edited.emit()
 
     def removeSelectedInstallation(self) -> None:
         if len(self.ui.pathList.selectedIndexes()) > 0:
             index = self.ui.pathList.selectedIndexes()[0]
             item = self.installationsModel.itemFromIndex(index)
             self.installationsModel.removeRow(item.row())
+            self.edited.emit()
 
         if len(self.ui.pathList.selectedIndexes()) == 0:
             self.ui.pathFrame.setEnabled(False)
@@ -72,6 +77,8 @@ class InstallationsWidget(QWidget):
         item.setData(data)
 
         item.setText(self.ui.pathNameEdit.text())
+
+        self.edited.emit()
 
     def installationSelected(self) -> None:
         if len(self.ui.pathList.selectedIndexes()) > 0:
