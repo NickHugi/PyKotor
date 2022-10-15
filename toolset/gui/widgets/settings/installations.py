@@ -182,6 +182,18 @@ class GlobalSettings(Settings):
         "greyRIMText",
         True
     )
+    showPreviewUTC = Settings._addSetting(
+        "showPreviewUTC",
+        True
+    )
+    showPreviewUTP = Settings._addSetting(
+        "showPreviewUTP",
+        True
+    )
+    showPreviewUTD = Settings._addSetting(
+        "showPreviewUTD",
+        True
+    )
     # endregion
 
 

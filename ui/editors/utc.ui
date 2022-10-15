@@ -1523,6 +1523,9 @@
    </property>
   </action>
   <action name="actionShowPreview">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Preview</string>
    </property>

@@ -757,6 +757,7 @@ class Ui_MainWindow(object):
         self.actionAlwaysSaveK2Fields.setCheckable(True)
         self.actionAlwaysSaveK2Fields.setObjectName("actionAlwaysSaveK2Fields")
         self.actionShowPreview = QtWidgets.QAction(MainWindow)
+        self.actionShowPreview.setCheckable(True)
         self.actionShowPreview.setObjectName("actionShowPreview")
         self.menuFile.addAction(self.actionNew)
         self.menuFile.addAction(self.actionOpen)

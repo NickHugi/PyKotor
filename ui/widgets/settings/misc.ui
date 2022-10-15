@@ -51,6 +51,27 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="showPreviewUTCCheck">
+         <property name="text">
+          <string>Show 3D Preview in UTC Editor</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="showPreviewUTPCheck">
+         <property name="text">
+          <string>Show 3D Preview in UTP Editor</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="showPreviewUTDCheck">
+         <property name="text">
+          <string>Show 3D Preview in UTD Editor</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="Line" name="line">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>

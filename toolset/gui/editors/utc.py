@@ -24,6 +24,8 @@ from gui.editor import Editor
 from gui.dialogs.inventory import InventoryEditor
 from utils.window import openResourceEditor
 
+from toolset.gui.widgets.settings.installations import GlobalSettings
+
 
 class UTCEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
@@ -31,6 +33,7 @@ class UTCEditor(Editor):
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
         self.settings: UTCSettings = UTCSettings()
+        self.globalSettings: GlobalSettings = GlobalSettings()
         self._utc = UTC()
 
         from toolset.uic.editors.utc import Ui_MainWindow
@@ -43,7 +46,7 @@ class UTCEditor(Editor):
         self.ui.actionSaveUnusedFields.setChecked(self.settings.saveUnusedFields)
         self.ui.actionAlwaysSaveK2Fields.setChecked(self.settings.alwaysSaveK2Fields)
 
-        self.setFixedSize(798, 593)
+        self.update3dPreview()
 
         self.new()
 
@@ -63,6 +66,7 @@ class UTCEditor(Editor):
 
         self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
         self.ui.actionAlwaysSaveK2Fields.triggered.connect(lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()))
+        self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
@@ -485,6 +489,10 @@ class UTCEditor(Editor):
         else:
             return None
 
+    def togglePreview(self) -> None:
+        self.globalSettings.showPreviewUTC = not self.globalSettings.showPreviewUTC
+        self.update3dPreview()
+
     def updateFeatSummary(self) -> None:
         summary = ""
         for i in range(self.ui.featList.count()):
@@ -502,10 +510,19 @@ class UTCEditor(Editor):
         self.ui.powerSummaryEdit.setPlainText(summary)
 
     def update3dPreview(self) -> None:
-        if self._installation is not None:
-            data, _ = self.build()
-            utc = read_utc(data)
-            self.ui.previewRenderer.setCreature(utc)
+        self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTC)
+
+        if self.globalSettings.showPreviewUTC:
+            self.ui.previewRenderer.setVisible(True)
+            self.setFixedSize(798, 553)
+
+            if self._installation is not None:
+                data, _ = self.build()
+                utc = read_utc(data)
+                self.ui.previewRenderer.setCreature(utc)
+        else:
+            self.ui.previewRenderer.setVisible(False)
+            self.setFixedSize(798-350, 553)
 
 
 class UTCSettings:
