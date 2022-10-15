@@ -47,7 +47,7 @@ def get_body_model(
 
     if appearance.get_row(utc.appearance_id).get_string("modeltype") == "B":
         body_model = appearance.get_row(utc.appearance_id).get_string("modela")
-        override_texture = body_model = appearance.get_row(utc.appearance_id).get_string("texa")
+        override_texture = appearance.get_row(utc.appearance_id).get_string("texa") + "01"
 
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
