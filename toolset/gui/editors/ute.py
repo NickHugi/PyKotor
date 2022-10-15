@@ -44,10 +44,10 @@ class UTEEditor(Editor):
         difficulties = installation.htGetCache2DA(HTInstallation.TwoDA_ENC_DIFFICULTIES)
 
         self.ui.difficultySelect.clear()
-        [self.ui.difficultySelect.addItem(label) for label in difficulties.get_column("label")]
+        self.ui.difficultySelect.setItems(difficulties.get_column("label"))
 
         self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
+        self.ui.difficultySelect.setItems(factions.get_column("label"))
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)

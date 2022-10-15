@@ -57,11 +57,8 @@ class UTDEditor(Editor):
         appearances = installation.htGetCache2DA(HTInstallation.TwoDA_DOORS)
         factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
 
-        self.ui.appearanceSelect.clear()
-        [self.ui.appearanceSelect.addItem(label.replace("_", " ")) for label in appearances.get_column("label")]
-
-        self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
+        self.ui.appearanceSelect.setItems(appearances.get_column("label"))
+        self.ui.factionSelect.setItems(factions.get_column("label"))
 
         self.ui.notBlastableCheckbox.setVisible(installation.tsl)
         self.ui.difficultyModSpin.setVisible(installation.tsl)

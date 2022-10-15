@@ -62,7 +62,7 @@ class UTIEditor(Editor):
         itemProperties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
         self.ui.baseSelect.clear()
-        [self.ui.baseSelect.addItem(label.replace("_", " ")) for label in baseitems.get_column("label")]
+        self.ui.baseSelect.setItems(baseitems.get_column("label"))
 
         self.ui.availablePropertyList.clear()
         for i in range(itemProperties.get_height()):

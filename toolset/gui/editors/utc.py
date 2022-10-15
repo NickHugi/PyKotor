@@ -1,4 +1,5 @@
 from contextlib import suppress
+from copy import deepcopy
 from typing import Optional, Tuple
 
 from PyQt5 import QtCore
@@ -61,7 +62,7 @@ class UTCEditor(Editor):
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
 
-        self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
+        #self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.alignmentSlider.valueChanged.connect(self.update3dPreview)
 
         self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
@@ -94,34 +95,19 @@ class UTCEditor(Editor):
         feats = installation.htGetCache2DA(HTInstallation.TwoDA_FEATS)
         powers = installation.htGetCache2DA(HTInstallation.TwoDA_POWERS)
 
-        self.ui.appearanceSelect.clear()
-        [self.ui.appearanceSelect.addItem(label.replace("_", " ")) for label in appearances.get_column("label")]
+        self.ui.appearanceSelect.setItems(appearances.get_column("label"))
+        self.ui.soundsetSelect.setItems(soundsets.get_column("label"))
+        self.ui.portraitSelect.setItems(portraits.get_column("baseresref"))
+        self.ui.subraceSelect.setItems(subraces.get_column("label"))
+        self.ui.speedSelect.setItems(speeds.get_column("label"))
+        self.ui.factionSelect.setItems(factions.get_column("label"))
+        self.ui.genderSelect.setItems(label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant"))
+        self.ui.perceptionSelect.setItems(perceptions.get_column("label"))
+        self.ui.class1Select.setItems(classes.get_column("label"))
 
-        self.ui.soundsetSelect.clear()
-        [self.ui.soundsetSelect.addItem(label.replace("_", " ")) for label in soundsets.get_column("label")]
-
-        self.ui.portraitSelect.clear()
-        [self.ui.portraitSelect.addItem(baseresref) for baseresref in portraits.get_column("baseresref")]
-
-        self.ui.raceSelect.addItems(["Droid", "Human"])
-
-        self.ui.subraceSelect.clear()
-        [self.ui.subraceSelect.addItem(label) for label in subraces.get_column("label")]
-
-        self.ui.speedSelect.clear()
-        [self.ui.speedSelect.addItem(label) for label in speeds.get_column("label")]
-
-        self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
-
-        self.ui.genderSelect.clear()
-        [self.ui.genderSelect.addItem(label.replace("_", " ").title().replace("Gender ", "")) for label in genders.get_column("constant")]
-
-        self.ui.perceptionSelect.clear()
-        [self.ui.perceptionSelect.addItem(label) for label in perceptions.get_column("label")]
-
-        self.ui.class1Select.clear()
-        [self.ui.class1Select.addItem(label) for label in classes.get_column("label")]
+        self.ui.raceSelect.clear()
+        self.ui.raceSelect.addItem("Droid", 5)
+        self.ui.raceSelect.addItem("Creature", 6)
 
         self.ui.class2Select.clear()
         self.ui.class2Select.addItem("[None]")

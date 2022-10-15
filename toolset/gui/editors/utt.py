@@ -40,14 +40,9 @@ class UTTEditor(Editor):
         factions = installation.htGetCache2DA(HTInstallation.TwoDA_FACTIONS)
         traps = installation.htGetCache2DA(HTInstallation.TwoDA_TRAPS)
 
-        self.ui.cursorSelect.clear()
-        [self.ui.cursorSelect.addItem(label) for label in cursors.get_column("label")]
-
-        self.ui.factionSelect.clear()
-        [self.ui.factionSelect.addItem(label) for label in factions.get_column("label")]
-
-        self.ui.trapSelect.clear()
-        [self.ui.trapSelect.addItem(label.replace("TRAP_", "").replace("_", " ").title()) for label in traps.get_column("label")]
+        self.ui.cursorSelect.setItems(cursors.get_column("label"))
+        self.ui.factionSelect.setItems(factions.get_column("label"))
+        self.ui.trapSelect.setItems(traps.get_column("label"))
 
     def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
