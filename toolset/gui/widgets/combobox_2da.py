@@ -50,7 +50,7 @@ class ComboBox2DA(QComboBox):
         Returns:
             Row index into the 2DA file.
         """
-        return self.currentData()
+        return 0 if self.currentData() is None else self.currentData()
 
     def onContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self)

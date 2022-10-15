@@ -6,17 +6,39 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>365</width>
-    <height>454</height>
+    <width>674</width>
+    <height>457</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
+     <widget class="ModelRenderer" name="previewRenderer">
+      <property name="minimumSize">
+       <size>
+        <width>300</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::StrongFocus</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QTabWidget" name="tabWidget">
+      <property name="minimumSize">
+       <size>
+        <width>350</width>
+        <height>0</height>
+       </size>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -380,6 +402,19 @@
           </layout>
          </widget>
         </item>
+        <item>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tab">
@@ -715,8 +750,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>365</width>
-     <height>21</height>
+     <width>674</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuNew">
@@ -731,7 +766,14 @@
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionShowPreview"/>
+   </widget>
    <addaction name="menuNew"/>
+   <addaction name="menuView"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -763,8 +805,21 @@
     <string>Exit</string>
    </property>
   </action>
+  <action name="actionShowPreview">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Preview</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>ModelRenderer</class>
+   <extends>QOpenGLWidget</extends>
+   <header location="global">toolset.gui.widgets.renderer.model</header>
+  </customwidget>
   <customwidget>
    <class>LocalizedStringLineEdit</class>
    <extends>QWidget</extends>

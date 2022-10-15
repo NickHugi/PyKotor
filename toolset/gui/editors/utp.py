@@ -18,11 +18,19 @@ from gui.editor import Editor
 from gui.dialogs.inventory import InventoryEditor
 from utils.window import openResourceEditor
 
+from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.pykotor.resource.generics.utd import read_utd
+from toolset.pykotor.tools import placeable
+
 
 class UTPEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
+
+        self.globalSettings: GlobalSettings = GlobalSettings()
+        self._placeables2DA = installation.htGetCache2DA("placeables")
+        self._utp = UTP()
 
         from toolset.uic.editors.utp import Ui_MainWindow
         self.ui = Ui_MainWindow()
@@ -31,8 +39,7 @@ class UTPEditor(Editor):
         self._setupSignals()
         self._setupInstallation(installation)
 
-        self._utp = UTP()
-
+        self.update3dPreview()
         self.new()
 
     def _setupSignals(self) -> None:
@@ -41,9 +48,13 @@ class UTPEditor(Editor):
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
         self.ui.inventoryButton.clicked.connect(self.openInventory)
 
+        self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
+        self.ui.actionShowPreview.triggered.connect(self.togglePreview)
+
     def _setupInstallation(self, installation: HTInstallation):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
+        self.ui.previewRenderer.installation = installation
 
         # Load required 2da files if they have not been loaded already
         required = [HTInstallation.TwoDA_PLACEABLES, HTInstallation.TwoDA_FACTIONS]
@@ -213,9 +224,7 @@ class UTPEditor(Editor):
         else:
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
-    def editConversation(
-            self
-    ) -> None:
+    def editConversation(self) -> None:
         resname = self.ui.conversationEdit.text()
         data, filepath = None, None
 
@@ -258,3 +267,25 @@ class UTPEditor(Editor):
         if inventoryEditor.exec_():
             self._utp.inventory = inventoryEditor.inventory
             self.updateItemCount()
+
+    def togglePreview(self) -> None:
+        self.globalSettings.showPreviewUTP = not self.globalSettings.showPreviewUTP
+        self.update3dPreview()
+
+    def update3dPreview(self) -> None:
+        self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)
+        self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
+
+        if self.globalSettings.showPreviewUTP:
+            self.setFixedSize(674, 457)
+
+            data, _ = self.build()
+            modelname = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+            mdl = self._installation.resource(modelname, ResourceType.MDL)
+            mdx = self._installation.resource(modelname, ResourceType.MDX)
+            if mdl and mdx:
+                self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+            else:
+                self.ui.previewRenderer.clearModel()
+        else:
+            self.setFixedSize(374, 457)
