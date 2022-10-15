@@ -33,7 +33,7 @@ class DoorDialog(QDialog):
         self.ui.xPosSpin.setValue(door.position.x)
         self.ui.yPosSpin.setValue(door.position.y)
         self.ui.zPosSpin.setValue(door.position.z)
-        self.ui.bearingSpin.setValue(door.bearing)
+        self.ui.bearingSpin.setValue(math.degrees(door.bearing))
         self.ui.colorSpin.setValue(0 if door.tweak_color is None else door.tweak_color.rgb_integer())
         self.ui.linkToTagEdit.setText(door.linked_to)
         self.ui.linkToModuleEdit.setText(door.linked_to_module.get())
@@ -51,7 +51,7 @@ class DoorDialog(QDialog):
         self.door.position.x = self.ui.xPosSpin.value()
         self.door.position.y = self.ui.yPosSpin.value()
         self.door.position.z = self.ui.zPosSpin.value()
-        self.door.bearing = self.ui.bearingSpin.value()
+        self.door.bearing = math.radians(self.ui.bearingSpin.value())
         self.door.tweak_color = Color.from_rgb_integer(self.ui.colorSpin.value()) if self.ui.colorSpin.value() != 0 else None
         self.door.linked_to = self.ui.linkToTagEdit.text()
         self.door.linked_to_module = ResRef(self.ui.linkToModuleEdit.text())
