@@ -1,3 +1,5 @@
+from typing import List
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QWidget, QComboBox, QMenu
@@ -8,8 +10,11 @@ from gui.dialogs.modded_value_spinbox import ModdedValueSpinboxDialog
 class ComboBox2DA(QComboBox):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
+
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.onContextMenu)
+
+        self._sortAlphabetically = False
 
     def addItem(self, text: str, row: int = None) -> None:
         """
@@ -23,6 +28,35 @@ class ComboBox2DA(QComboBox):
         if row is None:
             row = self.count()
         super().addItem(text, row)
+
+    def setItems(self, values: List[str], sortAlphabetically: bool = True) -> None:
+        self._sortAlphabetically = sortAlphabetically
+
+        for index, text in enumerate(values):
+            super().addItem(text, index)
+
+        if sortAlphabetically:
+            self.model().sort(0)
+
+    def toggleSort(self) -> None:
+        self.disableSort() if self._sortAlphabetically else self.enableSort()
+
+    def enableSort(self) -> None:
+        self._sortAlphabetically = True
+        self.model().sort(0)
+
+    def disableSort(self) -> None:
+        self._sortAlphabetically = False
+        items = []
+        selected = self.currentData()
+
+        for index in range(self.count()):
+            items.append((self.itemData(index), self.itemText(index)))
+        self.clear()
+
+        for index, text in sorted(items, key=lambda x: x[0]):
+            self.addItem(text, index)
+        self.setCurrentIndex(selected)
 
     def setCurrentIndex(self, rowIn2DA: int) -> None:
         """
@@ -55,6 +89,7 @@ class ComboBox2DA(QComboBox):
     def onContextMenu(self, point: QPoint) -> None:
         menu = QMenu(self)
         menu.addAction("Set Modded Value").triggered.connect(self.openModdedValueDialog)
+        menu.addAction("Toggle Sorting").triggered.connect(self.toggleSort)
         menu.popup(self.mapToGlobal(point))
 
     def openModdedValueDialog(self) -> None:
@@ -64,4 +99,3 @@ class ComboBox2DA(QComboBox):
         dialog = ModdedValueSpinboxDialog(self)
         if dialog.exec_():
             self.setCurrentIndex(dialog.value())
-
