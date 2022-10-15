@@ -43,6 +43,8 @@ class UTCEditor(Editor):
         self.ui.actionSaveUnusedFields.setChecked(self.settings.saveUnusedFields)
         self.ui.actionAlwaysSaveK2Fields.setChecked(self.settings.alwaysSaveK2Fields)
 
+        self.setFixedSize(798, 593)
+
         self.new()
 
     def _setupSignals(self) -> None:
