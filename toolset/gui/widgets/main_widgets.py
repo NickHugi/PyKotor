@@ -341,7 +341,8 @@ class TextureList(MainWindowList):
                 proxyIndex = proxyModel.index(firstIndex.row() + i, 0)
                 sourceIndex = proxyModel.mapToSource(proxyIndex)
                 item = model.itemFromIndex(sourceIndex)
-                items.append(item)
+                if item is not None:
+                    items.append(item)
 
         return items
 
