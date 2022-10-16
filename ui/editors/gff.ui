@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>667</width>
+    <width>668</width>
     <height>486</height>
    </rect>
   </property>
@@ -36,7 +36,7 @@
         <bool>false</bool>
        </attribute>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QGroupBox" name="fieldBox">
@@ -222,6 +222,9 @@
            <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
              <widget class="QDoubleSpinBox" name="floatSpin">
+              <property name="decimals">
+               <number>6</number>
+              </property>
               <property name="minimum">
                <double>-10000000000000000000000.000000000000000</double>
               </property>
@@ -259,6 +262,9 @@
             </item>
             <item row="0" column="1">
              <widget class="QDoubleSpinBox" name="xVec3Spin">
+              <property name="decimals">
+               <number>6</number>
+              </property>
               <property name="minimum">
                <double>-99999999999999991433150857216.000000000000000</double>
               </property>
@@ -276,6 +282,9 @@
             </item>
             <item row="1" column="1">
              <widget class="QDoubleSpinBox" name="yVec3Spin">
+              <property name="decimals">
+               <number>6</number>
+              </property>
               <property name="minimum">
                <double>-99999999999999991433150857216.000000000000000</double>
               </property>
@@ -293,6 +302,9 @@
             </item>
             <item row="2" column="1">
              <widget class="QDoubleSpinBox" name="zVec3Spin">
+              <property name="decimals">
+               <number>6</number>
+              </property>
               <property name="minimum">
                <double>-99999999999999991433150857216.000000000000000</double>
               </property>
@@ -314,6 +326,9 @@
             </item>
             <item row="0" column="1">
              <widget class="QDoubleSpinBox" name="xVec4Spin">
+              <property name="decimals">
+               <number>8</number>
+              </property>
               <property name="minimum">
                <double>-9999999999999999583119736832.000000000000000</double>
               </property>
@@ -331,6 +346,9 @@
             </item>
             <item row="1" column="1">
              <widget class="QDoubleSpinBox" name="yVec4Spin">
+              <property name="decimals">
+               <number>8</number>
+              </property>
               <property name="minimum">
                <double>-9999999999999999583119736832.000000000000000</double>
               </property>
@@ -355,6 +373,9 @@
             </item>
             <item row="2" column="1">
              <widget class="QDoubleSpinBox" name="zVec4Spin">
+              <property name="decimals">
+               <number>8</number>
+              </property>
               <property name="minimum">
                <double>-9999999999999999583119736832.000000000000000</double>
               </property>
@@ -365,6 +386,9 @@
             </item>
             <item row="3" column="1">
              <widget class="QDoubleSpinBox" name="wVec4Spin">
+              <property name="decimals">
+               <number>8</number>
+              </property>
               <property name="minimum">
                <double>-9999999999999999583119736832.000000000000000</double>
               </property>
@@ -542,8 +566,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>667</width>
-     <height>21</height>
+     <width>668</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
