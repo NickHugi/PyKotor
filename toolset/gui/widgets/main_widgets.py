@@ -3,7 +3,7 @@ import time
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from time import sleep
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QPoint, QThread, QTimer
@@ -242,6 +242,7 @@ class TextureList(MainWindowList):
         self.setupSignals()
 
         self._installation: Optional[HTInstallation] = None
+        self._loadedTextures: Set[str] = set()
 
         self.texturesModel = QStandardItemModel()
         self.texturesProxyModel = QSortFilterProxyModel()
@@ -368,10 +369,16 @@ class TextureList(MainWindowList):
         self.requestRefresh.emit()
 
     def onTextureListScrolled(self) -> None:
-        textures = self._installation.textures([item.text() for item in self.visibleItems()], [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA])
+        # Note: Avoid redundantly loading textures that have already been loaded
+        textures = self._installation.textures(
+            [item.text() for item in self.visibleItems() if item.text() not in self._loadedTextures],
+            [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA]
+        )
 
-        for item in self.visibleItems():
-            tpc = textures[item.text()] if item.text() in textures else TPC()
+        # Emit signals to load textures that have not had their icons assigned
+        for item in [item for item in self.visibleItems() if item.text() not in self._loadedTextures]:
+            hasTPC = item.text() in textures and textures[item.text()] is not None
+            tpc = textures[item.text()] if hasTPC else TPC()
 
             task = TextureListTask(item.row(), tpc, item.text())
             self._taskQueue.put(task)
@@ -379,6 +386,7 @@ class TextureList(MainWindowList):
 
     def onIconUpdate(self, item, icon):
         with suppress(RuntimeError):
+            self._loadedTextures.add(item.text())
             item.setIcon(icon)
 
     def onResourceDoubleClicked(self) -> None:
