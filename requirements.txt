@@ -2,8 +2,8 @@ certifi==2021.10.8
 chardet==4.0.0
 charset-normalizer==2.0.10
 idna==3.3
-PyKotor==1.5.3
-PyKotorGL==1.2.1
+PyKotor==1.5.4
+PyKotorGL==1.2.2
 pyperclip==1.8.2
 PyQt5==5.15.6
 PyQt5-Qt5==5.15.2
