@@ -308,9 +308,8 @@ class TextureList(MainWindowList):
         if self.texturesModel.rowCount() == 0:
             return []
 
-        scanWidth = self.ui.resourceList.viewport().width()
-        scanHeight = self.ui.resourceList.viewport().height()
-        print(scanWidth, scanHeight)
+        scanWidth = self.parent().width()
+        scanHeight = self.parent().height()
 
         proxyModel = self.texturesProxyModel
         model = self.texturesModel
