@@ -263,9 +263,11 @@ class TextureList(MainWindowList):
     def setupSignals(self) -> None:
         self.ui.searchEdit.textEdited.connect(self.onFilterStringUpdated)
         self.ui.sectionCombo.currentIndexChanged.connect(self.onSectionChanged)
-        self.ui.resourceList.verticalScrollBar().valueChanged.connect(self.onTextureListScrolled)
         self.ui.resourceList.doubleClicked.connect(self.onResourceDoubleClicked)
         self.iconUpdate.connect(self.onIconUpdate)
+
+        self.ui.resourceList.verticalScrollBar().valueChanged.connect(self.onTextureListScrolled)
+        self.ui.searchEdit.textChanged.connect(self.onTextureListScrolled)
 
     def doTerminations(self) -> None:
         self._scanner.terminate()
@@ -308,6 +310,7 @@ class TextureList(MainWindowList):
 
         scanWidth = self.ui.resourceList.viewport().width()
         scanHeight = self.ui.resourceList.viewport().height()
+        print(scanWidth, scanHeight)
 
         proxyModel = self.texturesProxyModel
         model = self.texturesModel
