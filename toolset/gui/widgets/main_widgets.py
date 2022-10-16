@@ -1,4 +1,5 @@
 import multiprocessing
+import time
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from time import sleep
@@ -367,9 +368,10 @@ class TextureList(MainWindowList):
         self.requestRefresh.emit()
 
     def onTextureListScrolled(self) -> None:
+        textures = self._installation.textures([item.text() for item in self.visibleItems()], [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA])
+
         for item in self.visibleItems():
-            tpc = self._installation.texture(item.text(), [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA])
-            tpc = TPC() if tpc is None else tpc
+            tpc = textures[item.text()] if item.text() in textures else TPC()
 
             task = TextureListTask(item.row(), tpc, item.text())
             self._taskQueue.put(task)
