@@ -19,8 +19,8 @@ from gui.dialogs.inventory import InventoryEditor
 from utils.window import openResourceEditor
 
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.pykotor.resource.generics.utd import read_utd
-from toolset.pykotor.tools import placeable
+from pykotor.resource.generics.utd import read_utd
+from pykotor.tools import placeable
 
 
 class UTPEditor(Editor):

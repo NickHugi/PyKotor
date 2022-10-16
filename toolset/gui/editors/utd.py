@@ -15,7 +15,7 @@ from gui.editor import Editor
 from utils.window import openResourceEditor
 
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.pykotor.tools import door
+from pykotor.tools import door
 
 
 class UTDEditor(Editor):
