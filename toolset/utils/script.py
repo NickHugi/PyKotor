@@ -98,7 +98,10 @@ def compileScript(source: str, tsl: bool) -> bytes:
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
 
     output = process.communicate()[0].decode()
-    output = output[output.index("Compiling: tempscript.nss") + 25:]
+    #output = output[output.index("Compiling: tempscript.nss") + 25:]
+    #i think it works now lmao
+    #it says it couldn't load NwnStdLoader and lookup path is broken but at the same time it compiled the NCS file
+    #print(output[0:])
     error = "Compilation aborted with errors" in output
 
     if error:
