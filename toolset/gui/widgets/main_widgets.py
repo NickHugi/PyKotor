@@ -356,7 +356,7 @@ class TextureList(MainWindowList):
             sleep(0.1)
 
     def onFilterStringUpdated(self) -> None:
-        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text())
+        self.texturesProxyModel.setFilterFixedString(self.ui.searchEdit.text().lower())
 
     def onSectionChanged(self) -> None:
         self.sectionChanged.emit(self.ui.sectionCombo.currentData(QtCore.Qt.UserRole))
