@@ -242,7 +242,7 @@ class TextureList(MainWindowList):
         self.setupSignals()
 
         self._installation: Optional[HTInstallation] = None
-        self._loadedTextures: Set[str] = set()
+        self._scannedTextures: Set[str] = set()
 
         self.texturesModel = QStandardItemModel()
         self.texturesProxyModel = QSortFilterProxyModel()
@@ -371,12 +371,15 @@ class TextureList(MainWindowList):
     def onTextureListScrolled(self) -> None:
         # Note: Avoid redundantly loading textures that have already been loaded
         textures = self._installation.textures(
-            [item.text() for item in self.visibleItems() if item.text() not in self._loadedTextures],
+            [item.text() for item in self.visibleItems() if item.text() not in self._scannedTextures],
             [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA]
         )
 
         # Emit signals to load textures that have not had their icons assigned
-        for item in [item for item in self.visibleItems() if item.text() not in self._loadedTextures]:
+        for item in [item for item in self.visibleItems() if item.text() not in self._scannedTextures]:
+            # Avoid trying to load the same texture multiple times.
+            self._scannedTextures.add(item.text())
+
             hasTPC = item.text() in textures and textures[item.text()] is not None
             tpc = textures[item.text()] if hasTPC else TPC()
 
@@ -386,7 +389,6 @@ class TextureList(MainWindowList):
 
     def onIconUpdate(self, item, icon):
         with suppress(RuntimeError):
-            self._loadedTextures.add(item.text())
             item.setIcon(icon)
 
     def onResourceDoubleClicked(self) -> None:
