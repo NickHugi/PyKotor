@@ -41,3 +41,20 @@ mklink gl /D %SOURCE_DIR%\PyKotorGL\pykotor\gl
 cd %SOURCE_DIR%\HolocronToolset
 mklink pykotor /D %SOURCE_DIR%\PyKotor\pykotor
 ```
+
+## Accessing the GUI Designer
+
+Run the command from your terminal:
+
+```commandline
+pip install qt5-applications
+```
+
+You will then need to navigate to your Python's site-packages folder. You can determine its location through your terminal
+with the following commands:
+
+```commandline
+python -m site --user-site
+```
+
+Then navigate to ```./qt5_applications/Qt/bin``` and open the ```designer.exe``` file.
