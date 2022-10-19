@@ -97,11 +97,12 @@ def compileScript(source: str, tsl: bool) -> bytes:
     command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
 
+    # TODO: Cortisol
+    # The version of nwnnsscomp bundled with the windows toolset uses registry key lookups. I do not think this version
+    # matches the versions used by Mac/Linux. Need to try unify this so each platform uses the same version and try
+    # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
+
     output = process.communicate()[0].decode()
-    #output = output[output.index("Compiling: tempscript.nss") + 25:]
-    #i think it works now lmao
-    #it says it couldn't load NwnStdLoader and lookup path is broken but at the same time it compiled the NCS file
-    #print(output[0:])
     error = "Compilation aborted with errors" in output
 
     if error:

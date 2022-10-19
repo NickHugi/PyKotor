@@ -776,7 +776,7 @@ class EditAnimationDialog(QDialog):
     def animation(self) -> DLGAnimation:
         animation = DLGAnimation()
         animation_id = self.ui.animationSelect.itemData(self.ui.animationSelect.currentIndex())
-        animation.animation_id = 6 if animation_id is None else int(animation_id) #apparently it doesn't save anims because it saves ids as strs
+        animation.animation_id = 6 if animation_id is None else int(animation_id)
         animation.participant = self.ui.participantEdit.text()
         return animation
 
