@@ -22,7 +22,7 @@ class Ui_Dialog(object):
         self.label = QtWidgets.QLabel(Dialog)
         self.label.setObjectName("label")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label)
-        self.animationSelect = QtWidgets.QComboBox(Dialog)
+        self.animationSelect = ComboBox2DA(Dialog)
         self.animationSelect.setObjectName("animationSelect")
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.animationSelect)
         self.label_2 = QtWidgets.QLabel(Dialog)
@@ -48,3 +48,4 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Edit Animation"))
         self.label.setText(_translate("Dialog", "Animation:"))
         self.label_2.setText(_translate("Dialog", "Participant:"))
+from toolset.gui.widgets.combobox_2da import ComboBox2DA

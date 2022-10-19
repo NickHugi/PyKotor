@@ -754,29 +754,14 @@ class EditAnimationDialog(QDialog):
         self.ui.setupUi(self)
 
         animations_list = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
-        for row in animations_list:
-            if row.get_string("name") != "":
-                self.ui.animationSelect.addItem(row.get_string("name"), row.label())
+        self.ui.animationSelect.setItems(animations_list.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
 
-        animationIndex = self._getAnimationIndex(animation.animation_id)
-        if animationIndex is not None:
-            self.ui.animationSelect.setCurrentIndex(animationIndex)
-        else:
-            self.ui.animationSelect.addItem("[Unknown Animation ID: {}".format(animation.animation_id), animation.animation_id)
-            self.ui.animationSelect.setCurrentIndex(self.ui.animationSelect.count() - 1)
-
+        self.ui.animationSelect.setCurrentIndex(animation.animation_id)
         self.ui.participantEdit.setText(animation.participant)
-
-    def _getAnimationIndex(self, animation_id: int):
-        for i in range(self.ui.animationSelect.count()):
-            if self.ui.animationSelect.itemData(i) == animation_id:
-                return i
-        return None
 
     def animation(self) -> DLGAnimation:
         animation = DLGAnimation()
-        animation_id = self.ui.animationSelect.itemData(self.ui.animationSelect.currentIndex())
-        animation.animation_id = 6 if animation_id is None else int(animation_id)
+        animation.animation_id = self.ui.animationSelect.currentIndex()
         animation.participant = self.ui.participantEdit.text()
         return animation
 

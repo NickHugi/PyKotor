@@ -29,7 +29,8 @@ class ComboBox2DA(QComboBox):
             row = self.count()
         super().addItem(text, row)
 
-    def setItems(self, values: List[str], sortAlphabetically: bool = True, cleanupStrings: bool = True) -> None:
+    def setItems(self, values: List[str], sortAlphabetically: bool = True, cleanupStrings: bool = True,
+                 ignoreBlanks: bool = False) -> None:
         self._sortAlphabetically = sortAlphabetically
         self.clear()
 
@@ -38,6 +39,8 @@ class ComboBox2DA(QComboBox):
                 text = text.replace("TRAP_", "")
                 text = text.replace("GENDER_", "")
                 text = text.replace("_", " ")
+            if ignoreBlanks and text == "":
+                continue
             super().addItem(text, index)
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
