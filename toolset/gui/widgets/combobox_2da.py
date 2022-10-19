@@ -40,8 +40,7 @@ class ComboBox2DA(QComboBox):
                 text = text.replace("_", " ")
             super().addItem(text, index)
 
-        '''if sortAlphabetically:
-            self.model().sort(0)'''
+        self.enableSort() if self._sortAlphabetically else self.disableSort()
 
     def toggleSort(self) -> None:
         self.disableSort() if self._sortAlphabetically else self.enableSort()
