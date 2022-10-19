@@ -1,15 +1,10 @@
-from typing import List, Any
+from typing import List
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QWidget
 
-from data.misc import Bind
 from data.settings import Settings
-from gui.widgets.color_edit import ColorEdit
-from gui.widgets.set_bind import SetBindWidget
 from gui.widgets.settings.base import SettingsWidget
-from pykotor.common.misc import Color
 from utils.misc import QtKey, QtMouse
 
 

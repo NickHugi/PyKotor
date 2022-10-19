@@ -4,7 +4,7 @@ from PyQt5.QtCore import QItemSelection, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
 from PyQt5.QtWidgets import QWidget, QMenu, QShortcut, QTreeView
 
-from gui.dialogs.locstring import LocalizedStringDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.jrl import JRL, JRLQuest, JRLEntry, dismantle_jrl, JRLQuestPriority, read_jrl
 from pykotor.resource.type import ResourceType

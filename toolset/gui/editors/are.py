@@ -1,9 +1,9 @@
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple
 
 from PyQt5.QtGui import QPixmap, QColor, QImage
 from PyQt5.QtWidgets import QWidget, QColorDialog, QLabel
 
-from gui.dialogs.locstring import LocalizedStringDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Color, ResRef
 from pykotor.resource.formats.gff import write_gff

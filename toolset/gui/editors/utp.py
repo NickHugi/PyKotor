@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget, QMessageBox
 
-from gui.dialogs.locstring import LocalizedStringDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
@@ -19,7 +19,6 @@ from gui.dialogs.inventory import InventoryEditor
 from utils.window import openResourceEditor
 
 from toolset.gui.widgets.settings.installations import GlobalSettings
-from pykotor.resource.generics.utd import read_utd
 from pykotor.tools import placeable
 
 

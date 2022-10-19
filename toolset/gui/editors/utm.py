@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget
 
-from gui.dialogs.locstring import LocalizedStringDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule

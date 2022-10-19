@@ -4,7 +4,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QWidget, QComboBox, QMenu
 
-from gui.dialogs.modded_value_spinbox import ModdedValueSpinboxDialog
+from gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 
 
 class ComboBox2DA(QComboBox):

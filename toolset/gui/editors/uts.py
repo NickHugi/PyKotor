@@ -6,7 +6,7 @@ from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QWidget, QMessageBox, QListWidgetItem
 
-from gui.dialogs.locstring import LocalizedStringDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts

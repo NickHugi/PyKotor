@@ -5,16 +5,15 @@ from typing import List, Union, Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QMainWindow, QDialog, QFileDialog, QMessageBox, QListWidgetItem, \
-    QShortcut, QLineEdit, QWidget, QPlainTextEdit
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QShortcut, QLineEdit, QWidget, QPlainTextEdit
 
 from gui.dialogs.load_from_module import LoadFromModuleDialog
-from gui.dialogs.save_to_bif import BifSaveDialog, BifSaveOption
-from gui.dialogs.save_to_module import SaveToModuleDialog
+from gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
+from gui.dialogs.save.to_module import SaveToModuleDialog
 from gui.widgets.settings.installations import GlobalSettings
 from pykotor.common.module import Module
 
-from toolset.gui.dialogs.save_to_rim import RimSaveDialog, RimSaveOption
+from gui.dialogs.save.to_rim import RimSaveDialog, RimSaveOption
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.erf import write_erf, read_erf, ERFType

@@ -5,16 +5,18 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelection, QBuffer, QIODevice, QPoint, QItemSelectionModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QBrush
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QPlainTextEdit, QMenu, QMessageBox, QShortcut, QDialog
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QPlainTextEdit, QMenu, QMessageBox, QShortcut
 
-from gui.dialogs.locstring import LocalizedStringDialog
+from gui.dialogs.edit.dialog_animation import EditAnimationDialog
+from gui.dialogs.edit.dialog_model import CutsceneModelDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from gui.editor import Editor
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.dlg import DLG, DLGLink, DLGNode, DLGReply, DLGEntry, dismantle_dlg, \
-    DLGConversationType, DLGComputerType, DLGAnimation, DLGStunt, read_dlg
+    DLGConversationType, DLGComputerType, read_dlg
 from pykotor.resource.type import ResourceType
 
 from data.installation import HTInstallation
@@ -745,40 +747,3 @@ class DLGEditor(Editor):
                 self.ui.animsList.addItem(item)
 
 
-class EditAnimationDialog(QDialog):
-    def __init__(self, parent: QWidget, installation: HTInstallation, animation: DLGAnimation = DLGAnimation()):
-        super().__init__(parent)
-
-        from toolset.uic.dialogs.edit_animation import Ui_Dialog
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
-
-        animations_list = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
-        self.ui.animationSelect.setItems(animations_list.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
-
-        self.ui.animationSelect.setCurrentIndex(animation.animation_id)
-        self.ui.participantEdit.setText(animation.participant)
-
-    def animation(self) -> DLGAnimation:
-        animation = DLGAnimation()
-        animation.animation_id = self.ui.animationSelect.currentIndex()
-        animation.participant = self.ui.participantEdit.text()
-        return animation
-
-
-class CutsceneModelDialog(QDialog):
-    def __init__(self, parent: QWidget, stunt: DLGStunt = DLGStunt()):
-        super().__init__(parent)
-
-        from toolset.uic.dialogs.edit_model import Ui_Dialog
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
-
-        self.ui.participantEdit.setText(stunt.participant)
-        self.ui.stuntEdit.setText(stunt.stunt_model.get())
-
-    def stunt(self) -> DLGStunt:
-        stunt = DLGStunt()
-        stunt.participant = self.ui.participantEdit.text()
-        stunt.stunt_model = ResRef(self.ui.stuntEdit.text())
-        return stunt

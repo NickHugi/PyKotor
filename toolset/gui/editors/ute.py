@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from PyQt5.QtWidgets import QWidget, QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 
-from gui.dialogs.locstring import LocalizedStringDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, dismantle_ute, UTECreature, read_ute

@@ -17,6 +17,7 @@ from gui.windows.main import ToolWindow
 
 
 os.environ['QT_MULTIMEDIA_PREFERRED_PLUGINS'] = 'windowsmediafoundation'
+os.environ['QT_DEBUG_PLUGINS'] = '1'
 
 #os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
