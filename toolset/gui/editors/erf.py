@@ -118,7 +118,7 @@ class ERFEditor(Editor):
         self._revert = data
 
         with open(self._filepath, 'wb') as file:
-            file.write(data)
+            file.write(data[0])
 
     def extractSelected(self) -> None:
         folderpath = QFileDialog.getExistingDirectory(self, "Extract to folder")
