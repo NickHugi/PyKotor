@@ -238,6 +238,12 @@ class GFFStruct:
         """
         return True if label in self._fields else None
 
+    def what_type(
+            self,
+            label: str
+    ) -> GFFFieldType:
+        return self._fields[label].field_type()
+
     def acquire(
             self,
             label: str,

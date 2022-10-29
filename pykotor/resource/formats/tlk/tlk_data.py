@@ -71,6 +71,15 @@ class TLK:
         """
         return self.entries[stringref] if 0 <= stringref < len(self) else None
 
+    def add(
+            self,
+            text: str,
+            sound_resref: str = ""
+    ) -> int:
+        entry = TLKEntry(text, ResRef(sound_resref))
+        self.entries.append(entry)
+        return len(self.entries) - 1
+
     def resize(
             self,
             size: int

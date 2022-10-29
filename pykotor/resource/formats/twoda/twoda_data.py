@@ -20,10 +20,11 @@ class TwoDA:
     BINARY_TYPE = ResourceType.TwoDA
 
     def __init__(
-            self
+            self,
+            headers: List[str] = None
     ):
         self._rows: List[Dict[str, str]] = []
-        self._headers: List[str] = []  # for columns
+        self._headers: List[str] = [] if headers is None else headers  # for columns
         self._labels: List[str] = []  # for rows
 
     def __iter__(
@@ -213,6 +214,38 @@ class TwoDA:
 
         return len(self._rows) - 1
 
+    def copy_row(
+            self,
+            source_row: TwoDARow,
+            row_label: Optional[str] = None,
+            override_cells: Dict[str, Any] = None
+    ) -> int:
+        """
+        Adds a new row to the end of the table with the same values as the source row.
+
+        Args:
+            row_label: The row label. If None then the row label will be its index.
+            cells: A dictionary representing the cells of the new row. A key is the header and value is the cell.
+
+        Returns:
+            The id of the new row.
+        """
+        source_index = self.row_index(source_row)
+
+        self._rows.append({})
+        self._labels.append(str(len(self._rows)) if row_label is None else row_label)
+
+        if override_cells is None:
+            override_cells = {}
+
+        for header in override_cells:
+            override_cells[header] = str(override_cells[header])
+
+        for header in self._headers:
+            self._rows[-1][header] = override_cells[header] if header in override_cells else self.get_cell(source_index, header)
+
+        return len(self._rows) - 1
+
     def get_cell(
             self,
             row_index,
@@ -305,6 +338,24 @@ class TwoDA:
             for i in range(row_count - current_height):
                 self.add_row()
 
+    def column_max(
+            self,
+            header: str
+    ) -> int:
+        """
+        Returns the highest numerical value underneath the specificied column.
+
+        Returns:
+            Highest numerical value underneath the column.
+        """
+        max_found = -1
+        for cell in self.get_column(header):
+            try:
+                max_found = int(cell)
+            except ValueError:
+                ...
+        return max_found + 1
+
 
 class TwoDARow:
     def __init__(
@@ -314,6 +365,12 @@ class TwoDARow:
     ):
         self._row_label: str = row_label
         self._data: Dict[str, str] = row_data
+
+    def __eq__(self, other):
+        if isinstance(other, TwoDARow):
+            return (self._row_label == other._row_label) and (self._data == other._data)
+        else:
+            return NotImplemented
 
     def label(
             self
