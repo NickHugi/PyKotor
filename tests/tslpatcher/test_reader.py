@@ -30,7 +30,7 @@ class TestConfigReader(TestCase):
         ini.read_string(ini_text)
         ini.optionxform = str
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
 
         ConfigReader(ini, tlk).load(config)
         tlk_mod0 = config.patches_tlk.modifiers.pop(0)
@@ -66,7 +66,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -104,7 +104,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -146,7 +146,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -189,7 +189,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -234,7 +234,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -268,7 +268,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -306,7 +306,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -344,7 +344,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -386,7 +386,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -433,7 +433,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -471,7 +471,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -514,7 +514,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -554,7 +554,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -593,7 +593,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -636,7 +636,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -688,7 +688,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -726,7 +726,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -769,7 +769,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
@@ -810,7 +810,7 @@ class TestConfigReader(TestCase):
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        config = PatcherConfig("", "")
+        config = PatcherConfig()
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker

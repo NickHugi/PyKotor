@@ -1,4 +1,7 @@
+from configparser import ConfigParser
 from typing import List, Dict
+
+from pykotor.common.stream import BinaryReader
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
@@ -19,24 +22,20 @@ class PatcherConfig:
         patches_2da: Map Patcher Token (key) to Changes class (value).
     """
 
-    def __init__(self, input_path: str, game_path: str):
-        self.game_path: str = game_path
-        self.input_path: str = input_path
-        self.output_path: str = self.game_path
-        #self.installation: Installation = Installation(self.game_path)
-
-        self.memory: PatcherMemory = PatcherMemory()
+    def __init__(self):
         self.patches_2da: List[Modifications2DA] = []
         self.patches_gff: List[ModificationsGFF] = []
         self.patches_ssf: List[ModificationsSSF] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
-    def load(self) -> None:
+    def load(self, ini_text: str, append: TLK) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
-        ConfigReader().load(self)
 
-    def apply_tlk(self, append: TLK, dialog: TLK) -> TLK:
-        ...
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        ConfigReader(ini, append).load(self)
 
     def apply(self) -> None:
         append_tlk = read_tlk(self.input_path + "/append.tlk")
@@ -55,3 +54,34 @@ class PatcherConfig:
 
         for patch in self.patches_gff:
             ...
+
+
+class ModInstaller:
+    def __init__(self, mod_path: str, game_path: str):
+        self.game_path: str = game_path
+        self.mod_path: str = mod_path
+        self.output_path: str = game_path
+
+    def install(self) -> None:
+        append_tlk = read_tlk(self.mod_path + "/append.tlk")
+        ini_text = BinaryReader.load_file(self.mod_path + "/changes.ini").decode()
+
+        installation = Installation(self.game_path)
+        memory = PatcherMemory()
+        twodas = {}
+
+        config = PatcherConfig()
+        config.load(ini_text, append_tlk)
+
+        # Apply changes to dialog.tlk
+        dialog_tlk = read_tlk(installation.path() + "dialog.tlk")
+        config.patches_tlk.apply(dialog_tlk, memory)
+        write_tlk(dialog_tlk, self.output_path + "/output.tlk")
+
+        # Apply changes to 2DA files
+        for patch in config.patches_2da:
+            resname, restype = ResourceIdentifier.from_path(patch.filename)
+            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+            twoda = twodas[patch.filename] = read_2da(search.data)
+            patch.apply(twoda, memory)
+            write_2da(twoda, "{}/{}".format(installation.override_path(), patch.filename))
