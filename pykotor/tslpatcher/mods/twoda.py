@@ -382,16 +382,16 @@ class AddColumn2DA(Modify2DA):
             identifier: str,
             header: str,
             default: str,
-            index_insert: Dict[int, str],
-            label_insert: Dict[str, str],
+            index_insert: Dict[int, RowValue],
+            label_insert: Dict[str, RowValue],
             store_2da: Dict[int, str] = None
     ):
         super().__init__()
         self.identifier: str = identifier
         self.header: str = header
         self.default: str = default
-        self.index_insert: Dict[int, str] = index_insert
-        self.label_insert: Dict[str, str] = label_insert
+        self.index_insert: Dict[int, RowValue] = index_insert
+        self.label_insert: Dict[str, RowValue] = label_insert
         self.store_2da: Dict[int, str] = {} if store_2da is None else store_2da
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
@@ -400,11 +400,11 @@ class AddColumn2DA(Modify2DA):
             row.set_string(self.header, self.default)
 
         for row_index, value in self.index_insert.items():
-            value = self._check_memory(value, memory)
+            value = value.value(memory, twoda, None)
             twoda.get_row(row_index).set_string(self.header, value)
 
         for row_label, value in self.label_insert.items():
-            value = self._check_memory(value, memory)
+            value = value.value(memory, twoda, None)
             twoda.find_row(row_label).set_string(self.header, value)
 
         for token_id, value in self.store_2da.items():
