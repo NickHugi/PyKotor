@@ -77,3 +77,11 @@ class TestTwoDA(TestCase):
         else:
             self.assertRaises(IsADirectoryError, write_2da, TwoDA(), ".", ResourceType.TwoDA)
         self.assertRaises(ValueError, write_2da, TwoDA(), ".", ResourceType.INVALID)
+
+    def test_row_max(self):
+        twoda = TwoDA()
+        twoda.add_row("0")
+        twoda.add_row("1")
+        twoda.add_row("2")
+
+        self.assertEqual("3", twoda.label_max())

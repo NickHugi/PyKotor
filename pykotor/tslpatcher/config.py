@@ -6,6 +6,7 @@ from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
+from pykotor.tslpatcher.mods.ssf import ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
@@ -22,11 +23,12 @@ class PatcherConfig:
         self.game_path: str = game_path
         self.input_path: str = input_path
         self.output_path: str = self.game_path
-        self.installation: Installation = Installation(self.game_path)
+        #self.installation: Installation = Installation(self.game_path)
 
         self.memory: PatcherMemory = PatcherMemory()
         self.patches_2da: List[Modifications2DA] = []
         self.patches_gff: List[ModificationsGFF] = []
+        self.patches_ssf: List[ModificationsSSF] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
     def load(self) -> None:

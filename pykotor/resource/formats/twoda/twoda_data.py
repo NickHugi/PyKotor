@@ -356,6 +356,17 @@ class TwoDA:
                 ...
         return max_found + 1
 
+    def label_max(
+            self
+    ) -> int:
+        max_found = -1
+        for label in self.get_labels():
+            try:
+                max_found = max(int(label), max_found)
+            except ValueError:
+                ...
+        return max_found + 1
+
 
 class TwoDARow:
     def __init__(

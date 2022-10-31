@@ -57,7 +57,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueConstant("X")}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueConstant("X")}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "X"], twoda.get_column("Col1"))
@@ -71,7 +71,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_LABEL, "1"), {"Col1": RowValueConstant("X")}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_LABEL, "1"), {"Col1": RowValueConstant("X")}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "X"], twoda.get_column("Col1"))
@@ -85,7 +85,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.LABEL_COLUMN, "d"), {"Col2": RowValueConstant("X")}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.LABEL_COLUMN, "d"), {"Col2": RowValueConstant("X")}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "d"], twoda.get_column("label"))
@@ -101,8 +101,8 @@ class TestManipulate2DA(TestCase):
         memory.memory_str[0] = 0
         memory.memory_str[1] = 1
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValueTLKMemory(0)}))
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueTLKMemory(1)}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValueTLKMemory(0)}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueTLKMemory(1)}))
         config.apply(twoda, memory)
 
         self.assertEqual(["0", "1"], twoda.get_column("Col1"))
@@ -118,8 +118,8 @@ class TestManipulate2DA(TestCase):
         memory.memory_2da[0] = "mem0"
         memory.memory_2da[1] = "mem1"
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValue2DAMemory(0)}))
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValue2DAMemory(1)}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValue2DAMemory(0)}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValue2DAMemory(1)}))
         config.apply(twoda, memory)
 
         self.assertEqual(["mem0", "mem1"], twoda.get_column("Col1"))
@@ -133,8 +133,8 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValueHigh("Col1")}))
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col2": RowValueHigh("Col2")}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValueHigh("Col1")}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col2": RowValueHigh("Col2")}))
         config.apply(twoda, memory)
 
         self.assertEqual(["3", "2"], twoda.get_column("Col1"))
@@ -148,7 +148,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {}, store_2da={5: RowValueRowIndex()}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {}, store_2da={5: RowValueRowIndex()}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "d"], twoda.get_column("Col1"))
@@ -163,7 +163,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {}, store_2da={5: RowValueRowLabel()}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {}, store_2da={5: RowValueRowLabel()}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "d"], twoda.get_column("Col1"))
@@ -178,7 +178,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {}, store_2da={5: RowValueRowCell("label")}))
+        config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {}, store_2da={5: RowValueRowCell("label")}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "d"], twoda.get_column("label"))
@@ -195,8 +195,8 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", None, None, {}))
-        config.rows.append(AddRow2DA("", None, None, {}))
+        config.modifiers.append(AddRow2DA("", None, None, {}))
+        config.modifiers.append(AddRow2DA("", None, None, {}))
         config.apply(twoda, memory)
 
         self.assertEqual(3, twoda.get_height())
@@ -210,7 +210,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", None, "r1", {}))
+        config.modifiers.append(AddRow2DA("", None, "r1", {}))
         config.apply(twoda, memory)
 
         self.assertEqual(1, twoda.get_height())
@@ -223,7 +223,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", "Col1", None, {"Col1": RowValueConstant("123"), "Col2": RowValueConstant("ABC")}))
+        config.modifiers.append(AddRow2DA("", "Col1", None, {"Col1": RowValueConstant("123"), "Col2": RowValueConstant("ABC")}))
         config.apply(twoda, memory)
 
         self.assertEqual(1, twoda.get_height())
@@ -237,7 +237,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", "Col1", "2", {"Col1": RowValueConstant("g"), "Col2": RowValueConstant("h"), "Col3": RowValueConstant("i")}))
+        config.modifiers.append(AddRow2DA("", "Col1", "2", {"Col1": RowValueConstant("g"), "Col2": RowValueConstant("h"), "Col3": RowValueConstant("i")}))
         config.apply(twoda, memory)
 
         self.assertEqual(3, twoda.get_height())
@@ -255,7 +255,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", "Col1", "3", {"Col1": RowValueConstant("g"), "Col2": RowValueConstant("X"), "Col3": RowValueConstant("Y")}))
+        config.modifiers.append(AddRow2DA("", "Col1", "3", {"Col1": RowValueConstant("g"), "Col2": RowValueConstant("X"), "Col3": RowValueConstant("Y")}))
         config.apply(twoda, memory)
 
         self.assertEqual(3, twoda.get_height())
@@ -270,7 +270,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", "Col4", "2", {}))
+        config.modifiers.append(AddRow2DA("", "Col4", "2", {}))
         # config.apply(twoda, memory)
         # TODO
 
@@ -281,8 +281,8 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", "", "2", {"Col1": RowValueConstant("g"), "Col2": RowValueConstant("h"), "Col3": RowValueConstant("i")}))
-        config.rows.append(AddRow2DA("", None, "3", {"Col1": RowValueConstant("j"), "Col2": RowValueConstant("k"), "Col3": RowValueConstant("l")}))
+        config.modifiers.append(AddRow2DA("", "", "2", {"Col1": RowValueConstant("g"), "Col2": RowValueConstant("h"), "Col3": RowValueConstant("i")}))
+        config.modifiers.append(AddRow2DA("", None, "3", {"Col1": RowValueConstant("j"), "Col2": RowValueConstant("k"), "Col3": RowValueConstant("l")}))
         config.apply(twoda, memory)
 
         self.assertEqual(4, twoda.get_height())
@@ -297,7 +297,7 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", "", "2", {"Col1": RowValueHigh("Col1")}))
+        config.modifiers.append(AddRow2DA("", "", "2", {"Col1": RowValueHigh("Col1")}))
         config.apply(twoda, memory)
 
         self.assertEqual(["1", "2", "3"], twoda.get_column("Col1"))
@@ -310,8 +310,8 @@ class TestManipulate2DA(TestCase):
         memory.memory_str[1] = 6
 
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", None, "0", {"Col1": RowValueTLKMemory(0)}))
-        config.rows.append(AddRow2DA("", None, "1", {"Col1": RowValueTLKMemory(1)}))
+        config.modifiers.append(AddRow2DA("", None, "0", {"Col1": RowValueTLKMemory(0)}))
+        config.modifiers.append(AddRow2DA("", None, "1", {"Col1": RowValueTLKMemory(1)}))
         config.apply(twoda, memory)
 
         self.assertEqual(["5", "6"], twoda.get_column("Col1"))
@@ -324,8 +324,8 @@ class TestManipulate2DA(TestCase):
         memory.memory_2da[1] = "6"
 
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", None, "0", {"Col1":  RowValue2DAMemory(0)}))
-        config.rows.append(AddRow2DA("", None, "1", {"Col1":  RowValue2DAMemory(1)}))
+        config.modifiers.append(AddRow2DA("", None, "0", {"Col1":  RowValue2DAMemory(0)}))
+        config.modifiers.append(AddRow2DA("", None, "1", {"Col1":  RowValue2DAMemory(1)}))
         config.apply(twoda, memory)
 
         self.assertEqual(["5", "6"], twoda.get_column("Col1"))
@@ -336,8 +336,8 @@ class TestManipulate2DA(TestCase):
 
         memory = PatcherMemory()
         config = Modifications2DA("")
-        config.rows.append(AddRow2DA("", "Col1", "1", {"Col1": RowValueConstant("X")}, store_2da={5: RowValueRowIndex()}))
-        config.rows.append(AddRow2DA("", None, "2", {"Col1": RowValueConstant("Y")}, store_2da={6: RowValueRowIndex()}))
+        config.modifiers.append(AddRow2DA("", "Col1", "1", {"Col1": RowValueConstant("X")}, store_2da={5: RowValueRowIndex()}))
+        config.modifiers.append(AddRow2DA("", None, "2", {"Col1": RowValueConstant("Y")}, store_2da={6: RowValueRowIndex()}))
         config.apply(twoda, memory)
 
         self.assertEqual(2, twoda.get_height())
@@ -355,7 +355,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValueConstant("X")}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValueConstant("X")}))
         config.apply(twoda, memory)
 
         self.assertEqual(3, twoda.get_height())
@@ -370,7 +370,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_LABEL, "1"), None, None, {"Col2": RowValueConstant("X")}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_LABEL, "1"), None, None, {"Col2": RowValueConstant("X")}))
         config.apply(twoda, memory)
 
         self.assertEqual(3, twoda.get_height())
@@ -384,7 +384,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), "Col1", None, {"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), "Col1", None, {"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")}))
         config.apply(twoda, memory)
 
         self.assertEqual(2, twoda.get_height())
@@ -399,7 +399,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), "Col1", None, {"Col1": RowValueConstant("a"), "Col2": RowValueConstant("X")}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), "Col1", None, {"Col1": RowValueConstant("a"), "Col2": RowValueConstant("X")}))
         config.apply(twoda, memory)
 
         self.assertEqual(1, twoda.get_height())
@@ -414,8 +414,8 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")}))
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), "", "r2", {"Col1": RowValueConstant("e"), "Col2": RowValueConstant("f")}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), "", "r2", {"Col1": RowValueConstant("e"), "Col2": RowValueConstant("f")}))
         config.apply(twoda, memory)
 
         self.assertEqual(3, twoda.get_height())
@@ -432,7 +432,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, "r2", {}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, "r2", {}))
         config.apply(twoda, memory)
 
         self.assertEqual("r2", twoda.get_label(2))
@@ -447,7 +447,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValueHigh("Col2")}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValueHigh("Col2")}))
         config.apply(twoda, memory)
 
         self.assertEqual(3, twoda.get_height())
@@ -463,7 +463,7 @@ class TestManipulate2DA(TestCase):
         memory.memory_str[0] = 5
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValueTLKMemory(0)}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValueTLKMemory(0)}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -478,7 +478,7 @@ class TestManipulate2DA(TestCase):
         memory.memory_2da[0] = "5"
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValue2DAMemory(0)}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {"Col2": RowValue2DAMemory(0)}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -492,7 +492,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {}, store_2da={5: RowValueRowIndex()}))
+        config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, None, {}, store_2da={5: RowValueRowIndex()}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -509,7 +509,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddColumn2DA("", "Col3", "", {}, {}, {}))
+        config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {}, {}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
@@ -524,7 +524,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddColumn2DA("", "Col3", "X", {}, {}, {}))
+        config.modifiers.append(AddColumn2DA("", "Col3", "X", {}, {}, {}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
@@ -539,7 +539,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddColumn2DA("", "Col3", "", {0: "X"}, {}, {}))
+        config.modifiers.append(AddColumn2DA("", "Col3", "", {0: "X"}, {}, {}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
@@ -554,7 +554,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddColumn2DA("", "Col3", "", {}, {"1": "X"}, {}))
+        config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {"1": "X"}, {}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
@@ -569,7 +569,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddColumn2DA("", "Col3", "", {0: "X", 1: "Y"}, {}, store_2da={0: "I0"}))
+        config.modifiers.append(AddColumn2DA("", "Col3", "", {0: "X", 1: "Y"}, {}, store_2da={0: "I0"}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
@@ -585,7 +585,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
 
         config = Modifications2DA("")
-        config.rows.append(AddColumn2DA("", "Col3", "", {0: "X", 1: "Y"}, {}, store_2da={0: "L1"}))
+        config.modifiers.append(AddColumn2DA("", "Col3", "", {0: "X", 1: "Y"}, {}, store_2da={0: "L1"}))
         config.apply(twoda, memory)
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))

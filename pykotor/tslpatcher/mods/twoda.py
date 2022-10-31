@@ -50,10 +50,10 @@ class Target:
 class Modifications2DA:
     def __init__(self, filename: str):
         self.filename: str = filename
-        self.rows: List[Modify2DA] = []
+        self.modifiers: List[Modify2DA] = []
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
-        for row in self.rows:
+        for row in self.modifiers:
             row.apply(twoda, memory)
 
 
@@ -89,11 +89,15 @@ class RowValueTLKMemory(RowValue):
 
 
 class RowValueHigh(RowValue):
-    def __init__(self, column: str):
-        self.column: str = column
+    """
+    Attributes:
+        column: Column to get the max integer from. If None it takes it from the Row Label.
+    """
+    def __init__(self, column: Optional[str]):
+        self.column: Optional[str] = column
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
-        return str(twoda.column_max(self.column))
+        return str(twoda.column_max(self.column)) if self.column is not None else twoda.label_max()
 
 
 class RowValueRowIndex(RowValue):
