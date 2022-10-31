@@ -68,6 +68,12 @@ class ConfigReader:
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
             modification = AddRow2DA(identifier, exclusive_column, row_label, cells, store_2da, store_tlk)
+        elif key.startswith("CopyRow"):
+            target = self.target_2da(identifier, modifiers)
+            exclusive_column = self.exclusive_column_2da(modifiers)
+            row_label = self.row_label_2da(identifier, modifiers)
+            cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
+            modification = CopyRow2DA(identifier, target, exclusive_column, row_label, cells, store_2da, store_tlk)
         else:
             raise WarningException()
 

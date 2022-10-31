@@ -4,7 +4,7 @@ from unittest import TestCase
 from pykotor.resource.formats.tlk import TLK
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.mods.twoda import ChangeRow2DA, TargetType, RowValueRowIndex, RowValueRowLabel, RowValueRowCell, \
-    RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA
+    RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA, CopyRow2DA
 from pykotor.tslpatcher.reader import ConfigReader
 
 
@@ -225,9 +225,7 @@ class TestConfigReader(TestCase):
             AddRow1=add_row_1
 
             [add_row_0]
-            RowIndex=1
             [add_row_1]
-            RowLabel=1
             """
 
         tlk = TLK()
@@ -280,7 +278,7 @@ class TestConfigReader(TestCase):
         self.assertEqual("label", mod_0.exclusive_column)
 
         # noinspection PyTypeChecker
-        mod_1: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddRow2DA)
         self.assertEqual("add_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.exclusive_column)
@@ -350,7 +348,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, tlk).load(config)
 
         # noinspection PyTypeChecker
-        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
 
         # noinspection PyTypeChecker
         store_0a: RowValueRowIndex = mod_0.store_2da[0]
@@ -409,3 +407,253 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
     # endregion Add Row
+
+    # region 2DA: Copy Row
+    def test_2da_copyrow_identifier(self):
+        """Test that identifier is being loaded correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            CopyRow0=copy_row_0
+            CopyRow1=copy_row_1
+
+            [copy_row_0]
+            RowIndex=1
+            [copy_row_1]
+            RowLabel=1
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertEqual("copy_row_0", mod_0.identifier)
+
+        # noinspection PyTypeChecker
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertEqual("copy_row_1", mod_1.identifier)
+
+    def test_2da_copyrow_target(self):
+        """Test that target values (line to modify) are loading correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            CopyRow0=copy_row_0
+            CopyRow1=copy_row_1
+            CopyRow2=copy_row_2
+
+            [copy_row_0]
+            RowIndex=1
+            [copy_row_1]
+            RowLabel=2
+            [copy_row_2]
+            LabelIndex=3
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertEqual(TargetType.ROW_INDEX, mod_0.target.target_type)
+        self.assertEqual(1, mod_0.target.value)
+
+        # noinspection PyTypeChecker
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertEqual(TargetType.ROW_LABEL, mod_1.target.target_type)
+        self.assertEqual("2", mod_1.target.value)
+
+        # noinspection PyTypeChecker
+        mod_2: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertEqual(TargetType.LABEL_COLUMN, mod_2.target.target_type)
+        self.assertEqual("3", mod_2.target.value)
+
+    def test_2da_copyrow_exclusivecolumn(self):
+        """Test that exclusive column property is being loaded correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            CopyRow0=copy_row_0
+            CopyRow1=copy_row_1
+
+            [copy_row_0]
+            RowIndex=0
+            ExclusiveColumn=label
+            [copy_row_1]
+            RowIndex=0
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, CopyRow2DA)
+        self.assertEqual("copy_row_0", mod_0.identifier)
+        self.assertEqual("label", mod_0.exclusive_column)
+
+        # noinspection PyTypeChecker
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertIsInstance(mod_1, CopyRow2DA)
+        self.assertEqual("copy_row_1", mod_1.identifier)
+        self.assertIsNone(mod_1.exclusive_column)
+
+    def test_2da_copyrow_rowlabel(self):
+        """Test that row label property is being loaded correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            CopyRow0=copy_row_0
+            CopyRow1=copy_row_1
+
+            [copy_row_0]
+            RowIndex=0
+            RowLabel=123
+            [copy_row_1]
+            RowIndex=0
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, CopyRow2DA)
+        self.assertEqual("copy_row_0", mod_0.identifier)
+        self.assertEqual("123", mod_0.row_label)
+
+        # noinspection PyTypeChecker
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertIsInstance(mod_1, CopyRow2DA)
+        self.assertEqual("copy_row_1", mod_1.identifier)
+        self.assertIsNone(mod_1.row_label)
+
+    def test_2da_copyrow_store2da(self):
+        """Test that 2DAMEMORY# data will be saved correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            CopyRow0=copy_row_0
+
+            [copy_row_0]
+            RowLabel=0
+            2DAMEMORY0=RowIndex
+            2DAMEMORY1=RowLabel
+            2DAMEMORY2=label
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+
+        # noinspection PyTypeChecker
+        store_0a: RowValueRowIndex = mod_0.store_2da[0]
+        self.assertIsInstance(store_0a, RowValueRowIndex)
+
+        # noinspection PyTypeChecker
+        store_0b: RowValueRowLabel = mod_0.store_2da[1]
+        self.assertIsInstance(store_0b, RowValueRowLabel)
+
+        # noinspection PyTypeChecker
+        store_0c: RowValueRowCell = mod_0.store_2da[2]
+        self.assertIsInstance(store_0c, RowValueRowCell)
+        self.assertEqual("label", store_0c.column)
+
+    def test_2da_copyrow_cells(self):
+        """Test that cells will be assigned properly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            CopyRow0=copy_row_0
+
+            [copy_row_0]
+            RowLabel=0
+            label=Test123
+            dialog=StrRef4
+            appearance=2DAMEMORY5
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+
+        # noinspection PyTypeChecker
+        cell_0_label: RowValueConstant = mod_0.cells["label"]
+        self.assertIsInstance(cell_0_label, RowValueConstant)
+        self.assertEqual("Test123", cell_0_label.string)
+
+        # noinspection PyTypeChecker
+        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]
+        self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
+        self.assertEqual(4, cell_0_dialog.token_id)
+
+        # noinspection PyTypeChecker
+        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
+        self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
+        self.assertEqual(5, cell_0_appearance.token_id)
+    # endregion
