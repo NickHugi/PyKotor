@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from copy import copy
 from enum import IntEnum
 from typing import Dict, List, Optional, Union, Tuple, Any
@@ -50,16 +50,93 @@ class Target:
 class Modifications2DA:
     def __init__(self, filename: str):
         self.filename: str = filename
-        self.rows: List[ManipulateRow2DA] = []
+        self.rows: List[Modify2DA] = []
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         for row in self.rows:
             row.apply(twoda, memory)
 
 
-class ManipulateRow2DA(ABC):
+# region Value Returners
+class RowValue(ABC):
+    @abstractmethod
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        ...
+
+
+class RowValueConstant(RowValue):
+    def __init__(self, string: str):
+        self.string = string
+
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        return self.string
+
+
+class RowValue2DAMemory(RowValue):
+    def __init__(self, token_id: int):
+        self.token_id = token_id
+
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        return memory.memory_2da[self.token_id]
+
+
+class RowValueTLKMemory(RowValue):
+    def __init__(self, token_id: int):
+        self.token_id = token_id
+
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        return str(memory.memory_str[self.token_id])
+
+
+class RowValueHigh(RowValue):
+    def __init__(self, column: str):
+        self.column: str = column
+
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        return str(twoda.column_max(self.column))
+
+
+class RowValueRowIndex(RowValue):
     def __init__(self):
         ...
+
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        return str(twoda.row_index(row)) if row is not None else ""
+
+
+class RowValueRowLabel(RowValue):
+    def __init__(self):
+        ...
+
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        return row.label()
+
+
+class RowValueRowCell(RowValue):
+    def __init__(self, column: str):
+        self.column: str = column
+
+    def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
+        return row.get_string(self.column) if row is not None else ""
+# endregion
+
+
+# region Modify 2DA
+class Modify2DA(ABC):
+    def __init__(self):
+        ...
+
+    def _unpack(
+            self,
+            cells: Dict[str, RowValue],
+            memory: PatcherMemory,
+            twoda: TwoDA,
+            row: TwoDARow
+    ) -> Dict[str, str]:
+        unpacked = {}
+        for column, value in cells.items():
+            unpacked[column] = value.value(memory, twoda, row)
+        return unpacked
 
     def _split_modifiers(
             self,
@@ -118,7 +195,7 @@ class ManipulateRow2DA(ABC):
         ...
 
 
-class ChangeRow2DA(ManipulateRow2DA):
+class ChangeRow2DA(Modify2DA):
     """
     Changes an existing row.
 
@@ -128,11 +205,20 @@ class ChangeRow2DA(ManipulateRow2DA):
         target: The row to change.
         modifiers: For the row, sets a cell under column KEY to have the text VALUE.
     """
-    def __init__(self, identifier: str, target: Target, modifiers: Dict[str, str]):
+    def __init__(
+            self,
+            identifier: str,
+            target: Target,
+            cells: Dict[str, RowValue],
+            store_2da: Dict[int, RowValue] = None,
+            store_tlk: Dict[int, RowValue] = None,
+    ):
         super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
-        self.modifiers: Dict[str, str] = modifiers
+        self.cells: Dict[str, RowValue] = cells
+        self.store_2da: Dict[int, RowValue] = {} if store_2da is None else store_2da
+        self.store_tlk: Dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: Optional[TwoDARow] = None
 
@@ -142,75 +228,71 @@ class ChangeRow2DA(ManipulateRow2DA):
         if source_row is None:
             raise WarningException()
 
-        new_values, memory_values, row_label, new_row_label = self._split_modifiers(self.modifiers, memory, twoda)
-        source_row.update_values(new_values)
-        self._row = source_row
+        cells = self._unpack(self.cells, memory, twoda, source_row)
+        source_row.update_values(cells)
 
-        for index, value in memory_values.items():
-            if value == "RowIndex":
-                value = twoda.row_index(source_row)
-            elif value == "RowLabel":
-                value = source_row.label()
-            elif value in twoda.get_headers():
-                value = source_row.get_string(value)
-            elif value.startswith("StrRef"):
-                token = int(value[:6])
-                value = memory.memory_str[token]
-            elif value.startswith("2DAMEMORY"):
-                token = int(value[:9])
-                value = memory.memory_2da[token]
+        for token_id, value in self.store_2da.items():
+            memory.memory_2da[token_id] = value.value(memory, twoda, source_row)
 
-            memory.memory_2da[index] = value
+        for token_id, value in self.store_tlk.items():
+            memory.memory_str[token_id] = int(value.value(memory, twoda, source_row))
 
 
-class AddRow2DA(ManipulateRow2DA):
+class AddRow2DA(Modify2DA):
     """
     Adds a new row.
 
     Attributes:
         modifiers: For the row, sets a cell under column KEY to have the text VALUE.
     """
-    def __init__(self, identifier: str, exclusive_column: Optional[str], modifiers: Dict[str, str]):
+    def __init__(
+            self,
+            identifier: str,
+            exclusive_column: Optional[str],
+            row_label: Optional[str],
+            cells: Dict[str, RowValue],
+            store_2da: Dict[int, RowValue] = None,
+            store_tlk: Dict[int, RowValue] = None,
+    ):
         super().__init__()
         self.identifier: str = identifier
-        self.exclusive_column: Optional[str] = exclusive_column
-        self.modifiers: Dict[str, str] = modifiers
+        self.exclusive_column: Optional[str] = exclusive_column if exclusive_column != "" else None
+        self.row_label: str = row_label
+        self.cells: Dict[str, RowValue] = cells
+        self.store_2da: Dict[int, RowValue] = {} if store_2da is None else store_2da
+        self.store_tlk: Dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: Optional[TwoDARow] = None
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         target_row = None
-        self.exclusive_column = self.exclusive_column if self.exclusive_column != "" else None
 
         if self.exclusive_column is not None:
-            if self.exclusive_column not in self.modifiers:
+            if self.exclusive_column not in self.cells:
                 raise WarningException("Exclusive column {} does not exists".format(self.exclusive_column))
-            exclusive_value = self.modifiers[self.exclusive_column]
+
+            exclusive_value = self.cells[self.exclusive_column].value(memory, twoda, None)
             for row in twoda:
                 if row.get_string(self.exclusive_column) == exclusive_value:
                     target_row = row
 
-        new_values, memory_values, row_label, new_row_label = self._split_modifiers(self.modifiers, memory, twoda)
-
         if target_row is None:
-            index = twoda.add_row(row_label, new_values)
+            row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
+            index = twoda.add_row(row_label, {})
             self._row = target_row = twoda.get_row(index)
+            target_row.update_values(self._unpack(self.cells, memory, twoda, target_row))
         else:
-            target_row.update_values(new_values)
+            cells = self._unpack(self.cells, memory, twoda, target_row)
+            target_row.update_values(cells)
 
-        for index, value in memory_values.items():
-            if value == "RowIndex":
-                value = twoda.row_index(target_row)
-            elif value.startswith("StrRef"):
-                token = int(value[:6])
-                value = memory.memory_str[token]
-            elif value.startswith("2DAMEMORY"):
-                token = int(value[:9])
-                value = memory.memory_2da[token]
-            memory.memory_2da[index] = value
+        for token_id, value in self.store_2da.items():
+            memory.memory_2da[token_id] = value.value(memory, twoda, target_row)
+
+        for token_id, value in self.store_tlk.items():
+            memory.memory_str[token_id] = int(value.value(memory, twoda, target_row))
 
 
-class CopyRow2DA(ManipulateRow2DA):
+class CopyRow2DA(Modify2DA):
     """
     Copies the the row if the exclusive_column value doesn't already exist. If it does, then it simply modifies the
     existing line.
@@ -221,66 +303,64 @@ class CopyRow2DA(ManipulateRow2DA):
         exclusive_column: Modify existing line if the same value already exists at this column.
         modifiers: For the row, sets a cell under column KEY to have the text VALUE.
     """
-    def __init__(self, identifier: str, target: Target, exclusive_column: Optional[str], modifiers: Dict[str, str]):
+    def __init__(
+            self,
+            identifier: str,
+            target: Target,
+            exclusive_column: Optional[str],
+            row_label: Optional[str],
+            cells: Dict[str, RowValue],
+            store_2da: Dict[int, RowValue] = None,
+            store_tlk: Dict[int, RowValue] = None,
+    ):
         super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
-        self.exclusive_column: Optional[str] = exclusive_column
-        self.modifiers: Dict[str, str] = modifiers
+        self.exclusive_column: Optional[str] = exclusive_column if exclusive_column != "" else None
+        self.row_label: str = row_label
+        self.cells: Dict[str, RowValue] = cells
+        self.store_2da: Dict[int, RowValue] = {} if store_2da is None else store_2da
+        self.store_tlk: Dict[int, RowValue] = {} if store_tlk is None else store_tlk
 
         self._row: Optional[TwoDARow] = None
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         source_row = self.target.search(twoda)
+        target_row = None
+        row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
 
         if source_row is None:
             raise WarningException()
 
-        # Check if the row we want already exists.
-        target_row = None
-        self.exclusive_column = self.exclusive_column if self.exclusive_column != "" else None
         if self.exclusive_column is not None:
-            if self.exclusive_column not in self.modifiers:
+            if self.exclusive_column not in self.cells:
                 raise WarningException("Exclusive column {} does not exists".format(self.exclusive_column))
-            exclusive_value = self.modifiers[self.exclusive_column]
+
+            exclusive_value = self.cells[self.exclusive_column].value(memory, twoda, None)
             for row in twoda:
                 if row.get_string(self.exclusive_column) == exclusive_value:
                     target_row = row
 
-        # Determine the row label for the copied row.
-        # Has no effect if it updates an existing row instead.
-        new_values, memory_values, row_label, new_row_label = self._split_modifiers(self.modifiers, memory, twoda)
-        if row_label is None:
-            row_label = str(twoda.get_height())
-        if new_row_label is not None:
-            row_label = new_row_label
-
         if target_row is not None:
             # If the row already exists (based on exclusive_column) then we update the cells
-            target_row.update_values(new_values)
+            cells = self._unpack(self.cells, memory, twoda, target_row)
+            target_row.update_values(cells)
             self._row = target_row
         else:
-            # Otherwise we add the a new row instead.
-            index = twoda.copy_row(source_row, row_label, new_values)
+            # Otherwise, we add the new row instead.
+            index = twoda.copy_row(source_row, row_label, {})
             self._row = target_row = twoda.get_row(index)
+            cells = self._unpack(self.cells, memory, twoda, target_row)
+            target_row.update_values(cells)
 
-        for index, value in memory_values.items():
-            if value == "RowIndex":
-                value = twoda.row_index(target_row)
-            elif value == "RowLabel":
-                value = source_row.label()
-            elif value in twoda.get_headers():
-                value = source_row.get_string(value)
-            elif value.startswith("StrRef"):
-                token = int(value[:6])
-                value = memory.memory_str[token]
-            elif value.startswith("2DAMEMORY"):
-                token = int(value[:9])
-                value = memory.memory_2da[token]
-            memory.memory_2da[index] = value
+        for token_id, value in self.store_2da.items():
+            memory.memory_2da[token_id] = value.value(memory, twoda, target_row)
+
+        for token_id, value in self.store_tlk.items():
+            memory.memory_str[token_id] = int(value.value(memory, twoda, target_row))
 
 
-class AddColumn2DA(ManipulateRow2DA):
+class AddColumn2DA(Modify2DA):
     """
     Adds a column. The new cells are either given a default value or can be given a value based on what the row index
     or row label is.
@@ -293,14 +373,22 @@ class AddColumn2DA(ManipulateRow2DA):
         label_insert: For the new column, if the row label is KEY then set cell to VALUE.
     """
 
-    def __init__(self, identifier: str, header: str, default: str, index_insert: Dict[int, str], label_insert: Dict[str, str], memory_saves: Dict[int, str]):
+    def __init__(
+            self,
+            identifier: str,
+            header: str,
+            default: str,
+            index_insert: Dict[int, str],
+            label_insert: Dict[str, str],
+            store_2da: Dict[int, str] = None
+    ):
         super().__init__()
         self.identifier: str = identifier
         self.header: str = header
         self.default: str = default
         self.index_insert: Dict[int, str] = index_insert
         self.label_insert: Dict[str, str] = label_insert
-        self.memory_saves: Dict[int, str] = memory_saves
+        self.store_2da: Dict[int, str] = {} if store_2da is None else store_2da
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         twoda.add_column(self.header)
@@ -315,20 +403,14 @@ class AddColumn2DA(ManipulateRow2DA):
             value = self._check_memory(value, memory)
             twoda.find_row(row_label).set_string(self.header, value)
 
-        for memory_index, value in self.memory_saves.items():
-            if value.startswith("StrRef"):
-                token = int(value[:6])
-                value = memory.memory_str[token]
-            elif value.startswith("2DAMEMORY"):
-                token = int(value[:9])
-                value = memory.memory_2da[token]
-
+        for token_id, value in self.store_2da.items():
+            # TODO: Exception handling
             if value.startswith("I"):
-                # TODO: Exception handling
                 cell = twoda.get_row(int(value[1:])).get_string(self.header)
-                memory.memory_2da[memory_index] = cell
+                memory.memory_2da[token_id] = cell
             elif value.startswith("L"):
                 cell = twoda.find_row(value[1:]).get_string(self.header)
-                memory.memory_2da[memory_index] = cell
+                memory.memory_2da[token_id] = cell
             else:
                 raise WarningException()
+# endregion

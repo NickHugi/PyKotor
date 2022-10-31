@@ -4,7 +4,7 @@ from typing import Dict, Optional
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
-from pykotor.tslpatcher.mods.twoda import ManipulateRow2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
+from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
     CopyRow2DA, AddColumn2DA, Modifications2DA
 
 
@@ -49,7 +49,7 @@ class ConfigReader:
                 manipulation = self.discern_2da(key, modification_id, dict(self.ini[modification_id].items()))
                 modificaitons.rows.append(manipulation)
 
-    def discern_2da(self, key: str, identifier: str, modifiers: Dict[str, str]) -> ManipulateRow2DA:
+    def discern_2da(self, key: str, identifier: str, modifiers: Dict[str, str]) -> Modify2DA:
         if key.startswith("ChangeRow"):
             manipulation = ChangeRow2DA(identifier, self.target_2da(modifiers), modifiers)
         elif key.startswith("AddRow"):
