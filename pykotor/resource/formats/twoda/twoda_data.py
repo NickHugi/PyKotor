@@ -351,7 +351,7 @@ class TwoDA:
         max_found = -1
         for cell in self.get_column(header):
             try:
-                max_found = int(cell)
+                max_found = max(int(cell), max_found)
             except ValueError:
                 ...
         return max_found + 1
