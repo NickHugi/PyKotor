@@ -74,6 +74,12 @@ class ConfigReader:
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
             modification = CopyRow2DA(identifier, target, exclusive_column, row_label, cells, store_2da, store_tlk)
+        elif key.startswith("AddColumn"):
+            header = modifiers.pop("ColumnLabel")
+            default = modifiers.pop("DefaultValue")
+            default = default if default != "****" else ""
+            index_insert, label_insert, store_2da = self.column_inserts_2da(identifier, modifiers)
+            modification = AddColumn2DA(identifier, header, default, index_insert, label_insert, store_2da)
         else:
             raise WarningException()
 
@@ -144,3 +150,33 @@ class ConfigReader:
             return modifiers.pop("NewRowLabel")
         else:
             return None
+
+    def column_inserts_2da(self, identifier: str, modifiers: Dict[str, str]) -> Tuple:
+        index_insert = {}
+        label_insert = {}
+        store_2da = {}
+
+        for modifier, value in modifiers.items():
+            is_store_2da = value.startswith("2DAMEMORY")
+            is_store_tlk = value.startswith("StrRef")
+
+            if is_store_2da:
+                token_id = int(value[9:])
+                row_value = RowValue2DAMemory(token_id)
+            elif is_store_tlk:
+                token_id = int(value[6:])
+                row_value = RowValueTLKMemory(token_id)
+            else:
+                row_value = RowValueConstant(value)
+
+            if modifier.startswith("I"):
+                index = int(modifier[1:])
+                index_insert[index] = row_value
+            elif modifier.startswith("L"):
+                label = modifier[1:]
+                label_insert[label] = row_value
+            elif modifier.startswith("2DAMEMORY"):
+                token_id = int(modifier[9:])
+                store_2da[token_id] = value
+
+        return index_insert, label_insert, store_2da

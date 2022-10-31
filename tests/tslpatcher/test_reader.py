@@ -4,7 +4,7 @@ from unittest import TestCase
 from pykotor.resource.formats.tlk import TLK
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.mods.twoda import ChangeRow2DA, TargetType, RowValueRowIndex, RowValueRowLabel, RowValueRowCell, \
-    RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA, CopyRow2DA
+    RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA, CopyRow2DA, AddColumn2DA
 from pykotor.tslpatcher.reader import ConfigReader
 
 
@@ -543,7 +543,7 @@ class TestConfigReader(TestCase):
 
             [copy_row_0]
             RowIndex=0
-            RowLabel=123
+            NewRowLabel=123
             [copy_row_1]
             RowIndex=0
             """
@@ -656,4 +656,166 @@ class TestConfigReader(TestCase):
         cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
+    # endregion
+
+    # region 2DA: Add Column
+    def test_2da_addcolumn_basic(self):
+        """Test that column will be inserted with correct label and default values."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            AddColumn0=add_column_0
+            AddColumn1=add_column_1
+
+            [add_column_0]
+            ColumnLabel=label
+            DefaultValue=****
+            2DAMEMORY2=I2
+            
+            [add_column_1]
+            ColumnLabel=someint
+            DefaultValue=0
+            2DAMEMORY2=I2
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertEqual("label", mod_0.header)
+        self.assertEqual("", mod_0.default)
+
+        # noinspection PyTypeChecker
+        mod_1: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        self.assertEqual("someint", mod_1.header)
+        self.assertEqual("0", mod_1.default)
+
+    def test_2da_addcolumn_indexinsert(self):
+        """Test that cells will be inserted to the new column at the given index correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            AddColumn0=add_column_0
+
+            [add_column_0]
+            ColumnLabel=NewColumn
+            DefaultValue=****
+            I0=abc
+            I1=2DAMEMORY4
+            I2=StrRef5
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+
+        value = mod_0.index_insert[0]
+        self.assertIsInstance(value, RowValueConstant)
+        self.assertEqual("abc", value.string)
+
+        value = mod_0.index_insert[1]
+        self.assertIsInstance(value, RowValue2DAMemory)
+        self.assertEqual(4, value.token_id)
+
+        value = mod_0.index_insert[2]
+        self.assertIsInstance(value, RowValueTLKMemory)
+        self.assertEqual(5, value.token_id)
+
+    def test_2da_addcolumn_labelinsert(self):
+        """Test that cells will be inserted to the new column at the given label correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            AddColumn0=add_column_0
+
+            [add_column_0]
+            ColumnLabel=NewColumn
+            DefaultValue=****
+            L0=abc
+            L1=2DAMEMORY4
+            L2=StrRef5
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+
+        value = mod_0.label_insert["0"]
+        self.assertIsInstance(value, RowValueConstant)
+        self.assertEqual("abc", value.string)
+
+        value = mod_0.label_insert["1"]
+        self.assertIsInstance(value, RowValue2DAMemory)
+        self.assertEqual(4, value.token_id)
+
+        value = mod_0.label_insert["2"]
+        self.assertIsInstance(value, RowValueTLKMemory)
+        self.assertEqual(5, value.token_id)
+
+    def test_2da_addcolumn_2damemory(self):
+        """Test that 2DAMEMORY will be stored correctly."""
+
+        ini_text = \
+            """
+            [2DAList]
+            Table0=test.2da
+
+            [test.2da]
+            AddColumn0=add_column_0
+
+            [add_column_0]
+            ColumnLabel=NewColumn
+            DefaultValue=****
+            2DAMEMORY2=I2
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig("", "")
+        ConfigReader(ini, tlk).load(config)
+
+        # noinspection PyTypeChecker
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+
+        value = mod_0.store_2da[2]
+        self.assertEqual("I2", value)
     # endregion
