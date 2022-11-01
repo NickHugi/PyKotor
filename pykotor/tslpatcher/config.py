@@ -5,6 +5,7 @@ from pykotor.common.stream import BinaryReader
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
@@ -15,13 +16,6 @@ from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
 class PatcherConfig:
-    """
-
-    Attributes:
-        patches_str: Map Patcher Token (key) to Append.tlk StrRef (value).
-        patches_2da: Map Patcher Token (key) to Changes class (value).
-    """
-
     def __init__(self):
         self.patches_2da: List[Modifications2DA] = []
         self.patches_gff: List[ModificationsGFF] = []
@@ -69,6 +63,7 @@ class ModInstaller:
         installation = Installation(self.game_path)
         memory = PatcherMemory()
         twodas = {}
+        soundsets = {}
 
         config = PatcherConfig()
         config.load(ini_text, append_tlk)
@@ -85,3 +80,11 @@ class ModInstaller:
             twoda = twodas[patch.filename] = read_2da(search.data)
             patch.apply(twoda, memory)
             write_2da(twoda, "{}/{}".format(installation.override_path(), patch.filename))
+
+        # Apply changes to SSF files
+        for patch in config.patches_ssf:
+            resname, restype = ResourceIdentifier.from_path(patch.filename)
+            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+            soundset = soundsets[patch.filename] = read_ssf(search.data)
+            patch.apply(soundset, memory)
+            write_ssf(soundset, "{}/{}".format(installation.override_path(), patch.filename))
