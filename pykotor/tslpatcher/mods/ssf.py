@@ -15,10 +15,10 @@ class ModifySSF:
 
 
 class ModificationsSSF:
-    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifySSF]):
+    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifySSF] = None):
         self.filename: str = filename
         self.replace_file: bool = replace_file
-        self.modifiers: List[ModifySSF] = modifiers
+        self.modifiers: List[ModifySSF] = modifiers if modifiers is not None else []
 
     def apply(self, ssf: SSF, memory: PatcherMemory) -> None:
         for modifier in self.modifiers:

@@ -1,8 +1,10 @@
 from configparser import ConfigParser
 from unittest import TestCase
 
+from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK
 from pykotor.tslpatcher.config import PatcherConfig
+from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.twoda import ChangeRow2DA, TargetType, RowValueRowIndex, RowValueRowLabel, RowValueRowCell, \
     RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA, CopyRow2DA, AddColumn2DA
 from pykotor.tslpatcher.reader import ConfigReader
@@ -818,4 +820,227 @@ class TestConfigReader(TestCase):
 
         value = mod_0.store_2da[2]
         self.assertEqual("I2", value)
+    # endregion
+
+    # region SSF
+    def test_ssf_replace(self):
+        """Test that column will be inserted with correct label and default values."""
+
+        ini_text = \
+            """
+            [SSFList]
+            File0=test1.ssf
+            Replace0=test2.ssf
+
+            [test1.ssf]
+            [test2.ssf]
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        self.assertFalse(config.patches_ssf[0].replace_file)
+        self.assertTrue(config.patches_ssf[1].replace_file)
+
+    def test_ssf_stored_constant(self):
+        """Test that column will be inserted with correct label and default values."""
+
+        ini_text = \
+            """
+            [SSFList]
+            File0=test.ssf
+
+            [test.ssf]
+            Battlecry 1=123
+            Battlecry 2=456
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0.stringref, NoTokenUsage)
+        self.assertEqual("123", mod_0.stringref.stored)
+
+        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        self.assertIsInstance(mod_1.stringref, NoTokenUsage)
+        self.assertEqual("456", mod_1.stringref.stored)
+
+    def test_ssf_stored_2da(self):
+        """Test that column will be inserted with correct label and default values."""
+
+        ini_text = \
+            """
+            [SSFList]
+            File0=test.ssf
+
+            [test.ssf]
+            Battlecry 1=2DAMEMORY5
+            Battlecry 2=2DAMEMORY6
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0.stringref, TokenUsage2DA)
+        self.assertEqual(5, mod_0.stringref.token_id)
+
+        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        self.assertIsInstance(mod_1.stringref, TokenUsage2DA)
+        self.assertEqual(6, mod_1.stringref.token_id)
+
+    def test_ssf_stored_tlk(self):
+        """Test that column will be inserted with correct label and default values."""
+
+        ini_text = \
+            """
+            [SSFList]
+            File0=test.ssf
+
+            [test.ssf]
+            Battlecry 1=StrRef5
+            Battlecry 2=StrRef6
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0.stringref, TokenUsageTLK)
+        self.assertEqual(5, mod_0.stringref.token_id)
+
+        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        self.assertIsInstance(mod_1.stringref, TokenUsageTLK)
+        self.assertEqual(6, mod_1.stringref.token_id)
+
+    def test_ssf_set(self):
+        """Test that each sound is registered correctly."""
+
+        ini_text = \
+            """
+            [SSFList]
+            File0=test.ssf
+
+            [test.ssf]
+            Battlecry 1=1
+            Battlecry 2=2
+            Battlecry 3=3
+            Battlecry 4=4
+            Battlecry 5=5
+            Battlecry 6=6
+            Selected 1=7
+            Selected 2=8
+            Selected 3=9
+            Attack 1=10
+            Attack 2=11
+            Attack 3=12
+            Pain 1=13
+            Pain 2=14
+            Low health=15
+            Death=16
+            Critical hit=17
+            Target immune=18
+            Place mine=19
+            Disarm mine=20
+            Stealth on=21
+            Search=22
+            Pick lock start=23
+            Pick lock fail=24
+            Pick lock done=25
+            Leave party=26
+            Rejoin party=27
+            Poisoned=28
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_battlecry1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_battlecry2 = config.patches_ssf[0].modifiers.pop(0)
+        mod_battlecry3 = config.patches_ssf[0].modifiers.pop(0)
+        mod_battlecry4 = config.patches_ssf[0].modifiers.pop(0)
+        mod_battlecry5 = config.patches_ssf[0].modifiers.pop(0)
+        mod_battlecry6 = config.patches_ssf[0].modifiers.pop(0)
+        mod_selected1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_selected2 = config.patches_ssf[0].modifiers.pop(0)
+        mod_selected3 = config.patches_ssf[0].modifiers.pop(0)
+        mod_attack1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_attack2 = config.patches_ssf[0].modifiers.pop(0)
+        mod_attack3 = config.patches_ssf[0].modifiers.pop(0)
+        mod_pain1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_pain2 = config.patches_ssf[0].modifiers.pop(0)
+        mod_lowhealth = config.patches_ssf[0].modifiers.pop(0)
+        mod_death = config.patches_ssf[0].modifiers.pop(0)
+        mod_criticalhit = config.patches_ssf[0].modifiers.pop(0)
+        mod_targetimmune = config.patches_ssf[0].modifiers.pop(0)
+        mod_placemine = config.patches_ssf[0].modifiers.pop(0)
+        mod_disarmmine = config.patches_ssf[0].modifiers.pop(0)
+        mod_stealthon = config.patches_ssf[0].modifiers.pop(0)
+        mod_search = config.patches_ssf[0].modifiers.pop(0)
+        mod_picklockstart = config.patches_ssf[0].modifiers.pop(0)
+        mod_picklockfail = config.patches_ssf[0].modifiers.pop(0)
+        mod_picklockdone = config.patches_ssf[0].modifiers.pop(0)
+        mod_leaveparty = config.patches_ssf[0].modifiers.pop(0)
+        mod_rejoinparty = config.patches_ssf[0].modifiers.pop(0)
+        mod_poisoned = config.patches_ssf[0].modifiers.pop(0)
+
+        self.assertEqual(SSFSound.BATTLE_CRY_1, mod_battlecry1.sound)
+        self.assertEqual(SSFSound.BATTLE_CRY_2, mod_battlecry2.sound)
+        self.assertEqual(SSFSound.BATTLE_CRY_3, mod_battlecry3.sound)
+        self.assertEqual(SSFSound.BATTLE_CRY_4, mod_battlecry4.sound)
+        self.assertEqual(SSFSound.BATTLE_CRY_5, mod_battlecry5.sound)
+        self.assertEqual(SSFSound.BATTLE_CRY_6, mod_battlecry6.sound)
+        self.assertEqual(SSFSound.SELECT_1, mod_selected1.sound)
+        self.assertEqual(SSFSound.SELECT_2, mod_selected2.sound)
+        self.assertEqual(SSFSound.SELECT_3, mod_selected3.sound)
+        self.assertEqual(SSFSound.ATTACK_GRUNT_1, mod_attack1.sound)
+        self.assertEqual(SSFSound.ATTACK_GRUNT_2, mod_attack2.sound)
+        self.assertEqual(SSFSound.ATTACK_GRUNT_3, mod_attack3.sound)
+        self.assertEqual(SSFSound.PAIN_GRUNT_1, mod_pain1.sound)
+        self.assertEqual(SSFSound.PAIN_GRUNT_2, mod_pain2.sound)
+        self.assertEqual(SSFSound.LOW_HEALTH, mod_lowhealth.sound)
+        self.assertEqual(SSFSound.DEAD, mod_death.sound)
+        self.assertEqual(SSFSound.CRITICAL_HIT, mod_criticalhit.sound)
+        self.assertEqual(SSFSound.TARGET_IMMUNE, mod_targetimmune.sound)
+        self.assertEqual(SSFSound.LAY_MINE, mod_placemine.sound)
+        self.assertEqual(SSFSound.DISARM_MINE, mod_disarmmine.sound)
+        self.assertEqual(SSFSound.BEGIN_STEALTH, mod_stealthon.sound)
+        self.assertEqual(SSFSound.BEGIN_SEARCH, mod_search.sound)
+        self.assertEqual(SSFSound.BEGIN_UNLOCK, mod_picklockstart.sound)
+        self.assertEqual(SSFSound.UNLOCK_FAILED, mod_picklockfail.sound)
+        self.assertEqual(SSFSound.UNLOCK_SUCCESS, mod_picklockdone.sound)
+        self.assertEqual(SSFSound.SEPARATED_FROM_PARTY, mod_leaveparty.sound)
+        self.assertEqual(SSFSound.REJOINED_PARTY, mod_rejoinparty.sound)
+        self.assertEqual(SSFSound.POISONED, mod_poisoned.sound)
     # endregion

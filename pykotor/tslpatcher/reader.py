@@ -1,8 +1,11 @@
 from configparser import ConfigParser
 from typing import Dict, Optional, Union, Tuple
 
+from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tslpatcher.config import PatcherConfig
+from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
+from pykotor.tslpatcher.mods.ssf import ModifySSF, ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
     CopyRow2DA, AddColumn2DA, Modifications2DA, RowValue2DAMemory, RowValueTLKMemory, RowValueHigh, RowValueRowIndex, \
@@ -25,6 +28,7 @@ class ConfigReader:
 
         self.load_stringref()
         self.load_2da()
+        self.load_ssf()
 
         return self.config
 
@@ -58,6 +62,65 @@ class ConfigReader:
                 manipulation = self.discern_2da(key, modification_id, dict(self.ini[modification_id].items()))
                 modificaitons.modifiers.append(manipulation)
 
+    def load_ssf(self) -> None:
+        if "SSFList" not in self.ini:
+            return
+
+        configstr_to_ssfsound = {
+            "Battlecry 1": SSFSound.BATTLE_CRY_1,
+            "Battlecry 2": SSFSound.BATTLE_CRY_2,
+            "Battlecry 3": SSFSound.BATTLE_CRY_3,
+            "Battlecry 4": SSFSound.BATTLE_CRY_4,
+            "Battlecry 5": SSFSound.BATTLE_CRY_5,
+            "Battlecry 6": SSFSound.BATTLE_CRY_6,
+            "Selected 1": SSFSound.SELECT_1,
+            "Selected 2": SSFSound.SELECT_2,
+            "Selected 3": SSFSound.SELECT_3,
+            "Attack 1": SSFSound.ATTACK_GRUNT_1,
+            "Attack 2": SSFSound.ATTACK_GRUNT_2,
+            "Attack 3": SSFSound.ATTACK_GRUNT_3,
+            "Pain 1": SSFSound.PAIN_GRUNT_1,
+            "Pain 2": SSFSound.PAIN_GRUNT_2,
+            "Low health": SSFSound.LOW_HEALTH,
+            "Death": SSFSound.DEAD,
+            "Critical hit": SSFSound.CRITICAL_HIT,
+            "Target immune": SSFSound.TARGET_IMMUNE,
+            "Place mine": SSFSound.LAY_MINE,
+            "Disarm mine": SSFSound.DISARM_MINE,
+            "Stealth on": SSFSound.BEGIN_STEALTH,
+            "Search": SSFSound.BEGIN_SEARCH,
+            "Pick lock start": SSFSound.BEGIN_UNLOCK,
+            "Pick lock fail": SSFSound.UNLOCK_FAILED,
+            "Pick lock done": SSFSound.UNLOCK_SUCCESS,
+            "Leave party": SSFSound.SEPARATED_FROM_PARTY,
+            "Rejoin party": SSFSound.REJOINED_PARTY,
+            "Poisoned": SSFSound.POISONED,
+        }
+
+        files = dict(self.ini["SSFList"].items())
+
+        for identifier, file in files.items():
+            modifications_ini = dict(self.ini[file].items())
+            replace = identifier.startswith("Replace")
+
+            modificaitons = ModificationsSSF(file, replace)
+            self.config.patches_ssf.append(modificaitons)
+
+            for name, value in modifications_ini.items():
+                if value.startswith("2DAMEMORY"):
+                    token_id = int(value[9:])
+                    value = TokenUsage2DA(token_id)
+                elif value.startswith("StrRef"):
+                    token_id = int(value[6:])
+                    value = TokenUsageTLK(token_id)
+                else:
+                    value = NoTokenUsage(int(value))
+
+                sound = configstr_to_ssfsound[name]
+                modifier = ModifySSF(sound, value)
+                modificaitons.modifiers.append(modifier)
+
+    #################
     def discern_2da(self, key: str, identifier: str, modifiers: Dict[str, str]) -> Modify2DA:
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
