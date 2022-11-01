@@ -53,14 +53,14 @@ class ModifyGFF(ABC):
 
 
 class AddFieldGFF(ModifyGFF):
-    def __init__(self, identifier: str, label: str, field_type: GFFFieldType, value: Any, path: str = ""):
+    def __init__(self, identifier: str, label: str, field_type: GFFFieldType, value: Any, path: str = "", modifiers: List[ModifyGFF] = None):
         self.identifier: str = identifier
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: Any = value
         self.path: Optional[str] = path
 
-        self.modifiers: List[ModifyGFF] = []
+        self.modifiers: List[ModifyGFF] = [] if modifiers is None else modifiers
 
     def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory) -> None:
         container = self._navigate_containers(container, self.path)
@@ -212,10 +212,10 @@ class ModifyFieldGFF(ModifyGFF):
 
 
 class ModificationsGFF:
-    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF]):
+    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] = None):
         self.filename: str = filename
         self.replace_file: bool = replace_file
-        self.modifiers: List[ModifyGFF] = modifiers
+        self.modifiers: List[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(self, gff: GFF, memory: PatcherMemory) -> None:
         for change_field in self.modifiers:

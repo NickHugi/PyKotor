@@ -1,10 +1,18 @@
 from configparser import ConfigParser
 from typing import Dict, Optional, Union, Tuple
 
+from pykotor.common.language import LocalizedString
+
+from pykotor.common.misc import ResRef
+
+from pykotor.common.geometry import Vector3, Vector4
+
+from pykotor.resource.formats.gff import GFFFieldType, GFFStruct, GFFList
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
+from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, AddStructToListGFF
 from pykotor.tslpatcher.mods.ssf import ModifySSF, ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
@@ -29,6 +37,7 @@ class ConfigReader:
         self.load_stringref()
         self.load_2da()
         self.load_ssf()
+        self.load_gff()
 
         return self.config
 
@@ -119,6 +128,112 @@ class ConfigReader:
                 sound = configstr_to_ssfsound[name]
                 modifier = ModifySSF(sound, value)
                 modificaitons.modifiers.append(modifier)
+
+    def load_gff(self) -> None:
+        if "GFFList" not in self.ini:
+            return
+
+        files = dict(self.ini["GFFList"].items())
+
+        for identifier, file in files.items():
+            modifications_ini = dict(self.ini[file].items())
+            replace = identifier.startswith("Replace")
+
+            modificaitons = ModificationsGFF(file, replace)
+            self.config.patches_gff.append(modificaitons)
+
+            for name, value in modifications_ini.items():
+                add_type = name.startswith("AddField")
+                if add_type:
+                    modifier = self.add_field_gff(value, dict(self.ini[value]))
+                    modificaitons.modifiers.append(modifier)
+                else:
+                    modifier = ModifyFieldGFF(name, value)
+                    modificaitons.modifiers.append(modifier)
+
+    def add_field_gff(self, identifier: str, ini_data: Dict[str, str], inside_list: bool = False) -> AddFieldGFF:
+        fieldname_to_fieldtype = {
+            "Byte": GFFFieldType.UInt8,
+            "Char": GFFFieldType.Int8,
+            "Word": GFFFieldType.UInt16,
+            "Short": GFFFieldType.Int16,
+            "DWord": GFFFieldType.UInt32,
+            "Int": GFFFieldType.Int32,
+            #"DWord64": GFFFieldType.UInt64,
+            #"Binary": GFFFieldType.Binary,
+            "Int64": GFFFieldType.Int64,
+            "Float": GFFFieldType.Single,
+            "Double": GFFFieldType.Double,
+            "ExoString": GFFFieldType.String,
+            "ResRef": GFFFieldType.ResRef,
+            "ExoLocString": GFFFieldType.LocalizedString,
+            "Position": GFFFieldType.Vector3,
+            "Orientation": GFFFieldType.Vector4,
+            "Struct": GFFFieldType.Struct,
+            "List": GFFFieldType.List,
+        }
+
+        field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
+        path = ini_data["Path"] if "Path" in ini_data else ""
+        label = ini_data.get("Label")
+        raw_value = ini_data.get("Value")
+
+        # Convert String value into proper value
+        if field_type.return_type() == int:
+            value = int(raw_value)
+        elif field_type.return_type() == float:
+            value = float(raw_value)
+        elif field_type.return_type() == str:
+            value = raw_value
+        elif field_type.return_type() == ResRef:
+            value = ResRef(raw_value)
+        elif field_type.return_type() == LocalizedString:
+            stringref = int(ini_data["StrRef"])
+            value = LocalizedString(stringref)
+            for substring, text in ini_data.items():
+                if not substring.startswith("lang"):
+                    continue
+                substring_id = int(substring[4:])
+                language, gender = value.substring_pair(substring_id)
+                value.set(language, gender, text)
+        elif field_type.return_type() == Vector3:
+            components = [float(axis) for axis in raw_value.split("|")]
+            value = Vector3(*components)
+        elif field_type.return_type() == Vector4:
+            components = [float(axis) for axis in raw_value.split("|")]
+            value = Vector4(*components)
+        elif field_type.return_type() == GFFList:
+            value = GFFList()
+        elif field_type.return_type() == GFFStruct:
+            if not inside_list:
+                struct_id = int(ini_data["TypeId"])
+                value = GFFStruct(struct_id)
+        else:
+            raise ValueError(field_type)
+
+        # Get nested fields/struct
+        nested_modifiers = []
+        for key, identifier in ini_data.items():
+            if not key.startswith("AddField"):
+                continue
+
+            is_list = field_type.return_type() == GFFList
+            modifier = self.add_field_gff(identifier, dict(self.ini[identifier].items()), is_list)
+            nested_modifiers.append(modifier)
+
+        if inside_list:
+            index_to_token = None
+            for key, memvalue in ini_data.items():
+                if not key.startswith("2DAMEMORY") and memvalue != "ListIndex":
+                    continue
+                token_id = int(key[9:])
+                index_to_token = token_id
+
+            struct_id = int(ini_data["TypeId"]) if ini_data["TypeId"] != "ListIndex" else None
+            modifier = AddStructToListGFF(identifier, struct_id, path, index_to_token)
+        else:
+            modifier = AddFieldGFF(identifier, label, field_type, value, path, nested_modifiers)
+        return modifier
 
     #################
     def discern_2da(self, key: str, identifier: str, modifiers: Dict[str, str]) -> Modify2DA:

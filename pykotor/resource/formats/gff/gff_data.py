@@ -79,11 +79,29 @@ class GFFFieldType(IntEnum):
     def return_type(
             self
     ):
-        if self in [GFFFieldType.UInt8, GFFFieldType.Int8, GFFFieldType.UInt16, GFFFieldType.Int16,
-                    GFFFieldType.UInt32, GFFFieldType.Int32, GFFFieldType.UInt16, GFFFieldType.UInt64]:
+        if self in [GFFFieldType.UInt8, GFFFieldType.UInt16, GFFFieldType.UInt32, GFFFieldType.UInt64,
+                    GFFFieldType.Int8, GFFFieldType.Int16, GFFFieldType.Int32, GFFFieldType.Int64]:
             return int
-        else:
+        elif self in [GFFFieldType.String]:
             return str
+        elif self in [GFFFieldType.ResRef]:
+            return ResRef
+        elif self in [GFFFieldType.Vector3]:
+            return Vector3
+        elif self in [GFFFieldType.Vector4]:
+            return Vector4
+        elif self in [GFFFieldType.LocalizedString]:
+            return LocalizedString
+        elif self in [GFFFieldType.Struct]:
+            return GFFStruct
+        elif self in [GFFFieldType.List]:
+            return GFFList
+        elif self in [GFFFieldType.Binary]:
+            return bytes
+        elif self in [GFFFieldType.Double, GFFFieldType.Single]:
+            return float
+        else:
+            raise ValueError(self)
 
 
 class GFF:

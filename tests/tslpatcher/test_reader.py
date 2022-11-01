@@ -1,10 +1,18 @@
 from configparser import ConfigParser
 from unittest import TestCase
 
+from pykotor.common.language import LocalizedString, Language, Gender
+
+from pykotor.common.misc import ResRef
+
+from pykotor.common.geometry import Vector3, Vector4
+from pykotor.resource.formats.gff import GFFStruct, GFFList
+
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
+from pykotor.tslpatcher.mods.gff import ModifyFieldGFF, AddFieldGFF, AddStructToListGFF
 from pykotor.tslpatcher.mods.twoda import ChangeRow2DA, TargetType, RowValueRowIndex, RowValueRowLabel, RowValueRowCell, \
     RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA, CopyRow2DA, AddColumn2DA
 from pykotor.tslpatcher.reader import ConfigReader
@@ -824,7 +832,7 @@ class TestConfigReader(TestCase):
 
     # region SSF
     def test_ssf_replace(self):
-        """Test that column will be inserted with correct label and default values."""
+        """Test that the replace file boolean is registered correctly."""
 
         ini_text = \
             """
@@ -849,7 +857,7 @@ class TestConfigReader(TestCase):
         self.assertTrue(config.patches_ssf[1].replace_file)
 
     def test_ssf_stored_constant(self):
-        """Test that column will be inserted with correct label and default values."""
+        """Test that the set sound as constant stringref is registered correctly."""
 
         ini_text = \
             """
@@ -879,7 +887,7 @@ class TestConfigReader(TestCase):
         self.assertEqual("456", mod_1.stringref.stored)
 
     def test_ssf_stored_2da(self):
-        """Test that column will be inserted with correct label and default values."""
+        """Test that the set sound as 2DAMEMORY value is registered correctly."""
 
         ini_text = \
             """
@@ -909,7 +917,7 @@ class TestConfigReader(TestCase):
         self.assertEqual(6, mod_1.stringref.token_id)
 
     def test_ssf_stored_tlk(self):
-        """Test that column will be inserted with correct label and default values."""
+        """Test that the set sound as StrRef is registered correctly."""
 
         ini_text = \
             """
@@ -939,7 +947,7 @@ class TestConfigReader(TestCase):
         self.assertEqual(6, mod_1.stringref.token_id)
 
     def test_ssf_set(self):
-        """Test that each sound is registered correctly."""
+        """Test that each sound is mapped and will register correctly."""
 
         ini_text = \
             """
@@ -1043,4 +1051,455 @@ class TestConfigReader(TestCase):
         self.assertEqual(SSFSound.SEPARATED_FROM_PARTY, mod_leaveparty.sound)
         self.assertEqual(SSFSound.REJOINED_PARTY, mod_rejoinparty.sound)
         self.assertEqual(SSFSound.POISONED, mod_poisoned.sound)
+    # endregion
+
+    # region GFF
+    def test_gff_modify(self):
+        """Test that the modify field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            ClassList\\0\\Class=123
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, ModifyFieldGFF)
+        self.assertEqual("ClassList\\0\\Class", mod_0.path)
+        self.assertEqual("123", mod_0.value)
+
+    def test_gff_add_ints(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_uint8
+            AddField1=add_int8
+            AddField2=add_uint16
+            AddField3=add_int16
+            AddField4=add_uint32
+            AddField5=add_int32
+            AddField7=add_int64
+            
+            [add_uint8]
+            FieldType=Byte
+            Path=SomeList
+            Label=SomeField
+            Value=123
+            
+            [add_int8]
+            FieldType=Char
+            Path=SomeList
+            Label=SomeField
+            Value=123
+            
+            [add_uint16]
+            FieldType=Word
+            Path=SomeList
+            Label=SomeField
+            Value=123
+            
+            [add_int16]
+            FieldType=Short
+            Path=SomeList
+            Label=SomeField
+            Value=123
+            
+            [add_uint32]
+            FieldType=DWord
+            Path=SomeList
+            Label=SomeField
+            Value=123
+            
+            [add_int32]
+            FieldType=Int
+            Path=SomeList
+            Label=SomeField
+            Value=123
+            
+            [add_int64]
+            FieldType=Int64
+            Path=SomeList
+            Label=SomeField
+            Value=123
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeField", mod_0.label)
+        self.assertEqual(123, mod_0.value)
+
+        mod_1 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_1, AddFieldGFF)
+        self.assertEqual("SomeList", mod_1.path)
+        self.assertEqual("SomeField", mod_1.label)
+        self.assertEqual(123, mod_1.value)
+
+        mod_2 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_2, AddFieldGFF)
+        self.assertEqual("SomeList", mod_2.path)
+        self.assertEqual("SomeField", mod_2.label)
+        self.assertEqual(123, mod_2.value)
+
+        mod_3 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_3, AddFieldGFF)
+        self.assertEqual("SomeList", mod_3.path)
+        self.assertEqual("SomeField", mod_3.label)
+        self.assertEqual(123, mod_3.value)
+
+        mod_4 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_4, AddFieldGFF)
+        self.assertEqual("SomeList", mod_4.path)
+        self.assertEqual("SomeField", mod_4.label)
+        self.assertEqual(123, mod_4.value)
+
+        mod_5 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_5, AddFieldGFF)
+        self.assertEqual("SomeList", mod_5.path)
+        self.assertEqual("SomeField", mod_5.label)
+        self.assertEqual(123, mod_5.value)
+
+        mod_6 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_6, AddFieldGFF)
+        self.assertEqual("SomeList", mod_6.path)
+        self.assertEqual("SomeField", mod_6.label)
+        self.assertEqual(123, mod_6.value)
+
+    def test_gff_add_floats(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_single
+            AddField1=add_double
+
+            [add_single]
+            FieldType=Float
+            Path=SomeList
+            Label=SomeField
+            Value=1.23
+
+            [add_double]
+            FieldType=Double
+            Path=SomeList
+            Label=SomeField
+            Value=1.23
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeField", mod_0.label)
+        self.assertEqual(1.23, mod_0.value)
+
+        mod_1 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_1, AddFieldGFF)
+        self.assertEqual("SomeList", mod_1.path)
+        self.assertEqual("SomeField", mod_1.label)
+        self.assertEqual(1.23, mod_1.value)
+
+    def test_gff_add_string(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_string
+
+            [add_string]
+            FieldType=ExoString
+            Path=SomeList
+            Label=SomeField
+            Value=abc
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeField", mod_0.label)
+        self.assertEqual("abc", mod_0.value)
+
+    def test_gff_add_vector3(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_vector3
+
+            [add_vector3]
+            FieldType=Position
+            Path=SomeList
+            Label=SomeField
+            Value=1|2|3
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeField", mod_0.label)
+        self.assertEqual(Vector3(1, 2, 3), mod_0.value)
+
+    def test_gff_add_vector4(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_vector4
+
+            [add_vector4]
+            FieldType=Orientation
+            Path=SomeList
+            Label=SomeField
+            Value=1|2|3|4
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeField", mod_0.label)
+        self.assertEqual(Vector4(1, 2, 3, 4), mod_0.value)
+
+    def test_gff_add_resref(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_resref
+
+            [add_resref]
+            FieldType=ResRef
+            Path=SomeList
+            Label=SomeField
+            Value=abc
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeField", mod_0.label)
+        self.assertEqual(ResRef("abc"), mod_0.value)
+
+    def test_gff_add_locstring(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_locstring
+
+            [add_locstring]
+            FieldType=ExoLocString
+            Path=SomeList
+            Label=SomeField
+            StrRef=123
+            lang0=abc
+            lang3=lmnop
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertIsInstance(mod_0.value, LocalizedString)
+        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeField", mod_0.label)
+        self.assertEqual(123, mod_0.value.stringref)
+        self.assertEqual("abc", mod_0.value.get(Language.ENGLISH, Gender.MALE))
+        self.assertEqual("lmnop", mod_0.value.get(Language.FRENCH, Gender.FEMALE))
+
+    def test_gff_add_inside_struct(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_struct
+            
+            [add_struct]
+            FieldType=Struct
+            Path=
+            Label=SomeStruct
+            TypeId=321
+            AddField0=add_insidestruct
+
+            [add_insidestruct]
+            FieldType=Byte
+            Path=
+            Label=InsideStruct
+            Value=123
+            """
+
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertIsInstance(mod_0.value, GFFStruct)
+        self.assertEqual("", mod_0.path)
+        self.assertEqual("SomeStruct", mod_0.label)
+        self.assertEqual(321, mod_0.value.struct_id)
+
+        mod_1 = mod_0.modifiers.pop(0)
+        self.assertIsInstance(mod_1, AddFieldGFF)
+        self.assertEqual("", mod_1.path)
+        self.assertEqual("InsideStruct", mod_1.label)
+        self.assertEqual(123, mod_1.value)
+
+    def test_gff_add_inside_list(self):
+        """Test that the add field modifiers are registered correctly."""
+
+        ini_text = \
+            """
+            [GFFList]
+            File0=test.gff
+
+            [test.gff]
+            AddField0=add_list
+
+            [add_list]
+            FieldType=List
+            Path=
+            Label=SomeList
+            AddField0=add_insidelist
+
+            [add_insidelist]
+            FieldType=Struct
+            Label=
+            TypeId=111
+            2DAMEMORY5=ListIndex
+            """
+        # TODO: Add field to struct
+        tlk = TLK()
+
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        config = PatcherConfig()
+        ConfigReader(ini, tlk).load(config)
+
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(mod_0, AddFieldGFF)
+        self.assertIsInstance(mod_0.value, GFFList)
+        self.assertEqual("", mod_0.path)
+        self.assertEqual("SomeList", mod_0.label)
+
+        mod_1 = mod_0.modifiers.pop(0)
+        self.assertIsInstance(mod_1, AddStructToListGFF)
+        self.assertEqual(111, mod_1.struct_id)
+        self.assertEqual(5, mod_1.index_to_token)
+
+    # endregion
+
+    # region SSF: Add
+
     # endregion
