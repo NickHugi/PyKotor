@@ -12,7 +12,8 @@ from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
-from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, AddStructToListGFF
+from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, AddStructToListGFF, \
+    LocalizedStringDelta, FieldValueConstant, FieldValue2DAMemory, FieldValueTLKMemory
 from pykotor.tslpatcher.mods.ssf import ModifySSF, ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
@@ -148,8 +149,41 @@ class ConfigReader:
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     modificaitons.modifiers.append(modifier)
                 else:
-                    modifier = ModifyFieldGFF(name, value)
+                    modifier = self.modify_field_gff(name, value)
                     modificaitons.modifiers.append(modifier)
+
+    #################
+    def modify_field_gff(self, name: str, string_value: str) -> ModifyFieldGFF:
+        if string_value.startswith("2DAMEMORY"):
+            token_id = int(string_value[9:])
+            value = FieldValue2DAMemory(token_id)
+        elif string_value.startswith("StrRef"):
+            token_id = int(string_value[6:])
+            value = FieldValueTLKMemory(token_id)
+        elif string_value.isnumeric():
+            value = FieldValueConstant(int(string_value))
+        elif string_value.count("|") == 2:
+            components = string_value.split("|")
+            value = FieldValueConstant(Vector3(*[int(x) for x in components]))
+        elif string_value.count("|") == 3:
+            components = string_value.split("|")
+            value = FieldValueConstant(Vector4(*[int(x) for x in components]))
+        else:
+            value = FieldValueConstant(string_value)
+
+        if "(strref)" in name:
+            value = FieldValueConstant(LocalizedStringDelta(value))
+            name = name[:name.index("(strref)")]
+        elif "(lang" in name:
+            substring_id = int(name[name.index("(lang")+5:-1])
+            language, gender = LocalizedString.substring_pair(substring_id)
+            locstring = LocalizedStringDelta()
+            locstring.set(language, gender, string_value)
+            value = FieldValueConstant(LocalizedStringDelta(value))
+            name = name[:name.index("(lang")]
+
+        modifier = ModifyFieldGFF(name, value)
+        return modifier
 
     def add_field_gff(self, identifier: str, ini_data: Dict[str, str], inside_list: bool = False) -> AddFieldGFF:
         fieldname_to_fieldtype = {
@@ -178,15 +212,21 @@ class ConfigReader:
         label = ini_data.get("Label")
         raw_value = ini_data.get("Value")
 
-        # Convert String value into proper value
-        if field_type.return_type() == int:
-            value = int(raw_value)
+        if isinstance(raw_value, str) and raw_value.startswith("2DAMEMORY"):
+            token_id = int(raw_value[9:])
+            value = FieldValue2DAMemory(token_id)
+        elif  isinstance(raw_value, str) and raw_value.endswith("StrRef"):
+            token_id = int(raw_value[6:])
+            value = FieldValueTLKMemory(token_id)
+
+        elif field_type.return_type() == int:
+            value = FieldValueConstant(int(raw_value))
         elif field_type.return_type() == float:
-            value = float(raw_value)
+            value = FieldValueConstant(float(raw_value))
         elif field_type.return_type() == str:
-            value = raw_value
+            value = FieldValueConstant(raw_value)
         elif field_type.return_type() == ResRef:
-            value = ResRef(raw_value)
+            value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == LocalizedString:
             stringref = int(ini_data["StrRef"])
             value = LocalizedString(stringref)
@@ -198,16 +238,16 @@ class ConfigReader:
                 value.set(language, gender, text)
         elif field_type.return_type() == Vector3:
             components = [float(axis) for axis in raw_value.split("|")]
-            value = Vector3(*components)
+            value = FieldValueConstant(Vector3(*components))
         elif field_type.return_type() == Vector4:
             components = [float(axis) for axis in raw_value.split("|")]
-            value = Vector4(*components)
+            value = FieldValueConstant(Vector4(*components))
         elif field_type.return_type() == GFFList:
-            value = GFFList()
+            value = FieldValueConstant(GFFList())
         elif field_type.return_type() == GFFStruct:
             if not inside_list:
                 struct_id = int(ini_data["TypeId"])
-                value = GFFStruct(struct_id)
+                value = FieldValueConstant(GFFStruct(struct_id))
         else:
             raise ValueError(field_type)
 
