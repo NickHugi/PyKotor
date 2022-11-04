@@ -144,8 +144,10 @@ class ConfigReader:
             self.config.patches_gff.append(modificaitons)
 
             for name, value in modifications_ini.items():
-                if name.startswith("!Destination"):
+                if name == "!Destination":
                     modificaitons.destination = value
+                elif name == "!ReplaceFile":
+                    modificaitons.replace_file = bool(int(value))
                 elif name.startswith("AddField"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     modificaitons.modifiers.append(modifier)
