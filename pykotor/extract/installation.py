@@ -722,7 +722,7 @@ class Installation:
                         with suppress(Exception):
                                 identifier = ResourceIdentifier.from_path(file)
                                 if query == identifier:
-                                    resource = FileResource(query.resname, query.restype, 0, 0, filepath)
+                                    resource = FileResource(query.resname, query.restype, os.path.getsize(filepath), 0, filepath)
                                     location = LocationResult(resource.filepath(), resource.offset(), resource.size())
                                     locations[identifier].append(location)
 
