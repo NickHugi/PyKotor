@@ -1749,7 +1749,3 @@ class TestConfigReader(TestCase):
         self.assertEqual(111, mod_1.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
     # endregion
-
-    # region SSF: Add
-
-    # endregion

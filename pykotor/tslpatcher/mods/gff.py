@@ -239,9 +239,10 @@ class ModifyFieldGFF(ModifyGFF):
 
 
 class ModificationsGFF:
-    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] = None):
+    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] = None, destination: str = None):
         self.filename: str = filename
         self.replace_file: bool = replace_file
+        self.destination: str = destination if destination is not None else "/override/"+filename
         self.modifiers: List[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(self, gff: GFF, memory: PatcherMemory) -> None:

@@ -1,11 +1,16 @@
+import os.path
 from configparser import ConfigParser
 from typing import List, Dict
 
-from pykotor.common.stream import BinaryReader
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
+
+from pykotor.resource.formats.erf import read_erf, write_erf, ERF
+from pykotor.common.stream import BinaryReader, BinaryWriter
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.gff import read_gff, write_gff
+from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
@@ -83,7 +88,20 @@ class ModInstaller:
                 [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.CUSTOM_FOLDERS],
                 folders=[self.mod_path]
             )
-            print(patch.filename)
+
             template = templates[patch.filename] = read_gff(search.data)
             patch.apply(template, memory)
-            write_gff(template, "{}/override/{}".format(self.output_path, patch.filename))
+            self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template))
+
+    def write(self, filepath: str, filename: str, data: bytes) -> None:
+        resname, restype = ResourceIdentifier.from_path(filename)
+        if filepath.endswith(".rim"):
+            rim = read_rim(BinaryReader.load_file(filepath)) if os.path.exists(filepath) else RIM()
+            rim.set(resname, restype, data)
+            write_rim(rim, filepath)
+        elif filepath.endswith(".mod") or filepath.endswith(".erf"):
+            erf = read_erf(BinaryReader.load_file(filepath)) if os.path.exists(filepath) else ERF()
+            erf.set(resname, restype, data)
+            write_erf(erf, filepath)
+        else:
+            BinaryWriter.dump(filepath, data)
