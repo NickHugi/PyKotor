@@ -174,10 +174,10 @@ class ConfigReader:
             value = FieldValueConstant(int(string_value))
         elif string_value.count("|") == 2:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector3(*[int(x) for x in components]))
+            value = FieldValueConstant(Vector3(*[float(x) for x in components]))
         elif string_value.count("|") == 3:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector4(*[int(x) for x in components]))
+            value = FieldValueConstant(Vector4(*[float(x) for x in components]))
         else:
             value = FieldValueConstant(string_value)
 
