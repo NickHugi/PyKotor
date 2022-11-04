@@ -201,7 +201,7 @@ class ConfigReader:
             "Char": GFFFieldType.Int8,
             "Word": GFFFieldType.UInt16,
             "Short": GFFFieldType.Int16,
-            "DWord": GFFFieldType.UInt32,
+            "DWORD": GFFFieldType.UInt32,
             "Int": GFFFieldType.Int32,
             #"DWord64": GFFFieldType.UInt64,
             #"Binary": GFFFieldType.Binary,
