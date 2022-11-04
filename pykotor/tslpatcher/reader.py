@@ -13,7 +13,7 @@ from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, AddStructToListGFF, \
-    LocalizedStringDelta, FieldValueConstant, FieldValue2DAMemory, FieldValueTLKMemory
+    LocalizedStringDelta, FieldValueConstant, FieldValue2DAMemory, FieldValueTLKMemory, FieldValue
 from pykotor.tslpatcher.mods.ssf import ModifySSF, ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
@@ -153,6 +153,16 @@ class ConfigReader:
                     modificaitons.modifiers.append(modifier)
 
     #################
+    def field_value_gff(self, raw_value: str) -> FieldValue:
+        if raw_value.startswith("StrRef"):
+            token_id = int(raw_value[6:])
+            return FieldValueTLKMemory(token_id)
+        elif raw_value.startswith("2DAMEMORY"):
+            token_id = int(raw_value[9:])
+            return FieldValueTLKMemory(token_id)
+        else:
+            return FieldValueConstant(int(raw_value))
+
     def modify_field_gff(self, name: str, string_value: str) -> ModifyFieldGFF:
         if string_value.startswith("2DAMEMORY"):
             token_id = int(string_value[9:])
@@ -179,7 +189,7 @@ class ConfigReader:
             language, gender = LocalizedString.substring_pair(substring_id)
             locstring = LocalizedStringDelta()
             locstring.set(language, gender, string_value)
-            value = FieldValueConstant(LocalizedStringDelta(value))
+            value = FieldValueConstant(locstring)
             name = name[:name.index("(lang")]
 
         modifier = ModifyFieldGFF(name, value)
@@ -212,10 +222,10 @@ class ConfigReader:
         label = ini_data.get("Label")
         raw_value = ini_data.get("Value")
 
-        if isinstance(raw_value, str) and raw_value.startswith("2DAMEMORY"):
+        if raw_value is not None and raw_value.startswith("2DAMEMORY"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
-        elif  isinstance(raw_value, str) and raw_value.endswith("StrRef"):
+        elif raw_value is not None and raw_value.endswith("StrRef"):
             token_id = int(raw_value[6:])
             value = FieldValueTLKMemory(token_id)
 
@@ -228,14 +238,16 @@ class ConfigReader:
         elif field_type.return_type() == ResRef:
             value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == LocalizedString:
-            stringref = int(ini_data["StrRef"])
-            value = LocalizedString(stringref)
+            stringref = self.field_value_gff(ini_data["StrRef"])
+
+            value = LocalizedStringDelta(stringref)
             for substring, text in ini_data.items():
                 if not substring.startswith("lang"):
                     continue
                 substring_id = int(substring[4:])
                 language, gender = value.substring_pair(substring_id)
                 value.set(language, gender, text)
+            value = FieldValueConstant(value)
         elif field_type.return_type() == Vector3:
             components = [float(axis) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector3(*components))

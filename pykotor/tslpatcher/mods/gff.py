@@ -90,7 +90,7 @@ class AddFieldGFF(ModifyGFF):
         def set_locstring():
             original = LocalizedString(0)
             value.apply(original, memory)
-            container.set_locstring(self.label, value)
+            container.set_locstring(self.label, original)
 
         func_map = {
             GFFFieldType.Int8: lambda: container.set_int8(self.label, value),
