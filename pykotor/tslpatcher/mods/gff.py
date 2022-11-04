@@ -92,6 +92,12 @@ class AddFieldGFF(ModifyGFF):
             value.apply(original, memory)
             container.set_locstring(self.label, original)
 
+        def set_list():
+            if isinstance(container, GFFStruct):
+                return container.set_struct(self.label, value)
+            elif isinstance(container, GFFList):
+                return container.add(value.struct_id)
+
         func_map = {
             GFFFieldType.Int8: lambda: container.set_int8(self.label, value),
             GFFFieldType.UInt8: lambda: container.set_uint8(self.label, value),
@@ -108,7 +114,7 @@ class AddFieldGFF(ModifyGFF):
             GFFFieldType.LocalizedString: lambda: set_locstring(),
             GFFFieldType.Vector3: lambda: container.set_vector3(self.label, value),
             GFFFieldType.Vector4: lambda: container.set_vector4(self.label, value),
-            GFFFieldType.Struct: lambda: container.set_struct(self.label, value),
+            GFFFieldType.Struct: lambda: set_list(),
             GFFFieldType.List: lambda: container.set_list(self.label, value),
         }
         container = func_map[self.field_type]()
