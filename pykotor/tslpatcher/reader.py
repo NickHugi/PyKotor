@@ -12,7 +12,7 @@ from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
-from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, AddStructToListGFF, \
+from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, \
     LocalizedStringDelta, FieldValueConstant, FieldValue2DAMemory, FieldValueTLKMemory, FieldValue
 from pykotor.tslpatcher.mods.ssf import ModifySSF, ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
@@ -260,34 +260,28 @@ class ConfigReader:
         elif field_type.return_type() == GFFList:
             value = FieldValueConstant(GFFList())
         elif field_type.return_type() == GFFStruct:
-            if not inside_list:
-                struct_id = int(ini_data["TypeId"])
-                value = FieldValueConstant(GFFStruct(struct_id))
+            struct_id = int(ini_data["TypeId"])
+            value = FieldValueConstant(GFFStruct(struct_id))
         else:
             raise ValueError(field_type)
 
         # Get nested fields/struct
         nested_modifiers = []
-        for key, identifier in ini_data.items():
+        for key, x in ini_data.items():
             if not key.startswith("AddField"):
                 continue
 
             is_list = field_type.return_type() == GFFList
-            modifier = self.add_field_gff(identifier, dict(self.ini[identifier].items()), is_list)
+            modifier = self.add_field_gff(x, dict(self.ini[x].items()), is_list)
             nested_modifiers.append(modifier)
 
-        if inside_list:
-            index_to_token = None
-            for key, memvalue in ini_data.items():
-                if not key.startswith("2DAMEMORY") and memvalue != "ListIndex":
-                    continue
-                token_id = int(key[9:])
-                index_to_token = token_id
+        index_in_list_token = None
+        for key, memvalue in ini_data.items():
+            if key.startswith("2DAMEMORY") and memvalue == "ListIndex" and field_type.return_type() != GFFStruct:
+                index_in_list_token = int(key[9:])
 
-            struct_id = int(ini_data["TypeId"]) if ini_data["TypeId"] != "ListIndex" else None
-            modifier = AddStructToListGFF(identifier, struct_id, path, index_to_token)
-        else:
-            modifier = AddFieldGFF(identifier, label, field_type, value, path, nested_modifiers)
+        modifier = AddFieldGFF(identifier, label, field_type, value, path, nested_modifiers, index_in_list_token)
+
         return modifier
 
     #################

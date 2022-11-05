@@ -74,12 +74,13 @@ class FieldValueTLKMemory(FieldValue):
 
 
 class AddFieldGFF(ModifyGFF):
-    def __init__(self, identifier: str, label: str, field_type: GFFFieldType, value: FieldValue, path: str = "", modifiers: List[ModifyGFF] = None):
+    def __init__(self, identifier: str, label: str, field_type: GFFFieldType, value: FieldValue, path: str = "", modifiers: List[ModifyGFF] = None, index_to_list_token: Optional[int] = None):
         self.identifier: str = identifier
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
         self.path: Optional[str] = path
+        self.index_to_list_token: Optional[int] = index_to_list_token
 
         self.modifiers: List[ModifyGFF] = [] if modifiers is None else modifiers
 
@@ -92,11 +93,14 @@ class AddFieldGFF(ModifyGFF):
             value.apply(original, memory)
             container.set_locstring(self.label, original)
 
-        def set_list():
+        def set_struct():
             if isinstance(container, GFFStruct):
                 return container.set_struct(self.label, value)
             elif isinstance(container, GFFList):
                 return container.add(value.struct_id)
+
+        def set_list():
+            return container.set_list(self.label, value)
 
         func_map = {
             GFFFieldType.Int8: lambda: container.set_int8(self.label, value),
@@ -114,10 +118,13 @@ class AddFieldGFF(ModifyGFF):
             GFFFieldType.LocalizedString: lambda: set_locstring(),
             GFFFieldType.Vector3: lambda: container.set_vector3(self.label, value),
             GFFFieldType.Vector4: lambda: container.set_vector4(self.label, value),
-            GFFFieldType.Struct: lambda: set_list(),
-            GFFFieldType.List: lambda: container.set_list(self.label, value),
+            GFFFieldType.Struct: lambda: set_struct(),
+            GFFFieldType.List: lambda: set_list(),
         }
         container = func_map[self.field_type]()
+
+        if self.index_to_list_token is not None and isinstance(container, GFFList):
+            memory.memory_2da[self.index_to_list_token] = str(len(container) - 1)
 
         if container is None and self.modifiers:
             raise WarningException()
@@ -126,54 +133,6 @@ class AddFieldGFF(ModifyGFF):
             add_field.apply(container, memory)
 
     def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> GFFStruct:
-        hierarchy = [container for container in path.split("\\") if container != ""]
-
-        for path in hierarchy:
-            if isinstance(container, GFFStruct):
-                container = container.acquire(path, None, (GFFStruct, GFFList))
-            elif isinstance(container, GFFList):
-                container = container.at(int(path))
-            else:
-                raise WarningException()
-
-        return container
-
-
-class AddStructToListGFF(ModifyGFF):
-    """
-    Add Struct to a List in the GFF file.
-
-    Attributes:
-        identifier: Unique identifier for this modifier.
-        struct_id: The StructID for the Struct. If set to None it will use the index inside the list instead.
-        path: Path to start from.
-        index_to_token: The Token ID to store the index of the struct in the list. Set to None to not store anything.
-    """
-
-    def __init__(self, identifier: str, struct_id: Optional[int], path: str = "", index_to_token: Optional[int] = None):
-        self.identifier: str = identifier
-        self.struct_id: Optional[int] = struct_id
-        self.modifiers: List[ModifyGFF] = []
-        self.path: str = path
-
-        self.index_to_token: Optional[int] = index_to_token
-
-    def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory) -> None:
-        container = self._navigate_containers(container, self.path)
-
-        if not isinstance(container, GFFList):
-            raise WarningException()
-
-        struct_id = len(container) if self.struct_id is None else self.struct_id
-        new_struct = container.add(struct_id)
-
-        if self.index_to_token is not None:
-            memory.memory_2da[self.index_to_token] = str(len(container) - 1)
-
-        for add_field in self.modifiers:
-            add_field.apply(new_struct, memory)
-
-    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> Union[GFFStruct, GFFList]:
         hierarchy = [container for container in path.split("\\") if container != ""]
 
         for path in hierarchy:
@@ -226,11 +185,11 @@ class ModifyFieldGFF(ModifyGFF):
     def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> Tuple[GFFStruct, str, GFFFieldType]:
         hierarchy, label = path.split("\\")[:-1], path.split("\\")[-1:][0]
 
-        for path in hierarchy:
+        for step in hierarchy:
             if isinstance(container, GFFStruct):
-                container = container.acquire(path, None, (GFFStruct, GFFList))
+                container = container.acquire(step, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
-                container = container.at(int(path))
+                container = container.at(int(step))
             else:
                 raise WarningException()
 
