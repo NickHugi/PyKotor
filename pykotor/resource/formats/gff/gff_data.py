@@ -287,6 +287,12 @@ class GFFStruct:
             value = self[label]
         return value
 
+    def value(
+            self,
+            label: str
+    ) -> Any:
+        return self._fields[label].value()
+
     def set_uint8(
             self,
             label: str,
