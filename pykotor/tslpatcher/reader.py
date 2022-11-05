@@ -148,6 +148,8 @@ class ConfigReader:
                     modificaitons.destination = value
                 elif name == "!ReplaceFile":
                     modificaitons.replace_file = bool(int(value))
+                elif name == "!Filename":
+                    modificaitons.filename = value
                 elif name.startswith("AddField"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     modificaitons.modifiers.append(modifier)
