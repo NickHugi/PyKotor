@@ -10,7 +10,7 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.gff import GFFFieldType, GFFStruct, GFFList
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
-from pykotor.tools.misc import is_float
+from pykotor.tools.misc import is_float, is_int
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, \
@@ -176,7 +176,7 @@ class ConfigReader:
         elif string_value.startswith("StrRef"):
             token_id = int(string_value[6:])
             value = FieldValueTLKMemory(token_id)
-        elif string_value.isnumeric():
+        elif is_int(string_value):
             value = FieldValueConstant(int(string_value))
         elif is_float(string_value):
             value = FieldValueConstant(float(string_value))

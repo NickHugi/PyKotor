@@ -41,12 +41,12 @@ class FieldValue(ABC):
     def validate(self, value: Any, field_type: GFFFieldType) -> Any:
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
             value = ResRef(str(value))
-        if field_type == GFFFieldType.String and not isinstance(value, str):
+        elif field_type == GFFFieldType.String and not isinstance(value, str):
             value = str(value)
-        if field_type.return_type() == float and isinstance(value, float):
-            value = float(value)
-        if field_type.return_type() == int and isinstance(value, str):
+        elif field_type.return_type() == int and isinstance(value, str):
             value = int(value)
+        elif field_type.return_type() == float and isinstance(value, str):
+            value = float(value)
         return value
 
 
