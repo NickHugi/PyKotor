@@ -370,6 +370,8 @@ class ConfigReader:
                 row_value = RowValueRowLabel()
             elif is_store_2da or is_store_tlk:
                 row_value = RowValueRowCell(value)
+            elif value == "****":
+                row_value = RowValueConstant("")
             else:
                 row_value = RowValueConstant(value)
 
