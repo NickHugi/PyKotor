@@ -43,6 +43,8 @@ class FieldValue(ABC):
             value = ResRef(str(value))
         if field_type == GFFFieldType.String and not isinstance(value, str):
             value = str(value)
+        if field_type.return_type() == float and isinstance(value, float):
+            value = float(value)
         if field_type.return_type() == int and isinstance(value, str):
             value = int(value)
         return value
