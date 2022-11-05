@@ -2,6 +2,8 @@ import os.path
 from configparser import ConfigParser
 from typing import List, Dict
 
+from pykotor.extract.capsule import Capsule
+
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 
 from pykotor.resource.formats.erf import read_erf, write_erf, ERF
@@ -16,6 +18,7 @@ from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
+from pykotor.tslpatcher.mods.install import InstallFolder
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import Modifications2DA
@@ -23,6 +26,7 @@ from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 class PatcherConfig:
     def __init__(self):
+        self.install_list: List[InstallFolder] = []
         self.patches_2da: List[Modifications2DA] = []
         self.patches_gff: List[ModificationsGFF] = []
         self.patches_ssf: List[ModificationsSSF] = []
@@ -62,6 +66,9 @@ class ModInstaller:
         config.patches_tlk.apply(dialog_tlk, memory)
         write_tlk(dialog_tlk, self.output_path + "/dialog.tlk")
 
+        for folder in config.install_list:
+            folder.apply(self.mod_path, self.output_path)
+
         # Apply changes to 2DA files
         for patch in config.patches_2da:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
@@ -82,11 +89,16 @@ class ModInstaller:
         for patch in config.patches_gff:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
 
+            scan_capsules = []
+            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
+                scan_capsules.append(Capsule(self.output_path + "/" + patch.destination))
+
             search = installation.resource(
                 resname,
                 restype,
-                [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES, SearchLocation.CUSTOM_FOLDERS],
-                folders=[self.mod_path]
+                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS, SearchLocation.CUSTOM_MODULES, SearchLocation.CHITIN],
+                folders=[self.mod_path],
+                capsules=scan_capsules
             )
 
             template = templates[patch.filename] = read_gff(search.data)

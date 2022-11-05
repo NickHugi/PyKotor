@@ -15,6 +15,7 @@ from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, \
     LocalizedStringDelta, FieldValueConstant, FieldValue2DAMemory, FieldValueTLKMemory, FieldValue
+from pykotor.tslpatcher.mods.install import InstallFolder, InstallFile
 from pykotor.tslpatcher.mods.ssf import ModifySSF, ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
@@ -30,18 +31,26 @@ class ConfigReader:
         self.config: Optional[PatcherConfig] = None
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
-        #self.ini.optionxform = str
-        #self.ini.read(config.input_path + "/changes.ini")
-        #self.append: TLK = read_tlk(config.input_path + "/append.tlk")
-
         self.config = config
 
+        self.load_filelist()
         self.load_stringref()
         self.load_2da()
         self.load_ssf()
         self.load_gff()
 
         return self.config
+
+    def load_filelist(self) -> None:
+        folders_ini = dict(self.ini["InstallList"].items())
+        for _, foldername in folders_ini.items():
+            folder_install = InstallFolder(foldername)
+            self.config.install_list.append(folder_install)
+
+            files_ini = dict(self.ini[_].items())
+            for __, filename in files_ini.items():
+                file_install = InstallFile(filename, False)
+                folder_install.files.append(file_install)
 
     def load_stringref(self) -> None:
         if "TLKList" not in self.ini:
@@ -145,13 +154,13 @@ class ConfigReader:
             self.config.patches_gff.append(modificaitons)
 
             for name, value in modifications_ini.items():
-                if name == "!Destination":
+                if name.lower() == "!destination":
                     modificaitons.destination = value
-                elif name == "!ReplaceFile":
+                elif name.lower() == "!replacefile":
                     modificaitons.replace_file = bool(int(value))
-                elif name == "!Filename":
+                elif name.lower() == "!filename":
                     modificaitons.filename = value
-                elif name.startswith("AddField"):
+                elif name.lower().startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     modificaitons.modifiers.append(modifier)
                 else:

@@ -137,11 +137,11 @@ class AddFieldGFF(ModifyGFF):
     def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> GFFStruct:
         hierarchy = [container for container in path.split("\\") if container != ""]
 
-        for path in hierarchy:
+        for step in hierarchy:
             if isinstance(container, GFFStruct):
-                container = container.acquire(path, None, (GFFStruct, GFFList))
+                container = container.acquire(step, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
-                container = container.at(int(path))
+                container = container.at(int(step))
             else:
                 raise WarningException()
 
