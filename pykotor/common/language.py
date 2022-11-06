@@ -86,6 +86,18 @@ class LocalizedString:
             else:
                 return "-1"
 
+    def __eq__(
+            self,
+            other
+    ):
+        if not isinstance(other, LocalizedString):
+            return False
+        if other.stringref != self.stringref:
+            return False
+        if other._substrings != self._substrings:
+            return False
+        return True
+
     @classmethod
     def from_invalid(
             cls
