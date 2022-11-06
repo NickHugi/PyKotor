@@ -69,7 +69,7 @@ class ModInstaller:
         write_tlk(dialog_tlk, self.output_path + "/dialog.tlk")
 
         for folder in config.install_list:
-            folder.apply(self.mod_path, self.output_path)
+            folder.apply(self.log, self.mod_path, self.output_path)
 
         # Apply changes to 2DA files
         for patch in config.patches_2da:
