@@ -16,6 +16,7 @@ from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
+from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFolder
@@ -47,6 +48,7 @@ class ModInstaller:
         self.game_path: str = game_path
         self.mod_path: str = mod_path
         self.output_path: str = game_path
+        self.log: PatchLogger = PatchLogger()
 
     def install(self) -> None:
         append_tlk = read_tlk(self.mod_path + "/append.tlk")
