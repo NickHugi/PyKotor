@@ -49,7 +49,8 @@ class ConfigReader:
 
             files_ini = dict(self.ini[_].items())
             for __, filename in files_ini.items():
-                file_install = InstallFile(filename, False)
+                replace_existing = __.lower().startswith("replace")
+                file_install = InstallFile(filename, replace_existing)
                 folder_install.files.append(file_install)
 
     def load_stringref(self) -> None:
