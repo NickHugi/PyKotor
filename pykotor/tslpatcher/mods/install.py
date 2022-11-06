@@ -26,9 +26,9 @@ class InstallFile:
 
         if self.replace_existing or destination.get(resname, restype) is None:
             if self.replace_existing and destination.get(resname, restype) is not None:
-                log.add_note("", "Replacing file {} in the {} archive...".format(self.filename, destination))
+                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination))
             else:
-                log.add_note("", "Adding file {} in the {} archive...".format(self.filename, destination))
+                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination))
 
             data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
             destination.set(resname, restype, data)
@@ -38,9 +38,9 @@ class InstallFile:
 
         if self.replace_existing or destination.get(resname, restype) is None:
             if self.replace_existing and destination.get(resname, restype) is not None:
-                log.add_note("", "Replacing file {} in the {} archive...".format(self.filename, destination))
+                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination))
             else:
-                log.add_note("", "Adding file {} in the {} archive...".format(self.filename, destination))
+                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination))
 
             data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
             destination.set(resname, restype, data)
@@ -51,13 +51,13 @@ class InstallFile:
 
         if self.replace_existing or not os.path.exists(save_file_to):
             if not os.path.exists(destination):
-                log.add_note("", "Folder {} did not exist, creating it...".format(destination))
+                log.add_note("Folder {} did not exist, creating it...".format(destination))
                 os.makedirs(destination)
 
             if self.replace_existing and not os.path.exists(save_file_to):
-                log.add_note("", "Replacing file {} to the {} folder...".format(self.filename, destination))
+                log.add_note("Replacing file {} to the {} folder...".format(self.filename, destination))
             else:
-                log.add_note("", "Copying file {} to the {} folder...".format(self.filename, destination))
+                log.add_note("Copying file {} to the {} folder...".format(self.filename, destination))
 
             BinaryWriter.dump(save_file_to, data)
 
