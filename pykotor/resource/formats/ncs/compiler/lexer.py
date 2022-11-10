@@ -26,6 +26,8 @@ class NssLexer:
         '{', '}', '(', ')', ';', '=', ','
     ]
 
+    t_ignore = " \t\n\r"
+
     # region Value Tokens
     def t_IDENTIFIER_VALUE(self, t):
         r'[a-zA-Z_]+[a-zA-Z0-9_]*'
