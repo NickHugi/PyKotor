@@ -89,6 +89,11 @@ class DataType(Enum):
     OBJECT = "object"
     VECTOR = "vector"
     LOCATION = "location"
+    EVENT = "event"
+    EFFECT = "effect"
+    ITEMPROPERTY = "itemproperty"
+    TALENT = "talent"
+    ACTION = "action"
 
     def size(self) -> int:
         if self == DataType.VOID:
