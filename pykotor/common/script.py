@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import List, Optional
 
 
@@ -57,7 +58,7 @@ class ScriptFunction:
             description: str,
             raw: str
     ):
-        self.returntype: str = returntype
+        self.returntype: DataType = DataType(returntype)
         self.name: str = name
         self.params: List[ScriptParam] = params
         self.description: str = description
@@ -79,3 +80,20 @@ class ScriptFunction:
                 param_str += ", "
         return "{} {}({})".format(self.returntype, self.name, param_str)
 
+
+class DataType(Enum):
+    VOID = "void"
+    INT = "int"
+    FLOAT = "float"
+    STRING = "string"
+    OBJECT = "object"
+    VECTOR = "vector"
+    LOCATION = "location"
+
+    def size(self) -> int:
+        if self == DataType.VOID:
+            return 0
+        elif self == DataType.VECTOR:
+            return 12
+        else:
+            return 4
