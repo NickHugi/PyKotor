@@ -12,7 +12,6 @@ class NssParser:
     def __init__(self):
         self.parser = yacc.yacc(module=self)
         self.ncs: NCS = NCS()
-        self.symbols: List[ScopedValue] = []
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
@@ -67,7 +66,6 @@ class NssParser:
             p[0] = IdentifierValue(p[1])
         else:
             p[0] = p[1]
-        p[0].compile(self.ncs, self.symbols)
 
     def p_data_type(self, p):
         """

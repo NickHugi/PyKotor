@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
@@ -39,7 +39,7 @@ class CodeBlock:
         self.scope: List[ScopedValue] = []
 
     def add_scoped(self, identifier: Identifier, data_type: DataType):
-        self.scope.append(ScopedValue(identifier, data_type))
+        self.scope.insert(0, ScopedValue(identifier, data_type))
 
     def get_scoped(self, identifier: Identifier):
         index = 0
@@ -66,13 +66,24 @@ class Value(ABC):
     def compile(self, ncs: NCS, block: CodeBlock):
         ...
 
+    @abstractmethod
+    def data_type(self):
+        ...
+
 
 class IdentifierValue(Value):
-    def __init__(self, value: str):
-        self.value: str = value
+    def __init__(self, value: Identifier):
+        self.identifier: Identifier = value
+        self._type: Optional[DataType] = None
 
     def compile(self, ncs: NCS, block: CodeBlock):
-        ...
+        self._type, stack_index = block.get_scoped(self.identifier)
+        ncs.instructions.append(NCSInstruction(NCSInstructionType.CPTOPSP, [stack_index, self._type.size()]))
+
+    def data_type(self):
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
 
 
 class StringValue(Value):
@@ -82,6 +93,9 @@ class StringValue(Value):
     def compile(self, ncs: NCS, block: CodeBlock):
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTS, [self.value]))
 
+    def data_type(self):
+        return DataType.STRING
+
 
 class IntValue(Value):
     def __init__(self, value: int):
@@ -90,6 +104,9 @@ class IntValue(Value):
     def compile(self, ncs: NCS, block: CodeBlock):
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTI, [self.value]))
 
+    def data_type(self):
+        return DataType.INT
+
 
 class FloatValue(Value):
     def __init__(self, value: float):
@@ -97,6 +114,9 @@ class FloatValue(Value):
 
     def compile(self, ncs: NCS, block: CodeBlock):
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTF, [self.value]))
+
+    def data_type(self):
+        return DataType.FLOAT
 # endregion
 
 
@@ -114,6 +134,7 @@ class DeclarationStatement(Statement):
         self.expression: Value = value
 
     def compile(self, ncs: NCS, block: CodeBlock):
+        self.expression.compile(ncs, block)
         block.add_scoped(self.identifier, self.data_type)
 
 
@@ -123,8 +144,14 @@ class AssignmentStatement(Statement):
         self.expression: Value = value
 
     def compile(self, ncs: NCS, block: CodeBlock):
+        self.expression.compile(ncs, block)
+
         data_type, stack_index = block.get_scoped(self.identifier)
         stack_index -= data_type.size()
+
+        if self.expression.data_type() != data_type:
+            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+
         # Copy the value that the expression has already been placed on the stack to where the identifiers position is
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CPDOWNSP, [stack_index, data_type.size()]))
         # Remove the temporary value from the stack that the expression created
