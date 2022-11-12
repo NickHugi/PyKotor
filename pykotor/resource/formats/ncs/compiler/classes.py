@@ -168,6 +168,8 @@ class DeclarationStatement(Statement):
 
     def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)
+        if self.expression.data_type() != self.data_type:
+            raise CompileException(f"Tried to declare a new variable with incorrect type '{self.identifier}'.")
         block.add_scoped(self.identifier, self.data_type)
 
 
