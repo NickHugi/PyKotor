@@ -1,10 +1,14 @@
 from typing import List
 
 from ply import yacc
+from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, KOTOR_CONSTANTS
+
+from pykotor.common.script import ScriptFunction, ScriptConstant
 
 from pykotor.resource.formats.ncs import NCS
-from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierValue, DeclarationStatement, CodeBlock, \
-    Statement, ScopedValue, AssignmentStatement
+from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
+    CodeBlock, \
+    Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -12,6 +16,8 @@ class NssParser:
     def __init__(self):
         self.parser = yacc.yacc(module=self)
         self.ncs: NCS = NCS()
+        self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
+        self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
@@ -40,6 +46,7 @@ class NssParser:
         statement : ';'
                   | declaration_statement
                   | assignment_statement
+                  | expression ';'
         """
         p[0] = p[1]
 
@@ -57,15 +64,43 @@ class NssParser:
 
     def p_expression(self, p):
         """
-        expression : INT_VALUE
+        expression : function_call
+                   | INT_VALUE
                    | FLOAT_VALUE
                    | STRING_VALUE
                    | IDENTIFIER
         """
         if isinstance(p[1], Identifier):
-            p[0] = IdentifierValue(p[1])
+            p[0] = IdentifierExpression(p[1])
         else:
             p[0] = p[1]
+
+    def p_function_call(self, p):
+        """
+        function_call : IDENTIFIER '(' function_call_params ')'
+        """
+        identifier = p[1]
+        engine_function = next((x for x in self.functions if x.name == identifier), None)
+        if engine_function is not None:
+            routine_id = self.functions.index(engine_function)
+            data_type = engine_function.returntype
+            args: List[Expression] = p[3]
+            expression = EngineCallExpression(engine_function, routine_id, data_type, args)
+            p[0] = expression
+
+    def p_function_call_params(self, p):
+        """
+        function_call_params : function_call_params ',' expression
+                             | expression
+                             |
+        """
+        if len(p) == 4:
+            p[1].append(p[3])
+            p[0] = p[1]
+        elif len(p) == 2:
+            p[0] = [p[1]]
+        elif len(p) == 1:
+            p[0] = []
 
     def p_data_type(self, p):
         """

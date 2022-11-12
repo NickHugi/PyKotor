@@ -1,6 +1,6 @@
 from pykotor.common.script import DataType
-from pykotor.resource.formats.ncs.compiler.classes import IntValue, ControlKeyword, StringValue, \
-    FloatValue, Identifier
+from pykotor.resource.formats.ncs.compiler.classes import IntExpression, ControlKeyword, StringExpression, \
+    FloatExpression, Identifier
 
 from abc import ABC
 from enum import Enum
@@ -145,37 +145,37 @@ class NssLexer:
 
     def t_STRING_VALUE(self, t):
         r'\"[^\"]*\"'
-        t.value = StringValue(t.value[1:-1])
+        t.value = StringExpression(t.value[1:-1])
         return t
 
     def t_FLOAT_VALUE(self, t):
         r'[0-9]+\.[0-9]+'
-        t.value = FloatValue(float(t.value))
+        t.value = FloatExpression(float(t.value))
         return t
 
     def t_INT_VALUE(self, t):
         r'[0-9]+'
-        t.value = IntValue(int(t.value))
+        t.value = IntExpression(int(t.value))
         return t
 
     def t_TRUE_VALUE(self, t):
         r'TRUE'
-        t.value = IntValue(1)
+        t.value = IntExpression(1)
         return t
 
     def t_FALSE_VALUE(self, t):
         r'FALSE'
-        t.value = IntValue(0)
+        t.value = IntExpression(0)
         return t
 
     def t_OBJECTSELF_VALUE(self, t):
         r'OBJECT_SELF'
-        t.value = IntValue(0)
+        t.value = IntExpression(0)
         return t
 
     def t_OBJECTINVALID_VALUE(self, t):
         r'OBJECT_INVALID'
-        t.value = IntValue(-1)
+        t.value = IntExpression(-1)
         return t
     # endregion
 

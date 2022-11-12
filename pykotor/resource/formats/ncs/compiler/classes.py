@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Optional
-from pykotor.common.script import DataType
+from pykotor.common.script import DataType, ScriptFunction
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
 
@@ -17,7 +17,12 @@ class Identifier:
         self.label: str = label
 
     def __eq__(self, other):
-        return self.label == other.label
+        if isinstance(other, Identifier):
+            return self.label == other.label
+        elif isinstance(other, str):
+            return self.label == other
+        else:
+            return NotImplemented
 
     def __str__(self):
         return self.label
@@ -37,12 +42,13 @@ class ControlKeyword(Enum):
 class CodeBlock:
     def __init__(self):
         self.scope: List[ScopedValue] = []
+        self.tempstack: int = 0
 
     def add_scoped(self, identifier: Identifier, data_type: DataType):
         self.scope.insert(0, ScopedValue(identifier, data_type))
 
     def get_scoped(self, identifier: Identifier):
-        index = 0
+        index = -self.tempstack
         for scoped in self.scope:
             index -= scoped.data_type.size()
             if scoped.identifier == identifier:
@@ -59,11 +65,11 @@ class ScopedValue:
 
 
 # region Value Classes
-class Value(ABC):
+class Expression(ABC):
     ...
 
     @abstractmethod
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ...
 
     @abstractmethod
@@ -71,14 +77,15 @@ class Value(ABC):
         ...
 
 
-class IdentifierValue(Value):
+class IdentifierExpression(Expression):
     def __init__(self, value: Identifier):
         self.identifier: Identifier = value
         self._type: Optional[DataType] = None
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self._type, stack_index = block.get_scoped(self.identifier)
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CPTOPSP, [stack_index, self._type.size()]))
+        return self._type.size()
 
     def data_type(self):
         if self._type is None:
@@ -86,37 +93,63 @@ class IdentifierValue(Value):
         return self._type
 
 
-class StringValue(Value):
+class StringExpression(Expression):
     def __init__(self, value: str):
         self.value: str = value
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTS, [self.value]))
+        return DataType.STRING.size()
 
     def data_type(self):
         return DataType.STRING
 
 
-class IntValue(Value):
+class IntExpression(Expression):
     def __init__(self, value: int):
         self.value: int = value
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTI, [self.value]))
+        return DataType.INT.size()
 
     def data_type(self):
         return DataType.INT
 
 
-class FloatValue(Value):
+class FloatExpression(Expression):
     def __init__(self, value: float):
         self.value: float = value
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTF, [self.value]))
+        return DataType.FLOAT.size()
 
     def data_type(self):
         return DataType.FLOAT
+
+
+class EngineCallExpression(Expression):
+    def __init__(self, function: ScriptFunction, routine_id: int, data_type: DataType, args: List[Expression]):
+        self._function: ScriptFunction = function
+        self._routine_id: int = routine_id
+        self._type: DataType = data_type
+        self._args: List[Expression] = args
+
+    def compile(self, ncs: NCS, block: CodeBlock):
+        this_stack = 0
+        for arg in self._args:
+            added = arg.compile(ncs, block)
+            block.tempstack += added
+            this_stack += added
+        for arg, param in zip(self._args, self._function.params):
+            if arg.data_type() != param.datatype:
+                raise CompileException(f"Tried to pass an argument of the incorrect type to {self._function.name}.")
+        ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
+        block.tempstack -= this_stack
+
+    def data_type(self):
+        return self._type
 # endregion
 
 
@@ -128,10 +161,10 @@ class Statement(ABC):
 
 
 class DeclarationStatement(Statement):
-    def __init__(self, identifier: Identifier, data_type: DataType, value: Value):
+    def __init__(self, identifier: Identifier, data_type: DataType, value: Expression):
         self.identifier: Identifier = identifier
         self.data_type: DataType = data_type
-        self.expression: Value = value
+        self.expression: Expression = value
 
     def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)
@@ -139,9 +172,9 @@ class DeclarationStatement(Statement):
 
 
 class AssignmentStatement(Statement):
-    def __init__(self, identifier: Identifier, value: Value):
+    def __init__(self, identifier: Identifier, value: Expression):
         self.identifier: Identifier = identifier
-        self.expression: Value = value
+        self.expression: Expression = value
 
     def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)

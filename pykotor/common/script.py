@@ -31,7 +31,7 @@ class ScriptParam:
             name: str,
             default: Optional[str]
     ):
-        self.datatype: str = datatype
+        self.datatype: DataType = DataType(datatype)
         self.name: str = name
         self.default: Optional[str] = default
 
