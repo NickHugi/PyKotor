@@ -194,4 +194,4 @@ class NCSInstruction:
         self.args: List = args if args is not None else []
 
     def __str__(self):
-        return "Instruction: {}".format(self.ins_type.name)
+        return "Instruction: {} {}".format(self.ins_type.name, self.args)

@@ -145,7 +145,7 @@ class NssLexer:
 
     def t_STRING_VALUE(self, t):
         r'\"[^\"]*\"'
-        t.value = StringValue(t.value)
+        t.value = StringValue(t.value[1:-1])
         return t
 
     def t_FLOAT_VALUE(self, t):

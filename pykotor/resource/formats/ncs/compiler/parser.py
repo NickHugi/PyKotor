@@ -1,12 +1,18 @@
+from typing import List
+
 from ply import yacc
 
-from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierValue, DeclarationStatement, CodeBlock
+from pykotor.resource.formats.ncs import NCS
+from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierValue, DeclarationStatement, CodeBlock, \
+    Statement, ScopedValue, AssignmentStatement
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
     def __init__(self):
         self.parser = yacc.yacc(module=self)
+        self.ncs: NCS = NCS()
+        self.symbols: List[ScopedValue] = []
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
@@ -19,11 +25,13 @@ class NssParser:
         """
         if len(p) == 3:
             block: CodeBlock = p[1]
-            block.statements.append(p[2])
+            statement: Statement = p[2]
+            statement.compile(self.ncs, block)
             p[0] = block
         elif len(p) == 2:
             block = CodeBlock()
-            block.statements.append(p[1])
+            statement: Statement = p[1]
+            statement.compile(self.ncs, block)
             p[0] = block
         elif len(p) == 1:
             ...
@@ -32,6 +40,7 @@ class NssParser:
         """
         statement : ';'
                   | declaration_statement
+                  | assignment_statement
         """
         p[0] = p[1]
 
@@ -40,6 +49,12 @@ class NssParser:
         declaration_statement : data_type IDENTIFIER '=' expression ';'
         """
         p[0] = DeclarationStatement(p[2], p[1], p[4])
+
+    def p_assignment_statement(self, p):
+        """
+        assignment_statement : IDENTIFIER '=' expression ';'
+        """
+        p[0] = AssignmentStatement(p[1], p[3])
 
     def p_expression(self, p):
         """
@@ -52,6 +67,7 @@ class NssParser:
             p[0] = IdentifierValue(p[1])
         else:
             p[0] = p[1]
+        p[0].compile(self.ncs, self.symbols)
 
     def p_data_type(self, p):
         """
