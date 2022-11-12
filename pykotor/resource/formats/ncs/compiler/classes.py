@@ -6,12 +6,21 @@ from typing import List
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
+
+class CompileException(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 class Identifier:
     def __init__(self, label: str):
         self.label: str = label
 
     def __eq__(self, other):
         return self.label == other.label
+
+    def __str__(self):
+        return self.label
 
 
 class ControlKeyword(Enum):
@@ -37,8 +46,10 @@ class CodeBlock:
         for scoped in self.scope:
             index -= scoped.data_type.size()
             if scoped.identifier == identifier:
-                continue
-        return scoped.data_type, self.scope.index(scoped) * -4
+                break
+        else:
+            raise CompileException(f"Could not find symbol {identifier}.")
+        return scoped.data_type, index
 
 
 class ScopedValue:
