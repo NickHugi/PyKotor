@@ -147,6 +147,7 @@ class EngineCallExpression(Expression):
                 raise CompileException(f"Tried to pass an argument of the incorrect type to {self._function.name}.")
         ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
         block.tempstack -= this_stack
+        return self._type.size()
 
     def data_type(self):
         return self._type
