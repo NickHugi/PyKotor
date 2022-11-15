@@ -138,7 +138,7 @@ class EngineCallExpression(Expression):
 
     def compile(self, ncs: NCS, block: CodeBlock):
         this_stack = 0
-        for arg in self._args:
+        for arg in reversed(self._args):
             added = arg.compile(ncs, block)
             block.tempstack += added
             this_stack += added
