@@ -43,6 +43,7 @@ class ControlKeyword(Enum):
 class CodeBlock:
     def __init__(self):
         self.scope: List[ScopedValue] = []
+        self.parent: Optional[CodeBlock] = None
         self._statements: List[Statement] = []
         self.jump_buffer: Optional[Tuple[NCSInstruction, int]] = None
         self.tempstack: int = 0
@@ -69,8 +70,18 @@ class CodeBlock:
             if scoped.identifier == identifier:
                 break
         else:
-            raise CompileException(f"Could not find symbol {identifier}.")
+            if self.parent is not None:
+                return self.parent.get_scoped(identifier)
+            else:
+                raise CompileException(f"Could not find symbol {identifier}.")
         return scoped.data_type, index
+
+    def build_parents(self):
+        # need a better way of implementing this
+        for statement in self._statements:
+            if hasattr(statement, "block"):
+                statement.block.parent = self
+                statement.block.build_parents()
 
 
 class ScopedValue:
