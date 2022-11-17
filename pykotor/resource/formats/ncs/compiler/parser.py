@@ -10,7 +10,7 @@ from pykotor.common.script import ScriptFunction, ScriptConstant
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
     CodeBlock, \
-    Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression
+    Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -45,6 +45,7 @@ class NssParser:
         statement : ';'
                   | declaration_statement
                   | assignment_statement
+                  | condition_statement
                   | expression ';'
         """
         p[0] = p[1]
@@ -61,6 +62,12 @@ class NssParser:
         assignment_statement : IDENTIFIER '=' expression ';'
         """
         p[0] = AssignmentStatement(p[1], p[3])
+
+    def p_condition_statement(self, p):
+        """
+        condition_statement : IF_CONTROL '(' expression ')' '{' code_block '}'
+        """
+        p[0] = ConditionalStatement(p[3], p[6])
 
     def p_expression(self, p):
         """

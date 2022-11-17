@@ -188,10 +188,16 @@ class NCS:
 
 
 class NCSInstruction:
-    def __init__(self, ins_type: NCSInstructionType = NCSInstructionType.NOP, args: List = None):
+    def __init__(self, ins_type: NCSInstructionType = NCSInstructionType.NOP, args: List = None, jump: Optional[NCSInstruction] = None):
         self.ins_type: NCSInstructionType = ins_type
-        self.jump: Optional[NCSInstruction] = None
+        self.jump: Optional[NCSInstruction] = jump
         self.args: List = args if args is not None else []
 
     def __str__(self):
-        return "Instruction: {} {}".format(self.ins_type.name, self.args)
+        if self.jump is None:
+            return "Instruction: {} {}".format(self.ins_type.name, self.args)
+        else:
+            return "Instruction: {} jump to '{}'".format(self.ins_type.name, self.jump)
+
+    def __repr__(self):
+        return "NCSInstruction({}, {}, {})".format(self.ins_type, self.jump, self.args)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from pykotor.common.script import DataType, ScriptFunction
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
@@ -37,12 +37,14 @@ class ControlKeyword(Enum):
     SWITCH = "switch"
     WHILE = "while"
     FOR = "for"
+    IF = "if"
 
 
 class CodeBlock:
     def __init__(self):
         self.scope: List[ScopedValue] = []
         self._statements: List[Statement] = []
+        self.jump_buffer: Optional[Tuple[NCSInstruction, int]] = None
         self.tempstack: int = 0
 
     def add(self, statement: Statement):
@@ -50,7 +52,12 @@ class CodeBlock:
 
     def compile(self, ncs: NCS):
         for statement in self._statements:
-            statement.compile(ncs, self)
+            if self.jump_buffer is None:
+                statement.compile(ncs, self)
+            else:
+                statement.compile(ncs, self)
+                inst, index = self.jump_buffer
+                inst.jump = ncs.instructions[index]
 
     def add_scoped(self, identifier: Identifier, data_type: DataType):
         self.scope.insert(0, ScopedValue(identifier, data_type))
@@ -205,5 +212,22 @@ class AssignmentStatement(Statement):
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CPDOWNSP, [stack_index, data_type.size()]))
         # Remove the temporary value from the stack that the expression created
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-data_type.size()]))
+
+
+class ConditionalStatement(Statement):
+    def __init__(self, condition: Expression, block: CodeBlock):
+        super().__init__()
+        self.condition: Expression = condition
+        self.block: CodeBlock = block
+
+    def compile(self, ncs: NCS, block: CodeBlock):
+        self.condition.compile(ncs, block)
+
+        jump = NCSInstruction(NCSInstructionType.JZ, [])
+        ncs.instructions.append(jump)
+
+        self.block.compile(ncs)
+        block.jump_buffer = (jump, len(ncs.instructions))
+
 # endregion
 
