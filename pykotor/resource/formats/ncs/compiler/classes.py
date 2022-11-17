@@ -42,7 +42,15 @@ class ControlKeyword(Enum):
 class CodeBlock:
     def __init__(self):
         self.scope: List[ScopedValue] = []
+        self._statements: List[Statement] = []
         self.tempstack: int = 0
+
+    def add(self, statement: Statement):
+        self._statements.append(statement)
+
+    def compile(self, ncs: NCS):
+        for statement in self._statements:
+            statement.compile(ncs, self)
 
     def add_scoped(self, identifier: Identifier, data_type: DataType):
         self.scope.insert(0, ScopedValue(identifier, data_type))
@@ -156,6 +164,9 @@ class EngineCallExpression(Expression):
 
 # region Statement Classes
 class Statement(ABC):
+    def __init__(self):
+        self.linenum: Optional[None] = None
+
     @abstractmethod
     def compile(self, ncs: NCS, block: CodeBlock):
         ...
@@ -163,6 +174,7 @@ class Statement(ABC):
 
 class DeclarationStatement(Statement):
     def __init__(self, identifier: Identifier, data_type: DataType, value: Expression):
+        super().__init__()
         self.identifier: Identifier = identifier
         self.data_type: DataType = data_type
         self.expression: Expression = value
@@ -176,6 +188,7 @@ class DeclarationStatement(Statement):
 
 class AssignmentStatement(Statement):
     def __init__(self, identifier: Identifier, value: Expression):
+        super().__init__()
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 

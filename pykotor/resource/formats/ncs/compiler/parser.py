@@ -1,6 +1,8 @@
 from typing import List
 
 from ply import yacc
+from ply.yacc import YaccProduction
+
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, KOTOR_CONSTANTS
 
 from pykotor.common.script import ScriptFunction, ScriptConstant
@@ -15,14 +17,13 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 class NssParser:
     def __init__(self):
         self.parser = yacc.yacc(module=self)
-        self.ncs: NCS = NCS()
         self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
         self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
 
-    def p_code_block(self, p):
+    def p_code_block(self, p: YaccProduction):
         """
         code_block : code_block statement
                    | statement
@@ -30,13 +31,11 @@ class NssParser:
         """
         if len(p) == 3:
             block: CodeBlock = p[1]
-            statement: Statement = p[2]
-            statement.compile(self.ncs, block)
+            block.add(p[2])
             p[0] = block
         elif len(p) == 2:
             block = CodeBlock()
-            statement: Statement = p[1]
-            statement.compile(self.ncs, block)
+            block.add(p[1])
             p[0] = block
         elif len(p) == 1:
             ...
@@ -49,6 +48,7 @@ class NssParser:
                   | expression ';'
         """
         p[0] = p[1]
+        p[0].linenum = p.lineno(1)
 
     def p_declaration_statement(self, p):
         """
