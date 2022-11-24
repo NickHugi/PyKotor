@@ -59,6 +59,7 @@ class CodeBlock:
                 statement.compile(ncs, self)
                 inst, index = self.jump_buffer
                 inst.jump = ncs.instructions[index]
+        ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-self.scope_size()]))
 
     def add_scoped(self, identifier: Identifier, data_type: DataType):
         self.scope.insert(0, ScopedValue(identifier, data_type))
@@ -75,6 +76,10 @@ class CodeBlock:
             else:
                 raise CompileException(f"Could not find symbol {identifier}.")
         return scoped.data_type, index
+
+    def scope_size(self):
+        size = self.get_scoped(self.scope[-1].identifier)[-1]
+        return abs(size)
 
     def build_parents(self):
         # need a better way of implementing this
