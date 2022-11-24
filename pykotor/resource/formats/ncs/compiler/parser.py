@@ -63,7 +63,7 @@ class NssParser:
             block.add(p[1])
             p[0] = block
         elif len(p) == 1:
-            ...
+            p[0] = CodeBlock()
 
     def p_statement(self, p):
         """
