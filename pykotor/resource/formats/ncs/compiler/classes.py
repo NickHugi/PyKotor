@@ -78,8 +78,7 @@ class CodeBlock:
         return scoped.data_type, index
 
     def scope_size(self):
-        size = self.get_scoped(self.scope[-1].identifier)[-1]
-        return abs(size)
+        return abs(self.get_scoped(self.scope[-1].identifier)[-1]) if self.scope else 0
 
     def build_parents(self):
         # need a better way of implementing this
