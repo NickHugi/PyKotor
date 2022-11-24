@@ -10,7 +10,8 @@ from pykotor.common.script import ScriptFunction, ScriptConstant
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
     CodeBlock, \
-    Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement
+    Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement, \
+    FunctionDefinition, FunctionDefinitionParam
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -23,7 +24,30 @@ class NssParser:
     tokens = NssLexer.tokens
     literals = NssLexer.literals
 
-    def p_code_block(self, p: YaccProduction):
+    def p_function_definition(self, p):
+        """
+        function_definition : data_type IDENTIFIER '(' function_definition_params ')' '{' code_block '}'
+        """
+        p[0] = FunctionDefinition(p[1], p[2], p[4], p[7])
+
+    def p_function_definition_params(self, p):
+        """
+        function_definition_params : function_definition_params ',' data_type IDENTIFIER
+                                   | data_type IDENTIFIER
+                                   |
+        """
+        if len(p) == 5:
+            params: List[FunctionDefinitionParam] = p[1]
+            params.append(FunctionDefinitionParam(p[3], p[4]))
+            p[0] = params
+        elif len(p) == 3:
+            params = []
+            params.append(FunctionDefinitionParam(p[1], p[2]))
+            p[0] = params
+        elif len(p) == 1:
+            p[0] =[]
+
+    def p_code_block(self, p):
         """
         code_block : code_block statement
                    | statement

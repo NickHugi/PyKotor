@@ -90,6 +90,19 @@ class ScopedValue:
         self.data_type: DataType = data_type
 
 
+class FunctionDefinition:
+    def __init__(self, return_type: DataType, identifier: Identifier, parameters: List[FunctionDefinitionParam], block: CodeBlock):
+        self.return_type: DataType = return_type
+        self.identifier: Identifier = identifier
+        self.parameters: List[FunctionDefinitionParam] = parameters
+
+
+class FunctionDefinitionParam:
+    def __init__(self, data_type: DataType, identifier: Identifier):
+        self.data_type: DataType = data_type
+        self.identifier: Identifier = identifier
+
+
 # region Value Classes
 class Expression(ABC):
     ...
@@ -239,6 +252,5 @@ class ConditionalStatement(Statement):
 
         self.block.compile(ncs)
         block.jump_buffer = (jump, len(ncs.instructions))
-
 # endregion
 
