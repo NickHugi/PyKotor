@@ -100,6 +100,10 @@ class FunctionDefinition:
         self.return_type: DataType = return_type
         self.identifier: Identifier = identifier
         self.parameters: List[FunctionDefinitionParam] = parameters
+        self.block: CodeBlock = block
+
+    def compile(self, ncs: NCS):
+        self.block.compile(ncs)
 
 
 class FunctionDefinitionParam:
