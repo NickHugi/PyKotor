@@ -11,7 +11,7 @@ from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
     CodeBlock, \
     Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement, \
-    FunctionDefinition, FunctionDefinitionParam
+    FunctionDefinition, FunctionDefinitionParam, CodeRoot
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -23,6 +23,21 @@ class NssParser:
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
+
+    def p_code_root(self, p):
+        """
+        code_root : code_root function_definition
+                  | function_definition
+                  |
+        """
+        if len(p) == 3:
+            block: CodeRoot = p[1]
+            block.functions.append(p[2])
+            p[0] = block
+        elif len(p) == 2:
+            block = CodeRoot()
+            block.functions.append(p[1])
+            p[0] = block
 
     def p_function_definition(self, p):
         """

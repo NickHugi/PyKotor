@@ -27,6 +27,9 @@ class Identifier:
     def __str__(self):
         return self.label
 
+    def __hash__(self):
+        return hash(self.label)
+
 
 class ControlKeyword(Enum):
     BREAK = "break"
@@ -38,6 +41,20 @@ class ControlKeyword(Enum):
     WHILE = "while"
     FOR = "for"
     IF = "if"
+
+
+class CodeRoot:
+    def __init__(self):
+        self.functions: List[FunctionDefinition] = []
+
+    def compile(self, ncs: NCS):
+        function_map = {}
+        for function in self.functions:
+            start_index = len(ncs.instructions)
+            function.compile(ncs)
+            function_map[function.identifier.label] = ncs.instructions[start_index]
+
+        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, function_map["main"]))
 
 
 class CodeBlock:
