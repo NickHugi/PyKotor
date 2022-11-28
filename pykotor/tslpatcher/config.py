@@ -51,7 +51,7 @@ class ModInstaller:
         self.log: PatchLogger = PatchLogger()
 
     def install(self) -> None:
-        append_tlk = read_tlk(self.mod_path + "/append.tlk")
+        append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
         ini_text = BinaryReader.load_file(self.mod_path + "/changes.ini").decode()
 
         installation = Installation(self.game_path)
