@@ -44,11 +44,11 @@ class PatcherConfig:
 
 
 class ModInstaller:
-    def __init__(self, mod_path: str, game_path: str):
+    def __init__(self, mod_path: str, game_path: str, logger: PatchLogger = None):
         self.game_path: str = game_path
         self.mod_path: str = mod_path
         self.output_path: str = game_path
-        self.log: PatchLogger = PatchLogger()
+        self.log: PatchLogger = PatchLogger() if logger is None else logger
 
     def install(self) -> None:
         append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
