@@ -1138,3 +1138,19 @@ class Installation:
         for module in self.modules_list():
             module_names[module] = self.module_name(module)
         return module_names
+
+    def uninstall_mods(
+            self
+    ) -> None:
+        """
+        Uninstalls all mods from the game.
+
+        What this method really does is delete all the contents of the override folder and delete all .MOD files from
+        the modules folder.
+        """
+        for file in os.listdir(self.module_path()):
+            if file.endswith(".mod"):
+                os.remove(self.module_path() + file)
+
+        for file in os.listdir(self.override_path()):
+            os.remove(self.override_path() + file)
