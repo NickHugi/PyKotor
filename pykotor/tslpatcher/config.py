@@ -74,7 +74,7 @@ class ModInstaller:
         # Apply changes to 2DA files
         for patch in config.patches_2da:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
-            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             twoda = twodas[patch.filename] = read_2da(search.data)
             patch.apply(twoda, memory)
             write_2da(twoda, "{}/override/{}".format(self.output_path, patch.filename))
@@ -82,7 +82,7 @@ class ModInstaller:
         # Apply changes to SSF files
         for patch in config.patches_ssf:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
-            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
+            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             soundset = soundsets[patch.filename] = read_ssf(search.data)
             patch.apply(soundset, memory)
             write_ssf(soundset, "{}/override/{}".format(self.output_path, patch.filename))
@@ -98,7 +98,7 @@ class ModInstaller:
             search = installation.resource(
                 resname,
                 restype,
-                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS, SearchLocation.CUSTOM_MODULES, SearchLocation.CHITIN],
+                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS, SearchLocation.CUSTOM_MODULES],
                 folders=[self.mod_path],
                 capsules=scan_capsules
             )
