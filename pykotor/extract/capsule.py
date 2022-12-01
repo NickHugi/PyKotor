@@ -1,8 +1,12 @@
+import os.path
 from typing import List, Optional, Dict
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceResult, ResourceIdentifier
+from pykotor.resource.formats.erf import ERF, read_erf, write_erf, ERFType
+from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_rim_file, is_erf_file, is_capsule_file
 
 
 class Capsule:
@@ -10,15 +14,23 @@ class Capsule:
     Chitin object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
     Capsule.resource() method.
-
-    Capsule data is read-only, use ERF or RIM classes instead for creating and editing files.
     """
     def __init__(
             self,
-            path: str
+            path: str,
+            create_nonexisting: bool = False
     ):
         self._path: str = path
         self._resources: List[FileResource] = []
+
+        if not is_capsule_file(path):
+            raise ValueError(f"Invalid file extension in capsule filepath '{path}'.")
+
+        if create_nonexisting and not os.path.exists(path):
+            if is_rim_file(path):
+                write_rim(RIM(), path)
+            elif is_erf_file(path):
+                write_erf(ERF(ERFType.from_extension(path)), path)
 
         self.reload()
 
@@ -122,6 +134,16 @@ class Capsule:
                 self._load_rim(reader)
             else:
                 raise ValueError("File '{}' was not an ERF/MOD/RIM.".format(self._path))
+
+    def add(
+            self,
+            resname: str,
+            restype: ResourceType,
+            resdata: bytes
+    ):
+        container = read_rim(self._path) if self._path.endswith(".rim") else read_erf(self._path)
+        container.set(resname, restype, resdata)
+        write_rim(container, self._path) if self._path.endswith(".rim") else write_erf(container, self._path)
 
     def path(
             self
