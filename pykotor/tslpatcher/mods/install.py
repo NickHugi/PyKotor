@@ -8,8 +8,7 @@ from pykotor.extract.file import ResourceIdentifier
 
 from pykotor.extract.capsule import Capsule
 
-from pykotor.resource.formats.erf import read_erf, write_erf, ERF
-from pykotor.resource.formats.rim import read_rim, write_rim, RIM
+from pykotor.tools.misc import is_capsule_file
 from pykotor.tslpatcher.logger import PatchLogger
 
 
@@ -21,29 +20,17 @@ class InstallFile:
     def _identifier(self) -> ResourceIdentifier:
         return ResourceIdentifier.from_path(self.filename)
 
-    def apply_rim(self, log: PatchLogger, source_folder: str, destination: RIM):
+    def apply_encapsulated(self, log: PatchLogger, source_folder: str, destination: Capsule):
         resname, restype = self._identifier()
 
-        if self.replace_existing or destination.get(resname, restype) is None:
-            if self.replace_existing and destination.get(resname, restype) is not None:
-                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination))
+        if self.replace_existing or destination.resource(resname, restype) is None:
+            if self.replace_existing and destination.resource(resname, restype) is not None:
+                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination.path()))
             else:
-                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination))
+                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination.path()))
 
             data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
-            destination.set(resname, restype, data)
-
-    def apply_erf(self, log: PatchLogger, source_folder: str, destination: ERF):
-        resname, restype = self._identifier()
-
-        if self.replace_existing or destination.get(resname, restype) is None:
-            if self.replace_existing and destination.get(resname, restype) is not None:
-                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination))
-            else:
-                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination))
-
-            data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
-            destination.set(resname, restype, data)
+            destination.add(resname, restype, data)
 
     def apply_file(self, log: PatchLogger, source_folder: str, destination: str):
         data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
@@ -70,13 +57,8 @@ class InstallFolder:
     def apply(self, log: PatchLogger, source_path: str, destination_path: str):
         target = "{}/{}".format(destination_path, self.foldername)
 
-        if self.foldername.endswith(".rim"):
-            destination = read_rim(target) if os.path.exists(target) else RIM()
-            [file.apply_rim(log, source_path, destination) for file in self.files]
-            write_rim(destination, target)
-        elif self.foldername.endswith(".mod"):
-            destination = read_erf(target) if os.path.exists(target) else ERF()
-            [file.apply_erf(log, source_path, destination) for file in self.files]
-            write_erf(destination, target)
+        if is_capsule_file(self.foldername):
+            destination = Capsule(target, create_nonexisting=True)
+            [file.apply_encapsulated(log, source_path, destination) for file in self.files]
         else:
             [file.apply_file(log, source_path, target) for file in self.files]
