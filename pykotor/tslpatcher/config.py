@@ -76,6 +76,8 @@ class ModInstaller:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             twoda = twodas[patch.filename] = read_2da(search.data)
+
+            self.log.add_note("Patching {}".format(patch.filename))
             patch.apply(twoda, memory)
             write_2da(twoda, "{}/override/{}".format(self.output_path, patch.filename))
 
@@ -84,6 +86,8 @@ class ModInstaller:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             soundset = soundsets[patch.filename] = read_ssf(search.data)
+
+            self.log.add_note("Patching {}".format(patch.filename))
             patch.apply(soundset, memory)
             write_ssf(soundset, "{}/override/{}".format(self.output_path, patch.filename))
 
@@ -102,8 +106,9 @@ class ModInstaller:
                 folders=[self.mod_path],
                 capsules=scan_capsules
             )
-
             template = templates[patch.filename] = read_gff(search.data)
+
+            self.log.add_note("Patching {}".format(patch.filename))
             patch.apply(template, memory)
             self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template))
 
