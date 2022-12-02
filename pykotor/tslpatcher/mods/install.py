@@ -47,6 +47,8 @@ class InstallFile:
                 log.add_note("Copying file {} to the {} folder...".format(self.filename, destination))
 
             BinaryWriter.dump(save_file_to, data)
+        elif not self.replace_existing and os.path.exists(save_file_to):
+            log.add_warning("A file named {} already exists in the {} folder. Skipping file...".format(self.filename, destination))
 
 
 class InstallFolder:
