@@ -9,7 +9,6 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFFieldType
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
-from pykotor.tslpatcher.mods.twoda import WarningException
 
 
 # TODO: 2DAMEMORY# as field path+label, store+save
@@ -90,6 +89,10 @@ class AddFieldGFF(ModifyGFF):
 
     def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
         container = self._navigate_containers(container, self.path)
+        if container is None:
+            logger.add_warning("Parent field at '{}' does not exist or is not a List or Struct. Unable to add new Field '{}'...".format(self.path, self.label))
+            return
+
         value = self.value.value(memory, self.field_type)
 
         def set_locstring():
@@ -130,9 +133,6 @@ class AddFieldGFF(ModifyGFF):
         if self.index_to_list_token is not None and isinstance(container, GFFList):
             memory.memory_2da[self.index_to_list_token] = str(len(container) - 1)
 
-        if container is None and self.modifiers:
-            raise WarningException()
-
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
@@ -144,8 +144,6 @@ class AddFieldGFF(ModifyGFF):
                 container = container.acquire(step, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
                 container = container.at(int(step))
-            else:
-                raise WarningException()
 
         return container
 
