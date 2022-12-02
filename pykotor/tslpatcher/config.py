@@ -109,7 +109,7 @@ class ModInstaller:
             template = templates[patch.filename] = read_gff(search.data)
 
             self.log.add_note("Patching {}".format(patch.filename))
-            patch.apply(template, memory)
+            patch.apply(template, memory, self.log)
             self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template))
 
     def write(self, filepath: str, filename: str, data: bytes) -> None:
