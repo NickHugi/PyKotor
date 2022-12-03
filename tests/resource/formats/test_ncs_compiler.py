@@ -39,7 +39,7 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                object oSomething = GetObjectByTag("something", 15);
+                object oExisting = GetExitingObject();
             }
         """)
 
@@ -50,3 +50,47 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual("GetObjectByTag", interpreter.action_snapshots[0].function_name)
         self.assertEqual(["something", 15], interpreter.action_snapshots[0].arg_values)
+
+    def test_addop_int_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 10 + 5;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(15, interpreter.stack_snapshots[-2][0].value)
+
+    def test_addop_float_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float value = 10.0 + 5.0;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        print(interpreter.stack_snapshots)
+        self.assertEqual(15.0, interpreter.stack_snapshots[-2][0].value)
+
+    def test_addop_string_string(self):
+        ncs = self.compile("""
+            void main()
+            {
+                string value = "abc" + "def";
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual("abcdef", interpreter.stack_snapshots[-2][0].value)
+
+    # test_addop_vector_vector
+    # test_addop_int_float
+    # test_addop_float_int

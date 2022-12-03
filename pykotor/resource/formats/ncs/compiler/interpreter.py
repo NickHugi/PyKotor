@@ -14,7 +14,7 @@ class Interpreter:
 
         self._stack: Stack = Stack()
 
-        self.stack_snapshots: List[List[Any]] = []
+        self.stack_snapshots: List[List[StackObject]] = []
         self.action_snapshots: List[ActionSnapshot] = []
 
     def run(self):
@@ -35,6 +35,10 @@ class Interpreter:
                 self.action(self._functions[self._cursor.args[0]], self._cursor.args[1])
             elif self._cursor.ins_type == NCSInstructionType.MOVSP:
                 self._stack.move(self._cursor.args[0])
+            elif self._cursor.ins_type in [NCSInstructionType.ADDII, NCSInstructionType.ADDIF,
+                                           NCSInstructionType.ADDFF, NCSInstructionType.ADDFI,
+                                           NCSInstructionType.ADDSS, NCSInstructionType.ADDVV]:
+                self._stack.addition_op()
 
             self.stack_snapshots.append(self._stack.state())
             # print(self._cursor, "\n", self._stack.state(), "\n")
@@ -77,6 +81,10 @@ class Stack:
         for i in range(abs(offset // 4)):
             self._stack.pop()
 
+    def addition_op(self):
+        value1 = self._stack.pop()
+        value2 = self._stack.pop()
+        self.add(value1.data_type, value2.value + value1.value)
 
 class StackObject:
     def __init__(self, data_type: DataType, value: Any):

@@ -150,7 +150,7 @@ class FunctionDefinitionParam:
         self.identifier: Identifier = identifier
 
 
-# region Value Classes
+# region Expression Classes
 class Expression(ABC):
     ...
 
@@ -159,7 +159,7 @@ class Expression(ABC):
         ...
 
     @abstractmethod
-    def data_type(self):
+    def data_type(self) -> DataType:
         ...
 
 
@@ -237,6 +237,43 @@ class EngineCallExpression(Expression):
 
     def data_type(self):
         return self._type
+
+
+class AdditionExpression(Expression):
+    def __init__(self, expression1: Expression, expression2: Expression):
+        self.expression1: Expression = expression1
+        self.expression2: Expression = expression2
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+        self.expression2.compile(ncs, block)
+
+        type1 = self.expression1.data_type()
+        type2 = self.expression2.data_type()
+
+        if type1 == DataType.INT and type1 == DataType.INT:
+            ncs.add(NCSInstructionType.ADDII)
+        elif type1 == DataType.INT and type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.ADDIF)
+        elif type1 == DataType.FLOAT and type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.ADDFF)
+        elif type1 == DataType.FLOAT and type1 == DataType.INT:
+            ncs.add(NCSInstructionType.ADDFI)
+        elif type1 == DataType.STRING and type1 == DataType.STRING:
+            ncs.add(NCSInstructionType.ADDSS)
+        elif type1 == DataType.VECTOR and type1 == DataType.VECTOR:
+            ncs.add(NCSInstructionType.ADDVV)
+        else:
+            raise CompileException(f"Cannot add {type1.name.lower()} to {type2.name.lower()}")
+
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
 # endregion
 
 
@@ -260,7 +297,7 @@ class DeclarationStatement(Statement):
     def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)
         if self.expression.data_type() != self.data_type:
-            raise CompileException(f"Tried to declare a new variable with incorrect type '{self.identifier}'.")
+            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{self.expression.data_type()}'.")
         block.add_scoped(self.identifier, self.data_type)
 
 

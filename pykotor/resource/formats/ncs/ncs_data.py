@@ -186,6 +186,9 @@ class NCS:
     def __init__(self):
         self.instructions: List[NCSInstruction] = []
 
+    def add(self, instruction_type: NCSInstructionType, args=None, jump=None) -> None:
+        self.instructions.append(NCSInstruction(instruction_type, args, jump))
+
 
 class NCSInstruction:
     def __init__(self, ins_type: NCSInstructionType = NCSInstructionType.NOP, args: List = None, jump: Optional[NCSInstruction] = None):
