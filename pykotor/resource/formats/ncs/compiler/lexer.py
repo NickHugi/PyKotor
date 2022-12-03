@@ -1,6 +1,8 @@
+import operator
+
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs.compiler.classes import IntExpression, ControlKeyword, StringExpression, \
-    FloatExpression, Identifier
+    FloatExpression, Identifier, Operator
 
 from abc import ABC
 from enum import Enum
@@ -19,7 +21,11 @@ class NssLexer:
         "VOID_TYPE",  "EVENT_TYPE", "EFFECT_TYPE", "ITEMPROPERTY_TYPE", "LOCATION_TYPE", "STRING_TYPE", "TALENT_TYPE",
         "VECTOR_TYPE", "ACTION_TYPE", "BREAK_CONTROL", "CASE_CONTROL", "DEFAULT_CONTROL", "DO_CONTROL", "ELSE_CONTROL",
         "SWITCH_CONTROL", "WHILE_CONTROL", "FOR_CONTROL", "IF_CONTROL", "TRUE_VALUE", "FALSE_VALUE", "OBJECTSELF_VALUE",
-        "OBJECTINVALID_VALUE"
+        "OBJECTINVALID_VALUE", "ADDITION_OPERATOR", "SUBTRACT_OPERATOR", "MULTIPLY_OPERATOR", "DIVIDE_OPERATOR",
+        "MODULUS_OPERATOR", "EQUAL_OPERATOR", "NOT_EQUAL_OPERATOR", "GREATER_THAN_OPERATOR", "LESS_THAN_OPERATOR",
+        "LESS_THAN_OR_EQUAL_OPERATOR", "GREATER_THAN_OR_EQUAL_OPERATOR", "AND_OPERATOR", "OR_OPERATOR",
+        "NOT_OPERATOR", "BITWISE_AND_OPERATOR", "BITWISE_OR_OPERATOR", "BITWISE_LEFT_OPERATOR",
+        "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR"
     ]
 
     literals = [
@@ -179,4 +185,99 @@ class NssLexer:
         return t
     # endregion
 
+    # region Operators
+    def t_ADDITION_OPERATOR(self, t):
+        '\+'
+        t.value = Operator.ADDITION
+        return t
 
+    def t_SUBTRACTION_OPERATOR(self, t):
+        '\-'
+        t.value = Operator.SUBTRACT
+        return t
+
+    def t_MULTIPLY_OPERATOR(self, t):
+        '\*'
+        t.value = Operator.MULTIPLY
+        return t
+
+    def t_DIVIDE_OPERATOR(self, t):
+        '/'
+        t.value = Operator.DIVIDE
+        return t
+
+    def t_MODULUS_OPERATOR(self, t):
+        '\%'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_EQUAL_OPERATOR(self, t):
+        '\=\='
+        t.value = Operator.ADDITION
+        return t
+
+    def t_NOT_EQUAL_OPERATOR(self, t):
+        '\!='
+        t.value = Operator.ADDITION
+        return t
+
+    def t_GREATER_THAN_OPERATOR(self, t):
+        '>'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_LESS_THAN_OPERATOR(self, t):
+        '\<'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_GREATER_OR_EQUAL_OPERATOR(self, t):
+        '\>='
+        t.value = Operator.ADDITION
+        return t
+
+    def t_LESS_THAN_OR_EQUAL_OPERATOR(self, t):
+        '\<='
+        t.value = Operator.ADDITION
+        return t
+
+    def t_AND_OPERATOR(self, t):
+        '&&'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_OR_OPERATOR(self, t):
+        '\|\|'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_NOT_OPERATOR(self, t):
+        '\!'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_BITWISE_AND_OPERATOR(self, t):
+        '&'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_BITWISE_OR_OPERATOR(self, t):
+        '\|'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_BITWISE_XOR_OPERATOR(self, t):
+        '\^'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_BITWISE_LEFT_OPERATOR(self, t):
+        '<<'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_BITWISE_RIGHT_OPERATOR(self, t):
+        '>>'
+        t.value = Operator.ADDITION
+        return t
+    # endregion
