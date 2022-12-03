@@ -1149,8 +1149,9 @@ class Installation:
         the modules folder.
         """
         for file in os.listdir(self.module_path()):
-            if file.endswith(".mod"):
+            if file.endswith(".mod") and os.path.isfile(self.module_path() + file):
                 os.remove(self.module_path() + file)
 
         for file in os.listdir(self.override_path()):
-            os.remove(self.override_path() + file)
+            if os.path.isfile(self.override_path() + file):
+                os.remove(self.override_path() + file)
