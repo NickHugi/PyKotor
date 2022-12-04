@@ -210,19 +210,6 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(-10.0, interpreter.stack_snapshots[-2][-1].value)
 
-    def test_compop_float(self):
-        ncs = self.compile("""
-            void main()
-            {
-                int a = ~1;
-            }
-        """)
-
-        interpreter = Interpreter(ncs)
-        interpreter.run()
-
-        self.assertEqual(-2, interpreter.stack_snapshots[-2][-1].value)
-
     def test_op_with_variables(self):
         ncs = self.compile("""
             void main()
@@ -270,7 +257,7 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)
 
-    def test_logand_op(self):
+    def test_logical_and_op(self):
         ncs = self.compile("""
             void main()
             {
@@ -287,7 +274,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
         self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
 
-    def test_logor_op(self):
+    def test_logical_or_op(self):
         ncs = self.compile("""
             void main()
             {
@@ -303,6 +290,21 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
         self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
         self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+
+    def test_logical_equals_op(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1 == 1;
+                int b = 1 == 2;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)
     # endregion
 
     # region Bitwise Operator Tests
@@ -331,6 +333,19 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(5, interpreter.stack_snapshots[-2][-1].value)
+
+    def test_bitwise_not_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = ~1;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(-2, interpreter.stack_snapshots[-2][-1].value)
 
     def test_bitwise_and_op(self):
         ncs = self.compile("""
