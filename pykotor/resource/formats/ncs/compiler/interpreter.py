@@ -196,12 +196,12 @@ class Stack:
     def compare_greaterthan_op(self):
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value1.value > value2.value)
+        self.add(value1.data_type, int(value1.value > value2.value))
 
     def compare_greaterthanorequal_op(self):
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value1.value >= value2.value)
+        self.add(value1.data_type, int(value1.value >= value2.value))
 
 
 class StackObject:

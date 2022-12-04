@@ -221,14 +221,14 @@ class NssLexer:
         t.value = Operator.NOT_EQUAL
         return t
 
+    def t_GREATER_THAN_OR_EQUAL_OPERATOR(self, t):
+        '>\='
+        t.value = Operator.GREATER_THAN_OR_EQUAL
+        return t
+
     def t_GREATER_THAN_OPERATOR(self, t):
         '>'
         t.value = Operator.GREATER_THAN
-        return t
-
-    def t_GREATER_THAN_OR_EQUAL_OPERATOR(self, t):
-        '>'
-        t.value = Operator.GREATER_THAN_OR_EQUAL
         return t
 
     def t_LESS_THAN_OPERATOR(self, t):
