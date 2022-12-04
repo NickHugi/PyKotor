@@ -304,3 +304,16 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
         self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
     # endregion
+
+    def test_bitwise_op(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 5 | 2;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(7, interpreter.stack_snapshots[-2][-1].value)

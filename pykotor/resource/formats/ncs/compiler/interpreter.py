@@ -63,6 +63,8 @@ class Interpreter:
                 self._stack.logical_and_op()
             elif self._cursor.ins_type in [NCSInstructionType.LOGORII]:
                 self._stack.logical_or_op()
+            elif self._cursor.ins_type in [NCSInstructionType.INCORII]:
+                self._stack.bitwise_or_op()
 
             self.stack_snapshots.append(self._stack.state())
             # print(self._cursor, "\n", self._stack.state(), "\n")
@@ -134,10 +136,6 @@ class Stack:
         value1 = self._stack.pop()
         self.add(value1.data_type, -value1.value)
 
-    def bitwise_not_op(self):
-        value1 = self._stack.pop()
-        self.add(value1.data_type, ~value1.value)
-
     def logical_not_op(self):
         value1 = self._stack.pop()
         self.add(value1.data_type, not value1.value)
@@ -151,6 +149,15 @@ class Stack:
         value1 = self._stack.pop()
         value2 = self._stack.pop()
         self.add(value1.data_type, value1.value or value2.value)
+
+    def bitwise_not_op(self):
+        value1 = self._stack.pop()
+        self.add(value1.data_type, ~value1.value)
+
+    def bitwise_or_op(self):
+        value1 = self._stack.pop()
+        value2 = self._stack.pop()
+        self.add(value1.data_type, value1.value | value2.value)
 
 
 class StackObject:

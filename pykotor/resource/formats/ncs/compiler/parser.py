@@ -13,7 +13,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement, \
     FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression, SubtractionExpression, \
     MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, OnesComplementExpression, \
-    LogicalNotExpression, LogicalAndExpression, LogicalOrExpression
+    LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -165,6 +165,12 @@ class NssParser:
         """
         p[0] = LogicalOrExpression(p[1], p[3])
 
+    def p_bitwise_or_expression(self, p):
+        """
+        bitwise_or_expression : expression BITWISE_OR_OPERATOR expression
+        """
+        p[0] = BitwiseOrExpression(p[1], p[3])
+
     def p_bitwise_not_expression(self, p):
         """
         bitwise_not_expression : ONES_COMPLEMENT_OPERATOR expression
@@ -184,6 +190,7 @@ class NssParser:
                    | divide_expression
                    | modulus_expression
                    | bitwise_not_expression
+                   | bitwise_or_expression
                    | logical_not_expression
                    | logical_and_expression
                    | logical_or_expression
