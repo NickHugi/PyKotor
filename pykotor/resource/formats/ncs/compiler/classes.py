@@ -78,6 +78,7 @@ class CodeRoot:
             function.compile(ncs)
             function_map[function.identifier.label] = ncs.instructions[start_index]
 
+        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.RETN))
         ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, function_map["main"]))
 
 
@@ -144,6 +145,7 @@ class FunctionDefinition:
 
     def compile(self, ncs: NCS):
         self.block.compile(ncs)
+        ncs.add(NCSInstructionType.RETN)
 
 
 class FunctionDefinitionParam:
