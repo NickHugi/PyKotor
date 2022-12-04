@@ -25,7 +25,8 @@ class NssLexer:
         "MODULUS_OPERATOR", "EQUAL_OPERATOR", "NOT_EQUAL_OPERATOR", "GREATER_THAN_OPERATOR", "LESS_THAN_OPERATOR",
         "LESS_THAN_OR_EQUAL_OPERATOR", "GREATER_THAN_OR_EQUAL_OPERATOR", "AND_OPERATOR", "OR_OPERATOR",
         "NOT_OPERATOR", "BITWISE_AND_OPERATOR", "BITWISE_OR_OPERATOR", "BITWISE_LEFT_OPERATOR",
-        "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR", "ONES_COMPLEMENT_OPERATOR", "COMMENT", "MULTILINE_COMMENT"
+        "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR", "ONES_COMPLEMENT_OPERATOR", "COMMENT", "MULTILINE_COMMENT",
+        "INCLUDE"
     ]
 
     literals = [
@@ -41,6 +42,10 @@ class NssLexer:
     def t_MULTILINE_COMMENT(self, t):
         r'/\*[^\*/]*\*/'
         pass
+
+    def t_INCLUDE(self, t):
+        '\#include'
+        return t
 
     # region Control Tokens
     def t_BREAK_CONTROL(self, t):

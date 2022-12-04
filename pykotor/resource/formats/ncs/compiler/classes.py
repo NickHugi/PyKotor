@@ -68,6 +68,7 @@ class Operator(Enum):
 
 class CodeRoot:
     def __init__(self):
+        self.includes: List[IncludeScript] = []
         self.functions: List[FunctionDefinition] = []
 
     def compile(self, ncs: NCS):
@@ -149,6 +150,14 @@ class FunctionDefinitionParam:
     def __init__(self, data_type: DataType, identifier: Identifier):
         self.data_type: DataType = data_type
         self.identifier: Identifier = identifier
+
+
+class IncludeScript:
+    def __init__(self, file: str):
+        self.file: str = file
+
+    def compile(self, ncs: NCS) -> int:
+        return 0
 
 
 # region Expression Classes

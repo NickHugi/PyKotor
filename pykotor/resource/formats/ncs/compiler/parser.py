@@ -16,7 +16,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
-    BitwiseRightShiftExpression
+    BitwiseRightShiftExpression, IncludeScript
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -32,17 +32,31 @@ class NssParser:
     def p_code_root(self, p):
         """
         code_root : code_root function_definition
+                  | code_root include_script
                   | function_definition
+                  | include_script
                   |
         """
         if len(p) == 3:
             block: CodeRoot = p[1]
-            block.functions.append(p[2])
+            if isinstance(p[2], FunctionDefinition):
+                block.functions.append(p[2])
+            elif isinstance(p[2], IncludeScript):
+                block.includes.append(p[2])
             p[0] = block
         elif len(p) == 2:
             block = CodeRoot()
-            block.functions.append(p[1])
+            if isinstance(p[1], FunctionDefinition):
+                block.functions.append(p[1])
+            elif isinstance(p[1], IncludeScript):
+                block.includes.append(p[1])
             p[0] = block
+
+    def p_include_script(self, p):
+        """
+        include_script : INCLUDE STRING_VALUE
+        """
+        p[0] = IncludeScript(p[2])
 
     def p_function_definition(self, p):
         """

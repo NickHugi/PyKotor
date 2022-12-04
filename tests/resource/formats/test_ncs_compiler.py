@@ -500,3 +500,16 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
+
+    def test_include(self):
+        ncs = self.compile("""
+            #include "k_inc_debug"
+            
+            void main()
+            {
+            
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
