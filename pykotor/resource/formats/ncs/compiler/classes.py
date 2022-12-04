@@ -831,7 +831,7 @@ class BitwiseAndExpression(Expression):
         return self._type
 
 
-class OnesComplementExpression(Expression):
+class BitwiseNotExpression(Expression):
     def __init__(self, expression1: Expression):
         self.expression1: Expression = expression1
         self._type = None
@@ -848,6 +848,36 @@ class OnesComplementExpression(Expression):
             raise CompileException(f"Cannot get one's complement of {type1.name.lower()}")
 
         block.tempstack -= 4
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
+
+
+class BitwiseLeftShiftExpression(Expression):
+    def __init__(self, expression1: Expression, expression2: Expression):
+        self.expression1: Expression = expression1
+        self.expression2: Expression = expression2
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+        block.tempstack += 4
+        self.expression2.compile(ncs, block)
+        block.tempstack += 4
+
+        type1 = self.expression1.data_type()
+        type2 = self.expression2.data_type()
+
+        if type1 == DataType.INT and type2 == DataType.INT:
+            ncs.add(NCSInstructionType.SHLEFTII)
+        else:
+            raise CompileException(f"Cannot bitshift {type1.name.lower()} with {type2.name.lower()}")
+
+        block.tempstack -= 8
         self._type = type1
         return type1.size()
 

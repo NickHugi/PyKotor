@@ -186,6 +186,16 @@ class NssLexer:
     # endregion
 
     # region Operators
+    def t_BITWISE_LEFT_OPERATOR(self, t):
+        '<<'
+        t.value = Operator.ADDITION
+        return t
+
+    def t_BITWISE_RIGHT_OPERATOR(self, t):
+        '>>'
+        t.value = Operator.ADDITION
+        return t
+
     def t_ADDITION_OPERATOR(self, t):
         '\+'
         t.value = Operator.ADDITION
@@ -273,16 +283,6 @@ class NssLexer:
 
     def t_BITWISE_XOR_OPERATOR(self, t):
         '\^'
-        t.value = Operator.ADDITION
-        return t
-
-    def t_BITWISE_LEFT_OPERATOR(self, t):
-        '<<'
-        t.value = Operator.ADDITION
-        return t
-
-    def t_BITWISE_RIGHT_OPERATOR(self, t):
-        '>>'
         t.value = Operator.ADDITION
         return t
 

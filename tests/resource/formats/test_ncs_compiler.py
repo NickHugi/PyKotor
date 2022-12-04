@@ -445,4 +445,17 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(2, interpreter.stack_snapshots[-2][-1].value)
+
+    def test_bitwise_shiftleft_op(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 7 << 2;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(28, interpreter.stack_snapshots[-2][-1].value)
     # endregion
