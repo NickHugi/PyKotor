@@ -15,7 +15,8 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, BitwiseNotExpression, \
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
-    GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression
+    GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
+    BitwiseRightShiftExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -233,6 +234,12 @@ class NssParser:
         """
         p[0] = BitwiseLeftShiftExpression(p[1], p[3])
 
+    def p_bitwise_rightshift_expression(self, p):
+        """
+        bitwise_rightshift_expression : expression BITWISE_RIGHT_OPERATOR expression
+        """
+        p[0] = BitwiseRightShiftExpression(p[1], p[3])
+
     def p_expression(self, p):
         """
         expression : function_call
@@ -250,6 +257,7 @@ class NssParser:
                    | bitwise_xor_expression
                    | bitwise_and_expression
                    | bitwise_leftshift_expression
+                   | bitwise_rightshift_expression
                    | logical_not_expression
                    | logical_and_expression
                    | logical_or_expression

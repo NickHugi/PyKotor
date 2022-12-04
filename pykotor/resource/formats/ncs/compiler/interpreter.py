@@ -112,6 +112,9 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.SHLEFTII]:
                 self._stack.bitwise_leftshift_op()
 
+            elif self._cursor.ins_type in [NCSInstructionType.SHRIGHTII]:
+                self._stack.bitwise_rightshift_op()
+
             self.stack_snapshots.append(self._stack.state())
             # print(self._cursor, "\n", self._stack.state(), "\n")
 
@@ -229,6 +232,11 @@ class Stack:
         value1 = self._stack.pop()
         value2 = self._stack.pop()
         self.add(value1.data_type, value2.value << value1.value)
+
+    def bitwise_rightshift_op(self):
+        value1 = self._stack.pop()
+        value2 = self._stack.pop()
+        self.add(value1.data_type, value2.value >> value1.value)
 
     def compare_greaterthan_op(self):
         value1 = self._stack.pop()
