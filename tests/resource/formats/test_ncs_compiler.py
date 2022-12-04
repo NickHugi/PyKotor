@@ -53,6 +53,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual("GetObjectByTag", interpreter.action_snapshots[0].function_name)
         self.assertEqual(["something", 15], interpreter.action_snapshots[0].arg_values)
 
+    # region Arithmetic Tests
     def test_addop_int_int(self):
         ncs = self.compile("""
             void main()
@@ -144,6 +145,32 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(50.0, interpreter.stack_snapshots[-2][0].value)
 
+    def test_divop_int_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 10 / 5;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, interpreter.stack_snapshots[-2][0].value)
+
+    def test_divop_float_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float a = 10.0 / 5.0;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2.0, interpreter.stack_snapshots[-2][0].value)
+
     # test_addop_vector_vector
     # test_addop_int_float
     # test_addop_float_int
@@ -154,3 +181,8 @@ class TestNSSCompiler(TestCase):
     # test_mulop_float_int
     # test_mulop_float_vector
     # test_mulop_vector_float
+    # test_divop_int_float
+    # test_divop_float_int
+    # test_divop_vector_float
+
+    # endregion

@@ -12,7 +12,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     CodeBlock, \
     Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement, \
     FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression, SubtractionExpression, \
-    MultiplicationExpression
+    MultiplicationExpression, DivisionExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -128,6 +128,12 @@ class NssParser:
         """
         p[0] = MultiplicationExpression(p[1], p[3])
 
+    def p_divide_expression(self, p):
+        """
+        divide_expression : expression DIVIDE_OPERATOR expression
+        """
+        p[0] = DivisionExpression(p[1], p[3])
+
     def p_expression(self, p):
         """
         expression : function_call
@@ -138,6 +144,7 @@ class NssParser:
                    | add_expression
                    | subtract_expression
                    | multiply_expression
+                   | divide_expression
         """
         if isinstance(p[1], Identifier):
             p[0] = IdentifierExpression(p[1])
