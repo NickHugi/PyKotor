@@ -381,6 +381,33 @@ class DivisionExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
+
+
+class ModulusExpression(Expression):
+    def __init__(self, expression1: Expression, expression2: Expression):
+        self.expression1: Expression = expression1
+        self.expression2: Expression = expression2
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+        self.expression2.compile(ncs, block)
+
+        type1 = self.expression1.data_type()
+        type2 = self.expression2.data_type()
+
+        if type1 == DataType.INT and type1 == DataType.INT:
+            ncs.add(NCSInstructionType.MODII)
+        else:
+            raise CompileException(f"Cannot get the modulus of {type1.name.lower()} and {type2.name.lower()}")
+
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
 # endregion
 
 

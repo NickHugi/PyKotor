@@ -171,6 +171,34 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(2.0, interpreter.stack_snapshots[-2][0].value)
 
+    def test_modop_int_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 10 % 3;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, interpreter.stack_snapshots[-2][0].value)
+
+    def test_op_with_variables(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 10;
+                int b = 5;
+                int c = a * b;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(50, interpreter.stack_snapshots[-2][-1].value)
+
     # test_addop_vector_vector
     # test_addop_int_float
     # test_addop_float_int
