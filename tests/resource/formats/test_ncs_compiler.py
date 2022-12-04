@@ -184,6 +184,32 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, interpreter.stack_snapshots[-2][0].value)
 
+    def test_negop_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = -10;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(-10, interpreter.stack_snapshots[-2][-1].value)
+
+    def test_negop_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float a = -10.0;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(-10.0, interpreter.stack_snapshots[-2][-1].value)
+
     def test_op_with_variables(self):
         ncs = self.compile("""
             void main()

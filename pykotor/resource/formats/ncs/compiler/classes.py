@@ -408,6 +408,32 @@ class ModulusExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
+
+
+class NegationExpression(Expression):
+    def __init__(self, expression1: Expression):
+        self.expression1: Expression = expression1
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+
+        type1 = self.expression1.data_type()
+
+        if type1 == DataType.INT:
+            ncs.add(NCSInstructionType.NEGI)
+        elif type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.NEGF)
+        else:
+            raise CompileException(f"Cannot negate {type1.name.lower()}")
+
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
 # endregion
 
 
