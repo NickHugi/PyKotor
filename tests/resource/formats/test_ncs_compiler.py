@@ -91,6 +91,35 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual("abcdef", interpreter.stack_snapshots[-2][0].value)
 
+    def test_subop_int_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 10 - 5;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(5, interpreter.stack_snapshots[-2][0].value)
+
+    def test_subop_float_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float value = 10.0 - 5.0;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(5.0, interpreter.stack_snapshots[-2][0].value)
+
     # test_addop_vector_vector
     # test_addop_int_float
     # test_addop_float_int
+    # test_subop_int_float
+    # test_subop_float_int
+    # test_subop_vector_vector

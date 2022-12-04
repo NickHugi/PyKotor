@@ -11,7 +11,7 @@ from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
     CodeBlock, \
     Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement, \
-    FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression
+    FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression, SubtractionExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -115,6 +115,12 @@ class NssParser:
         """
         p[0] = AdditionExpression(p[1], p[3])
 
+    def p_subtract_expression(self, p):
+        """
+        subtract_expression : expression SUBTRACTION_OPERATOR expression
+        """
+        p[0] = SubtractionExpression(p[1], p[3])
+
     def p_expression(self, p):
         """
         expression : function_call
@@ -123,6 +129,7 @@ class NssParser:
                    | STRING_VALUE
                    | IDENTIFIER
                    | add_expression
+                   | subtract_expression
         """
         if isinstance(p[1], Identifier):
             p[0] = IdentifierExpression(p[1])

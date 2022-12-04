@@ -39,6 +39,10 @@ class Interpreter:
                                            NCSInstructionType.ADDFF, NCSInstructionType.ADDFI,
                                            NCSInstructionType.ADDSS, NCSInstructionType.ADDVV]:
                 self._stack.addition_op()
+            elif self._cursor.ins_type in [NCSInstructionType.SUBII, NCSInstructionType.SUBIF,
+                                           NCSInstructionType.SUBFF, NCSInstructionType.SUBFI,
+                                           NCSInstructionType.SUBVV]:
+                self._stack.subtraction_op()
 
             self.stack_snapshots.append(self._stack.state())
             # print(self._cursor, "\n", self._stack.state(), "\n")
@@ -85,6 +89,12 @@ class Stack:
         value1 = self._stack.pop()
         value2 = self._stack.pop()
         self.add(value1.data_type, value2.value + value1.value)
+
+    def subtraction_op(self):
+        value1 = self._stack.pop()
+        value2 = self._stack.pop()
+        self.add(value1.data_type, value2.value - value1.value)
+
 
 class StackObject:
     def __init__(self, data_type: DataType, value: Any):

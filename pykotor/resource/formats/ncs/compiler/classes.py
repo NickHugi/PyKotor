@@ -274,6 +274,41 @@ class AdditionExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
+
+
+class SubtractionExpression(Expression):
+    def __init__(self, expression1: Expression, expression2: Expression):
+        self.expression1: Expression = expression1
+        self.expression2: Expression = expression2
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+        self.expression2.compile(ncs, block)
+
+        type1 = self.expression1.data_type()
+        type2 = self.expression2.data_type()
+
+        if type1 == DataType.INT and type1 == DataType.INT:
+            ncs.add(NCSInstructionType.SUBII)
+        elif type1 == DataType.INT and type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.SUBIF)
+        elif type1 == DataType.FLOAT and type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.SUBFF)
+        elif type1 == DataType.FLOAT and type1 == DataType.INT:
+            ncs.add(NCSInstructionType.SUBFI)
+        elif type1 == DataType.VECTOR and type1 == DataType.VECTOR:
+            ncs.add(NCSInstructionType.SUBVV)
+        else:
+            raise CompileException(f"Cannot add {type1.name.lower()} to {type2.name.lower()}")
+
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
 # endregion
 
 
