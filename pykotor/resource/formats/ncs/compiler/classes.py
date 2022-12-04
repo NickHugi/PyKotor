@@ -300,7 +300,44 @@ class SubtractionExpression(Expression):
         elif type1 == DataType.VECTOR and type1 == DataType.VECTOR:
             ncs.add(NCSInstructionType.SUBVV)
         else:
-            raise CompileException(f"Cannot add {type1.name.lower()} to {type2.name.lower()}")
+            raise CompileException(f"Cannot subtract {type2.name.lower()} from {type1.name.lower()}")
+
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
+
+
+class MultiplicationExpression(Expression):
+    def __init__(self, expression1: Expression, expression2: Expression):
+        self.expression1: Expression = expression1
+        self.expression2: Expression = expression2
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+        self.expression2.compile(ncs, block)
+
+        type1 = self.expression1.data_type()
+        type2 = self.expression2.data_type()
+
+        if type1 == DataType.INT and type1 == DataType.INT:
+            ncs.add(NCSInstructionType.MULII)
+        elif type1 == DataType.INT and type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.MULIF)
+        elif type1 == DataType.FLOAT and type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.MULFF)
+        elif type1 == DataType.FLOAT and type1 == DataType.INT:
+            ncs.add(NCSInstructionType.MULFI)
+        elif type1 == DataType.VECTOR and type1 == DataType.FLOAT:
+            ncs.add(NCSInstructionType.MULVF)
+        elif type1 == DataType.FLOAT and type1 == DataType.VECTOR:
+            ncs.add(NCSInstructionType.MULFV)
+        else:
+            raise CompileException(f"Cannot multiply {type1.name.lower()} to {type2.name.lower()}")
 
         self._type = type1
         return type1.size()
