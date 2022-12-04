@@ -322,6 +322,27 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
     # endregion
 
+    # region Comparision Operator Tests
+
+    def test_compare_greaterthan_op(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 10 > 1;
+                int b = 10 > 10;
+                int c = 10 > 20;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+
+    # endregion
+
     # region Bitwise Operator Tests
     def test_bitwise_or_op(self):
         ncs = self.compile("""

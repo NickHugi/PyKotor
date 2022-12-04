@@ -75,6 +75,8 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.NEQUALII, NCSInstructionType.NEQUALFF,
                                            NCSInstructionType.NEQUALSS, NCSInstructionType.NEQUALOO]:
                 self._stack.logical_inequality_op()
+            elif self._cursor.ins_type in [NCSInstructionType.GTII, NCSInstructionType.GTFF]:
+                self._stack.compare_greaterthan_op()
 
             self.stack_snapshots.append(self._stack.state())
             # print(self._cursor, "\n", self._stack.state(), "\n")
@@ -188,6 +190,11 @@ class Stack:
         value1 = self._stack.pop()
         value2 = self._stack.pop()
         self.add(value1.data_type, value1.value & value2.value)
+
+    def compare_greaterthan_op(self):
+        value1 = self._stack.pop()
+        value2 = self._stack.pop()
+        self.add(value1.data_type, value1.value > value2.value)
 
 
 class StackObject:
