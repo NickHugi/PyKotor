@@ -16,7 +16,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
-    BitwiseRightShiftExpression, IncludeScript
+    BitwiseRightShiftExpression, IncludeScript, ReturnStatement
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -105,6 +105,7 @@ class NssParser:
                   | declaration_statement
                   | assignment_statement
                   | condition_statement
+                  | return_statement
                   | expression ';'
         """
         p[0] = p[1]
@@ -127,6 +128,12 @@ class NssParser:
         condition_statement : IF_CONTROL '(' expression ')' '{' code_block '}'
         """
         p[0] = ConditionalStatement(p[3], p[6])
+
+    def p_return_statement(self, p):
+        """
+        return_statement : RETURN ';'
+        """
+        p[0] = ReturnStatement()
 
     def p_add_expression(self, p):
         """

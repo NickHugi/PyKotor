@@ -26,7 +26,7 @@ class NssLexer:
         "LESS_THAN_OR_EQUAL_OPERATOR", "GREATER_THAN_OR_EQUAL_OPERATOR", "AND_OPERATOR", "OR_OPERATOR",
         "NOT_OPERATOR", "BITWISE_AND_OPERATOR", "BITWISE_OR_OPERATOR", "BITWISE_LEFT_OPERATOR",
         "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR", "ONES_COMPLEMENT_OPERATOR", "COMMENT", "MULTILINE_COMMENT",
-        "INCLUDE"
+        "INCLUDE", "RETURN"
     ]
 
     literals = [
@@ -91,6 +91,11 @@ class NssLexer:
     def t_IF_CONTROL(self, t):
         r'if'
         t.value = ControlKeyword.IF
+        return t
+
+    def t_RETURN(self, t):
+        r'return'
+        t.value = ControlKeyword.RETURN
         return t
     # endregion
 

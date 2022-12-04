@@ -41,6 +41,7 @@ class ControlKeyword(Enum):
     WHILE = "while"
     FOR = "for"
     IF = "if"
+    RETURN = "return"
 
 
 class Operator(Enum):
@@ -93,12 +94,17 @@ class CodeBlock:
     def add(self, statement: Statement):
         self._statements.append(statement)
 
-    def compile(self, ncs: NCS):
+    def compile(self, ncs: NCS, return_instruction: NCSInstruction):
         for statement in self._statements:
-            if self.jump_buffer is None:
-                statement.compile(ncs, self)
+
+            if isinstance(statement, ReturnStatement):
+                ncs.add(NCSInstructionType.MOVSP, args=[-self.full_scope_size()])
+                ncs.add(NCSInstructionType.JMP, jump=return_instruction)
+                return
+            elif self.jump_buffer is None:
+                statement.compile(ncs, self, return_instruction)
             else:
-                statement.compile(ncs, self)
+                statement.compile(ncs, self, return_instruction)
                 inst, index = self.jump_buffer
                 inst.jump = ncs.instructions[index]
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-self.scope_size()]))
@@ -120,7 +126,16 @@ class CodeBlock:
         return scoped.data_type, index
 
     def scope_size(self):
+        """Returns size of local scope."""
         return abs(self.get_scoped(self.scope[-1].identifier)[-1]) if self.scope else 0
+
+    def full_scope_size(self):
+        """Returns size of scope, including outer blocks."""
+        size = 0
+        size += self.scope_size()
+        if self.parent is not None:
+            size += self.parent.full_scope_size()
+        return size
 
     def build_parents(self):
         # need a better way of implementing this
@@ -144,8 +159,9 @@ class FunctionDefinition:
         self.block: CodeBlock = block
 
     def compile(self, ncs: NCS):
-        self.block.compile(ncs)
-        ncs.add(NCSInstructionType.RETN)
+        retn = NCSInstruction(NCSInstructionType.RETN)
+        self.block.compile(ncs, retn)
+        ncs.instructions.append(retn)
 
 
 class FunctionDefinitionParam:
@@ -935,7 +951,7 @@ class Statement(ABC):
         self.linenum: Optional[None] = None
 
     @abstractmethod
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
         ...
 
 
@@ -946,7 +962,7 @@ class DeclarationStatement(Statement):
         self.data_type: DataType = data_type
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
         self.expression.compile(ncs, block)
         if self.expression.data_type() != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{self.expression.data_type()}'.")
@@ -959,7 +975,7 @@ class AssignmentStatement(Statement):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
         self.expression.compile(ncs, block)
 
         data_type, stack_index = block.get_scoped(self.identifier)
@@ -980,13 +996,22 @@ class ConditionalStatement(Statement):
         self.condition: Expression = condition
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
         self.condition.compile(ncs, block)
 
         jump = NCSInstruction(NCSInstructionType.JZ, [])
         ncs.instructions.append(jump)
 
-        self.block.compile(ncs)
+        self.block.compile(ncs, return_instruction)
         block.jump_buffer = (jump, len(ncs.instructions))
+
+
+class ReturnStatement(Statement):
+    def __init__(self):
+        super().__init__()
+        ...
+
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        ...
 # endregion
 

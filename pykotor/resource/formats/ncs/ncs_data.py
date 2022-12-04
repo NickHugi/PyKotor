@@ -186,6 +186,14 @@ class NCS:
     def __init__(self):
         self.instructions: List[NCSInstruction] = []
 
+    def print(self):
+        for i, instruction in enumerate(self.instructions):
+            if instruction.jump:
+                jump_index = self.instructions.index(instruction.jump)
+                print("{}:\t{}\t--> {}".format(i, instruction.ins_type.name.ljust(8), jump_index))
+            else:
+                print("{}:\t{} {}".format(i, instruction.ins_type.name.ljust(8), instruction.args))
+
     def add(self, instruction_type: NCSInstructionType, args=None, jump=None) -> None:
         self.instructions.append(NCSInstruction(instruction_type, args, jump))
 

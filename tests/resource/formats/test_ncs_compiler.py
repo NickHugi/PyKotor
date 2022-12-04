@@ -513,3 +513,22 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
+
+    def test_return(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 0;
+            
+                if (a == 1)
+                {
+                    int b = 0;
+                    return;
+                }
+                
+                return;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
