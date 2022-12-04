@@ -217,6 +217,7 @@ class TestNSSCompiler(TestCase):
                 int a = 10;
                 int b = 5;
                 int c = a * b;
+                int d = 10 * 5;
             }
         """)
 
@@ -224,6 +225,7 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(50, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(50, interpreter.stack_snapshots[-2][-2].value)
 
     # test_addop_vector_vector
     # test_addop_int_float

@@ -247,7 +247,9 @@ class AdditionExpression(Expression):
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
+        block.tempstack += 4
         self.expression2.compile(ncs, block)
+        block.tempstack += 4
 
         type1 = self.expression1.data_type()
         type2 = self.expression2.data_type()
@@ -267,6 +269,7 @@ class AdditionExpression(Expression):
         else:
             raise CompileException(f"Cannot add {type1.name.lower()} to {type2.name.lower()}")
 
+        block.tempstack -= 8
         self._type = type1
         return type1.size()
 
@@ -284,7 +287,9 @@ class SubtractionExpression(Expression):
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
+        block.tempstack += 4
         self.expression2.compile(ncs, block)
+        block.tempstack += 4
 
         type1 = self.expression1.data_type()
         type2 = self.expression2.data_type()
@@ -302,6 +307,7 @@ class SubtractionExpression(Expression):
         else:
             raise CompileException(f"Cannot subtract {type2.name.lower()} from {type1.name.lower()}")
 
+        block.tempstack -= 8
         self._type = type1
         return type1.size()
 
@@ -319,7 +325,9 @@ class MultiplicationExpression(Expression):
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
+        block.tempstack += 4
         self.expression2.compile(ncs, block)
+        block.tempstack += 4
 
         type1 = self.expression1.data_type()
         type2 = self.expression2.data_type()
@@ -339,6 +347,8 @@ class MultiplicationExpression(Expression):
         else:
             raise CompileException(f"Cannot multiply {type1.name.lower()} to {type2.name.lower()}")
 
+        block.tempstack -= 8
+        block.tempstack -= 8
         self._type = type1
         return type1.size()
 
@@ -356,7 +366,9 @@ class DivisionExpression(Expression):
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
+        block.tempstack += 4
         self.expression2.compile(ncs, block)
+        block.tempstack += 4
 
         type1 = self.expression1.data_type()
         type2 = self.expression2.data_type()
@@ -374,6 +386,7 @@ class DivisionExpression(Expression):
         else:
             raise CompileException(f"Cannot divide {type1.name.lower()} by {type2.name.lower()}")
 
+        block.tempstack -= 8
         self._type = type1
         return type1.size()
 
@@ -391,7 +404,9 @@ class ModulusExpression(Expression):
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
+        block.tempstack += 4
         self.expression2.compile(ncs, block)
+        block.tempstack += 4
 
         type1 = self.expression1.data_type()
         type2 = self.expression2.data_type()
@@ -401,6 +416,7 @@ class ModulusExpression(Expression):
         else:
             raise CompileException(f"Cannot get the modulus of {type1.name.lower()} and {type2.name.lower()}")
 
+        block.tempstack -= 8
         self._type = type1
         return type1.size()
 
@@ -417,6 +433,7 @@ class NegationExpression(Expression):
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
+        block.tempstack += 4
 
         type1 = self.expression1.data_type()
 
@@ -427,6 +444,7 @@ class NegationExpression(Expression):
         else:
             raise CompileException(f"Cannot negate {type1.name.lower()}")
 
+        block.tempstack -= 4
         self._type = type1
         return type1.size()
 
