@@ -472,3 +472,14 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
     # endregion
+
+    def test_comment(self):
+        ncs = self.compile("""
+            void main()
+            {
+                // int a = "abc"; // [] /*
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()

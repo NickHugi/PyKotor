@@ -94,7 +94,7 @@ class NssParser:
                   | expression ';'
         """
         p[0] = p[1]
-        p[0].linenum = p.lineno(1)
+        #p[0].linenum = p.lineno(1)
 
     def p_declaration_statement(self, p):
         """
