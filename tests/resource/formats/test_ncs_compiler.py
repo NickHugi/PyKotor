@@ -255,3 +255,16 @@ class TestNSSCompiler(TestCase):
     # test_divop_vector_float
 
     # endregion
+
+    def test_notop_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = !1;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)

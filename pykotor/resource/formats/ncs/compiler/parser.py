@@ -12,7 +12,8 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     CodeBlock, \
     Statement, ScopedValue, AssignmentStatement, EngineCallExpression, Expression, ConditionalStatement, \
     FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression, SubtractionExpression, \
-    MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, OnesComplementExpression
+    MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, OnesComplementExpression, \
+    LogicalNotExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -146,6 +147,12 @@ class NssParser:
         """
         p[0] = NegationExpression(p[2])
 
+    def p_logical_not_expression(self, p):
+        """
+        logical_not_expression : NOT_OPERATOR expression
+        """
+        p[0] = LogicalNotExpression(p[2])
+
     def p_bitwise_not_expression(self, p):
         """
         bitwise_not_expression : ONES_COMPLEMENT_OPERATOR expression
@@ -165,6 +172,7 @@ class NssParser:
                    | divide_expression
                    | modulus_expression
                    | bitwise_not_expression
+                   | logical_not_expression
         """
         if isinstance(p[1], Identifier):
             p[0] = IdentifierExpression(p[1])

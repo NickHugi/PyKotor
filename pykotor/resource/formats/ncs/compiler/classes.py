@@ -455,6 +455,32 @@ class NegationExpression(Expression):
         return self._type
 
 
+class LogicalNotExpression(Expression):
+    def __init__(self, expression1: Expression):
+        self.expression1: Expression = expression1
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+        block.tempstack += 4
+
+        type1 = self.expression1.data_type()
+
+        if type1 == DataType.INT:
+            ncs.add(NCSInstructionType.NOTI)
+        else:
+            raise CompileException(f"Cannot get the logical NOT of {type1.name.lower()}")
+
+        block.tempstack -= 4
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
+
+
 class OnesComplementExpression(Expression):
     def __init__(self, expression1: Expression):
         self.expression1: Expression = expression1
