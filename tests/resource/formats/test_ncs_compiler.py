@@ -256,7 +256,8 @@ class TestNSSCompiler(TestCase):
 
     # endregion
 
-    def test_notop_float(self):
+    # region Logical Tests
+    def test_not_op(self):
         ncs = self.compile("""
             void main()
             {
@@ -268,3 +269,19 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)
+
+    def test_logand_op(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1 && 0;
+                int b = 1 && 1;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+    # endregion

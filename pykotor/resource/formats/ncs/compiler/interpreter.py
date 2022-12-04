@@ -59,6 +59,8 @@ class Interpreter:
                 self._stack.bitwise_not_op()
             elif self._cursor.ins_type in [NCSInstructionType.NOTI]:
                 self._stack.logical_not_op()
+            elif self._cursor.ins_type in [NCSInstructionType.LOGANDII]:
+                self._stack.logical_and_op()
 
             self.stack_snapshots.append(self._stack.state())
             # print(self._cursor, "\n", self._stack.state(), "\n")
@@ -137,6 +139,11 @@ class Stack:
     def logical_not_op(self):
         value1 = self._stack.pop()
         self.add(value1.data_type, not value1.value)
+
+    def logical_and_op(self):
+        value1 = self._stack.pop()
+        value2 = self._stack.pop()
+        self.add(value1.data_type, value1.value and value2.value)
 
 
 class StackObject:
