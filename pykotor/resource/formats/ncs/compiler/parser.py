@@ -15,7 +15,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, OnesComplementExpression, \
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
-    GreaterThanOrEqualExpression
+    GreaterThanOrEqualExpression, LessThanExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -181,7 +181,7 @@ class NssParser:
 
     def p_compare_greaterthan_expression(self, p):
         """
-        comparison_greaterthan_expression : expression GREATER_THAN_OPERATOR expression
+        compare_greaterthan_expression : expression GREATER_THAN_OPERATOR expression
         """
         p[0] = GreaterThanExpression(p[1], p[3])
 
@@ -190,6 +190,12 @@ class NssParser:
         compare_greaterthanorequal_expression : expression GREATER_THAN_OR_EQUAL_OPERATOR expression
         """
         p[0] = GreaterThanOrEqualExpression(p[1], p[3])
+
+    def p_compare_lessthan_expression(self, p):
+        """
+        compare_lessthan_expression : expression LESS_THAN_OPERATOR expression
+        """
+        p[0] = LessThanExpression(p[1], p[3])
 
     def p_bitwise_or_expression(self, p):
         """
@@ -236,8 +242,9 @@ class NssParser:
                    | logical_or_expression
                    | logical_equality_expression
                    | logical_inequality_expression
-                   | comparison_greaterthan_expression
+                   | compare_greaterthan_expression
                    | compare_greaterthanorequal_expression
+                   | compare_lessthan_expression
         """
         if isinstance(p[1], Identifier):
             p[0] = IdentifierExpression(p[1])
