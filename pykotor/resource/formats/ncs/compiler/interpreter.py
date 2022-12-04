@@ -55,6 +55,8 @@ class Interpreter:
                 self._stack.modulus_op()
             elif self._cursor.ins_type in [NCSInstructionType.NEGI, NCSInstructionType.NEGF]:
                 self._stack.negation_op()
+            elif self._cursor.ins_type in [NCSInstructionType.COMPI]:
+                self._stack.ones_complement_op()
 
             self.stack_snapshots.append(self._stack.state())
             # print(self._cursor, "\n", self._stack.state(), "\n")
@@ -125,6 +127,10 @@ class Stack:
     def negation_op(self):
         value1 = self._stack.pop()
         self.add(value1.data_type, -value1.value)
+
+    def ones_complement_op(self):
+        value1 = self._stack.pop()
+        self.add(value1.data_type, ~value1.value)
 
 
 class StackObject:

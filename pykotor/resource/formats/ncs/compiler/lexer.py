@@ -25,7 +25,7 @@ class NssLexer:
         "MODULUS_OPERATOR", "EQUAL_OPERATOR", "NOT_EQUAL_OPERATOR", "GREATER_THAN_OPERATOR", "LESS_THAN_OPERATOR",
         "LESS_THAN_OR_EQUAL_OPERATOR", "GREATER_THAN_OR_EQUAL_OPERATOR", "AND_OPERATOR", "OR_OPERATOR",
         "NOT_OPERATOR", "BITWISE_AND_OPERATOR", "BITWISE_OR_OPERATOR", "BITWISE_LEFT_OPERATOR",
-        "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR"
+        "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR", "ONES_COMPLEMENT_OPERATOR"
     ]
 
     literals = [
@@ -279,5 +279,10 @@ class NssLexer:
     def t_BITWISE_RIGHT_OPERATOR(self, t):
         '>>'
         t.value = Operator.ADDITION
+        return t
+
+    def t_ONES_COMPLEMENT_OPERATOR(self, t):
+        '\~'
+        t.value = Operator.ONES_COMPLEMENT
         return t
     # endregion

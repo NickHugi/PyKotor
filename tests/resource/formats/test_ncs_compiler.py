@@ -210,22 +210,35 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(-10.0, interpreter.stack_snapshots[-2][-1].value)
 
-    def test_op_with_variables(self):
+    def test_compop_float(self):
         ncs = self.compile("""
             void main()
             {
-                int a = 10;
-                int b = 5;
-                int c = a * b;
-                int d = 10 * 5;
+                int a = ~1;
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(50, interpreter.stack_snapshots[-2][-1].value)
-        self.assertEqual(50, interpreter.stack_snapshots[-2][-2].value)
+        self.assertEqual(-2, interpreter.stack_snapshots[-2][-1].value)
+
+    def test_op_with_variables(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 10;
+                int b = 5;
+                int c = a * b * a;
+                int d = 10 * 5 * 10;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(500, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(500, interpreter.stack_snapshots[-2][-2].value)
 
     # test_addop_vector_vector
     # test_addop_int_float

@@ -62,7 +62,8 @@ class Operator(Enum):
     BITWISE_OR = "|"
     BITWISE_XOR = "^"
     BITWISE_LEFT = "<<"
-    BITWISE_RIGHT = ">>"\
+    BITWISE_RIGHT = ">>"
+    ONES_COMPLEMENT = "~"
 
 
 class CodeRoot:
@@ -443,6 +444,32 @@ class NegationExpression(Expression):
             ncs.add(NCSInstructionType.NEGF)
         else:
             raise CompileException(f"Cannot negate {type1.name.lower()}")
+
+        block.tempstack -= 4
+        self._type = type1
+        return type1.size()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
+
+
+class OnesComplementExpression(Expression):
+    def __init__(self, expression1: Expression):
+        self.expression1: Expression = expression1
+        self._type = None
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+        self.expression1.compile(ncs, block)
+        block.tempstack += 4
+
+        type1 = self.expression1.data_type()
+
+        if type1 == DataType.INT:
+            ncs.add(NCSInstructionType.COMPI)
+        else:
+            raise CompileException(f"Cannot get one's complement of {type1.name.lower()}")
 
         block.tempstack -= 4
         self._type = type1
