@@ -14,7 +14,7 @@ class Interpreter:
 
         self._stack: Stack = Stack()
 
-        self.stack_snapshots: List[List[StackObject]] = []
+        self.stack_snapshots: List[StackSnapshot] = []
         self.action_snapshots: List[ActionSnapshot] = []
 
     def run(self):
@@ -35,6 +35,9 @@ class Interpreter:
 
             elif self._cursor.ins_type == NCSInstructionType.CPTOPSP:
                 self._stack.copy_to_top(self._cursor.args[0])
+
+            elif self._cursor.ins_type == NCSInstructionType.CPDOWNSP:
+                self._stack.copy_down(self._cursor.args[0])
 
             elif self._cursor.ins_type == NCSInstructionType.ACTION:
                 self.action(self._functions[self._cursor.args[0]], self._cursor.args[1])
@@ -115,7 +118,7 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.SHRIGHTII]:
                 self._stack.bitwise_rightshift_op()
 
-            self.stack_snapshots.append(self._stack.state())
+            self.stack_snapshots.append(StackSnapshot(self._cursor, self._stack.state()))
             # print(self._cursor, "\n", self._stack.state(), "\n")
 
             if self._cursor.jump is not None:
@@ -135,6 +138,10 @@ class Interpreter:
 
         self.action_snapshots.append(ActionSnapshot(function.name, args_snap, None))
 
+    def print(self):
+        for snap in self.stack_snapshots:
+            print(snap.instruction, "\n", snap.stack, "\n")
+
 
 class Stack:
     def __init__(self):
@@ -148,6 +155,10 @@ class Stack:
 
     def copy_to_top(self, offset: int) -> None:
         self._stack.append(self._stack[offset // 4])
+
+    def copy_down(self, offset: int) -> None:
+        top_value = self._stack[-1]
+        self._stack[offset // 4] = top_value
 
     def pop(self) -> Any:
         return self._stack.pop()
@@ -278,3 +289,9 @@ class ActionSnapshot(NamedTuple):
     function_name: str
     arg_values: List
     return_value: Any
+
+
+class StackSnapshot(NamedTuple):
+    instruction: NCSInstruction
+    stack: List[StackObject]
+

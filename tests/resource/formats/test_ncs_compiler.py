@@ -53,7 +53,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual("GetObjectByTag", interpreter.action_snapshots[0].function_name)
         self.assertEqual(["something", 15], interpreter.action_snapshots[0].arg_values)
 
-    # region Arithmetic Tests
+    # region Arithmetic Operator Tests
     def test_addop_int_int(self):
         ncs = self.compile("""
             void main()
@@ -243,7 +243,7 @@ class TestNSSCompiler(TestCase):
 
     # endregion
 
-    # region Logical Tests
+    # region Logical Operator Tests
     def test_not_op(self):
         ncs = self.compile("""
             void main()
@@ -471,6 +471,22 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+    # endregion
+
+    # Assignment Tests
+    def test_addition_assignment(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                a += 2;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(3, interpreter.stack_snapshots[-3].stack[-1].value)
     # endregion
 
     def test_comment(self):

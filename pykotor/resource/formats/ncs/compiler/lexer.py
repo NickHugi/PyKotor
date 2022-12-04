@@ -26,7 +26,7 @@ class NssLexer:
         "LESS_THAN_OR_EQUAL_OPERATOR", "GREATER_THAN_OR_EQUAL_OPERATOR", "AND_OPERATOR", "OR_OPERATOR",
         "NOT_OPERATOR", "BITWISE_AND_OPERATOR", "BITWISE_OR_OPERATOR", "BITWISE_LEFT_OPERATOR",
         "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR", "ONES_COMPLEMENT_OPERATOR", "COMMENT", "MULTILINE_COMMENT",
-        "INCLUDE", "RETURN"
+        "INCLUDE", "RETURN", "ADDITION_ASSIGNMENT"
     ]
 
     literals = [
@@ -202,6 +202,10 @@ class NssLexer:
         t.value = IntExpression(-1)
         return t
     # endregion
+
+    def t_ADDITION_ASSIGNMENT(self, t):
+        '\+\='
+        return t
 
     # region Operators
     def t_BITWISE_LEFT_OPERATOR(self, t):

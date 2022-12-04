@@ -16,7 +16,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
-    BitwiseRightShiftExpression, IncludeScript, ReturnStatement
+    BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -107,6 +107,7 @@ class NssParser:
                   | condition_statement
                   | return_statement
                   | expression ';'
+                  | addition_assignment ';'
         """
         p[0] = p[1]
         #p[0].linenum = p.lineno(1)
@@ -122,6 +123,12 @@ class NssParser:
         assignment_statement : IDENTIFIER '=' expression ';'
         """
         p[0] = AssignmentStatement(p[1], p[3])
+
+    def p_addition_assignment(self, p):
+        """
+        addition_assignment : IDENTIFIER ADDITION_ASSIGNMENT expression
+        """
+        p[0] = AdditionAssignment(p[1], p[3])
 
     def p_condition_statement(self, p):
         """

@@ -88,7 +88,7 @@ class CodeBlock:
         self.scope: List[ScopedValue] = []
         self.parent: Optional[CodeBlock] = None
         self._statements: List[Statement] = []
-        self.jump_buffer: Optional[Tuple[NCSInstruction, int]] = None
+        self.jump_buffer: Optional[Tuple[NCSInstruction, int]] = None  # Instruction to assign jump value to + the index of the instruction to jump to
         self.tempstack: int = 0
 
     def add(self, statement: Statement):
@@ -988,6 +988,32 @@ class AssignmentStatement(Statement):
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CPDOWNSP, [stack_index, data_type.size()]))
         # Remove the temporary value from the stack that the expression created
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-data_type.size()]))
+
+
+class AdditionAssignment(Statement):
+    def __init__(self, identifier: Identifier, value: Expression):
+        super().__init__()
+        self.identifier: Identifier = identifier
+        self.expression: Expression = value
+
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        self.expression.compile(ncs, block)
+        #block.tempstack += self.expression.data_type().size()
+
+        data_type, stack_index = block.get_scoped(self.identifier)
+        stack_index -= data_type.size()
+
+        if self.expression.data_type() != data_type:
+            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+
+        # Copy the variable to the top of the stack
+        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, data_type.size()])
+        # Add the expression and our temp variable copy together
+        ncs.add(NCSInstructionType.ADDII)
+        # Copy the result to the original variable in the stack
+        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index, data_type.size()])
+        # Pop the temp variable
+        ncs.add(NCSInstructionType.MOVSP, args=[-data_type.size()])
 
 
 class ConditionalStatement(Statement):
