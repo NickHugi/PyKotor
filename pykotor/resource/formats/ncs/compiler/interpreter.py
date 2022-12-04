@@ -13,12 +13,13 @@ class Interpreter:
         self._functions: List[ScriptFunction] = KOTOR_FUNCTIONS
 
         self._stack: Stack = Stack()
+        self._returns: List[NCSInstruction] = [None]
 
         self.stack_snapshots: List[StackSnapshot] = []
         self.action_snapshots: List[ActionSnapshot] = []
 
     def run(self):
-        while True:
+        while self._cursor is not None:
             index = self._ncs.instructions.index(self._cursor)
 
             if self._cursor.ins_type == NCSInstructionType.CONSTS:
@@ -118,15 +119,22 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.SHRIGHTII]:
                 self._stack.bitwise_rightshift_op()
 
+            elif self._cursor.ins_type in [NCSInstructionType.JSR]:
+                index_return_to = self._ncs.instructions.index(self._cursor) + 1
+                return_to = self._ncs.instructions[index_return_to]
+                self._returns.append(return_to)
+
             self.stack_snapshots.append(StackSnapshot(self._cursor, self._stack.state()))
-            # print(self._cursor, "\n", self._stack.state(), "\n")
+
+            if self._cursor.ins_type in [NCSInstructionType.RETN]:
+                return_to = self._returns.pop()
+                self._cursor = return_to
+                continue
 
             if self._cursor.jump is not None:
                 self._cursor = self._cursor.jump
-            elif index < len(self._ncs.instructions)-1:
-                self._cursor = self._ncs.instructions[index + 1]
             else:
-                break
+                self._cursor = self._ncs.instructions[index + 1]
 
     def action(self, function: ScriptFunction, args: int):
         args_snap = []
