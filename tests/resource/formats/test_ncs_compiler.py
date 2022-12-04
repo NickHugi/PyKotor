@@ -478,6 +478,23 @@ class TestNSSCompiler(TestCase):
             void main()
             {
                 // int a = "abc"; // [] /*
+                int a = 0;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+    def test_multiline_comment(self):
+        ncs = self.compile("""
+            void main()
+            {
+                /* int 
+                abc = 
+                ;; 123
+                */
+                
+                string aaa = "";
             }
         """)
 
