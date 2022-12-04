@@ -65,7 +65,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(15, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(15, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_addop_float_float(self):
         ncs = self.compile("""
@@ -78,7 +78,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(15.0, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(15.0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_addop_string_string(self):
         ncs = self.compile("""
@@ -91,7 +91,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual("abcdef", interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual("abcdef", interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_subop_int_int(self):
         ncs = self.compile("""
@@ -104,7 +104,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(5, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(5, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_subop_float_float(self):
         ncs = self.compile("""
@@ -117,7 +117,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(5.0, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(5.0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_mulop_int_int(self):
         ncs = self.compile("""
@@ -130,7 +130,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(50, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(50, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_mulop_float_float(self):
         ncs = self.compile("""
@@ -143,7 +143,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(50.0, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(50.0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_divop_int_int(self):
         ncs = self.compile("""
@@ -156,7 +156,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(2, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_divop_float_float(self):
         ncs = self.compile("""
@@ -169,7 +169,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2.0, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(2.0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_modop_int_int(self):
         ncs = self.compile("""
@@ -182,7 +182,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-2][0].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_negop_int(self):
         ncs = self.compile("""
@@ -195,7 +195,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(-10, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(-10, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_negop_float(self):
         ncs = self.compile("""
@@ -208,7 +208,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(-10.0, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(-10.0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_op_with_variables(self):
         ncs = self.compile("""
@@ -224,8 +224,8 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(500, interpreter.stack_snapshots[-2][-1].value)
-        self.assertEqual(500, interpreter.stack_snapshots[-2][-2].value)
+        self.assertEqual(500, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(500, interpreter.stack_snapshots[-4].stack[-2].value)
 
     # test_addop_vector_vector
     # test_addop_int_float
@@ -255,7 +255,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_logical_and_op(self):
         ncs = self.compile("""
@@ -270,9 +270,9 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_logical_or_op(self):
         ncs = self.compile("""
@@ -287,9 +287,9 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_logical_equals_op(self):
         ncs = self.compile("""
@@ -303,8 +303,8 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_logical_notequals_op(self):
         ncs = self.compile("""
@@ -318,8 +318,8 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
     # region Comparision Operator Tests
@@ -336,9 +336,9 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_compare_greaterthanorequal_op(self):
         ncs = self.compile("""
@@ -353,9 +353,9 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_compare_lessthan_op(self):
         ncs = self.compile("""
@@ -370,9 +370,9 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-3].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-3].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_compare_lessthanorequal_op(self):
         ncs = self.compile("""
@@ -387,9 +387,9 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-3].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-3].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
+        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
 
     # endregion
 
@@ -405,7 +405,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(7, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(7, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_bitwise_xor_op(self):
         ncs = self.compile("""
@@ -418,7 +418,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(5, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(5, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_bitwise_not_float(self):
         ncs = self.compile("""
@@ -431,7 +431,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(-2, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(-2, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_bitwise_and_op(self):
         ncs = self.compile("""
@@ -443,8 +443,8 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-
-        self.assertEqual(2, interpreter.stack_snapshots[-2][-1].value)
+        
+        self.assertEqual(2, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_bitwise_shiftleft_op(self):
         ncs = self.compile("""
@@ -457,7 +457,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(28, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(28, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_bitwise_shiftright_op(self):
         ncs = self.compile("""
@@ -470,7 +470,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
     # Assignment Tests
@@ -486,7 +486,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, interpreter.stack_snapshots[-3].stack[-1].value)
+        self.assertEqual(3, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
     def test_comment(self):
