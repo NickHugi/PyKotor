@@ -274,14 +274,33 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int a = 1 && 0;
-                int b = 1 && 1;
+                int a = 0 && 0;
+                int b = 1 && 0;
+                int c = 1 && 1;
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
+        self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
         self.assertEqual(0, interpreter.stack_snapshots[-2][-2].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
+
+    def test_logor_op(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 0 || 0;
+                int b = 1 || 0;
+                int c = 1 || 1;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.stack_snapshots[-2][-3].value)
+        self.assertEqual(1, interpreter.stack_snapshots[-2][-2].value)
         self.assertEqual(1, interpreter.stack_snapshots[-2][-1].value)
     # endregion
