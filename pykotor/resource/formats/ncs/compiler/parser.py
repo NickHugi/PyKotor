@@ -21,8 +21,8 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
-    def __init__(self):
-        self.parser = yacc.yacc(module=self)
+    def __init__(self, errorlog=yacc.NullLogger()):
+        self.parser = yacc.yacc(module=self, errorlog=errorlog)
         self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
         self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
 

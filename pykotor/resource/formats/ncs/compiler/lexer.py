@@ -12,8 +12,8 @@ import ply.lex as lex
 
 
 class NssLexer:
-    def __init__(self):
-        self.lexer = lex.lex(module=self)
+    def __init__(self, errorlog=lex.NullLogger()):
+        self.lexer = lex.lex(module=self, errorlog=errorlog)
         self.lexer.begin("INITIAL")
 
     tokens = [
