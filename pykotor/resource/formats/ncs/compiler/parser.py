@@ -106,7 +106,6 @@ class NssParser:
                   | condition_statement
                   | return_statement
                   | expression ';'
-                  | addition_assignment ';'
         """
         p[0] = p[1]
         #p[0].linenum = p.lineno(1)
@@ -275,6 +274,7 @@ class NssParser:
                    | STRING_VALUE
                    | IDENTIFIER
                    | assignment
+                   | addition_assignment
                    | add_expression
                    | subtract_expression
                    | multiply_expression
