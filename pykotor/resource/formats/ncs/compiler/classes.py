@@ -184,17 +184,9 @@ class IncludeScript:
 
 
 class Expression(ABC):
-    def __init__(self):
-        self._type: Optional[DataType] = None
-
     @abstractmethod
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
         ...
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
 
 
 class Statement(ABC):
@@ -212,10 +204,10 @@ class IdentifierExpression(Expression):
         super().__init__()
         self.identifier: Identifier = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self._type, stack_index = block.get_scoped(self.identifier)
-        ncs.instructions.append(NCSInstruction(NCSInstructionType.CPTOPSP, [stack_index, self._type.size()]))
-        return self._type.size()
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        datatype, stack_index = block.get_scoped(self.identifier)
+        ncs.instructions.append(NCSInstruction(NCSInstructionType.CPTOPSP, [stack_index, datatype.size()]))
+        return datatype
 
 
 class StringExpression(Expression):
@@ -223,10 +215,9 @@ class StringExpression(Expression):
         super().__init__()
         self.value: str = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTS, [self.value]))
-        self._type = DataType.STRING
-        return DataType.STRING.size()
+        return DataType.STRING
 
 
 class IntExpression(Expression):
@@ -234,10 +225,9 @@ class IntExpression(Expression):
         super().__init__()
         self.value: int = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTI, [self.value]))
-        self._type = DataType.INT
-        return DataType.INT.size()
+        return DataType.INT
 
 
 class FloatExpression(Expression):
@@ -245,10 +235,9 @@ class FloatExpression(Expression):
         super().__init__()
         self.value: float = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTF, [self.value]))
-        self._type = DataType.FLOAT
-        return DataType.FLOAT.size()
+        return DataType.FLOAT
 
 
 class EngineCallExpression(Expression):
@@ -258,19 +247,19 @@ class EngineCallExpression(Expression):
         self._routine_id: int = routine_id
         self._args: List[Expression] = args
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
         this_stack = 0
-        for arg in reversed(self._args):
+        for i, arg in enumerate(reversed(self._args)):
             added = arg.compile(ncs, block)
-            block.tempstack += added
-            this_stack += added
-        for arg, param in zip(self._args, self._function.params):
-            if arg.data_type() != param.datatype:
+            block.tempstack += added.size()
+            this_stack += added.size()
+
+            if added != self._function.params[-i - 1].datatype:
                 raise CompileException(f"Tried to pass an argument of the incorrect type to {self._function.name}.")
+
         ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
         block.tempstack -= this_stack
-        self._type = self._function.returntype
-        return self._type.size()
+        return self._function.returntype
 # endregion
 
 
@@ -281,14 +270,11 @@ class AdditionExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type1 == DataType.INT:
             ncs.add(NCSInstructionType.ADDII)
@@ -306,13 +292,7 @@ class AdditionExpression(Expression):
             raise CompileException(f"Cannot add {type1.name.lower()} to {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
+        return type1
 
 
 class SubtractionExpression(Expression):
@@ -321,14 +301,11 @@ class SubtractionExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type1 == DataType.INT:
             ncs.add(NCSInstructionType.SUBII)
@@ -344,8 +321,7 @@ class SubtractionExpression(Expression):
             raise CompileException(f"Cannot subtract {type2.name.lower()} from {type1.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class MultiplicationExpression(Expression):
@@ -354,14 +330,11 @@ class MultiplicationExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type1 == DataType.INT:
             ncs.add(NCSInstructionType.MULII)
@@ -379,8 +352,7 @@ class MultiplicationExpression(Expression):
             raise CompileException(f"Cannot multiply {type1.name.lower()} to {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class DivisionExpression(Expression):
@@ -389,14 +361,11 @@ class DivisionExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type1 == DataType.INT:
             ncs.add(NCSInstructionType.DIVII)
@@ -412,8 +381,7 @@ class DivisionExpression(Expression):
             raise CompileException(f"Cannot divide {type1.name.lower()} by {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class ModulusExpression(Expression):
@@ -422,14 +390,11 @@ class ModulusExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type1 == DataType.INT:
             ncs.add(NCSInstructionType.MODII)
@@ -437,22 +402,17 @@ class ModulusExpression(Expression):
             raise CompileException(f"Cannot get the modulus of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
-# endregion
+        return type1
 
 
-# region Expressions: Logical
 class NegationExpression(Expression):
     def __init__(self, expression1: Expression):
         super().__init__()
         self.expression1: Expression = expression1
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
 
         if type1 == DataType.INT:
             ncs.add(NCSInstructionType.NEGI)
@@ -462,20 +422,19 @@ class NegationExpression(Expression):
             raise CompileException(f"Cannot negate {type1.name.lower()}")
 
         block.tempstack -= 4
-        self._type = type1
-        return type1.size()
+        return type1
+# endregion
 
 
+# region Expressions: Logical
 class LogicalNotExpression(Expression):
     def __init__(self, expression1: Expression):
         super().__init__()
         self.expression1: Expression = expression1
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
 
         if type1 == DataType.INT:
             ncs.add(NCSInstructionType.NOTI)
@@ -483,13 +442,7 @@ class LogicalNotExpression(Expression):
             raise CompileException(f"Cannot get the logical NOT of {type1.name.lower()}")
 
         block.tempstack -= 4
-        self._type = type1
-        return type1.size()
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
+        return DataType.INT
 
 
 class LogicalAndExpression(Expression):
@@ -498,14 +451,11 @@ class LogicalAndExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.LOGANDII)
@@ -513,8 +463,7 @@ class LogicalAndExpression(Expression):
             raise CompileException(f"Cannot get the logical AND of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 
 
 class LogicalOrExpression(Expression):
@@ -523,14 +472,11 @@ class LogicalOrExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.LOGORII)
@@ -538,8 +484,7 @@ class LogicalOrExpression(Expression):
             raise CompileException(f"Cannot get the logical OR of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 # endregion
 
 
@@ -550,14 +495,11 @@ class LogicalEqualityExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.EQUALII)
@@ -571,8 +513,7 @@ class LogicalEqualityExpression(Expression):
             raise CompileException(f"Cannot test the equality of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 
 
 class LogicalInequalityExpression(Expression):
@@ -582,14 +523,11 @@ class LogicalInequalityExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.NEQUALII)
@@ -603,8 +541,7 @@ class LogicalInequalityExpression(Expression):
             raise CompileException(f"Cannot test the equality of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 
 
 class GreaterThanExpression(Expression):
@@ -613,14 +550,11 @@ class GreaterThanExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.GTII)
@@ -630,8 +564,7 @@ class GreaterThanExpression(Expression):
             raise CompileException(f"Cannot test if {type1.name.lower()} is greater than {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 
 
 class GreaterThanOrEqualExpression(Expression):
@@ -641,14 +574,11 @@ class GreaterThanOrEqualExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.GEQII)
@@ -658,8 +588,7 @@ class GreaterThanOrEqualExpression(Expression):
             raise CompileException(f"Cannot test if {type1.name.lower()} is greater than or equal to {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 
 
 class LessThanExpression(Expression):
@@ -669,14 +598,11 @@ class LessThanExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.LTII)
@@ -686,8 +612,7 @@ class LessThanExpression(Expression):
             raise CompileException(f"Cannot test if {type1.name.lower()} is less than {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 
 
 class LessThanOrEqualExpression(Expression):
@@ -697,14 +622,11 @@ class LessThanOrEqualExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.LEQII)
@@ -714,8 +636,7 @@ class LessThanOrEqualExpression(Expression):
             raise CompileException(f"Cannot test if {type1.name.lower()} is less than {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return DataType.INT
 # endregion
 
 
@@ -726,14 +647,11 @@ class BitwiseOrExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.INCORII)
@@ -741,8 +659,7 @@ class BitwiseOrExpression(Expression):
             raise CompileException(f"Cannot get the bitwise OR of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class BitwiseXorExpression(Expression):
@@ -751,14 +668,11 @@ class BitwiseXorExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.EXCORII)
@@ -766,8 +680,7 @@ class BitwiseXorExpression(Expression):
             raise CompileException(f"Cannot get the bitwise XOR of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class BitwiseAndExpression(Expression):
@@ -776,14 +689,11 @@ class BitwiseAndExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.BOOLANDII)
@@ -791,8 +701,7 @@ class BitwiseAndExpression(Expression):
             raise CompileException(f"Cannot get the bitwise AND of {type1.name.lower()} and {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class BitwiseNotExpression(Expression):
@@ -800,11 +709,9 @@ class BitwiseNotExpression(Expression):
         super().__init__()
         self.expression1: Expression = expression1
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
 
         if type1 == DataType.INT:
             ncs.add(NCSInstructionType.COMPI)
@@ -812,8 +719,7 @@ class BitwiseNotExpression(Expression):
             raise CompileException(f"Cannot get one's complement of {type1.name.lower()}")
 
         block.tempstack -= 4
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class BitwiseLeftShiftExpression(Expression):
@@ -822,14 +728,11 @@ class BitwiseLeftShiftExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.SHLEFTII)
@@ -837,8 +740,7 @@ class BitwiseLeftShiftExpression(Expression):
             raise CompileException(f"Cannot bitshift {type1.name.lower()} with {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 
 
 class BitwiseRightShiftExpression(Expression):
@@ -847,14 +749,11 @@ class BitwiseRightShiftExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> int:
-        self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, block)
         block.tempstack += 4
-        self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, block)
         block.tempstack += 4
-
-        type1 = self.expression1.data_type()
-        type2 = self.expression2.data_type()
 
         if type1 == DataType.INT and type2 == DataType.INT:
             ncs.add(NCSInstructionType.SHRIGHTII)
@@ -862,8 +761,7 @@ class BitwiseRightShiftExpression(Expression):
             raise CompileException(f"Cannot bitshift {type1.name.lower()} with {type2.name.lower()}")
 
         block.tempstack -= 8
-        self._type = type1
-        return type1.size()
+        return type1
 # endregion
 
 
@@ -874,13 +772,13 @@ class Assignment(Expression):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock):
-        self.expression.compile(ncs, block)
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        type1 = self.expression.compile(ncs, block)
 
         data_type, stack_index = block.get_scoped(self.identifier)
         stack_index -= data_type.size()
 
-        if self.expression.data_type() != data_type:
+        if type1 != data_type:
             raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
 
         # Copy the value that the expression has already been placed on the stack to where the identifiers position is
@@ -888,7 +786,7 @@ class Assignment(Expression):
         # Remove the temporary value from the stack that the expression created
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-data_type.size()]))
 
-        self._type = self.expression.data_type()
+        return type1
 
 
 class AdditionAssignment(Expression):
@@ -897,27 +795,36 @@ class AdditionAssignment(Expression):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock):
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
         data_type, stack_index = block.get_scoped(self.identifier)
         stack_index -= data_type.size()
 
-        self.expression.compile(ncs, block)
-        block.tempstack += self.expression.data_type().size()
+        type1 = self.expression.compile(ncs, block)
+        block.tempstack += type1.size()
 
-        if self.expression.data_type() != data_type:
+        if data_type == DataType.INT and type1 == DataType.INT:
+            arthimetic_instruction = NCSInstructionType.ADDII
+        elif data_type == DataType.INT and type1 == DataType.FLOAT:
+            arthimetic_instruction = NCSInstructionType.ADDIF
+        elif data_type == DataType.FLOAT and type1 == DataType.FLOAT:
+            arthimetic_instruction = NCSInstructionType.ADDFF
+        elif data_type == DataType.FLOAT and type1 == DataType.INT:
+            arthimetic_instruction = NCSInstructionType.ADDFI
+        else:
             raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
 
         # Copy the variable to the top of the stack
         ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, data_type.size()])
         # Add the expression and our temp variable copy together
-        ncs.add(NCSInstructionType.ADDII)
+        if type1 == DataType.INT:
+            ncs.add(arthimetic_instruction)
         # Copy the result to the original variable in the stack
         ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index, data_type.size()])
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-data_type.size()])
 
-        block.tempstack -= self.expression.data_type().size()
-        self._type = self.expression.data_type()
+        block.tempstack -= type1.size()
+        return type1
 # endregion
 
 
@@ -939,8 +846,8 @@ class DeclarationStatement(Statement):
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
-        self.expression.compile(ncs, block)
-        if self.expression.data_type() != self.data_type:
+        type1 = self.expression.compile(ncs, block)
+        if type1 != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{self.expression.data_type()}'.")
         block.add_scoped(self.identifier, self.data_type)
 
