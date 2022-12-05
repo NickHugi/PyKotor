@@ -7,6 +7,15 @@ from pykotor.resource.formats.ncs.compiler.parser import NssParser
 
 
 class TestNSSCompiler(TestCase):
+    """
+
+    Many tests depend on using snapshots of the stack to evaluate whatever they have been testing has worked correctly,
+    hence you will see the 4th last snapshot being accessed. This is because the last 3 snapshots include returning out
+    of the popping the stack of the main function, returning out of the main function and then finally returning out of
+    the script. Therefore, the 4th last snapshot is the stack of the main function right before everything collapses.
+
+    """
+
     def compile(self, script: str) -> NCS:
         nssLexer = NssLexer()
         nssParser = NssParser()
@@ -19,6 +28,7 @@ class TestNSSCompiler(TestCase):
         t.compile(ncs)
         return ncs
 
+    # region Engine Call
     def test_enginecall(self):
         ncs = self.compile("""
             void main()
@@ -34,6 +44,20 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual("GetExitingObject", interpreter.action_snapshots[0].function_name)
         self.assertEqual([], interpreter.action_snapshots[0].arg_values)
+
+    def test_enginecall_return_value(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int inescapable = GetAreaUnescapable();
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.set_mock("GetAreaUnescapable", lambda: 10)
+        interpreter.run()
+
+        self.assertEqual(10, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_enginecall_with_params(self):
         ncs = self.compile("""
@@ -52,8 +76,9 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual("GetObjectByTag", interpreter.action_snapshots[0].function_name)
         self.assertEqual(["something", 15], interpreter.action_snapshots[0].arg_values)
+    # endregion
 
-    # region Arithmetic Operator Tests
+    # region Arithmetic Operator
     def test_addop_int_int(self):
         ncs = self.compile("""
             void main()
@@ -243,7 +268,7 @@ class TestNSSCompiler(TestCase):
 
     # endregion
 
-    # region Logical Operator Tests
+    # region Logical Operator
     def test_not_op(self):
         ncs = self.compile("""
             void main()
@@ -322,7 +347,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
-    # region Comparision Operator Tests
+    # region Comparision Operator
     def test_compare_greaterthan_op(self):
         ncs = self.compile("""
             void main()
@@ -393,7 +418,7 @@ class TestNSSCompiler(TestCase):
 
     # endregion
 
-    # region Bitwise Operator Tests
+    # region Bitwise Operator
     def test_bitwise_or_op(self):
         ncs = self.compile("""
             void main()
@@ -473,7 +498,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
-    # region Assignment Tests
+    # region Assignment
     def test_assignment(self):
         ncs = self.compile("""
             void main()
@@ -501,6 +526,10 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(3, interpreter.stack_snapshots[-4].stack[-1].value)
+    # endregion
+
+    # region Simple Expressions
+
     # endregion
 
     def test_comment(self):
