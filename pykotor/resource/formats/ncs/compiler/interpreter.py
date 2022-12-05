@@ -1,5 +1,6 @@
 from copy import copy
-from typing import List, Any, NamedTuple
+from inspect import signature
+from typing import List, Any, NamedTuple, Callable, Dict
 
 from pykotor.common.script import ScriptFunction, DataType
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS
@@ -14,6 +15,8 @@ class Interpreter:
 
         self._stack: Stack = Stack()
         self._returns: List[NCSInstruction] = [None]
+
+        self._mocks: Dict[str, Callable] = {}
 
         self.stack_snapshots: List[StackSnapshot] = []
         self.action_snapshots: List[ActionSnapshot] = []
@@ -141,14 +144,37 @@ class Interpreter:
 
         for i in range(args):
             args_snap.append(self._stack.pop())
+
         if function.returntype != DataType.VOID:
-            self._stack.add(function.returntype, None)
+            if function.name in self._mocks:
+                # Execute and return the value back from the mock
+                self._stack.add(function.returntype, self._mocks[function.name](*[arg.value for arg in args_snap]))
+            else:
+                # Return value of None if no relevant mock is found
+                self._stack.add(function.returntype, None)
 
         self.action_snapshots.append(ActionSnapshot(function.name, args_snap, None))
 
     def print(self):
         for snap in self.stack_snapshots:
             print(snap.instruction, "\n", snap.stack, "\n")
+
+    def set_mock(self, function_name: str, mock: Callable):
+        function = next((function for function in self._functions if function.name == function_name), None)
+
+        if function is None:
+            raise ValueError(f"Function '{function_name}' does not exist.")
+
+        mock_param_count = len(signature(mock).parameters)
+        routine_param_count = len(function.params)
+        if mock_param_count != routine_param_count:
+            raise ValueError(f"Function '{function_name}' expects {routine_param_count} parameters not {mock_param_count}.")
+
+        self._mocks[function_name] = mock
+
+    def remove_mock(self, function_name: str):
+        self._mocks.pop(function_name)
+
 
 
 class Stack:
@@ -303,3 +329,8 @@ class StackSnapshot(NamedTuple):
     instruction: NCSInstruction
     stack: List[StackObject]
 
+
+class EngineRoutineMock:
+    def __init__(self, function: ScriptFunction, mock: Callable):
+        self.function: ScriptFunction = function
+        self.mock: Callable = mock
