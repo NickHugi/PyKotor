@@ -179,15 +179,17 @@ class IncludeScript:
 
 
 class Expression(ABC):
-    ...
+    def __init__(self):
+        self._type: Optional[DataType] = None
 
     @abstractmethod
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ...
 
-    @abstractmethod
     def data_type(self) -> DataType:
-        ...
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
 
 
 class Statement(ABC):
@@ -202,61 +204,53 @@ class Statement(ABC):
 # region Expressions: Simple
 class IdentifierExpression(Expression):
     def __init__(self, value: Identifier):
+        super().__init__()
         self.identifier: Identifier = value
-        self._type: Optional[DataType] = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self._type, stack_index = block.get_scoped(self.identifier)
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CPTOPSP, [stack_index, self._type.size()]))
         return self._type.size()
 
-    def data_type(self):
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class StringExpression(Expression):
     def __init__(self, value: str):
+        super().__init__()
         self.value: str = value
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTS, [self.value]))
+        self._type = DataType.STRING
         return DataType.STRING.size()
-
-    def data_type(self):
-        return DataType.STRING
 
 
 class IntExpression(Expression):
     def __init__(self, value: int):
+        super().__init__()
         self.value: int = value
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTI, [self.value]))
+        self._type = DataType.INT
         return DataType.INT.size()
-
-    def data_type(self):
-        return DataType.INT
 
 
 class FloatExpression(Expression):
     def __init__(self, value: float):
+        super().__init__()
         self.value: float = value
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTF, [self.value]))
+        self._type = DataType.FLOAT
         return DataType.FLOAT.size()
-
-    def data_type(self):
-        return DataType.FLOAT
 
 
 class EngineCallExpression(Expression):
     def __init__(self, function: ScriptFunction, routine_id: int, data_type: DataType, args: List[Expression]):
+        super().__init__()
         self._function: ScriptFunction = function
         self._routine_id: int = routine_id
-        self._type: DataType = data_type
         self._args: List[Expression] = args
 
     def compile(self, ncs: NCS, block: CodeBlock):
@@ -270,19 +264,17 @@ class EngineCallExpression(Expression):
                 raise CompileException(f"Tried to pass an argument of the incorrect type to {self._function.name}.")
         ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
         block.tempstack -= this_stack
+        self._type = self._function.returntype
         return self._type.size()
-
-    def data_type(self):
-        return self._type
 # endregion
 
 
 # region Expressions: Arithmetic
 class AdditionExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -320,9 +312,9 @@ class AdditionExpression(Expression):
 
 class SubtractionExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -350,17 +342,12 @@ class SubtractionExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class MultiplicationExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -391,17 +378,12 @@ class MultiplicationExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class DivisionExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -429,17 +411,12 @@ class DivisionExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class ModulusExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -458,19 +435,14 @@ class ModulusExpression(Expression):
         block.tempstack -= 8
         self._type = type1
         return type1.size()
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
 # endregion
 
 
 # region Expressions: Logical
 class NegationExpression(Expression):
     def __init__(self, expression1: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -489,16 +461,11 @@ class NegationExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class LogicalNotExpression(Expression):
     def __init__(self, expression1: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -523,9 +490,9 @@ class LogicalNotExpression(Expression):
 
 class LogicalAndExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -545,17 +512,12 @@ class LogicalAndExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class LogicalOrExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -574,20 +536,15 @@ class LogicalOrExpression(Expression):
         block.tempstack -= 8
         self._type = type1
         return type1.size()
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
 # endregion
 
 
 # region Expressions: Relational
 class LogicalEqualityExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -613,14 +570,10 @@ class LogicalEqualityExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class LogicalInequalityExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
         self._type = None
@@ -649,17 +602,12 @@ class LogicalInequalityExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class GreaterThanExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -681,14 +629,10 @@ class GreaterThanExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class GreaterThanOrEqualExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
         self._type = None
@@ -713,14 +657,10 @@ class GreaterThanOrEqualExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class LessThanExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
         self._type = None
@@ -745,14 +685,10 @@ class LessThanExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class LessThanOrEqualExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
         self._type = None
@@ -776,20 +712,15 @@ class LessThanOrEqualExpression(Expression):
         block.tempstack -= 8
         self._type = type1
         return type1.size()
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
 # endregion
 
 
 # region Expression: Bitwise
 class BitwiseOrExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -809,17 +740,12 @@ class BitwiseOrExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class BitwiseXorExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -839,17 +765,12 @@ class BitwiseXorExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class BitwiseAndExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -869,16 +790,11 @@ class BitwiseAndExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class BitwiseNotExpression(Expression):
     def __init__(self, expression1: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -895,17 +811,12 @@ class BitwiseNotExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class BitwiseLeftShiftExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -925,17 +836,12 @@ class BitwiseLeftShiftExpression(Expression):
         self._type = type1
         return type1.size()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class BitwiseRightShiftExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
+        super().__init__()
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
-        self._type = None
 
     def compile(self, ncs: NCS, block: CodeBlock) -> int:
         self.expression1.compile(ncs, block)
@@ -954,11 +860,6 @@ class BitwiseRightShiftExpression(Expression):
         block.tempstack -= 8
         self._type = type1
         return type1.size()
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
 # endregion
 
 
@@ -968,7 +869,6 @@ class Assignment(Expression):
         super().__init__()
         self.identifier: Identifier = identifier
         self.expression: Expression = value
-        self._type: Optional[DataType] = None
 
     def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)
@@ -986,18 +886,12 @@ class Assignment(Expression):
 
         self._type = self.expression.data_type()
 
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
-
 
 class AdditionAssignment(Expression):
     def __init__(self, identifier: Identifier, value: Expression):
         super().__init__()
         self.identifier: Identifier = identifier
         self.expression: Expression = value
-        self._type: Optional[DataType] = None
 
     def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)
@@ -1019,11 +913,6 @@ class AdditionAssignment(Expression):
         ncs.add(NCSInstructionType.MOVSP, args=[-data_type.size()])
 
         self._type = self.expression.data_type()
-
-    def data_type(self) -> DataType:
-        if self._type is None:
-            raise Exception("Expression has not been compiled yet.")
-        return self._type
 # endregion
 
 

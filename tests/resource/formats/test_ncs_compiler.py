@@ -473,7 +473,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
-    # Assignment Tests
+    # region Assignment Tests
     def test_assignment(self):
         ncs = self.compile("""
             void main()
