@@ -16,7 +16,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
-    BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment
+    BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -107,7 +107,10 @@ class NssParser:
                   | return_statement
                   | expression ';'
         """
-        p[0] = p[1]
+        if isinstance(p[1], Expression):
+            p[0] = ExpressionStatement(p[1])
+        else:
+            p[0] = p[1]
         #p[0].linenum = p.lineno(1)
 
     def p_declaration_statement(self, p):

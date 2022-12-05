@@ -942,40 +942,16 @@ class BitwiseRightShiftExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
-# endregion
 
 
-# region Statement Classes
-class Statement(ABC):
-    def __init__(self):
-        self.linenum: Optional[None] = None
-
-    @abstractmethod
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
-        ...
-
-
-class DeclarationStatement(Statement):
-    def __init__(self, identifier: Identifier, data_type: DataType, value: Expression):
-        super().__init__()
-        self.identifier: Identifier = identifier
-        self.data_type: DataType = data_type
-        self.expression: Expression = value
-
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
-        self.expression.compile(ncs, block)
-        if self.expression.data_type() != self.data_type:
-            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{self.expression.data_type()}'.")
-        block.add_scoped(self.identifier, self.data_type)
-
-
-class Assignment(Statement):
+class Assignment(Expression):
     def __init__(self, identifier: Identifier, value: Expression):
         super().__init__()
         self.identifier: Identifier = identifier
         self.expression: Expression = value
+        self._type: Optional[DataType] = None
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)
 
         data_type, stack_index = block.get_scoped(self.identifier)
@@ -989,14 +965,22 @@ class Assignment(Statement):
         # Remove the temporary value from the stack that the expression created
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-data_type.size()]))
 
+        self._type = self.expression.data_type()
 
-class AdditionAssignment(Statement):
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
+
+
+class AdditionAssignment(Expression):
     def __init__(self, identifier: Identifier, value: Expression):
         super().__init__()
         self.identifier: Identifier = identifier
         self.expression: Expression = value
+        self._type: Optional[DataType] = None
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, block: CodeBlock):
         self.expression.compile(ncs, block)
         #block.tempstack += self.expression.data_type().size()
 
@@ -1014,6 +998,47 @@ class AdditionAssignment(Statement):
         ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index, data_type.size()])
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-data_type.size()])
+
+        self._type = self.expression.data_type()
+
+    def data_type(self) -> DataType:
+        if self._type is None:
+            raise Exception("Expression has not been compiled yet.")
+        return self._type
+# endregion
+
+
+# region Statement Classes
+class Statement(ABC):
+    def __init__(self):
+        self.linenum: Optional[None] = None
+
+    @abstractmethod
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        ...
+
+
+class ExpressionStatement(Statement):
+    def __init__(self, expression: Expression):
+        super().__init__()
+        self.expression: Expression = expression
+
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        self.expression.compile(ncs, block)
+
+
+class DeclarationStatement(Statement):
+    def __init__(self, identifier: Identifier, data_type: DataType, value: Expression):
+        super().__init__()
+        self.identifier: Identifier = identifier
+        self.data_type: DataType = data_type
+        self.expression: Expression = value
+
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        self.expression.compile(ncs, block)
+        if self.expression.data_type() != self.data_type:
+            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{self.expression.data_type()}'.")
+        block.add_scoped(self.identifier, self.data_type)
 
 
 class ConditionalStatement(Statement):
