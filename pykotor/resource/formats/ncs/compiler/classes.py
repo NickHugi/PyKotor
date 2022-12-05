@@ -109,6 +109,11 @@ class CodeBlock:
                 inst.jump = ncs.instructions[index]
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-self.scope_size()]))
 
+        if self.tempstack != 0:
+            # If the temp stack is 0 after the whole block has compiled there must be an logic error in the code
+            # of one of the expression/statement classes
+            raise ValueError
+
     def add_scoped(self, identifier: Identifier, data_type: DataType):
         self.scope.insert(0, ScopedValue(identifier, data_type))
 
@@ -373,7 +378,6 @@ class MultiplicationExpression(Expression):
         else:
             raise CompileException(f"Cannot multiply {type1.name.lower()} to {type2.name.lower()}")
 
-        block.tempstack -= 8
         block.tempstack -= 8
         self._type = type1
         return type1.size()
@@ -894,11 +898,11 @@ class AdditionAssignment(Expression):
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, block: CodeBlock):
-        self.expression.compile(ncs, block)
-        #block.tempstack += self.expression.data_type().size()
-
         data_type, stack_index = block.get_scoped(self.identifier)
         stack_index -= data_type.size()
+
+        self.expression.compile(ncs, block)
+        block.tempstack += self.expression.data_type().size()
 
         if self.expression.data_type() != data_type:
             raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
@@ -912,6 +916,7 @@ class AdditionAssignment(Expression):
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-data_type.size()])
 
+        block.tempstack -= self.expression.data_type().size()
         self._type = self.expression.data_type()
 # endregion
 
