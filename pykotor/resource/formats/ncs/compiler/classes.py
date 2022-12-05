@@ -178,7 +178,6 @@ class IncludeScript:
         return 0
 
 
-# region Expression Classes
 class Expression(ABC):
     ...
 
@@ -191,6 +190,16 @@ class Expression(ABC):
         ...
 
 
+class Statement(ABC):
+    def __init__(self):
+        self.linenum: Optional[None] = None
+
+    @abstractmethod
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        ...
+
+
+# region Expressions: Simple
 class IdentifierExpression(Expression):
     def __init__(self, value: Identifier):
         self.identifier: Identifier = value
@@ -265,8 +274,10 @@ class EngineCallExpression(Expression):
 
     def data_type(self):
         return self._type
+# endregion
 
 
+# region Expressions: Arithmetic
 class AdditionExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
         self.expression1: Expression = expression1
@@ -452,8 +463,10 @@ class ModulusExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
+# endregion
 
 
+# region Expressions: Logical
 class NegationExpression(Expression):
     def __init__(self, expression1: Expression):
         self.expression1: Expression = expression1
@@ -566,8 +579,10 @@ class LogicalOrExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
+# endregion
 
 
+# region Expressions: Relational
 class LogicalEqualityExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
         self.expression1: Expression = expression1
@@ -766,8 +781,10 @@ class LessThanOrEqualExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
+# endregion
 
 
+# region Expression: Bitwise
 class BitwiseOrExpression(Expression):
     def __init__(self, expression1: Expression, expression2: Expression):
         self.expression1: Expression = expression1
@@ -942,8 +959,10 @@ class BitwiseRightShiftExpression(Expression):
         if self._type is None:
             raise Exception("Expression has not been compiled yet.")
         return self._type
+# endregion
 
 
+# region Expressions: Assignment
 class Assignment(Expression):
     def __init__(self, identifier: Identifier, value: Expression):
         super().__init__()
@@ -1008,16 +1027,7 @@ class AdditionAssignment(Expression):
 # endregion
 
 
-# region Statement Classes
-class Statement(ABC):
-    def __init__(self):
-        self.linenum: Optional[None] = None
-
-    @abstractmethod
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
-        ...
-
-
+# region Statements
 class ExpressionStatement(Statement):
     def __init__(self, expression: Expression):
         super().__init__()
