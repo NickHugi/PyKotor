@@ -474,6 +474,20 @@ class TestNSSCompiler(TestCase):
     # endregion
 
     # Assignment Tests
+    def test_assignment(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                a = 2;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, interpreter.stack_snapshots[-4].stack[-1].value)
+
     def test_addition_assignment(self):
         ncs = self.compile("""
             void main()

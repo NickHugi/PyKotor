@@ -969,7 +969,7 @@ class DeclarationStatement(Statement):
         block.add_scoped(self.identifier, self.data_type)
 
 
-class AssignmentStatement(Statement):
+class Assignment(Statement):
     def __init__(self, identifier: Identifier, value: Expression):
         super().__init__()
         self.identifier: Identifier = identifier
