@@ -38,7 +38,7 @@ class Interpreter:
                 self._stack.add(DataType.OBJECT, self._cursor.args[0])
 
             elif self._cursor.ins_type == NCSInstructionType.CPTOPSP:
-                self._stack.copy_to_top(self._cursor.args[0])
+                self._stack.copy_to_top(self._cursor.args[0], self._cursor.args[1])
 
             elif self._cursor.ins_type == NCSInstructionType.CPDOWNSP:
                 self._stack.copy_down(self._cursor.args[0])
@@ -187,12 +187,21 @@ class Stack:
     def add(self, data_type: DataType, value: Any) -> None:
         self._stack.append(StackObject(data_type, value))
 
-    def copy_to_top(self, offset: int) -> None:
-        self._stack.append(self._stack[offset // 4])
+    def _stack_index(self, offset: int) -> int:
+        if offset == 0:
+            raise ValueError
+        return offset // 4
+
+    def peek(self, offset: int) -> Any:
+        real_index = self._stack_index(offset)
+        return self._stack[real_index]
+
+    def copy_to_top(self, offset: int, size: int) -> None:
+        self._stack.append(self.peek(offset))
 
     def copy_down(self, offset: int) -> None:
         top_value = self._stack[-1]
-        self._stack[offset // 4] = top_value
+        self._stack[self._stack_index(offset)] = top_value
 
     def pop(self) -> Any:
         return self._stack.pop()
