@@ -16,13 +16,15 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
-    BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement
+    BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
+    SubtractionAssignment
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
     def __init__(self, errorlog=yacc.NullLogger()):
-        self.parser = yacc.yacc(module=self, errorlog=errorlog)
+        self.parser = yacc.yacc(module=self)
+        #self.parser = yacc.yacc(module=self, errorlog=errorlog)
         self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
         self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
 
@@ -127,9 +129,15 @@ class NssParser:
 
     def p_addition_assignment(self, p):
         """
-        addition_assignment : IDENTIFIER ADDITION_ASSIGNMENT expression
+        addition_assignment : IDENTIFIER ADDITION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = AdditionAssignment(p[1], p[3])
+
+    def p_subtraction_assignment(self, p):
+        """
+        subtraction_assignment : IDENTIFIER SUBTRACTION_ASSIGNMENT_OPERATOR expression
+        """
+        p[0] = SubtractionAssignment(p[1], p[3])
 
     def p_condition_statement(self, p):
         """
@@ -278,6 +286,7 @@ class NssParser:
                    | IDENTIFIER
                    | assignment
                    | addition_assignment
+                   | subtraction_assignment
                    | add_expression
                    | subtract_expression
                    | multiply_expression

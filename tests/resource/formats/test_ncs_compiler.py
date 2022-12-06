@@ -504,14 +504,14 @@ class TestNSSCompiler(TestCase):
             void main()
             {
                 int a = 1;
-                a = 2;
+                a = 2 * 2;
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(2, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(4, interpreter.stack_snapshots[-4].stack[-1].value)
 
     def test_addition_assignment(self):
         ncs = self.compile("""
@@ -526,6 +526,21 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(3, interpreter.stack_snapshots[-4].stack[-1].value)
+
+    def test_subtraction_assignment(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 10;
+                a -= 2 * 2;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        interpreter.print()
+
+        self.assertEqual(6, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
     # region Simple Expressions
