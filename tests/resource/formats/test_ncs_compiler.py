@@ -544,8 +544,26 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int a = 1;
-                a += 2;
+                int value = 1;
+                value += 2;
+                
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintInteger", snap.function_name)
+        self.assertEqual(3, snap.arg_values[0])
+
+    def test_addition_assignment_int_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 1;
+                value += 2.0;
                 
                 PrintInteger(a);
             }
@@ -562,10 +580,28 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                float a = 1.0;
-                a += 2.0;
+                float value = 1.0;
+                value += 2.0;
                 
-                PrintFloat(a);
+                PrintFloat(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintFloat", snap.function_name)
+        self.assertEqual(3.0, snap.arg_values[0])
+
+    def test_addition_assignment_float_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float value = 1.0;
+                value += 2;
+                
+                PrintFloat(value);
             }
         """)
 
@@ -598,10 +634,10 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int a = 10;
-                a -= 2 * 2;
+                int value = 10;
+                value -= 2 * 2;
                 
-                PrintInteger(a);
+                PrintInteger(value);
             }
         """)
 
@@ -616,10 +652,10 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int a = 10;
-                a *= 2 * 2;
+                int value = 10;
+                value *= 2 * 2;
                 
-                PrintInteger(a);
+                PrintInteger(value);
             }
         """)
 
@@ -634,10 +670,10 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int a = 12;
-                a /= 2 * 2;
+                int value = 12;
+                value /= 2 * 2;
                 
-                PrintInteger(a);
+                PrintInteger(value);
             }
         """)
 
