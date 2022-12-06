@@ -900,6 +900,44 @@ class MultiplicationAssignment(Expression):
 
         block.tempstack -= expresion_type.size()
         return expresion_type
+
+
+class DivisionAssignment(Expression):
+    def __init__(self, identifier: Identifier, value: Expression):
+        super().__init__()
+        self.identifier: Identifier = identifier
+        self.expression: Expression = value
+
+    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        # Copy the variable to the top of the stack
+        variable_type, stack_index = block.get_scoped(self.identifier)
+        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
+
+        # Add the result of the expression to the stack
+        expresion_type = self.expression.compile(ncs, block)
+        block.tempstack += expresion_type.size()
+
+        # Determine what instruction to apply to the two values
+        if variable_type == DataType.INT and expresion_type == DataType.INT:
+            arthimetic_instruction = NCSInstructionType.DIVII
+        elif variable_type == DataType.INT and expresion_type == DataType.FLOAT:
+            arthimetic_instruction = NCSInstructionType.DIVIF
+        elif variable_type == DataType.FLOAT and expresion_type == DataType.FLOAT:
+            arthimetic_instruction = NCSInstructionType.DIVFF
+        elif variable_type == DataType.FLOAT and expresion_type == DataType.INT:
+            arthimetic_instruction = NCSInstructionType.DIVFI
+        else:
+            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+
+        # Add the expression and our temp variable copy together
+        ncs.add(arthimetic_instruction)
+        # Copy the result to the original variable in the stack
+        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - expresion_type.size(), variable_type.size()])
+        # Pop the temp variable
+        ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size()])
+
+        block.tempstack -= expresion_type.size()
+        return expresion_type
 # endregion
 
 

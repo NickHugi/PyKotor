@@ -558,6 +558,24 @@ class TestNSSCompiler(TestCase):
         snap = interpreter.action_snapshots[-1]
         self.assertEqual("PrintInteger", snap.function_name)
         self.assertEqual(40, snap.arg_values[0])
+
+    def test_division_assignment(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 12;
+                a /= 2 * 2;
+                
+                PrintInteger(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintInteger", snap.function_name)
+        self.assertEqual(3, snap.arg_values[0])
     # endregion
 
     # region Simple Expressions

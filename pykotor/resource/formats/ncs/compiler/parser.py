@@ -17,7 +17,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
-    SubtractionAssignment, MultiplicationAssignment
+    SubtractionAssignment, MultiplicationAssignment, DivisionAssignment
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -144,6 +144,12 @@ class NssParser:
         multiplication_assignment : IDENTIFIER MULTIPLICATION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = MultiplicationAssignment(p[1], p[3])
+
+    def p_division_assignment(self, p):
+        """
+        division_assignment : IDENTIFIER DIVISION_ASSIGNMENT_OPERATOR expression
+        """
+        p[0] = DivisionAssignment(p[1], p[3])
 
     def p_condition_statement(self, p):
         """
@@ -294,6 +300,7 @@ class NssParser:
                    | addition_assignment
                    | subtraction_assignment
                    | multiplication_assignment
+                   | division_assignment
                    | add_expression
                    | subtract_expression
                    | multiply_expression
