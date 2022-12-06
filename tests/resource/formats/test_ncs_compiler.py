@@ -630,7 +630,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual("PrintString", snap.function_name)
         self.assertEqual("ab", snap.arg_values[0])
 
-    def test_subtraction_assignment(self):
+    def test_subtraction_assignment_int_int(self):
         ncs = self.compile("""
             void main()
             {
@@ -647,6 +647,60 @@ class TestNSSCompiler(TestCase):
         snap = interpreter.action_snapshots[-1]
         self.assertEqual("PrintInteger", snap.function_name)
         self.assertEqual([6], snap.arg_values)
+
+    def test_subtraction_assignment_int_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 10;
+                value -= 2.0;
+                
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintInteger", snap.function_name)
+        self.assertEqual(8.0, snap.arg_values[0])
+
+    def test_subtraction_assignment_float_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float value = 10.0;
+                value -= 2.0;
+                
+                PrintFloat(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintFloat", snap.function_name)
+        self.assertEqual(8.0, snap.arg_values[0])
+
+    def test_subtraction_assignment_float_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float value = 10.0;
+                value -= 2;
+                
+                PrintFloat(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintFloat", snap.function_name)
+        self.assertEqual(8.0, snap.arg_values[0])
 
     def test_multiplication_assignment(self):
         ncs = self.compile("""
