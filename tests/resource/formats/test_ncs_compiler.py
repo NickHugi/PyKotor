@@ -540,7 +540,7 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(4, interpreter.stack_snapshots[-4].stack[-1].value)
 
-    def test_addition_assignment(self):
+    def test_addition_assignment_int_int(self):
         ncs = self.compile("""
             void main()
             {
@@ -558,6 +558,42 @@ class TestNSSCompiler(TestCase):
         self.assertEqual("PrintInteger", snap.function_name)
         self.assertEqual(3, snap.arg_values[0])
 
+    def test_addition_assignment_float_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float a = 1.0;
+                a += 2.0;
+                
+                PrintFloat(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintFloat", snap.function_name)
+        self.assertEqual(3.0, snap.arg_values[0])
+
+    def test_addition_assignment_string_string(self):
+        ncs = self.compile("""
+            void main()
+            {
+                string value = "a";
+                value += "b";
+                
+                PrintString(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintString", snap.function_name)
+        self.assertEqual("ab", snap.arg_values[0])
+
     def test_subtraction_assignment(self):
         ncs = self.compile("""
             void main()
@@ -574,7 +610,7 @@ class TestNSSCompiler(TestCase):
 
         snap = interpreter.action_snapshots[-1]
         self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual(6, snap.arg_values[0])
+        self.assertEqual([6], snap.arg_values)
 
     def test_multiplication_assignment(self):
         ncs = self.compile("""
@@ -592,7 +628,7 @@ class TestNSSCompiler(TestCase):
 
         snap = interpreter.action_snapshots[-1]
         self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual(40, snap.arg_values[0])
+        self.assertEqual([40], snap.arg_values)
 
     def test_division_assignment(self):
         ncs = self.compile("""
@@ -610,7 +646,7 @@ class TestNSSCompiler(TestCase):
 
         snap = interpreter.action_snapshots[-1]
         self.assertEqual("PrintInteger", snap.function_name)
-        self.assertEqual(3, snap.arg_values[0])
+        self.assertEqual([3], snap.arg_values)
     # endregion
 
     # region Simple Expressions

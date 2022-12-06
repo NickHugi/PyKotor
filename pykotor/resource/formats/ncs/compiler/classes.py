@@ -815,12 +815,15 @@ class AdditionAssignment(Expression):
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        # Copy the variable to the top of the stack
         variable_type, stack_index = block.get_scoped(self.identifier)
-        stack_index -= variable_type.size()
+        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
 
+        # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, block)
         block.tempstack += expresion_type.size()
 
+        # Determine what instruction to apply to the two values
         if variable_type == DataType.INT and expresion_type == DataType.INT:
             arthimetic_instruction = NCSInstructionType.ADDII
         elif variable_type == DataType.INT and expresion_type == DataType.FLOAT:
@@ -829,15 +832,15 @@ class AdditionAssignment(Expression):
             arthimetic_instruction = NCSInstructionType.ADDFF
         elif variable_type == DataType.FLOAT and expresion_type == DataType.INT:
             arthimetic_instruction = NCSInstructionType.ADDFI
+        elif variable_type == DataType.STRING and expresion_type == DataType.STRING:
+            arthimetic_instruction = NCSInstructionType.ADDSS
         else:
             raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
 
-        # Copy the variable to the top of the stack
-        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
         # Copy the result to the original variable in the stack
-        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index, variable_type.size()])
+        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - expresion_type.size(), variable_type.size()])
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size()])
 
