@@ -964,6 +964,14 @@ class DivisionAssignment(Expression):
 
 
 # region Statements
+class EmptyStatement(Statement):
+    def __init__(self):
+        super().__init__()
+
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        return DataType.VOID
+
+
 class ExpressionStatement(Statement):
     def __init__(self, expression: Expression):
         super().__init__()
