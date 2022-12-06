@@ -27,6 +27,7 @@ class NssLexer:
         "NOT_OPERATOR", "BITWISE_AND_OPERATOR", "BITWISE_OR_OPERATOR", "BITWISE_LEFT_OPERATOR",
         "BITWISE_RIGHT_OPERATOR", "BITWISE_XOR_OPERATOR", "ONES_COMPLEMENT_OPERATOR", "COMMENT", "MULTILINE_COMMENT",
         "INCLUDE", "RETURN", "ADDITION_ASSIGNMENT_OPERATOR", "SUBTRACTION_ASSIGNMENT_OPERATOR",
+        "MULTIPLICATION_ASSIGNMENT_OPERATOR",
     ]
 
     literals = [
@@ -209,6 +210,10 @@ class NssLexer:
 
     def t_SUBTRACTION_ASSIGNMENT_OPERATOR(self, t):
         '\-\='
+        return t
+
+    def t_MULTIPLICATION_ASSIGNMENT_OPERATOR(self, t):
+        '\*\='
         return t
 
     # region Operators

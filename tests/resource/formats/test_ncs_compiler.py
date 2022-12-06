@@ -7,14 +7,6 @@ from pykotor.resource.formats.ncs.compiler.parser import NssParser
 
 
 class TestNSSCompiler(TestCase):
-    """
-
-    Many tests depend on using snapshots of the stack to evaluate whatever they have been testing has worked correctly,
-    hence you will see the 4th last snapshot being accessed. This is because the last 3 snapshots include returning out
-    of the popping the stack of the main function, returning out of the main function and then finally returning out of
-    the script. Therefore, the 4th last snapshot is the stack of the main function right before everything collapses.
-
-    """
 
     def compile(self, script: str) -> NCS:
         nssLexer = NssLexer()
@@ -519,13 +511,17 @@ class TestNSSCompiler(TestCase):
             {
                 int a = 1;
                 a += 2;
+                
+                PrintInteger(a);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(3, interpreter.stack_snapshots[-4].stack[-1].value)
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintInteger", snap.function_name)
+        self.assertEqual(3, snap.arg_values[0])
 
     def test_subtraction_assignment(self):
         ncs = self.compile("""
@@ -533,14 +529,35 @@ class TestNSSCompiler(TestCase):
             {
                 int a = 10;
                 a -= 2 * 2;
+                
+                PrintInteger(a);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        interpreter.print()
 
-        self.assertEqual(6, interpreter.stack_snapshots[-4].stack[-1].value)
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintInteger", snap.function_name)
+        self.assertEqual(6, snap.arg_values[0])
+
+    def test_multiplication_assignment(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 10;
+                a *= 2 * 2;
+                
+                PrintInteger(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        snap = interpreter.action_snapshots[-1]
+        self.assertEqual("PrintInteger", snap.function_name)
+        self.assertEqual(40, snap.arg_values[0])
     # endregion
 
     # region Simple Expressions

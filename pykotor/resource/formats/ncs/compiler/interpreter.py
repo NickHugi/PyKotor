@@ -23,7 +23,7 @@ class Interpreter:
 
     def run(self):
         while self._cursor is not None:
-            print(self._cursor)
+            # print(self._cursor)
             index = self._ncs.instructions.index(self._cursor)
 
             if self._cursor.ins_type == NCSInstructionType.CONSTS:
