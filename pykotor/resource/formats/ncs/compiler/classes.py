@@ -248,6 +248,25 @@ class EngineCallExpression(Expression):
         self._args: List[Expression] = args
 
     def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+        arg_count = len(self._args)
+
+        if arg_count > len(self._function.params):
+            raise CompileException(f"Too many arguments passed to '{self._function.name}'.")
+
+        for i, param in enumerate(self._function.params):
+            if i >= arg_count:
+                if param.default is None:
+                    raise CompileException(f"Not enough arguments passed to '{self._function.name}'.")
+                else:
+                    if param.datatype == DataType.INT:
+                        self._args.append(IntExpression(int(param.default)))
+                    elif param.datatype == DataType.FLOAT:
+                        self._args.append(FloatExpression(float(param.default)))
+                    elif param.datatype == DataType.STRING:
+                        self._args.append(StringExpression(param.default))
+                    else:
+                        raise CompileException(f"Unexpected compilation error at '{self._function.name}' call.")
+
         this_stack = 0
         for i, arg in enumerate(reversed(self._args)):
             added = arg.compile(ncs, block)
@@ -255,7 +274,7 @@ class EngineCallExpression(Expression):
             this_stack += added.size()
 
             if added != self._function.params[-i - 1].datatype:
-                raise CompileException(f"Tried to pass an argument of the incorrect type to {self._function.name}.")
+                raise CompileException(f"Tried to pass an argument of the incorrect type to '{self._function.name}'.")
 
         ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
         block.tempstack -= this_stack

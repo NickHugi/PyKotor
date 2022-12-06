@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from pykotor.resource.formats.ncs import NCS
+from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter, ActionSnapshot
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
@@ -68,6 +69,40 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual("GetObjectByTag", interpreter.action_snapshots[0].function_name)
         self.assertEqual(["something", 15], interpreter.action_snapshots[0].arg_values)
+
+    def test_enginecall_with_default_params(self):
+        ncs = self.compile("""
+            void main()
+            {
+                string tag = "something";
+                object oSomething = GetObjectByTag(tag);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+    def test_enginecall_with_missing_params(self):
+        script = """
+            void main()
+            {
+                string tag = "something";
+                object oSomething = GetObjectByTag();
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, script)
+
+    def test_enginecall_with_too_many_params(self):
+        script = """
+            void main()
+            {
+                string tag = "something";
+                object oSomething = GetObjectByTag("", 0, "shouldnotbehere");
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, script)
     # endregion
 
     # region Arithmetic Operator
