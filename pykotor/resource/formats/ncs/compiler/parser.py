@@ -17,14 +17,13 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
-    SubtractionAssignment, MultiplicationAssignment, DivisionAssignment
+    SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
     def __init__(self, errorlog=yacc.NullLogger()):
-        self.parser = yacc.yacc(module=self)
-        #self.parser = yacc.yacc(module=self, errorlog=errorlog)
+        self.parser = yacc.yacc(module=self, errorlog=errorlog)
         self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
         self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
 
@@ -101,12 +100,19 @@ class NssParser:
         elif len(p) == 1:
             p[0] = CodeBlock()
 
+    def p_while_loop(self, p):
+        """
+        while_loop : WHILE_CONTROL '(' expression ')' '{' code_block '}'
+        """
+        p[0] = WhileLoopBlock(p[3], p[6])
+
     def p_statement(self, p):
         """
         statement : ';'
                   | declaration_statement
                   | condition_statement
                   | return_statement
+                  | while_loop
                   | expression ';'
         """
         if isinstance(p[1], Expression):

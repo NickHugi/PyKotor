@@ -194,8 +194,10 @@ class NCS:
             else:
                 print("{}:\t{} {}".format(i, instruction.ins_type.name.ljust(8), instruction.args))
 
-    def add(self, instruction_type: NCSInstructionType, args=None, jump=None) -> None:
-        self.instructions.append(NCSInstruction(instruction_type, args, jump))
+    def add(self, instruction_type: NCSInstructionType, args=None, jump=None) -> NCSInstruction:
+        instruction = NCSInstruction(instruction_type, args, jump)
+        self.instructions.append(instruction)
+        return instruction
 
 
 class NCSInstruction:

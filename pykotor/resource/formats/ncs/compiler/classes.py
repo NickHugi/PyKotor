@@ -989,9 +989,9 @@ class DeclarationStatement(Statement):
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
-        type1 = self.expression.compile(ncs, block)
-        if type1 != self.data_type:
-            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{self.expression.data_type()}'.")
+        expression_type = self.expression.compile(ncs, block)
+        if expression_type != self.data_type:
+            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
         block.add_scoped(self.identifier, self.data_type)
 
 
@@ -1018,5 +1018,27 @@ class ReturnStatement(Statement):
 
     def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
         ...
+
+
+class WhileLoopBlock(Statement):
+    def __init__(self, condition: Expression, block: CodeBlock):
+        super().__init__()
+        self.condition: Expression = condition
+        self.block: CodeBlock = block
+
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        loopstart = ncs.add(NCSInstructionType.NOP, args=[])
+        condition_type = self.condition.compile(ncs, block)
+
+        if condition_type != DataType.INT:
+            raise CompileException("Condition must be int type.")
+
+        jz = ncs.add(NCSInstructionType.JZ, jump=None)
+        self.block.compile(ncs, return_instruction)
+
+        ncs.add(NCSInstructionType.JMP, jump=loopstart)
+
+        loopend = ncs.add(NCSInstructionType.NOP, args=[])
+        jz.jump = loopend
 # endregion
 
