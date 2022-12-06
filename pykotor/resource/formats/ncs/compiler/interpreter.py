@@ -25,6 +25,7 @@ class Interpreter:
         while self._cursor is not None:
             # print(self._cursor)
             index = self._ncs.instructions.index(self._cursor)
+            jump_value = None
 
             if self._cursor.ins_type == NCSInstructionType.CONSTS:
                 self._stack.add(DataType.STRING, self._cursor.args[0])
@@ -128,6 +129,9 @@ class Interpreter:
                 return_to = self._ncs.instructions[index_return_to]
                 self._returns.append(return_to)
 
+            elif self._cursor.ins_type in [NCSInstructionType.JZ, NCSInstructionType.JNZ]:
+                jump_value = self._stack.pop()
+
             self.stack_snapshots.append(StackSnapshot(self._cursor, self._stack.state()))
 
             if self._cursor.ins_type in [NCSInstructionType.RETN]:
@@ -135,8 +139,18 @@ class Interpreter:
                 self._cursor = return_to
                 continue
 
-            if self._cursor.jump is not None:
+            elif self._cursor.ins_type in [NCSInstructionType.JMP]:
                 self._cursor = self._cursor.jump
+
+            elif self._cursor.ins_type in [NCSInstructionType.JZ] and jump_value == 0:
+                self._cursor = self._cursor.jump
+
+            elif self._cursor.ins_type in [NCSInstructionType.JNZ] and jump_value != 0:
+                self._cursor = self._cursor.jump
+
+            elif self._cursor.ins_type in [NCSInstructionType.JSR]:
+                self._cursor = self._cursor.jump
+
             else:
                 self._cursor = self._ncs.instructions[index + 1]
 
