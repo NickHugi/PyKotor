@@ -759,6 +759,22 @@ class TestNSSCompiler(TestCase):
 
     # endregion
 
+    def test_scope(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 1;
+                
+                if (value == 1)
+                {
+                    value = 2;
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
     def test_while_loop(self):
         ncs = self.compile("""
             void main()

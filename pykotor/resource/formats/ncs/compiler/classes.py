@@ -86,7 +86,7 @@ class CodeRoot:
 class CodeBlock:
     def __init__(self):
         self.scope: List[ScopedValue] = []
-        self.parent: Optional[CodeBlock] = None
+        self._parent: Optional[CodeBlock] = None
         self._statements: List[Statement] = []
         self.jump_buffer: Optional[Tuple[NCSInstruction, int]] = None  # Instruction to assign jump value to + the index of the instruction to jump to
         self.tempstack: int = 0
@@ -94,7 +94,9 @@ class CodeBlock:
     def add(self, statement: Statement):
         self._statements.append(statement)
 
-    def compile(self, ncs: NCS, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, block: Optional[CodeBlock], return_instruction: NCSInstruction):
+        self._parent = block
+
         for statement in self._statements:
 
             if isinstance(statement, ReturnStatement):
@@ -124,8 +126,8 @@ class CodeBlock:
             if scoped.identifier == identifier:
                 break
         else:
-            if self.parent is not None:
-                return self.parent.get_scoped(identifier)
+            if self._parent is not None:
+                return self._parent.get_scoped(identifier)
             else:
                 raise CompileException(f"Could not find symbol {identifier}.")
         return scoped.data_type, index
@@ -138,16 +140,9 @@ class CodeBlock:
         """Returns size of scope, including outer blocks."""
         size = 0
         size += self.scope_size()
-        if self.parent is not None:
-            size += self.parent.full_scope_size()
+        if self._parent is not None:
+            size += self._parent.full_scope_size()
         return size
-
-    def build_parents(self):
-        # need a better way of implementing this
-        for statement in self._statements:
-            if hasattr(statement, "block"):
-                statement.block.parent = self
-                statement.block.build_parents()
 
 
 class ScopedValue:
@@ -165,7 +160,7 @@ class FunctionDefinition:
 
     def compile(self, ncs: NCS):
         retn = NCSInstruction(NCSInstructionType.RETN)
-        self.block.compile(ncs, retn)
+        self.block.compile(ncs, None, retn)
         ncs.instructions.append(retn)
 
 
@@ -1007,7 +1002,7 @@ class ConditionalStatement(Statement):
         jump = NCSInstruction(NCSInstructionType.JZ, [])
         ncs.instructions.append(jump)
 
-        self.block.compile(ncs, return_instruction)
+        self.block.compile(ncs, block, return_instruction)
         block.jump_buffer = (jump, len(ncs.instructions))
 
 
@@ -1034,7 +1029,7 @@ class WhileLoopBlock(Statement):
             raise CompileException("Condition must be int type.")
 
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
-        self.block.compile(ncs, return_instruction)
+        self.block.compile(ncs, block, return_instruction)
 
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
 
@@ -1051,7 +1046,7 @@ class DoWhileLoopBlock(Statement):
     def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
 
-        self.block.compile(ncs, return_instruction)
+        self.block.compile(ncs, block, return_instruction)
 
         condition_type = self.condition.compile(ncs, block)
         if condition_type != DataType.INT:
@@ -1080,7 +1075,7 @@ class ForLoopBlock(Statement):
             raise CompileException("Condition must be int type.")
 
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
-        self.block.compile(ncs, return_instruction)
+        self.block.compile(ncs, block, return_instruction)
 
         self.iteration.compile(ncs, block)
         ncs.add(NCSInstructionType.JMP, jump=loopstart)

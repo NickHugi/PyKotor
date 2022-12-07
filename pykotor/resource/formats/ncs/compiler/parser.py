@@ -65,7 +65,6 @@ class NssParser:
         function_definition : data_type IDENTIFIER '(' function_definition_params ')' '{' code_block '}'
         """
         p[0] = FunctionDefinition(p[1], p[2], p[4], p[7])
-        p[7].build_parents()
 
     def p_function_definition_params(self, p):
         """
