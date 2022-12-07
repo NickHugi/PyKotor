@@ -382,15 +382,19 @@ class TestNSSCompiler(TestCase):
                 int a = 10 > 1;
                 int b = 10 > 10;
                 int c = 10 > 20;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+                PrintInteger(c);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_compare_greaterthanorequal_op(self):
         ncs = self.compile("""
@@ -399,15 +403,19 @@ class TestNSSCompiler(TestCase):
                 int a = 10 >= 1;
                 int b = 10 >= 10;
                 int c = 10 >= 20;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+                PrintInteger(c);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-3].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_compare_lessthan_op(self):
         ncs = self.compile("""
@@ -416,15 +424,19 @@ class TestNSSCompiler(TestCase):
                 int a = 10 < 1;
                 int b = 10 < 10;
                 int c = 10 < 20;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+                PrintInteger(c);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-3].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_compare_lessthanorequal_op(self):
         ncs = self.compile("""
@@ -433,15 +445,19 @@ class TestNSSCompiler(TestCase):
                 int a = 10 <= 1;
                 int b = 10 <= 10;
                 int c = 10 <= 20;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+                PrintInteger(c);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-3].value)
-        self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
 
     # endregion
 
@@ -565,7 +581,7 @@ class TestNSSCompiler(TestCase):
                 int value = 1;
                 value += 2.0;
                 
-                PrintInteger(a);
+                PrintInteger(value);
             }
         """)
 
