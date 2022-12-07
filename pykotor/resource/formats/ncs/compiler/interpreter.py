@@ -23,7 +23,7 @@ class Interpreter:
 
     def run(self):
         while self._cursor is not None:
-            # print(self._cursor)
+            # print(str(self._cursor).ljust(30), self._stack.state())
             index = self._ncs.instructions.index(self._cursor)
             jump_value = None
 
