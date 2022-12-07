@@ -785,6 +785,26 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
 
+    def test_for_loop(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int i = 99;
+                for (i = 1; i <= 3; i += 1)
+                {
+                    PrintInteger(i);
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(3, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+        self.assertEqual(3, interpreter.action_snapshots[2].arg_values[0])
+
     def test_comment(self):
         ncs = self.compile("""
             void main()

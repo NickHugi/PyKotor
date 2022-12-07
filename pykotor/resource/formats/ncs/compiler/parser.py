@@ -18,7 +18,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
-    DoWhileLoopBlock
+    DoWhileLoopBlock, ForLoopBlock
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -113,6 +113,12 @@ class NssParser:
         """
         p[0] = DoWhileLoopBlock(p[7], p[3])
 
+    def p_for_loop(self, p):
+        """
+        for_loop : FOR_CONTROL '(' expression ';' expression ';' expression ')' '{' code_block '}'
+        """
+        p[0] = ForLoopBlock(p[3], p[5], p[7], p[10])
+
     def p_statement(self, p):
         """
         statement : ';'
@@ -121,6 +127,7 @@ class NssParser:
                   | return_statement
                   | while_loop
                   | do_while_loop
+                  | for_loop
                   | expression ';'
         """
         if isinstance(p[1], Expression):

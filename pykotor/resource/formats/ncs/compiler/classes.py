@@ -1061,6 +1061,31 @@ class DoWhileLoopBlock(Statement):
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
 
         loopend = ncs.add(NCSInstructionType.NOP, args=[])
+
+
+class ForLoopBlock(Statement):
+    def __init__(self, initial: Expression, condition: Expression, iteration: Expression, block: CodeBlock):
+        super().__init__()
+        self.initial: Expression = initial
+        self.condition: Expression = condition
+        self.iteration: Expression = iteration
+        self.block: CodeBlock = block
+
+    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+        self.initial.compile(ncs, block)
+        loopstart = ncs.add(NCSInstructionType.NOP, args=[])
+
+        condition_type = self.condition.compile(ncs, block)
+        if condition_type != DataType.INT:
+            raise CompileException("Condition must be int type.")
+
+        jz = ncs.add(NCSInstructionType.JZ, jump=None)
+        self.block.compile(ncs, return_instruction)
+
+        self.iteration.compile(ncs, block)
+        ncs.add(NCSInstructionType.JMP, jump=loopstart)
+
+        loopend = ncs.add(NCSInstructionType.NOP, args=[])
         jz.jump = loopend
 # endregion
 
