@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from enum import IntEnum, Enum
 from typing import NamedTuple, Optional, List
 
@@ -199,6 +200,16 @@ class NCS:
         self.instructions.append(instruction)
         return instruction
 
+    def links_to(self, target: NCSInstruction) -> List[NCSInstruction]:
+        """
+        Get a list of all instructions which may jump to the target instructions.
+        """
+        return [inst for inst in self.instructions if inst.jump is target]
+
+    def optimize(self, optimizers: List[NCSOptimizer]) -> None:
+        for optimizer in optimizers:
+            optimizer.optimize(self)
+
 
 class NCSInstruction:
     def __init__(self, ins_type: NCSInstructionType = NCSInstructionType.NOP, args: List = None, jump: Optional[NCSInstruction] = None):
@@ -214,3 +225,9 @@ class NCSInstruction:
 
     def __repr__(self):
         return "NCSInstruction({}, {}, {})".format(self.ins_type, self.jump, self.args)
+
+
+class NCSOptimizer(ABC):
+    @abstractmethod
+    def optimize(self, ncs: NCS) -> None:
+        ...
