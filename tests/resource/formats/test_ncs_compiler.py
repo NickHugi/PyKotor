@@ -993,9 +993,29 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        ncs.print()
 
         self.assertEqual(2, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+
+    def test_call_int_with_no_args(self):
+        ncs = self.compile("""
+            int test()
+            {
+                return 5;
+            }
+
+            void main()
+            {
+                int x = test();
+                PrintInteger(x);
+            }
+        """)
+
+        ncs.print()
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
     # endregion

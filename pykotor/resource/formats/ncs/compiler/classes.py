@@ -71,24 +71,43 @@ class CodeRoot:
     def __init__(self):
         self.includes: List[IncludeScript] = []
         self.function_defs: List[FunctionDefinition] = []
-        self._function_map: Dict[str, NCSInstruction] = {}
+        self._function_map: Dict[str, Tuple[NCSInstruction, FunctionDefinition]] = {}
 
     def compile(self, ncs: NCS):
         for function in self.function_defs:
             start_index = len(ncs.instructions)
             function.compile(ncs, self)
-            self._function_map[function.identifier.label] = ncs.instructions[start_index]
+            self._function_map[function.identifier.label] = ncs.instructions[start_index], function
 
         ncs.add(NCSInstructionType.RETN, args=[], prepend=True)
-        ncs.add(NCSInstructionType.JSR, jump=self._function_map["main"], prepend=True)
+        ncs.add(NCSInstructionType.JSR, jump=self._function_map["main"][0], prepend=True)
 
-    def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression):
+    def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression) -> DataType:
         if name not in self._function_map:
             raise CompileException(f"Function '{name}' has not been defined.")
 
+        start_instruction, definition = self._function_map[name]
+
+        if definition.return_type == DataType.INT:
+            ncs.add(NCSInstructionType.RSADDI, args=[])
+        elif definition.return_type == DataType.FLOAT:
+            ncs.add(NCSInstructionType.RSADDF, args=[])
+        elif definition.return_type == DataType.STRING:
+            ncs.add(NCSInstructionType.RSADDS, args=[])
+        elif definition.return_type == DataType.VECTOR:
+            raise NotImplementedError("Cannot define a function that returns Vector yet")  # TODO
+        elif definition.return_type == DataType.OBJECT:
+            ncs.add(NCSInstructionType.RSADDO, args=[])
+        elif definition.return_type == DataType.VOID:
+            ...
+        else:
+            raise NotImplementedError("Trying to return unsuppoted type?")  # TODO
+
         for arg in args:
             arg.compile(ncs, self, block)
-        ncs.add(NCSInstructionType.JSR, jump=self._function_map[name])
+        ncs.add(NCSInstructionType.JSR, jump=start_instruction)
+
+        return definition.return_type
 
 
 class CodeBlock:
@@ -107,7 +126,14 @@ class CodeBlock:
         for statement in self._statements:
 
             if isinstance(statement, ReturnStatement):
-                ncs.add(NCSInstructionType.MOVSP, args=[-self.full_scope_size()])
+                scope_size = self.full_scope_size()
+
+                return_type = statement.compile(ncs, root, self, return_instruction)
+                if return_type != DataType.VOID:
+                    ncs.add(NCSInstructionType.CPDOWNSP, args=[-scope_size-return_type.size()*2, 4])
+                    ncs.add(NCSInstructionType.MOVSP, args=[-return_type.size()])
+
+                ncs.add(NCSInstructionType.MOVSP, args=[-scope_size])
                 ncs.add(NCSInstructionType.JMP, jump=return_instruction)
                 return
             else:
@@ -289,8 +315,7 @@ class FunctionCallExpression(Expression):
         self._args: List[Expression] = args
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        root.compile_jsr(ncs, block, self._function.label, *self._args)
-        return DataType.VOID
+        return root.compile_jsr(ncs, block, self._function.label, *self._args)
 # endregion
 
 
@@ -1024,12 +1049,14 @@ class ConditionalBlock(Statement):
 
 
 class ReturnStatement(Statement):
-    def __init__(self):
+    def __init__(self, expression: Optional[Expression] = None):
         super().__init__()
-        ...
+        self.expression: Optional[Expression] = expression
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
-        ...
+        if self.expression is not None:
+            return self.expression.compile(ncs, root, block)
+        return DataType.VOID
 
 
 class WhileLoopBlock(Statement):

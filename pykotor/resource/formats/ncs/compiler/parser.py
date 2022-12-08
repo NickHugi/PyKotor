@@ -182,8 +182,12 @@ class NssParser:
     def p_return_statement(self, p):
         """
         return_statement : RETURN ';'
+                         | RETURN expression ';'
         """
-        p[0] = ReturnStatement()
+        if len(p) == 3:
+            p[0] = ReturnStatement()
+        elif len(p) == 4:
+            p[0] = ReturnStatement(p[2])
 
     def p_add_expression(self, p):
         """
