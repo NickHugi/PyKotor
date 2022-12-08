@@ -195,9 +195,9 @@ class NCS:
             else:
                 print("{}:\t{} {}".format(i, instruction.ins_type.name.ljust(8), instruction.args))
 
-    def add(self, instruction_type: NCSInstructionType, args=None, jump=None) -> NCSInstruction:
+    def add(self, instruction_type: NCSInstructionType, args=None, jump=None, prepend=False) -> NCSInstruction:
         instruction = NCSInstruction(instruction_type, args, jump)
-        self.instructions.append(instruction)
+        self.instructions.insert(0, instruction) if prepend else self.instructions.append(instruction)
         return instruction
 
     def links_to(self, target: NCSInstruction) -> List[NCSInstruction]:

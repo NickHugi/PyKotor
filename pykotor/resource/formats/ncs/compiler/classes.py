@@ -79,12 +79,14 @@ class CodeRoot:
             function.compile(ncs, self)
             self._function_map[function.identifier.label] = ncs.instructions[start_index]
 
-        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.RETN))
-        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, self._function_map["main"]))
+        ncs.add(NCSInstructionType.RETN, args=[], prepend=True)
+        ncs.add(NCSInstructionType.JSR, jump=self._function_map["main"], prepend=True)
 
     def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression):
-        ncs.add(NCSInstructionType.JSR, args=[])
-        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, self._function_map["main"]))
+        for arg in args:
+            arg.compile(ncs, self, block)
+        ncs.add(NCSInstructionType.JSR, jump=self._function_map[name])
+        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, self._function_map[name]))
 
 
 class CodeBlock:
@@ -273,6 +275,17 @@ class EngineCallExpression(Expression):
         ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
         block.tempstack -= this_stack
         return self._function.returntype
+
+
+class FunctionCallExpression(Expression):
+    def __init__(self, function: Identifier, args: List[Expression]):
+        super().__init__()
+        self._function: Identifier = function
+        self._args: List[Expression] = args
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        root.compile_jsr(ncs, block, self._function.label, *self._args)
+        return DataType.VOID
 # endregion
 
 

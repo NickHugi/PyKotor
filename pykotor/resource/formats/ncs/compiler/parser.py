@@ -18,7 +18,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
-    DoWhileLoopBlock, ForLoopBlock
+    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -354,13 +354,15 @@ class NssParser:
         function_call : IDENTIFIER '(' function_call_params ')'
         """
         identifier = p[1]
-        engine_function = next((x for x in self.functions if x.name == identifier), None)
-        if engine_function is not None:
+        args: List[Expression] = p[3]
+
+        if engine_function := next((x for x in self.functions if x.name == identifier), None):
             routine_id = self.functions.index(engine_function)
             data_type = engine_function.returntype
+            p[0] = EngineCallExpression(engine_function, routine_id, data_type, args)
+        else:
             args: List[Expression] = p[3]
-            expression = EngineCallExpression(engine_function, routine_id, data_type, args)
-            p[0] = expression
+            p[0] = FunctionCallExpression(identifier, args)
 
     def p_function_call_params(self, p):
         """

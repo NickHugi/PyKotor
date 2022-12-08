@@ -798,7 +798,6 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        interpreter.print()
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
@@ -928,3 +927,19 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_call_void_with_no_args(self):
+        ncs = self.compile("""
+            void test() { }
+        
+            void main()
+            {
+                test(0);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        #self.assertEqual(1, len(interpreter.action_snapshots))
+        #self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
