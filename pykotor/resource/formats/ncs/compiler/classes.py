@@ -179,7 +179,7 @@ class IncludeScript:
 
 class Expression(ABC):
     @abstractmethod
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         ...
 
 
@@ -198,7 +198,7 @@ class IdentifierExpression(Expression):
         super().__init__()
         self.identifier: Identifier = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         datatype, stack_index = block.get_scoped(self.identifier)
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CPTOPSP, [stack_index, datatype.size()]))
         return datatype
@@ -209,7 +209,7 @@ class StringExpression(Expression):
         super().__init__()
         self.value: str = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTS, [self.value]))
         return DataType.STRING
 
@@ -219,7 +219,7 @@ class IntExpression(Expression):
         super().__init__()
         self.value: int = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTI, [self.value]))
         return DataType.INT
 
@@ -229,7 +229,7 @@ class FloatExpression(Expression):
         super().__init__()
         self.value: float = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTF, [self.value]))
         return DataType.FLOAT
 
@@ -241,7 +241,7 @@ class EngineCallExpression(Expression):
         self._routine_id: int = routine_id
         self._args: List[Expression] = args
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         arg_count = len(self._args)
 
         if arg_count > len(self._function.params):
@@ -263,7 +263,7 @@ class EngineCallExpression(Expression):
 
         this_stack = 0
         for i, arg in enumerate(reversed(self._args)):
-            added = arg.compile(ncs, block)
+            added = arg.compile(ncs, root, block)
             block.tempstack += added.size()
             this_stack += added.size()
 
@@ -283,10 +283,10 @@ class AdditionExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type1 == DataType.INT:
@@ -314,10 +314,10 @@ class SubtractionExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type1 == DataType.INT:
@@ -343,10 +343,10 @@ class MultiplicationExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type1 == DataType.INT:
@@ -374,10 +374,10 @@ class DivisionExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type1 == DataType.INT:
@@ -403,10 +403,10 @@ class ModulusExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type1 == DataType.INT:
@@ -423,8 +423,8 @@ class NegationExpression(Expression):
         super().__init__()
         self.expression1: Expression = expression1
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT:
@@ -445,8 +445,8 @@ class LogicalNotExpression(Expression):
         super().__init__()
         self.expression1: Expression = expression1
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT:
@@ -464,10 +464,10 @@ class LogicalAndExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -485,10 +485,10 @@ class LogicalOrExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -508,10 +508,10 @@ class LogicalEqualityExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -536,10 +536,10 @@ class LogicalInequalityExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -563,10 +563,10 @@ class GreaterThanExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -587,10 +587,10 @@ class GreaterThanOrEqualExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -611,10 +611,10 @@ class LessThanExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -635,10 +635,10 @@ class LessThanOrEqualExpression(Expression):
         self.expression2: Expression = expression2
         self._type = None
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -660,10 +660,10 @@ class BitwiseOrExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -681,10 +681,10 @@ class BitwiseXorExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -702,10 +702,10 @@ class BitwiseAndExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -722,8 +722,8 @@ class BitwiseNotExpression(Expression):
         super().__init__()
         self.expression1: Expression = expression1
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT:
@@ -741,10 +741,10 @@ class BitwiseLeftShiftExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -762,10 +762,10 @@ class BitwiseRightShiftExpression(Expression):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
-        type2 = self.expression2.compile(ncs, block)
+        type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
         if type1 == DataType.INT and type2 == DataType.INT:
@@ -785,8 +785,8 @@ class Assignment(Expression):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
-        variable_type = self.expression.compile(ncs, block)
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
+        variable_type = self.expression.compile(ncs, root, block)
 
         expression_type, stack_index = block.get_scoped(self.identifier)
         stack_index -= expression_type.size()
@@ -808,13 +808,13 @@ class AdditionAssignment(Expression):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
         variable_type, stack_index = block.get_scoped(self.identifier)
         ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
-        expresion_type = self.expression.compile(ncs, block)
+        expresion_type = self.expression.compile(ncs, root, block)
         block.tempstack += expresion_type.size()
 
         # Determine what instruction to apply to the two values
@@ -848,13 +848,13 @@ class SubtractionAssignment(Expression):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
         variable_type, stack_index = block.get_scoped(self.identifier)
         ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
-        expresion_type = self.expression.compile(ncs, block)
+        expresion_type = self.expression.compile(ncs, root, block)
         block.tempstack += expresion_type.size()
 
         # Determine what instruction to apply to the two values
@@ -886,13 +886,13 @@ class MultiplicationAssignment(Expression):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
         variable_type, stack_index = block.get_scoped(self.identifier)
         ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
-        expresion_type = self.expression.compile(ncs, block)
+        expresion_type = self.expression.compile(ncs, root, block)
         block.tempstack += expresion_type.size()
 
         # Determine what instruction to apply to the two values
@@ -924,13 +924,13 @@ class DivisionAssignment(Expression):
         self.identifier: Identifier = identifier
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock) -> DataType:
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
         variable_type, stack_index = block.get_scoped(self.identifier)
         ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
-        expresion_type = self.expression.compile(ncs, block)
+        expresion_type = self.expression.compile(ncs, root, block)
         block.tempstack += expresion_type.size()
 
         # Determine what instruction to apply to the two values
@@ -972,7 +972,7 @@ class ExpressionStatement(Statement):
         self.expression: Expression = expression
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
-        self.expression.compile(ncs, block)
+        self.expression.compile(ncs, root, block)
 
 
 class DeclarationStatement(Statement):
@@ -983,7 +983,7 @@ class DeclarationStatement(Statement):
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
-        expression_type = self.expression.compile(ncs, block)
+        expression_type = self.expression.compile(ncs, root, block)
         if expression_type != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
         block.add_scoped(self.identifier, self.data_type)
@@ -996,7 +996,7 @@ class ConditionalBlock(Statement):
         self.block: CodeBlock = block
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
-        self.condition.compile(ncs, block)
+        self.condition.compile(ncs, root, block)
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
         self.block.compile(ncs, root, block, return_instruction)
         block_end = ncs.add(NCSInstructionType.NOP, args=[])
@@ -1022,7 +1022,7 @@ class WhileLoopBlock(Statement):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
-        condition_type = self.condition.compile(ncs, block)
+        condition_type = self.condition.compile(ncs, root, block)
 
         if condition_type != DataType.INT:
             raise CompileException("Condition must be int type.")
@@ -1047,7 +1047,7 @@ class DoWhileLoopBlock(Statement):
 
         self.block.compile(ncs, root, block, return_instruction)
 
-        condition_type = self.condition.compile(ncs, block)
+        condition_type = self.condition.compile(ncs, root, block)
         if condition_type != DataType.INT:
             raise CompileException("Condition must be int type.")
 
@@ -1066,17 +1066,17 @@ class ForLoopBlock(Statement):
         self.block: CodeBlock = block
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
-        self.initial.compile(ncs, block)
+        self.initial.compile(ncs, root, block)
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
 
-        condition_type = self.condition.compile(ncs, block)
+        condition_type = self.condition.compile(ncs, root, block)
         if condition_type != DataType.INT:
             raise CompileException("Condition must be int type.")
 
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
         self.block.compile(ncs, root, block, return_instruction)
 
-        self.iteration.compile(ncs, block)
+        self.iteration.compile(ncs, root, block)
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
 
         loopend = ncs.add(NCSInstructionType.NOP, args=[])
