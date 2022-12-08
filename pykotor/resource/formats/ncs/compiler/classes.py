@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict
 from pykotor.common.script import DataType, ScriptFunction
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
@@ -70,17 +70,21 @@ class Operator(Enum):
 class CodeRoot:
     def __init__(self):
         self.includes: List[IncludeScript] = []
-        self.functions: List[FunctionDefinition] = []
+        self.function_defs: List[FunctionDefinition] = []
+        self._function_map: Dict[str, NCSInstruction] = {}
 
     def compile(self, ncs: NCS):
-        function_map = {}
-        for function in self.functions:
+        for function in self.function_defs:
             start_index = len(ncs.instructions)
-            function.compile(ncs)
-            function_map[function.identifier.label] = ncs.instructions[start_index]
+            function.compile(ncs, self)
+            self._function_map[function.identifier.label] = ncs.instructions[start_index]
 
         ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.RETN))
-        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, function_map["main"]))
+        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, self._function_map["main"]))
+
+    def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression):
+        ncs.add(NCSInstructionType.JSR, args=[])
+        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, self._function_map["main"]))
 
 
 class CodeBlock:
@@ -93,7 +97,7 @@ class CodeBlock:
     def add(self, statement: Statement):
         self._statements.append(statement)
 
-    def compile(self, ncs: NCS, block: Optional[CodeBlock], return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: Optional[CodeBlock], return_instruction: NCSInstruction):
         self._parent = block
 
         for statement in self._statements:
@@ -103,7 +107,7 @@ class CodeBlock:
                 ncs.add(NCSInstructionType.JMP, jump=return_instruction)
                 return
             else:
-                statement.compile(ncs, self, return_instruction)
+                statement.compile(ncs, root, self, return_instruction)
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-self.scope_size()]))
 
         if self.tempstack != 0:
@@ -153,9 +157,9 @@ class FunctionDefinition:
         self.parameters: List[FunctionDefinitionParam] = parameters
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS):
+    def compile(self, ncs: NCS, root: CodeRoot):
         retn = NCSInstruction(NCSInstructionType.RETN)
-        self.block.compile(ncs, None, retn)
+        self.block.compile(ncs, root, None, retn)
         ncs.instructions.append(retn)
 
 
@@ -184,7 +188,7 @@ class Statement(ABC):
         self.linenum: Optional[None] = None
 
     @abstractmethod
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         ...
 
 
@@ -958,7 +962,7 @@ class EmptyStatement(Statement):
     def __init__(self):
         super().__init__()
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         return DataType.VOID
 
 
@@ -967,7 +971,7 @@ class ExpressionStatement(Statement):
         super().__init__()
         self.expression: Expression = expression
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         self.expression.compile(ncs, block)
 
 
@@ -978,7 +982,7 @@ class DeclarationStatement(Statement):
         self.data_type: DataType = data_type
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         expression_type = self.expression.compile(ncs, block)
         if expression_type != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
@@ -991,10 +995,10 @@ class ConditionalBlock(Statement):
         self.condition: Expression = condition
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         self.condition.compile(ncs, block)
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
-        self.block.compile(ncs, block, return_instruction)
+        self.block.compile(ncs, root, block, return_instruction)
         block_end = ncs.add(NCSInstructionType.NOP, args=[])
 
         # Set the Jump If Zero instruction to jump to the end of the block
@@ -1006,7 +1010,7 @@ class ReturnStatement(Statement):
         super().__init__()
         ...
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         ...
 
 
@@ -1016,7 +1020,7 @@ class WhileLoopBlock(Statement):
         self.condition: Expression = condition
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
         condition_type = self.condition.compile(ncs, block)
 
@@ -1024,7 +1028,7 @@ class WhileLoopBlock(Statement):
             raise CompileException("Condition must be int type.")
 
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
-        self.block.compile(ncs, block, return_instruction)
+        self.block.compile(ncs, root, block, return_instruction)
 
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
 
@@ -1038,10 +1042,10 @@ class DoWhileLoopBlock(Statement):
         self.condition: Expression = condition
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
 
-        self.block.compile(ncs, block, return_instruction)
+        self.block.compile(ncs, root, block, return_instruction)
 
         condition_type = self.condition.compile(ncs, block)
         if condition_type != DataType.INT:
@@ -1061,7 +1065,7 @@ class ForLoopBlock(Statement):
         self.iteration: Expression = iteration
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
         self.initial.compile(ncs, block)
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
 
@@ -1070,7 +1074,7 @@ class ForLoopBlock(Statement):
             raise CompileException("Condition must be int type.")
 
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
-        self.block.compile(ncs, block, return_instruction)
+        self.block.compile(ncs, root, block, return_instruction)
 
         self.iteration.compile(ncs, block)
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
@@ -1078,4 +1082,3 @@ class ForLoopBlock(Statement):
         loopend = ncs.add(NCSInstructionType.NOP, args=[])
         jz.jump = loopend
 # endregion
-
