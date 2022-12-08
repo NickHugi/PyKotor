@@ -88,7 +88,6 @@ class CodeBlock:
         self.scope: List[ScopedValue] = []
         self._parent: Optional[CodeBlock] = None
         self._statements: List[Statement] = []
-        self.jump_buffer: Optional[Tuple[NCSInstruction, int]] = None  # Instruction to assign jump value to + the index of the instruction to jump to
         self.tempstack: int = 0
 
     def add(self, statement: Statement):
@@ -103,12 +102,8 @@ class CodeBlock:
                 ncs.add(NCSInstructionType.MOVSP, args=[-self.full_scope_size()])
                 ncs.add(NCSInstructionType.JMP, jump=return_instruction)
                 return
-            elif self.jump_buffer is None:
-                statement.compile(ncs, self, return_instruction)
             else:
                 statement.compile(ncs, self, return_instruction)
-                inst, index = self.jump_buffer
-                inst.jump = ncs.instructions[index]
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-self.scope_size()]))
 
         if self.tempstack != 0:
@@ -990,7 +985,7 @@ class DeclarationStatement(Statement):
         block.add_scoped(self.identifier, self.data_type)
 
 
-class ConditionalStatement(Statement):
+class ConditionalBlock(Statement):
     def __init__(self, condition: Expression, block: CodeBlock):
         super().__init__()
         self.condition: Expression = condition
@@ -998,12 +993,12 @@ class ConditionalStatement(Statement):
 
     def compile(self, ncs: NCS, block: CodeBlock, return_instruction: NCSInstruction):
         self.condition.compile(ncs, block)
-
-        jump = NCSInstruction(NCSInstructionType.JZ, [])
-        ncs.instructions.append(jump)
-
+        jz = ncs.add(NCSInstructionType.JZ, jump=None)
         self.block.compile(ncs, block, return_instruction)
-        block.jump_buffer = (jump, len(ncs.instructions))
+        block_end = ncs.add(NCSInstructionType.NOP, args=[])
+
+        # Set the Jump If Zero instruction to jump to the end of the block
+        jz.jump = block_end
 
 
 class ReturnStatement(Statement):

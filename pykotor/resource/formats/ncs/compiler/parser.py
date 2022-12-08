@@ -10,7 +10,7 @@ from pykotor.common.script import ScriptFunction, ScriptConstant
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
     CodeBlock, \
-    Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalStatement, \
+    Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalBlock, \
     FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression, SubtractionExpression, \
     MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, BitwiseNotExpression, \
     LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
@@ -177,7 +177,7 @@ class NssParser:
         """
         condition_statement : IF_CONTROL '(' expression ')' '{' code_block '}'
         """
-        p[0] = ConditionalStatement(p[3], p[6])
+        p[0] = ConditionalBlock(p[3], p[6])
 
     def p_return_statement(self, p):
         """

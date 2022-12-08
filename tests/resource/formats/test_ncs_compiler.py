@@ -775,6 +775,34 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
+    def test_if(self):
+        ncs = self.compile("""
+            void main()
+            {
+                if(0)
+                {
+                    PrintInteger(0);
+                }
+            
+                if(1)
+                {
+                    PrintInteger(1);
+                }
+                
+                if(0)
+                {
+                    PrintInteger(2);
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        interpreter.print()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+
     def test_while_loop(self):
         ncs = self.compile("""
             void main()
