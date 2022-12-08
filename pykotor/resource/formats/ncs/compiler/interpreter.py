@@ -23,9 +23,10 @@ class Interpreter:
 
     def run(self):
         while self._cursor is not None:
-            # print(str(self._cursor).ljust(30), self._stack.state())
             index = self._ncs.instructions.index(self._cursor)
             jump_value = None
+
+            #print(str(index).ljust(3), str(self._cursor).ljust(30), self._stack.state())
 
             if self._cursor.ins_type == NCSInstructionType.CONSTS:
                 self._stack.add(DataType.STRING, self._cursor.args[0])
@@ -123,6 +124,18 @@ class Interpreter:
 
             elif self._cursor.ins_type in [NCSInstructionType.SHRIGHTII]:
                 self._stack.bitwise_rightshift_op()
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDI]:
+                self._stack.add(DataType.INT, 0)
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDF]:
+                self._stack.add(DataType.FLOAT, 0)
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDS]:
+                self._stack.add(DataType.STRING, "")
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDO]:
+                self._stack.add(DataType.STRING, None)
 
             elif self._cursor.ins_type in [NCSInstructionType.JSR]:
                 index_return_to = self._ncs.instructions.index(self._cursor) + 1
