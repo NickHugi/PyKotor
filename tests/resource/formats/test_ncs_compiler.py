@@ -957,4 +957,45 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(123, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_call_void_with_one_arg(self):
+        ncs = self.compile("""
+            void test(int value)
+            {
+                PrintInteger(value);
+            }
+
+            void main()
+            {
+                test(123);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(123, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_call_void_with_two_args(self):
+        ncs = self.compile("""
+            void test(int value1, int value2)
+            {
+                PrintInteger(value1);
+                PrintInteger(value2);
+            }
+
+            void main()
+            {
+                test(1, 2);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        ncs.print()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
     # endregion

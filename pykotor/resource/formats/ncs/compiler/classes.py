@@ -161,6 +161,9 @@ class FunctionDefinition:
         self.parameters: List[FunctionDefinitionParam] = parameters
         self.block: CodeBlock = block
 
+        for param in parameters:
+            block.add_scoped(param.identifier, param.data_type)
+
     def compile(self, ncs: NCS, root: CodeRoot):
         retn = NCSInstruction(NCSInstructionType.RETN)
         self.block.compile(ncs, root, None, retn)
