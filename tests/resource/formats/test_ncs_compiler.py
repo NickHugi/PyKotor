@@ -910,17 +910,21 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int a = 0;
+                int a = 1;
             
                 if (a == 1)
                 {
-                    int b = 0;
+                    PrintInteger(a);
                     return;
                 }
                 
+                PrintInteger(0);
                 return;
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
