@@ -928,18 +928,33 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
 
-    def test_call_void_with_no_args(self):
-        ncs = self.compile("""
-            void test() { }
-        
+    # region User-defined Functions
+    def test_call_undefined(self):
+        script = """
             void main()
             {
                 test(0);
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, script)
+
+    def test_call_void_with_no_args(self):
+        ncs = self.compile("""
+            void test()
+            {
+                PrintInteger(123);
+            }
+        
+            void main()
+            {
+                test();
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        #self.assertEqual(1, len(interpreter.action_snapshots))
-        #self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(123, interpreter.action_snapshots[0].arg_values[0])
+    # endregion

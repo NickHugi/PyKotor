@@ -83,10 +83,12 @@ class CodeRoot:
         ncs.add(NCSInstructionType.JSR, jump=self._function_map["main"], prepend=True)
 
     def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression):
+        if name not in self._function_map:
+            raise CompileException(f"Function '{name}' has not been defined.")
+
         for arg in args:
             arg.compile(ncs, self, block)
         ncs.add(NCSInstructionType.JSR, jump=self._function_map[name])
-        ncs.instructions.insert(0, NCSInstruction(NCSInstructionType.JSR, None, self._function_map[name]))
 
 
 class CodeBlock:
