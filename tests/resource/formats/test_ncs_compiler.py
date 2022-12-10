@@ -937,7 +937,7 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
     # region User-defined Functions
-    def test_forward_declaration_no_args(self):
+    def test_prototype_no_args(self):
         ncs = self.compile("""
             void test();
 
@@ -960,7 +960,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(56, interpreter.action_snapshots[0].arg_values[0])
 
-    def test_forward_declaration_with_args(self):
+    def test_prototype_with_args(self):
         ncs = self.compile("""
             void test();
 
@@ -995,7 +995,14 @@ class TestNSSCompiler(TestCase):
         """
         self.assertRaises(CompileException, self.compile, script)
 
-    def test_foward_declaration_after_definition(self):
+    def test_double_prototype(self):
+        script = """
+            void test();
+            void test();
+        """
+        self.assertRaises(CompileException, self.compile, script)
+
+    def test_prototype_after_definition(self):
         script = """
             void test()
             {
@@ -1003,6 +1010,28 @@ class TestNSSCompiler(TestCase):
             }
         
             void test();
+        """
+        self.assertRaises(CompileException, self.compile, script)
+
+    def test_prototype_and_definition_param_mismatch(self):
+        script = """
+            void test(int a);
+            
+            void test()
+            {
+                
+            }
+        """
+        self.assertRaises(CompileException, self.compile, script)
+
+    def test_prototype_and_definition_return_mismatch(self):
+        script = """
+            void test(int a);
+            
+            int test(int a)
+            {
+                
+            }
         """
         self.assertRaises(CompileException, self.compile, script)
 

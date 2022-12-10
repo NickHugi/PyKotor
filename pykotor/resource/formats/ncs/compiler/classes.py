@@ -77,6 +77,9 @@ class FunctionReference(NamedTuple):
     instruction: NCSInstruction
     definition: Union[FunctionForwardDeclaration, FunctionDefinition]
 
+    def is_prototype(self) -> bool:
+        return isinstance(self.definition, FunctionForwardDeclaration)
+
 
 class CodeRoot:
     def __init__(self):
@@ -197,6 +200,11 @@ class FunctionForwardDeclaration(TopLevelObject):
         self.paramaters: List[FunctionDefinitionParam] = parameters
 
     def compile(self, ncs: NCS, root: CodeRoot):
+        function_name = self.identifier.label
+
+        if self.identifier.label in root.function_map:
+            raise CompileException(f"Function '{function_name}' already has a protype or been defined.")
+
         root.function_map[self.identifier.label] = FunctionReference(ncs.add(NCSInstructionType.NOP, args=[]), self)
 
 
@@ -214,10 +222,12 @@ class FunctionDefinition(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot):
         name = self.identifier.label
 
-        # TODO: throw error when signature does not match forward declaration
-        if name in root.function_map:
-            if isinstance(root.function_map[name].definition, FunctionDefinition):
-                raise CompileException(f"Function '{name}' has already been defined.")
+        if name in root.function_map and not root.function_map[name].is_prototype():
+            raise CompileException(f"Function '{name}' has already been defined.")
+        elif name in root.function_map and root.function_map[name].is_prototype():
+
+            if not self.is_matching_signature(root.function_map[name].definition):
+                raise CompileException(f"Prototype of function '{name}' does not match definition.")
 
             # Function has forward declaration, insert the compiled definition after the stub
             temp = NCS()
@@ -232,12 +242,20 @@ class FunctionDefinition(TopLevelObject):
 
             function_start = ncs.add(NCSInstructionType.NOP, args=[])
             self.block.compile(ncs, root, None, retn)
+            ncs.instructions.append(retn)
 
             root.function_map[name] = FunctionReference(function_start, self)
 
-            ncs.instructions.append(retn)
+    def is_matching_signature(self, prototype: FunctionForwardDeclaration) -> bool:
+        if self.return_type != prototype.return_type:
+            return False
+        if len(self.parameters) != len(prototype.paramaters):
+            return False
+        for i in range(len(self.parameters)):
+            if self.parameters[i].data_type != prototype.paramaters[i].data_type:
+                return False
 
-
+        return True
 
 
 class FunctionDefinitionParam:
