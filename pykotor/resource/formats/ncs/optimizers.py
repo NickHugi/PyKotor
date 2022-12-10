@@ -20,3 +20,23 @@ class RemoveNopOptimizer(NCSOptimizer):
 
         # It is now safe to remove all NOP instructions
         ncs.instructions = [inst for inst in ncs.instructions if inst.ins_type != NCSInstructionType.NOP]
+
+
+class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
+    def optimize(self, ncs: NCS) -> None:
+        raise NotImplementedError()
+
+
+class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
+    def optimize(self, ncs: NCS) -> None:
+        raise NotImplementedError()
+
+
+class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
+    def optimize(self, ncs: NCS) -> None:
+        raise NotImplementedError()
+
+
+class RemoveUnusedBlocksOptimizer(NCSOptimizer):
+    def optimize(self, ncs: NCS) -> None:
+        raise NotImplementedError()
