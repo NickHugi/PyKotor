@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List, Optional, Tuple, Dict
 from pykotor.common.script import DataType, ScriptFunction
+from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
 
@@ -71,22 +72,26 @@ class CodeRoot:
     def __init__(self):
         self.includes: List[IncludeScript] = []
         self.function_defs: List[FunctionDefinition] = []
-        self._function_map: Dict[str, Tuple[NCSInstruction, FunctionDefinition]] = {}
+        self.function_map: Dict[str, Tuple[NCSInstruction, FunctionDefinition]] = {}
 
     def compile(self, ncs: NCS):
+        for include in self.includes:
+            include.compile(ncs, self)
+
         for function in self.function_defs:
             start_index = len(ncs.instructions)
             function.compile(ncs, self)
-            self._function_map[function.identifier.label] = ncs.instructions[start_index], function
+            self.function_map[function.identifier.label] = ncs.instructions[start_index], function
 
-        ncs.add(NCSInstructionType.RETN, args=[], prepend=True)
-        ncs.add(NCSInstructionType.JSR, jump=self._function_map["main"][0], prepend=True)
+        if "main" in self.function_map:
+            ncs.add(NCSInstructionType.RETN, args=[], prepend=True)
+            ncs.add(NCSInstructionType.JSR, jump=self.function_map["main"][0], prepend=True)
 
     def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression) -> DataType:
-        if name not in self._function_map:
+        if name not in self.function_map:
             raise CompileException(f"Function '{name}' has not been defined.")
 
-        start_instruction, definition = self._function_map[name]
+        start_instruction, definition = self.function_map[name]
 
         if definition.return_type == DataType.INT:
             ncs.add(NCSInstructionType.RSADDI, args=[])
@@ -203,11 +208,29 @@ class FunctionDefinitionParam:
 
 
 class IncludeScript:
-    def __init__(self, file: str):
-        self.file: str = file
+    def __init__(self, file: StringExpression, library: Dict[str, str] = None):
+        self.file: StringExpression = file
+        self.builtin_library: Dict[str, str] = library
 
-    def compile(self, ncs: NCS) -> int:
-        return 0
+    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+        builtin_library = self.builtin_library if self.builtin_library else {}
+
+        if self.file.value in builtin_library:
+            source = self.builtin_library[self.file.value]
+            # TODO try get file from drive
+        else:
+            raise CompileException(f"Could not find file '{self.file.value}.nss'.")
+
+        from pykotor.resource.formats.ncs.compiler.parser import NssParser
+        nssParser = NssParser()
+        t = nssParser.parser.parse(source, tracking=True)
+
+        imported = NCS()
+        t.compile(imported)
+        ncs.merge(imported)
+        # TODO: throw error of function redefined
+        root.function_map.update(t.function_map)
+
 
 
 class Expression(ABC):

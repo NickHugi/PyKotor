@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from ply import yacc
 from ply.yacc import YaccProduction
@@ -6,6 +6,7 @@ from ply.yacc import YaccProduction
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, KOTOR_CONSTANTS
 
 from pykotor.common.script import ScriptFunction, ScriptConstant
+from pykotor.common.scriptlib import KOTOR_LIBRARY
 
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
@@ -27,6 +28,7 @@ class NssParser:
         self.parser = yacc.yacc(module=self, errorlog=errorlog)
         self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
         self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
+        self.library: Dict[str, str] = KOTOR_LIBRARY
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
@@ -58,7 +60,7 @@ class NssParser:
         """
         include_script : INCLUDE STRING_VALUE
         """
-        p[0] = IncludeScript(p[2])
+        p[0] = IncludeScript(p[2], library=self.library)
 
     def p_function_definition(self, p):
         """
@@ -398,4 +400,3 @@ class NssParser:
                   | ACTION_TYPE
         """
         p[0] = p[1]
-

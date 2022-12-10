@@ -210,6 +210,9 @@ class NCS:
         for optimizer in optimizers:
             optimizer.optimize(self)
 
+    def merge(self, other: NCS) -> None:
+        self.instructions.extend(other.instructions)
+
 
 class NCSInstruction:
     def __init__(self, ins_type: NCSInstructionType = NCSInstructionType.NOP, args: List = None, jump: Optional[NCSInstruction] = None):

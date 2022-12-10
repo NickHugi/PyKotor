@@ -1,3 +1,4 @@
+from typing import Dict
 from unittest import TestCase
 
 from pykotor.resource.formats.ncs import NCS
@@ -9,10 +10,10 @@ from pykotor.resource.formats.ncs.compiler.parser import NssParser
 
 class TestNSSCompiler(TestCase):
 
-    def compile(self, script: str) -> NCS:
+    def compile(self, script: str, library: Dict[str, str] = None) -> NCS:
         nssLexer = NssLexer()
         nssParser = NssParser()
-        lex = nssLexer.lexer
+        nssParser.library = library
         parser = nssParser.parser
 
         t = parser.parse(script, tracking=True)
@@ -928,6 +929,27 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
 
+    def test_import(self):
+        otherscript = """
+            void TestFunc()
+            {
+                PrintInteger(123);
+            }
+        """
+
+        ncs = self.compile("""
+            #include "otherscript"
+        
+            void main()
+            {
+                TestFunc();
+            }
+        """, library={"otherscript": otherscript})
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        ncs.print()
+
     # region User-defined Functions
     def test_call_undefined(self):
         script = """
@@ -948,7 +970,7 @@ class TestNSSCompiler(TestCase):
         
             void main()
             {
-                test();
+                //test();
             }
         """)
 
