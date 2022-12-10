@@ -893,19 +893,6 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-    def test_include(self):
-        ncs = self.compile("""
-            #include "k_inc_debug"
-            
-            void main()
-            {
-            
-            }
-        """)
-
-        interpreter = Interpreter(ncs)
-        interpreter.run()
-
     def test_return(self):
         ncs = self.compile("""
             void main()
@@ -929,7 +916,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
 
-    def test_import(self):
+    def test_include(self):
         otherscript = """
             void TestFunc()
             {
@@ -948,7 +935,6 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        ncs.print()
 
     # region User-defined Functions
     def test_forward_declaration_no_args(self):
@@ -965,6 +951,8 @@ class TestNSSCompiler(TestCase):
                 PrintInteger(56);
             }
         """)
+
+        ncs.print()
 
         interpreter = Interpreter(ncs)
         interpreter.run()
@@ -1004,6 +992,17 @@ class TestNSSCompiler(TestCase):
             {
                 
             }
+        """
+        self.assertRaises(CompileException, self.compile, script)
+
+    def test_foward_declaration_after_definition(self):
+        script = """
+            void test()
+            {
+                
+            }
+        
+            void test();
         """
         self.assertRaises(CompileException, self.compile, script)
 
@@ -1090,7 +1089,6 @@ class TestNSSCompiler(TestCase):
             }
         """)
 
-        ncs.print()
         interpreter = Interpreter(ncs)
         interpreter.run()
 

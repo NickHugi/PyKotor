@@ -46,18 +46,11 @@ class NssParser:
         if len(p) == 3:
             block: CodeRoot = p[1]
             p[0] = block
-            add = p[2]
+            block.objects.append(p[2])
         elif len(p) == 2:
             block = CodeRoot()
             p[0] = block
-            add = p[1]
-
-        if isinstance(add, FunctionDefinition):
-            block.function_defs.append(add)
-        elif isinstance(add, IncludeScript):
-            block.includes.append(add)
-        elif isinstance(add, FunctionForwardDeclaration):
-            block.function_decs.append(add)
+            block.objects.append(p[1])
 
     def p_include_script(self, p):
         """

@@ -13,6 +13,11 @@ class CompileException(Exception):
         super().__init__(message)
 
 
+class TopLevelObject:
+    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+        ...
+
+
 class Identifier:
     def __init__(self, label: str):
         self.label: str = label
@@ -75,37 +80,13 @@ class FunctionReference(NamedTuple):
 
 class CodeRoot:
     def __init__(self):
-        # TODO: merge these three into one list extending common class
-        self.includes: List[IncludeScript] = []
-        self.function_decs: List[FunctionForwardDeclaration] = []
-        self.function_defs: List[FunctionDefinition] = []
+        self.objects: List[TopLevelObject] = []
 
         self.function_map: Dict[str, FunctionReference] = {}
 
     def compile(self, ncs: NCS):
-        for include in self.includes:
-            include.compile(ncs, self)
-
-        for foward_dec in self.function_decs:
-            self.function_map[foward_dec.identifier.label] = FunctionReference(ncs.add(NCSInstructionType.NOP, args=[]), foward_dec)
-
-        for function in self.function_defs:
-            name = function.identifier.label
-
-            # TODO: throw error when signature does not match forward declaration
-            if name in self.function_map:
-                if isinstance(self.function_map[name].definition, FunctionDefinition):
-                    raise CompileException(f"Function '{name}' has already been defined.")
-
-                # Function has forward declaration, insert the compiled definition after the stub
-                temp = NCS()
-                function.compile(temp, self)
-                stub_index = ncs.instructions.index(self.function_map[name].instruction)
-                ncs.instructions[stub_index+1:stub_index+1] = temp.instructions
-            else:
-                start_index = len(ncs.instructions)
-                function.compile(ncs, self)
-                self.function_map[function.identifier.label] = FunctionReference(ncs.instructions[start_index], function)
+        for obj in self.objects:
+            obj.compile(ncs, self)
 
         if "main" in self.function_map:
             ncs.add(NCSInstructionType.RETN, args=[], prepend=True)
@@ -209,17 +190,17 @@ class ScopedValue:
         self.data_type: DataType = data_type
 
 
-class FunctionForwardDeclaration:
+class FunctionForwardDeclaration(TopLevelObject):
     def __init__(self, return_type: DataType, identifier: Identifier, parameters: List[FunctionDefinitionParam]):
         self.return_type: DataType = return_type
         self.identifier: Identifier = identifier
         self.paramaters: List[FunctionDefinitionParam] = parameters
 
     def compile(self, ncs: NCS, root: CodeRoot):
-        ...
+        root.function_map[self.identifier.label] = FunctionReference(ncs.add(NCSInstructionType.NOP, args=[]), self)
 
 
-class FunctionDefinition:
+class FunctionDefinition(TopLevelObject):
     # TODO: split definition into signature + block?
     def __init__(self, return_type: DataType, identifier: Identifier, parameters: List[FunctionDefinitionParam], block: CodeBlock):
         self.return_type: DataType = return_type
@@ -231,9 +212,32 @@ class FunctionDefinition:
             block.add_scoped(param.identifier, param.data_type)
 
     def compile(self, ncs: NCS, root: CodeRoot):
-        retn = NCSInstruction(NCSInstructionType.RETN)
-        self.block.compile(ncs, root, None, retn)
-        ncs.instructions.append(retn)
+        name = self.identifier.label
+
+        # TODO: throw error when signature does not match forward declaration
+        if name in root.function_map:
+            if isinstance(root.function_map[name].definition, FunctionDefinition):
+                raise CompileException(f"Function '{name}' has already been defined.")
+
+            # Function has forward declaration, insert the compiled definition after the stub
+            temp = NCS()
+            retn = NCSInstruction(NCSInstructionType.RETN)
+            self.block.compile(temp, root, None, retn)
+            temp.add(NCSInstructionType.RETN, args=[])
+
+            stub_index = ncs.instructions.index(root.function_map[name].instruction)
+            ncs.instructions[stub_index + 1:stub_index + 1] = temp.instructions
+        else:
+            retn = NCSInstruction(NCSInstructionType.RETN)
+
+            function_start = ncs.add(NCSInstructionType.NOP, args=[])
+            self.block.compile(ncs, root, None, retn)
+
+            root.function_map[name] = FunctionReference(function_start, self)
+
+            ncs.instructions.append(retn)
+
+
 
 
 class FunctionDefinitionParam:
@@ -242,7 +246,7 @@ class FunctionDefinitionParam:
         self.identifier: Identifier = identifier
 
 
-class IncludeScript:
+class IncludeScript(TopLevelObject):
     def __init__(self, file: StringExpression, library: Dict[str, str] = None):
         self.file: StringExpression = file
         self.builtin_library: Dict[str, str] = library
