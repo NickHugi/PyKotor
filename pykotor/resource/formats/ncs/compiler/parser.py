@@ -19,7 +19,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
-    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression
+    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -37,30 +37,39 @@ class NssParser:
         """
         code_root : code_root function_definition
                   | code_root include_script
+                  | code_root function_forward_declaration
                   | function_definition
                   | include_script
+                  | function_forward_declaration
                   |
         """
         if len(p) == 3:
             block: CodeRoot = p[1]
-            if isinstance(p[2], FunctionDefinition):
-                block.function_defs.append(p[2])
-            elif isinstance(p[2], IncludeScript):
-                block.includes.append(p[2])
             p[0] = block
+            add = p[2]
         elif len(p) == 2:
             block = CodeRoot()
-            if isinstance(p[1], FunctionDefinition):
-                block.function_defs.append(p[1])
-            elif isinstance(p[1], IncludeScript):
-                block.includes.append(p[1])
             p[0] = block
+            add = p[1]
+
+        if isinstance(add, FunctionDefinition):
+            block.function_defs.append(add)
+        elif isinstance(add, IncludeScript):
+            block.includes.append(add)
+        elif isinstance(add, FunctionForwardDeclaration):
+            block.function_decs.append(add)
 
     def p_include_script(self, p):
         """
         include_script : INCLUDE STRING_VALUE
         """
         p[0] = IncludeScript(p[2], library=self.library)
+
+    def p_function_forward_declaration(self, p):
+        """
+        function_forward_declaration : data_type IDENTIFIER '(' function_definition_params ')' ';'
+        """
+        p[0] = FunctionForwardDeclaration(p[1], p[2], p[4])
 
     def p_function_definition(self, p):
         """

@@ -951,6 +951,27 @@ class TestNSSCompiler(TestCase):
         ncs.print()
 
     # region User-defined Functions
+    def test_forward_declaration_no_args(self):
+        ncs = self.compile("""
+            void test();
+
+            void main()
+            {
+                test();
+            }
+
+            void test()
+            {
+                PrintInteger(56);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(56, interpreter.action_snapshots[0].arg_values[0])
+
     def test_call_undefined(self):
         script = """
             void main()
@@ -970,7 +991,7 @@ class TestNSSCompiler(TestCase):
         
             void main()
             {
-                //test();
+                test();
             }
         """)
 

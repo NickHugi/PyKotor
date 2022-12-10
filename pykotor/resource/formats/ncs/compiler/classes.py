@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, NamedTuple, Union
 from pykotor.common.script import DataType, ScriptFunction
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
@@ -68,20 +68,42 @@ class Operator(Enum):
     ONES_COMPLEMENT = "~"
 
 
+class FunctionReference(NamedTuple):
+    instruction: NCSInstruction
+    definition: Union[FunctionForwardDeclaration, FunctionDefinition]
+
+
 class CodeRoot:
     def __init__(self):
+        # TODO: merge these three into one list extending common class
         self.includes: List[IncludeScript] = []
+        self.function_decs: List[FunctionForwardDeclaration] = []
         self.function_defs: List[FunctionDefinition] = []
-        self.function_map: Dict[str, Tuple[NCSInstruction, FunctionDefinition]] = {}
+
+        self.function_map: Dict[str, FunctionReference] = {}
 
     def compile(self, ncs: NCS):
         for include in self.includes:
             include.compile(ncs, self)
 
+        for foward_dec in self.function_decs:
+            self.function_map[foward_dec.identifier.label] = FunctionReference(ncs.add(NCSInstructionType.NOP, args=[]), foward_dec)
+
         for function in self.function_defs:
-            start_index = len(ncs.instructions)
-            function.compile(ncs, self)
-            self.function_map[function.identifier.label] = ncs.instructions[start_index], function
+            name = function.identifier.label
+
+            # TODO: throw error when trying to compile function of same name
+            # TODO: throw error when signature does not match forward declaration
+            if name in self.function_map:
+                # Function has forward declaration, insert the compiled definition after the stub
+                temp = NCS()
+                function.compile(temp, self)
+                stub_index = ncs.instructions.index(self.function_map[name].instruction)
+                ncs.instructions[stub_index+1:stub_index+1] = temp.instructions
+            else:
+                start_index = len(ncs.instructions)
+                function.compile(ncs, self)
+                self.function_map[function.identifier.label] = FunctionReference(ncs.instructions[start_index], function)
 
         if "main" in self.function_map:
             ncs.add(NCSInstructionType.RETN, args=[], prepend=True)
@@ -185,7 +207,18 @@ class ScopedValue:
         self.data_type: DataType = data_type
 
 
+class FunctionForwardDeclaration:
+    def __init__(self, return_type: DataType, identifier: Identifier, parameters: List[FunctionDefinitionParam]):
+        self.return_type: DataType = return_type
+        self.identifier: Identifier = identifier
+        self.paramaters: List[FunctionDefinitionParam] = parameters
+
+    def compile(self, ncs: NCS, root: CodeRoot):
+        ...
+
+
 class FunctionDefinition:
+    # TODO: split definition into signature + block?
     def __init__(self, return_type: DataType, identifier: Identifier, parameters: List[FunctionDefinitionParam], block: CodeBlock):
         self.return_type: DataType = return_type
         self.identifier: Identifier = identifier
@@ -230,7 +263,6 @@ class IncludeScript:
         ncs.merge(imported)
         # TODO: throw error of function redefined
         root.function_map.update(t.function_map)
-
 
 
 class Expression(ABC):
