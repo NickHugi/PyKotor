@@ -26,7 +26,7 @@ class Interpreter:
             index = self._ncs.instructions.index(self._cursor)
             jump_value = None
 
-            #print(str(index).ljust(3), str(self._cursor).ljust(30), self._stack.state())
+            #print(str(index).ljust(3), str(self._cursor).ljust(40)[:40], str(self._stack.state()).ljust(30), f"BP={self._stack.base_pointer()//4}")
 
             if self._cursor.ins_type == NCSInstructionType.CONSTS:
                 self._stack.add(DataType.STRING, self._cursor.args[0])
@@ -44,7 +44,7 @@ class Interpreter:
                 self._stack.copy_to_top(self._cursor.args[0], self._cursor.args[1])
 
             elif self._cursor.ins_type == NCSInstructionType.CPDOWNSP:
-                self._stack.copy_down(self._cursor.args[0])
+                self._stack.copy_down(self._cursor.args[0], self._cursor.args[1])
 
             elif self._cursor.ins_type == NCSInstructionType.ACTION:
                 self.action(self._functions[self._cursor.args[0]], self._cursor.args[1])
@@ -137,6 +137,18 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.RSADDO]:
                 self._stack.add(DataType.STRING, None)
 
+            elif self._cursor.ins_type in [NCSInstructionType.SAVEBP]:
+                self._stack.save_bp()
+
+            elif self._cursor.ins_type in [NCSInstructionType.RESTOREBP]:
+                self._stack.restore_bp()
+
+            elif self._cursor.ins_type in [NCSInstructionType.CPTOPBP]:
+                self._stack.copy_top_bp(self._cursor.args[0], self._cursor.args[1])
+
+            elif self._cursor.ins_type in [NCSInstructionType.CPDOWNBP]:
+                self._stack.copy_down_bp(self._cursor.args[0], self._cursor.args[1])
+
             elif self._cursor.ins_type in [NCSInstructionType.JSR]:
                 index_return_to = self._ncs.instructions.index(self._cursor) + 1
                 return_to = self._ncs.instructions[index_return_to]
@@ -207,6 +219,8 @@ class Interpreter:
 class Stack:
     def __init__(self):
         self._stack: List = []
+        self._bp: int = 0
+        self._bp_buffer: List[int] = []
 
     def state(self) -> List:
         return copy(self._stack)
@@ -215,9 +229,13 @@ class Stack:
         self._stack.append(StackObject(data_type, value))
 
     def _stack_index(self, offset: int) -> int:
-        if offset == 0:
-            raise ValueError
         return offset // 4
+
+    def stack_pointer(self) -> int:
+        return len(self._stack) * 4
+
+    def base_pointer(self) -> int:
+        return self._bp
 
     def peek(self, offset: int) -> Any:
         real_index = self._stack_index(offset)
@@ -226,7 +244,7 @@ class Stack:
     def copy_to_top(self, offset: int, size: int) -> None:
         self._stack.append(self.peek(offset))
 
-    def copy_down(self, offset: int) -> None:
+    def copy_down(self, offset: int, size: int) -> None:
         top_value = self._stack[-1]
         self._stack[self._stack_index(offset)] = top_value
 
@@ -236,6 +254,26 @@ class Stack:
     def move(self, offset: int) -> None:
         for i in range(abs(offset // 4)):
             self._stack.pop()
+
+    def copy_down_bp(self, offset: int, size: int) -> None:
+        # Copy from the top of the stack down to the bp adjusted w/ offset?
+        top_value = self._stack[-1]
+        to_index = self._stack_index(self._bp + offset)
+        self._stack[to_index] = top_value
+
+    def copy_top_bp(self, offset: int, size: int) -> None:
+        # Copy value relative to base pointer to the top of the stack
+        copy_index = self._stack_index(self._bp + offset)
+        print(copy_index)
+        top_value = self._stack[copy_index]
+        self._stack.append(top_value)
+
+    def save_bp(self) -> None:
+        self._bp_buffer.append(self.base_pointer())
+        self._bp = self.stack_pointer()
+
+    def restore_bp(self) -> None:
+        self._bp = self._bp_buffer.pop()
 
     def addition_op(self):
         value1 = self._stack.pop()
