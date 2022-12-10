@@ -59,7 +59,7 @@ class NCSBinaryReader(ResourceReader):
 
         if instruction.ins_type in [NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
                                     NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP]:
-            instruction.args.extend([self._reader.read_uint32,
+            instruction.args.extend([self._reader.read_int32,
                                      self._reader.read_uint32])
 
         elif instruction.ins_type in [NCSInstructionType.CONSTI]:
@@ -103,7 +103,7 @@ class NCSBinaryReader(ResourceReader):
             ...
 
         else:
-            ...
+            raise Exception("Tried to read unsupported instruction to NCS")
 
         return instruction
 
@@ -145,7 +145,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         if instruction.ins_type in [NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
                                     NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP]:
-            size += 8
+            size += 6
 
         elif instruction.ins_type in [NCSInstructionType.CONSTI]:
             size += 4
@@ -184,7 +184,6 @@ class NCSBinaryWriter(ResourceWriter):
 
         elif instruction.ins_type in [NCSInstructionType.NOP]:
             ...
-
         else:
             ...
 
@@ -196,11 +195,11 @@ class NCSBinaryWriter(ResourceWriter):
 
         if instruction.ins_type in [NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
                                     NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP]:
-            self._writer.write_uint32(instruction.args[0], big=True)
-            self._writer.write_uint32(instruction.args[0], big=True)
+            self._writer.write_int32(instruction.args[0], big=True)
+            self._writer.write_uint16(4, big=True)  # TODO: 12 for float support
 
         elif instruction.ins_type in [NCSInstructionType.CONSTI]:
-            self._writer.write_uint32(instruction.args[0], big=True)
+            self._writer.write_int32(instruction.args[0], big=True)
 
         elif instruction.ins_type in [NCSInstructionType.CONSTF]:
             self._writer.write_single(instruction.args[0], big=True)
@@ -209,7 +208,7 @@ class NCSBinaryWriter(ResourceWriter):
             self._writer.write_string(instruction.args[0], big=True, prefix_length=2)
 
         elif instruction.ins_type in [NCSInstructionType.CONSTO]:
-            self._writer.write_uint16(instruction.args[0], big=True)
+            self._writer.write_uint32(instruction.args[0], big=True)
 
         elif instruction.ins_type in [NCSInstructionType.ACTION]:
             self._writer.write_uint16(instruction.args[0], big=True)
@@ -239,9 +238,16 @@ class NCSBinaryWriter(ResourceWriter):
         elif instruction.ins_type in [NCSInstructionType.EQUALTT, NCSInstructionType.NEQUALTT]:
             self._writer.write_uint16(instruction.args[0], big=True)
 
+        elif instruction.ins_type in [NCSInstructionType.RETN]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.RSADDI, NCSInstructionType.RSADDF, NCSInstructionType.RSADDO,
+                                      NCSInstructionType.RSADDS]:
+            ...
+
         elif instruction.ins_type in [NCSInstructionType.NOP]:
             ...
 
         else:
-            ...
+            raise Exception(f"Tried to write unsupported instruction ({instruction.ins_type.name}) to NCS")
 
