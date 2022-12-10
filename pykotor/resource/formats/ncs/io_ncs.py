@@ -59,8 +59,8 @@ class NCSBinaryReader(ResourceReader):
 
         if instruction.ins_type in [NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
                                     NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP]:
-            instruction.args.extend([self._reader.read_int32,
-                                     self._reader.read_uint32])
+            instruction.args.extend([self._reader.read_int32(big=True),
+                                     self._reader.read_uint16(big=True)])
 
         elif instruction.ins_type in [NCSInstructionType.CONSTI]:
             instruction.args.extend([self._reader.read_uint32(big=True)])
@@ -99,11 +99,13 @@ class NCSBinaryReader(ResourceReader):
         elif instruction.ins_type in [NCSInstructionType.EQUALTT, NCSInstructionType.NEQUALTT]:
             instruction.args.extend([self._reader.read_uint16])
 
-        elif instruction.ins_type in [NCSInstructionType.NOP]:
+        elif instruction.ins_type in [NCSInstructionType.NOP, NCSInstructionType.RETN, NCSInstructionType.SAVEBP,
+                                      NCSInstructionType.RESTOREBP, NCSInstructionType.ADDII, NCSInstructionType.RSADDI,
+                                      NCSInstructionType.RSADDO, NCSInstructionType.NEGI, NCSInstructionType.RSADDS]:
             ...
 
         else:
-            raise Exception("Tried to read unsupported instruction to NCS")
+            raise Exception(f"Tried to read unsupported instruction '{instruction.ins_type.name}' to NCS")
 
         return instruction
 

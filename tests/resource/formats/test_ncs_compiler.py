@@ -952,8 +952,6 @@ class TestNSSCompiler(TestCase):
             }
         """)
 
-        ncs.print()
-
         interpreter = Interpreter(ncs)
         interpreter.run()
 
@@ -962,7 +960,7 @@ class TestNSSCompiler(TestCase):
 
     def test_prototype_with_args(self):
         ncs = self.compile("""
-            void test();
+            void test(int value);
 
             void main()
             {

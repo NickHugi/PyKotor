@@ -88,7 +88,16 @@ class CodeRoot:
         self.function_map: Dict[str, FunctionReference] = {}
 
     def compile(self, ncs: NCS):
-        for obj in self.objects:
+        # nwnnsscomp processes the includes and global variable declarations before functions regardless if they are
+        # placed before or after function defintions. We will replicate this behaviour.
+
+        includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
+        others = [obj for obj in self.objects if obj not in includes]
+
+        for include in includes:
+            include.compile(ncs, self)
+
+        for obj in others:
             obj.compile(ncs, self)
 
         if "main" in self.function_map:
