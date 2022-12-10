@@ -972,6 +972,41 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(56, interpreter.action_snapshots[0].arg_values[0])
 
+    def test_forward_declaration_with_args(self):
+        ncs = self.compile("""
+            void test();
+
+            void main()
+            {
+                test(57);
+            }
+
+            void test(int value)
+            {
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(57, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_redefine_function(self):
+        script = """
+            void test()
+            {
+                
+            }
+        
+            void test()
+            {
+                
+            }
+        """
+        self.assertRaises(CompileException, self.compile, script)
+
     def test_call_undefined(self):
         script = """
             void main()

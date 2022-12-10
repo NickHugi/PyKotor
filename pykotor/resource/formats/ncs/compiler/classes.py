@@ -92,9 +92,11 @@ class CodeRoot:
         for function in self.function_defs:
             name = function.identifier.label
 
-            # TODO: throw error when trying to compile function of same name
             # TODO: throw error when signature does not match forward declaration
             if name in self.function_map:
+                if isinstance(self.function_map[name].definition, FunctionDefinition):
+                    raise CompileException(f"Function '{name}' has already been defined.")
+
                 # Function has forward declaration, insert the compiled definition after the stub
                 temp = NCS()
                 function.compile(temp, self)
