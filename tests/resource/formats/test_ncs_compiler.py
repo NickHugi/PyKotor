@@ -104,6 +104,17 @@ class TestNSSCompiler(TestCase):
         """
 
         self.assertRaises(CompileException, self.compile, script)
+
+    def test_enginecall_delay_command_1(self):
+        ncs = self.compile("""
+            void main()
+            {
+                object oFirstPlayer = GetFirstPC();
+                DelayCommand(1.0, GiveXPToCreature(oFirstPlayer, 9001));
+            }
+        """)
+
+        ncs.print()
     # endregion
 
     # region Arithmetic Operator

@@ -113,14 +113,16 @@ class CodeRoot:
         # nwnnsscomp processes the includes and global variable declarations before functions regardless if they are
         # placed before or after function defintions. We will replicate this behaviour.
 
+        included = []
         while [obj for obj in self.objects if isinstance(obj, IncludeScript)]:
             includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
             include = includes.pop()
             self.objects.remove(include)
+            included.append(include)
             include.compile(ncs, self)
 
         globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration)]
-        others = [obj for obj in self.objects if obj not in includes and obj not in globals]
+        others = [obj for obj in self.objects if obj not in included and obj not in globals]
 
         if len(globals) > 0:
             for globaldef in globals:
@@ -174,6 +176,12 @@ class CodeRoot:
         else:
             raise CompileException(f"Could not find variable '{identifier}'.")
         return GetScopedResult(True, scoped.data_type, offset)
+
+    def scope_size(self):
+        offset = 0
+        for scoped in self._global_scope:
+            offset -= scoped.data_type.size()
+        return offset
 
 
 class CodeBlock:
@@ -432,12 +440,20 @@ class EngineCallExpression(Expression):
 
         this_stack = 0
         for i, arg in enumerate(reversed(self._args)):
-            added = arg.compile(ncs, root, block)
-            block.tempstack += added.size()
-            this_stack += added.size()
+            param_type = self._function.params[-i - 1].datatype
+            if param_type == DataType.ACTION:
+                after_command = NCSInstruction()
+                ncs.add(NCSInstructionType.STORE_STATE, args=[root.scope_size(), block.full_scope_size()])
+                ncs.add(NCSInstructionType.JMP, jump=after_command)
+                arg.compile(ncs, root, block)
+                ncs.instructions.append(after_command)
+            else:
+                added = arg.compile(ncs, root, block)
+                block.tempstack += added.size()
+                this_stack += added.size()
 
-            if added != self._function.params[-i - 1].datatype:
-                raise CompileException(f"Tried to pass an argument of the incorrect type to '{self._function.name}'.")
+                if added != param_type:
+                    raise CompileException(f"Tried to pass an argument of the incorrect type to '{self._function.name}'.")
 
         ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
         block.tempstack -= this_stack
