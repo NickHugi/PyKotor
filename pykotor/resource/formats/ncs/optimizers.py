@@ -40,3 +40,8 @@ class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):
     def optimize(self, ncs: NCS) -> None:
         raise NotImplementedError()
+
+
+class RemoveUnusedGlobalsInStackOptimizer(NCSOptimizer):
+    def optimize(self, ncs: NCS) -> None:
+        raise NotImplementedError()

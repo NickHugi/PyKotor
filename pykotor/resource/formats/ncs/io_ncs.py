@@ -101,7 +101,8 @@ class NCSBinaryReader(ResourceReader):
 
         elif instruction.ins_type in [NCSInstructionType.NOP, NCSInstructionType.RETN, NCSInstructionType.SAVEBP,
                                       NCSInstructionType.RESTOREBP, NCSInstructionType.ADDII, NCSInstructionType.RSADDI,
-                                      NCSInstructionType.RSADDO, NCSInstructionType.NEGI, NCSInstructionType.RSADDS]:
+                                      NCSInstructionType.RSADDO, NCSInstructionType.NEGI, NCSInstructionType.RSADDS,
+                                      NCSInstructionType.EQUALII]:
             ...
 
         else:

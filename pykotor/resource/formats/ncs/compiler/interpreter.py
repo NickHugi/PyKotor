@@ -47,7 +47,7 @@ class Interpreter:
                 self._stack.copy_down(self._cursor.args[0], self._cursor.args[1])
 
             elif self._cursor.ins_type == NCSInstructionType.ACTION:
-                self.action(self._functions[self._cursor.args[0]], self._cursor.args[1])
+                self.do_action(self._functions[self._cursor.args[0]], self._cursor.args[1])
 
             elif self._cursor.ins_type == NCSInstructionType.MOVSP:
                 self._stack.move(self._cursor.args[0])
@@ -157,8 +157,12 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.JZ, NCSInstructionType.JNZ]:
                 jump_value = self._stack.pop()
 
+            elif self._cursor.ins_type in [NCSInstructionType.STORE_STATE]:
+                self.store_state()
+
             self.stack_snapshots.append(StackSnapshot(self._cursor, self._stack.state()))
 
+            # Control flow
             if self._cursor.ins_type in [NCSInstructionType.RETN]:
                 return_to = self._returns.pop()
                 self._cursor = return_to
@@ -179,7 +183,21 @@ class Interpreter:
             else:
                 self._cursor = self._ncs.instructions[index + 1]
 
-    def action(self, function: ScriptFunction, args: int):
+    def store_state(self):
+        self._stack.store_state()
+
+        index = self._ncs.instructions.index(self._cursor)
+        tempcursor = self._ncs.instructions[index+2]
+
+        block = []
+        while tempcursor.ins_type != NCSInstructionType.RETN:
+            block.append(tempcursor)
+            index = self._ncs.instructions.index(tempcursor)
+            tempcursor = self._ncs.instructions[index + 1]
+
+        self._stack.add(DataType.ACTION, ActionStackValue(block, self._stack.state()))
+
+    def do_action(self, function: ScriptFunction, args: int):
         args_snap = []
 
         for i in range(args):
@@ -377,6 +395,9 @@ class Stack:
         value2 = self._stack.pop()
         self.add(value1.data_type, int(value2.value <= value1.value))
 
+    def store_state(self):
+        ...
+
 
 class StackObject:
     def __init__(self, data_type: DataType, value: Any):
@@ -391,6 +412,11 @@ class StackObject:
             return self.value == other.value
         else:
             return self.value == other
+
+
+class ActionStackValue(NamedTuple):
+    block: List[NCSInstruction]
+    stack: List
 
 
 class ActionSnapshot(NamedTuple):
