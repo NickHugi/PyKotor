@@ -86,7 +86,7 @@ class NCSInstructionQualifier(IntEnum):
 
 
 class NCSInstructionType(Enum):
-    NOP = NCSInstructionTypeValue(NCSByteCode.NOP, 0x00)  # 0x0c)
+    NOP = NCSInstructionTypeValue(NCSByteCode.NOP, 0x2D)
     CPDOWNSP = NCSInstructionTypeValue(NCSByteCode.CPDOWNSP, 0x01)
     RSADDI = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Int)
     RSADDF = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Float)
@@ -195,9 +195,9 @@ class NCS:
             else:
                 print("{}:\t{} {}".format(i, instruction.ins_type.name.ljust(8), instruction.args))
 
-    def add(self, instruction_type: NCSInstructionType, args: List = None, jump: Optional[NCSInstruction] = None, prepend: bool = False) -> NCSInstruction:
+    def add(self, instruction_type: NCSInstructionType, args: List = None, jump: Optional[NCSInstruction] = None, index: int = None) -> NCSInstruction:
         instruction = NCSInstruction(instruction_type, args, jump)
-        self.instructions.insert(0, instruction) if prepend else self.instructions.append(instruction)
+        self.instructions.insert(index, instruction) if index is not None else self.instructions.append(instruction)
         return instruction
 
     def links_to(self, target: NCSInstruction) -> List[NCSInstruction]:

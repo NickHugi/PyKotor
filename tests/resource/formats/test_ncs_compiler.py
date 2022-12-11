@@ -936,6 +936,25 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
+    def test_global_variable(self):
+        ncs = self.compile("""
+            int value1 = 1;
+            int value2 = 2;
+
+            void main()
+            {
+                object oPlayer = GetPCSpeaker();
+                GiveXPToCreature(oPlayer, value1);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        ncs.print()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[1].arg_values[1])
+
     # region User-defined Functions
     def test_prototype_no_args(self):
         ncs = self.compile("""

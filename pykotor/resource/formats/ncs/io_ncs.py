@@ -244,7 +244,7 @@ class NCSBinaryWriter(ResourceWriter):
             ...
 
         elif instruction.ins_type in [NCSInstructionType.RSADDI, NCSInstructionType.RSADDF, NCSInstructionType.RSADDO,
-                                      NCSInstructionType.RSADDS]:
+                                      NCSInstructionType.RSADDS, NCSInstructionType.SAVEBP]:
             ...
 
         elif instruction.ins_type in [NCSInstructionType.NOP]:

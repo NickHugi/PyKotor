@@ -19,7 +19,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
-    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration
+    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -38,9 +38,11 @@ class NssParser:
         code_root : code_root function_definition
                   | code_root include_script
                   | code_root function_forward_declaration
+                  | code_root global_variable_declaration
                   | function_definition
                   | include_script
                   | function_forward_declaration
+                  | global_variable_declaration
                   |
         """
         if len(p) == 3:
@@ -57,6 +59,12 @@ class NssParser:
         include_script : INCLUDE STRING_VALUE
         """
         p[0] = IncludeScript(p[2], library=self.library)
+
+    def p_global_variable_declaration(self, p):
+        """
+        global_variable_declaration : data_type IDENTIFIER '=' expression ';'
+        """
+        p[0] = GlobalVariableDeclaration(p[2], p[1], p[4])
 
     def p_function_forward_declaration(self, p):
         """

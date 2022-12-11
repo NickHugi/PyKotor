@@ -13,9 +13,24 @@ class CompileException(Exception):
         super().__init__(message)
 
 
-class TopLevelObject:
+class TopLevelObject(ABC):
+    @abstractmethod
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
         ...
+
+
+class GlobalVariableDeclaration(TopLevelObject):
+    def __init__(self, identifier: Identifier, data_type: DataType, value: Expression):
+        super().__init__()
+        self.identifier: Identifier = identifier
+        self.data_type: DataType = data_type
+        self.expression: Expression = value
+
+    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+        expression_type = self.expression.compile(ncs, root, None)
+        if expression_type != self.data_type:
+            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
+        root.add_scoped(self.identifier, self.data_type)
 
 
 class Identifier:
@@ -81,28 +96,43 @@ class FunctionReference(NamedTuple):
         return isinstance(self.definition, FunctionForwardDeclaration)
 
 
+class GetScopedResult(NamedTuple):
+    isglobal: bool
+    datatype: DataType
+    offset: int
+
+
 class CodeRoot:
     def __init__(self):
         self.objects: List[TopLevelObject] = []
 
         self.function_map: Dict[str, FunctionReference] = {}
+        self._global_scope: List[ScopedValue] = []
 
     def compile(self, ncs: NCS):
         # nwnnsscomp processes the includes and global variable declarations before functions regardless if they are
         # placed before or after function defintions. We will replicate this behaviour.
 
         includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
-        others = [obj for obj in self.objects if obj not in includes]
+        globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration)]
+        includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
+        others = [obj for obj in self.objects if obj not in includes and obj not in globals]
 
         for include in includes:
             include.compile(ncs, self)
+
+        if len(globals) > 0:
+            for globaldef in globals:
+                globaldef.compile(ncs, self)
+            ncs.add(NCSInstructionType.SAVEBP, args=[])
+        entry_index = len(ncs.instructions)
 
         for obj in others:
             obj.compile(ncs, self)
 
         if "main" in self.function_map:
-            ncs.add(NCSInstructionType.RETN, args=[], prepend=True)
-            ncs.add(NCSInstructionType.JSR, jump=self.function_map["main"][0], prepend=True)
+            ncs.add(NCSInstructionType.RETN, args=[], index=entry_index)
+            ncs.add(NCSInstructionType.JSR, jump=self.function_map["main"][0], index=entry_index)
 
     def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression) -> DataType:
         if name not in self.function_map:
@@ -130,6 +160,19 @@ class CodeRoot:
         ncs.add(NCSInstructionType.JSR, jump=start_instruction)
 
         return definition.return_type
+
+    def add_scoped(self, identifier: Identifier, datatype: DataType) -> None:
+        self._global_scope.insert(0, ScopedValue(identifier, datatype))
+
+    def get_scoped(self, identifier: Identifier) -> GetScopedResult:
+        offset = 0
+        for scoped in self._global_scope:
+            offset -= scoped.data_type.size()
+            if scoped.identifier == identifier:
+                break
+        else:
+            raise CompileException(f"Could not find variable '{identifier}'.")
+        return GetScopedResult(True, scoped.data_type, offset)
 
 
 class CodeBlock:
@@ -170,22 +213,25 @@ class CodeBlock:
     def add_scoped(self, identifier: Identifier, data_type: DataType):
         self.scope.insert(0, ScopedValue(identifier, data_type))
 
-    def get_scoped(self, identifier: Identifier):
-        index = -self.tempstack
+    def get_scoped(self, identifier: Identifier, root: CodeRoot) -> GetScopedResult:
+        offset = -self.tempstack
         for scoped in self.scope:
-            index -= scoped.data_type.size()
+            offset -= scoped.data_type.size()
             if scoped.identifier == identifier:
                 break
         else:
             if self._parent is not None:
-                return self._parent.get_scoped(identifier)
+                return self._parent.get_scoped(identifier, root)
             else:
-                raise CompileException(f"Could not find symbol {identifier}.")
-        return scoped.data_type, index
+                return root.get_scoped(identifier,)
+        return GetScopedResult(False, scoped.data_type, offset)
 
     def scope_size(self):
         """Returns size of local scope."""
-        return abs(self.get_scoped(self.scope[-1].identifier)[-1]) if self.scope else 0
+        size = 0
+        for scoped in self.scope:
+            size -= scoped.data_type.size()
+        return size
 
     def full_scope_size(self):
         """Returns size of scope, including outer blocks."""
@@ -320,8 +366,9 @@ class IdentifierExpression(Expression):
         self.identifier: Identifier = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        datatype, stack_index = block.get_scoped(self.identifier)
-        ncs.instructions.append(NCSInstruction(NCSInstructionType.CPTOPSP, [stack_index, datatype.size()]))
+        isglobal, datatype, stack_index = block.get_scoped(self.identifier, root)
+        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, datatype.size()]))
         return datatype
 
 
@@ -919,14 +966,15 @@ class Assignment(Expression):
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         variable_type = self.expression.compile(ncs, root, block)
 
-        expression_type, stack_index = block.get_scoped(self.identifier)
+        isglobal, expression_type, stack_index = block.get_scoped(self.identifier, root)
+        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         stack_index -= expression_type.size()
 
         if variable_type != expression_type:
             raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
 
         # Copy the value that the expression has already been placed on the stack to where the identifiers position is
-        ncs.instructions.append(NCSInstruction(NCSInstructionType.CPDOWNSP, [stack_index, expression_type.size()]))
+        ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, expression_type.size()]))
         # Remove the temporary value from the stack that the expression created
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-expression_type.size()]))
 
@@ -941,8 +989,9 @@ class AdditionAssignment(Expression):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
-        variable_type, stack_index = block.get_scoped(self.identifier)
-        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
+        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        ncs.add(instruction_type, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
@@ -981,8 +1030,9 @@ class SubtractionAssignment(Expression):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
-        variable_type, stack_index = block.get_scoped(self.identifier)
-        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
+        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        ncs.add(instruction_type, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
@@ -1019,8 +1069,9 @@ class MultiplicationAssignment(Expression):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
-        variable_type, stack_index = block.get_scoped(self.identifier)
-        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
+        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        ncs.add(instruction_type, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
@@ -1057,8 +1108,9 @@ class DivisionAssignment(Expression):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         # Copy the variable to the top of the stack
-        variable_type, stack_index = block.get_scoped(self.identifier)
-        ncs.add(NCSInstructionType.CPTOPSP, args=[stack_index, variable_type.size()])
+        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        ncs.add(instruction_type, args=[stack_index, variable_type.size()])
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
