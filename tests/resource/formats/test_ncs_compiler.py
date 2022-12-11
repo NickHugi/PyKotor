@@ -936,6 +936,35 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
+    def test_nested_include(self):
+        first_script = """
+            int SOME_COST = 13;
+        
+            void TestFunc(int value)
+            {
+                PrintInteger(value);
+            }
+        """
+
+        second_script = """
+            #include "first_script"
+        """
+
+        ncs = self.compile("""
+            #include "second_script"
+        
+            void main()
+            {
+                TestFunc(SOME_COST);
+            }
+        """, library={"first_script": first_script, "second_script": second_script})
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(13, interpreter.action_snapshots[0].arg_values[0])
+
     def test_global_variable(self):
         ncs = self.compile("""
             int value1 = 1;
@@ -950,10 +979,30 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        ncs.print()
 
         self.assertEqual(2, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[1].arg_values[1])
+
+    def test_imported_global_variable(self):
+        otherscript = """
+            int iExperience = 55;
+        """
+
+        ncs = self.compile("""
+            #include "otherscript"
+
+            void main()
+            {
+                object oPlayer = GetPCSpeaker();
+                GiveXPToCreature(oPlayer, iExperience);
+            }
+        """, library={"otherscript": otherscript})
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(55, interpreter.action_snapshots[1].arg_values[1])
 
     # region User-defined Functions
     def test_prototype_no_args(self):

@@ -113,13 +113,14 @@ class CodeRoot:
         # nwnnsscomp processes the includes and global variable declarations before functions regardless if they are
         # placed before or after function defintions. We will replicate this behaviour.
 
-        includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
-        globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration)]
-        includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
-        others = [obj for obj in self.objects if obj not in includes and obj not in globals]
-
-        for include in includes:
+        while [obj for obj in self.objects if isinstance(obj, IncludeScript)]:
+            includes = [obj for obj in self.objects if isinstance(obj, IncludeScript)]
+            include = includes.pop()
+            self.objects.remove(include)
             include.compile(ncs, self)
+
+        globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration)]
+        others = [obj for obj in self.objects if obj not in includes and obj not in globals]
 
         if len(globals) > 0:
             for globaldef in globals:
@@ -322,26 +323,26 @@ class FunctionDefinitionParam:
 class IncludeScript(TopLevelObject):
     def __init__(self, file: StringExpression, library: Dict[str, str] = None):
         self.file: StringExpression = file
-        self.builtin_library: Dict[str, str] = library
+        self.library: Dict[str, str] = library if library is not None else {}
 
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
-        builtin_library = self.builtin_library if self.builtin_library else {}
-
-        if self.file.value in builtin_library:
-            source = self.builtin_library[self.file.value]
+        if self.file.value in self.library:
+            source = self.library[self.file.value]
             # TODO try get file from drive
         else:
             raise CompileException(f"Could not find file '{self.file.value}.nss'.")
 
         from pykotor.resource.formats.ncs.compiler.parser import NssParser
         nssParser = NssParser()
-        t = nssParser.parser.parse(source, tracking=True)
+        nssParser.library = self.library
+        t: CodeRoot = nssParser.parser.parse(source, tracking=True)
+        [root.objects.insert(0, obj) for obj in t.objects]
 
-        imported = NCS()
+        '''imported = NCS()
         t.compile(imported)
         ncs.merge(imported)
         # TODO: throw error of function redefined
-        root.function_map.update(t.function_map)
+        root.function_map.update(t.function_map)'''
 
 
 class Expression(ABC):
