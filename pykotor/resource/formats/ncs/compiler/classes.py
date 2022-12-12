@@ -1382,15 +1382,7 @@ class SwitchStatement(Statement):
             for label in switchblock.labels:
                 # Do not want to run switch expression multiple times, execute it once and copy it to the top
                 ncs.add(NCSInstructionType.CPTOPSP, args=[-expression_type.size(), expression_type.size()])
-
-                # Compare the copied Switch expression to the Label expression
-                label_type = label.expression.compile(ncs, root, block)
-                equality_instruction = get_logical_equality_instruction(expression_type, label_type)
-                ncs.add(equality_instruction, args=[])
-
-                # If the expressions match, then we jump to the appropriate place, otherwise continue trying the
-                # other Labels
-                ncs.add(NCSInstructionType.JNZ, jump=switchblock_to_instruction[switchblock])
+                label.compile(ncs, root, block, switchblock_to_instruction[switchblock], expression_type)
         # If none of the labels match, jump over the code block
         ncs.add(NCSInstructionType.JMP, jump=end_of_switch)
 
@@ -1408,7 +1400,32 @@ class SwitchBlock:
         self.block: List[Statement] = block
 
 
-class SwitchLabel:
+class SwitchLabel(ABC):
+    @abstractmethod
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, jump_to: NCSInstruction, expression_type: DataType):
+        ...
+
+
+class ExpressionSwitchLabel:
     def __init__(self, expression: Expression):
         self.expression: Expression = expression
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, jump_to: NCSInstruction, expression_type: DataType):
+        # Compare the copied Switch expression to the Label expression
+        label_type = self.expression.compile(ncs, root, block)
+        equality_instruction = get_logical_equality_instruction(expression_type, label_type)
+        ncs.add(equality_instruction, args=[])
+
+        # If the expressions match, then we jump to the appropriate place, otherwise continue trying the
+        # other Labels
+        ncs.add(NCSInstructionType.JNZ, jump=jump_to)
+
+
+
+class DefaultSwitchLabel:
+    def __init__(self):
+        ...
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, jump_to: NCSInstruction, expression_type: DataType):
+        ncs.add(NCSInstructionType.JMP, jump=jump_to)
 # endregion
