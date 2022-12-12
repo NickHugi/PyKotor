@@ -202,6 +202,7 @@ class CodeBlock:
         self.scope: List[ScopedValue] = []
         self._parent: Optional[CodeBlock] = None
         self._statements: List[Statement] = []
+        self._break_scope: bool = False
         self.tempstack: int = 0
 
     def add(self, statement: Statement):
@@ -211,7 +212,6 @@ class CodeBlock:
         self._parent = block
 
         for statement in self._statements:
-
             if isinstance(statement, ReturnStatement):
                 scope_size = self.full_scope_size()
 
@@ -235,33 +235,44 @@ class CodeBlock:
     def add_scoped(self, identifier: Identifier, data_type: DataType):
         self.scope.insert(0, ScopedValue(identifier, data_type))
 
-    def get_scoped(self, identifier: Identifier, root: CodeRoot) -> GetScopedResult:
-        offset = -self.tempstack
+    def get_scoped(self, identifier: Identifier, root: CodeRoot, offset: int = None) -> GetScopedResult:
+        offset = -self.tempstack if offset is None else offset
         for scoped in self.scope:
             offset -= scoped.data_type.size()
             if scoped.identifier == identifier:
                 break
         else:
             if self._parent is not None:
-                return self._parent.get_scoped(identifier, root)
+                return self._parent.get_scoped(identifier, root, offset)
             else:
-                return root.get_scoped(identifier,)
+                return root.get_scoped(identifier)
         return GetScopedResult(False, scoped.data_type, offset)
 
-    def scope_size(self):
+    def scope_size(self) -> int:
         """Returns size of local scope."""
         size = 0
         for scoped in self.scope:
-            size -= scoped.data_type.size()
+            size += scoped.data_type.size()
         return size
 
-    def full_scope_size(self):
+    def full_scope_size(self) -> int:
         """Returns size of scope, including outer blocks."""
         size = 0
         size += self.scope_size()
         if self._parent is not None:
             size += self._parent.full_scope_size()
         return size
+
+    def break_scope_size(self) -> int:
+        """Returns size of scope up to the nearest loop/switch statement."""
+        size = 0
+        size += self.scope_size()
+        if self._parent is not None and not self._parent._break_scope:
+            size += self._parent.break_scope_size()
+        return size
+
+    def mark_break_scope(self) -> None:
+        self._break_scope = True
 
 
 class ScopedValue:
