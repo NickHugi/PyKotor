@@ -1010,7 +1010,7 @@ class Assignment(Expression):
 
         isglobal, expression_type, stack_index = block.get_scoped(self.identifier, root)
         instruction_type = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
-        stack_index -= expression_type.size()
+        stack_index -= variable_type.size()
 
         if variable_type != expression_type:
             raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
@@ -1254,6 +1254,9 @@ class WhileLoopBlock(Statement):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+        # Tell break/continue statements to stop here when getting scope size
+        block.mark_break_scope()
+
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
         loopend = NCSInstruction(NCSInstructionType.NOP, args=[])
         condition_type = self.condition.compile(ncs, root, block)
@@ -1276,6 +1279,9 @@ class DoWhileLoopBlock(Statement):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+        # Tell break/continue statements to stop here when getting scope size
+        block.mark_break_scope()
+
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
         conditionstart = NCSInstruction(NCSInstructionType.NOP, args=[])
         loopend = NCSInstruction(NCSInstructionType.NOP, args=[])
@@ -1302,7 +1308,11 @@ class ForLoopBlock(Statement):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+        # Tell break/continue statements to stop here when getting scope size
+        block.mark_break_scope()
+
         self.initial.compile(ncs, root, block)
+
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
         updatestart = NCSInstruction(NCSInstructionType.NOP, args=[])
         loopend = NCSInstruction(NCSInstructionType.NOP, args=[])
@@ -1321,7 +1331,6 @@ class ForLoopBlock(Statement):
 # endregion
 
 
-# TODO - break and continue need to pop values off the stack
 class BreakStatement(Statement):
     def __init__(self):
         super().__init__()
@@ -1330,7 +1339,9 @@ class BreakStatement(Statement):
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
         if break_instruction is None:
             raise CompileException("Nothing to break out of.")
+        ncs.add(NCSInstructionType.MOVSP, args=[-block.break_scope_size()])
         ncs.add(NCSInstructionType.JMP, jump=break_instruction)
+        ncs.add(NCSInstructionType.NOP, args=["YEA REMEMBER TO DELETE THIS MY DUDE"])
 
 
 class ContinueStatement(Statement):
@@ -1341,6 +1352,7 @@ class ContinueStatement(Statement):
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
         if continue_instruction is None:
             raise CompileException("Nothing to continue out of.")
+        ncs.add(NCSInstructionType.MOVSP, args=[-block.break_scope_size()])
         ncs.add(NCSInstructionType.JMP, jump=continue_instruction)
 
 

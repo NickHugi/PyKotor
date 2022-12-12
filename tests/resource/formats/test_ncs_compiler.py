@@ -963,6 +963,32 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+
+    def test_while_loop_scope(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 11;
+                int outer = 22;
+                while (value)
+                {
+                    int inner = 33;
+                    value = 0;
+                    continue;
+                    outer = 99;
+                }
+                
+                PrintInteger(outer);
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(22, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[1].arg_values[0])
     # endregion
 
     # region Do While
@@ -1029,6 +1055,30 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+
+    def test_do_while_loop_scope(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int outer = 11;
+                int value = 22;
+                do
+                {
+                    int inner = 33;
+                    value = 0;
+                } while (value);
+                
+                PrintInteger(outer);
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(11, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[1].arg_values[0])
     # endregion
 
     # region For Loop
@@ -1092,6 +1142,27 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(3, interpreter.action_snapshots[2].arg_values[0])
+
+    def test_for_loop_scope(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int i = 11;
+                int outer = 22;
+                for (i = 0; i <= 5; i += 1)
+                {
+                    int inner = 33;
+                    break;
+                }
+                PrintInteger(i);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(0, interpreter.action_snapshots[0].arg_values[0])
     # endregion
 
     def test_comment(self):
