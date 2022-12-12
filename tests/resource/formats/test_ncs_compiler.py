@@ -557,14 +557,34 @@ class TestNSSCompiler(TestCase):
             void main()
             {
                 int a = 1;
-                a = 2 * 2;
+                a = 4;
+                
+                PrintInteger(a);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(4, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(4, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_assignment_complex(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                a = a * 2 + 8;
+                
+                PrintInteger(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(10, interpreter.action_snapshots[0].arg_values[0])
 
     def test_addition_assignment_int_int(self):
         ncs = self.compile("""

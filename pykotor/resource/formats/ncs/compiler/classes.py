@@ -998,7 +998,7 @@ class Assignment(Expression):
         variable_type = self.expression.compile(ncs, root, block)
 
         isglobal, expression_type, stack_index = block.get_scoped(self.identifier, root)
-        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+        instruction_type = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
         stack_index -= expression_type.size()
 
         if variable_type != expression_type:
