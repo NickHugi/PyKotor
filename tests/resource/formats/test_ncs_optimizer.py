@@ -18,7 +18,7 @@ class TestNCSOptimizers(TestCase):
         t = parser.parse(script, tracking=True)
 
         ncs = NCS()
-        t.compile(ncs)
+        t.compile(ncs,,
         return ncs
 
     def test_no_op_optimizer(self):

@@ -920,6 +920,29 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_while_loop_with_continue(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 3;
+                while (value)
+                {
+                    PrintInteger(value);
+                    value -= 1;
+                    continue;
+                    PrintInteger(99);
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(3, len(interpreter.action_snapshots))
+        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
     # endregion
 
     # region Do While
@@ -963,6 +986,29 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_do_while_loop_with_continue(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 3;
+                do
+                {
+                    PrintInteger(value);
+                    value -= 1;
+                    continue;
+                    PrintInteger(99);
+                } while (value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(3, len(interpreter.action_snapshots))
+        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
     # endregion
 
     # region For Loop
@@ -1004,6 +1050,28 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_for_loop_with_continue(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int i = 99;
+                for (i = 1; i <= 3; i += 1)
+                {
+                    PrintInteger(i);
+                    continue;
+                    PrintInteger(99);
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(3, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+        self.assertEqual(3, interpreter.action_snapshots[2].arg_values[0])
     # endregion
 
     def test_comment(self):
