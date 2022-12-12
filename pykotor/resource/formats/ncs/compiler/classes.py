@@ -8,6 +8,19 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
 
+def get_logical_equality_instruction(type1: DataType, type2: DataType) -> NCSInstructionType:
+    if type1 == DataType.INT and type2 == DataType.INT:
+        return NCSInstructionType.EQUALII
+    elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
+        return NCSInstructionType.EQUALFF
+    elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
+        return NCSInstructionType.EQUALSS
+    elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
+        return NCSInstructionType.EQUALOO
+    else:
+        raise CompileException(f"Tried an unsupported comparision between '{type1}' '{type2}'.")
+
+
 class CompileException(Exception):
     def __init__(self, message: str):
         super().__init__(message)
@@ -1284,3 +1297,61 @@ class ForLoopBlock(Statement):
         loopend = ncs.add(NCSInstructionType.NOP, args=[])
         jz.jump = loopend
 # endregion
+
+
+# region Switch
+class SwitchStatement(Statement):
+    def __init__(self, expression: Expression, blocks: List[SwitchBlock]):
+        super().__init__()
+        self.expression: Expression = expression
+        self.blocks: List[SwitchBlock] = blocks
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+        expression_type = self.expression.compile(ncs, root, block)
+        block.tempstack += expression_type.size()
+
+        end_of_switch = NCSInstruction(NCSInstructionType.NOP, args=[])
+
+        tempncs = NCS()
+        switchblock_to_instruction = {}
+        for switchblock in self.blocks:
+            switchblock_start = tempncs.add(NCSInstructionType.NOP, args=[])
+            switchblock_to_instruction[switchblock] = switchblock_start
+            for statement in switchblock.block:
+                statement.compile(tempncs, root, block, return_instruction)
+
+        for switchblock in self.blocks:
+            for label in switchblock.labels:
+                # Do not want to run switch expression multiple times, execute it once and copy it to the top
+                ncs.add(NCSInstructionType.CPTOPSP, args=[-expression_type.size(), expression_type.size()])
+
+                # Compare the copied Switch expression to the Label expression
+                label_type = label.expression.compile(ncs, root, block)
+                equality_instruction = get_logical_equality_instruction(expression_type, label_type)
+                ncs.add(equality_instruction, args=[])
+
+                # If the expressions match, then we jump to the appropriate place, otherwise continue trying the
+                # other Labels
+                ncs.add(NCSInstructionType.JNZ, jump=switchblock_to_instruction[switchblock])
+        # If none of the labels match, jump over the code block
+        ncs.add(NCSInstructionType.JMP, jump=end_of_switch)
+
+        ncs.merge(tempncs)
+        ncs.instructions.append(end_of_switch)
+
+        # Pop the Switch expression
+        ncs.add(NCSInstructionType.MOVSP, args=[-4])
+        block.tempstack -= expression_type.size()
+
+
+class SwitchBlock:
+    def __init__(self, labels: List[SwitchLabel], block: List[Statement]):
+        self.labels: List[SwitchLabel] = labels
+        self.block: List[Statement] = block
+
+
+class SwitchLabel:
+    def __init__(self, expression: Expression):
+        self.expression: Expression = expression
+# endregion
+

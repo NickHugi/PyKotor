@@ -113,8 +113,6 @@ class TestNSSCompiler(TestCase):
                 DelayCommand(1.0, GiveXPToCreature(oFirstPlayer, 9001));
             }
         """)
-
-        ncs.print()
     # endregion
 
     # region Arithmetic Operator
@@ -770,6 +768,29 @@ class TestNSSCompiler(TestCase):
     # region Simple Expressions
 
     # endregion
+
+    def test_switch_no_breaks(self):
+        ncs = self.compile("""
+            void main()
+            {
+                switch (2)
+                {
+                    case 1:
+                        PrintInteger(1);
+                    case 2:
+                        PrintInteger(2);
+                    case 3:
+                        PrintInteger(3);
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(2, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(3, interpreter.action_snapshots[1].arg_values[0])
 
     def test_scope(self):
         ncs = self.compile("""

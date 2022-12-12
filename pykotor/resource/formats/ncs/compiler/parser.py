@@ -19,13 +19,16 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
-    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration
+    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
+    SwitchLabel, SwitchBlock, SwitchStatement
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
     def __init__(self, errorlog=yacc.NullLogger()):
-        self.parser = yacc.yacc(module=self, errorlog=errorlog)
+        self.parser = yacc.yacc(module=self,
+                                errorlog=errorlog
+                                )
         self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
         self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
         self.library: Dict[str, str] = KOTOR_LIBRARY
@@ -139,6 +142,7 @@ class NssParser:
                   | while_loop
                   | do_while_loop
                   | for_loop
+                  | switch_statement
                   | expression ';'
         """
         if isinstance(p[1], Expression):
@@ -410,3 +414,57 @@ class NssParser:
                   | ACTION_TYPE
         """
         p[0] = p[1]
+
+    # region Switch Statement
+    def p_switch_statement(self, p):
+        """
+        switch_statement : SWITCH_CONTROL '(' expression ')' '{' switch_blocks '}'
+        """
+        p[0] = SwitchStatement(p[3], p[6])
+
+    def p_switch_blocks(self, p):
+        """
+        switch_blocks : switch_blocks switch_block
+                      |
+        """
+        if len(p) == 3:
+            p[1].append(p[2])
+            p[0] = p[1]
+        else:
+            p[0] = []
+
+    def p_switch_block(self, p):
+        """
+        switch_block : switch_labels block_statements
+        """
+        p[0] = SwitchBlock(p[1], p[2])
+
+    def p_switch_labels(self, p):
+        """
+        switch_labels : switch_labels switch_label
+                      |
+        """
+        if len(p) == 3:
+            p[1].append(p[2])
+            p[0] = p[1]
+        else:
+            p[0] = []
+
+    def p_switch_label(self, p):
+        """
+        switch_label : CASE_CONTROL expression ':'
+        """
+        p[0] = SwitchLabel(p[2])
+
+    # endregion
+
+    def p_block_statements(self, p):
+        """
+        block_statements : block_statements statement
+                         |
+        """
+        if len(p) == 3:
+            p[1].append(p[2])
+            p[0] = p[1]
+        else:
+            p[0] = []
