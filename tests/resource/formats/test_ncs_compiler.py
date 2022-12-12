@@ -879,6 +879,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
 
+    # region While
     def test_while_loop(self):
         ncs = self.compile("""
             void main()
@@ -900,6 +901,28 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
 
+    def test_while_loop_with_break(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 3;
+                while (value)
+                {
+                    PrintInteger(value);
+                    value -= 1;
+                    break;
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+    # endregion
+
+    # region Do While
     def test_do_while_loop(self):
         ncs = self.compile("""
             void main()
@@ -921,6 +944,27 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
 
+    def test_do_while_loop_with_break(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = 3;
+                do
+                {
+                    PrintInteger(value);
+                    value -= 1;
+                    break;
+                } while (value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+    # endregion
+
     # region For Loop
     def test_for_loop(self):
         ncs = self.compile("""
@@ -941,6 +985,25 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(3, interpreter.action_snapshots[2].arg_values[0])
+
+    def test_for_loop_with_break(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int i = 99;
+                for (i = 1; i <= 3; i += 1)
+                {
+                    PrintInteger(i);
+                    break;
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
     # endregion
 
     def test_comment(self):
