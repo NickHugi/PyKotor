@@ -215,7 +215,7 @@ class CodeBlock:
             if isinstance(statement, ReturnStatement):
                 scope_size = self.full_scope_size()
 
-                return_type = statement.compile(ncs, root, self, return_instruction)
+                return_type = statement.compile(ncs, root, self, return_instruction, None)
                 if return_type != DataType.VOID:
                     ncs.add(NCSInstructionType.CPDOWNSP, args=[-scope_size-return_type.size()*2, 4])
                     ncs.add(NCSInstructionType.MOVSP, args=[-return_type.size()])
@@ -224,7 +224,7 @@ class CodeBlock:
                 ncs.add(NCSInstructionType.JMP, jump=return_instruction)
                 return
             else:
-                statement.compile(ncs, root, self, return_instruction)
+                statement.compile(ncs, root, self, return_instruction, None)
         ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-self.scope_size()]))
 
         if self.tempstack != 0:
@@ -377,7 +377,8 @@ class Statement(ABC):
         self.linenum: Optional[None] = None
 
     @abstractmethod
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         ...
 
 
@@ -1175,7 +1176,8 @@ class EmptyStatement(Statement):
     def __init__(self):
         super().__init__()
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         return DataType.VOID
 
 
@@ -1184,7 +1186,8 @@ class ExpressionStatement(Statement):
         super().__init__()
         self.expression: Expression = expression
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         self.expression.compile(ncs, root, block)
 
 
@@ -1195,7 +1198,8 @@ class DeclarationStatement(Statement):
         self.data_type: DataType = data_type
         self.expression: Expression = value
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         expression_type = self.expression.compile(ncs, root, block)
         if expression_type != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
@@ -1208,7 +1212,8 @@ class ConditionalBlock(Statement):
         self.condition: Expression = condition
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         self.condition.compile(ncs, root, block)
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
         self.block.compile(ncs, root, block, return_instruction)
@@ -1223,7 +1228,8 @@ class ReturnStatement(Statement):
         super().__init__()
         self.expression: Optional[Expression] = expression
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         if self.expression is not None:
             return self.expression.compile(ncs, root, block)
         return DataType.VOID
@@ -1235,7 +1241,8 @@ class WhileLoopBlock(Statement):
         self.condition: Expression = condition
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
         condition_type = self.condition.compile(ncs, root, block)
 
@@ -1257,7 +1264,8 @@ class DoWhileLoopBlock(Statement):
         self.condition: Expression = condition
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
 
         self.block.compile(ncs, root, block, return_instruction)
@@ -1280,7 +1288,8 @@ class ForLoopBlock(Statement):
         self.iteration: Expression = iteration
         self.block: CodeBlock = block
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction]):
         self.initial.compile(ncs, root, block)
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
 
@@ -1299,6 +1308,16 @@ class ForLoopBlock(Statement):
 # endregion
 
 
+class BreakStatement(Statement):
+    def __init__(self):
+        super().__init__()
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction, break_instruction: Optional[NCSInstruction]):
+        if break_instruction is None:
+            raise CompileException("Nothing to break out of.")
+        ncs.add(NCSInstructionType.JMP, jump=break_instruction)
+
+
 # region Switch
 class SwitchStatement(Statement):
     def __init__(self, expression: Expression, blocks: List[SwitchBlock]):
@@ -1306,7 +1325,7 @@ class SwitchStatement(Statement):
         self.expression: Expression = expression
         self.blocks: List[SwitchBlock] = blocks
 
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction):
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction, break_instruction: Optional[NCSInstruction]):
         expression_type = self.expression.compile(ncs, root, block)
         block.tempstack += expression_type.size()
 
@@ -1318,7 +1337,7 @@ class SwitchStatement(Statement):
             switchblock_start = tempncs.add(NCSInstructionType.NOP, args=[])
             switchblock_to_instruction[switchblock] = switchblock_start
             for statement in switchblock.block:
-                statement.compile(tempncs, root, block, return_instruction)
+                statement.compile(tempncs, root, block, return_instruction, end_of_switch)
 
         for switchblock in self.blocks:
             for label in switchblock.labels:

@@ -20,7 +20,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
-    SwitchLabel, SwitchBlock, SwitchStatement
+    SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -143,6 +143,7 @@ class NssParser:
                   | do_while_loop
                   | for_loop
                   | switch_statement
+                  | break_statement
                   | expression ';'
         """
         if isinstance(p[1], Expression):
@@ -152,6 +153,12 @@ class NssParser:
         else:
             p[0] = p[1]
         #p[0].linenum = p.lineno(1)
+
+    def p_break_statement(self, p):
+        """
+        break_statement : BREAK_CONTROL ';'
+        """
+        p[0] = BreakStatement()
 
     def p_declaration_statement(self, p):
         """
