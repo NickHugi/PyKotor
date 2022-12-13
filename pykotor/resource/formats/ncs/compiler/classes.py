@@ -1218,20 +1218,53 @@ class DeclarationStatement(Statement):
 
 
 class ConditionalBlock(Statement):
-    def __init__(self, condition: Expression, block: CodeBlock):
+    def __init__(self, if_block: ConditionAndBlock, else_if_blocks: List[ConditionAndBlock], else_block: CodeBlock):
         super().__init__()
-        self.condition: Expression = condition
-        self.block: CodeBlock = block
+        self.if_block: ConditionAndBlock = if_block
+        self.else_if_blocks: List[ConditionAndBlock] = else_if_blocks
+        self.else_block: Optional[CodeBlock] = else_block
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
-        self.condition.compile(ncs, root, block)
+
+        jump_count = 1 + 1 + len(self.else_if_blocks)
+        jump_tos = [NCSInstruction(NCSInstructionType.NOP, args=[]) for i in range(jump_count)]
+
+        self.if_block.condition.compile(ncs, root, block)
+        ncs.add(NCSInstructionType.JZ, jump=jump_tos[0])
+
+        self.if_block.block.compile(ncs, root, block, return_instruction, break_instruction, continue_instruction)
+        ncs.add(NCSInstructionType.JMP, jump=jump_tos[-1])
+
+        ncs.instructions.append(jump_tos[0])
+
+        for i, else_if in enumerate(self.else_if_blocks):
+            else_if.condition.compile(ncs, root, block)
+            ncs.add(NCSInstructionType.JZ, jump=jump_tos[i + 1])
+
+            else_if.block.compile(ncs, root, block, return_instruction, break_instruction, continue_instruction)
+            ncs.add(NCSInstructionType.JMP, jump=jump_tos[-1])
+
+            ncs.instructions.append(jump_tos[i + 1])
+
+        if self.else_block is not None:
+            self.else_block.compile(ncs, root, block, return_instruction, break_instruction, continue_instruction)
+
+        ncs.instructions.append(jump_tos[-1])
+
+        '''self.condition.compile(ncs, root, block)
         jz = ncs.add(NCSInstructionType.JZ, jump=None)
-        self.block.compile(ncs, root, block, return_instruction, break_instruction, continue_instruction)
+        self.if_block.compile(ncs, root, block, return_instruction, break_instruction, continue_instruction)
         block_end = ncs.add(NCSInstructionType.NOP, args=[])
 
         # Set the Jump If Zero instruction to jump to the end of the block
-        jz.jump = block_end
+        jz.jump = block_end'''
+
+
+class ConditionAndBlock:
+    def __init__(self, condition: Expression, block: CodeBlock):
+        self.condition: Expression = condition
+        self.block: CodeBlock = block
 
 
 class ReturnStatement(Statement):
@@ -1419,7 +1452,6 @@ class ExpressionSwitchLabel:
         # If the expressions match, then we jump to the appropriate place, otherwise continue trying the
         # other Labels
         ncs.add(NCSInstructionType.JNZ, jump=jump_to)
-
 
 
 class DefaultSwitchLabel:

@@ -22,6 +22,7 @@ class Interpreter:
         self.action_snapshots: List[ActionSnapshot] = []
 
     def run(self):
+        # TODO - limit how many instructions can be run before raising an error
         while self._cursor is not None:
             index = self._ncs.instructions.index(self._cursor)
             jump_value = None

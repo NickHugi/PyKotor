@@ -900,6 +900,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
+    # If/Else Conditions
     def test_if(self):
         ncs = self.compile("""
             void main()
@@ -913,11 +914,6 @@ class TestNSSCompiler(TestCase):
                 {
                     PrintInteger(1);
                 }
-                
-                if(0)
-                {
-                    PrintInteger(2);
-                }
             }
         """)
 
@@ -926,6 +922,83 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_if_else(self):
+        ncs = self.compile("""
+            void main()
+            {
+                if (0) {    PrintInteger(0); }
+                else {      PrintInteger(1); }
+                
+                if (1) {    PrintInteger(2); }
+                else {      PrintInteger(3); }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
+
+    def test_if_else_if(self):
+        ncs = self.compile("""
+            void main()
+            {
+                if (0)      { PrintInteger(0); }
+                else if (0) { PrintInteger(1); }
+                
+                if (1)      { PrintInteger(2); } // hit
+                else if (1) { PrintInteger(3); }
+                
+                if (1)      { PrintInteger(4); } // hit
+                else if (0) { PrintInteger(5); }
+            
+                if (0)      { PrintInteger(6); }
+                else if (1) { PrintInteger(7); } // hit
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(3, len(interpreter.action_snapshots))
+        self.assertEqual(2, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(4, interpreter.action_snapshots[1].arg_values[0])
+        self.assertEqual(7, interpreter.action_snapshots[2].arg_values[0])
+
+    def test_if_else_if_else(self):
+        ncs = self.compile("""
+            void main()
+            {
+                if (0)      { PrintInteger(0); }
+                else if (0) { PrintInteger(1); }
+                else        { PrintInteger(3); } // hit
+                
+                if (0)      { PrintInteger(4); }
+                else if (1) { PrintInteger(5); } // hit
+                else        { PrintInteger(6); }
+                
+                if (1)      { PrintInteger(7); } // hit
+                else if (1) { PrintInteger(8); }
+                else        { PrintInteger(9); }
+                
+                if (1)      { PrintInteger(10); } //hit
+                else if (0) { PrintInteger(11); }
+                else        { PrintInteger(12); }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(4, len(interpreter.action_snapshots))
+        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(5, interpreter.action_snapshots[1].arg_values[0])
+        self.assertEqual(7, interpreter.action_snapshots[2].arg_values[0])
+        self.assertEqual(10, interpreter.action_snapshots[3].arg_values[0])
+    # endregion
 
     # region While
     def test_while_loop(self):

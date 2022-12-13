@@ -21,14 +21,14 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
-    DefaultSwitchLabel
+    DefaultSwitchLabel, ConditionAndBlock
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
     def __init__(self, errorlog=yacc.NullLogger()):
         self.parser = yacc.yacc(module=self,
-                                errorlog=errorlog
+                               #errorlog=errorlog
                                 )
         self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
         self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
@@ -204,11 +204,49 @@ class NssParser:
         """
         p[0] = DivisionAssignment(p[1], p[3])
 
+    # region If Statement
     def p_condition_statement(self, p):
         """
-        condition_statement : IF_CONTROL '(' expression ')' '{' code_block '}'
+        condition_statement : if_statement else_if_statements else_statement
         """
-        p[0] = ConditionalBlock(p[3], p[6])
+        p[0] = ConditionalBlock(p[1], p[2], p[3])
+        # IF_CONTROL '(' expression ')' '{' code_block '}'
+        # p[0] = ConditionalBlock(p[3], p[6])
+
+    def p_if_statement(self, p):
+        """
+        if_statement : IF_CONTROL '(' expression ')' '{' code_block '}'
+        """
+        p[0] = ConditionAndBlock(p[3], p[6])
+
+    def p_else_statement(self, p):
+        """
+        else_statement : ELSE_CONTROL '{' code_block '}'
+                       |
+        """
+        if len(p) == 1:
+            p[0] = None
+        else:
+            p[0] = p[3]
+
+    def p_else_if_statement(self, p):
+        """
+        else_if_statement : ELSE_CONTROL IF_CONTROL '(' expression ')' '{' code_block '}'
+        """
+        p[0] = ConditionAndBlock(p[4], p[7])
+
+    def p_else_if_statements(self, p):
+        """
+        else_if_statements : else_if_statements else_if_statement
+                           |
+        """
+        if len(p) == 1:
+            p[0] = []
+        else:
+            p[1].append(p[2])
+            p[0] = p[1]
+
+    # endregion
 
     def p_return_statement(self, p):
         """
