@@ -182,25 +182,25 @@ class NssParser:
 
     def p_addition_assignment(self, p):
         """
-        addition_assignment : IDENTIFIER ADDITION_ASSIGNMENT_OPERATOR expression
+        assignment : IDENTIFIER ADDITION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = AdditionAssignment(p[1], p[3])
 
     def p_subtraction_assignment(self, p):
         """
-        subtraction_assignment : IDENTIFIER SUBTRACTION_ASSIGNMENT_OPERATOR expression
+        assignment : IDENTIFIER SUBTRACTION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = SubtractionAssignment(p[1], p[3])
 
     def p_multiplication_assignment(self, p):
         """
-        multiplication_assignment : IDENTIFIER MULTIPLICATION_ASSIGNMENT_OPERATOR expression
+        assignment : IDENTIFIER MULTIPLICATION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = MultiplicationAssignment(p[1], p[3])
 
     def p_division_assignment(self, p):
         """
-        division_assignment : IDENTIFIER DIVISION_ASSIGNMENT_OPERATOR expression
+        assignment : IDENTIFIER DIVISION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = DivisionAssignment(p[1], p[3])
 
@@ -260,127 +260,127 @@ class NssParser:
 
     def p_add_expression(self, p):
         """
-        add_expression : expression ADDITION_OPERATOR expression
+        expression : expression ADDITION_OPERATOR expression
         """
         p[0] = AdditionExpression(p[1], p[3])
 
     def p_subtract_expression(self, p):
         """
-        subtract_expression : expression SUBTRACTION_OPERATOR expression
+        expression : expression SUBTRACTION_OPERATOR expression
         """
         p[0] = SubtractionExpression(p[1], p[3])
 
     def p_multiply_expression(self, p):
         """
-        multiply_expression : expression MULTIPLY_OPERATOR expression
+        expression : expression MULTIPLY_OPERATOR expression
         """
         p[0] = MultiplicationExpression(p[1], p[3])
 
     def p_divide_expression(self, p):
         """
-        divide_expression : expression DIVIDE_OPERATOR expression
+        assignment : expression DIVIDE_OPERATOR expression
         """
         p[0] = DivisionExpression(p[1], p[3])
 
     def p_modulus_expression(self, p):
         """
-        modulus_expression : expression MODULUS_OPERATOR expression
+        assignment : expression MODULUS_OPERATOR expression
         """
         p[0] = ModulusExpression(p[1], p[3])
 
     def p_negation_expression(self, p):
         """
-        modulus_expression : SUBTRACTION_OPERATOR expression
+        assignment : SUBTRACTION_OPERATOR expression
         """
         p[0] = NegationExpression(p[2])
 
     def p_logical_not_expression(self, p):
         """
-        logical_not_expression : NOT_OPERATOR expression
+        assignment : NOT_OPERATOR expression
         """
         p[0] = LogicalNotExpression(p[2])
 
     def p_logical_and_expression(self, p):
         """
-        logical_and_expression : expression AND_OPERATOR expression
+        assignment : expression AND_OPERATOR expression
         """
         p[0] = LogicalAndExpression(p[1], p[3])
 
     def p_logical_or_expression(self, p):
         """
-        logical_or_expression : expression OR_OPERATOR expression
+        assignment : expression OR_OPERATOR expression
         """
         p[0] = LogicalOrExpression(p[1], p[3])
 
     def p_logical_equality_expression(self, p):
         """
-        logical_equality_expression : expression EQUAL_OPERATOR expression
+        assignment : expression EQUAL_OPERATOR expression
         """
         p[0] = LogicalEqualityExpression(p[1], p[3])
 
     def p_logical_inequality_expression(self, p):
         """
-        logical_inequality_expression : expression NOT_EQUAL_OPERATOR expression
+        assignment : expression NOT_EQUAL_OPERATOR expression
         """
         p[0] = LogicalInequalityExpression(p[1], p[3])
 
     def p_compare_greaterthan_expression(self, p):
         """
-        compare_greaterthan_expression : expression GREATER_THAN_OPERATOR expression
+        assignment : expression GREATER_THAN_OPERATOR expression
         """
         p[0] = GreaterThanExpression(p[1], p[3])
 
     def p_compare_greaterthanorequal_expression(self, p):
         """
-        compare_greaterthanorequal_expression : expression GREATER_THAN_OR_EQUAL_OPERATOR expression
+        assignment : expression GREATER_THAN_OR_EQUAL_OPERATOR expression
         """
         p[0] = GreaterThanOrEqualExpression(p[1], p[3])
 
     def p_compare_lessthan_expression(self, p):
         """
-        compare_lessthan_expression : expression LESS_THAN_OPERATOR expression
+        assignment : expression LESS_THAN_OPERATOR expression
         """
         p[0] = LessThanExpression(p[1], p[3])
 
     def p_compare_lessthanorequal_expression(self, p):
         """
-        compare_lessthanorequal_expression : expression LESS_THAN_OR_EQUAL_OPERATOR expression
+        assignment : expression LESS_THAN_OR_EQUAL_OPERATOR expression
         """
         p[0] = LessThanOrEqualExpression(p[1], p[3])
 
     def p_bitwise_or_expression(self, p):
         """
-        bitwise_or_expression : expression BITWISE_OR_OPERATOR expression
+        assignment : expression BITWISE_OR_OPERATOR expression
         """
         p[0] = BitwiseOrExpression(p[1], p[3])
 
     def p_bitwise_xor_expression(self, p):
         """
-        bitwise_xor_expression : expression BITWISE_XOR_OPERATOR expression
+        assignment : expression BITWISE_XOR_OPERATOR expression
         """
         p[0] = BitwiseXorExpression(p[1], p[3])
 
     def p_bitwise_and_expression(self, p):
         """
-        bitwise_and_expression : expression BITWISE_AND_OPERATOR expression
+        assignment : expression BITWISE_AND_OPERATOR expression
         """
         p[0] = BitwiseAndExpression(p[1], p[3])
 
     def p_bitwise_not_expression(self, p):
         """
-        bitwise_not_expression : ONES_COMPLEMENT_OPERATOR expression
+        assignment : ONES_COMPLEMENT_OPERATOR expression
         """
         p[0] = BitwiseNotExpression(p[2])
 
     def p_bitwise_leftshift_expression(self, p):
         """
-        bitwise_leftshift_expression : expression BITWISE_LEFT_OPERATOR expression
+        assignment : expression BITWISE_LEFT_OPERATOR expression
         """
         p[0] = BitwiseLeftShiftExpression(p[1], p[3])
 
     def p_bitwise_rightshift_expression(self, p):
         """
-        bitwise_rightshift_expression : expression BITWISE_RIGHT_OPERATOR expression
+        assignment : expression BITWISE_RIGHT_OPERATOR expression
         """
         p[0] = BitwiseRightShiftExpression(p[1], p[3])
 
@@ -392,30 +392,6 @@ class NssParser:
                    | STRING_VALUE
                    | IDENTIFIER
                    | assignment
-                   | addition_assignment
-                   | subtraction_assignment
-                   | multiplication_assignment
-                   | division_assignment
-                   | add_expression
-                   | subtract_expression
-                   | multiply_expression
-                   | divide_expression
-                   | modulus_expression
-                   | bitwise_not_expression
-                   | bitwise_or_expression
-                   | bitwise_xor_expression
-                   | bitwise_and_expression
-                   | bitwise_leftshift_expression
-                   | bitwise_rightshift_expression
-                   | logical_not_expression
-                   | logical_and_expression
-                   | logical_or_expression
-                   | logical_equality_expression
-                   | logical_inequality_expression
-                   | compare_greaterthan_expression
-                   | compare_greaterthanorequal_expression
-                   | compare_lessthan_expression
-                   | compare_lessthanorequal_expression
         """
         if isinstance(p[1], Identifier):
             p[0] = IdentifierExpression(p[1])
