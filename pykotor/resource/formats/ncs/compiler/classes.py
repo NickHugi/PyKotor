@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from enum import Enum
 from typing import List, Optional, Tuple, Dict, NamedTuple, Union
 from pykotor.common.script import DataType, ScriptFunction
@@ -99,6 +100,13 @@ class Operator(Enum):
     BITWISE_LEFT = "<<"
     BITWISE_RIGHT = ">>"
     ONES_COMPLEMENT = "~"
+
+
+class DataTypePair:
+    def __init__(self, instruction: NCSInstructionType, lhs: DataType, rhs: DataType):
+        self.instruction: NCSInstructionType = instruction
+        self.lhs: DataType = lhs
+        self.rhs: DataType = rhs
 
 
 class FunctionReference(NamedTuple):
@@ -659,7 +667,6 @@ class NegationExpression(Expression):
 # endregion
 
 
-# region Expressions: Logical
 class LogicalNotExpression(Expression):
     def __init__(self, expression1: Expression):
         super().__init__()
@@ -678,11 +685,11 @@ class LogicalNotExpression(Expression):
         return DataType.INT
 
 
-class LogicalAndExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
+class ConditionalExpression(Expression):
+    def __init__(self, expression1: Expression, expression2: Expression, compatibility: List[DataTypePair]):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
+        self.compatibility: List[DataTypePair] = compatibility
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         type1 = self.expression1.compile(ncs, root, block)
@@ -690,187 +697,15 @@ class LogicalAndExpression(Expression):
         type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.LOGANDII)
-        else:
-            raise CompileException(f"Cannot get the logical AND of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return DataType.INT
-
-
-class LogicalOrExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.LOGORII)
-        else:
-            raise CompileException(f"Cannot get the logical OR of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return DataType.INT
-# endregion
-
-
-# region Expressions: Relational
-class LogicalEqualityExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.EQUALII)
-        elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.EQUALFF)
-        elif type1 == DataType.STRING and type2 == DataType.STRING:
-            ncs.add(NCSInstructionType.EQUALSS)
-        elif type1 == DataType.OBJECT and type2 == DataType.OBJECT:
-            ncs.add(NCSInstructionType.EQUALOO)
-        else:
-            raise CompileException(f"Cannot test the equality of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return DataType.INT
-
-
-class LogicalInequalityExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-        self._type = None
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.NEQUALII)
-        elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.NEQUALFF)
-        elif type1 == DataType.STRING and type2 == DataType.STRING:
-            ncs.add(NCSInstructionType.NEQUALSS)
-        elif type1 == DataType.OBJECT and type2 == DataType.OBJECT:
-            ncs.add(NCSInstructionType.NEQUALOO)
-        else:
-            raise CompileException(f"Cannot test the equality of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return DataType.INT
-
-
-class GreaterThanExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.GTII)
-        elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.GTFF)
+        for x in self.compatibility:
+            if type1 == x.lhs and type2 == x.rhs:
+                ncs.add(x.instruction)
+                break
         else:
             raise CompileException(f"Cannot test if {type1.name.lower()} is greater than {type2.name.lower()}")
 
         block.tempstack -= 8
-        return DataType.INT
-
-
-class GreaterThanOrEqualExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-        self._type = None
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.GEQII)
-        elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.GEQFF)
-        else:
-            raise CompileException(f"Cannot test if {type1.name.lower()} is greater than or equal to {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return DataType.INT
-
-
-class LessThanExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-        self._type = None
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.LTII)
-        elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.LTFF)
-        else:
-            raise CompileException(f"Cannot test if {type1.name.lower()} is less than {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return DataType.INT
-
-
-class LessThanOrEqualExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-        self._type = None
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.LEQII)
-        elif type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.LEQFF)
-        else:
-            raise CompileException(f"Cannot test if {type1.name.lower()} is less than {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return DataType.INT
-# endregion
+        return x.lhs
 
 
 # region Expression: Bitwise
@@ -1451,3 +1286,34 @@ class DefaultSwitchLabel:
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, jump_to: NCSInstruction, expression_type: DataType):
         ncs.add(NCSInstructionType.JMP, jump=jump_to)
 # endregion
+
+
+class Struct:
+    def __init__(self, members: List[Member]):
+        self.members: List[Member] = members
+
+    def initialize(self, ncs: NCS) -> None:
+        for member in self.members:
+            if member.datatype == DataType:
+                ...
+
+    def size(self) -> int:
+        size = 0
+        for member in self.members:
+            size += member.datatype.size()
+        return size
+
+
+class Member:
+    def __init__(self, identifier: Identifier, datatype: DataType):
+        self.identifier: Identifier = identifier
+        self.datatype: DataType = datatype
+
+
+class Vector(Struct):
+    def __init__(self):
+        super().__init__([
+            Member(Identifier("x"), DataType.FLOAT),
+            Member(Identifier("y"), DataType.FLOAT),
+            Member(Identifier("z"), DataType.FLOAT),
+        ])

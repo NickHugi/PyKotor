@@ -1,8 +1,9 @@
 import operator
 
 from pykotor.common.script import DataType
+from pykotor.resource.formats.ncs import NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import IntExpression, ControlKeyword, StringExpression, \
-    FloatExpression, Identifier, Operator
+    FloatExpression, Identifier, Operator, DataTypePair
 
 from abc import ABC
 from enum import Enum
@@ -262,47 +263,68 @@ class NssLexer:
 
     def t_EQUAL_OPERATOR(self, t):
         '\=\='
-        t.value = Operator.EQUAL
+        t.value = [
+            DataTypePair(NCSInstructionType.EQUALII, DataType.INT, DataType.INT),
+            DataTypePair(NCSInstructionType.EQUALFF, DataType.FLOAT, DataType.FLOAT),
+            DataTypePair(NCSInstructionType.EQUALOO, DataType.OBJECT, DataType.OBJECT),
+            DataTypePair(NCSInstructionType.EQUALSS, DataType.STRING, DataType.STRING),
+        ]
         return t
 
     def t_NOT_EQUAL_OPERATOR(self, t):
         '\!='
-        t.value = Operator.NOT_EQUAL
+        t.value = [
+            DataTypePair(NCSInstructionType.NEQUALII, DataType.INT, DataType.INT),
+            DataTypePair(NCSInstructionType.NEQUALFF, DataType.FLOAT, DataType.FLOAT),
+            DataTypePair(NCSInstructionType.NEQUALOO, DataType.OBJECT, DataType.OBJECT),
+            DataTypePair(NCSInstructionType.NEQUALSS, DataType.STRING, DataType.STRING),
+        ]
         return t
 
     def t_GREATER_THAN_OR_EQUAL_OPERATOR(self, t):
         '>\='
-        t.value = Operator.GREATER_THAN_OR_EQUAL
+        t.value = [
+            DataTypePair(NCSInstructionType.GEQII, DataType.INT, DataType.INT),
+            DataTypePair(NCSInstructionType.GEQFF, DataType.FLOAT, DataType.FLOAT),
+        ]
         return t
 
     def t_GREATER_THAN_OPERATOR(self, t):
         '>'
-        t.value = Operator.GREATER_THAN
+        t.value = [
+            DataTypePair(NCSInstructionType.GTII, DataType.INT, DataType.INT),
+            DataTypePair(NCSInstructionType.GTFF, DataType.FLOAT, DataType.FLOAT),
+        ]
         return t
 
     def t_LESS_THAN_OR_EQUAL_OPERATOR(self, t):
         '\<='
-        t.value = Operator.ADDITION
+        t.value = [
+            DataTypePair(NCSInstructionType.LEQII, DataType.INT, DataType.INT),
+            DataTypePair(NCSInstructionType.LEQFF, DataType.FLOAT, DataType.FLOAT),
+        ]
         return t
 
     def t_LESS_THAN_OPERATOR(self, t):
         '\<'
-        t.value = Operator.ADDITION
-        return t
-
-    def t_GREATER_OR_EQUAL_OPERATOR(self, t):
-        '<\='
-        t.value = Operator.ADDITION
+        t.value = [
+            DataTypePair(NCSInstructionType.LTII, DataType.INT, DataType.INT),
+            DataTypePair(NCSInstructionType.LTFF, DataType.FLOAT, DataType.FLOAT),
+        ]
         return t
 
     def t_AND_OPERATOR(self, t):
         '&&'
-        t.value = Operator.ADDITION
+        t.value = [
+            DataTypePair(NCSInstructionType.LOGANDII, DataType.INT, DataType.INT),
+        ]
         return t
 
     def t_OR_OPERATOR(self, t):
         '\|\|'
-        t.value = Operator.ADDITION
+        t.value = [
+            DataTypePair(NCSInstructionType.LOGORII, DataType.INT, DataType.INT),
+        ]
         return t
 
     def t_NOT_OPERATOR(self, t):

@@ -14,14 +14,13 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalBlock, \
     FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression, SubtractionExpression, \
     MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, BitwiseNotExpression, \
-    LogicalNotExpression, LogicalAndExpression, LogicalOrExpression, BitwiseOrExpression, BitwiseXorExpression, \
-    BitwiseAndExpression, LogicalEqualityExpression, LogicalInequalityExpression, GreaterThanExpression, \
-    GreaterThanOrEqualExpression, LessThanExpression, LessThanOrEqualExpression, BitwiseLeftShiftExpression, \
+    LogicalNotExpression, BitwiseOrExpression, BitwiseXorExpression, \
+    BitwiseAndExpression, BitwiseLeftShiftExpression, \
     BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
-    DefaultSwitchLabel, ConditionAndBlock
+    DefaultSwitchLabel, ConditionAndBlock, ConditionalExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -300,53 +299,18 @@ class NssParser:
         """
         p[0] = LogicalNotExpression(p[2])
 
-    def p_logical_and_expression(self, p):
-        """
-        assignment : expression AND_OPERATOR expression
-        """
-        p[0] = LogicalAndExpression(p[1], p[3])
-
-    def p_logical_or_expression(self, p):
-        """
-        assignment : expression OR_OPERATOR expression
-        """
-        p[0] = LogicalOrExpression(p[1], p[3])
-
-    def p_logical_equality_expression(self, p):
-        """
-        assignment : expression EQUAL_OPERATOR expression
-        """
-        p[0] = LogicalEqualityExpression(p[1], p[3])
-
-    def p_logical_inequality_expression(self, p):
-        """
-        assignment : expression NOT_EQUAL_OPERATOR expression
-        """
-        p[0] = LogicalInequalityExpression(p[1], p[3])
-
     def p_compare_greaterthan_expression(self, p):
         """
         assignment : expression GREATER_THAN_OPERATOR expression
+                   | expression GREATER_THAN_OR_EQUAL_OPERATOR expression
+                   | expression LESS_THAN_OPERATOR expression
+                   | expression LESS_THAN_OR_EQUAL_OPERATOR expression
+                   | expression NOT_EQUAL_OPERATOR expression
+                   | expression EQUAL_OPERATOR expression
+                   | expression AND_OPERATOR expression
+                   | expression OR_OPERATOR expression
         """
-        p[0] = GreaterThanExpression(p[1], p[3])
-
-    def p_compare_greaterthanorequal_expression(self, p):
-        """
-        assignment : expression GREATER_THAN_OR_EQUAL_OPERATOR expression
-        """
-        p[0] = GreaterThanOrEqualExpression(p[1], p[3])
-
-    def p_compare_lessthan_expression(self, p):
-        """
-        assignment : expression LESS_THAN_OPERATOR expression
-        """
-        p[0] = LessThanExpression(p[1], p[3])
-
-    def p_compare_lessthanorequal_expression(self, p):
-        """
-        assignment : expression LESS_THAN_OR_EQUAL_OPERATOR expression
-        """
-        p[0] = LessThanOrEqualExpression(p[1], p[3])
+        p[0] = ConditionalExpression(p[1], p[3], p[2])
 
     def p_bitwise_or_expression(self, p):
         """
