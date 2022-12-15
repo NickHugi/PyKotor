@@ -34,17 +34,17 @@ class NssParser:
     literals = NssLexer.literals
 
     precedence = (
-        ('left', 'OR_OPERATOR'),
-        ('left', 'AND_OPERATOR'),
-        ('left', 'BITWISE_OR_OPERATOR'),
-        ('left', 'BITWISE_XOR_OPERATOR'),
-        ('left', 'BITWISE_AND_OPERATOR'),
-        ('left', 'EQUAL_OPERATOR', 'NOT_EQUAL_OPERATOR'),
-        ('left', 'GREATER_THAN_OPERATOR', 'LESS_THAN_OPERATOR', 'GREATER_THAN_OR_EQUAL_OPERATOR', 'LESS_THAN_OR_EQUAL_OPERATOR'),
-        ('left', 'BITWISE_LEFT_OPERATOR', 'BITWISE_RIGHT_OPERATOR'),
-        ('left', 'ADDITION_OPERATOR', 'SUBTRACTION_OPERATOR', 'ONES_COMPLEMENT_OPERATOR'),
-        ('left', 'MULTIPLY_OPERATOR', 'DIVIDE_OPERATOR', 'MODULUS_OPERATOR'),
-        ('left', 'ONES_COMPLEMENT_OPERATOR', 'NOT_OPERATOR'),
+        ('left', 'OR'),
+        ('left', 'AND'),
+        ('left', 'BITWISE_OR'),
+        ('left', 'BITWISE_XOR'),
+        ('left', 'BITWISE_AND'),
+        ('left', 'EQUALS', 'NOT_EQUALS'),
+        ('left', 'GREATER_THAN', 'LESS_THAN', 'GREATER_THAN_OR_EQUALS', 'LESS_THAN_OR_EQUALS'),
+        ('left', 'BITWISE_LEFT', 'BITWISE_RIGHT'),
+        ('left', 'ADD', 'MINUS', 'BITWISE_NOT'),
+        ('left', 'MULTIPLY', 'DIVIDE', 'MOD'),
+        ('left', 'BITWISE_NOT', 'NOT'),
         #('left', 'INCREMENT', 'DECREMENT'),
     )
 
@@ -267,32 +267,32 @@ class NssParser:
 
     def p_binary_operator(self, p):
         """
-        expression : expression GREATER_THAN_OPERATOR expression
-                   | expression GREATER_THAN_OR_EQUAL_OPERATOR expression
-                   | expression LESS_THAN_OPERATOR expression
-                   | expression LESS_THAN_OR_EQUAL_OPERATOR expression
-                   | expression NOT_EQUAL_OPERATOR expression
-                   | expression EQUAL_OPERATOR expression
-                   | expression AND_OPERATOR expression
-                   | expression OR_OPERATOR expression
-                   | expression ADDITION_OPERATOR expression
-                   | expression SUBTRACTION_OPERATOR expression
-                   | expression MULTIPLY_OPERATOR expression
-                   | expression DIVIDE_OPERATOR expression
-                   | expression BITWISE_OR_OPERATOR expression
-                   | expression BITWISE_XOR_OPERATOR expression
-                   | expression BITWISE_AND_OPERATOR expression
-                   | expression BITWISE_LEFT_OPERATOR expression
-                   | expression BITWISE_RIGHT_OPERATOR expression
-                   | expression MODULUS_OPERATOR expression
+        expression : expression GREATER_THAN expression
+                   | expression GREATER_THAN_OR_EQUALS expression
+                   | expression LESS_THAN expression
+                   | expression LESS_THAN_OR_EQUALS expression
+                   | expression NOT_EQUALS expression
+                   | expression EQUALS expression
+                   | expression AND expression
+                   | expression OR expression
+                   | expression ADD expression
+                   | expression MINUS expression
+                   | expression MULTIPLY expression
+                   | expression DIVIDE expression
+                   | expression BITWISE_OR expression
+                   | expression BITWISE_XOR expression
+                   | expression BITWISE_AND expression
+                   | expression BITWISE_LEFT expression
+                   | expression BITWISE_RIGHT expression
+                   | expression MOD expression
         """
         p[0] = BinaryOperatorExpression(p[1], p[3], p[2].binary)
 
     def p_unary_expression(self, p):
         """
-        expression : SUBTRACTION_OPERATOR expression
-                   | ONES_COMPLEMENT_OPERATOR expression
-                   | NOT_OPERATOR expression
+        expression : MINUS expression
+                   | BITWISE_NOT expression
+                   | NOT expression
         """
         p[0] = UnaryOperatorExpression(p[2], p[1].unary)
 
