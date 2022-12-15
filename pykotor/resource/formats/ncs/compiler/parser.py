@@ -12,15 +12,12 @@ from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
     CodeBlock, \
     Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalBlock, \
-    FunctionDefinition, FunctionDefinitionParam, CodeRoot, AdditionExpression, SubtractionExpression, \
-    MultiplicationExpression, DivisionExpression, ModulusExpression, NegationExpression, BitwiseNotExpression, \
-    LogicalNotExpression, BitwiseOrExpression, BitwiseXorExpression, \
-    BitwiseAndExpression, BitwiseLeftShiftExpression, \
-    BitwiseRightShiftExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
+    FunctionDefinition, FunctionDefinitionParam, CodeRoot, UnaryOperatorExpression, BitwiseNotExpression, \
+    LogicalNotExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
-    DefaultSwitchLabel, ConditionAndBlock, ConditionalExpression
+    DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -257,51 +254,17 @@ class NssParser:
         elif len(p) == 4:
             p[0] = ReturnStatement(p[2])
 
-    def p_add_expression(self, p):
+    def p_unary_expression(self, p):
         """
-        expression : expression ADDITION_OPERATOR expression
+        expression : SUBTRACTION_OPERATOR expression
+                   | ONES_COMPLEMENT_OPERATOR expression
+                   | NOT_OPERATOR expression
         """
-        p[0] = AdditionExpression(p[1], p[3])
+        p[0] = UnaryOperatorExpression(p[2], p[1].unary)
 
-    def p_subtract_expression(self, p):
+    def p_binary_operator(self, p):
         """
-        expression : expression SUBTRACTION_OPERATOR expression
-        """
-        p[0] = SubtractionExpression(p[1], p[3])
-
-    def p_multiply_expression(self, p):
-        """
-        expression : expression MULTIPLY_OPERATOR expression
-        """
-        p[0] = MultiplicationExpression(p[1], p[3])
-
-    def p_divide_expression(self, p):
-        """
-        assignment : expression DIVIDE_OPERATOR expression
-        """
-        p[0] = DivisionExpression(p[1], p[3])
-
-    def p_modulus_expression(self, p):
-        """
-        assignment : expression MODULUS_OPERATOR expression
-        """
-        p[0] = ModulusExpression(p[1], p[3])
-
-    def p_negation_expression(self, p):
-        """
-        assignment : SUBTRACTION_OPERATOR expression
-        """
-        p[0] = NegationExpression(p[2])
-
-    def p_logical_not_expression(self, p):
-        """
-        assignment : NOT_OPERATOR expression
-        """
-        p[0] = LogicalNotExpression(p[2])
-
-    def p_compare_greaterthan_expression(self, p):
-        """
-        assignment : expression GREATER_THAN_OPERATOR expression
+        expression : expression GREATER_THAN_OPERATOR expression
                    | expression GREATER_THAN_OR_EQUAL_OPERATOR expression
                    | expression LESS_THAN_OPERATOR expression
                    | expression LESS_THAN_OR_EQUAL_OPERATOR expression
@@ -309,44 +272,18 @@ class NssParser:
                    | expression EQUAL_OPERATOR expression
                    | expression AND_OPERATOR expression
                    | expression OR_OPERATOR expression
+                   | expression ADDITION_OPERATOR expression
+                   | expression SUBTRACTION_OPERATOR expression
+                   | expression MULTIPLY_OPERATOR expression
+                   | expression DIVIDE_OPERATOR expression
+                   | expression BITWISE_OR_OPERATOR expression
+                   | expression BITWISE_XOR_OPERATOR expression
+                   | expression BITWISE_AND_OPERATOR expression
+                   | expression BITWISE_LEFT_OPERATOR expression
+                   | expression BITWISE_RIGHT_OPERATOR expression
+                   | expression MODULUS_OPERATOR expression
         """
-        p[0] = ConditionalExpression(p[1], p[3], p[2])
-
-    def p_bitwise_or_expression(self, p):
-        """
-        assignment : expression BITWISE_OR_OPERATOR expression
-        """
-        p[0] = BitwiseOrExpression(p[1], p[3])
-
-    def p_bitwise_xor_expression(self, p):
-        """
-        assignment : expression BITWISE_XOR_OPERATOR expression
-        """
-        p[0] = BitwiseXorExpression(p[1], p[3])
-
-    def p_bitwise_and_expression(self, p):
-        """
-        assignment : expression BITWISE_AND_OPERATOR expression
-        """
-        p[0] = BitwiseAndExpression(p[1], p[3])
-
-    def p_bitwise_not_expression(self, p):
-        """
-        assignment : ONES_COMPLEMENT_OPERATOR expression
-        """
-        p[0] = BitwiseNotExpression(p[2])
-
-    def p_bitwise_leftshift_expression(self, p):
-        """
-        assignment : expression BITWISE_LEFT_OPERATOR expression
-        """
-        p[0] = BitwiseLeftShiftExpression(p[1], p[3])
-
-    def p_bitwise_rightshift_expression(self, p):
-        """
-        assignment : expression BITWISE_RIGHT_OPERATOR expression
-        """
-        p[0] = BitwiseRightShiftExpression(p[1], p[3])
+        p[0] = BinaryOperatorExpression(p[1], p[3], p[2].binary)
 
     def p_expression(self, p):
         """

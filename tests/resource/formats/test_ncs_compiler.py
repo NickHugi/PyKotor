@@ -251,13 +251,15 @@ class TestNSSCompiler(TestCase):
             void main()
             {
                 int a = -10;
+                PrintInteger(a);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(-10, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(-10, interpreter.action_snapshots[0].arg_values[0])
 
     def test_negop_float(self):
         ncs = self.compile("""
@@ -384,7 +386,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
     # endregion
 
-    # region Comparision Operator
+    # region Relational Operator
     def test_compare_greaterthan_op(self):
         ncs = self.compile("""
             void main()
@@ -498,7 +500,7 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(5, interpreter.stack_snapshots[-4].stack[-1].value)
 
-    def test_bitwise_not_float(self):
+    def test_bitwise_not_int(self):
         ncs = self.compile("""
             void main()
             {

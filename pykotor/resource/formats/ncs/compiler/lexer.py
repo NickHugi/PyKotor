@@ -3,7 +3,7 @@ import operator
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import IntExpression, ControlKeyword, StringExpression, \
-    FloatExpression, Identifier, Operator, DataTypePair
+    FloatExpression, Identifier, Operator, BinaryOperatorMapping, UnaryOperatorMapping, OperatorMapping
 
 from abc import ABC
 from enum import Enum
@@ -228,127 +228,171 @@ class NssLexer:
     # region Operators
     def t_BITWISE_LEFT_OPERATOR(self, t):
         '<<'
-        t.value = Operator.ADDITION
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.SHLEFTII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_BITWISE_RIGHT_OPERATOR(self, t):
         '>>'
-        t.value = Operator.ADDITION
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.SHRIGHTII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_ADDITION_OPERATOR(self, t):
         '\+'
-        t.value = Operator.ADDITION
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.ADDII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.ADDIF, DataType.INT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.ADDFI, DataType.FLOAT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.ADDFF, DataType.FLOAT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.ADDVV, DataType.VECTOR, DataType.VECTOR),
+            BinaryOperatorMapping(NCSInstructionType.ADDSS, DataType.STRING, DataType.STRING),
+        ])
         return t
 
     def t_SUBTRACTION_OPERATOR(self, t):
         '-'
-        t.value = Operator.SUBTRACT
+        t.value = OperatorMapping([
+            UnaryOperatorMapping(NCSInstructionType.NEGI, DataType.INT),
+            UnaryOperatorMapping(NCSInstructionType.NEGF, DataType.FLOAT),
+        ], [
+            BinaryOperatorMapping(NCSInstructionType.SUBII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.SUBIF, DataType.INT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.SUBFI, DataType.FLOAT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.SUBFF, DataType.FLOAT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.SUBVV, DataType.VECTOR, DataType.VECTOR),
+        ])
         return t
 
     def t_MULTIPLY_OPERATOR(self, t):
         '\*'
-        t.value = Operator.MULTIPLY
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.MULII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.MULIF, DataType.INT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.MULFI, DataType.FLOAT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.MULFF, DataType.FLOAT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.MULVF, DataType.VECTOR, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.MULFV, DataType.FLOAT, DataType.VECTOR),
+        ])
         return t
 
     def t_DIVIDE_OPERATOR(self, t):
         '/'
-        t.value = Operator.DIVIDE
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.DIVII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.DIVIF, DataType.INT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.DIVFI, DataType.FLOAT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.DIVFF, DataType.FLOAT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.DIVVF, DataType.VECTOR, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.DIVFV, DataType.FLOAT, DataType.VECTOR),
+        ])
         return t
 
     def t_MODULUS_OPERATOR(self, t):
         '\%'
-        t.value = Operator.MODULUS
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.MODII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_EQUAL_OPERATOR(self, t):
         '\=\='
-        t.value = [
-            DataTypePair(NCSInstructionType.EQUALII, DataType.INT, DataType.INT),
-            DataTypePair(NCSInstructionType.EQUALFF, DataType.FLOAT, DataType.FLOAT),
-            DataTypePair(NCSInstructionType.EQUALOO, DataType.OBJECT, DataType.OBJECT),
-            DataTypePair(NCSInstructionType.EQUALSS, DataType.STRING, DataType.STRING),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.EQUALII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.EQUALFF, DataType.FLOAT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.EQUALOO, DataType.OBJECT, DataType.OBJECT),
+            BinaryOperatorMapping(NCSInstructionType.EQUALSS, DataType.STRING, DataType.STRING),
+        ])
         return t
 
     def t_NOT_EQUAL_OPERATOR(self, t):
         '\!='
-        t.value = [
-            DataTypePair(NCSInstructionType.NEQUALII, DataType.INT, DataType.INT),
-            DataTypePair(NCSInstructionType.NEQUALFF, DataType.FLOAT, DataType.FLOAT),
-            DataTypePair(NCSInstructionType.NEQUALOO, DataType.OBJECT, DataType.OBJECT),
-            DataTypePair(NCSInstructionType.NEQUALSS, DataType.STRING, DataType.STRING),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.NEQUALII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.NEQUALFF, DataType.FLOAT, DataType.FLOAT),
+            BinaryOperatorMapping(NCSInstructionType.NEQUALOO, DataType.OBJECT, DataType.OBJECT),
+            BinaryOperatorMapping(NCSInstructionType.NEQUALSS, DataType.STRING, DataType.STRING),
+        ])
         return t
 
     def t_GREATER_THAN_OR_EQUAL_OPERATOR(self, t):
         '>\='
-        t.value = [
-            DataTypePair(NCSInstructionType.GEQII, DataType.INT, DataType.INT),
-            DataTypePair(NCSInstructionType.GEQFF, DataType.FLOAT, DataType.FLOAT),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.GEQII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.GEQFF, DataType.FLOAT, DataType.FLOAT),
+        ])
         return t
 
     def t_GREATER_THAN_OPERATOR(self, t):
         '>'
-        t.value = [
-            DataTypePair(NCSInstructionType.GTII, DataType.INT, DataType.INT),
-            DataTypePair(NCSInstructionType.GTFF, DataType.FLOAT, DataType.FLOAT),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.GTII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.GTFF, DataType.FLOAT, DataType.FLOAT),
+        ])
         return t
 
     def t_LESS_THAN_OR_EQUAL_OPERATOR(self, t):
         '\<='
-        t.value = [
-            DataTypePair(NCSInstructionType.LEQII, DataType.INT, DataType.INT),
-            DataTypePair(NCSInstructionType.LEQFF, DataType.FLOAT, DataType.FLOAT),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.LEQII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.LEQFF, DataType.FLOAT, DataType.FLOAT),
+        ])
         return t
 
     def t_LESS_THAN_OPERATOR(self, t):
         '\<'
-        t.value = [
-            DataTypePair(NCSInstructionType.LTII, DataType.INT, DataType.INT),
-            DataTypePair(NCSInstructionType.LTFF, DataType.FLOAT, DataType.FLOAT),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.LTII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.LTFF, DataType.FLOAT, DataType.FLOAT),
+        ])
         return t
 
     def t_AND_OPERATOR(self, t):
         '&&'
-        t.value = [
-            DataTypePair(NCSInstructionType.LOGANDII, DataType.INT, DataType.INT),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.LOGANDII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_OR_OPERATOR(self, t):
         '\|\|'
-        t.value = [
-            DataTypePair(NCSInstructionType.LOGORII, DataType.INT, DataType.INT),
-        ]
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.LOGORII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_NOT_OPERATOR(self, t):
         '\!'
-        t.value = Operator.ADDITION
+        t.value = OperatorMapping([
+            UnaryOperatorMapping(NCSInstructionType.NOTI, DataType.INT),
+        ], [])
         return t
 
     def t_BITWISE_AND_OPERATOR(self, t):
         '&'
-        t.value = Operator.ADDITION
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.BOOLANDII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_BITWISE_OR_OPERATOR(self, t):
         '\|'
-        t.value = Operator.ADDITION
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.INCORII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_BITWISE_XOR_OPERATOR(self, t):
         '\^'
-        t.value = Operator.ADDITION
+        t.value = OperatorMapping([], [
+            BinaryOperatorMapping(NCSInstructionType.EXCORII, DataType.INT, DataType.INT),
+        ])
         return t
 
     def t_ONES_COMPLEMENT_OPERATOR(self, t):
         '\~'
-        t.value = Operator.ONES_COMPLEMENT
+        t.value = OperatorMapping([UnaryOperatorMapping(NCSInstructionType.COMPI, DataType.INT)], [])
         return t
     # endregion

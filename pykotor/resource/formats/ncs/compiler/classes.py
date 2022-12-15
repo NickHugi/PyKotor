@@ -102,10 +102,21 @@ class Operator(Enum):
     ONES_COMPLEMENT = "~"
 
 
-class DataTypePair:
+class OperatorMapping(NamedTuple):
+    unary: List[UnaryOperatorMapping]
+    binary: List[BinaryOperatorMapping]
+
+
+class BinaryOperatorMapping:
     def __init__(self, instruction: NCSInstructionType, lhs: DataType, rhs: DataType):
         self.instruction: NCSInstructionType = instruction
         self.lhs: DataType = lhs
+        self.rhs: DataType = rhs
+
+
+class UnaryOperatorMapping:
+    def __init__(self, instruction: NCSInstructionType, rhs: DataType):
+        self.instruction: NCSInstructionType = instruction
         self.rhs: DataType = rhs
 
 
@@ -504,12 +515,11 @@ class FunctionCallExpression(Expression):
 # endregion
 
 
-# region Expressions: Arithmetic
-class AdditionExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
+class BinaryOperatorExpression(Expression):
+    def __init__(self, expression1: Expression, expression2: Expression, mapping: List[BinaryOperatorMapping]):
         self.expression1: Expression = expression1
         self.expression2: Expression = expression2
+        self.compatibility: List[BinaryOperatorMapping] = mapping
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         type1 = self.expression1.compile(ncs, root, block)
@@ -517,154 +527,36 @@ class AdditionExpression(Expression):
         type2 = self.expression2.compile(ncs, root, block)
         block.tempstack += 4
 
-        if type1 == DataType.INT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.ADDII)
-        elif type1 == DataType.INT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.ADDIF)
-        elif type1 == DataType.FLOAT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.ADDFF)
-        elif type1 == DataType.FLOAT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.ADDFI)
-        elif type1 == DataType.STRING and type1 == DataType.STRING:
-            ncs.add(NCSInstructionType.ADDSS)
-        elif type1 == DataType.VECTOR and type1 == DataType.VECTOR:
-            ncs.add(NCSInstructionType.ADDVV)
+        for x in self.compatibility:
+            if type1 == x.lhs and type2 == x.rhs:
+                ncs.add(x.instruction)
+                break
         else:
-            raise CompileException(f"Cannot add {type1.name.lower()} to {type2.name.lower()}")
+            raise CompileException(f"Cannot test if {type1.name.lower()} is greater than {type2.name.lower()}")
 
         block.tempstack -= 8
-        return type1
+        return x.lhs
 
 
-class SubtractionExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
+class UnaryOperatorExpression(Expression):
+    def __init__(self, expression1: Expression, mapping: List[UnaryOperatorMapping]):
         super().__init__()
         self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.SUBII)
-        elif type1 == DataType.INT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.SUBIF)
-        elif type1 == DataType.FLOAT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.SUBFF)
-        elif type1 == DataType.FLOAT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.SUBFI)
-        elif type1 == DataType.VECTOR and type1 == DataType.VECTOR:
-            ncs.add(NCSInstructionType.SUBVV)
-        else:
-            raise CompileException(f"Cannot subtract {type2.name.lower()} from {type1.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
-class MultiplicationExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.MULII)
-        elif type1 == DataType.INT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.MULIF)
-        elif type1 == DataType.FLOAT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.MULFF)
-        elif type1 == DataType.FLOAT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.MULFI)
-        elif type1 == DataType.VECTOR and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.MULVF)
-        elif type1 == DataType.FLOAT and type1 == DataType.VECTOR:
-            ncs.add(NCSInstructionType.MULFV)
-        else:
-            raise CompileException(f"Cannot multiply {type1.name.lower()} to {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
-class DivisionExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.DIVII)
-        elif type1 == DataType.INT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.DIVIF)
-        elif type1 == DataType.FLOAT and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.DIVFF)
-        elif type1 == DataType.FLOAT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.DIVFI)
-        elif type1 == DataType.VECTOR and type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.DIVVF)
-        else:
-            raise CompileException(f"Cannot divide {type1.name.lower()} by {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
-class ModulusExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type1 == DataType.INT:
-            ncs.add(NCSInstructionType.MODII)
-        else:
-            raise CompileException(f"Cannot get the modulus of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
-class NegationExpression(Expression):
-    def __init__(self, expression1: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
+        self.compatibility: List[UnaryOperatorMapping] = mapping
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
         type1 = self.expression1.compile(ncs, root, block)
         block.tempstack += 4
 
-        if type1 == DataType.INT:
-            ncs.add(NCSInstructionType.NEGI)
-        elif type1 == DataType.FLOAT:
-            ncs.add(NCSInstructionType.NEGF)
+        for x in self.compatibility:
+            if type1 == x.rhs:
+                ncs.add(x.instruction)
+                break
         else:
             raise CompileException(f"Cannot negate {type1.name.lower()}")
 
         block.tempstack -= 4
         return type1
-# endregion
 
 
 class LogicalNotExpression(Expression):
@@ -685,93 +577,6 @@ class LogicalNotExpression(Expression):
         return DataType.INT
 
 
-class ConditionalExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression, compatibility: List[DataTypePair]):
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-        self.compatibility: List[DataTypePair] = compatibility
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        for x in self.compatibility:
-            if type1 == x.lhs and type2 == x.rhs:
-                ncs.add(x.instruction)
-                break
-        else:
-            raise CompileException(f"Cannot test if {type1.name.lower()} is greater than {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return x.lhs
-
-
-# region Expression: Bitwise
-class BitwiseOrExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.INCORII)
-        else:
-            raise CompileException(f"Cannot get the bitwise OR of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
-class BitwiseXorExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.EXCORII)
-        else:
-            raise CompileException(f"Cannot get the bitwise XOR of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
-class BitwiseAndExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.BOOLANDII)
-        else:
-            raise CompileException(f"Cannot get the bitwise AND of {type1.name.lower()} and {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
 class BitwiseNotExpression(Expression):
     def __init__(self, expression1: Expression):
         super().__init__()
@@ -788,49 +593,6 @@ class BitwiseNotExpression(Expression):
 
         block.tempstack -= 4
         return type1
-
-
-class BitwiseLeftShiftExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.SHLEFTII)
-        else:
-            raise CompileException(f"Cannot bitshift {type1.name.lower()} with {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-
-
-class BitwiseRightShiftExpression(Expression):
-    def __init__(self, expression1: Expression, expression2: Expression):
-        super().__init__()
-        self.expression1: Expression = expression1
-        self.expression2: Expression = expression2
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DataType:
-        type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
-        type2 = self.expression2.compile(ncs, root, block)
-        block.tempstack += 4
-
-        if type1 == DataType.INT and type2 == DataType.INT:
-            ncs.add(NCSInstructionType.SHRIGHTII)
-        else:
-            raise CompileException(f"Cannot bitshift {type1.name.lower()} with {type2.name.lower()}")
-
-        block.tempstack -= 8
-        return type1
-# endregion
 
 
 # region Expressions: Assignment
