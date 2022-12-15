@@ -209,6 +209,20 @@ class NssLexer:
         return t
     # endregion
 
+    def t_INCREMENT(self, t):
+        '\+\+'
+        t.value = OperatorMapping([
+            UnaryOperatorMapping(NCSInstructionType.INCISP, DataType.INT),
+        ], [])
+        return t
+
+    def t_DECREMENT(self, t):
+        '\-\-'
+        t.value = OperatorMapping([
+            UnaryOperatorMapping(NCSInstructionType.DECISP, DataType.INT),
+        ], [])
+        return t
+
     def t_ADDITION_ASSIGNMENT_OPERATOR(self, t):
         '\+\='
         return t

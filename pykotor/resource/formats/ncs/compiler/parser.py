@@ -33,6 +33,21 @@ class NssParser:
     tokens = NssLexer.tokens
     literals = NssLexer.literals
 
+    precedence = (
+        ('left', 'OR_OPERATOR'),
+        ('left', 'AND_OPERATOR'),
+        ('left', 'BITWISE_OR_OPERATOR'),
+        ('left', 'BITWISE_XOR_OPERATOR'),
+        ('left', 'BITWISE_AND_OPERATOR'),
+        ('left', 'EQUAL_OPERATOR', 'NOT_EQUAL_OPERATOR'),
+        ('left', 'GREATER_THAN_OPERATOR', 'LESS_THAN_OPERATOR', 'GREATER_THAN_OR_EQUAL_OPERATOR', 'LESS_THAN_OR_EQUAL_OPERATOR'),
+        ('left', 'BITWISE_LEFT_OPERATOR', 'BITWISE_RIGHT_OPERATOR'),
+        ('left', 'ADDITION_OPERATOR', 'SUBTRACTION_OPERATOR', 'ONES_COMPLEMENT_OPERATOR'),
+        ('left', 'MULTIPLY_OPERATOR', 'DIVIDE_OPERATOR', 'MODULUS_OPERATOR'),
+        ('left', 'ONES_COMPLEMENT_OPERATOR', 'NOT_OPERATOR'),
+        #('left', 'INCREMENT', 'DECREMENT'),
+    )
+
     def p_code_root(self, p):
         """
         code_root : code_root function_definition
@@ -244,24 +259,6 @@ class NssParser:
 
     # endregion
 
-    def p_return_statement(self, p):
-        """
-        return_statement : RETURN ';'
-                         | RETURN expression ';'
-        """
-        if len(p) == 3:
-            p[0] = ReturnStatement()
-        elif len(p) == 4:
-            p[0] = ReturnStatement(p[2])
-
-    def p_unary_expression(self, p):
-        """
-        expression : SUBTRACTION_OPERATOR expression
-                   | ONES_COMPLEMENT_OPERATOR expression
-                   | NOT_OPERATOR expression
-        """
-        p[0] = UnaryOperatorExpression(p[2], p[1].unary)
-
     def p_binary_operator(self, p):
         """
         expression : expression GREATER_THAN_OPERATOR expression
@@ -284,6 +281,24 @@ class NssParser:
                    | expression MODULUS_OPERATOR expression
         """
         p[0] = BinaryOperatorExpression(p[1], p[3], p[2].binary)
+
+    def p_unary_expression(self, p):
+        """
+        expression : SUBTRACTION_OPERATOR expression
+                   | ONES_COMPLEMENT_OPERATOR expression
+                   | NOT_OPERATOR expression
+        """
+        p[0] = UnaryOperatorExpression(p[2], p[1].unary)
+
+    def p_return_statement(self, p):
+        """
+        return_statement : RETURN ';'
+                         | RETURN expression ';'
+        """
+        if len(p) == 3:
+            p[0] = ReturnStatement()
+        elif len(p) == 4:
+            p[0] = ReturnStatement(p[2])
 
     def p_expression(self, p):
         """
