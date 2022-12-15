@@ -259,6 +259,12 @@ class NssParser:
 
     # endregion
 
+    def p_parenthesis_expression(self, p):
+        """
+        expression : '(' expression ')'
+        """
+        p[0] = p[2]
+
     def p_binary_operator(self, p):
         """
         expression : expression GREATER_THAN_OPERATOR expression

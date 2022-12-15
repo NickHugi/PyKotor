@@ -278,7 +278,7 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int value = 2 + 5 * 3 + 2 - 2 / 2;
+                int value = 2 + (5 * ((0)) + 5) * 3 + 2 - (2 + (2 * 4 - 12 / 2)) / 2;
                 PrintInteger(value);
             }
         """)
@@ -287,7 +287,7 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(18, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(17, interpreter.action_snapshots[0].arg_values[0])
 
     def test_op_with_variables(self):
         ncs = self.compile("""
