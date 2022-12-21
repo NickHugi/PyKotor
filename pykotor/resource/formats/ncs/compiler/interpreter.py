@@ -1,7 +1,9 @@
+import struct
 from copy import copy
 from inspect import signature
-from typing import List, Any, NamedTuple, Callable, Dict
+from typing import List, Any, NamedTuple, Callable, Dict, Union
 
+from pykotor.common.geometry import Vector3
 from pykotor.common.script import ScriptFunction, DataType
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
@@ -202,15 +204,31 @@ class Interpreter:
         args_snap = []
 
         for i in range(args):
-            args_snap.append(self._stack.pop())
+            if function.params[i].datatype == DataType.VECTOR:
+                vector_object = StackObject(DataType.VECTOR, Vector3(self._stack.pop().value, self._stack.pop().value, self._stack.pop().value))
+                args_snap.append(vector_object)
+            else:
+                args_snap.append(self._stack.pop())
 
         if function.returntype != DataType.VOID:
             if function.name in self._mocks:
                 # Execute and return the value back from the mock
-                self._stack.add(function.returntype, self._mocks[function.name](*[arg.value for arg in args_snap]))
+                value = self._mocks[function.name](*[arg.value for arg in args_snap])
             else:
                 # Return value of None if no relevant mock is found
-                self._stack.add(function.returntype, None)
+                value = None
+
+            if function.returntype == DataType.VECTOR:
+                if value is None:
+                    self._stack.add(DataType.FLOAT, 0.0)
+                    self._stack.add(DataType.FLOAT, 0.0)
+                    self._stack.add(DataType.FLOAT, 0.0)
+                else:
+                    self._stack.add(DataType.FLOAT, value[2])
+                    self._stack.add(DataType.FLOAT, value[1])
+                    self._stack.add(DataType.FLOAT, value[0])
+            else:
+                self._stack.add(function.returntype, value)
 
         self.action_snapshots.append(ActionSnapshot(function.name, args_snap, None))
 
@@ -235,9 +253,42 @@ class Interpreter:
         self._mocks.pop(function_name)
 
 
+class StackV2:
+    def __init__(self):
+        self._stack: bytearray = bytearray()
+        self._base_pointer: int = 0
+        self._base_pointer_saved: List[int] = []
+        self._stack_types: List = []
+
+    def state(self) -> bytearray:
+        return copy(self._stack)
+
+    def copy_down(self, offset: int, size: int) -> None:
+        stacksize = len(self._stack)
+        copied = self._stack[stacksize-size:stacksize]
+        self._stack[stacksize-offset:stacksize-offset+size] = copied
+
+    def copy_to_top(self, offset: int, size: int) -> None:
+        stacksize = len(self._stack)
+        copied = self._stack[stacksize-offset:stacksize-offset+size]
+        self._stack.extend(copied)
+
+    def add(self, datatype: DataType, value: Union[int, float]):
+        if datatype == DataType.INT:
+            if not isinstance(value, int):
+                raise ValueError
+            self._stack.extend(struct.pack("i", value))
+        elif datatype == DataType.FLOAT:
+            if not isinstance(value, int):
+                raise ValueError
+            self._stack.extend(struct.pack("i", value))
+        else:
+            raise NotImplementedError
+
+
 class Stack:
     def __init__(self):
-        self._stack: List = []
+        self._stack: List[StackObject] = []
         self._bp: int = 0
         self._bp_buffer: List[int] = []
 
@@ -248,7 +299,15 @@ class Stack:
         self._stack.append(StackObject(data_type, value))
 
     def _stack_index(self, offset: int) -> int:
-        return offset // 4
+        if offset > 0:
+            raise ValueError
+        offset = abs(offset)
+        index = 0
+        while offset > 0:
+            element_size = self._stack[index].data_type.size()
+            offset -= element_size
+            index -= 1
+        return index
 
     def stack_pointer(self) -> int:
         return len(self._stack) * 4
@@ -261,7 +320,8 @@ class Stack:
         return self._stack[real_index]
 
     def copy_to_top(self, offset: int, size: int) -> None:
-        self._stack.append(self.peek(offset))
+        for i in range(size//4):
+            self._stack.append(self.peek(offset))
 
     def copy_down(self, offset: int, size: int) -> None:
         top_value = self._stack[-1]
@@ -271,8 +331,12 @@ class Stack:
         return self._stack.pop()
 
     def move(self, offset: int) -> None:
-        for i in range(abs(offset // 4)):
-            self._stack.pop()
+        if offset > 0:
+            raise ValueError
+        if offset == 0:
+            return
+        remove_to = self._stack_index(offset)
+        self._stack = self._stack[:remove_to]
 
     def copy_down_bp(self, offset: int, size: int) -> None:
         # Copy from the top of the stack down to the bp adjusted w/ offset?
@@ -283,7 +347,6 @@ class Stack:
     def copy_top_bp(self, offset: int, size: int) -> None:
         # Copy value relative to base pointer to the top of the stack
         copy_index = self._stack_index(self._bp + offset)
-        print(copy_index)
         top_value = self._stack[copy_index]
         self._stack.append(top_value)
 

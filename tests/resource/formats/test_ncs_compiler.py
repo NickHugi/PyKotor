@@ -1,6 +1,7 @@
 from typing import Dict
 from unittest import TestCase
 
+from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter, ActionSnapshot
@@ -1421,6 +1422,23 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(2, len(interpreter.action_snapshots))
         self.assertEqual(55, interpreter.action_snapshots[1].arg_values[1])
+
+    def test_vector(self):
+        ncs = self.compile("""
+            void main()
+            {
+                vector vec = Vector(2.0, 4.0, 4.0);
+                float mag = VectorMagnitude(vec);
+                PrintFloat(mag);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("VectorMagnitude", lambda vec: vec.magnitude())
+        interpreter.run()
+
+        self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
 
     # region User-defined Functions
     def test_prototype_no_args(self):

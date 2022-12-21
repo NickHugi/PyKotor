@@ -1,4 +1,7 @@
+from pykotor.common.misc import Game
+from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, TSL_FUNCTIONS, KOTOR_CONSTANTS, TSL_CONSTANTS
 from pykotor.resource.formats.ncs import NCS, NCSBinaryReader, NCSBinaryWriter
+from pykotor.resource.formats.ncs.parser import NssParser
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
@@ -68,3 +71,21 @@ def bytes_ncs(
     data = bytearray()
     write_ncs(ncs, data, file_format)
     return data
+
+
+def compile_nss(
+        source: str,
+        game: Game
+) -> NCS:
+    library = {}
+
+    nssParser = NssParser()
+    nssParser.library = {}
+    nssParser.functions = KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS
+    nssParser.constants = KOTOR_CONSTANTS if game == Game.K2 else TSL_CONSTANTS
+
+    t = nssParser.parser.parse(source, tracking=True)
+
+    ncs = NCS()
+    t.compile(ncs)
+    return ncs
