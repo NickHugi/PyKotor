@@ -106,11 +106,12 @@ class NssLexer:
         return t
     # endregion
 
+    # region Type Tokens
     def t_STRUCT(self, t):
         r'struct'
+        t.value = DataType.STRUCT
         return t
 
-    # region Type Tokens
     def t_INT_TYPE(self, t):
         r'int'
         t.value = DataType.INT

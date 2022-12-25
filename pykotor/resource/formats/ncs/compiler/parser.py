@@ -18,7 +18,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
-    StructMember
+    StructMember, DynamicDataType
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -80,7 +80,7 @@ class NssParser:
 
     def p_struct_members(self, p):
         """
-        struct_members : struct_members declaration_statement
+        struct_members : struct_members struct_member
                        |
         """
         if len(p) == 3:
@@ -396,8 +396,12 @@ class NssParser:
                   | TALENT_TYPE
                   | VECTOR_TYPE
                   | ACTION_TYPE
+                  | STRUCT IDENTIFIER
         """
-        p[0] = p[1]
+        if len(p) == 3:
+            p[0] = DynamicDataType(p[1], p[2].label)
+        else:
+            p[0] = DynamicDataType(p[1])
 
     # region Switch Statement
     def p_switch_statement(self, p):
