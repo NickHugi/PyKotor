@@ -94,11 +94,14 @@ class DataType(Enum):
     ITEMPROPERTY = "itemproperty"
     TALENT = "talent"
     ACTION = "action"
+    STRUCT = "struct"
 
     def size(self) -> int:
         if self == DataType.VOID:
             return 0
         elif self == DataType.VECTOR:
             return 12
+        elif self == DataType.STRUCT:
+            raise ValueError  # TODO
         else:
             return 4

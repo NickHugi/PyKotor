@@ -1482,6 +1482,26 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
 
+    def test_struct(self):
+        ncs = self.compile("""
+            struct ABC
+            {
+                int a;
+            };
+        
+            void main()
+            {
+            
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.set_mock("VectorMagnitude", lambda vec: vec.magnitude())
+        interpreter.run()
+
+        #self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
+
     # region User-defined Functions
     def test_prototype_no_args(self):
         ncs = self.compile("""

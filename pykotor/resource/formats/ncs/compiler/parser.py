@@ -17,7 +17,8 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
-    DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression
+    DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
+    StructMember
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -51,6 +52,7 @@ class NssParser:
     def p_code_root(self, p):
         """
         code_root : code_root function_definition
+                  | code_root struct_definition
                   | code_root include_script
                   | code_root function_forward_declaration
                   | code_root global_variable_declaration
@@ -58,6 +60,7 @@ class NssParser:
                   | include_script
                   | function_forward_declaration
                   | global_variable_declaration
+                  | struct_definition
                   |
         """
         if len(p) == 3:
@@ -68,6 +71,29 @@ class NssParser:
             block = CodeRoot()
             p[0] = block
             block.objects.append(p[1])
+
+    def p_struct_definition(self, p):
+        """
+        struct_definition : STRUCT IDENTIFIER '{' struct_members '}' ';'
+        """
+        p[0] = StructDefinition(p[2], p[4])
+
+    def p_struct_members(self, p):
+        """
+        struct_members : struct_members declaration_statement
+                       |
+        """
+        if len(p) == 3:
+            p[1].append(p[2])
+            p[0] = p[1]
+        else:
+            p[0] = []
+
+    def p_struct_member(self, p):
+        """
+        struct_member : data_type IDENTIFIER ';'
+        """
+        p[0] = StructMember(p[1], p[2])
 
     def p_include_script(self, p):
         """

@@ -28,7 +28,8 @@ class NssLexer:
         "NOT", "BITWISE_AND", "BITWISE_OR", "BITWISE_LEFT",
         "BITWISE_RIGHT", "BITWISE_XOR", "BITWISE_NOT", "COMMENT", "MULTILINE_COMMENT",
         "INCLUDE", "RETURN", "ADDITION_ASSIGNMENT_OPERATOR", "SUBTRACTION_ASSIGNMENT_OPERATOR",
-        "MULTIPLICATION_ASSIGNMENT_OPERATOR", "DIVISION_ASSIGNMENT_OPERATOR", "CONTINUE_CONTROL"
+        "MULTIPLICATION_ASSIGNMENT_OPERATOR", "DIVISION_ASSIGNMENT_OPERATOR", "CONTINUE_CONTROL",
+        "STRUCT"
     ]
 
     literals = [
@@ -104,6 +105,10 @@ class NssLexer:
         t.value = ControlKeyword.RETURN
         return t
     # endregion
+
+    def t_STRUCT(self, t):
+        r'struct'
+        return t
 
     # region Type Tokens
     def t_INT_TYPE(self, t):

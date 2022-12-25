@@ -134,12 +134,39 @@ class GetScopedResult(NamedTuple):
     offset: int
 
 
+class Struct:
+    def __init__(self, identifier: Identifier, members: List[StructMember]):
+        self.identifier: Identifier = identifier
+        self.members: List[StructMember] = members
+
+    def size(self) -> int:
+        # TODO: One-time calculation in __init__
+        size = 0
+        for member in self.members:
+            size += member.size()
+        return size
+
+
+class StructMember:
+    def __init__(self, datatype: DataType, identifier: Identifier, struct: Struct):
+        self.datatype: DataType = datatype
+        self._struct: Struct = struct
+        self.identifier: Identifier = identifier
+
+    def size(self):
+        if self._struct is not None:
+            return self._struct.size()
+        else:
+            return self.datatype.size()
+
+
 class CodeRoot:
     def __init__(self):
         self.objects: List[TopLevelObject] = []
 
         self.function_map: Dict[str, FunctionReference] = {}
         self._global_scope: List[ScopedValue] = []
+        self.struct_map: Dict[str, Struct] = {}
 
     def compile(self, ncs: NCS):
         # nwnnsscomp processes the includes and global variable declarations before functions regardless if they are
@@ -394,6 +421,17 @@ class IncludeScript(TopLevelObject):
         ncs.merge(imported)
         # TODO: throw error of function redefined
         root.function_map.update(t.function_map)'''
+
+
+class StructDefinition(TopLevelObject):
+    def __init__(self, identifier: Identifier, members: List[StructMember]):
+        self.identifier: Identifier = identifier
+        self.members: List[StructMember] = members
+
+    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+        if len(self.members) == 0:
+            raise CompileException("Struct cannot be empty.")
+        root.struct_map[self.identifier.label] = Struct(self.identifier, self.members)
 
 
 class Expression(ABC):
@@ -1081,34 +1119,3 @@ class DefaultSwitchLabel:
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, jump_to: NCSInstruction, expression_type: DataType):
         ncs.add(NCSInstructionType.JMP, jump=jump_to)
 # endregion
-
-
-class Struct:
-    def __init__(self, members: List[Member]):
-        self.members: List[Member] = members
-
-    def initialize(self, ncs: NCS) -> None:
-        for member in self.members:
-            if member.datatype == DataType:
-                ...
-
-    def size(self) -> int:
-        size = 0
-        for member in self.members:
-            size += member.datatype.size()
-        return size
-
-
-class Member:
-    def __init__(self, identifier: Identifier, datatype: DataType):
-        self.identifier: Identifier = identifier
-        self.datatype: DataType = datatype
-
-
-class Vector(Struct):
-    def __init__(self):
-        super().__init__([
-            Member(Identifier("x"), DataType.FLOAT),
-            Member(Identifier("y"), DataType.FLOAT),
-            Member(Identifier("z"), DataType.FLOAT),
-        ])
