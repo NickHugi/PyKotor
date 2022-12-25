@@ -799,7 +799,7 @@ class ExpressionStatement(Statement):
         self.expression.compile(ncs, root, block)
 
 
-class DeclarationStatement(Statement):
+class InitializationStatement(Statement):
     def __init__(self, identifier: Identifier, data_type: DataType, value: Expression):
         super().__init__()
         self.identifier: Identifier = identifier
@@ -811,6 +811,39 @@ class DeclarationStatement(Statement):
         expression_type = self.expression.compile(ncs, root, block)
         if expression_type != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
+        block.add_scoped(self.identifier, self.data_type)
+
+
+class DeclarationStatement(Statement):
+    def __init__(self, identifier: Identifier, data_type: DataType):
+        super().__init__()
+        self.identifier: Identifier = identifier
+        self.data_type: DataType = data_type
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+
+        if self.data_type == DataType.INT:
+            ncs.add(NCSInstructionType.RSADDI)
+        elif self.data_type == DataType.FLOAT:
+            ncs.add(NCSInstructionType.RSADDF)
+        elif self.data_type == DataType.STRING:
+            ncs.add(NCSInstructionType.RSADDS)
+        elif self.data_type == DataType.OBJECT:
+            ncs.add(NCSInstructionType.RSADDO)
+        elif self.data_type == DataType.EVENT:
+            ncs.add(NCSInstructionType.RSADDEVT)
+        elif self.data_type == DataType.LOCATION:
+            ncs.add(NCSInstructionType.RSADDLOC)
+        elif self.data_type == DataType.TALENT:
+            ncs.add(NCSInstructionType.RSADDTAL)
+        elif self.data_type == DataType.EFFECT:
+            ncs.add(NCSInstructionType.RSADDEFF)
+        elif self.data_type == DataType.VOID:
+            raise CompileException("Cannot declare a variable of void type.")
+        else:
+            raise CompileException("Tried to compile a variable of unknown type.")
+
         block.add_scoped(self.identifier, self.data_type)
 
 

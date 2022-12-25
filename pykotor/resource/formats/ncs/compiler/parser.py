@@ -9,7 +9,7 @@ from pykotor.common.script import ScriptFunction, ScriptConstant
 from pykotor.common.scriptlib import KOTOR_LIBRARY
 
 from pykotor.resource.formats.ncs import NCS
-from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, DeclarationStatement, \
+from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, InitializationStatement, \
     CodeBlock, \
     Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalBlock, \
     FunctionDefinition, FunctionDefinitionParam, CodeRoot, UnaryOperatorExpression, BitwiseNotExpression, \
@@ -148,6 +148,7 @@ class NssParser:
     def p_statement(self, p):
         """
         statement : ';'
+                  | initialization_statement
                   | declaration_statement
                   | condition_statement
                   | return_statement
@@ -179,13 +180,19 @@ class NssParser:
         """
         p[0] = ContinueStatement()
 
+    def p_initialization_statement(self, p):
+        """
+        initialization_statement : data_type IDENTIFIER '=' expression ';'
+        """
+        p[0] = InitializationStatement(p[2], p[1], p[4])
+
     def p_declaration_statement(self, p):
         """
-        declaration_statement : data_type IDENTIFIER '=' expression ';'
+        declaration_statement : data_type IDENTIFIER ';'
         """
-        p[0] = DeclarationStatement(p[2], p[1], p[4])
+        p[0] = DeclarationStatement(p[2], p[1])
 
-    def p_assignment(self, p):
+    def p_normal_assignment(self, p):
         """
         assignment : IDENTIFIER '=' expression
         """

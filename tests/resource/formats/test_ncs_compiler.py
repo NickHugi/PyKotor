@@ -1423,6 +1423,48 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(2, len(interpreter.action_snapshots))
         self.assertEqual(55, interpreter.action_snapshots[1].arg_values[1])
 
+    def test_declaration_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a;
+                PrintInteger(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_declaration_float(self):
+        ncs = self.compile("""
+            void main()
+            {
+                float a;
+                PrintFloat(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0.0, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_declaration_string(self):
+        ncs = self.compile("""
+            void main()
+            {
+                string a;
+                PrintString(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual("", interpreter.action_snapshots[-1].arg_values[0])
+
     def test_vector(self):
         ncs = self.compile("""
             void main()
