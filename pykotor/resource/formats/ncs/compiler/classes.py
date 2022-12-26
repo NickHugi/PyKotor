@@ -519,31 +519,10 @@ class FieldAccessExpression(Expression):
         self.field_access: FieldAccess = field_access
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
-        first = self.field_access.identifiers[0]
-        scoped = block.get_scoped(first, root)
-
-        offset = scoped.offset
-        datatype = scoped.datatype
+        scoped = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if scoped.isglobal else NCSInstructionType.CPTOPSP
-
-        if scoped.datatype.builtin == DataType.VECTOR:
-            second = self.field_access.identifiers[1]
-            datatype = DynamicDataType.FLOAT
-            if second.label == "x":
-                offset += 0
-            elif second.label == "y":
-                offset += 4
-            elif second.label == "z":
-                offset += 8
-            else:
-                raise CompileException(f"Trying to access invalid member '{second}' of vector type.")
-        elif scoped.datatype.builtin == DataType.STRUCT:
-            raise CompileException
-        else:
-            raise CompileException
-
-        ncs.instructions.append(NCSInstruction(instruction_type, [offset, datatype.size(root)]))
-        return datatype
+        ncs.instructions.append(NCSInstruction(instruction_type, [scoped.offset, scoped.datatype.size(root)]))
+        return scoped.datatype
 
 
 class StringExpression(Expression):
