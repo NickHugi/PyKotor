@@ -464,6 +464,12 @@ class Statement(ABC):
         ...
 
 
+class FieldAccess:
+    def __init__(self, identifiers: List[Identifier]):
+        super().__init__()
+        self.identifiers: List[Identifier] = identifiers
+
+
 # region Expressions: Simple
 class IdentifierExpression(Expression):
     def __init__(self, value: Identifier):
@@ -474,6 +480,39 @@ class IdentifierExpression(Expression):
         isglobal, datatype, stack_index = block.get_scoped(self.identifier, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, datatype.size(root)]))
+        return datatype
+
+
+class FieldAccessExpression(Expression):
+    def __init__(self, field_access: FieldAccess):
+        super().__init__()
+        self.field_access: FieldAccess = field_access
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        first = self.field_access.identifiers[0]
+        scoped = block.get_scoped(first, root)
+
+        offset = scoped.offset
+        datatype = scoped.datatype
+        instruction_type = NCSInstructionType.CPTOPBP if scoped.isglobal else NCSInstructionType.CPTOPSP
+
+        if scoped.datatype.builtin == DataType.VECTOR:
+            second = self.field_access.identifiers[1]
+            datatype = DynamicDataType.FLOAT
+            if second.label == "x":
+                offset += 0
+            elif second.label == "y":
+                offset += 4
+            elif second.label == "z":
+                offset += 8
+            else:
+                raise CompileException(f"Trying to access invalid member '{second}' of vector type.")
+        elif scoped.datatype.builtin == DataType.STRUCT:
+            raise CompileException
+        else:
+            raise CompileException
+
+        ncs.instructions.append(NCSInstruction(instruction_type, [offset, datatype.size(root)]))
         return datatype
 
 

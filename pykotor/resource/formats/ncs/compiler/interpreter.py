@@ -224,9 +224,9 @@ class Interpreter:
                     self._stack.add(DataType.FLOAT, 0.0)
                     self._stack.add(DataType.FLOAT, 0.0)
                 else:
-                    self._stack.add(DataType.FLOAT, value[2])
-                    self._stack.add(DataType.FLOAT, value[1])
                     self._stack.add(DataType.FLOAT, value[0])
+                    self._stack.add(DataType.FLOAT, value[1])
+                    self._stack.add(DataType.FLOAT, value[2])
             else:
                 self._stack.add(function.returntype, value)
 

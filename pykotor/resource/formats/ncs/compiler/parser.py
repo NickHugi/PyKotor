@@ -18,7 +18,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
-    StructMember, DynamicDataType
+    StructMember, DynamicDataType, FieldAccess, FieldAccessExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -353,6 +353,12 @@ class NssParser:
         else:
             p[0] = p[1]
 
+    def p_field_access_expression(self, p):
+        """
+        expression : field_access
+        """
+        p[0] = FieldAccessExpression(p[1])
+
     def p_function_call(self, p):
         """
         function_call : IDENTIFIER '(' function_call_params ')'
@@ -403,6 +409,20 @@ class NssParser:
         else:
             p[0] = DynamicDataType(p[1])
 
+    def p_field_access(self, p):
+        """
+        field_access : IDENTIFIER
+                     | IDENTIFIER '.' IDENTIFIER
+                     | field_access '.' IDENTIFIER
+        """
+        if len(p) == 1:
+            p[0] = FieldAccess([p[1]])
+        elif isinstance(p[1], Identifier):
+            p[0] = FieldAccess([p[1], p[3]])
+        else:
+            p[0] = p[1]
+            p[0].identifiers.append(p[3])
+
     # region Switch Statement
     def p_switch_statement(self, p):
         """
@@ -449,7 +469,6 @@ class NssParser:
         switch_label : DEFAULT_CONTROL ':'
         """
         p[0] = DefaultSwitchLabel()
-    # endregion
 
     def p_block_statements(self, p):
         """
@@ -461,3 +480,4 @@ class NssParser:
             p[0] = p[1]
         else:
             p[0] = []
+    # endregion
