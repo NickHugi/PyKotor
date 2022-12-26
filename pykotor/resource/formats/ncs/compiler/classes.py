@@ -207,7 +207,7 @@ class CodeRoot:
 
     def compile(self, ncs: NCS):
         # nwnnsscomp processes the includes and global variable declarations before functions regardless if they are
-        # placed before or after function defintions. We will replicate this behaviour.
+        # placed before or after function definitions. We will replicate this behaviour.
 
         included = []
         while [obj for obj in self.objects if isinstance(obj, IncludeScript)]:
