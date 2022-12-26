@@ -569,6 +569,16 @@ class IntExpression(Expression):
         return DynamicDataType.INT
 
 
+class ObjectExpression(Expression):
+    def __init__(self, value: int):
+        super().__init__()
+        self.value: int = value
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTO, [self.value]))
+        return DynamicDataType.OBJECT
+
+
 class FloatExpression(Expression):
     def __init__(self, value: float):
         super().__init__()

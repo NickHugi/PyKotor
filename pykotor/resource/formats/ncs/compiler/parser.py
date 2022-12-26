@@ -345,6 +345,8 @@ class NssParser:
                    | INT_VALUE
                    | FLOAT_VALUE
                    | STRING_VALUE
+                   | OBJECTSELF_VALUE
+                   | OBJECTINVALID_VALUE
                    | IDENTIFIER
                    | assignment
         """

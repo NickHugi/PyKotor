@@ -3,7 +3,8 @@ import operator
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import IntExpression, ControlKeyword, StringExpression, \
-    FloatExpression, Identifier, Operator, BinaryOperatorMapping, UnaryOperatorMapping, OperatorMapping
+    FloatExpression, Identifier, Operator, BinaryOperatorMapping, UnaryOperatorMapping, OperatorMapping, \
+    ObjectExpression
 
 from abc import ABC
 from enum import Enum
@@ -48,6 +49,16 @@ class NssLexer:
 
     def t_INCLUDE(self, t):
         '\#include'
+        return t
+
+    def t_OBJECTSELF_VALUE(self, t):
+        r'OBJECT_SELF'
+        t.value = ObjectExpression(0)
+        return t
+
+    def t_OBJECTINVALID_VALUE(self, t):
+        r'OBJECT_INVALID'
+        t.value = ObjectExpression(1)
         return t
 
     # region Control Tokens
@@ -202,16 +213,6 @@ class NssLexer:
     def t_FALSE_VALUE(self, t):
         r'FALSE'
         t.value = IntExpression(0)
-        return t
-
-    def t_OBJECTSELF_VALUE(self, t):
-        r'OBJECT_SELF'
-        t.value = IntExpression(0)
-        return t
-
-    def t_OBJECTINVALID_VALUE(self, t):
-        r'OBJECT_INVALID'
-        t.value = IntExpression(-1)
         return t
     # endregion
 
