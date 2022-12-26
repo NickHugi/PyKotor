@@ -220,31 +220,31 @@ class NssParser:
 
     def p_normal_assignment(self, p):
         """
-        assignment : IDENTIFIER '=' expression
+        assignment : field_access '=' expression
         """
         p[0] = Assignment(p[1], p[3])
 
     def p_addition_assignment(self, p):
         """
-        assignment : IDENTIFIER ADDITION_ASSIGNMENT_OPERATOR expression
+        assignment : field_access ADDITION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = AdditionAssignment(p[1], p[3])
 
     def p_subtraction_assignment(self, p):
         """
-        assignment : IDENTIFIER SUBTRACTION_ASSIGNMENT_OPERATOR expression
+        assignment : field_access SUBTRACTION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = SubtractionAssignment(p[1], p[3])
 
     def p_multiplication_assignment(self, p):
         """
-        assignment : IDENTIFIER MULTIPLICATION_ASSIGNMENT_OPERATOR expression
+        assignment : field_access MULTIPLICATION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = MultiplicationAssignment(p[1], p[3])
 
     def p_division_assignment(self, p):
         """
-        assignment : IDENTIFIER DIVISION_ASSIGNMENT_OPERATOR expression
+        assignment : field_access DIVISION_ASSIGNMENT_OPERATOR expression
         """
         p[0] = DivisionAssignment(p[1], p[3])
 
@@ -415,7 +415,7 @@ class NssParser:
                      | IDENTIFIER '.' IDENTIFIER
                      | field_access '.' IDENTIFIER
         """
-        if len(p) == 1:
+        if len(p) == 2:
             p[0] = FieldAccess([p[1]])
         elif isinstance(p[1], Identifier):
             p[0] = FieldAccess([p[1], p[3]])

@@ -469,6 +469,36 @@ class FieldAccess:
         super().__init__()
         self.identifiers: List[Identifier] = identifiers
 
+    def get_scoped(self, block: CodeBlock, root: CodeRoot) -> GetScopedResult:
+        if len(self.identifiers) == 0:
+            raise CompileException
+
+        first = self.identifiers[0]
+        scoped = block.get_scoped(first, root)
+
+        isglobal = scoped.isglobal
+        offset = scoped.offset
+        datatype = scoped.datatype
+
+        for next in self.identifiers[1:]:
+            # Check previous datatype to see what members are accessible
+            if datatype.builtin == DataType.VECTOR:
+                datatype = DynamicDataType.FLOAT
+                if next.label == "x":
+                    offset += 0
+                elif next.label == "y":
+                    offset += 4
+                elif next.label == "z":
+                    offset += 8
+                else:
+                    raise CompileException(f"Attempting to access unknown member '{next}' on datatype '{datatype}'.")
+            elif datatype.builtin == DataType.STRUCT:
+                raise CompileException  # TODO
+            else:
+                raise CompileException(f"Attempting to access unknown member '{next}' on datatype '{datatype}'.")
+
+        return GetScopedResult(isglobal, datatype, offset)
+
 
 # region Expressions: Simple
 class IdentifierExpression(Expression):
@@ -688,20 +718,20 @@ class BitwiseNotExpression(Expression):
 
 # region Expressions: Assignment
 class Assignment(Expression):
-    def __init__(self, identifier: Identifier, value: Expression):
+    def __init__(self, field_access: FieldAccess, value: Expression):
         super().__init__()
-        self.identifier: Identifier = identifier
+        self.field_access: FieldAccess = field_access
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         variable_type = self.expression.compile(ncs, root, block)
 
-        isglobal, expression_type, stack_index = block.get_scoped(self.identifier, root)
+        isglobal, expression_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
         stack_index -= variable_type.size(root)
 
         if variable_type != expression_type:
-            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+            raise CompileException(f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}.")
 
         # Copy the value that the expression has already been placed on the stack to where the identifiers position is
         ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, expression_type.size(root)]))
@@ -712,14 +742,14 @@ class Assignment(Expression):
 
 
 class AdditionAssignment(Expression):
-    def __init__(self, identifier: Identifier, value: Expression):
+    def __init__(self, field_access: FieldAccess, value: Expression):
         super().__init__()
-        self.identifier: Identifier = identifier
+        self.field_access: FieldAccess = field_access
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Copy the variable to the top of the stack
-        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
 
@@ -739,7 +769,7 @@ class AdditionAssignment(Expression):
         elif variable_type == DynamicDataType.STRING and expresion_type == DynamicDataType.STRING:
             arthimetic_instruction = NCSInstructionType.ADDSS
         else:
-            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+            raise CompileException(f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}.")
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
@@ -753,14 +783,14 @@ class AdditionAssignment(Expression):
 
 
 class SubtractionAssignment(Expression):
-    def __init__(self, identifier: Identifier, value: Expression):
+    def __init__(self, field_access: FieldAccess, value: Expression):
         super().__init__()
-        self.identifier: Identifier = identifier
+        self.field_access: FieldAccess = field_access
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Copy the variable to the top of the stack
-        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
 
@@ -778,7 +808,7 @@ class SubtractionAssignment(Expression):
         elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.INT:
             arthimetic_instruction = NCSInstructionType.SUBFI
         else:
-            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+            raise CompileException(f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}.")
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
@@ -792,14 +822,14 @@ class SubtractionAssignment(Expression):
 
 
 class MultiplicationAssignment(Expression):
-    def __init__(self, identifier: Identifier, value: Expression):
+    def __init__(self, field_access: FieldAccess, value: Expression):
         super().__init__()
-        self.identifier: Identifier = identifier
+        self.field_access: FieldAccess = field_access
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Copy the variable to the top of the stack
-        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
 
@@ -817,7 +847,7 @@ class MultiplicationAssignment(Expression):
         elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.INT:
             arthimetic_instruction = NCSInstructionType.MULFI
         else:
-            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+            raise CompileException(f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}.")
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
@@ -831,14 +861,14 @@ class MultiplicationAssignment(Expression):
 
 
 class DivisionAssignment(Expression):
-    def __init__(self, identifier: Identifier, value: Expression):
+    def __init__(self, field_access: FieldAccess, value: Expression):
         super().__init__()
-        self.identifier: Identifier = identifier
+        self.field_access: FieldAccess = field_access
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Copy the variable to the top of the stack
-        isglobal, variable_type, stack_index = block.get_scoped(self.identifier, root)
+        isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
 
@@ -856,7 +886,7 @@ class DivisionAssignment(Expression):
         elif variable_type == DynamicDataType.FLOAT and expresion_type == DynamicDataType.INT:
             arthimetic_instruction = NCSInstructionType.DIVFI
         else:
-            raise CompileException(f"Wrong type was assigned to symbol {self.identifier}.")
+            raise CompileException(f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}.")
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)

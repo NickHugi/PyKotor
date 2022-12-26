@@ -1501,6 +1501,28 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(4.0, interpreter.action_snapshots[-2].arg_values[0])
         self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
 
+    def test_vector_set_components(self):
+        ncs = self.compile("""
+            void main()
+            {
+                vector vec = Vector(0.0, 0.0, 0.0);
+                vec.x = 2.0;
+                vec.y = 4.0;
+                vec.z = 6.0;
+                PrintFloat(vec.x);
+                PrintFloat(vec.y);
+                PrintFloat(vec.z);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.set_mock("Vector", lambda x, y, z: Vector3(x, y, z))
+        interpreter.run()
+
+        self.assertEqual(2.0, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(4.0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
+
     def test_struct(self):
         ncs = self.compile("""
             struct ABC
