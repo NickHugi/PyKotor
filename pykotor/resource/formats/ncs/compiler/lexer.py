@@ -61,6 +61,16 @@ class NssLexer:
         t.value = ObjectExpression(1)
         return t
 
+    def t_TRUE_VALUE(self, t):
+        r'TRUE'
+        t.value = IntExpression(1)
+        return t
+
+    def t_FALSE_VALUE(self, t):
+        r'FALSE'
+        t.value = IntExpression(0)
+        return t
+
     # region Control Tokens
     def t_BREAK_CONTROL(self, t):
         r'break'
@@ -203,16 +213,6 @@ class NssLexer:
     def t_INT_VALUE(self, t):
         r'[0-9]+'
         t.value = IntExpression(int(t.value))
-        return t
-
-    def t_TRUE_VALUE(self, t):
-        r'TRUE'
-        t.value = IntExpression(1)
-        return t
-
-    def t_FALSE_VALUE(self, t):
-        r'FALSE'
-        t.value = IntExpression(0)
         return t
     # endregion
 
