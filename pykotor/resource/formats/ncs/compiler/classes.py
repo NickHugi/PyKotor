@@ -150,6 +150,29 @@ class Struct:
             size += member.size(root)
         return size
 
+    def child_offset(self, root: CodeRoot, identifier: Identifier) -> int:
+        """
+        Returns the relative offset to the specified member inside the struct.
+        """
+        size = 0
+        for member in self.members:
+            if member.identifier == identifier:
+                break
+            size += member.size(root)
+        else:
+            raise CompileException  # TODO
+        return size
+
+    def child_type(self, root: CodeRoot, identifier: Identifier) -> DynamicDataType:
+        """
+        Returns the child data type of the specified member inside the struct.
+        """
+        for member in self.members:
+            if member.identifier == identifier:
+                return member.datatype
+        else:
+            raise CompileException
+
 
 class StructMember:
     def __init__(self, datatype: DynamicDataType, identifier: Identifier):
@@ -493,7 +516,8 @@ class FieldAccess:
                 else:
                     raise CompileException(f"Attempting to access unknown member '{next}' on datatype '{datatype}'.")
             elif datatype.builtin == DataType.STRUCT:
-                raise CompileException  # TODO
+                offset += root.struct_map[datatype._struct].child_offset(root, next)
+                datatype = root.struct_map[datatype._struct].child_type(root, next)
             else:
                 raise CompileException(f"Attempting to access unknown member '{next}' on datatype '{datatype}'.")
 
@@ -584,7 +608,7 @@ class EngineCallExpression(Expression):
 
         this_stack = 0
         for i, arg in enumerate(reversed(self._args)):
-            param_type = self._function.params[-i - 1].datatype
+            param_type = DynamicDataType(self._function.params[-i - 1].datatype)
             if param_type == DataType.ACTION:
                 after_command = NCSInstruction()
                 ncs.add(NCSInstructionType.STORE_STATE, args=[root.scope_size(), block.full_scope_size(root)])

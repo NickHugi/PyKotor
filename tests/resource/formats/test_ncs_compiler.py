@@ -1523,7 +1523,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(4.0, interpreter.action_snapshots[-2].arg_values[0])
         self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
 
-    def test_struct(self):
+    def test_struct_get_members(self):
         ncs = self.compile("""
             struct ABC
             {
@@ -1536,13 +1536,45 @@ class TestNSSCompiler(TestCase):
             {
                 struct ABC abc;
                 PrintInteger(abc.value1);
+                PrintString(abc.value2);
+                PrintFloat(abc.value3);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        ncs.print()
+        self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual("", interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(0.0, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_struct_set_members(self):
+        ncs = self.compile("""
+            struct ABC
+            {
+                int value1;
+                string value2;
+                float value3;
+            };
+        
+            void main()
+            {
+                struct ABC abc;
+                abc.value1 = 123;
+                abc.value2 = "abc";
+                abc.value3 = 3.14;
+                PrintInteger(abc.value1);
+                PrintString(abc.value2);
+                PrintFloat(abc.value3);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(123, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual("abc", interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(3.14, interpreter.action_snapshots[-1].arg_values[0])
 
     # region User-defined Functions
     def test_prototype_no_args(self):
