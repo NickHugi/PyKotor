@@ -9,7 +9,7 @@ class ScriptConstant:
             name: str,
             value: str
     ):
-        self.datatype: str = datatype
+        self.datatype: DataType = DataType(datatype)
         self.name: str = name
         self.value: str = value
 

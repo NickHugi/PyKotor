@@ -604,6 +604,38 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(10, interpreter.action_snapshots[0].arg_values[0])
 
+    def test_assignment_string_constant(self):
+        ncs = self.compile("""
+            void main()
+            {
+                string a = "A";
+                
+                PrintString(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual("A", interpreter.action_snapshots[0].arg_values[0])
+
+    def test_assignment_string_enginecall(self):
+        ncs = self.compile("""
+            void main()
+            {
+                string a = GetGlobalString("A");
+                
+                PrintString(a);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.set_mock("GetGlobalString", lambda identifier: identifier)
+        interpreter.run()
+
+        self.assertEqual("A", interpreter.action_snapshots[-1].arg_values[0])
+
     def test_addition_assignment_int_int(self):
         ncs = self.compile("""
             void main()
@@ -1598,7 +1630,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(56, interpreter.action_snapshots[0].arg_values[0])
 
-    def test_prototype_with_args(self):
+    def test_prototype_with_arg(self):
         ncs = self.compile("""
             void test(int value);
 
@@ -1618,6 +1650,78 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(57, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_prototype_with_default_arg(self):
+        ncs = self.compile("""
+            void test(int value = 57);
+
+            void main()
+            {
+                test();
+            }
+
+            void test(int value = 57)
+            {
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(57, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_prototype_missing_arg(self):
+        source = """
+            void test(int value);
+
+            void main()
+            {
+                test();
+            }
+
+            void test(int value)
+            {
+                PrintInteger(value);
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, source)
+
+    def test_prototype_missing_arg_and_default(self):
+        source = """
+            void test(int value1, int value2 = 123);
+
+            void main()
+            {
+                test();
+            }
+
+            void test(int value1, int value2 = 123)
+            {
+                PrintInteger(value1);
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, source)
+
+    def test_prototype_default_before_required(self):
+        source = """
+            void test(int value1 = 123, int value2);
+
+            void main()
+            {
+                test(123, 123);
+            }
+
+            void test(int value1 = 123, int value2)
+            {
+                PrintInteger(value1);
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, source)
 
     def test_redefine_function(self):
         script = """
@@ -1656,6 +1760,17 @@ class TestNSSCompiler(TestCase):
             void test(int a);
             
             void test()
+            {
+                
+            }
+        """
+        self.assertRaises(CompileException, self.compile, script)
+
+    def test_prototype_and_definition_default_param_mismatch(self):
+        script = """
+            void test(int a = 1);
+            
+            void test(int a = 2)
             {
                 
             }

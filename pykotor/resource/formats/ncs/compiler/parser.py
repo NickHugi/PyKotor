@@ -51,26 +51,24 @@ class NssParser:
 
     def p_code_root(self, p):
         """
-        code_root : code_root function_definition
-                  | code_root struct_definition
-                  | code_root include_script
-                  | code_root function_forward_declaration
-                  | code_root global_variable_declaration
-                  | function_definition
-                  | include_script
-                  | function_forward_declaration
-                  | global_variable_declaration
-                  | struct_definition
+        code_root : code_root code_root_object
                   |
         """
         if len(p) == 3:
-            block: CodeRoot = p[1]
-            p[0] = block
-            block.objects.append(p[2])
-        elif len(p) == 2:
-            block = CodeRoot()
-            p[0] = block
-            block.objects.append(p[1])
+            p[1].objects.append(p[2])
+            p[0] = p[1]
+        else:
+            p[0] = CodeRoot(constants=self.constants)
+
+    def p_code_root_object(self, p):
+        """
+        code_root_object : function_definition
+                         | include_script
+                         | function_forward_declaration
+                         | global_variable_declaration
+                         | struct_definition
+        """
+        p[0] = p[1]
 
     def p_struct_definition(self, p):
         """
@@ -121,20 +119,29 @@ class NssParser:
 
     def p_function_definition_params(self, p):
         """
-        function_definition_params : function_definition_params ',' data_type IDENTIFIER
-                                   | data_type IDENTIFIER
+        function_definition_params : function_definition_params ',' function_definition_param
+                                   | function_definition_param
                                    |
         """
-        if len(p) == 5:
-            params: List[FunctionDefinitionParam] = p[1]
-            params.append(FunctionDefinitionParam(p[3], p[4]))
-            p[0] = params
-        elif len(p) == 3:
-            params = []
-            params.append(FunctionDefinitionParam(p[1], p[2]))
-            p[0] = params
+        if len(p) == 4:
+            p[1].append(p[3])
+            p[0] = p[1]
+        elif len(p) == 2:
+            p[0] = [p[1]]
         elif len(p) == 1:
-            p[0] =[]
+            p[0] = []
+
+    def p_function_definition_param(self, p):
+        """
+        function_definition_param : data_type IDENTIFIER
+        """
+        p[0] = FunctionDefinitionParam(p[1], p[2])
+
+    def p_function_definition_param_with_default(self, p):
+        """
+        function_definition_param : data_type IDENTIFIER '=' constant_expression
+        """
+        p[0] = FunctionDefinitionParam(p[1], p[2], p[4])
 
     def p_code_block(self, p):
         """
@@ -342,15 +349,24 @@ class NssParser:
     def p_expression(self, p):
         """
         expression : function_call
-                   | INT_VALUE
-                   | FLOAT_VALUE
-                   | STRING_VALUE
-                   | OBJECTSELF_VALUE
-                   | OBJECTINVALID_VALUE
-                   | TRUE_VALUE
-                   | FALSE_VALUE
                    | IDENTIFIER
                    | assignment
+                   | constant_expression
+        """
+        if isinstance(p[1], Identifier):
+            p[0] = IdentifierExpression(p[1])
+        else:
+            p[0] = p[1]
+
+    def p_constant_expression(self, p):
+        """
+        constant_expression : INT_VALUE
+                            | FLOAT_VALUE
+                            | STRING_VALUE
+                            | OBJECTSELF_VALUE
+                            | OBJECTINVALID_VALUE
+                            | TRUE_VALUE
+                            | FALSE_VALUE
         """
         if isinstance(p[1], Identifier):
             p[0] = IdentifierExpression(p[1])

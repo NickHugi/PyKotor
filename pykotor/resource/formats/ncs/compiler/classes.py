@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum
-from typing import List, Optional, Tuple, Dict, NamedTuple, Union
-from pykotor.common.script import DataType, ScriptFunction
+from typing import List, Optional, Tuple, Dict, NamedTuple, Union, Any
+from pykotor.common.script import DataType, ScriptFunction, ScriptConstant
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
@@ -198,10 +198,11 @@ class StructMember:
 
 
 class CodeRoot:
-    def __init__(self):
+    def __init__(self, constants: List[ScriptConstant]):
         self.objects: List[TopLevelObject] = []
 
         self.function_map: Dict[str, FunctionReference] = {}
+        self.constants: List[ScriptConstant] = constants
         self._global_scope: List[ScopedValue] = []
         self.struct_map: Dict[str, Struct] = {}
 
@@ -237,7 +238,11 @@ class CodeRoot:
         if name not in self.function_map:
             raise CompileException(f"Function '{name}' has not been defined.")
 
-        start_instruction, definition = self.function_map[name]
+        args = list(args)
+
+        func_map = self.function_map[name]
+        definition = func_map.definition
+        start_instruction = func_map.instruction
 
         if definition.return_type == DynamicDataType.INT:
             ncs.add(NCSInstructionType.RSADDI, args=[])
@@ -252,10 +257,23 @@ class CodeRoot:
         elif definition.return_type == DynamicDataType.VOID:
             ...
         else:
-            raise NotImplementedError("Trying to return unsuppoted type?")  # TODO
+            raise NotImplementedError("Trying to return unsupported type?")  # TODO
 
-        for arg in args:
-            arg.compile(ncs, self, block)
+        required_params = [param for param in definition.parameters if param.default is None]
+
+        # Make sure the minimal number of arguments were passed through
+        if len(required_params) > len(args):
+            raise CompileException(f"Required argument missing in call to '{name}'.")
+
+        # If some optional parameters were not specified, add the defaults to the arguments list
+        while len(definition.parameters) > len(args):
+            param_index = len(args)
+            args.append(definition.parameters[param_index].default)
+
+        for param, arg in zip(definition.parameters, args):
+            arg_datatype = arg.compile(ncs, self, block)
+            if param.data_type != arg_datatype:
+                raise CompileException
         ncs.add(NCSInstructionType.JSR, jump=start_instruction)
 
         return definition.return_type
@@ -368,7 +386,7 @@ class FunctionForwardDeclaration(TopLevelObject):
     def __init__(self, return_type: DynamicDataType, identifier: Identifier, parameters: List[FunctionDefinitionParam]):
         self.return_type: DynamicDataType = return_type
         self.identifier: Identifier = identifier
-        self.paramaters: List[FunctionDefinitionParam] = parameters
+        self.parameters: List[FunctionDefinitionParam] = parameters
 
     def compile(self, ncs: NCS, root: CodeRoot):
         function_name = self.identifier.label
@@ -392,6 +410,14 @@ class FunctionDefinition(TopLevelObject):
 
     def compile(self, ncs: NCS, root: CodeRoot):
         name = self.identifier.label
+
+        # Make sure all default parameters appear after the required parameters
+        previous_is_default = False
+        for param in self.parameters:
+            is_default = param.default is not None
+            if previous_is_default and not is_default:
+                raise CompileException("Function parameter without a default value can't follow one with a default value.")
+            previous_is_default = is_default
 
         if name in root.function_map and not root.function_map[name].is_prototype():
             raise CompileException(f"Function '{name}' has already been defined.")
@@ -420,19 +446,22 @@ class FunctionDefinition(TopLevelObject):
     def is_matching_signature(self, prototype: FunctionForwardDeclaration) -> bool:
         if self.return_type != prototype.return_type:
             return False
-        if len(self.parameters) != len(prototype.paramaters):
+        if len(self.parameters) != len(prototype.parameters):
             return False
         for i in range(len(self.parameters)):
-            if self.parameters[i].data_type != prototype.paramaters[i].data_type:
+            if self.parameters[i].data_type != prototype.parameters[i].data_type:
+                return False
+            if self.parameters[i].default != prototype.parameters[i].default:
                 return False
 
         return True
 
 
 class FunctionDefinitionParam:
-    def __init__(self, data_type: DynamicDataType, identifier: Identifier):
+    def __init__(self, data_type: DynamicDataType, identifier: Identifier, default: Optional[Expression] = None):
         self.data_type: DynamicDataType = data_type
         self.identifier: Identifier = identifier
+        self.default: Optional[Expression] = default
 
 
 class IncludeScript(TopLevelObject):
@@ -531,10 +560,20 @@ class IdentifierExpression(Expression):
         self.identifier: Identifier = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
-        isglobal, datatype, stack_index = block.get_scoped(self.identifier, root)
-        instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
-        ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, datatype.size(root)]))
-        return datatype
+        constant = next((constant for constant in root.constants if constant.name == self.identifier.label), None)
+        if constant is not None:
+            if constant.datatype == DataType.INT:
+                ncs.add(NCSInstructionType.CONSTI, args=[int(constant.value)])
+            elif constant.datatype == DataType.FLOAT:
+                ncs.add(NCSInstructionType.CONSTF, args=[float(constant.value)])
+            elif constant.datatype == DataType.STRING:
+                ncs.add(NCSInstructionType.CONSTS, args=[str(constant.value)])
+            return DynamicDataType(constant.datatype)
+        else:
+            isglobal, datatype, stack_index = block.get_scoped(self.identifier, root)
+            instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
+            ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, datatype.size(root)]))
+            return datatype
 
 
 class FieldAccessExpression(Expression):
@@ -554,6 +593,15 @@ class StringExpression(Expression):
         super().__init__()
         self.value: str = value
 
+    def __eq__(self, other):
+        if isinstance(other, StringExpression):
+            return self.value == other.value
+        else:
+            return NotImplemented
+
+    def data_type(self) -> DynamicDataType:
+        return DynamicDataType.STRING
+
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTS, [self.value]))
         return DynamicDataType.STRING
@@ -563,6 +611,15 @@ class IntExpression(Expression):
     def __init__(self, value: int):
         super().__init__()
         self.value: int = value
+
+    def __eq__(self, other):
+        if isinstance(other, IntExpression):
+            return self.value == other.value
+        else:
+            return NotImplemented
+
+    def data_type(self) -> DynamicDataType:
+        return DynamicDataType.INT
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTI, [self.value]))
@@ -574,6 +631,15 @@ class ObjectExpression(Expression):
         super().__init__()
         self.value: int = value
 
+    def __eq__(self, other):
+        if isinstance(other, ObjectExpression):
+            return self.value == other.value
+        else:
+            return NotImplemented
+
+    def data_type(self) -> DynamicDataType:
+        return DynamicDataType.OBJECT
+
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTO, [self.value]))
         return DynamicDataType.OBJECT
@@ -583,6 +649,15 @@ class FloatExpression(Expression):
     def __init__(self, value: float):
         super().__init__()
         self.value: float = value
+
+    def __eq__(self, other):
+        if isinstance(other, FloatExpression):
+            return self.value == other.value
+        else:
+            return NotImplemented
+
+    def data_type(self) -> DynamicDataType:
+        return DynamicDataType.FLOAT
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         ncs.instructions.append(NCSInstruction(NCSInstructionType.CONSTF, [self.value]))
@@ -610,7 +685,7 @@ class EngineCallExpression(Expression):
                     if param.datatype == DynamicDataType.INT:
                         self._args.append(IntExpression(int(param.default)))
                     elif param.datatype == DynamicDataType.FLOAT:
-                        self._args.append(FloatExpression(float(param.default)))
+                        self._args.append(FloatExpression(float(param.default.replace("f", ""))))
                     elif param.datatype == DynamicDataType.STRING:
                         self._args.append(StringExpression(param.default))
                     else:
@@ -635,7 +710,7 @@ class EngineCallExpression(Expression):
 
         ncs.instructions.append(NCSInstruction(NCSInstructionType.ACTION, [self._routine_id, len(self._args)]))
         block.tempstack -= this_stack
-        return self._function.returntype
+        return DynamicDataType(self._function.returntype)
 
 
 class FunctionCallExpression(Expression):
