@@ -392,7 +392,7 @@ class FunctionForwardDeclaration(TopLevelObject):
         function_name = self.identifier.label
 
         if self.identifier.label in root.function_map:
-            raise CompileException(f"Function '{function_name}' already has a protype or been defined.")
+            raise CompileException(f"Function '{function_name}' already has a prototype or been defined.")
 
         root.function_map[self.identifier.label] = FunctionReference(ncs.add(NCSInstructionType.NOP, args=[]), self)
 
@@ -430,7 +430,7 @@ class FunctionDefinition(TopLevelObject):
             temp = NCS()
             retn = NCSInstruction(NCSInstructionType.RETN)
             self.block.compile(temp, root, None, retn, None, None)
-            temp.add(NCSInstructionType.RETN, args=[])
+            temp.instructions.append(retn)
 
             stub_index = ncs.instructions.index(root.function_map[name].instruction)
             ncs.instructions[stub_index + 1:stub_index + 1] = temp.instructions

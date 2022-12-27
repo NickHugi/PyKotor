@@ -1876,4 +1876,26 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_call_int_with_no_args_and_forward_declared(self):
+        ncs = self.compile("""
+            int test();
+            
+            int test()
+            {
+                return 5;
+            }
+
+            void main()
+            {
+                int x = test();
+                PrintInteger(x);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
     # endregion

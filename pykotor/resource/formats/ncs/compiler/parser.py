@@ -368,10 +368,7 @@ class NssParser:
                             | TRUE_VALUE
                             | FALSE_VALUE
         """
-        if isinstance(p[1], Identifier):
-            p[0] = IdentifierExpression(p[1])
-        else:
-            p[0] = p[1]
+        p[0] = p[1]
 
     def p_field_access_expression(self, p):
         """
