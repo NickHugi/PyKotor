@@ -560,6 +560,7 @@ class IdentifierExpression(Expression):
         self.identifier: Identifier = value
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        # Scan for any constants that are stored as part of the compiler (from nwscript).
         constant = next((constant for constant in root.constants if constant.name == self.identifier.label), None)
         if constant is not None:
             if constant.datatype == DataType.INT:
@@ -572,7 +573,7 @@ class IdentifierExpression(Expression):
         else:
             isglobal, datatype, stack_index = block.get_scoped(self.identifier, root)
             instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
-            ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, datatype.size(root)]))
+            ncs.add(instruction_type, args=[stack_index, datatype.size(root)])
             return datatype
 
 
@@ -816,7 +817,7 @@ class Assignment(Expression):
 
         isglobal, expression_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
-        stack_index -= variable_type.size(root)
+        stack_index -= 0 if isglobal else variable_type.size(root)
 
         if variable_type != expression_type:
             raise CompileException(f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}.")
@@ -840,6 +841,7 @@ class AdditionAssignment(Expression):
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
+        block.tempstack += variable_type.size(root)
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
@@ -860,12 +862,17 @@ class AdditionAssignment(Expression):
             raise CompileException(f"Wrong type was assigned to symbol {self.field_access.identifiers[-1]}.")
 
         # Add the expression and our temp variable copy together
-        ncs.add(arthimetic_instruction)
+        ncs.add(arthimetic_instruction, args=[])
+
         # Copy the result to the original variable in the stack
-        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - expresion_type.size(root), variable_type.size(root)])
+        ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
+        offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
+        ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
+
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
 
+        block.tempstack -= variable_type.size(root)
         block.tempstack -= expresion_type.size(root)
         return expresion_type
 
@@ -881,6 +888,7 @@ class SubtractionAssignment(Expression):
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
+        block.tempstack += variable_type.size(root)
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
@@ -900,12 +908,17 @@ class SubtractionAssignment(Expression):
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
+
         # Copy the result to the original variable in the stack
-        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - expresion_type.size(root), variable_type.size(root)])
+        ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
+        offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
+        ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
+
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
 
         block.tempstack -= expresion_type.size(root)
+        block.tempstack -= variable_type.size(root)
         return expresion_type
 
 
@@ -920,6 +933,7 @@ class MultiplicationAssignment(Expression):
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
+        block.tempstack += variable_type.size(root)
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
@@ -939,12 +953,17 @@ class MultiplicationAssignment(Expression):
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
+
         # Copy the result to the original variable in the stack
-        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - expresion_type.size(root), variable_type.size(root)])
+        ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
+        offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
+        ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
+
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
 
         block.tempstack -= expresion_type.size(root)
+        block.tempstack -= variable_type.size(root)
         return expresion_type
 
 
@@ -959,6 +978,7 @@ class DivisionAssignment(Expression):
         isglobal, variable_type, stack_index = self.field_access.get_scoped(block, root)
         instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
         ncs.add(instruction_type, args=[stack_index, variable_type.size(root)])
+        block.tempstack += variable_type.size(root)
 
         # Add the result of the expression to the stack
         expresion_type = self.expression.compile(ncs, root, block)
@@ -978,12 +998,17 @@ class DivisionAssignment(Expression):
 
         # Add the expression and our temp variable copy together
         ncs.add(arthimetic_instruction)
+
         # Copy the result to the original variable in the stack
-        ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - expresion_type.size(root), variable_type.size(root)])
+        ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
+        offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
+        ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
+
         # Pop the temp variable
         ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
 
         block.tempstack -= expresion_type.size(root)
+        block.tempstack -= variable_type.size(root)
         return expresion_type
 # endregion
 

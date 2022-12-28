@@ -1416,15 +1416,21 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(13, interpreter.action_snapshots[0].arg_values[0])
 
-    def test_global_variable(self):
+    def test_global_int_addition_assignment(self):
         ncs = self.compile("""
-            int value1 = 1;
-            int value2 = 2;
+            int global1 = 1;
+            int global2 = 2;
 
             void main()
             {
-                object oPlayer = GetPCSpeaker();
-                GiveXPToCreature(oPlayer, value1);
+                int local1 = 3;
+                int local2 = 4;
+                
+                global1 += local1;
+                global2 = local2 + global1;
+            
+                PrintInteger(global1);
+                PrintInteger(global2);
             }
         """)
 
@@ -1432,7 +1438,83 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(2, len(interpreter.action_snapshots))
-        self.assertEqual(1, interpreter.action_snapshots[1].arg_values[1])
+        self.assertEqual(4, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(8, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_global_int_subtraction_assignment(self):
+        ncs = self.compile("""
+            int global1 = 1;
+            int global2 = 10;
+
+            void main()
+            {
+                int local1 = 100;
+                int local2 = 1000;
+                
+                global1 -= local1;              // 1 - 100 = -99
+                global2 = local2 - global1;     // 1000 - -99 = 1099
+            
+                PrintInteger(global1);
+                PrintInteger(global2);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(-99, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(1099, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_global_int_multiplication_assignment(self):
+        ncs = self.compile("""
+            int global1 = 1;
+            int global2 = 10;
+
+            void main()
+            {
+                int local1 = 100;
+                int local2 = 1000;
+                
+                global1 *= local1;              // 1 * 100 = 100
+                global2 = local2 * global1;     // 1000 * 100 = 100000
+            
+                PrintInteger(global1);
+                PrintInteger(global2);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(100, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(100000, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_global_int_division_assignment(self):
+        ncs = self.compile("""
+            int global1 = 1000;
+            int global2 = 100;
+
+            void main()
+            {
+                int local1 = 10;
+                int local2 = 1;
+                
+                global1 /= local1;              // 1000 / 10 = 100
+                global2 = global1 / local2;     // 100 / 1 = 100
+            
+                PrintInteger(global1);
+                PrintInteger(global2);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, len(interpreter.action_snapshots))
+        self.assertEqual(100, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(100, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_imported_global_variable(self):
         otherscript = """
