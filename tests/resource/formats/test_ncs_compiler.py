@@ -1608,6 +1608,154 @@ class TestNSSCompiler(TestCase):
         self.assertEqual("abc", interpreter.action_snapshots[-2].arg_values[0])
         self.assertEqual(3.14, interpreter.action_snapshots[-1].arg_values[0])
 
+    def test_prefix_increment_sp_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                int b = ++a;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_prefix_increment_bp_int(self):
+        ncs = self.compile("""
+            int a = 1;
+        
+            void main()
+            {
+                int b = ++a;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_postfix_increment_sp_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                int b = a++;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_postfix_increment_bp_int(self):
+        ncs = self.compile("""
+            int a = 1;
+                
+            void main()
+            {
+                int b = a++;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_prefix_decrement_sp_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                int b = --a;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_prefix_decrement_bp_int(self):
+        ncs = self.compile("""
+            int a = 1;
+            
+            void main()
+            {
+                int b = --a;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_postfix_decrement_sp_int(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                int b = a--;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_postfix_decrement_bp_int(self):
+        ncs = self.compile("""
+            int a = 1;
+                        
+            void main()
+            {
+                int b = a--;
+                
+                PrintInteger(a);
+                PrintInteger(b);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+
     # region User-defined Functions
     def test_prototype_no_args(self):
         ncs = self.compile("""

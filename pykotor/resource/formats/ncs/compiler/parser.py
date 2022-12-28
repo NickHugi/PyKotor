@@ -18,7 +18,8 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
-    StructMember, DynamicDataType, FieldAccess, FieldAccessExpression
+    StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
+    PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -439,6 +440,31 @@ class NssParser:
         else:
             p[0] = p[1]
             p[0].identifiers.append(p[3])
+
+    def p_prefix_increment_expression(self, p):
+        """
+        expression : INCREMENT expression
+        """
+        p[0] = PrefixIncrementExpression(p[2])
+
+    def p_postfix_increment_expression(self, p):
+        """
+        expression : expression INCREMENT
+        """
+        p[0] = PostfixIncrementExpression(p[1])
+
+    def p_prefix_decrement_expression(self, p):
+        """
+        expression : DECREMENT expression
+        """
+        p[0] = PrefixDecrementExpression(p[2])
+
+    def p_postfix_decrement_expression(self, p):
+        """
+        expression : expression DECREMENT
+        """
+        p[0] = PostfixDecrementExpression(p[1])
+
 
     # region Switch Statement
     def p_switch_statement(self, p):

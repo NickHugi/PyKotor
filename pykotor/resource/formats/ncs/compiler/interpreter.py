@@ -128,6 +128,18 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.SHRIGHTII]:
                 self._stack.bitwise_rightshift_op()
 
+            elif self._cursor.ins_type in [NCSInstructionType.INCIBP]:
+                self._stack.increment_bp(self._cursor.args[0])
+
+            elif self._cursor.ins_type in [NCSInstructionType.DECIBP]:
+                self._stack.decrement_bp(self._cursor.args[0])
+
+            elif self._cursor.ins_type in [NCSInstructionType.INCISP]:
+                self._stack.increment(self._cursor.args[0])
+
+            elif self._cursor.ins_type in [NCSInstructionType.DECISP]:
+                self._stack.decrement(self._cursor.args[0])
+
             elif self._cursor.ins_type in [NCSInstructionType.RSADDI]:
                 self._stack.add(DataType.INT, 0)
 
@@ -299,7 +311,7 @@ class Stack:
         self._stack.append(StackObject(data_type, value))
 
     def _stack_index(self, offset: int) -> int:
-        if offset > 0:
+        if offset >= 0:
             raise ValueError
         offset = abs(offset)
         index = 0
@@ -308,6 +320,16 @@ class Stack:
             offset -= element_size
             index -= 1
         return index
+
+    def _stack_index_bp(self, offset) -> int:
+        if offset >= 0:
+            raise ValueError
+        bp_index = self._bp // 4
+        relative_index = abs(offset) // 4
+        absolute_index = bp_index - relative_index
+        if absolute_index < 0:
+            raise ValueError
+        return bp_index - relative_index
 
     def stack_pointer(self) -> int:
         return len(self._stack) * 4
@@ -341,12 +363,12 @@ class Stack:
     def copy_down_bp(self, offset: int, size: int) -> None:
         # Copy from the top of the stack down to the bp adjusted w/ offset?
         top_value = self._stack[-1]
-        to_index = self._stack_index(self._bp + offset)
+        to_index = self._stack_index_bp(offset)
         self._stack[to_index] = top_value
 
     def copy_top_bp(self, offset: int, size: int) -> None:
         # Copy value relative to base pointer to the top of the stack
-        copy_index = self._stack_index(self._bp + offset)
+        copy_index = self._stack_index_bp(offset)
         top_value = self._stack[copy_index]
         self._stack.append(top_value)
 
@@ -356,6 +378,26 @@ class Stack:
 
     def restore_bp(self) -> None:
         self._bp = self._bp_buffer.pop()
+
+    def increment(self, offset: int):
+        index = self._stack_index(offset)
+        self._stack[index] = copy(self._stack[index])
+        self._stack[index].value += 1
+
+    def decrement(self, offset: int):
+        index = self._stack_index(offset)
+        self._stack[index] = copy(self._stack[index])
+        self._stack[index].value -= 1
+
+    def increment_bp(self, offset: int):
+        index = self._stack_index_bp(offset)
+        self._stack[index] = copy(self._stack[index])
+        self._stack[index].value += 1
+
+    def decrement_bp(self, offset: int):
+        index = self._stack_index_bp(offset)
+        self._stack[index] = copy(self._stack[index])
+        self._stack[index].value -= 1
 
     def addition_op(self):
         value1 = self._stack.pop()

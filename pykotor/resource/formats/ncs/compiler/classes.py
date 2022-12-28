@@ -1220,6 +1220,102 @@ class ContinueStatement(Statement):
         ncs.add(NCSInstructionType.JMP, jump=continue_instruction)
 
 
+class PrefixIncrementExpression(Expression):
+    def __init__(self, expression: Expression):
+        self.expression: Expression = expression
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        if isinstance(self.expression, IdentifierExpression):
+            variable_type = self.expression.compile(ncs, root, block)
+
+            if variable_type != DynamicDataType.INT:
+                raise CompileException("perator (++) not valid for specified types")
+
+            isglobal, variable_type, stack_index = block.get_scoped(self.expression.identifier, root)  # TODO FieldAccess
+            ncs.add(NCSInstructionType.INCISP, args=[-4])
+
+            if isglobal:
+                ncs.add(NCSInstructionType.CPDOWNBP, args=[stack_index, variable_type.size(root)])
+            else:
+                ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - variable_type.size(root), variable_type.size(root)])
+
+            return variable_type
+        else:
+            raise CompileException("Operator (++) not valid for specified types")
+
+
+class PostfixIncrementExpression(Expression):
+    def __init__(self, expression: Expression):
+        self.expression: Expression = expression
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        if isinstance(self.expression, IdentifierExpression):
+            variable_type = self.expression.compile(ncs, root, block)
+            block.tempstack += 4
+
+            if variable_type != DynamicDataType.INT:
+                raise CompileException("Operator (++) not valid for specified types")
+
+            isglobal, variable_type, stack_index = block.get_scoped(self.expression.identifier, root)  # TODO FieldAccess
+            if isglobal:
+                ncs.add(NCSInstructionType.INCIBP, args=[stack_index])
+            else:
+                ncs.add(NCSInstructionType.INCISP, args=[stack_index])
+
+            block.tempstack -= 4
+            return variable_type
+        else:
+            raise CompileException("Operator (++) not valid for specified types")
+
+
+class PrefixDecrementExpression(Expression):
+    def __init__(self, expression: Expression):
+        self.expression: Expression = expression
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        if isinstance(self.expression, IdentifierExpression):
+            variable_type = self.expression.compile(ncs, root, block)
+
+            if variable_type != DynamicDataType.INT:
+                raise CompileException("perator (++) not valid for specified types")
+
+            isglobal, variable_type, stack_index = block.get_scoped(self.expression.identifier, root)  # TODO FieldAccess
+            ncs.add(NCSInstructionType.DECISP, args=[-4])
+
+            if isglobal:
+                ncs.add(NCSInstructionType.CPDOWNBP, args=[stack_index, variable_type.size(root)])
+            else:
+                ncs.add(NCSInstructionType.CPDOWNSP, args=[stack_index - variable_type.size(root), variable_type.size(root)])
+
+            return variable_type
+        else:
+            raise CompileException("Operator (++) not valid for specified types")
+
+
+class PostfixDecrementExpression(Expression):
+    def __init__(self, expression: Expression):
+        self.expression: Expression = expression
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        if isinstance(self.expression, IdentifierExpression):
+            variable_type = self.expression.compile(ncs, root, block)
+            block.tempstack += 4
+
+            if variable_type != DynamicDataType.INT:
+                raise CompileException("Operator (++) not valid for specified types")
+
+            isglobal, variable_type, stack_index = block.get_scoped(self.expression.identifier, root)  # TODO FieldAccess
+            if isglobal:
+                ncs.add(NCSInstructionType.DECIBP, args=[stack_index])
+            else:
+                ncs.add(NCSInstructionType.DECISP, args=[stack_index])
+
+            block.tempstack -= 4
+            return variable_type
+        else:
+            raise CompileException("Operator (++) not valid for specified types")
+
+
 # region Switch
 class SwitchStatement(Statement):
     def __init__(self, expression: Expression, blocks: List[SwitchBlock]):
