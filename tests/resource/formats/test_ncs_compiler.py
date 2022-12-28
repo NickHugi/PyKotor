@@ -1596,6 +1596,24 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(6.0, interpreter.action_snapshots[-1].arg_values[0])
 
+    def test_vector_notation(self):
+        ncs = self.compile("""
+            void main()
+            {
+                vector vec = [1.0, 2.0, 3.0];
+                PrintFloat(vec.x);
+                PrintFloat(vec.y);
+                PrintFloat(vec.z);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1.0, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(2.0, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(3.0, interpreter.action_snapshots[-1].arg_values[0])
+
     def test_vector_get_components(self):
         ncs = self.compile("""
             void main()

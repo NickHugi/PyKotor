@@ -19,7 +19,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
     StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
-    PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression
+    PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -465,6 +465,11 @@ class NssParser:
         """
         p[0] = PostfixDecrementExpression(p[1])
 
+    def p_vector_expression(self, p):
+        """
+        expression : '[' FLOAT_VALUE ',' FLOAT_VALUE ',' FLOAT_VALUE ']'
+        """
+        p[0] = VectorExpression(p[2], p[4], p[6])
 
     # region Switch Statement
     def p_switch_statement(self, p):

@@ -671,6 +671,29 @@ class FloatExpression(Expression):
         return DynamicDataType.FLOAT
 
 
+class VectorExpression(Expression):
+    def __init__(self, x: FloatExpression, y: FloatExpression, z: FloatExpression):
+        super().__init__()
+        self.x: FloatExpression = x
+        self.y: FloatExpression = y
+        self.z: FloatExpression = z
+
+    def __eq__(self, other):
+        if isinstance(other, VectorExpression):
+            return self.x == other.x and self.y == other.y and self.z == other.z
+        else:
+            return NotImplemented
+
+    def data_type(self) -> DynamicDataType:
+        return DynamicDataType.FLOAT
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
+        self.x.compile(ncs, root, block)
+        self.y.compile(ncs, root, block)
+        self.z.compile(ncs, root, block)
+        return DynamicDataType.VECTOR
+
+
 class EngineCallExpression(Expression):
     def __init__(self, function: ScriptFunction, routine_id: int, data_type: DynamicDataType, args: List[Expression]):
         super().__init__()
