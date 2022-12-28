@@ -443,25 +443,25 @@ class NssParser:
 
     def p_prefix_increment_expression(self, p):
         """
-        expression : INCREMENT expression
+        expression : INCREMENT field_access
         """
         p[0] = PrefixIncrementExpression(p[2])
 
     def p_postfix_increment_expression(self, p):
         """
-        expression : expression INCREMENT
+        expression : field_access INCREMENT
         """
         p[0] = PostfixIncrementExpression(p[1])
 
     def p_prefix_decrement_expression(self, p):
         """
-        expression : DECREMENT expression
+        expression : DECREMENT field_access
         """
         p[0] = PrefixDecrementExpression(p[2])
 
     def p_postfix_decrement_expression(self, p):
         """
-        expression : expression DECREMENT
+        expression : field_access DECREMENT
         """
         p[0] = PostfixDecrementExpression(p[1])
 
