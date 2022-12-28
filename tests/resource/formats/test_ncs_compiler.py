@@ -686,9 +686,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintFloat", snap.function_name)
-        self.assertEqual(3.0, snap.arg_values[0])
+        self.assertEqual(3.0, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_addition_assignment_float_int(self):
         ncs = self.compile("""
@@ -1305,6 +1303,7 @@ class TestNSSCompiler(TestCase):
                     int inner = 33;
                     break;
                 }
+                
                 PrintInteger(i);
             }
         """)
@@ -1313,7 +1312,7 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(0, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
     # endregion
 
     def test_comment(self):
@@ -1855,6 +1854,26 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(0, interpreter.action_snapshots[-2].arg_values[0])
         self.assertEqual(1, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_assignmentless_expression(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 123;
+                
+                1;
+                GetCheatCode(1);
+                "abc";
+                
+                PrintInteger(a);
+            }
+        """)
+        ncs.print()
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(123, interpreter.action_snapshots[-1].arg_values[0])
 
     # region User-defined Functions
     def test_prototype_no_args(self):

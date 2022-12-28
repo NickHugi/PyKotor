@@ -864,8 +864,6 @@ class Assignment(Expression):
 
         # Copy the value that the expression has already been placed on the stack to where the identifiers position is
         ncs.instructions.append(NCSInstruction(instruction_type, [stack_index, expression_type.size(root)]))
-        # Remove the temporary value from the stack that the expression created
-        ncs.instructions.append(NCSInstruction(NCSInstructionType.MOVSP, [-expression_type.size(root)]))
 
         return variable_type
 
@@ -909,9 +907,6 @@ class AdditionAssignment(Expression):
         offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
 
-        # Pop the temp variable
-        ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
-
         block.tempstack -= variable_type.size(root)
         block.tempstack -= expresion_type.size(root)
         return expresion_type
@@ -953,9 +948,6 @@ class SubtractionAssignment(Expression):
         ins_cpdown = NCSInstructionType.CPDOWNBP if isglobal else NCSInstructionType.CPDOWNSP
         offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
-
-        # Pop the temp variable
-        ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
 
         block.tempstack -= expresion_type.size(root)
         block.tempstack -= variable_type.size(root)
@@ -999,9 +991,6 @@ class MultiplicationAssignment(Expression):
         offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
 
-        # Pop the temp variable
-        ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
-
         block.tempstack -= expresion_type.size(root)
         block.tempstack -= variable_type.size(root)
         return expresion_type
@@ -1044,9 +1033,6 @@ class DivisionAssignment(Expression):
         offset_cpdown = stack_index if isglobal else stack_index - expresion_type.size(root)
         ncs.add(ins_cpdown, args=[offset_cpdown, variable_type.size(root)])
 
-        # Pop the temp variable
-        ncs.add(NCSInstructionType.MOVSP, args=[-variable_type.size(root)])
-
         block.tempstack -= expresion_type.size(root)
         block.tempstack -= variable_type.size(root)
         return expresion_type
@@ -1070,7 +1056,8 @@ class ExpressionStatement(Statement):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
-        self.expression.compile(ncs, root, block)
+        expression_type = self.expression.compile(ncs, root, block)
+        ncs.add(NCSInstructionType.MOVSP, args=[-expression_type.size(root)])
 
 
 class InitializationStatement(Statement):
@@ -1240,7 +1227,8 @@ class ForLoopBlock(Statement):
         # Tell break/continue statements to stop here when getting scope size
         block.mark_break_scope()
 
-        self.initial.compile(ncs, root, block)
+        initial_type = self.initial.compile(ncs, root, block)
+        ncs.add(NCSInstructionType.MOVSP, args=[-initial_type.size(root)])
 
         loopstart = ncs.add(NCSInstructionType.NOP, args=[])
         updatestart = NCSInstruction(NCSInstructionType.NOP, args=[])
@@ -1254,7 +1242,9 @@ class ForLoopBlock(Statement):
         self.block.compile(ncs, root, block, return_instruction, loopend, updatestart)
 
         ncs.instructions.append(updatestart)
-        self.iteration.compile(ncs, root, block)
+        iteration_type = self.iteration.compile(ncs, root, block)
+        ncs.add(NCSInstructionType.MOVSP, args=[-iteration_type.size(root)])
+
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
         ncs.instructions.append(loopend)
 # endregion
@@ -1270,7 +1260,6 @@ class BreakStatement(Statement):
             raise CompileException("Nothing to break out of.")
         ncs.add(NCSInstructionType.MOVSP, args=[-block.break_scope_size(root)])
         ncs.add(NCSInstructionType.JMP, jump=break_instruction)
-        ncs.add(NCSInstructionType.NOP, args=["YEA REMEMBER TO DELETE THIS MY DUDE"])
 
 
 class ContinueStatement(Statement):

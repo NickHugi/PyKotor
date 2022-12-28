@@ -192,15 +192,18 @@ class NssParser:
                   | switch_statement
                   | break_statement
                   | continue_statement
-                  | expression ';'
         """
-        if isinstance(p[1], Expression):
-            p[0] = ExpressionStatement(p[1])
-        elif p[1] == ";":
+        if p[1] == ";":
             p[0] = EmptyStatement()
         else:
             p[0] = p[1]
         #p[0].linenum = p.lineno(1)
+
+    def p_expression_statement(self, p):
+        """
+        statement : expression ';'
+        """
+        p[0] = ExpressionStatement(p[1])
 
     def p_break_statement(self, p):
         """
