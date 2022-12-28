@@ -114,6 +114,18 @@ class TestNSSCompiler(TestCase):
                 DelayCommand(1.0, GiveXPToCreature(oFirstPlayer, 9001));
             }
         """)
+
+    def test_enginecall_GetFirstObjectInShape_defaults(self):
+        # Tests defaults for (int, int, vector)
+        ncs = self.compile("""
+            void main()
+            {
+                int nShape = SHAPE_CUBE;
+                float fSize = 0.0;
+                location lTarget;
+                GetFirstObjectInShape(nShape, fSize, lTarget);
+            }
+        """)
     # endregion
 
     # region Operators
