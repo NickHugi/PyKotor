@@ -734,6 +734,8 @@ class EngineCallExpression(Expression):
                             y = FloatExpression(param.default.y)
                             z = FloatExpression(param.default.z)
                             self._args.append(VectorExpression(x, y, z))
+                        elif param.datatype == DynamicDataType.OBJECT:
+                            self._args.append(ObjectExpression(param.default))
                         else:
                             raise CompileException(f"Unexpected compilation error at '{self._function.name}' call.")
 

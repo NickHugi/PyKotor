@@ -126,6 +126,16 @@ class TestNSSCompiler(TestCase):
                 GetFirstObjectInShape(nShape, fSize, lTarget);
             }
         """)
+
+    def test_enginecall_GetFactionEqual(self):
+        # Tests defaults for (object)
+        ncs = self.compile("""
+            void main()
+            {
+                object oFirst;
+                GetFactionEqual(oFirst);
+            }
+        """)
     # endregion
 
     # region Operators
