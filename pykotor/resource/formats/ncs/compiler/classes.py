@@ -33,7 +33,7 @@ class TopLevelObject(ABC):
         ...
 
 
-class GlobalVariableDeclaration(TopLevelObject):
+class GlobalVariableInitialization(TopLevelObject):
     def __init__(self, identifier: Identifier, data_type: DynamicDataType, value: Expression):
         super().__init__()
         self.identifier: Identifier = identifier
@@ -44,6 +44,43 @@ class GlobalVariableDeclaration(TopLevelObject):
         expression_type = self.expression.compile(ncs, root, None)
         if expression_type != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
+        root.add_scoped(self.identifier, self.data_type)
+
+
+class GlobalVariableDeclaration(TopLevelObject):
+    def __init__(self, identifier: Identifier, data_type: DynamicDataType):
+        super().__init__()
+        self.identifier: Identifier = identifier
+        self.data_type: DynamicDataType = data_type
+
+    def compile(self, ncs: NCS, root: CodeRoot) -> None:
+        if self.data_type.builtin == DataType.INT:
+            ncs.add(NCSInstructionType.RSADDI)
+        elif self.data_type.builtin == DataType.FLOAT:
+            ncs.add(NCSInstructionType.RSADDF)
+        elif self.data_type.builtin == DataType.STRING:
+            ncs.add(NCSInstructionType.RSADDS)
+        elif self.data_type.builtin == DataType.OBJECT:
+            ncs.add(NCSInstructionType.RSADDO)
+        elif self.data_type.builtin == DataType.EVENT:
+            ncs.add(NCSInstructionType.RSADDEVT)
+        elif self.data_type.builtin == DataType.LOCATION:
+            ncs.add(NCSInstructionType.RSADDLOC)
+        elif self.data_type.builtin == DataType.TALENT:
+            ncs.add(NCSInstructionType.RSADDTAL)
+        elif self.data_type.builtin == DataType.EFFECT:
+            ncs.add(NCSInstructionType.RSADDEFF)
+        elif self.data_type.builtin == DataType.VECTOR:
+            ncs.add(NCSInstructionType.RSADDF)
+            ncs.add(NCSInstructionType.RSADDF)
+            ncs.add(NCSInstructionType.RSADDF)
+        elif self.data_type.builtin == DataType.STRUCT:
+            root.struct_map[self.data_type._struct].initialize(ncs, root)
+        elif self.data_type.builtin == DataType.VOID:
+            raise CompileException("Cannot declare a variable of void type.")
+        else:
+            raise CompileException("Tried to compile a variable of unknown type.")
+
         root.add_scoped(self.identifier, self.data_type)
 
 
@@ -218,7 +255,7 @@ class CodeRoot:
             included.append(include)
             include.compile(ncs, self)
 
-        globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration)]
+        globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration) or isinstance(obj, GlobalVariableInitialization)]
         others = [obj for obj in self.objects if obj not in included and obj not in globals]
 
         if len(globals) > 0:

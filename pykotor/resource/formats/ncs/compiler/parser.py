@@ -19,7 +19,8 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
     StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
-    PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression
+    PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression, \
+    GlobalVariableInitialization
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -67,6 +68,7 @@ class NssParser:
                          | include_script
                          | function_forward_declaration
                          | global_variable_declaration
+                         | global_variable_initialization
                          | struct_definition
         """
         p[0] = p[1]
@@ -100,11 +102,17 @@ class NssParser:
         """
         p[0] = IncludeScript(p[2], library=self.library)
 
+    def p_global_variable_initialization(self, p):
+        """
+        global_variable_initialization : data_type IDENTIFIER '=' expression ';'
+        """
+        p[0] = GlobalVariableInitialization(p[2], p[1], p[4])
+
     def p_global_variable_declaration(self, p):
         """
-        global_variable_declaration : data_type IDENTIFIER '=' expression ';'
+        global_variable_declaration : data_type IDENTIFIER ';'
         """
-        p[0] = GlobalVariableDeclaration(p[2], p[1], p[4])
+        p[0] = GlobalVariableDeclaration(p[2], p[1])
 
     def p_function_forward_declaration(self, p):
         """

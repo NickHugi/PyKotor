@@ -2,7 +2,7 @@ from typing import Dict
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.ncs import NCS
+from pykotor.resource.formats.ncs import NCS, NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter, ActionSnapshot
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
@@ -1337,7 +1337,7 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
     # endregion
 
-    def test_declarations(self):
+    def test_local_declarations(self):
         ncs = self.compile("""
             void main()
             {
@@ -1354,6 +1354,46 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
+
+    def test_global_declarations(self):
+        ncs = self.compile("""
+            int INT;
+            float FLOAT;
+            string STRING;
+            location LOCATION;
+            effect EFFECT;
+            talent TALENT;
+            event EVENT;
+            vector VECTOR;
+        
+            void main()
+            {
+                
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertTrue(any((inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)))
+
+    def test_global_initializations(self):
+        ncs = self.compile("""
+            int INT = 0;
+            float FLOAT = 0.0;
+            string STRING = "";
+            vector VECTOR = [0.0, 0.0, 0.0];
+        
+            void main()
+            {
+                
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertTrue(any((inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)))
 
     def test_comment(self):
         ncs = self.compile("""
@@ -2206,3 +2246,4 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
     # endregion
+
