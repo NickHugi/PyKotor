@@ -1315,6 +1315,24 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
     # endregion
 
+    def test_declarations(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int INT;
+                float FLOAT;
+                string STRING;
+                location LOCATION;
+                effect EFFECT;
+                talent TALENT;
+                event EVENT;
+                vector VECTOR;
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
     def test_comment(self):
         ncs = self.compile("""
             void main()

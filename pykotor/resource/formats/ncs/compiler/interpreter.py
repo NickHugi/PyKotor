@@ -150,7 +150,19 @@ class Interpreter:
                 self._stack.add(DataType.STRING, "")
 
             elif self._cursor.ins_type in [NCSInstructionType.RSADDO]:
-                self._stack.add(DataType.STRING, None)
+                self._stack.add(DataType.OBJECT, 1)
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDEFF]:
+                self._stack.add(DataType.EFFECT, 0)
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDTAL]:
+                self._stack.add(DataType.TALENT, 0)
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDLOC]:
+                self._stack.add(DataType.LOCATION, 0)
+
+            elif self._cursor.ins_type in [NCSInstructionType.RSADDEVT]:
+                self._stack.add(DataType.EVENT, 0)
 
             elif self._cursor.ins_type in [NCSInstructionType.SAVEBP]:
                 self._stack.save_bp()

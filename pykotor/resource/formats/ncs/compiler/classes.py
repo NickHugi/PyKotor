@@ -1100,6 +1100,10 @@ class DeclarationStatement(Statement):
             ncs.add(NCSInstructionType.RSADDTAL)
         elif self.data_type.builtin == DataType.EFFECT:
             ncs.add(NCSInstructionType.RSADDEFF)
+        elif self.data_type.builtin == DataType.VECTOR:
+            ncs.add(NCSInstructionType.RSADDF)
+            ncs.add(NCSInstructionType.RSADDF)
+            ncs.add(NCSInstructionType.RSADDF)
         elif self.data_type.builtin == DataType.STRUCT:
             root.struct_map[self.data_type._struct].initialize(ncs, root)
         elif self.data_type.builtin == DataType.VOID:
