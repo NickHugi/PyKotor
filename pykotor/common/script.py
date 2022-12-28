@@ -35,9 +35,9 @@ class ScriptConstant:
 class ScriptParam:
     def __init__(
             self,
-            datatype: str,
+            datatype: DataType,
             name: str,
-            default: Optional[str]
+            default: Optional[Any]
     ):
         self.datatype: DataType = DataType(datatype)
         self.name: str = name
@@ -60,7 +60,7 @@ class ScriptParam:
 class ScriptFunction:
     def __init__(
             self,
-            returntype: str,
+            returntype: DataType,
             name: str,
             params: List[ScriptParam],
             description: str,
