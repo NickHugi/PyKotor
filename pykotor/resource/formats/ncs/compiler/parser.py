@@ -47,7 +47,7 @@ class NssParser:
         ('left', 'ADD', 'MINUS', 'BITWISE_NOT'),
         ('left', 'MULTIPLY', 'DIVIDE', 'MOD'),
         ('left', 'BITWISE_NOT', 'NOT'),
-        #('left', 'INCREMENT', 'DECREMENT'),
+        ('left', 'INCREMENT', 'DECREMENT'),
     )
 
     def p_code_root(self, p):
