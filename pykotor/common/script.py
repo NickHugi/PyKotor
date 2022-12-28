@@ -1,17 +1,25 @@
+from __future__ import annotations
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Any
 
 
 class ScriptConstant:
     def __init__(
             self,
-            datatype: str,
+            datatype: DataType,
             name: str,
-            value: str
+            value: Any
     ):
         self.datatype: DataType = DataType(datatype)
         self.name: str = name
-        self.value: str = value
+        self.value: Any = value
+
+        if self.datatype == DataType.INT and not isinstance(value, int):
+            raise ValueError("Script constant value argument does not match given datatype.")
+        elif self.datatype == DataType.FLOAT and not isinstance(value, float):
+            raise ValueError("Script constant value argument does not match given datatype.")
+        elif self.datatype == DataType.STRING and not isinstance(value, str):
+            raise ValueError("Script constant value argument does not match given datatype.")
 
     def __repr__(
             self
