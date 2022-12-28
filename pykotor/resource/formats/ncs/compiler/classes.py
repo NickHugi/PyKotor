@@ -689,14 +689,25 @@ class EngineCallExpression(Expression):
                 if param.default is None:
                     raise CompileException(f"Not enough arguments passed to '{self._function.name}'.")
                 else:
-                    if param.datatype == DynamicDataType.INT:
-                        self._args.append(IntExpression(int(param.default)))
-                    elif param.datatype == DynamicDataType.FLOAT:
-                        self._args.append(FloatExpression(float(param.default.replace("f", ""))))
-                    elif param.datatype == DynamicDataType.STRING:
-                        self._args.append(StringExpression(param.default))
+                    constant = next((constant for constant in root.constants if constant.name == param.default), None)
+                    if constant is not None:
+                        if constant.datatype == DataType.INT:
+                            self._args.append(IntExpression(int(constant.value)))
+                        elif constant.datatype == DataType.FLOAT:
+                            self._args.append(FloatExpression(float(constant.value)))
+                        elif constant.datatype == DataType.STRING:
+                            self._args.append(StringExpression(str(constant.value)))
+                        elif constant.datatype == DataType.OBJECT:
+                            self._args.append(ObjectExpression(int(constant.value)))
                     else:
-                        raise CompileException(f"Unexpected compilation error at '{self._function.name}' call.")
+                        if param.datatype == DynamicDataType.INT:
+                            self._args.append(IntExpression(int(param.default)))
+                        elif param.datatype == DynamicDataType.FLOAT:
+                            self._args.append(FloatExpression(float(param.default.replace("f", ""))))
+                        elif param.datatype == DynamicDataType.STRING:
+                            self._args.append(StringExpression(param.default))
+                        else:
+                            raise CompileException(f"Unexpected compilation error at '{self._function.name}' call.")
 
         this_stack = 0
         for i, arg in enumerate(reversed(self._args)):
