@@ -32,7 +32,7 @@ class NssLexer:
         "BITWISE_RIGHT", "BITWISE_XOR", "BITWISE_NOT", "COMMENT", "MULTILINE_COMMENT",
         "INCLUDE", "RETURN", "ADDITION_ASSIGNMENT_OPERATOR", "SUBTRACTION_ASSIGNMENT_OPERATOR",
         "MULTIPLICATION_ASSIGNMENT_OPERATOR", "DIVISION_ASSIGNMENT_OPERATOR", "CONTINUE_CONTROL",
-        "STRUCT", "INCREMENT", "DECREMENT", "NEWLINE"
+        "STRUCT", "INCREMENT", "DECREMENT", "NEWLINE", "NOP"
     ]
 
     literals = [
@@ -45,6 +45,10 @@ class NssLexer:
         r'\n+'
         t.lexer.lineno += len(t.value)
         pass
+
+    def t_NOP(self, t):
+        r'nop'
+        return t
 
     def t_COMMENT(self, t):
         r'//[^\n]*\n'

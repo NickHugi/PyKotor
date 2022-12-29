@@ -20,7 +20,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
     StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
     PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression, \
-    GlobalVariableInitialization, VariableDeclarator, VariableInitializer
+    GlobalVariableInitialization, VariableDeclarator, VariableInitializer, NopStatement
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -212,6 +212,12 @@ class NssParser:
         else:
             p[0] = p[1]
         #p[0].linenum = p.lineno(1)
+
+    def p_nop_statement(self, p):
+        """
+        statement : NOP STRING_VALUE ';'
+        """
+        p[0] = NopStatement(p[2].value)
 
     def p_expression_statement(self, p):
         """

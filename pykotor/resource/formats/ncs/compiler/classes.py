@@ -1111,6 +1111,17 @@ class EmptyStatement(Statement):
         return DynamicDataType.VOID
 
 
+class NopStatement(Statement):
+    def __init__(self, string: str):
+        super().__init__()
+        self.string = string
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+        ncs.add(NCSInstructionType.NOP, args=[self.string])
+        return DynamicDataType.VOID
+
+
 class ExpressionStatement(Statement):
     def __init__(self, expression: Expression):
         super().__init__()
