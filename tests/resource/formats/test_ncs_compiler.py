@@ -1426,7 +1426,7 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                int value1, value2 = 111, value3;
+                int value1, value2 = 1, value3 = 2;
                 
                 PrintInteger(value1);
                 PrintInteger(value2);
@@ -1438,8 +1438,8 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(0, interpreter.action_snapshots[-3].arg_values[0])
-        self.assertEqual(111, interpreter.action_snapshots[-2].arg_values[0])
-        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
+        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_local_declarations(self):
         ncs = self.compile("""
@@ -2102,6 +2102,58 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(57, interpreter.action_snapshots[0].arg_values[0])
 
+    def test_prototype_with_three_args(self):
+        ncs = self.compile("""
+            void test(int a, int b, int c)
+            {
+                PrintInteger(a);
+                PrintInteger(b);
+                PrintInteger(c);
+            }
+
+            void main()
+            {
+                int a = 1, b = 2, c = 3;
+                test(a, b, c);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        ncs.print()
+
+        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(3, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_prototype_with_many_args(self):
+        ncs = self.compile("""
+            void test(int a, effect z, int b, int c, int d = 4)
+            {
+                PrintInteger(a);
+                PrintInteger(b);
+                PrintInteger(c);
+                PrintInteger(d);
+            }
+
+            void main()
+            {
+                int a = 1, b = 2, c = 3;
+                effect z;
+                
+                test(a, z, b, c);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        ncs.print()
+
+        self.assertEqual(1, interpreter.action_snapshots[-4].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(3, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(4, interpreter.action_snapshots[-1].arg_values[0])
+
     def test_prototype_with_default_arg(self):
         ncs = self.compile("""
             void test(int value = 57);
@@ -2372,3 +2424,29 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
     # endregion
+
+    def test_switch_scope_a(self):
+        ncs = self.compile("""
+            int shape;
+            
+            void main()
+            {
+                object oTarget = OBJECT_SELF;
+                effect e1, e2;
+                effect e3;
+                
+                shape = SHAPE_SPHERE;
+            
+                switch (1)
+                {
+                    case 1:
+                        GetHasSpellEffect(FORCE_POWER_SPEED_BURST, oTarget);
+                    break;
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual([8, 0], interpreter.action_snapshots[0].arg_values)

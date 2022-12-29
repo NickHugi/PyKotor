@@ -308,10 +308,14 @@ class CodeRoot:
             param_index = len(args)
             args.append(definition.parameters[param_index].default)
 
+        offset = 0
         for param, arg in zip(definition.parameters, args):
             arg_datatype = arg.compile(ncs, self, block)
+            offset += arg_datatype.size(self)
+            block.tempstack += arg_datatype.size(self)
             if param.data_type != arg_datatype:
-                raise CompileException
+                raise CompileException  # TODO
+        block.tempstack -= offset
         ncs.add(NCSInstructionType.JSR, jump=start_instruction)
 
         return definition.return_type
@@ -1458,8 +1462,15 @@ class SwitchStatement(Statement):
         self.expression: Expression = expression
         self.blocks: List[SwitchBlock] = blocks
 
+        self.real_block: CodeBlock = CodeBlock()
+
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+        self.real_block._parent = block
+        block.mark_break_scope()
+
+        block = self.real_block
+
         expression_type = self.expression.compile(ncs, root, block)
         block.tempstack += expression_type.size(root)
 

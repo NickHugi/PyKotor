@@ -270,7 +270,7 @@ class NssLexer:
     def t_BITWISE_RIGHT(self, t):
         '>>'
         t.value = OperatorMapping([], [
-            BinaryOperatorMapping(NCSInstructionType.SHRIGHTII, DataType.INT, DataType.INT),
+            BinaryOperatorMapping(NCSInstructionType.SHRIGHTII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
