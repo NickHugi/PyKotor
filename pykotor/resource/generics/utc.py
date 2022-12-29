@@ -365,8 +365,6 @@ def dismantle_utc(
 
     root.set_uint8("GoodEvil", utc.alignment)
     root.set_single("ChallengeRating", utc.challenge_rating)
-    root.set_single("BlindSpot", utc.blindspot)
-    root.set_uint8("MultiplierSet", utc.multiplier_set)
 
     root.set_uint8("NaturalAC", utc.natural_ac)
     root.set_int16("refbonus", utc.reflex_bonus)
@@ -446,6 +444,8 @@ def dismantle_utc(
             item_struct.set_uint8("Dropable", True)
 
     if game == Game.K2:
+        root.set_single("BlindSpot", utc.blindspot)
+        root.set_uint8("MultiplierSet", utc.multiplier_set)
         root.set_uint8("IgnoreCrePath", utc.ignore_cre_path)
         root.set_uint8("Hologram", utc.hologram)
 
