@@ -1,3 +1,5 @@
+from copy import copy
+
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer, NCSInstructionType
 
@@ -24,7 +26,18 @@ class RemoveNopOptimizer(NCSOptimizer):
 
 class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
     def optimize(self, ncs: NCS) -> None:
-        raise NotImplementedError()
+        movsp0 = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0]
+
+        # Process instructions which jump to a MOVSP=0 and set them to jump to the proceeding instruction instead
+        for op in movsp0:
+            nop_index = ncs.instructions.index(op)
+            for link in ncs.links_to(op):
+                link.jump = ncs.instructions[nop_index + 1]
+
+        # It is now safe to remove all MOVSP=0 instructions
+        for inst in copy(ncs.instructions):
+            if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0:
+                ncs.instructions.remove(inst)
 
 
 class MergeAdjacentMoveSPOptimizer(NCSOptimizer):

@@ -4,6 +4,7 @@ from pykotor.common.scriptlib import TSL_LIBRARY, KOTOR_LIBRARY
 from pykotor.resource.formats.ncs import NCS, NCSBinaryReader, NCSBinaryWriter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
+from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer, RemoveMoveSPEqualsZeroOptimizer
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
@@ -92,4 +93,7 @@ def compile_nss(
 
     ncs = NCS()
     t.compile(ncs)
+
+    ncs.optimize([RemoveNopOptimizer()])
+
     return ncs

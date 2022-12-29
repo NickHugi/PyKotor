@@ -1046,6 +1046,21 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
 
+    def test_if_multiple_conditions(self):
+        ncs = self.compile("""
+            void main()
+            {
+                if(1 && 2 && 3)
+                {
+                    PrintInteger(0);
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+        ncs.print()
+
     def test_if_else(self):
         ncs = self.compile("""
             void main()

@@ -148,7 +148,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         if instruction.ins_type in [NCSInstructionType.CPDOWNSP, NCSInstructionType.CPTOPSP,
                                     NCSInstructionType.CPDOWNBP, NCSInstructionType.CPTOPBP]:
-            size += 6
+            size = 8
 
         elif instruction.ins_type in [NCSInstructionType.CONSTI]:
             size += 4
@@ -160,10 +160,10 @@ class NCSBinaryWriter(ResourceWriter):
             size += 2 + len(instruction.args[0])
 
         elif instruction.ins_type in [NCSInstructionType.CONSTO]:
-            size += 2
+            size = 6
 
         elif instruction.ins_type in [NCSInstructionType.ACTION]:
-            size += 3
+            size = 5
 
         elif instruction.ins_type in [NCSInstructionType.MOVSP]:
             size += 4
@@ -187,6 +187,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         elif instruction.ins_type in [NCSInstructionType.NOP]:
             ...
+
         else:
             ...
 
