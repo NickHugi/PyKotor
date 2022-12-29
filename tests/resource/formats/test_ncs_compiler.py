@@ -351,13 +351,14 @@ class TestNSSCompiler(TestCase):
             void main()
             {
                 int a = !1;
+                PrintInteger(a);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual(0, interpreter.stack_snapshots[-4].stack[-1].value)
+        self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_logical_and_op(self):
         ncs = self.compile("""
@@ -393,12 +394,12 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-2].value)
         self.assertEqual(1, interpreter.stack_snapshots[-4].stack[-1].value)
 
-    def test_logical_equals_op(self):
+    def test_logical_equals(self):
         ncs = self.compile("""
             void main()
             {
                 int a = 1 == 1;
-                int b = 1 == 2;
+                int b = "a" == "b";
             }
         """)
 

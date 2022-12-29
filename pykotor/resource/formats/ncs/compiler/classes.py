@@ -145,8 +145,9 @@ class OperatorMapping(NamedTuple):
 
 
 class BinaryOperatorMapping:
-    def __init__(self, instruction: NCSInstructionType, lhs: DataType, rhs: DataType):
+    def __init__(self, instruction: NCSInstructionType, result: DataType, lhs: DataType, rhs: DataType):
         self.instruction: NCSInstructionType = instruction
+        self.result: DataType = result
         self.lhs: DataType = lhs
         self.rhs: DataType = rhs
 
@@ -842,10 +843,10 @@ class BinaryOperatorExpression(Expression):
                 ncs.add(x.instruction)
                 break
         else:
-            raise CompileException(f"Cannot test if {type1.name.lower()} is greater than {type2.name.lower()}")
+            raise CompileException(f"Cannot compare {type1.builtin.name.lower()} against {type2.builtin.name.lower()}")
 
         block.tempstack -= 8
-        return DynamicDataType(x.lhs)
+        return DynamicDataType(x.result)
 
 
 class UnaryOperatorExpression(Expression):
@@ -1175,7 +1176,7 @@ class VariableInitializer:
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, data_type: DynamicDataType):
         expression_type = self.expression.compile(ncs, root, block)
         if expression_type != data_type:
-            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
+            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type.builtin}'.")
         block.add_scoped(self.identifier, data_type)
 
 

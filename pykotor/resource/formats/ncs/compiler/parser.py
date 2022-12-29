@@ -45,9 +45,9 @@ class NssParser:
         ('left', 'EQUALS', 'NOT_EQUALS'),
         ('left', 'GREATER_THAN', 'LESS_THAN', 'GREATER_THAN_OR_EQUALS', 'LESS_THAN_OR_EQUALS'),
         ('left', 'BITWISE_LEFT', 'BITWISE_RIGHT'),
-        ('left', 'ADD', 'MINUS', 'BITWISE_NOT'),
+        ('left', 'ADD', 'MINUS'),
         ('left', 'MULTIPLY', 'DIVIDE', 'MOD'),
-        ('left', 'BITWISE_NOT', 'NOT'),
+        ('right', 'BITWISE_NOT', 'NOT'),
         ('left', 'INCREMENT', 'DECREMENT'),
     )
 
@@ -346,9 +346,9 @@ class NssParser:
                    | expression GREATER_THAN_OR_EQUALS expression
                    | expression LESS_THAN expression
                    | expression LESS_THAN_OR_EQUALS expression
+                   | expression AND expression
                    | expression NOT_EQUALS expression
                    | expression EQUALS expression
-                   | expression AND expression
                    | expression OR expression
                    | expression ADD expression
                    | expression MINUS expression
