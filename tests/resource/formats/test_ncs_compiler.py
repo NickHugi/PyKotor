@@ -904,7 +904,7 @@ class TestNSSCompiler(TestCase):
         ncs = self.compile("""
             void main()
             {
-                switch (2)
+                switch (3)
                 {
                     case 1:
                         PrintInteger(1);
@@ -915,6 +915,9 @@ class TestNSSCompiler(TestCase):
                     case 3:
                         PrintInteger(3);
                         break;
+                    case 4:
+                        PrintInteger(4);
+                        break;
                 }
             }
         """)
@@ -923,7 +926,7 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
         self.assertEqual(1, len(interpreter.action_snapshots))
-        self.assertEqual(2, interpreter.action_snapshots[0].arg_values[0])
+        self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
 
     def test_switch_with_default(self):
         ncs = self.compile("""
@@ -952,6 +955,35 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(4, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_switch_scoped_blocks(self):
+        ncs = self.compile("""
+            void main()
+            {
+                switch (2)
+                {
+                    case 1:
+                    {
+                        int inner = 10;
+                        PrintInteger(inner);
+                    }
+                    break;
+                    
+                    case 2:
+                    {
+                        int inner = 20;
+                        PrintInteger(inner);
+                    }
+                    break;
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(20, interpreter.action_snapshots[-1].arg_values[0])
     # endregion
 
     def test_scope(self):
@@ -969,6 +1001,26 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
+
+    def test_scoped_block(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int a = 1;
+                
+                {
+                    int b = 2;
+                    PrintInteger(a);
+                    PrintInteger(b);
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[-1].arg_values[0])
 
     # region If/Else Conditions
     def test_if(self):
@@ -2284,4 +2336,3 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
     # endregion
-

@@ -187,6 +187,12 @@ class NssParser:
         """
         p[0] = ForLoopBlock(p[3], p[5], p[7], p[10])
 
+    def p_scoped_block(self, p):
+        """
+        scoped_block : '{' code_block '}'
+        """
+        p[0] = p[2]
+
     def p_statement(self, p):
         """
         statement : ';'
@@ -200,6 +206,7 @@ class NssParser:
                   | switch_statement
                   | break_statement
                   | continue_statement
+                  | scoped_block
         """
         if p[1] == ";":
             p[0] = EmptyStatement()

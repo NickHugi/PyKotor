@@ -1311,6 +1311,16 @@ class ForLoopBlock(Statement):
 
         ncs.add(NCSInstructionType.JMP, jump=loopstart)
         ncs.instructions.append(loopend)
+
+
+class ScopedBlock(Statement):
+    def __init__(self, block: CodeBlock):
+        super().__init__()
+        self.block: CodeBlock = block
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
+                break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+        self.block.compile(ncs, root, block, return_instruction, break_instruction, continue_instruction)
 # endregion
 
 
