@@ -2428,6 +2428,7 @@ class TestNSSCompiler(TestCase):
     def test_switch_scope_a(self):
         ncs = self.compile("""
             int shape;
+            int harmful;
             
             void main()
             {
@@ -2440,6 +2441,15 @@ class TestNSSCompiler(TestCase):
                 switch (1)
                 {
                     case 1:
+                        harmful = FALSE;
+                        e1 = EffectMovementSpeedIncrease(99);
+                        
+                        if (1 == 1)
+                        {
+                            e1 = EffectLinkEffects(e1, EffectVisualEffect(VFX_DUR_SPEED));
+                        }
+                        
+                        GiveXPToCreature(OBJECT_SELF, 100);
                         GetHasSpellEffect(FORCE_POWER_SPEED_BURST, oTarget);
                     break;
                 }
@@ -2449,4 +2459,30 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        self.assertEqual([8, 0], interpreter.action_snapshots[0].arg_values)
+        self.assertEqual([8, 0], interpreter.action_snapshots[-1].arg_values)
+
+    def test_switch_scope_b(self):
+        ncs = self.compile("""
+            int SWFP_SHAPE;
+            
+            void main()
+            {
+                object oTarget = GetSpellTargetObject();
+                SWFP_SHAPE = SHAPE_SPHERE;
+                
+                switch (GetSpellId())
+                {
+                    case FORCE_POWER_SPEED_BURST:
+                    {
+                        GetHasSpellEffect(FORCE_POWER_SPEED_BURST, oTarget);
+                    }
+                    break;
+                }
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.set_mock("GetSpellId", lambda: 8)
+        interpreter.run()
+
+        #self.assertEqual([8, 0], .action_snapshots[-1].arg_values)

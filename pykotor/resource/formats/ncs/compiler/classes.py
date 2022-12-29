@@ -380,7 +380,7 @@ class CodeBlock:
         self.scope.insert(0, ScopedValue(identifier, data_type))
 
     def get_scoped(self, identifier: Identifier, root: CodeRoot, offset: int = None) -> GetScopedResult:
-        offset = -self.tempstack if offset is None else offset
+        offset = -self.tempstack if offset is None else offset-self.tempstack
         for scoped in self.scope:
             offset -= scoped.data_type.size(root)
             if scoped.identifier == identifier:
