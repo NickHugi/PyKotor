@@ -1337,6 +1337,23 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(0, interpreter.action_snapshots[-1].arg_values[0])
     # endregion
 
+    def test_float_notations(self):
+        ncs = self.compile("""
+            void main()
+            {
+                PrintFloat(1.0f);
+                PrintFloat(2.0);
+                PrintFloat(3f);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
+        self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
+        self.assertEqual(3, interpreter.action_snapshots[-1].arg_values[0])
+
     def test_local_declarations(self):
         ncs = self.compile("""
             void main()

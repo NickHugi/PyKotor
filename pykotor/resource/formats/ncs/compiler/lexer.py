@@ -215,8 +215,8 @@ class NssLexer:
         return t
 
     def t_FLOAT_VALUE(self, t):
-        r'[0-9]+\.[0-9]+'
-        t.value = FloatExpression(float(t.value))
+        r'[0-9]+\.[0-9]+f?|[0-9]f'
+        t.value = FloatExpression(float(t.value.replace("f", "")))
         return t
 
     def t_INT_VALUE(self, t):
