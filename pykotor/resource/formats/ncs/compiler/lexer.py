@@ -1,5 +1,7 @@
 import operator
 
+import ply.lex
+
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import IntExpression, ControlKeyword, StringExpression, \
@@ -30,21 +32,28 @@ class NssLexer:
         "BITWISE_RIGHT", "BITWISE_XOR", "BITWISE_NOT", "COMMENT", "MULTILINE_COMMENT",
         "INCLUDE", "RETURN", "ADDITION_ASSIGNMENT_OPERATOR", "SUBTRACTION_ASSIGNMENT_OPERATOR",
         "MULTIPLICATION_ASSIGNMENT_OPERATOR", "DIVISION_ASSIGNMENT_OPERATOR", "CONTINUE_CONTROL",
-        "STRUCT", "INCREMENT", "DECREMENT"
+        "STRUCT", "INCREMENT", "DECREMENT", "NEWLINE"
     ]
 
     literals = [
         '{', '}', '(', ')', ';', '=', ',', ':', '.', '[', ']'
     ]
 
-    t_ignore = " \t\n\r"
+    t_ignore = " \t\r"
+
+    def t_NEWLINE(self, t):
+        r'\n+'
+        t.lexer.lineno += len(t.value)
+        pass
 
     def t_COMMENT(self, t):
         r'//[^\n]*\n'
+        t.lexer.lineno += 1
         pass
 
     def t_MULTILINE_COMMENT(self, t):
         r'/\*[^\*/]*\*/'
+        t.lexer.lineno += t.value.count('\n')
         pass
 
     def t_INCLUDE(self, t):
