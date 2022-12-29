@@ -234,6 +234,10 @@ class Interpreter:
             else:
                 args_snap.append(self._stack.pop())
 
+        for i in range(args):
+            if function.params[i].datatype != args_snap[i].data_type:
+                raise ValueError(f"Invoked action '{function.name}' received the wrong data type for parameter '{function.params[i].name}' valued at '{args_snap[i]}'.")
+
         if function.returntype != DataType.VOID:
             if function.name in self._mocks:
                 # Execute and return the value back from the mock
