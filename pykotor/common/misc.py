@@ -405,19 +405,22 @@ class InventoryItem:
 
 class EquipmentSlot(Enum):
     INVALID = 0
-    HEAD = 1
-    ARMOR = 2
-    GAUNTLET = 8
-    RIGHT_HAND = 16
-    LEFT_HAND = 32
-    RIGHT_ARM = 128
-    LEFT_ARM = 256
-    IMPLANT = 512
-    BELT = 1024
-    CLAW1 = 16384
-    CLAW2 = 32768
-    CLAW3 = 65536
-    HIDE = 131072
+    HEAD = 1 ** 0
+    ARMOR = 2 ** 1
+    GAUNTLET = 2 ** 3
+    RIGHT_HAND = 2 ** 4
+    LEFT_HAND = 2 ** 5
+    RIGHT_ARM = 2 ** 7
+    LEFT_ARM = 2 ** 8
+    IMPLANT = 2 ** 9
+    BELT = 2 ** 10
+    CLAW1 = 2 ** 14
+    CLAW2 = 2 ** 15
+    CLAW3 = 2 ** 16
+    HIDE = 2 ** 17
+    # TSL Only:
+    RIGHT_HAND_2 = 2 ** 18
+    LEFT_HAND_2 = 2 ** 19
 
 
 class CaseInsensitiveDict(Generic[T]):
