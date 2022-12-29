@@ -9,7 +9,7 @@ from pykotor.common.script import ScriptFunction, ScriptConstant
 from pykotor.common.scriptlib import KOTOR_LIBRARY
 
 from pykotor.resource.formats.ncs import NCS
-from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, InitializationStatement, \
+from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, \
     CodeBlock, \
     Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalBlock, \
     FunctionDefinition, FunctionDefinitionParam, CodeRoot, UnaryOperatorExpression, BitwiseNotExpression, \
@@ -20,7 +20,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
     StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
     PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression, \
-    GlobalVariableInitialization
+    GlobalVariableInitialization, VariableDeclarator, VariableInitializer
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -196,7 +196,6 @@ class NssParser:
     def p_statement(self, p):
         """
         statement : ';'
-                  | initialization_statement
                   | declaration_statement
                   | condition_statement
                   | return_statement
@@ -232,17 +231,34 @@ class NssParser:
         """
         p[0] = ContinueStatement()
 
-    def p_initialization_statement(self, p):
-        """
-        initialization_statement : data_type IDENTIFIER '=' expression ';'
-        """
-        p[0] = InitializationStatement(p[2], p[1], p[4])
-
     def p_declaration_statement(self, p):
         """
-        declaration_statement : data_type IDENTIFIER ';'
+        declaration_statement : data_type variable_declarators ';'
         """
-        p[0] = DeclarationStatement(p[2], p[1])
+        p[0] = DeclarationStatement(p[1], p[2])
+
+    def p_variable_declarators(self, p):
+        """
+        variable_declarators : variable_declarators ',' variable_declarator
+                             | variable_declarator
+        """
+        if len(p) == 4:
+            p[1].append(p[3])
+            p[0] = p[1]
+        elif len(p) == 2:
+            p[0] = [p[1]]
+
+    def p_variable_declarator_no_initializer(self, p):
+        """
+        variable_declarator : IDENTIFIER
+        """
+        p[0] = VariableDeclarator(p[1])
+
+    def p_variable_declarator_initializer(self, p):
+        """
+        variable_declarator : IDENTIFIER '=' expression
+        """
+        p[0] = VariableInitializer(p[1], p[3])
 
     def p_normal_assignment(self, p):
         """

@@ -1120,58 +1120,63 @@ class ExpressionStatement(Statement):
         ncs.add(NCSInstructionType.MOVSP, args=[-expression_type.size(root)])
 
 
-class InitializationStatement(Statement):
-    def __init__(self, identifier: Identifier, data_type: DynamicDataType, value: Expression):
-        super().__init__()
-        self.identifier: Identifier = identifier
-        self.data_type: DynamicDataType = data_type
-        self.expression: Expression = value
-
-    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
-                break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
-        expression_type = self.expression.compile(ncs, root, block)
-        if expression_type != self.data_type:
-            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
-        block.add_scoped(self.identifier, self.data_type)
-
-
 class DeclarationStatement(Statement):
-    def __init__(self, identifier: Identifier, data_type: DynamicDataType):
+    def __init__(self, data_type: DynamicDataType, declarators: List[VariableDeclarator]):
         super().__init__()
-        self.identifier: Identifier = identifier
         self.data_type: DynamicDataType = data_type
+        self.declarators: List[VariableDeclarator] = declarators
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, return_instruction: NCSInstruction,
                 break_instruction: Optional[NCSInstruction], continue_instruction: Optional[NCSInstruction]):
+        for declarator in self.declarators:
+            declarator.compile(ncs, root, block, self.data_type)
 
-        if self.data_type.builtin == DataType.INT:
+
+class VariableDeclarator:
+    def __init__(self, identifier: Identifier):
+        self.identifier: Identifier = identifier
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, data_type: DynamicDataType):
+        if data_type.builtin == DataType.INT:
             ncs.add(NCSInstructionType.RSADDI)
-        elif self.data_type.builtin == DataType.FLOAT:
+        elif data_type.builtin == DataType.FLOAT:
             ncs.add(NCSInstructionType.RSADDF)
-        elif self.data_type.builtin == DataType.STRING:
+        elif data_type.builtin == DataType.STRING:
             ncs.add(NCSInstructionType.RSADDS)
-        elif self.data_type.builtin == DataType.OBJECT:
+        elif data_type.builtin == DataType.OBJECT:
             ncs.add(NCSInstructionType.RSADDO)
-        elif self.data_type.builtin == DataType.EVENT:
+        elif data_type.builtin == DataType.EVENT:
             ncs.add(NCSInstructionType.RSADDEVT)
-        elif self.data_type.builtin == DataType.LOCATION:
+        elif data_type.builtin == DataType.LOCATION:
             ncs.add(NCSInstructionType.RSADDLOC)
-        elif self.data_type.builtin == DataType.TALENT:
+        elif data_type.builtin == DataType.TALENT:
             ncs.add(NCSInstructionType.RSADDTAL)
-        elif self.data_type.builtin == DataType.EFFECT:
+        elif data_type.builtin == DataType.EFFECT:
             ncs.add(NCSInstructionType.RSADDEFF)
-        elif self.data_type.builtin == DataType.VECTOR:
+        elif data_type.builtin == DataType.VECTOR:
             ncs.add(NCSInstructionType.RSADDF)
             ncs.add(NCSInstructionType.RSADDF)
             ncs.add(NCSInstructionType.RSADDF)
-        elif self.data_type.builtin == DataType.STRUCT:
-            root.struct_map[self.data_type._struct].initialize(ncs, root)
-        elif self.data_type.builtin == DataType.VOID:
+        elif data_type.builtin == DataType.STRUCT:
+            root.struct_map[data_type._struct].initialize(ncs, root)
+        elif data_type.builtin == DataType.VOID:
             raise CompileException("Cannot declare a variable of void type.")
         else:
             raise CompileException("Tried to compile a variable of unknown type.")
 
-        block.add_scoped(self.identifier, self.data_type)
+        block.add_scoped(self.identifier, data_type)
+
+
+class VariableInitializer:
+    def __init__(self, identifier: Identifier, expression: Expression):
+        self.identifier: Identifier = identifier
+        self.expression: Expression = expression
+
+    def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock, data_type: DynamicDataType):
+        expression_type = self.expression.compile(ncs, root, block)
+        if expression_type != data_type:
+            raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
+        block.add_scoped(self.identifier, data_type)
 
 
 class ConditionalBlock(Statement):
