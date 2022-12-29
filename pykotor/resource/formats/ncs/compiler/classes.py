@@ -330,6 +330,7 @@ class CodeRoot:
         return GetScopedResult(True, scoped.data_type, offset)
 
     def scope_size(self):
+        # TODO should be positive
         offset = 0
         for scoped in self._global_scope:
             offset -= scoped.data_type.size(self)
@@ -798,7 +799,7 @@ class EngineCallExpression(Expression):
             param_type = DynamicDataType(self._function.params[-i - 1].datatype)
             if param_type == DataType.ACTION:
                 after_command = NCSInstruction()
-                ncs.add(NCSInstructionType.STORE_STATE, args=[root.scope_size(), block.full_scope_size(root)])
+                ncs.add(NCSInstructionType.STORE_STATE, args=[-root.scope_size(), block.full_scope_size(root)])
                 ncs.add(NCSInstructionType.JMP, jump=after_command)
                 arg.compile(ncs, root, block)
                 ncs.instructions.append(after_command)

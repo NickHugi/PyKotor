@@ -232,7 +232,7 @@ class NCSBinaryWriter(ResourceWriter):
 
         elif instruction.ins_type in [NCSInstructionType.DECISP, NCSInstructionType.INCISP,
                                       NCSInstructionType.DECIBP, NCSInstructionType.INCIBP]:
-            self._writer.write_uint32(instruction.args[0], big=True)
+            self._writer.write_int32(instruction.args[0], big=True)
 
         elif instruction.ins_type in [NCSInstructionType.STORE_STATE]:
             self._writer.write_uint32(instruction.args[0], big=True)
@@ -241,11 +241,68 @@ class NCSBinaryWriter(ResourceWriter):
         elif instruction.ins_type in [NCSInstructionType.EQUALTT, NCSInstructionType.NEQUALTT]:
             self._writer.write_uint16(instruction.args[0], big=True)
 
+        elif instruction.ins_type in [NCSInstructionType.EQUALII, NCSInstructionType.EQUALFF,
+                                      NCSInstructionType.EQUALFF, NCSInstructionType.EQUALOO,
+                                      NCSInstructionType.EQUALEFFEFF, NCSInstructionType.EQUALEVTEVT,
+                                      NCSInstructionType.EQUALEVTEVT, NCSInstructionType.EQUALLOCLOC,
+                                      NCSInstructionType.EQUALTALTAL, NCSInstructionType.EQUALSS]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.NEQUALII, NCSInstructionType.NEQUALFF,
+                                      NCSInstructionType.NEQUALFF, NCSInstructionType.NEQUALOO,
+                                      NCSInstructionType.NEQUALEFFEFF, NCSInstructionType.NEQUALEVTEVT,
+                                      NCSInstructionType.NEQUALEVTEVT, NCSInstructionType.NEQUALLOCLOC,
+                                      NCSInstructionType.NEQUALTALTAL, NCSInstructionType.NEQUALSS]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.ADDII, NCSInstructionType.ADDFF,
+                                      NCSInstructionType.ADDFI, NCSInstructionType.ADDIF,
+                                      NCSInstructionType.ADDSS, NCSInstructionType.ADDVV]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.SUBII, NCSInstructionType.SUBFF,
+                                      NCSInstructionType.SUBFI, NCSInstructionType.SUBIF,
+                                      NCSInstructionType.SUBVV]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.MULII, NCSInstructionType.MULFF,
+                                      NCSInstructionType.MULFI, NCSInstructionType.MULIF,
+                                      NCSInstructionType.MULFV, NCSInstructionType.MULVF]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.DIVII, NCSInstructionType.DIVFF,
+                                      NCSInstructionType.DIVFI, NCSInstructionType.DIVIF,
+                                      NCSInstructionType.DIVFV, NCSInstructionType.DIVVF]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.GTII, NCSInstructionType.GTFF,
+                                      NCSInstructionType.GEQII, NCSInstructionType.GEQFF]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.LTII, NCSInstructionType.LTFF,
+                                      NCSInstructionType.LEQII, NCSInstructionType.LEQFF]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.LOGANDII, NCSInstructionType.LOGORII]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.INCORII]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.NEGI, NCSInstructionType.NEGF]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.MODII]:
+            ...
+
+        elif instruction.ins_type in [NCSInstructionType.NOTI]:
+            ...
+
         elif instruction.ins_type in [NCSInstructionType.RETN]:
             ...
 
         elif instruction.ins_type in [NCSInstructionType.RSADDI, NCSInstructionType.RSADDF, NCSInstructionType.RSADDO,
-                                      NCSInstructionType.RSADDS, NCSInstructionType.SAVEBP]:
+                                      NCSInstructionType.RSADDS, NCSInstructionType.RSADDEFF, NCSInstructionType.SAVEBP]:
             ...
 
         elif instruction.ins_type in [NCSInstructionType.NOP]:

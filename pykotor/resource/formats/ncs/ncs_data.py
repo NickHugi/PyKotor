@@ -11,7 +11,7 @@ class NCSInstructionTypeValue(NamedTuple):
 
 
 class NCSByteCode(IntEnum):
-    NOP = 0
+    NOP = 0x2D
     CPDOWNSP = 0x01
     RSADDx = 0x02
     CPTOPSP = 0x03
@@ -86,7 +86,7 @@ class NCSInstructionQualifier(IntEnum):
 
 
 class NCSInstructionType(Enum):
-    NOP = NCSInstructionTypeValue(NCSByteCode.NOP, 0x2D)
+    NOP = NCSInstructionTypeValue(NCSByteCode.NOP, 0x00)
     CPDOWNSP = NCSInstructionTypeValue(NCSByteCode.CPDOWNSP, 0x01)
     RSADDI = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Int)
     RSADDF = NCSInstructionTypeValue(NCSByteCode.RSADDx, NCSInstructionQualifier.Float)
