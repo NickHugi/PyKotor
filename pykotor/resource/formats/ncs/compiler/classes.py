@@ -456,6 +456,11 @@ class FunctionDefinition(TopLevelObject):
                 raise CompileException("Function parameter without a default value can't follow one with a default value.")
             previous_is_default = is_default
 
+        # Make sure params are all constant values
+        for param in self.parameters:
+            if isinstance(param.default, IdentifierExpression) and not param.default.is_constant(root):
+                raise CompileException(f"Non-constant default value specified for function prototype parameter '{param.identifier}'.")
+
         if name in root.function_map and not root.function_map[name].is_prototype():
             raise CompileException(f"Function '{name}' has already been defined.")
         elif name in root.function_map and root.function_map[name].is_prototype():
@@ -602,6 +607,12 @@ class IdentifierExpression(Expression):
         super().__init__()
         self.identifier: Identifier = value
 
+    def __eq__(self, other):
+        if isinstance(other, IdentifierExpression):
+            return self.identifier == other.identifier
+        else:
+            return NotImplemented
+
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         # Scan for any constants that are stored as part of the compiler (from nwscript).
         constant = next((constant for constant in root.constants if constant.name == self.identifier.label), None)
@@ -618,6 +629,9 @@ class IdentifierExpression(Expression):
             instruction_type = NCSInstructionType.CPTOPBP if isglobal else NCSInstructionType.CPTOPSP
             ncs.add(instruction_type, args=[stack_index, datatype.size(root)])
             return datatype
+
+    def is_constant(self, root: CodeRoot) -> bool:
+        return next((constant for constant in root.constants if constant.name == self.identifier.label), None) is not None
 
 
 class FieldAccessExpression(Expression):

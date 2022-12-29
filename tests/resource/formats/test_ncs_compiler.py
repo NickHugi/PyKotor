@@ -2019,6 +2019,27 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(57, interpreter.action_snapshots[0].arg_values[0])
 
+    def test_prototype_with_default_constant_arg(self):
+        ncs = self.compile("""
+            void test(int value = DAMAGE_TYPE_COLD);
+
+            void main()
+            {
+                test();
+            }
+
+            void test(int value = DAMAGE_TYPE_COLD)
+            {
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, len(interpreter.action_snapshots))
+        self.assertEqual(32, interpreter.action_snapshots[0].arg_values[0])
+
     def test_prototype_missing_arg(self):
         source = """
             void test(int value);

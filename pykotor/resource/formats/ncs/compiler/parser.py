@@ -148,7 +148,7 @@ class NssParser:
 
     def p_function_definition_param_with_default(self, p):
         """
-        function_definition_param : data_type IDENTIFIER '=' constant_expression
+        function_definition_param : data_type IDENTIFIER '=' expression
         """
         p[0] = FunctionDefinitionParam(p[1], p[2], p[4])
 

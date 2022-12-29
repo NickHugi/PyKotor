@@ -86,7 +86,7 @@ def compile_nss(
 
     nssParser.library = KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY
     nssParser.functions = KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS
-    nssParser.constants = KOTOR_CONSTANTS if game == Game.K2 else TSL_CONSTANTS
+    nssParser.constants = KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS
 
     t = nssParser.parser.parse(source, tracking=True)
 
