@@ -1,6 +1,7 @@
 import os.path
 from configparser import ConfigParser
-from typing import List, Dict
+from enum import IntEnum
+from typing import List, Dict, Optional
 
 from pykotor.extract.capsule import Capsule
 
@@ -23,6 +24,28 @@ from pykotor.tslpatcher.mods.install import InstallFolder
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import Modifications2DA
+
+
+class LogLevel(IntEnum):
+    # Docstrings taken from ChangeEdit docs
+
+    Nothing = 0
+    """No feedback at all. The text from "info.rtf" will continue to be displayed during installation"""
+
+    General = 1
+    """Only general progress information will be displayed. Not recommended."""
+
+    Errors = 2
+    """General progress information is displayed, along with any serious errors encountered."""
+
+    Warnings = 3
+    """General progress information, serious errors and warnings are displayed. This is
+    recommended for the release version of your mod."""
+
+    Full = 4
+    """Full feedback. On top of what is displayed at level 3, it also shows verbose progress
+    information that may be useful for a Modder to see what is happening. Intended for
+    Debugging."""
 
 
 class PatcherConfig:
