@@ -1,17 +1,19 @@
+import os
 from configparser import ConfigParser
-from typing import Dict, Optional, Union, Tuple
+from typing import Dict, Optional, Union, Tuple, List
 
 from pykotor.common.language import LocalizedString
 
 from pykotor.common.misc import ResRef
 
 from pykotor.common.geometry import Vector3, Vector4
+from pykotor.common.stream import BinaryReader
 
 from pykotor.resource.formats.gff import GFFFieldType, GFFStruct, GFFList
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
-from pykotor.tslpatcher.config import PatcherConfig
+from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, \
     LocalizedStringDelta, FieldValueConstant, FieldValue2DAMemory, FieldValueTLKMemory, FieldValue
@@ -29,6 +31,18 @@ class ConfigReader:
         self.append: TLK = append
 
         self.config: Optional[PatcherConfig] = None
+
+    @classmethod
+    def from_filepath(cls, path: str, append_path: Optional[str]) -> PatcherConfig:
+        ini_text = BinaryReader.load_file(path).decode()
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+
+        append = read_tlk(append_path) if os.path.exists(append_path) else TLK()
+
+        config = PatcherConfig()
+        return ConfigReader(ini, append).load(config)
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
