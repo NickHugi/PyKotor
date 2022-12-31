@@ -83,15 +83,16 @@ class PatcherNamespace:
 
 
 class ModInstaller:
-    def __init__(self, mod_path: str, game_path: str, logger: PatchLogger = None):
+    def __init__(self, mod_path: str, game_path: str, ini_file: str, logger: PatchLogger = None):
         self.game_path: str = game_path
         self.mod_path: str = mod_path
+        self.ini_file: str = ini_file
         self.output_path: str = game_path
         self.log: PatchLogger = PatchLogger() if logger is None else logger
 
     def install(self) -> None:
         append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
-        ini_text = BinaryReader.load_file(self.mod_path + "/changes.ini").decode()
+        ini_text = BinaryReader.load_file(self.mod_path + "/" + self.ini_file).decode()
 
         installation = Installation(self.game_path)
         memory = PatcherMemory()
