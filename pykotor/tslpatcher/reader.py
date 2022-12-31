@@ -47,6 +47,7 @@ class ConfigReader:
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
 
+        self.load_settings()
         self.load_filelist()
         self.load_stringref()
         self.load_2da()
@@ -54,6 +55,13 @@ class ConfigReader:
         self.load_gff()
 
         return self.config
+
+    def load_settings(self) -> None:
+        self.config.window_title = self.ini.get("Settings", "WindowCaption", fallback="")
+        self.config.confirm_message = self.ini.get("Settings", "ConfirmMessage", fallback="")
+        self.config.game_number = self.ini.get("Settings", "LookupGameNumber", fallback=None)
+        self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
+        self.config.required_message = self.ini.get("Settings", "Required", fallback="")
 
     def load_filelist(self) -> None:
         folders_ini = dict(self.ini["InstallList"].items())
@@ -438,3 +446,32 @@ class ConfigReader:
                 store_2da[token_id] = value
 
         return index_insert, label_insert, store_2da
+
+
+class NamespaceReader:
+    def __init__(self, ini: ConfigParser):
+        self.ini = ini
+        self.namespaces: List[PatcherNamespace] = []
+
+    @classmethod
+    def from_filepath(cls, path: str) -> List[PatcherNamespace]:
+        ini_text = BinaryReader.load_file(path).decode()
+        ini = ConfigParser()
+        ini.optionxform = str
+        ini.read_string(ini_text)
+        return NamespaceReader(ini).load()
+
+    def load(self) -> List[PatcherNamespace]:
+        namespace_ids = dict(self.ini["Namespaces"].items()).values()
+        namespaces = []
+
+        for namespace_id in namespace_ids:
+            namespace = PatcherNamespace()
+            namespace.ini_filename = self.ini[namespace_id]["IniName"]
+            namespace.info_filename = self.ini[namespace_id]["InfoName"]
+            namespace.data_folderpath = self.ini[namespace_id]["DataPath"]
+            namespace.name = self.ini[namespace_id]["Name"]
+            namespace.description = self.ini[namespace_id]["Description"]
+            namespaces.append(namespace)
+
+        return namespaces
