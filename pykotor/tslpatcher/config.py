@@ -50,6 +50,13 @@ class LogLevel(IntEnum):
 
 class PatcherConfig:
     def __init__(self):
+        self.window_title: str = ""
+        self.confirm_message: str = ""
+        self.game_number: Optional[int] = None
+
+        self.required_file: Optional[str] = None
+        self.required_message: str = ""
+
         self.install_list: List[InstallFolder] = []
         self.patches_2da: List[Modifications2DA] = []
         self.patches_gff: List[ModificationsGFF] = []
@@ -64,6 +71,15 @@ class PatcherConfig:
         ini.read_string(ini_text)
 
         ConfigReader(ini, append).load(self)
+
+
+class PatcherNamespace:
+    def __init__(self):
+        self.ini_filename: str = ""
+        self.info_filename: str = ""
+        self.data_folderpath: str = ""
+        self.name: str = ""
+        self.description: str = ""
 
 
 class ModInstaller:
