@@ -72,9 +72,13 @@ class PatcherConfig:
 
         ConfigReader(ini, append).load(self)
 
+    def patch_count(self) -> int:
+        return len(self.patches_2da) + len(self.patches_gff) + len(self.patches_ssf) + 1 + len(self.install_list)
+
 
 class PatcherNamespace:
     def __init__(self):
+        self.namespace_id: str = ""
         self.ini_filename: str = ""
         self.info_filename: str = ""
         self.data_folderpath: str = ""
@@ -90,9 +94,24 @@ class ModInstaller:
         self.output_path: str = game_path
         self.log: PatchLogger = PatchLogger() if logger is None else logger
 
+        self._config: Optional[PatcherConfig] = None
+
+    def config(self) -> PatcherConfig:
+        """
+        Returns the PatcherConfig object associated with the mod installer. The object is created when the method is
+        first called then cached for future calls.
+        """
+
+        if self._config is None:
+            ini_text = BinaryReader.load_file(self.mod_path + "/" + self.ini_file).decode()
+            append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
+            self._config = PatcherConfig()
+            self._config.load(ini_text, append_tlk)
+
+        return self._config
+
     def install(self) -> None:
-        append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
-        ini_text = BinaryReader.load_file(self.mod_path + "/" + self.ini_file).decode()
+        config = self.config()
 
         installation = Installation(self.game_path)
         memory = PatcherMemory()
@@ -100,16 +119,15 @@ class ModInstaller:
         soundsets = {}
         templates = {}
 
-        config = PatcherConfig()
-        config.load(ini_text, append_tlk)
-
         # Apply changes to dialog.tlk
         dialog_tlk = read_tlk(installation.path() + "dialog.tlk")
         config.patches_tlk.apply(dialog_tlk, memory)
         write_tlk(dialog_tlk, self.output_path + "/dialog.tlk")
+        self.log.complete_patch()
 
         for folder in config.install_list:
             folder.apply(self.log, self.mod_path, self.output_path)
+            self.log.complete_patch()
 
         # Apply changes to 2DA files
         for patch in config.patches_2da:
@@ -121,6 +139,8 @@ class ModInstaller:
             patch.apply(twoda, memory)
             write_2da(twoda, "{}/override/{}".format(self.output_path, patch.filename))
 
+            self.log.complete_patch()
+
         # Apply changes to SSF files
         for patch in config.patches_ssf:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
@@ -130,6 +150,8 @@ class ModInstaller:
             self.log.add_note("Patching {}".format(patch.filename))
             patch.apply(soundset, memory)
             write_ssf(soundset, "{}/override/{}".format(self.output_path, patch.filename))
+
+            self.log.complete_patch()
 
         # Apply changes to GFF files
         for patch in config.patches_gff:
@@ -151,6 +173,8 @@ class ModInstaller:
             self.log.add_note("Patching {}".format(patch.filename))
             patch.apply(template, memory, self.log)
             self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template))
+
+            self.log.complete_patch()
 
     def write(self, filepath: str, filename: str, data: bytes) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)

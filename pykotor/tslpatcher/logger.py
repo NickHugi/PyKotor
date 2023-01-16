@@ -7,6 +7,11 @@ class PatchLogger:
         self.warnings: List[PatchLog] = []
         self.errors: List[PatchLog] = []
 
+        self.patches_completed: int = 0
+
+    def complete_patch(self) -> None:
+        self.patches_completed += 1
+
     def add_note(self, message: str) -> None:
         self.notes.append(PatchLog(message))
 

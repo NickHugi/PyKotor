@@ -467,6 +467,7 @@ class NamespaceReader:
 
         for namespace_id in namespace_ids:
             namespace = PatcherNamespace()
+            namespace.namespace_id = namespace_id
             namespace.ini_filename = self.ini[namespace_id]["IniName"]
             namespace.info_filename = self.ini[namespace_id]["InfoName"]
             namespace.data_folderpath = self.ini[namespace_id]["DataPath"]
