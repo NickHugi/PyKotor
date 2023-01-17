@@ -56,7 +56,7 @@ class NssLexer:
         pass
 
     def t_MULTILINE_COMMENT(self, t):
-        r'/\*[^\*/]*\*/'
+        r'\/\*(\*(?!\/)|[^*])*\*\/'
         t.lexer.lineno += t.value.count('\n')
         pass
 
