@@ -529,8 +529,9 @@ class IncludeScript(TopLevelObject):
         from pykotor.resource.formats.ncs.compiler.parser import NssParser
         nssParser = NssParser()
         nssParser.library = self.library
+        nssParser.constants = root.constants
         t: CodeRoot = nssParser.parser.parse(source, tracking=True)
-        [root.objects.insert(0, obj) for obj in t.objects]
+        root.objects = t.objects + root.objects
 
         '''imported = NCS()
         t.compile(imported)
