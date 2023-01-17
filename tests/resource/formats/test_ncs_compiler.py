@@ -1136,6 +1136,34 @@ class TestNSSCompiler(TestCase):
         self.assertEqual(5, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(7, interpreter.action_snapshots[2].arg_values[0])
         self.assertEqual(10, interpreter.action_snapshots[3].arg_values[0])
+
+    def test_single_statement_if(self):
+        ncs = self.compile("""
+            void main()
+            {
+                if (1) PrintInteger(222);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(222, interpreter.action_snapshots[-1].arg_values[0])
+
+    def test_single_statement_else_if_else(self):
+        ncs = self.compile("""
+            void main()
+            {
+                if (0) PrintInteger(11);
+                else if (0) PrintInteger(22);
+                else PrintInteger(33);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(33, interpreter.action_snapshots[-1].arg_values[0])
     # endregion
 
     # region While
@@ -1549,6 +1577,58 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_return_parenthesis(self):
+        ncs = self.compile("""
+            int test()
+            {
+                return(321);
+            }
+        
+            void main()
+            {
+                int value = test();
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(321, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_return_parenthesis_constant(self):
+        ncs = self.compile("""
+            int test()
+            {
+                return(TRUE);
+            }
+        
+            void main()
+            {
+                int value = test();
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(1, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_int_parenthesis_declaration(self):
+        ncs = self.compile("""
+            void main()
+            {
+                int value = (123);
+                PrintInteger(value);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(123, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_include(self):
         otherscript = """
@@ -2463,26 +2543,33 @@ class TestNSSCompiler(TestCase):
 
     def test_switch_scope_b(self):
         ncs = self.compile("""
-            int SWFP_SHAPE;
+            int test(int abc)
+            {
+             GiveXPToCreature(GetFirstPC(), abc);
+            }
             
             void main()
             {
-                object oTarget = GetSpellTargetObject();
-                SWFP_SHAPE = SHAPE_SPHERE;
-                
-                switch (GetSpellId())
-                {
-                    case FORCE_POWER_SPEED_BURST:
-                    {
-                        GetHasSpellEffect(FORCE_POWER_SPEED_BURST, oTarget);
-                    }
-                    break;
-                }
+                test(123);
             }
         """)
+        ncs = self.compile("""
+            int Cort_XP(int abc)
+            {
+                GiveXPToCreature(GetFirstPC(), abc);
+            }
+            
+            void main() {
+                int abc = 2500;
+                Cort_XP(abc);
+            }
+        """)
+        ncs.print()
 
         interpreter = Interpreter(ncs)
-        interpreter.set_mock("GetSpellId", lambda: 8)
+        #interpreter.set_mock("GetSpellId", lambda: 8)
         interpreter.run()
+
+        print(interpreter.action_snapshots)
 
         #self.assertEqual([8, 0], .action_snapshots[-1].arg_values)

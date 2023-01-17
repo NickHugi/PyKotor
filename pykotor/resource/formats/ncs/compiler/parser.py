@@ -311,6 +311,14 @@ class NssParser:
         """
         p[0] = ConditionAndBlock(p[3], p[6])
 
+    def p_if_statement_single(self, p):
+        """
+        if_statement : IF_CONTROL '(' expression ')' statement
+        """
+        block = CodeBlock()
+        block.add(p[5])
+        p[0] = ConditionAndBlock(p[3], block)
+
     def p_else_statement(self, p):
         """
         else_statement : ELSE_CONTROL '{' code_block '}'
@@ -321,11 +329,27 @@ class NssParser:
         else:
             p[0] = p[3]
 
+    def p_else_statement_single(self, p):
+        """
+        else_statement : ELSE_CONTROL statement
+        """
+        block = CodeBlock()
+        block.add(p[2])
+        p[0] = block
+
     def p_else_if_statement(self, p):
         """
         else_if_statement : ELSE_CONTROL IF_CONTROL '(' expression ')' '{' code_block '}'
         """
         p[0] = ConditionAndBlock(p[4], p[7])
+
+    def p_else_if_statement_single(self, p):
+        """
+        else_if_statement : ELSE_CONTROL IF_CONTROL '(' expression ')' statement
+        """
+        block = CodeBlock()
+        block.add(p[6])
+        p[0] = ConditionAndBlock(p[4], block)
 
     def p_else_if_statements(self, p):
         """
