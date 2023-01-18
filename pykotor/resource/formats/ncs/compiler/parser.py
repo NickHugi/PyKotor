@@ -432,6 +432,7 @@ class NssParser:
                             | OBJECTINVALID_VALUE
                             | TRUE_VALUE
                             | FALSE_VALUE
+                            | INT_HEX_VALUE
         """
         p[0] = p[1]
 

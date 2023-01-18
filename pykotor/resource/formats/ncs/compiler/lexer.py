@@ -21,7 +21,7 @@ class NssLexer:
         self.lexer.begin("INITIAL")
 
     tokens = [
-        "STRING_VALUE", "INT_VALUE", "FLOAT_VALUE", "IDENTIFIER", "INT_TYPE", "FLOAT_TYPE", "OBJECT_TYPE",
+        "STRING_VALUE", "INT_VALUE", "FLOAT_VALUE", "IDENTIFIER", "INT_TYPE", "INT_HEX_VALUE", "FLOAT_TYPE", "OBJECT_TYPE",
         "VOID_TYPE",  "EVENT_TYPE", "EFFECT_TYPE", "ITEMPROPERTY_TYPE", "LOCATION_TYPE", "STRING_TYPE", "TALENT_TYPE",
         "VECTOR_TYPE", "ACTION_TYPE", "BREAK_CONTROL", "CASE_CONTROL", "DEFAULT_CONTROL", "DO_CONTROL", "ELSE_CONTROL",
         "SWITCH_CONTROL", "WHILE_CONTROL", "FOR_CONTROL", "IF_CONTROL", "TRUE_VALUE", "FALSE_VALUE", "OBJECTSELF_VALUE",
@@ -221,6 +221,11 @@ class NssLexer:
     def t_FLOAT_VALUE(self, t):
         r'[0-9]+\.[0-9]+f?|[0-9]f'
         t.value = FloatExpression(float(t.value.replace("f", "")))
+        return t
+
+    def t_INT_HEX_VALUE(self, t):
+        r'0x[0-9a-fA-F]+'
+        t.value = IntExpression(int(t.value, 16))
         return t
 
     def t_INT_VALUE(self, t):
