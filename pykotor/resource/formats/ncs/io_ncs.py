@@ -287,6 +287,9 @@ class NCSBinaryWriter(ResourceWriter):
         elif instruction.ins_type in [NCSInstructionType.LOGANDII, NCSInstructionType.LOGORII]:
             ...
 
+        elif instruction.ins_type in [NCSInstructionType.BOOLANDII]:
+            ...
+
         elif instruction.ins_type in [NCSInstructionType.INCORII]:
             ...
 
@@ -303,7 +306,8 @@ class NCSBinaryWriter(ResourceWriter):
             ...
 
         elif instruction.ins_type in [NCSInstructionType.RSADDI, NCSInstructionType.RSADDF, NCSInstructionType.RSADDO,
-                                      NCSInstructionType.RSADDS, NCSInstructionType.RSADDEFF, NCSInstructionType.SAVEBP]:
+                                      NCSInstructionType.RSADDS, NCSInstructionType.RSADDEFF, NCSInstructionType.RSADDEVT,
+                                      NCSInstructionType.RSADDLOC, NCSInstructionType.RSADDTAL, NCSInstructionType.SAVEBP]:
             ...
 
         elif instruction.ins_type in [NCSInstructionType.NOP]:
