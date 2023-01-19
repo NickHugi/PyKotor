@@ -1940,6 +1940,24 @@ class TestNSSCompiler(TestCase):
         self.assertEqual("", interpreter.action_snapshots[-2].arg_values[0])
         self.assertEqual(0.0, interpreter.action_snapshots[-1].arg_values[0])
 
+    def test_struct_get_invalid_member(self):
+        source = """
+            struct ABC
+            {
+                int value1;
+                string value2;
+                float value3;
+            };
+        
+            void main()
+            {
+                struct ABC abc;
+                PrintFloat(abc.value4);
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, source)
+
     def test_struct_set_members(self):
         ncs = self.compile("""
             struct ABC

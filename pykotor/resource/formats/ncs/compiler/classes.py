@@ -199,7 +199,7 @@ class Struct:
                 break
             size += member.size(root)
         else:
-            raise CompileException  # TODO
+            raise CompileException(f"Trying to access unknown variable '{identifier}' on '{self.identifier}'.")
         return size
 
     def child_type(self, root: CodeRoot, identifier: Identifier) -> DynamicDataType:
