@@ -875,7 +875,10 @@ class UnaryOperatorExpression(Expression):
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         type1 = self.expression1.compile(ncs, root, block)
-        block.tempstack += 4
+
+        # TODO: pass temp block instead of checking not None
+        if block:
+            block.tempstack += 4
 
         for x in self.compatibility:
             if type1 == x.rhs:
@@ -884,7 +887,8 @@ class UnaryOperatorExpression(Expression):
         else:
             raise CompileException(f"Cannot negate {type1.name.lower()}")
 
-        block.tempstack -= 4
+        if block:
+            block.tempstack -= 4
         return type1
 
 
