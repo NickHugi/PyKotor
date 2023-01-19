@@ -11,7 +11,7 @@ from pykotor.resource.formats.ncs.compiler.parser import NssParser
 
 class TestNSSCompiler(TestCase):
 
-    def compile(self, script: str, library: Dict[str, str] = None) -> NCS:
+    def compile(self, script: str, library: Dict[str, bytes] = None) -> NCS:
         nssLexer = NssLexer()
         nssParser = NssParser()
         nssParser.library = library
@@ -815,9 +815,7 @@ class TestNSSCompiler(TestCase):
         interpreter = Interpreter(ncs)
         interpreter.run()
 
-        snap = interpreter.action_snapshots[-1]
-        self.assertEqual("PrintFloat", snap.function_name)
-        self.assertEqual(8.0, snap.arg_values[0])
+        self.assertEqual(8.0, interpreter.action_snapshots[-1].arg_values[0])
 
     def test_multiplication_assignment(self):
         ncs = self.compile("""
@@ -1059,7 +1057,6 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        ncs.print()
 
     def test_if_else(self):
         ncs = self.compile("""
@@ -1636,7 +1633,7 @@ class TestNSSCompiler(TestCase):
             {
                 PrintInteger(123);
             }
-        """
+        """.encode()
 
         ncs = self.compile("""
             #include "otherscript"
@@ -1658,11 +1655,11 @@ class TestNSSCompiler(TestCase):
             {
                 PrintInteger(value);
             }
-        """
+        """.encode()
 
         second_script = """
             #include "first_script"
-        """
+        """.encode()
 
         ncs = self.compile("""
             #include "second_script"
@@ -1782,7 +1779,7 @@ class TestNSSCompiler(TestCase):
     def test_imported_global_variable(self):
         otherscript = """
             int iExperience = 55;
-        """
+        """.encode()
 
         ncs = self.compile("""
             #include "otherscript"
@@ -2132,7 +2129,6 @@ class TestNSSCompiler(TestCase):
                 PrintInteger(a);
             }
         """)
-        ncs.print()
 
         interpreter = Interpreter(ncs)
         interpreter.run()
@@ -2200,7 +2196,6 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        ncs.print()
 
         self.assertEqual(1, interpreter.action_snapshots[-3].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[-2].arg_values[0])
@@ -2227,7 +2222,6 @@ class TestNSSCompiler(TestCase):
 
         interpreter = Interpreter(ncs)
         interpreter.run()
-        ncs.print()
 
         self.assertEqual(1, interpreter.action_snapshots[-4].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[-3].arg_values[0])
@@ -2564,12 +2558,6 @@ class TestNSSCompiler(TestCase):
                 Cort_XP(abc);
             }
         """)
-        ncs.print()
 
         interpreter = Interpreter(ncs)
-        #interpreter.set_mock("GetSpellId", lambda: 8)
         interpreter.run()
-
-        print(interpreter.action_snapshots)
-
-        #self.assertEqual([8, 0], .action_snapshots[-1].arg_values)

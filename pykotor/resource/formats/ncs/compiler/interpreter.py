@@ -418,12 +418,12 @@ class Stack:
     def addition_op(self):
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value2.value + value1.value)
+        self.add(value2.data_type, value2.value + value1.value)
 
     def subtraction_op(self):
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value1.data_type, value2.value - value1.value)
+        self.add(value2.data_type, value2.value - value1.value)
 
     def multiplication_op(self):
         value1 = self._stack.pop()
