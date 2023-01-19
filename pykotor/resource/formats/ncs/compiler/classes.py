@@ -539,12 +539,6 @@ class IncludeScript(TopLevelObject):
         t: CodeRoot = nssParser.parser.parse(source, tracking=True)
         root.objects = t.objects + root.objects
 
-        '''imported = NCS()
-        t.compile(imported)
-        ncs.merge(imported)
-        # TODO: throw error of function redefined
-        root.function_map.update(t.function_map)'''
-
 
 class StructDefinition(TopLevelObject):
     def __init__(self, identifier: Identifier, members: List[StructMember]):
@@ -876,9 +870,7 @@ class UnaryOperatorExpression(Expression):
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
         type1 = self.expression1.compile(ncs, root, block)
 
-        # TODO: pass temp block instead of checking not None
-        if block:
-            block.tempstack += 4
+        block.tempstack += 4
 
         for x in self.compatibility:
             if type1 == x.rhs:
@@ -887,8 +879,7 @@ class UnaryOperatorExpression(Expression):
         else:
             raise CompileException(f"Cannot negate {type1.name.lower()}")
 
-        if block:
-            block.tempstack -= 4
+        block.tempstack -= 4
         return type1
 
 

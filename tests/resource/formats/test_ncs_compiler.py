@@ -1515,14 +1515,34 @@ class TestNSSCompiler(TestCase):
         
             void main()
             {
-                
+                PrintInteger(INT);
+                PrintFloat(FLOAT);
+                PrintString(STRING);
             }
         """)
 
         interpreter = Interpreter(ncs)
         interpreter.run()
 
+        self.assertEqual(interpreter.action_snapshots[-3].arg_values[0], 0)
+        self.assertEqual(interpreter.action_snapshots[-2].arg_values[0], 0.0)
+        self.assertEqual(interpreter.action_snapshots[-1].arg_values[0], "")
         self.assertTrue(any((inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.SAVEBP)))
+
+    def test_global_initialization_with_unary(self):
+        ncs = self.compile("""
+            int INT = -1;
+        
+            void main()
+            {
+                PrintInteger(INT);
+            }
+        """)
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+        self.assertEqual(interpreter.action_snapshots[-1].arg_values[0], -1)
 
     def test_comment(self):
         ncs = self.compile("""
