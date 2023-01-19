@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from enum import IntEnum, Enum
 from typing import NamedTuple, Optional, List
 
+from pykotor.common.misc import Game
+
 
 class NCSInstructionTypeValue(NamedTuple):
     byte_code: int
@@ -233,4 +235,10 @@ class NCSInstruction:
 class NCSOptimizer(ABC):
     @abstractmethod
     def optimize(self, ncs: NCS) -> None:
+        ...
+
+
+class NCSCompiler(ABC):
+    @abstractmethod
+    def compile(self, source_filepath: str, output_filepath: str, game: Game) -> None:
         ...
