@@ -1,7 +1,9 @@
-from typing import Dict
+import os
+from typing import Dict, Optional
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector3
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter, ActionSnapshot
@@ -11,12 +13,16 @@ from pykotor.resource.formats.ncs.compiler.parser import NssParser
 
 class TestNSSCompiler(TestCase):
 
-    def compile(self, script: str, library: Dict[str, bytes] = None) -> NCS:
+    def compile(self, script: str, library: Dict[str, bytes] = None, library_lookup: Optional[str] = None) -> NCS:
         nssLexer = NssLexer()
-        nssParser = NssParser()
-        nssParser.library = library
-        parser = nssParser.parser
+        nssParser = NssParser(
+            library=library,
+            constants=KOTOR_CONSTANTS,
+            functions=KOTOR_FUNCTIONS,
+            library_lookup=library_lookup
+        )
 
+        parser = nssParser.parser
         t = parser.parse(script, tracking=True)
 
         ncs = NCS()
@@ -1647,7 +1653,7 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(123, interpreter.action_snapshots[-1].arg_values[0])
 
-    def test_include(self):
+    def test_include_builtin(self):
         otherscript = """
             void TestFunc()
             {
@@ -1663,6 +1669,19 @@ class TestNSSCompiler(TestCase):
                 TestFunc();
             }
         """, library={"otherscript": otherscript})
+
+        interpreter = Interpreter(ncs)
+        interpreter.run()
+
+    def test_include_lookup(self):
+        ncs = self.compile("""
+            #include "includetest"
+        
+            void main()
+            {
+                TestFunc();
+            }
+        """, library_lookup="../../files/")
 
         interpreter = Interpreter(ncs)
         interpreter.run()
@@ -1695,6 +1714,18 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(13, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_missing_include(self):
+        source = """
+            #include "otherscript"
+
+            void main()
+            {
+                TestFunc();
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, source)
 
     def test_global_int_addition_assignment(self):
         ncs = self.compile("""

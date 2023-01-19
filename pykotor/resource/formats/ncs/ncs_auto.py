@@ -83,11 +83,12 @@ def compile_nss(
     library = {}
 
     nssLexer = NssLexer()
-    nssParser = NssParser()
-
-    nssParser.library = KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY
-    nssParser.functions = KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS
-    nssParser.constants = KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS
+    nssParser = NssParser(
+        library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
+        functions=KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS,
+        constants=KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS,
+        library_lookup=None
+    )
 
     t = nssParser.parser.parse(source, tracking=True)
 

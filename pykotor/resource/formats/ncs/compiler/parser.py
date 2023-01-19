@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from ply import yacc
 from ply.yacc import YaccProduction
@@ -25,13 +25,21 @@ from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
-    def __init__(self, errorlog=yacc.NullLogger()):
+    def __init__(
+            self,
+            functions: List[ScriptFunction],
+            constants: List[ScriptConstant],
+            library: Dict[str, bytes],
+            library_lookup: Optional[str],
+            errorlog=yacc.NullLogger(),
+    ):
         self.parser = yacc.yacc(module=self,
                                #errorlog=errorlog
                                 )
-        self.functions: List[ScriptFunction] = KOTOR_FUNCTIONS
-        self.constants: List[ScriptConstant] = KOTOR_CONSTANTS
-        self.library: Dict[str, str] = KOTOR_LIBRARY
+        self.functions: List[ScriptFunction] = functions
+        self.constants: List[ScriptConstant] = constants
+        self.library: Dict[str, bytes] = library
+        self.library_lookup: Optional[str] = library_lookup
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
@@ -60,7 +68,8 @@ class NssParser:
             p[1].objects.append(p[2])
             p[0] = p[1]
         else:
-            p[0] = CodeRoot(constants=self.constants)
+            p[0] = CodeRoot(constants=self.constants, functions=self.functions, library_lookup=self.library_lookup,
+                            library=self.library)
 
     def p_code_root_object(self, p):
         """

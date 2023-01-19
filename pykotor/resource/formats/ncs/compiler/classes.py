@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum
@@ -237,11 +238,16 @@ class StructMember:
 
 
 class CodeRoot:
-    def __init__(self, constants: List[ScriptConstant]):
+    def __init__(self, constants: List[ScriptConstant], functions: List[ScriptFunction], library_lookup: Optional[str],
+                 library: Dict[str, bytes]):
         self.objects: List[TopLevelObject] = []
 
-        self.function_map: Dict[str, FunctionReference] = {}
+        self.library: Dict[str, bytes] = library
+        self.functions: List[ScriptFunction] = functions
         self.constants: List[ScriptConstant] = constants
+        self.library_lookup: Optional[str] = library_lookup
+
+        self.function_map: Dict[str, FunctionReference] = {}
         self._global_scope: List[ScopedValue] = []
         self.struct_map: Dict[str, Struct] = {}
 
@@ -526,14 +532,17 @@ class IncludeScript(TopLevelObject):
         self.library: Dict[str, bytes] = library if library is not None else {}
 
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
-        if self.file.value in self.library:
-            source = self.library[self.file.value].decode()
-            # TODO try get file from drive
+        lookup_filepath = os.path.normpath(f"{root.library_lookup}/{self.file.value}.nss")
+
+        if root.library_lookup and os.path.exists(lookup_filepath):
+            source = BinaryReader.load_file(lookup_filepath).decode(errors="ignore")
+        elif self.file.value in self.library:
+            source = self.library[self.file.value].decode(errors="ignore")
         else:
-            raise CompileException(f"Could not find file '{self.file.value}.nss'.")
+            raise CompileException(f"Could not find included script '{self.file.value}.nss'.")
 
         from pykotor.resource.formats.ncs.compiler.parser import NssParser
-        nssParser = NssParser()
+        nssParser = NssParser(root.functions, root.constants, root.library, root.library_lookup, None)
         nssParser.library = self.library
         nssParser.constants = root.constants
         t: CodeRoot = nssParser.parser.parse(source, tracking=True)
