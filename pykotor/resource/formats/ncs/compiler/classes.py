@@ -41,7 +41,8 @@ class GlobalVariableInitialization(TopLevelObject):
         self.expression: Expression = value
 
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
-        expression_type = self.expression.compile(ncs, root, None)
+        block = CodeBlock()
+        expression_type = self.expression.compile(ncs, root, block)
         if expression_type != self.data_type:
             raise CompileException(f"Tried to declare '{self.identifier}' a new variable with incorrect type '{expression_type}'.")
         root.add_scoped(self.identifier, self.data_type)
@@ -256,7 +257,7 @@ class CodeRoot:
             included.append(include)
             include.compile(ncs, self)
 
-        globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration) or isinstance(obj, GlobalVariableInitialization)]
+        globals = [obj for obj in self.objects if isinstance(obj, GlobalVariableDeclaration) or isinstance(obj, GlobalVariableInitialization) or isinstance(obj, StructDefinition)]
         others = [obj for obj in self.objects if obj not in included and obj not in globals]
 
         if len(globals) > 0:
@@ -273,9 +274,6 @@ class CodeRoot:
             ncs.add(NCSInstructionType.JSR, jump=self.function_map["main"][0], index=entry_index)
 
     def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression) -> DynamicDataType:
-        if name not in self.function_map:
-            raise CompileException(f"Function '{name}' has not been defined.")
-
         args = list(args)
 
         func_map = self.function_map[name]
@@ -292,6 +290,14 @@ class CodeRoot:
             raise NotImplementedError("Cannot define a function that returns Vector yet")  # TODO
         elif definition.return_type == DynamicDataType.OBJECT:
             ncs.add(NCSInstructionType.RSADDO, args=[])
+        elif definition.return_type == DynamicDataType.TALENT:
+            ncs.add(NCSInstructionType.RSADDTAL, args=[])
+        elif definition.return_type == DynamicDataType.EVENT:
+            ncs.add(NCSInstructionType.RSADDEVT, args=[])
+        elif definition.return_type == DynamicDataType.LOCATION:
+            ncs.add(NCSInstructionType.RSADDLOC, args=[])
+        elif definition.return_type == DynamicDataType.EFFECT:
+            ncs.add(NCSInstructionType.RSADDEFF, args=[])
         elif definition.return_type == DynamicDataType.VOID:
             ...
         else:
@@ -828,7 +834,13 @@ class FunctionCallExpression(Expression):
         self._args: List[Expression] = args
 
     def compile(self, ncs: NCS, root: CodeRoot, block: CodeBlock) -> DynamicDataType:
-        return root.compile_jsr(ncs, block, self._function.label, *self._args)
+        if self._function.label not in root.function_map:
+            raise CompileException(f"Function '{self._function.label}' has not been defined.")
+
+        block.tempstack += root.function_map[self._function.label].definition.return_type.size(root)
+        x = root.compile_jsr(ncs, block, self._function.label, *self._args)
+        block.tempstack -= root.function_map[self._function.label].definition.return_type.size(root)
+        return x
 # endregion
 
 
@@ -1543,6 +1555,10 @@ class DynamicDataType:
     FLOAT: DynamicDataType
     OBJECT: DynamicDataType
     VECTOR: DynamicDataType
+    EVENT: DynamicDataType
+    TALENT: DynamicDataType
+    LOCATION: DynamicDataType
+    EFFECT: DynamicDataType
     VOID: DynamicDataType
 
     def __init__(self, datatype: DataType, struct_name: str = None):
@@ -1573,3 +1589,7 @@ DynamicDataType.FLOAT = DynamicDataType(DataType.FLOAT)
 DynamicDataType.OBJECT = DynamicDataType(DataType.OBJECT)
 DynamicDataType.VECTOR = DynamicDataType(DataType.VECTOR)
 DynamicDataType.VOID = DynamicDataType(DataType.VOID)
+DynamicDataType.EVENT = DynamicDataType(DataType.EVENT)
+DynamicDataType.TALENT = DynamicDataType(DataType.TALENT)
+DynamicDataType.LOCATION = DynamicDataType(DataType.LOCATION)
+DynamicDataType.EFFECT = DynamicDataType(DataType.EFFECT)
