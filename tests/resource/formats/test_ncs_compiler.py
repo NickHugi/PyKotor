@@ -2153,7 +2153,7 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(123, interpreter.action_snapshots[-1].arg_values[0])
 
-    # region User-defined Functions
+    # region Script Subroutines
     def test_prototype_no_args(self):
         ncs = self.compile("""
             void test();
@@ -2515,6 +2515,21 @@ class TestNSSCompiler(TestCase):
 
         self.assertEqual(1, len(interpreter.action_snapshots))
         self.assertEqual(5, interpreter.action_snapshots[0].arg_values[0])
+
+    def test_call_param_mismatch(self):
+        source ="""
+            int test(int a)
+            {
+                return a;
+            }
+
+            void main()
+            {
+                test("123");
+            }
+        """
+
+        self.assertRaises(CompileException, self.compile, source)
     # endregion
 
     def test_switch_scope_a(self):

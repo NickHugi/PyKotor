@@ -320,7 +320,7 @@ class CodeRoot:
             offset += arg_datatype.size(self)
             block.tempstack += arg_datatype.size(self)
             if param.data_type != arg_datatype:
-                raise CompileException  # TODO
+                raise CompileException(f"Wrong parameter type was past to '{param.identifier}' in function '{definition.identifier}'.")
         block.tempstack -= offset
         ncs.add(NCSInstructionType.JSR, jump=start_instruction)
 
