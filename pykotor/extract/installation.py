@@ -1139,6 +1139,83 @@ class Installation:
             module_names[module] = self.module_name(module)
         return module_names
 
+    def module_id(
+            self,
+            module_filename: str,
+            use_hardcoded: bool = True
+    ) -> str:
+        """
+        Returns the ID of the area for a module from the installations module list. The ID is taken from the
+        ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
+
+        Args:
+            module_filename: The name of the module file.
+            use_hardcoded: Use hardcoded values for modules where applicable.
+
+        Returns:
+            The ID of the area for the module.
+        """
+        root = module_filename.replace(".mod", "").replace(".erf", "").replace(".rim", "")
+        root = root[:-len("_s")] if root.endswith("_s") else root
+        root = root[:-len("_dlg")] if root.endswith("_dlg") else root
+
+        hardcoded = {
+            "STUNT_00": "000",
+            "STUNT_03A": "m03a",
+            "STUNT_06": "m07",
+            "STUNT_07": "m07",
+            "STUNT_12": "m12",
+            "STUNT_14": "m14",
+            "STUNT_16": "m16",
+            "STUNT_18": "m18",
+            "STUNT_19": "m19",
+            "STUNT_31B": "m31b",
+            "STUNT_34": "m34",
+            "STUNT_35": "m35",
+            "STUNT_42": "m43",
+            "STUNT_44": "m44",
+            "STUNT_50A": "m50a",
+            "STUNT_51A": "m51a",
+            "STUNT_54A": "m54a",
+            "STUNT_55A": "m55a",
+            "STUNT_56A": "m56a",
+            "STUNT_57": "m57",
+        }
+
+        if use_hardcoded:
+            for key in hardcoded.keys():
+                if key.upper() in module_filename.upper():
+                    return hardcoded[key]
+
+        mod_id = ""
+
+        for module in self.modules_list():
+            if root not in module:
+                continue
+
+            capsule = Capsule(self.module_path() + module)
+
+            if capsule.exists("module", ResourceType.IFO):
+                ifo = read_gff(capsule.resource("module", ResourceType.IFO))
+                mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
+
+        return mod_id
+
+    def module_ids(
+            self
+    ) -> Dict[str, str]:
+        """
+        Returns a dictionary mapping module filename to the ID of the module. The ID is taken from the
+        ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
+
+        Returns:
+            A dictionary mapping module filename to in-game module id.
+        """
+        module_ids = {}
+        for module in self.modules_list():
+            module_ids[module] = self.module_id(module)
+        return module_ids
+
     def uninstall_mods(
             self
     ) -> None:
