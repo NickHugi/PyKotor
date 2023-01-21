@@ -78,10 +78,9 @@ def bytes_ncs(
 
 def compile_nss(
         source: str,
-        game: Game
+        game: Game,
+        optimize: bool = False
 ) -> NCS:
-    library = {}
-
     nssLexer = NssLexer()
     nssParser = NssParser(
         library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
@@ -90,10 +89,10 @@ def compile_nss(
         library_lookup=None
     )
 
-    t = nssParser.parser.parse(source, tracking=True)
-
     ncs = NCS()
-    t.compile(ncs)
+
+    block = nssParser.parser.parse(source, tracking=True)
+    block.compile(ncs)
 
     ncs.optimize([RemoveNopOptimizer()])
 
