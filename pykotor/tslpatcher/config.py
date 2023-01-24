@@ -168,9 +168,14 @@ class ModInstaller:
                 folders=[self.mod_path],
                 capsules=[] if capsule is None else [capsule]
             )
+
+            norm_game_path = os.path.normpath(installation.path())
+            norm_file_path = os.path.normpath(patch.destination)
+            local_path = norm_file_path.replace(norm_game_path, "")
+
             template = templates[patch.filename] = read_gff(search.data)
 
-            self.log.add_note("Patching {}".format(patch.filename))
+            self.log.add_note("Patching {}".format(local_path))
             patch.apply(template, memory, self.log)
             self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template))
 
