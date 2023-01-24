@@ -157,16 +157,16 @@ class ModInstaller:
         for patch in config.patches_gff:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
 
-            scan_capsules = []
+            capsule = None
             if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
-                scan_capsules.append(Capsule(self.output_path + "/" + patch.destination))
+                capsule = Capsule(self.output_path + "/" + patch.destination)
 
             search = installation.resource(
                 resname,
                 restype,
                 [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS, SearchLocation.CUSTOM_MODULES],
                 folders=[self.mod_path],
-                capsules=scan_capsules
+                capsules=[] if capsule is None else [capsule]
             )
             template = templates[patch.filename] = read_gff(search.data)
 
