@@ -25,14 +25,14 @@ class InstallFile:
 
         if self.replace_existing or destination.resource(resname, restype) is None:
             if self.replace_existing and destination.resource(resname, restype) is not None:
-                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination.path()))
+                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination.filename()))
             else:
-                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination.path()))
+                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination.filename()))
 
             data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
             destination.add(resname, restype, data)
 
-    def apply_file(self, log: PatchLogger, source_folder: str, destination: str):
+    def apply_file(self, log: PatchLogger, source_folder: str, destination: str, local_folder: str):
         data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
         save_file_to = "{}/{}".format(destination, self.filename)
 
@@ -42,13 +42,13 @@ class InstallFile:
                 os.makedirs(destination)
 
             if self.replace_existing and not os.path.exists(save_file_to):
-                log.add_note("Replacing file {} to the {} folder...".format(self.filename, destination))
+                log.add_note("Replacing file {} to the {} folder...".format(self.filename, local_folder))
             else:
-                log.add_note("Copying file {} to the {} folder...".format(self.filename, destination))
+                log.add_note("Copying file {} to the {} folder...".format(self.filename, local_folder))
 
             BinaryWriter.dump(save_file_to, data)
         elif not self.replace_existing and os.path.exists(save_file_to):
-            log.add_warning("A file named {} already exists in the {} folder. Skipping file...".format(self.filename, destination))
+            log.add_warning("A file named {} already exists in the {} folder. Skipping file...".format(self.filename, local_folder))
 
 
 class InstallFolder:
@@ -63,4 +63,4 @@ class InstallFolder:
             destination = Capsule(target, create_nonexisting=True)
             [file.apply_encapsulated(log, source_path, destination) for file in self.files]
         else:
-            [file.apply_file(log, source_path, target) for file in self.files]
+            [file.apply_file(log, source_path, target, self.foldername) for file in self.files]

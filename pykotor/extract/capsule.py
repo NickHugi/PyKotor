@@ -1,3 +1,4 @@
+import ntpath
 import os.path
 from typing import List, Optional, Dict
 
@@ -148,7 +149,12 @@ class Capsule:
     def path(
             self
     ) -> str:
-        return self._path
+        return os.path.normpath(self._path)
+
+    def filename(
+            self
+    ) -> str:
+        return ntpath.basename(self._path)
 
     def _load_erf(
             self,
