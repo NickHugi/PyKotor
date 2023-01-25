@@ -13,6 +13,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.gff import read_gff, write_gff
+from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
@@ -21,6 +22,7 @@ from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFolder
+from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import Modifications2DA
@@ -61,6 +63,7 @@ class PatcherConfig:
         self.patches_2da: List[Modifications2DA] = []
         self.patches_gff: List[ModificationsGFF] = []
         self.patches_ssf: List[ModificationsSSF] = []
+        self.patches_nss: List[ModificationsNSS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
     def load(self, ini_text: str, append: TLK) -> None:
@@ -73,7 +76,7 @@ class PatcherConfig:
         ConfigReader(ini, append).load(self)
 
     def patch_count(self) -> int:
-        return len(self.patches_2da) + len(self.patches_gff) + len(self.patches_ssf) + 1 + len(self.install_list)
+        return len(self.patches_2da) + len(self.patches_gff) + len(self.patches_ssf) + 1 + len(self.install_list) + len(self.patches_nss)
 
 
 class PatcherNamespace:
@@ -136,7 +139,7 @@ class ModInstaller:
             twoda = twodas[patch.filename] = read_2da(search.data)
 
             self.log.add_note("Patching {}".format(patch.filename))
-            patch.apply(twoda, memory)
+            patch.apply(twoda, memory, self.log)
             write_2da(twoda, "{}/override/{}".format(self.output_path, patch.filename))
 
             self.log.complete_patch()
@@ -176,15 +179,33 @@ class ModInstaller:
 
             self.log.complete_patch()
 
-    def write(self, filepath: str, filename: str, data: bytes) -> None:
+        # Apply changes to NSS files
+        for patch in config.patches_nss:
+            resname, restype = ResourceIdentifier.from_path(patch.filename)
+
+            nss = [BinaryReader.load_file(f"{self.mod_path}/{patch.filename}").decode(errors="ignore")]
+
+            self.log.add_note("Patching {}".format(patch.filename))
+            patch.apply(nss, memory, self.log)
+
+            data = bytes_ncs(compile_nss(nss[0], installation.game()))
+            self.write(f"{self.output_path}/{patch.destination}", patch.filename.replace(".nss", ".ncs"), data, patch.replace_file)
+
+            self.log.complete_patch()
+
+    def write(self, destination: str, filename: str, data: bytes, replace: bool = False) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
-        if filepath.endswith(".rim"):
-            rim = read_rim(BinaryReader.load_file(filepath)) if os.path.exists(filepath) else RIM()
-            rim.set(resname, restype, data)
-            write_rim(rim, filepath)
-        elif filepath.endswith(".mod") or filepath.endswith(".erf"):
-            erf = read_erf(BinaryReader.load_file(filepath)) if os.path.exists(filepath) else ERF()
-            erf.set(resname, restype, data)
-            write_erf(erf, filepath)
+        if destination.endswith(".rim"):
+            rim = read_rim(BinaryReader.load_file(destination)) if os.path.exists(destination) else RIM()
+            if not rim.get(resname, restype) or replace:
+                rim.set(resname, restype, data)
+                write_rim(rim, destination)
+        elif destination.endswith(".mod") or destination.endswith(".erf"):
+            erf = read_erf(BinaryReader.load_file(destination)) if os.path.exists(destination) else ERF()
+            if not erf.get(resname, restype) or replace:
+                erf.set(resname, restype, data)
+                write_erf(erf, destination)
         else:
-            BinaryWriter.dump(filepath, data)
+            filepath = f"{destination}"
+            if not os.path.exists(filepath) or replace:
+                BinaryWriter.dump(filepath, data)

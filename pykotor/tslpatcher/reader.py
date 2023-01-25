@@ -18,6 +18,7 @@ from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import ModificationsGFF, ModifyFieldGFF, AddFieldGFF, \
     LocalizedStringDelta, FieldValueConstant, FieldValue2DAMemory, FieldValueTLKMemory, FieldValue
 from pykotor.tslpatcher.mods.install import InstallFolder, InstallFile
+from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModifySSF, ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModifyTLK
 from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, TargetType, WarningException, AddRow2DA, \
@@ -53,6 +54,7 @@ class ConfigReader:
         self.load_2da()
         self.load_ssf()
         self.load_gff()
+        self.load_nss()
 
         return self.config
 
@@ -189,6 +191,23 @@ class ConfigReader:
                 else:
                     modifier = self.modify_field_gff(name, value)
                     modificaitons.modifiers.append(modifier)
+
+    def load_nss(self) -> None:
+        if "CompileList" not in self.ini:
+            return
+
+        files = dict(self.ini["CompileList"].items())
+
+        for identifier, file in files.items():
+            modifications_ini = dict(self.ini[file].items())
+            replace = identifier.startswith("Replace")
+
+            modifications = ModificationsNSS(file, replace)
+            self.config.patches_nss.append(modifications)
+
+            for name, value in modifications_ini.items():
+                if name.lower() == "!destination":
+                    modifications.destination = value
 
     #################
     def field_value_gff(self, raw_value: str) -> FieldValue:
