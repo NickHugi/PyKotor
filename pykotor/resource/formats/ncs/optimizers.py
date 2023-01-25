@@ -69,10 +69,10 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
                 continue
             reachable.add(instruction)
 
-            if instruction.ins_type in [NCSInstructionType.JZ, NCSInstructionType.JNZ]:
+            if instruction.ins_type in [NCSInstructionType.JZ, NCSInstructionType.JNZ, NCSInstructionType.JSR]:
                 checking.append(ncs.instructions.index(instruction.jump))
                 checking.append(check + 1)
-            elif instruction.ins_type in [NCSInstructionType.JMP, NCSInstructionType.JSR]:
+            elif instruction.ins_type in [NCSInstructionType.JMP]:
                 checking.append(ncs.instructions.index(instruction.jump))
             elif instruction.ins_type in [NCSInstructionType.RETN]:
                 ...
