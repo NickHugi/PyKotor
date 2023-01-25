@@ -1,3 +1,4 @@
+import ntpath
 import os.path
 from configparser import ConfigParser
 from enum import IntEnum
@@ -139,7 +140,7 @@ class ModInstaller:
             twoda = twodas[patch.filename] = read_2da(search.data)
 
             self.log.add_note("Patching {}".format(patch.filename))
-            patch.apply(twoda, memory, self.log)
+            patch.apply(twoda, memory)
             write_2da(twoda, "{}/override/{}".format(self.output_path, patch.filename))
 
             self.log.complete_patch()
@@ -172,13 +173,17 @@ class ModInstaller:
                 capsules=[] if capsule is None else [capsule]
             )
 
-            norm_game_path = os.path.normpath(installation.path())
-            norm_file_path = os.path.normpath(patch.destination)
+            norm_game_path = ntpath.normpath(installation.path())
+            norm_file_path = ntpath.normpath(patch.destination)
             local_path = norm_file_path.replace(norm_game_path, "")
+            local_folder = local_path.replace(patch.filename, "")
+
+            if capsule is None:
+                self.log.add_note(f"Patching {patch.filename} in the {local_folder} folder.")
+            else:
+                self.log.add_note(f"Patching {patch.filename} in the {local_path} archive.")
 
             template = templates[patch.filename] = read_gff(search.data)
-
-            self.log.add_note("Patching {}".format(local_path))
             patch.apply(template, memory, self.log)
             self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template))
 
@@ -186,11 +191,19 @@ class ModInstaller:
 
         # Apply changes to NSS files
         for patch in config.patches_nss:
-            resname, restype = ResourceIdentifier.from_path(patch.filename)
-
             nss = [BinaryReader.load_file(f"{self.mod_path}/{patch.filename}").decode(errors="ignore")]
 
-            self.log.add_note("Patching {}".format(patch.filename))
+            norm_game_path = ntpath.normpath(installation.path())
+            norm_file_path = ntpath.normpath(patch.destination)
+            local_path = norm_file_path.replace(norm_game_path, "")
+            local_folder = local_path.replace(patch.filename, "")
+
+            if capsule is None:
+                self.log.add_note(f"Patching {patch.filename} in the {local_folder} folder.")
+            else:
+                self.log.add_note(f"Patching {patch.filename} in the {local_path} archive.")
+
+            self.log.add_note("Compiling {}".format(patch.filename))
             patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
