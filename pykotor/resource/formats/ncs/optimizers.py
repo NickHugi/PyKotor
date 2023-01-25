@@ -56,7 +56,35 @@ class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
 
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):
     def optimize(self, ncs: NCS) -> None:
-        raise NotImplementedError()
+        # Find list of unreachable instructions
+        reachable = set()
+        checking = [0]
+        while len(checking) > 0:
+            check = checking.pop(0)
+            if check > len(ncs.instructions):
+                continue
+
+            instruction = ncs.instructions[check]
+            if instruction in reachable:
+                continue
+            reachable.add(instruction)
+
+            if instruction.ins_type in [NCSInstructionType.JZ, NCSInstructionType.JNZ]:
+                checking.append(ncs.instructions.index(instruction.jump))
+                checking.append(check + 1)
+            elif instruction.ins_type in [NCSInstructionType.JMP, NCSInstructionType.JSR]:
+                checking.append(ncs.instructions.index(instruction.jump))
+            elif instruction.ins_type in [NCSInstructionType.RETN]:
+                ...
+            else:
+                checking.append(check + 1)
+
+        unreachable = [instruction for instruction in ncs.instructions if instruction not in reachable]
+        for instruction in unreachable:
+            # We do not have to worry about fixing any instructions that JMP since the target instructions here should
+            # be detached for the actual (reachable) script.
+            ncs.instructions.remove(instruction)
+            self.instructions_cleared += 1
 
 
 class RemoveUnusedGlobalsInStackOptimizer(NCSOptimizer):
