@@ -34,7 +34,7 @@ class NssParser:
             errorlog=yacc.NullLogger(),
     ):
         self.parser = yacc.yacc(module=self,
-                               #errorlog=errorlog
+                                errorlog=errorlog
                                 )
         self.functions: List[ScriptFunction] = functions
         self.constants: List[ScriptConstant] = constants
