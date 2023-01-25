@@ -7,7 +7,7 @@ from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer, NCSInstructionTy
 class RemoveNopOptimizer(NCSOptimizer):
     """
     NCS Compiler uses NOP instructions as stubs to simplify the compilation process however as their name suggests
-    they do not perform any actual function. This optimizer removes all occureses of NOP instructions from the
+    they do not perform any actual function. This optimizer removes all occurrences of NOP instructions from the
     compiled script.
     """
 
@@ -25,6 +25,9 @@ class RemoveNopOptimizer(NCSOptimizer):
 
 
 class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
+    def __init__(self):
+        super().__init__()
+
     def optimize(self, ncs: NCS) -> None:
         movsp0 = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0]
 
@@ -38,6 +41,7 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
         for inst in copy(ncs.instructions):
             if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0:
                 ncs.instructions.remove(inst)
+                self.instructions_cleared += 1
 
 
 class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
@@ -52,7 +56,35 @@ class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
 
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):
     def optimize(self, ncs: NCS) -> None:
-        raise NotImplementedError()
+        # Find list of unreachable instructions
+        reachable = set()
+        checking = [0]
+        while len(checking) > 0:
+            check = checking.pop(0)
+            if check > len(ncs.instructions):
+                continue
+
+            instruction = ncs.instructions[check]
+            if instruction in reachable:
+                continue
+            reachable.add(instruction)
+
+            if instruction.ins_type in [NCSInstructionType.JZ, NCSInstructionType.JNZ, NCSInstructionType.JSR]:
+                checking.append(ncs.instructions.index(instruction.jump))
+                checking.append(check + 1)
+            elif instruction.ins_type in [NCSInstructionType.JMP]:
+                checking.append(ncs.instructions.index(instruction.jump))
+            elif instruction.ins_type in [NCSInstructionType.RETN]:
+                ...
+            else:
+                checking.append(check + 1)
+
+        unreachable = [instruction for instruction in ncs.instructions if instruction not in reachable]
+        for instruction in unreachable:
+            # We do not have to worry about fixing any instructions that JMP since the target instructions here should
+            # be detached for the actual (reachable) script.
+            ncs.instructions.remove(instruction)
+            self.instructions_cleared += 1
 
 
 class RemoveUnusedGlobalsInStackOptimizer(NCSOptimizer):

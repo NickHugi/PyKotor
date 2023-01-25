@@ -7,7 +7,7 @@ from enum import IntEnum
 from typing import Dict, List, Optional, NamedTuple
 
 from pykotor.common.language import Language, Gender, LocalizedString
-from pykotor.common.misc import CaseInsensitiveDict
+from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.chitin import Chitin
@@ -541,6 +541,11 @@ class Installation:
         """
         return list(self._override[directory])
     # endregion
+
+    def game(
+        self
+    ) -> Game:
+        return Game(2 if os.path.exists(f"{self._path}/swkotor2.exe") else 1)
 
     def talktable(
             self

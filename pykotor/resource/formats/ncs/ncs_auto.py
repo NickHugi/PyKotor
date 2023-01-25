@@ -1,9 +1,12 @@
+from typing import List
+
 from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, TSL_FUNCTIONS, KOTOR_CONSTANTS, TSL_CONSTANTS
 from pykotor.common.scriptlib import TSL_LIBRARY, KOTOR_LIBRARY
 from pykotor.resource.formats.ncs import NCS, NCSBinaryReader, NCSBinaryWriter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
+from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
 from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer, RemoveMoveSPEqualsZeroOptimizer
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
@@ -79,9 +82,19 @@ def bytes_ncs(
 def compile_nss(
         source: str,
         game: Game,
-        optimize: bool = False
+        optimizers: List[NCSOptimizer] = None
 ) -> NCS:
-    nssLexer = NssLexer()
+    """
+    Returns NCS object compiled from input source string.
+
+    Attributes:
+        source: The source code.
+        game: Target game for the NCS object.
+        optimizers: What post-compilation optimizers to apply to the NCS object.
+    """
+    nssLexer = NssLexer(
+
+    )
     nssParser = NssParser(
         library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
         functions=KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS,
@@ -94,6 +107,9 @@ def compile_nss(
     block = nssParser.parser.parse(source, tracking=True)
     block.compile(ncs)
 
-    ncs.optimize([RemoveNopOptimizer()])
+    optimizers = [RemoveNopOptimizer()] if optimizers is None else [RemoveNopOptimizer()] + optimizers
+    [optimizer.reset() for optimizer in optimizers]
+
+    ncs.optimize(optimizers)
 
     return ncs
