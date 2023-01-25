@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional
 
 from ply import yacc
+from ply.lex import LexToken
 from ply.yacc import YaccProduction
 
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, KOTOR_CONSTANTS
@@ -20,7 +21,7 @@ from pykotor.resource.formats.ncs.compiler.classes import Identifier, Identifier
     DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
     StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
     PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression, \
-    GlobalVariableInitialization, VariableDeclarator, VariableInitializer, NopStatement
+    GlobalVariableInitialization, VariableDeclarator, VariableInitializer, NopStatement, CompileException
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
@@ -34,7 +35,10 @@ class NssParser:
             errorlog=yacc.NullLogger()
     ):
         self.parser = yacc.yacc(module=self,
-                                errorlog=errorlog
+                                errorlog=errorlog,
+                                write_tables=False,
+                                debug=False,
+                                debuglog=yacc.NullLogger()
                                 )
         self.functions: List[ScriptFunction] = functions
         self.constants: List[ScriptConstant] = constants
@@ -58,6 +62,9 @@ class NssParser:
         ('right', 'BITWISE_NOT', 'NOT'),
         ('left', 'INCREMENT', 'DECREMENT'),
     )
+
+    def p_error(self, p: LexToken):
+        raise CompileException(f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'")
 
     def p_code_root(self, p):
         """

@@ -17,7 +17,7 @@ import ply.lex as lex
 
 class NssLexer:
     def __init__(self, errorlog=lex.NullLogger()):
-        self.lexer = lex.lex(module=self, errorlog=errorlog)
+        self.lexer = lex.lex(module=self, errorlog=errorlog, nowarn=True)
         self.lexer.begin("INITIAL")
 
     tokens = [
@@ -29,10 +29,10 @@ class NssLexer:
         "MOD", "EQUALS", "NOT_EQUALS", "GREATER_THAN", "LESS_THAN",
         "LESS_THAN_OR_EQUALS", "GREATER_THAN_OR_EQUALS", "AND", "OR",
         "NOT", "BITWISE_AND", "BITWISE_OR", "BITWISE_LEFT",
-        "BITWISE_RIGHT", "BITWISE_XOR", "BITWISE_NOT", "COMMENT", "MULTILINE_COMMENT",
+        "BITWISE_RIGHT", "BITWISE_XOR", "BITWISE_NOT",
         "INCLUDE", "RETURN", "ADDITION_ASSIGNMENT_OPERATOR", "SUBTRACTION_ASSIGNMENT_OPERATOR",
         "MULTIPLICATION_ASSIGNMENT_OPERATOR", "DIVISION_ASSIGNMENT_OPERATOR", "CONTINUE_CONTROL",
-        "STRUCT", "INCREMENT", "DECREMENT", "NEWLINE", "NOP"
+        "STRUCT", "INCREMENT", "DECREMENT", "NOP"
     ]
 
     literals = [
