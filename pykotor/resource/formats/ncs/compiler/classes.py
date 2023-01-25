@@ -278,6 +278,10 @@ class CodeRoot:
         if "main" in self.function_map:
             ncs.add(NCSInstructionType.RETN, args=[], index=entry_index)
             ncs.add(NCSInstructionType.JSR, jump=self.function_map["main"][0], index=entry_index)
+        elif "StartingConditional" in self.function_map:
+            ncs.add(NCSInstructionType.RSADDI, args=[], index=entry_index)
+            ncs.add(NCSInstructionType.RETN, args=[], index=entry_index)
+            ncs.add(NCSInstructionType.JSR, jump=self.function_map["StartingConditional"][0], index=entry_index)
 
     def compile_jsr(self, ncs: NCS, block: CodeBlock, name: str, *args: Expression) -> DynamicDataType:
         args = list(args)
