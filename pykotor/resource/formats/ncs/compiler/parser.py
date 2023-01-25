@@ -31,7 +31,7 @@ class NssParser:
             constants: List[ScriptConstant],
             library: Dict[str, bytes],
             library_lookup: Optional[str],
-            errorlog=yacc.NullLogger(),
+            errorlog=yacc.NullLogger()
     ):
         self.parser = yacc.yacc(module=self,
                                 errorlog=errorlog

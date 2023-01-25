@@ -233,9 +233,16 @@ class NCSInstruction:
 
 
 class NCSOptimizer(ABC):
+    def __init__(self):
+        self.instructions_cleared: int = 0
+
     @abstractmethod
     def optimize(self, ncs: NCS) -> None:
         ...
+
+    def reset(self) -> None:
+        """Reset stats counter."""
+        self.instructions_cleared = 0
 
 
 class NCSCompiler(ABC):

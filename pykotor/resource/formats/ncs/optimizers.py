@@ -7,7 +7,7 @@ from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer, NCSInstructionTy
 class RemoveNopOptimizer(NCSOptimizer):
     """
     NCS Compiler uses NOP instructions as stubs to simplify the compilation process however as their name suggests
-    they do not perform any actual function. This optimizer removes all occureses of NOP instructions from the
+    they do not perform any actual function. This optimizer removes all occurrences of NOP instructions from the
     compiled script.
     """
 
@@ -25,6 +25,9 @@ class RemoveNopOptimizer(NCSOptimizer):
 
 
 class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
+    def __init__(self):
+        super().__init__()
+
     def optimize(self, ncs: NCS) -> None:
         movsp0 = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0]
 
@@ -38,6 +41,7 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
         for inst in copy(ncs.instructions):
             if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0:
                 ncs.instructions.remove(inst)
+                self.instructions_cleared += 1
 
 
 class MergeAdjacentMoveSPOptimizer(NCSOptimizer):
