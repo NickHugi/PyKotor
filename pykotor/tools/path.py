@@ -24,10 +24,10 @@ def locate_game_path(game: Game):
         },
         "Darwin": {
             Game.K1: [
-                "~/Library/Application Support/Steam/SteamApps/common/swkotor",
+                "~/Library/Application Support/Steam/SteamApps/common/swkotor/Knights of the Old Republic.app/Contents/Assets",
             ],
             Game.K2: [
-                "~/Library/Application Support/Steam/SteamApps/common/Knights of the Old Republic II",
+                "~/Library/Application Support/Steam/SteamApps/common/Knights of the Old Republic II/Knights of the Old Republic II.app/Contents/Assets",
             ]
         },
         "Linux": {
