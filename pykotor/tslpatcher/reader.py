@@ -238,7 +238,7 @@ class ConfigReader:
             components = string_value.split("|")
             value = FieldValueConstant(Vector4(*[float(x) for x in components]))
         else:
-            value = FieldValueConstant(string_value)
+            value = FieldValueConstant(string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
 
         if "(strref)" in name:
             value = FieldValueConstant(LocalizedStringDelta(value))
@@ -293,7 +293,7 @@ class ConfigReader:
         elif field_type.return_type() == float:
             value = FieldValueConstant(float(raw_value))
         elif field_type.return_type() == str:
-            value = FieldValueConstant(raw_value)
+            value = FieldValueConstant(raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
         elif field_type.return_type() == ResRef:
             value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == LocalizedString:
