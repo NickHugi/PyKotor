@@ -185,12 +185,16 @@ class ModInstaller:
 
             template = templates[patch.filename] = read_gff(search.data)
             patch.apply(template, memory, self.log)
-            self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template))
+            self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template), True)
 
             self.log.complete_patch()
 
         # Apply changes to NSS files
         for patch in config.patches_nss:
+            capsule = None
+            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
+                capsule = Capsule(self.output_path + "/" + patch.destination)
+
             nss = [BinaryReader.load_file(f"{self.mod_path}/{patch.filename}").decode(errors="ignore")]
 
             norm_game_path = ntpath.normpath(installation.path())
