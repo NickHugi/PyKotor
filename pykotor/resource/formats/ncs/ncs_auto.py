@@ -82,7 +82,8 @@ def bytes_ncs(
 def compile_nss(
         source: str,
         game: Game,
-        optimizers: List[NCSOptimizer] = None
+        optimizers: List[NCSOptimizer] = None,
+        library_lookup: List[str] = None
 ) -> NCS:
     """
     Returns NCS object compiled from input source string.
@@ -99,7 +100,7 @@ def compile_nss(
         library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
         functions=KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS,
         constants=KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS,
-        library_lookup=None
+        library_lookup=library_lookup
     )
 
     ncs = NCS()
