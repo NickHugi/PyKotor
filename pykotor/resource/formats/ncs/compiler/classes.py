@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ntpath
 import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -238,14 +239,14 @@ class StructMember:
 
 
 class CodeRoot:
-    def __init__(self, constants: List[ScriptConstant], functions: List[ScriptFunction], library_lookup: Optional[str],
+    def __init__(self, constants: List[ScriptConstant], functions: List[ScriptFunction], library_lookup: Optional[List[str]],
                  library: Dict[str, bytes]):
         self.objects: List[TopLevelObject] = []
 
         self.library: Dict[str, bytes] = library
         self.functions: List[ScriptFunction] = functions
         self.constants: List[ScriptConstant] = constants
-        self.library_lookup: Optional[str] = library_lookup
+        self.library_lookup: Optional[List[str]] = library_lookup if library_lookup is not None else []
 
         self.function_map: Dict[str, FunctionReference] = {}
         self._global_scope: List[ScopedValue] = []
@@ -536,14 +537,16 @@ class IncludeScript(TopLevelObject):
         self.library: Dict[str, bytes] = library if library is not None else {}
 
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
-        lookup_filepath = os.path.normpath(f"{root.library_lookup}/{self.file.value}.nss")
-
-        if root.library_lookup and os.path.exists(lookup_filepath):
-            source = BinaryReader.load_file(lookup_filepath).decode(errors="ignore")
-        elif self.file.value in self.library:
-            source = self.library[self.file.value].decode(errors="ignore")
+        for folder in root.library_lookup:
+            filepath = ntpath.normpath(f"{folder}/{self.file.value}.nss")
+            if ntpath.exists(filepath):
+                source = BinaryReader.load_file(filepath).decode(errors="ignore")
+                break
         else:
-            raise CompileException(f"Could not find included script '{self.file.value}.nss'.")
+            if self.file.value in self.library:
+                source = self.library[self.file.value].decode(errors="ignore")
+            else:
+                raise CompileException(f"Could not find included script '{self.file.value}.nss'.")
 
         from pykotor.resource.formats.ncs.compiler.parser import NssParser
         nssParser = NssParser(root.functions, root.constants, root.library, root.library_lookup, None)

@@ -31,7 +31,7 @@ class NssParser:
             functions: List[ScriptFunction],
             constants: List[ScriptConstant],
             library: Dict[str, bytes],
-            library_lookup: Optional[str],
+            library_lookup: Optional[List[str]],
             errorlog=yacc.NullLogger()
     ):
         self.parser = yacc.yacc(module=self,
@@ -43,7 +43,7 @@ class NssParser:
         self.functions: List[ScriptFunction] = functions
         self.constants: List[ScriptConstant] = constants
         self.library: Dict[str, bytes] = library
-        self.library_lookup: Optional[str] = library_lookup
+        self.library_lookup: Optional[List[str]] = library_lookup
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
