@@ -4,3 +4,6 @@ venv
 dist
 PyKotor.egg-info
 ignore
+build/*
+*.pyc
+pykotor/gl

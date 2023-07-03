@@ -1,5 +1,6 @@
 import os
-from configparser import ConfigParser
+from configparser import ConfigParser, DuplicateOptionError, DuplicateSectionError, RawConfigParser, SectionProxy
+import sys
 from typing import Dict, Optional, Union, Tuple, List
 
 from pykotor.common.language import LocalizedString
@@ -25,6 +26,115 @@ from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, Targe
     CopyRow2DA, AddColumn2DA, Modifications2DA, RowValue2DAMemory, RowValueTLKMemory, RowValueHigh, RowValueRowIndex, \
     RowValueRowLabel, RowValueConstant, RowValueRowCell
 
+class ConfigParser(RawConfigParser):
+    def _read(self, fp, fpname):
+        """Override the _read in RawConfigParser so it doesn't throw exceptions when there's no header defined.
+        This override matches TSLPatcher.
+        """
+        elements_added = set()
+        cursect = None                        # None, or a dictionary
+        sectname = None
+        optname = None
+        lineno = 0
+        indent_level = 0
+        e = None                              # None, or an exception
+        for lineno, line in enumerate(fp, start=1):
+            comment_start = sys.maxsize
+            # strip inline comments
+            inline_prefixes = {p: -1 for p in self._inline_comment_prefixes}
+            while comment_start == sys.maxsize and inline_prefixes:
+                next_prefixes = {}
+                for prefix, index in inline_prefixes.items():
+                    index = line.find(prefix, index+1)
+                    if index == -1:
+                        continue
+                    next_prefixes[prefix] = index
+                    if index == 0 or (index > 0 and line[index-1].isspace()):
+                        comment_start = min(comment_start, index)
+                inline_prefixes = next_prefixes
+            # strip full line comments
+            for prefix in self._comment_prefixes:
+                if line.strip().startswith(prefix):
+                    comment_start = 0
+                    break
+            if comment_start == sys.maxsize:
+                comment_start = None
+            value = line[:comment_start].strip()
+            if not value:
+                if self._empty_lines_in_values:
+                    # add empty line to the value, but only if there was no
+                    # comment on the line
+                    if (comment_start is None and
+                        cursect is not None and
+                        optname and
+                        cursect[optname] is not None):
+                        cursect[optname].append('') # newlines added at join
+                else:
+                    # empty line marks end of value
+                    indent_level = sys.maxsize
+                continue
+            # continuation line?
+            first_nonspace = self.NONSPACECRE.search(line)
+            cur_indent_level = first_nonspace.start() if first_nonspace else 0
+            if (cursect is not None and optname and
+                cur_indent_level > indent_level):
+                cursect[optname].append(value)
+            # a section header or option header?
+            else:
+                indent_level = cur_indent_level
+                # is it a section header?
+                mo = self.SECTCRE.match(value)
+                if mo:
+                    sectname = mo.group('header')
+                    if sectname in self._sections:
+                        if self._strict and sectname in elements_added:
+                            raise DuplicateSectionError(sectname, fpname,
+                                                        lineno)
+                        cursect = self._sections[sectname]
+                        elements_added.add(sectname)
+                    elif sectname == self.default_section:
+                        cursect = self._defaults
+                    else:
+                        cursect = self._dict()
+                        self._sections[sectname] = cursect
+                        self._proxies[sectname] = SectionProxy(self, sectname)
+                        elements_added.add(sectname)
+                    # So sections can't start with a continuation line
+                    optname = None
+                # no section header in the file?
+                elif cursect is None:
+                    continue # this is the patch
+                # an option line?
+                else:
+                    mo = self._optcre.match(value)
+                    if mo:
+                        optname, vi, optval = mo.group('option', 'vi', 'value')
+                        if not optname:
+                            e = self._handle_error(e, fpname, lineno, line)
+                        optname = self.optionxform(optname.rstrip())
+                        if (self._strict and
+                            (sectname, optname) in elements_added):
+                            raise DuplicateOptionError(sectname, optname,
+                                                       fpname, lineno)
+                        elements_added.add((sectname, optname))
+                        # This check is fine because the OPTCRE cannot
+                        # match if it would set optval to None
+                        if optval is not None:
+                            optval = optval.strip()
+                            cursect[optname] = [optval]
+                        else:
+                            # valueless option handling
+                            cursect[optname] = None
+                    else:
+                        # a non-fatal parsing error occurred. set up the
+                        # exception but keep going. the exception will be
+                        # raised at the end of the file and will contain a
+                        # list of all bogus lines
+                        e = self._handle_error(e, fpname, lineno, line)
+        self._join_multiline_values()
+        # if any parsing errors occurred, raise an exception
+        if e:
+            raise e
 
 class ConfigReader:
     def __init__(self, ini: ConfigParser, append: TLK) -> None:
@@ -291,7 +401,9 @@ class ConfigReader:
         elif field_type.return_type() == int:
             value = FieldValueConstant(int(raw_value))
         elif field_type.return_type() == float:
-            value = FieldValueConstant(float(raw_value))
+            # Replace comma with dot for decimal separator to match TSLPatcher syntax.
+            float_val = raw_value.replace(',', '.')
+            value = FieldValueConstant(float(float_val))
         elif field_type.return_type() == str:
             value = FieldValueConstant(raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
         elif field_type.return_type() == ResRef:
@@ -475,22 +587,24 @@ class NamespaceReader:
     @classmethod
     def from_filepath(cls, path: str) -> List[PatcherNamespace]:
         ini_text = BinaryReader.load_file(path).decode()
-        ini = ConfigParser()
+        ini = ConfigParser(interpolation=None)
         ini.optionxform = str
         ini.read_string(ini_text)
         return NamespaceReader(ini).load()
 
     def load(self) -> List[PatcherNamespace]:
         namespace_ids = dict(self.ini["Namespaces"].items()).values()
+        self.ini = {key.lower(): value for key, value in self.ini.items()}
         namespaces = []
 
         for namespace_id in namespace_ids:
             namespace = PatcherNamespace()
+            namespace_id = namespace_id.lower()
             namespace.namespace_id = namespace_id
             namespace.ini_filename = self.ini[namespace_id]["IniName"]
             namespace.info_filename = self.ini[namespace_id]["InfoName"]
-            namespace.data_folderpath = self.ini[namespace_id]["DataPath"]
-            namespace.name = self.ini[namespace_id]["Name"]
+            namespace.data_folderpath = self.ini[namespace_id].get("DataPath")
+            namespace.name = self.ini[namespace_id].get("Name")
             namespace.description = self.ini[namespace_id]["Description"]
             namespaces.append(namespace)
 
