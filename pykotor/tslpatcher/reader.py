@@ -309,13 +309,11 @@ class ConfigReader:
         files = dict(self.ini["CompileList"].items())
 
         for identifier, file in files.items():
-            modifications_ini = dict(self.ini[file].items())
             replace = identifier.startswith("Replace")
-
             modifications = ModificationsNSS(file, replace)
             self.config.patches_nss.append(modifications)
 
-            for name, value in modifications_ini.items():
+            for name, value in files.items():
                 if name.lower() == "!destination":
                     modifications.destination = value
 
@@ -420,10 +418,10 @@ class ConfigReader:
                 value.set(language, gender, text)
             value = FieldValueConstant(value)
         elif field_type.return_type() == Vector3:
-            components = [float(axis) for axis in raw_value.split("|")]
+            components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector3(*components))
         elif field_type.return_type() == Vector4:
-            components = [float(axis) for axis in raw_value.split("|")]
+            components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector4(*components))
         elif field_type.return_type() == GFFList:
             value = FieldValueConstant(GFFList())
@@ -587,7 +585,7 @@ class NamespaceReader:
     @classmethod
     def from_filepath(cls, path: str) -> List[PatcherNamespace]:
         ini_text = BinaryReader.load_file(path).decode()
-        ini = ConfigParser(interpolation=None)
+        ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
         return NamespaceReader(ini).load()
@@ -605,7 +603,7 @@ class NamespaceReader:
             namespace.info_filename = self.ini[namespace_id]["InfoName"]
             namespace.data_folderpath = self.ini[namespace_id].get("DataPath")
             namespace.name = self.ini[namespace_id].get("Name")
-            namespace.description = self.ini[namespace_id]["Description"]
+            namespace.description = self.ini[namespace_id].get("Description")
             namespaces.append(namespace)
 
         return namespaces

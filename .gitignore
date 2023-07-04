@@ -7,3 +7,6 @@ ignore
 build/*
 *.pyc
 pykotor/gl
+.vscode/launch.json
+debug.log
+pykotorcli.spec

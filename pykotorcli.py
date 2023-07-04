@@ -5,6 +5,20 @@ from enum import Enum
 from pykotor.tslpatcher.config import ModInstaller
 from pykotor.tslpatcher.reader import NamespaceReader
 
+# Override the print function to flush immediately
+def custom_print(*args, **kwargs):
+    builtins_print(*args, **kwargs)
+    sys.stdout.flush()
+
+# Replace the built-in print function
+builtins_print = print
+print = custom_print
+
+# Replace the print function in the imported modules
+sys.modules['pykotor.tslpatcher.reader'].print = custom_print
+sys.modules['pykotor.tslpatcher.config'].print = custom_print
+
+
 class ExitCode(Enum):
     Success = 0
     NumberOfArgs = 1
