@@ -79,28 +79,18 @@ ini_name = os.path.basename(changes_ini_path)
 installer = ModInstaller(mod_path, game_path, ini_name)
 installer.install()
 
-# Print the log messages to the console
-for note in installer.log.notes:
-    print(f"[Note] {note.message}")
-
-for warning in installer.log.warnings:
-    print(f"[Warning] {warning.message}")
-
-for error in installer.log.errors:
-    print(f"[Error] {error.message}")
-        
-print ("Create log file...")
+print ("Writing log file 'installlog.txt'...")
 
 log_file_path = os.path.join(tslpatchdata_path, "installlog.txt")
 with open(log_file_path, "w") as log_file:
     for note in installer.log.notes:
-        log_file.write(f"[Note] {note.message}\n")
+        log_file.write(f"{note.message}\n")
 
     for warning in installer.log.warnings:
-        log_file.write(f"[Warning] {warning.message}\n")
+        log_file.write(f"Warning: {warning.message}\n")
 
     for error in installer.log.errors:
-        log_file.write(f"[Error] {error.message}\n")
+        log_file.write(f"Error: {error.message}\n")
         
 print ("Logging finished")
 sys.exit()

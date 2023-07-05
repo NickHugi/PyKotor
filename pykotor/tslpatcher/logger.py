@@ -13,12 +13,15 @@ class PatchLogger:
         self.patches_completed += 1
 
     def add_note(self, message: str) -> None:
+        print("Note: " + message)
         self.notes.append(PatchLog(message))
 
     def add_warning(self, message: str) -> None:
+        print("Warning: " + message)
         self.warnings.append(PatchLog(message))
 
     def add_error(self, message: str) -> None:
+        print("Error: " + message)
         self.errors.append(PatchLog(message))
 
 
