@@ -28,7 +28,7 @@ class ERFBinaryReader(ResourceReader):
         erf_type_map = {x.value: x for x in ERFType}
 
         if file_type not in erf_type_map:
-            raise ValueError(f"Not a valid ERF file: {file_type}")
+            raise ValueError(f"Not a valid ERF file: '{file_type}'")
         
         self._erf = ERF(erf_type_map.get(file_type))
 
