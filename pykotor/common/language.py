@@ -98,6 +98,9 @@ class LocalizedString:
             return False
         return True
 
+    def __hash__(self):
+        return hash(self.stringref)
+
     @classmethod
     def from_invalid(
             cls
