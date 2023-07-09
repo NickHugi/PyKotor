@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
+from copy import copy
 from typing import List, Optional
 
 from pykotor.common.geometry import Vector2
@@ -72,7 +73,7 @@ class PTH:
             self,
             point: Vector2
     ) -> Optional[int]:
-        return next([x for x in self._points if x == point], None)
+        return self._points.index(point)
 
     def connect(
             self,
@@ -86,7 +87,11 @@ class PTH:
             source: int,
             target: int
     ) -> None:
-        self._connections.remove(PTHEdge(source, target))
+        for edge in copy(self._connections):
+            hasSource = edge.source == source or edge.source == target
+            hasTarget = edge.target == source or edge.target == target
+            if hasSource and hasTarget:
+                self._connections.remove(edge)
 
     def is_connected(
             self,
