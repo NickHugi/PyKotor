@@ -21,16 +21,19 @@ class ERFBinaryReader(ResourceReader):
             self,
             auto_close: bool = True
     ) -> ERF:
-        self._erf = ERF()
 
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
 
-        if not any(x for x in ERFType if x.value == file_type):
-            raise ValueError("Not a valid ERF file.")
+        erf_type_map = {x.value: x for x in ERFType}
+
+        if file_type not in erf_type_map:
+            raise ValueError(f"Not a valid ERF file: {file_type}")
+        
+        self._erf = ERF(erf_type_map.get(file_type))
 
         if file_version != "V1.0":
-            raise ValueError("The ERF version that was loaded is unsupported.")
+            raise ValueError(f"ERF version '{file_version}' is unsupported.")
 
         self._reader.skip(8)
         entry_count = self._reader.read_uint32()

@@ -217,13 +217,14 @@ class ModInstaller:
 
     def write(self, destination: str, filename: str, data: bytes, replace: bool = False) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
-        if destination.endswith(".rim"):
+        file_extension = os.path.splitext(destination)[1]
+        if file_extension.lower() == ".rim":
             rim = read_rim(BinaryReader.load_file(destination)) if os.path.exists(destination) else RIM()
             if not rim.get(resname, restype) or replace:
                 rim.set(resname, restype, data)
                 write_rim(rim, destination)
-        elif destination.endswith(".mod") or destination.endswith(".erf"):
-            erf = read_erf(BinaryReader.load_file(destination)) if os.path.exists(destination) else ERF()
+        elif file_extension.lower() == ".mod" or file_extension.lower() == ".rim":
+            erf = read_erf(BinaryReader.load_file(destination)) if os.path.exists(destination) else ERF(file_extension)
             if not erf.get(resname, restype) or replace:
                 erf.set(resname, restype, data)
                 write_erf(erf, destination)
