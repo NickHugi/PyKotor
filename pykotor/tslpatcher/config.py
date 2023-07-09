@@ -228,6 +228,12 @@ class ModInstaller:
                 erf.set(resname, restype, data)
                 write_erf(erf, destination)
         else:
-            filepath = f"{destination}"
+            # todo: fix later
+            base_name, extension = os.path.splitext(destination)
+            filepath = None
+            if extension:
+                filepath = f"{destination}"
+            else:
+                filepath = os.path.join(f"{destination}", filename)
             if not os.path.exists(filepath) or replace:
                 BinaryWriter.dump(filepath, data)
