@@ -32,4 +32,3 @@ class ModifyTLK:
 
     def apply_replacements(self, dialog: TLK, memory: PatcherMemory) -> None:
         dialog.replace(self.token_id, self.text, self.sound.get())
-        memory.memory_str[self.token_id] = self.token_id
