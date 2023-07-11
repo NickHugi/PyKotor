@@ -5,6 +5,7 @@ from enum import IntEnum
 from typing import List, Dict, Optional
 
 from pykotor.extract.capsule import Capsule
+from pykotor.resource.formats.erf.erf_data import ERFType
 
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 
@@ -224,7 +225,7 @@ class ModInstaller:
                 rim.set(resname, restype, data)
                 write_rim(rim, destination)
         elif file_extension.lower() == ".mod" or file_extension.lower() == ".rim":
-            erf = read_erf(BinaryReader.load_file(destination)) if os.path.exists(destination) else ERF(file_extension)
+            erf = read_erf(BinaryReader.load_file(destination)) if os.path.exists(destination) else ERF(ERFType.from_extension(file_extension))
             if not erf.get(resname, restype) or replace:
                 erf.set(resname, restype, data)
                 write_erf(erf, destination)
