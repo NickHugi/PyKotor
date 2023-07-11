@@ -1,4 +1,5 @@
 import operator
+import os
 
 import ply.lex
 
@@ -51,13 +52,13 @@ class NssLexer:
         return t
 
     def t_COMMENT(self, t):
-        r'//[^\n]*\n'
+        rf'//[^\n]*{os.linesep}'
         t.lexer.lineno += 1
         pass
 
     def t_MULTILINE_COMMENT(self, t):
         r'\/\*(\*(?!\/)|[^*])*\*\/'
-        t.lexer.lineno += t.value.count('\n')
+        t.lexer.lineno += t.value.count(os.linesep)
         pass
 
     def t_INCLUDE(self, t):

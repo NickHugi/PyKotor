@@ -15,6 +15,8 @@ def is_float(string: str):
     else:
         return True
 
+def is_mod_file(filename: str):
+    return filename.lower().endswith(".mod")
 
 def is_erf_file(filename: str):
     return filename.lower().endswith(".mod") or filename.lower().endswith(".erf")

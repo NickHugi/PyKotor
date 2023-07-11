@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os.path
+import pathlib
 from contextlib import suppress
 from copy import copy
 from typing import List, TypeVar, Generic, Optional, Any
@@ -85,7 +85,7 @@ class Module:
         Returns:
             The string for the root name of a module.
         """
-        root = os.path.basename(filepath).replace(".rim", "").replace(".erf", "").replace(".mod", "").lower()
+        root = pathlib.basename(filepath).replace(".rim", "").replace(".erf", "").replace(".mod", "").lower()
         roota = root[:5]
         rootb = root[5:]
         if "_" in rootb:
@@ -519,6 +519,20 @@ class ModuleResource(Generic[T]):
         else:
             return None
 
+    def is_module_rim_file(filename: str):
+        return filename.lower().endswith(".rim")
+    def is_module_mod_file(filename: str):
+        return filename.lower().endswith(".mod")
+    def is_module_erf_file(filename: str):
+        return filename.lower().endswith(".erf")
+    def is_module_file(filename: str):
+        filename = filename.lower()
+        return (
+            filename.endswith(".rim")
+            or filename.endswith(".erf")
+            or filename.endswith(".mod")
+        )
+
     def data(
             self
     ) -> bytes:
@@ -578,7 +592,7 @@ class ModuleResource(Generic[T]):
 
             if self._active is None:
                 self._resource = None
-            elif self._active.endswith(".erf") or self._active.endswith(".mod") or self._active.endswith(".rim"):
+            elif self.filename_has_module_extension(self._active):
                 data = Capsule(self._active).resource(self._resname, self._restype)
                 self._resource = conversions[self._restype](data)
             elif self._active.endswith("bif"):

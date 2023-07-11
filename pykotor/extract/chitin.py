@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Optional
 
 from pykotor.common.stream import BinaryReader
@@ -16,10 +17,9 @@ class Chitin:
 
     def __init__(
             self,
-            kotor_path: str
+            kotor_path: Path
     ):
-        self._kotor_path: str = kotor_path.replace('\\', '/')
-        if not self._kotor_path.endswith('/'): self._kotor_path += '/'
+        self._kotor_path = Path( kotor_path )
 
         self._resources: List[FileResource] = []
         self.load()
@@ -43,7 +43,7 @@ class Chitin:
         """
         self._resources = []
 
-        with BinaryReader.from_file(self._kotor_path + "chitin.key") as reader:
+        with BinaryReader.from_file(self._kotor_path / "chitin.key") as reader:
             file_type = reader.read_string(4)
             file_version = reader.read_string(4)
             bif_count = reader.read_uint32()
@@ -63,7 +63,7 @@ class Chitin:
             bifs = []
             for file_offset, file_length in files:
                 reader.seek(file_offset)
-                bif = reader.read_string(file_length).replace("\\", "/")
+                bif = Path(reader.read_string(file_length).resolve())
                 bifs.append(bif)
 
             keys = {}
@@ -74,7 +74,7 @@ class Chitin:
                 keys[res_id] = resref
 
         for bif in bifs:
-            with BinaryReader.from_file(self._kotor_path + bif) as reader:
+            with BinaryReader.from_file(Path(self._kotor_path, bif)) as reader:
                 file_type = reader.read_string(4)
                 file_version = reader.read_string(4)
                 resource_count = reader.read_uint32()
@@ -88,7 +88,7 @@ class Chitin:
                     size = reader.read_uint32()
                     restype = ResourceType.from_id(reader.read_uint32())
                     resref = keys[res_id]
-                    resource = FileResource(resref, restype, size, offset, self._kotor_path + bif)
+                    resource = FileResource(resref, restype, size, offset, Path(self._kotor_path, bif))
                     self._resources.append(resource)
 
     def resource(

@@ -3,7 +3,7 @@ This module holds various unrelated classes.
 """
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from enum import IntEnum, Enum
 from typing import TypeVar, Generic, Dict
 
@@ -74,7 +74,7 @@ class ResRef:
     @classmethod
     def from_path(
             cls,
-            path: str
+            path: Path
     ) -> ResRef:
         """
         Returns a ResRef from the filename in the specified path.
@@ -85,7 +85,7 @@ class ResRef:
         Returns:
             A new ResRef instance.
         """
-        return ResRef(os.path.splitext(path)[0].replace('\\', '/').split('/')[-1])
+        return ResRef(path.stem)
 
     def set(
             self,

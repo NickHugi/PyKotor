@@ -13,7 +13,7 @@ class TestInstallation(TestCase):
         path = os.environ.get("K1_PATH")
         self.installation = Installation(path)
 
-        if not os.path.exists(self.installation.override_path() + "nwscript.nss"):
+        if not Path(self.installation.override_path().exists + "nwscript.nss"):
             raise ValueError("Place nwscript.nss in override folder before testing.")
 
     def test_resource(self):

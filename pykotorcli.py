@@ -1,4 +1,5 @@
 import os
+import pathlib
 import sys
 
 from enum import Enum
@@ -30,13 +31,13 @@ if len(sys.argv) < 3 or len(sys.argv) > 4:
     print("Syntax: pykotorcli.exe [\"\\path\\to\\game\\dir\"] [\"\\path\\to\\tslpatchdata\"] {\"namespace_option_index\"}")
     sys.exit(ExitCode.NumberOfArgs)
 
-game_path = sys.argv[1]
-tslpatchdata_path = sys.argv[2]
+game_path = Path(sys.argv[1]).absolute()
+tslpatchdata_path = Path(sys.argv[2]).absolute()
 namespace_index = None
 changes_ini_path = None
 
 if len(sys.argv) == 3:
-    changes_ini_path = os.path.join(tslpatchdata_path, "tslpatchdata", "changes.ini")
+    changes_ini_path = Path(tslpatchdata_path).joinpath("tslpatchdata", "changes.ini")
 elif len(sys.argv) == 4:
     try:
         namespace_index = int(sys.argv[3])
@@ -44,9 +45,9 @@ elif len(sys.argv) == 4:
         print("Invalid namespace_option_index. It should be an integer.")
         sys.exit(ExitCode.NamespaceIndexOutOfRange)
 
-    namespaces_ini_path = os.path.join(tslpatchdata_path, "tslpatchdata", "namespaces.ini")
-    print("Using namespaces.ini path: " + namespaces_ini_path)
-    if not os.path.exists(namespaces_ini_path):
+    namespaces_ini_path = Path(tslpatchdata_path).joinpath("tslpatchdata", "namespaces.ini")
+    print(f"Using namespaces.ini path: {namespaces_ini_path.absolute}")
+    if not Path(namespaces_ini_path).exists:
         print("The 'namespaces.ini' file was not found in the specified tslpatchdata path.")
         sys.exit(ExitCode.NamespacesIniNotFound)
 
@@ -56,32 +57,33 @@ elif len(sys.argv) == 4:
         sys.exit(ExitCode.NamespaceIndexOutOfRange)
     
     if loaded_namespaces[namespace_index].data_folderpath:
-        changes_ini_path = os.path.join(
+        changes_ini_path = Path(
             tslpatchdata_path,
             "tslpatchdata",
             loaded_namespaces[namespace_index].data_folderpath,
             loaded_namespaces[namespace_index].ini_filename
         )
     else:
-        changes_ini_path = os.path.join(
+        changes_ini_path = Path(
             tslpatchdata_path,
             "tslpatchdata",
             loaded_namespaces[namespace_index].ini_filename
         )
-print("Using changes.ini path: " + changes_ini_path)
-if not os.path.exists(changes_ini_path):
+print(f"Using changes.ini path: '{changes_ini_path.absolute}'")
+if not Path(changes_ini_path).exists:
     print("The 'changes.ini' file could not be found.")
     sys.exit(ExitCode.ChangesIniNotFound)
 
-mod_path = os.path.dirname(os.path.abspath(changes_ini_path))
-ini_name = os.path.basename(changes_ini_path)
+mod_path = Path(changes_ini_path).parent.absolute
+ini_name = Path(changes_ini_path).name
 
+print("Starting install...")
 installer = ModInstaller(mod_path, game_path, ini_name)
 installer.install()
 
 print ("Writing log file 'installlog.txt'...")
 
-log_file_path = os.path.join(tslpatchdata_path, "installlog.txt")
+log_file_path = Path(tslpatchdata_path, "installlog.txt")
 with open(log_file_path, "w") as log_file:
     for note in installer.log.notes:
         log_file.write(f"{note.message}\n")

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 from typing import Optional, List
 
@@ -64,6 +65,6 @@ class VISAsciiWriter(ResourceWriter):
             auto_close: bool = True
     ) -> None:
         for observer, observed in self._vis:
-            self._writer.write_string("{} {}\r\n".format(observer, str(len(observed))))
+            self._writer.write_string("{} {}{}}".format(observer, str(len(observed)), os.linesep))
             for room in observed:
-                self._writer.write_string("  {}\r\n".format(room))
+                self._writer.write_string("  {}{}".format(room, os.linesep))

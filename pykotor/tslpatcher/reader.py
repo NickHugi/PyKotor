@@ -151,7 +151,7 @@ class ConfigReader:
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        append = read_tlk(append_path) if os.path.exists(append_path) else TLK()
+        append = read_tlk(append_path) if Path(append_path).exists else TLK()
 
         config = PatcherConfig()
         return ConfigReader(ini, append).load(config)
@@ -193,9 +193,9 @@ class ConfigReader:
         if "TLKList" not in self.ini:
             return
 
-        stringrefs = dict(self.ini["TLKList"].items())
+        stringrefs_dict = dict(self.ini["TLKList"].items())
 
-        for name, value in stringrefs.items():
+        for name, value in stringrefs_dict.items():
             token_id = int(name[6:])
             append_index = int(value)
             entry = self.append.get(append_index)
@@ -206,18 +206,14 @@ class ConfigReader:
     def load_stringref_replacement(self) -> None:
         if "TLKReplaceList" not in self.ini:
             return
-
-        stringrefs = dict(self.ini["TLKReplaceList"].items())
-
-        index = 0
         
-        for name, value in stringrefs.items():
-            replace_index = int(value)
+        stringrefs_list = self.ini["TLKReplaceList"].values()
+
+        for index, replacement_strref in enumerate(stringrefs_list):
             entry = self.replace.get(index)
 
-            modifier = ModifyTLK(replace_index, entry.text, entry.voiceover)
+            modifier = ModifyTLK(int(replacement_strref), entry.text, entry.voiceover)
             self.config.patches_tlk.modifiers.append(modifier)
-            index += 1
 
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:
@@ -303,22 +299,22 @@ class ConfigReader:
             modifications_ini = dict(self.ini[file].items())
             replace = identifier.startswith("Replace")
 
-            modificaitons = ModificationsGFF(file, replace)
-            self.config.patches_gff.append(modificaitons)
+            modifications = ModificationsGFF(file, replace)
+            self.config.patches_gff.append(modifications)
 
             for name, value in modifications_ini.items():
                 if name.lower() == "!destination":
-                    modificaitons.destination = value
+                    modifications.destination = value
                 elif name.lower() == "!replacefile":
-                    modificaitons.replace_file = bool(int(value))
-                elif name.lower() == "!filename":
-                    modificaitons.filename = value
+                    modifications.replace_file = bool(int(value))
+                elif name.lower() == "!filename" or name.lower() == "!saveas":
+                    modifications.filename = value
                 elif name.lower().startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
-                    modificaitons.modifiers.append(modifier)
+                    modifications.modifiers.append(modifier)
                 else:
                     modifier = self.modify_field_gff(name, value)
-                    modificaitons.modifiers.append(modifier)
+                    modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
         if "CompileList" not in self.ini:

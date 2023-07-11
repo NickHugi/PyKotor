@@ -1,7 +1,7 @@
 import os
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.module import Module
+from pykotor.common.module import Module, ModuleResource
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
@@ -183,9 +183,8 @@ def clone_module(
     write_lyt(lyt, lyt_data)
     newModule.set(identifier, ResourceType.LYT, lyt_data)
 
-    filepath = installation.module_path() + identifier + ".mod"
+    filepath = Path(installation.module_path(), identifier + ".mod")
     write_erf(newModule, filepath)
-
 
 def rim_to_mod(filepath: str) -> None:
     """
@@ -201,14 +200,15 @@ def rim_to_mod(filepath: str) -> None:
     Args:
         filepath: The filepath of the MOD file you would like to create.
     """
-    if not filepath.endswith(".mod"):
+    if not ModuleResource.is_module_mod_file(filepath):
         raise ValueError("Specified file must end with the .mod extension")
 
-    filepath_rim_s = filepath.replace(".mod", "_s.rim")
-    filepath_rim = filepath.replace(".mod", ".rim")
+    filename = pathlib.splitext(filepath)[0] # strip the extension
+    filepath_rim_s = filename + "_s.rim"
+    filepath_rim = filename + ".rim"
 
     rim = read_rim(filepath_rim)
-    rim_s = read_rim(filepath_rim_s) if os.path.exists(filepath_rim_s) else RIM()
+    rim_s = read_rim(filepath_rim_s) if Path(filepath_rim_s).exists else RIM()
 
     mod = ERF(ERFType.MOD)
     [mod.set(res.resref.get(), res.restype, res.data) for res in rim]

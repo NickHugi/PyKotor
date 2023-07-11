@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import Optional, NamedTuple
 
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_capsule_file
 
 
 class FileResource:
@@ -22,7 +23,7 @@ class FileResource:
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: str = filepath
+        self._filepath: Path = filepath
         self._offset: int = offset
 
     def __repr__(
@@ -83,15 +84,15 @@ class FileResource:
             Bytes data of the resource.
         """
         if reload:
-            if self._filepath.lower().endswith(".mod") or self._filepath.lower().endswith(".erf") or self._filepath.lower().endswith(".rim"):
+            if is_capsule_file(self._filepath):
                 from pykotor.extract.capsule import Capsule
                 capsule = Capsule(self._filepath)
                 res = capsule.info(self._resname, self._restype)
                 self._offset = res.offset()
                 self._size = res.size()
-            elif not self._filepath.lower().endswith(".bif"):
+            elif not is_bif_file(self._filepath):
                 self._offset = 0
-                self._size = os.path.getsize(self._filepath)
+                self._size = self._filepath.sta
 
         with open(self._filepath, 'rb') as file:
             file.seek(self._offset)
@@ -146,8 +147,7 @@ class ResourceIdentifier(NamedTuple):
 
     @staticmethod
     def from_path(
-            filepath: str
+            file: Path
     ) -> ResourceIdentifier:
-        filename = os.path.basename(filepath)
-        resname, restype_ext = filename.split(".", 1)
+        resname, restype_ext = file.stem, file.suffix
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

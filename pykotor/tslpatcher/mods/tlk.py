@@ -12,12 +12,11 @@ class ModificationsTLK:
         self.modifiers: List[ModifyTLK] = []
 
     def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
-        for modifier in self.modifiers:
-            modifier.apply(dialog, memory)
-            
-    def apply_replacements(self, dialog: TLK, memory: PatcherMemory) -> None:
+        # do replacements first.
         for modifier in self.modifiers:
             modifier.apply_replacements(dialog, memory)
+        for modifier in self.modifiers:
+            modifier.apply(dialog, memory)
 
 
 class ModifyTLK:

@@ -1,5 +1,4 @@
-import ntpath
-import os.path
+from pathlib import Path
 from typing import List, Optional, Dict
 
 from pykotor.common.stream import BinaryReader
@@ -7,8 +6,7 @@ from pykotor.extract.file import FileResource, ResourceResult, ResourceIdentifie
 from pykotor.resource.formats.erf import ERF, read_erf, write_erf, ERFType
 from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_rim_file, is_erf_file, is_capsule_file
-
+from pykotor.tools.misc import is_capsule_file, is_rim_file, is_erf_file, is_capsule_file
 
 class Capsule:
     """
@@ -27,7 +25,7 @@ class Capsule:
         if not is_capsule_file(path):
             raise ValueError(f"Invalid file extension in capsule filepath '{path}'.")
 
-        if create_nonexisting and not os.path.exists(path):
+        if create_nonexisting and not Path(path).exists:
             if is_rim_file(path):
                 write_rim(RIM(), path)
             elif is_erf_file(path):
@@ -142,19 +140,19 @@ class Capsule:
             restype: ResourceType,
             resdata: bytes
     ):
-        container = read_rim(self._path) if self._path.endswith(".rim") else read_erf(self._path)
+        container = read_rim(self._path) if is_rim_file(self._path) else read_erf(self._path)
         container.set(resname, restype, resdata)
-        write_rim(container, self._path) if self._path.endswith(".rim") else write_erf(container, self._path)
+        write_rim(container, self._path) if is_rim_file(self._path) else write_erf(container, self._path)
 
     def path(
             self
     ) -> str:
-        return os.path.normpath(self._path)
+        return Path(self._path).resolve()
 
     def filename(
             self
     ) -> str:
-        return ntpath.basename(self._path)
+        return Path(self._path).name
 
     def _load_erf(
             self,

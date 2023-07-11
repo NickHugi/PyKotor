@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import ntpath
-import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum
+import pathlib
 from typing import List, Optional, Tuple, Dict, NamedTuple, Union, Any
 from pykotor.common.script import DataType, ScriptFunction, ScriptConstant
 from pykotor.common.stream import BinaryReader
@@ -538,8 +537,8 @@ class IncludeScript(TopLevelObject):
 
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
         for folder in root.library_lookup:
-            filepath = os.path.normpath(f"{folder}/{self.file.value}.nss")
-            if ntpath.exists(filepath):
+            filepath = Path(folder, self.file.value + ".nss")
+            if Path(filepath).exists:
                 source = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break
         else:

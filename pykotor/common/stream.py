@@ -6,6 +6,7 @@ from __future__ import annotations
 import io
 import struct
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import BinaryIO, Union, Optional
 
 from pykotor.common.geometry import Vector3, Vector4, Vector2
@@ -74,7 +75,7 @@ class BinaryReader:
     @classmethod
     def from_file(
             cls,
-            path: str,
+            path: Path,
             offset: int = 0,
             size: int = None
     ) -> BinaryReader:

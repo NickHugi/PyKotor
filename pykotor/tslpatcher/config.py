@@ -1,5 +1,4 @@
-import ntpath
-import os.path
+from pathlib import Path
 from configparser import ConfigParser
 from enum import IntEnum
 from typing import List, Dict, Optional
@@ -10,6 +9,7 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 
 from pykotor.resource.formats.erf import read_erf, write_erf, ERF
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.common.module import ModuleResource
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
@@ -92,11 +92,11 @@ class PatcherNamespace:
 
 
 class ModInstaller:
-    def __init__(self, mod_path: str, game_path: str, ini_file: str, logger: PatchLogger = None):
-        self.game_path: str = game_path
-        self.mod_path: str = mod_path
+    def __init__(self, mod_path: Path, game_path: Path, ini_file: str, logger: PatchLogger = None):
+        self.game_path: Path = game_path
+        self.mod_path: Path = mod_path
         self.ini_file: str = ini_file
-        self.output_path: str = game_path
+        self.output_path: Path = game_path
         self.log: PatchLogger = PatchLogger() if logger is None else logger
 
         self._config: Optional[PatcherConfig] = None
@@ -108,9 +108,16 @@ class ModInstaller:
         """
 
         if self._config is None:
-            ini_text = BinaryReader.load_file(self.mod_path + "/" + self.ini_file).decode()
-            append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
-            replace_tlk = read_tlk(self.mod_path + "/replace.tlk") if os.path.exists(self.mod_path + "/replace.tlk") else TLK()
+            ini_text = BinaryReader.load_file(self.mod_path / self.ini_file).decode()
+            
+            self.log.add_note("Reading append.tlk")
+            append_tlk_filepath = self.mod_path / "append.tlk"
+            append_tlk = read_tlk(append_tlk_filepath) if append_tlk_filepath.exists else TLK()
+            
+            self.log.add_note("Reading replace.tlk")
+            replace_tlk_filepath = self.mod_path / "replace.tlk"
+            replace_tlk = read_tlk(replace_tlk_filepath) if replace_tlk_filepath.exists else TLK()
+            
             self._config = PatcherConfig()
             self._config.load(ini_text, append_tlk, replace_tlk)
 
@@ -126,10 +133,9 @@ class ModInstaller:
         templates = {}
 
         # Apply changes to dialog.tlk
-        dialog_tlk = read_tlk(installation.path() + "dialog.tlk")
+        dialog_tlk = read_tlk(installation.path() / "dialog.tlk")
         config.patches_tlk.apply(dialog_tlk, memory)
-        config.patches_tlk.apply_replacements(dialog_tlk, memory)
-        write_tlk(dialog_tlk, self.output_path + "/dialog.tlk")
+        write_tlk(dialog_tlk, self.output_path / "dialog.tlk")
         self.log.complete_patch()
 
         for folder in config.install_list:
@@ -142,9 +148,9 @@ class ModInstaller:
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             twoda = twodas[patch.filename] = read_2da(search.data)
 
-            self.log.add_note("Patching {}".format(patch.filename))
+            self.log.add_note(f"Patching '{patch.name}'")
             patch.apply(twoda, memory)
-            write_2da(twoda, "{}/override/{}".format(self.output_path, patch.filename))
+            write_2da(twoda, self.output_path / "override" / patch.filename)
 
             self.log.complete_patch()
 
@@ -154,9 +160,9 @@ class ModInstaller:
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             soundset = soundsets[patch.filename] = read_ssf(search.data)
 
-            self.log.add_note("Patching {}".format(patch.filename))
+            self.log.add_note("Patching '{}'".format(patch.filename))
             patch.apply(soundset, memory)
-            write_ssf(soundset, "{}/override/{}".format(self.output_path, patch.filename))
+            write_ssf(soundset, self.output_path / "override" / patch.filename)
 
             self.log.complete_patch()
 
@@ -165,8 +171,9 @@ class ModInstaller:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
 
             capsule = None
-            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
-                capsule = Capsule(self.output_path + "/" + patch.destination)
+            gff_filepath = Path(self.output_path, patch.destination)
+            if ModuleResource.is_module_file(patch.destination):
+                capsule = Capsule(gff_filepath)
 
             search = installation.resource(
                 resname,
@@ -176,67 +183,69 @@ class ModInstaller:
                 capsules=[] if capsule is None else [capsule]
             )
 
-            norm_game_path = ntpath.normpath(installation.path())
-            norm_file_path = ntpath.normpath(patch.destination)
+            norm_game_path = Path(installation.path().resolve())
+            norm_file_path = Path(patch.destination).resolve()
             local_path = norm_file_path.replace(norm_game_path, "")
             local_folder = local_path.replace(patch.filename, "")
 
             if capsule is None:
-                self.log.add_note(f"Patching {patch.filename} in the {local_folder} folder.")
+                self.log.add_note(f"Patching '{patch.filename}' in the '{local_folder}' folder.")
             else:
-                self.log.add_note(f"Patching {patch.filename} in the {local_path} archive.")
+                self.log.add_note(f"Patching '{patch.filename}' in the '{local_path}' archive.")
 
             template = templates[patch.filename] = read_gff(search.data)
             patch.apply(template, memory, self.log)
-            self.write("{}/{}".format(self.output_path, patch.destination), patch.filename, bytes_gff(template), True)
+            self.write(gff_filepath, patch.filename, bytes_gff(template), True)
 
             self.log.complete_patch()
 
         # Apply changes to NSS files
         for patch in config.patches_nss:
             capsule = None
-            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
-                capsule = Capsule(self.output_path + "/" + patch.destination)
+            nss_output_filepath = Path(self.output_path, patch.destination)
+            if ModuleResource.is_module_file(patch.destination):
+                capsule = Capsule(nss_output_filepath)
 
-            nss = [BinaryReader.load_file(f"{self.mod_path}/{patch.filename}").decode(errors="ignore")]
+            nss_input_filepath = Path(self.mod_path, patch.filename)
+            nss = [BinaryReader.load_file(nss_input_filepath).decode(errors="ignore")]
 
-            norm_game_path = ntpath.normpath(installation.path())
-            norm_file_path = ntpath.normpath(patch.destination)
+            norm_game_path = installation.path()
+            norm_file_path = patch.destination
             local_path = norm_file_path.replace(norm_game_path, "")
             local_folder = local_path.replace(patch.filename, "")
 
             if capsule is None:
-                self.log.add_note(f"Patching {patch.filename} in the {local_folder} folder.")
+                self.log.add_note(f"Patching '{patch.filename}' in the '{local_folder}' folder.")
             else:
-                self.log.add_note(f"Patching {patch.filename} in the {local_path} archive.")
+                self.log.add_note(f"Patching '{patch.filename}' in the '{local_path}' archive.")
 
-            self.log.add_note("Compiling {}".format(patch.filename))
+            self.log.add_note("Compiling '{}'".format(patch.filename))
             patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
-            self.write(f"{self.output_path}/{patch.destination}", patch.filename.replace(".nss", ".ncs"), data, patch.replace_file)
+            file_name, ext = pathlib.splitext(patch.filename)
+            self.write(nss_output_filepath, file_name + ext.lower().replace(".nss", ".ncs"), data, patch.replace_file)
 
             self.log.complete_patch()
 
     def write(self, destination: str, filename: str, data: bytes, replace: bool = False) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
-        if destination.endswith(".rim"):
-            rim = read_rim(BinaryReader.load_file(destination)) if os.path.exists(destination) else RIM()
+        if ModuleResource.is_module_rim_file(destination):
+            rim = read_rim(BinaryReader.load_file(destination)) if Path(destination).exists else RIM()
             if not rim.get(resname, restype) or replace:
                 rim.set(resname, restype, data)
                 write_rim(rim, destination)
-        elif destination.endswith(".mod") or destination.endswith(".erf"):
-            erf = read_erf(BinaryReader.load_file(destination)) if os.path.exists(destination) else ERF()
+
+        elif ModuleResource.is_module_file(destination):
+            erf = read_erf(BinaryReader.load_file(destination)) if Path(destination).exists else ERF()
             if not erf.get(resname, restype) or replace:
                 erf.set(resname, restype, data)
                 write_erf(erf, destination)
         else:
-            # todo: fix later
-            base_name, extension = os.path.splitext(destination)
-            filepath = None
-            if extension:
-                filepath = f"{destination}"
-            else:
-                filepath = os.path.join(f"{destination}", filename)
-            if not os.path.exists(filepath) or replace:
+            # todo: fix later. Check if destination is already a filename with an extension. I've somehow encountered both scenarios.
+            # a better solution would be finding out what caused this, as it definitely wasn't caused by a improper changes.ini
+            base_folder_name, extension = pathlib.splitext(destination)
+            filepath = destination if extension else Path(destination, filename)
+
+            if not Path(filepath).exists or replace:
                 BinaryWriter.dump(filepath, data)

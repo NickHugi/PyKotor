@@ -4,6 +4,7 @@ import os
 from contextlib import suppress
 from copy import copy
 from enum import IntEnum
+from pathlib import Path
 from typing import Dict, List, Optional, NamedTuple
 
 from pykotor.common.language import Language, Gender, LocalizedString
@@ -18,6 +19,19 @@ from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
 
+def is_module_rim_file(filename: str):
+    return filename.lower().endswith(".rim")
+def is_module_mod_file(filename: str):
+    return filename.lower().endswith(".mod")
+def is_module_erf_file(filename: str):
+    return filename.lower().endswith(".erf")
+def is_module_file(filename: str):
+    filename = filename.lower()
+    return (
+        filename.endswith(".rim")
+        or filename.endswith(".erf")
+        or filename.endswith(".mod")
+    )
 
 class SearchLocation(IntEnum):
     OVERRIDE = 0
@@ -78,12 +92,11 @@ class Installation:
 
     def __init__(
             self,
-            path: str
+            path: Path
     ):
-        self._path: str = path.replace('\\', '/')
-        if not self._path.endswith('/'): self._path += '/'
+        self._path: Path = path
 
-        self._talktable: Optional[TalkTable] = TalkTable(self._path + "dialog.tlk")
+        self._talktable: Optional[TalkTable] = TalkTable(self._path / "dialog.tlk")
 
         self._chitin: List[FileResource] = []
         self._modules: Dict[str, List[FileResource]] = {}
@@ -115,11 +128,11 @@ class Installation:
         Returns:
             The path to the root folder.
         """
-        return self._path.replace("\\", "/")
+        return self._path
 
     def module_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to modules folder of the Installation. This method maintains the case of the foldername.
 
@@ -128,15 +141,16 @@ class Installation:
         """
         module_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(module_path + folder) and folder.lower() == "modules":
-                module_path += folder + "/"
+            this_path = module_path / folder
+            if this_path.is_dir() and folder.lower() == "modules":
+                module_path = this_path
         if module_path == self._path:
-            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return module_path.replace("\\", "/")
+            raise ValueError(f"Could not find modules folder in '{self._path}'.")
+        return module_path
 
     def override_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to override folder of the Installation. This method maintains the case of the foldername.
 
@@ -145,15 +159,16 @@ class Installation:
         """
         override_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(override_path + folder) and folder.lower() == "override":
-                override_path += folder + "/"
+            this_path = override_path / folder
+            if this_path.is_dir() and folder.lower() == "override":
+                override_path = this_path
         if override_path == self._path:
-            raise ValueError("Could not find override folder in '{}'.".format(self._path))
-        return override_path.replace("\\", "/")
+            raise ValueError(f"Could not find override folder in '{self._path}'.")
+        return override_path
 
     def lips_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to lips folder of the Installation. This method maintains the case of the foldername.
 
@@ -162,15 +177,16 @@ class Installation:
         """
         lips_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(lips_path + folder) and folder.lower() == "lips":
-                lips_path += folder + "/"
+            this_path = lips_path / folder
+            if this_path.is_dir() and folder.lower() == "lips":
+                lips_path = this_path
         if lips_path == self._path:
-            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return lips_path.replace("\\", "/")
+            raise ValueError(f"Could not find modules folder in '{self._path}'.")
+        return lips_path
 
     def texturepacks_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to texturepacks folder of the Installation. This method maintains the case of the foldername.
 
@@ -179,66 +195,69 @@ class Installation:
         """
         texturepacks_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(texturepacks_path + folder) and folder.lower() == "texturepacks":
-                texturepacks_path += folder + "/"
+            this_path = texturepacks_path / folder
+            if this_path.is_dir() and folder.lower() == "texturepacks":
+                texturepacks_path = this_path
         if texturepacks_path == self._path:
-            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return texturepacks_path.replace("\\", "/")
+            raise ValueError(f"Could not find modules folder in '{self._path}'.")
+        return texturepacks_path
 
     def rims_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to rims folder of the Installation. This method maintains the case of the foldername.
 
         Returns:
             The path to the rims folder.
         """
-        path = self._path
+        rims_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and folder.lower() == "rims":
-                path += folder + "/"
-        if path == self._path:
-            raise ValueError("Could not find rims folder in '{}'.".format(self._path))
-        return path.replace("\\", "/")
+            this_path = Path(rims_path, folder)
+            if this_path.is_dir() and folder.lower() == "rims":
+                rims_path = this_path
+        if rims_path == self._path:
+            raise ValueError(f"Could not find rims folder in '{self._path}'.")
+        return rims_path
 
     def streammusic_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to streammusic folder of the Installation. This method maintains the case of the foldername.
 
         Returns:
             The path to the streammusic folder.
         """
-        path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and folder.lower() == "streammusic":
-                path += folder + "/"
-        if path == self._path:
-            raise ValueError("Could not find StreamMusic folder in '{}'.".format(self._path))
-        return path.replace("\\", "/")
+        for folder in [folder for folder in self._path.iterdir() if folder.is_dir()]:
+            this_path = streammusic_path / folder
+            if this_path.is_dir() and folder.lower() == "streammusic":
+                streammusic_path = this_path
+        if streammusic_path == self._path:
+            raise ValueError(f"Could not find StreamMusic folder in '{self._path}'.")
+        return streammusic_path
 
     def streamsounds_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to streamsounds folder of the Installation. This method maintains the case of the foldername.
 
         Returns:
             The path to the streamsounds folder.
         """
-        path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and folder.lower() == "streamsounds":
-                path += folder + "/"
-        if path == self._path:
-            raise ValueError("Could not find StreamSounds folder in '{}'.".format(self._path))
-        return path.replace("\\", "/")
+        streamsounds_path = self._path
+        for folder in [folder for folder in self._path.iterdir() if folder.is_dir()]:
+            this_path = streamsounds_path / folder
+            if this_path.is_dir() and folder.lower() == "streamsounds":
+                streamsounds_path = this_path
+        if streamsounds_path == self._path:
+            raise ValueError(f"Could not find StreamSounds folder in '{self._path}'.")
+        return Path(streamsounds_path).resolve()
 
     def streamvoice_path(
             self
-    ) -> str:
+    ) -> Path:
         """
         Returns the path to streamvoice folder of the Installation. This method maintains the case of the foldername.
 
@@ -247,13 +266,14 @@ class Installation:
         Returns:
             The path to the streamvoice folder.
         """
-        path = self._path
+        streamwavesvoice_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and (folder.lower() == "streamvoice" or folder.lower() == "streamwaves"):
-                path += folder + "/"
-        if path == self._path:
-            raise ValueError("Could not find voice over folder in '{}'.".format(self._path))
-        return path.replace("\\", "/")
+            this_path = streamwavesvoice_path / folder
+            if this_path.is_dir() and (folder.lower() == "streamvoice" or folder.lower() == "streamwaves"):
+                streamwavesvoice_path = this_path
+        if streamwavesvoice_path == self._path:
+            raise ValueError(f"Could not find voice over folder in '{self._path}'.")
+        return Path(streamwavesvoice_path).resolve()
     # endregion
 
     # region Load Data
@@ -274,10 +294,9 @@ class Installation:
         """
         modules_path = self.module_path()
         self._modules = {}
-        module_files = [file for file in os.listdir(modules_path) if file.endswith('.mod') or file.endswith('.rim') or file.endswith('.erf')]
-        for module in module_files:
+        for module in [file for file in os.listdir(modules_path) if is_module_file(file)]:
             with suppress(Exception):
-                self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
+                self._modules[module] = [resource for resource in Capsule(self.module_path() / module)]
 
     def reload_module(
             self,
@@ -289,7 +308,7 @@ class Installation:
         Args:
             module: The filename of the module.
         """
-        self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
+        self._modules[module] = [resource for resource in Capsule(self.module_path() / module)]
 
     def load_lips(
             self
@@ -299,9 +318,9 @@ class Installation:
         """
         self._lips = {}
         lips_path = self.lips_path()
-        lip_files = [file for file in os.listdir(lips_path) if file.endswith('.mod')]
+        lip_files = [file for file in os.listdir(lips_path) if is_module_mod_file(file)]
         for module in lip_files:
-            self._lips[module] = [resource for resource in Capsule(lips_path + module)]
+            self._lips[module] = [resource for resource in Capsule(lips_path / module)]
 
     def load_textures(
             self
@@ -311,9 +330,9 @@ class Installation:
         """
         self._texturepacks = {}
         texturepacks_path = self.texturepacks_path()
-        texturepacks_files = [file for file in os.listdir(texturepacks_path) if file.endswith('.erf')]
+        texturepacks_files = [file for file in os.listdir(texturepacks_path) if is_module_erf_file(file)]
         for module in texturepacks_files:
-            self._texturepacks[module] = [resource for resource in Capsule(texturepacks_path + module)]
+            self._texturepacks[module] = [resource for resource in Capsule(texturepacks_path / module)]
 
     def load_override(
             self
@@ -324,17 +343,14 @@ class Installation:
         self._override = {}
         override_path = self.override_path()
 
-        for path, subdirs, files in os.walk(override_path):
-            directory = path.replace("\\", "/").replace(override_path, "")
-            path = (path if path.endswith("/") else path + "/").replace("\\", "/")
-            self._override[directory] = []
-
-            for file in files:
-                with suppress(Exception):
-                    name, ext = file.split('.', 1)
-                    size = os.path.getsize(path + file)
-                    resource = FileResource(name, ResourceType.from_extension(ext), size, 0, path + file)
-                    self._override[directory].append(resource)
+        for file_path in Path(override_path).glob('**' + os.sep + '*'):
+            override_subdir = file_path.parent
+            self._override[override_subdir] = []
+            with suppress(Exception):
+                name, ext = file_path.stem, file_path.suffix
+                size = file_path.stat().st_size
+                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, file_path)
+                self._override[override_subdir].append(resource)
 
     def reload_override(
             self,
@@ -349,13 +365,9 @@ class Installation:
         override_path = self.override_path()
 
         self._override[directory] = []
-        files = os.listdir(override_path + directory)
-
-        for file in files:
+        for file in (override_path / directory).iterdir():
             with suppress(Exception):
-                name, ext = file.split('.', 1)
-                size = os.path.getsize(override_path + directory + file)
-                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, override_path + directory + file)
+                resource = FileResource(file.stem, ResourceType.from_extension(file.suffix), file.stat().st_size, 0, file)
                 self._override[directory].append(resource)
 
     def load_streammusic(
@@ -363,11 +375,10 @@ class Installation:
     ) -> None:
         self._streammusic = []
         streammusic_path = self.streammusic_path()
-        for filename in [file for file in os.listdir(streammusic_path)]:
+        for file in streammusic_path.iterdir():
             with suppress(Exception):
-                filepath = streammusic_path + filename
-                identifier = ResourceIdentifier.from_path(filepath)
-                resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                identifier = ResourceIdentifier.from_path(file)
+                resource = FileResource(identifier.resname, identifier.restype, file.stat().st_size, 0, file)
                 self._streammusic.append(resource)
 
     def load_streamsounds(
@@ -378,11 +389,10 @@ class Installation:
         """
         self._streamsounds = []
         streamsounds_path = self.streamsounds_path()
-        for filename in [file for file in os.listdir(streamsounds_path)]:
+        for file in streamsounds_path.iterdir():
             with suppress(Exception):
-                filepath = streamsounds_path + filename
-                identifier = ResourceIdentifier.from_path(filepath)
-                resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                identifier = ResourceIdentifier.from_path(file)
+                resource = FileResource(identifier.resname, identifier.restype, file.stat().st_size, 0, filepath)
                 self._streamsounds.append(resource)
 
     def load_streamvoices(
@@ -397,12 +407,9 @@ class Installation:
         for path, subdirs, files in os.walk(streamvoices_path):
             for filename in files:
                 with suppress(Exception):
-                    folderpath = path.replace("\\", "/")
-                    if not folderpath.endswith("/"):
-                        folderpath += "/"
-                    filepath = folderpath + filename
+                    filepath = Path(path, filename)
                     identifier = ResourceIdentifier.from_path(filepath)
-                    resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                    resource = FileResource(identifier.resname, identifier.restype, pathlib.getsize(filepath), 0, filepath)
                     self._streamvoices.append(resource)
 
     def load_rims(
@@ -414,9 +421,9 @@ class Installation:
         self._rims = {}
         with suppress(ValueError):
             rims_path = self.rims_path()
-            filenames = [file for file in os.listdir(rims_path) if file.endswith('.rim')]
+            filenames = [file for file in os.listdir(rims_path) if file.lower().endswith('.rim')]
             for filename in filenames:
-                self._rims[filename] = [resource for resource in Capsule(rims_path + filename)]
+                self._rims[filename] = [resource for resource in Capsule(Path(rims_path, filename))]
     # endregion
 
     # region Get FileResources
@@ -545,7 +552,7 @@ class Installation:
     def game(
         self
     ) -> Game:
-        return Game(2 if os.path.exists(f"{self._path}/swkotor2.exe") else 1)
+        return Game(2 if Path(Path(self._path, "swkotor2.exe").exists) else 1)
 
     def talktable(
             self
@@ -565,7 +572,7 @@ class Installation:
         order: List[SearchLocation] = None,
         *,
         capsules: List[Capsule] = None,
-        folders: List[str] = None
+        folders: List[Path] = None
     ) -> Optional[ResourceResult]:
         """
         Returns a resource matching the specified resref and restype. If no resource is found then None is returned
@@ -720,14 +727,15 @@ class Installation:
 
         def check_folders(values):
             for folder in values:
-                folder = folder + '/' if not folder.endswith('/') else folder
-                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
-                    filepath = folder + file
+                folder = Path(folder).resolve()
+                filepath = Path(folder, file)
+                for file in [file for file in os.listdir(folder) if pathlib.isfile(filepath)]:
+                    filepath = Path(folder, file)
                     for query in queries:
                         with suppress(Exception):
                                 identifier = ResourceIdentifier.from_path(file)
                                 if query == identifier:
-                                    resource = FileResource(query.resname, query.restype, os.path.getsize(filepath), 0, filepath)
+                                    resource = FileResource(query.resname, query.restype, pathlib.getsize(filepath), 0, filepath)
                                     location = LocationResult(resource.filepath(), resource.offset(), resource.size())
                                     locations[identifier].append(location)
 
@@ -847,9 +855,10 @@ class Installation:
 
         def check_folders(values):
             for folder in values:
-                folder = folder + '/' if not folder.endswith('/') else folder
-                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
-                    filepath = folder + file
+                folder = Path(folder).resolve()
+                filepath = Path(folder, file)
+                for file in [file for file in os.listdir(folder) if pathlib.isfile(filepath)]:
+                    filepath = Path(folder, file)
                     identifier = ResourceIdentifier.from_path(file)
                     for resname in queries:
                         if identifier.resname == resname and identifier.restype in texture_types:
@@ -962,9 +971,10 @@ class Installation:
 
         def check_folders(values):
             for folder in values:
-                folder = folder + '/' if not folder.endswith('/') else folder
-                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
-                    filepath = folder + file
+                folder = Path(folder).resolve()
+                filepath = Path(folder, file)
+                for file in [file for file in os.listdir(folder) if pathlib.isfile(filepath)]:
+                    filepath = Path(folder, file)
                     identifier = ResourceIdentifier.from_path(file)
                     for resname in resnames:
                         if identifier.resname == resname and identifier.restype in texture_types:
@@ -1160,9 +1170,13 @@ class Installation:
         Returns:
             The ID of the area for the module.
         """
-        root = module_filename.replace(".mod", "").replace(".erf", "").replace(".rim", "")
-        root = root[:-len("_s")] if root.endswith("_s") else root
-        root = root[:-len("_dlg")] if root.endswith("_dlg") else root
+        base_file_name, ext = pathlib.splitext(module_filename)
+        newExt = ext.lower().replace(".mod", "").replace(".erf", "").replace(".rim", "")
+        if newExt.lower() != ext.lower():
+            ext = newExt
+        root = base_file_name + ext
+        root = root.lower()[:-len("_s")] if root.lower().endswith("_s") else root
+        root = root.lower()[:-len("_dlg")] if root.lower().endswith("_dlg") else root
 
         hardcoded = {
             "STUNT_00": "000",
@@ -1231,9 +1245,11 @@ class Installation:
         the modules folder.
         """
         for file in os.listdir(self.module_path()):
-            if file.endswith(".mod") and os.path.isfile(self.module_path() + file):
-                os.remove(self.module_path() + file)
+            filepath = Path(Path(self.module_path().resolve(), file))
+            if is_module_mod_file(filepath) and pathlib.isfile(filepath):
+                os.remove(filepath)
 
         for file in os.listdir(self.override_path()):
-            if os.path.isfile(self.override_path() + file):
-                os.remove(self.override_path() + file)
+            filepath = Path(Path(self.override_path().resolve(), file))
+            if pathlib.isfile(filepath):
+                os.remove(filepath)

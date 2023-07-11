@@ -46,7 +46,7 @@ def locate_game_path(game: Game):
 
     potential = locations[platform.system()][game]
     for path in potential:
-        if os.path.exists(path):
+        if Path(path).exists:
             return path
     else:
         return None

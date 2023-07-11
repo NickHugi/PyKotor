@@ -1,3 +1,4 @@
+import os
 import struct
 from copy import copy
 from inspect import signature
@@ -262,7 +263,7 @@ class Interpreter:
 
     def print(self):
         for snap in self.stack_snapshots:
-            print(snap.instruction, "\n", snap.stack, "\n")
+            print(snap.instruction, os.linesep, snap.stack, os.linesep)
 
     def set_mock(self, function_name: str, mock: Callable):
         function = next((function for function in self._functions if function.name == function_name), None)

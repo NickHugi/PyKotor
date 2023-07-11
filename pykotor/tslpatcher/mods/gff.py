@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import List, Any, Optional, Union, Tuple
 
 from pykotor.common.language import LocalizedString
@@ -136,8 +137,8 @@ class AddFieldGFF(ModifyGFF):
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
-    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> GFFStruct:
-        hierarchy = [container for container in path.split("\\") if container != ""]
+    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: Path) -> GFFStruct:
+        hierarchy = [container for container in path.parts if container != ""]
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
@@ -150,7 +151,7 @@ class AddFieldGFF(ModifyGFF):
 
 class ModifyFieldGFF(ModifyGFF):
     def __init__(self, path: str, value: FieldValue):
-        self.path: str = path
+        self.path: str = path.replace("")
         self.value: FieldValue = value
 
     def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
@@ -189,8 +190,10 @@ class ModifyFieldGFF(ModifyGFF):
         }
         func_map[field_type]()
 
-    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> Optional[Tuple[GFFStruct, str, GFFFieldType]]:
-        hierarchy, label = path.split("\\")[:-1], path.split("\\")[-1:][0]
+    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: Path) -> Optional[Tuple[GFFStruct, str, GFFFieldType]]:
+        file_info = path
+        hierarchy = file_info.parent
+        label = file_info.name
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
@@ -209,7 +212,8 @@ class ModificationsGFF:
     def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] = None, destination: str = None):
         self.filename: str = filename
         self.replace_file: bool = replace_file
-        self.destination: str = destination if destination is not None else "/override/"+filename
+        destination = Path(destination) if destination else Path("override", filename)
+
         self.modifiers: List[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(self, gff: GFF, memory: PatcherMemory, logger: PatchLogger) -> None:
