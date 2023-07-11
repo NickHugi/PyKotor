@@ -66,15 +66,16 @@ class PatcherConfig:
         self.patches_ssf: List[ModificationsSSF] = []
         self.patches_nss: List[ModificationsNSS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
+        self.patches_tlk_replace: ModificationsTLK = ModificationsTLK()
 
-    def load(self, ini_text: str, append: TLK) -> None:
+    def load(self, ini_text: str, append: TLK, replace: TLK) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
 
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        ConfigReader(ini, append).load(self)
+        ConfigReader(ini, append, replace).load(self)
 
     def patch_count(self) -> int:
         return len(self.patches_2da) + len(self.patches_gff) + len(self.patches_ssf) + 1 + len(self.install_list) + len(self.patches_nss)
@@ -109,8 +110,9 @@ class ModInstaller:
         if self._config is None:
             ini_text = BinaryReader.load_file(self.mod_path + "/" + self.ini_file).decode()
             append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
+            replace_tlk = read_tlk(self.mod_path + "/replace.tlk") if os.path.exists(self.mod_path + "/replace.tlk") else TLK()
             self._config = PatcherConfig()
-            self._config.load(ini_text, append_tlk)
+            self._config.load(ini_text, append_tlk, replace_tlk)
 
         return self._config
 
@@ -126,6 +128,7 @@ class ModInstaller:
         # Apply changes to dialog.tlk
         dialog_tlk = read_tlk(installation.path() + "dialog.tlk")
         config.patches_tlk.apply(dialog_tlk, memory)
+        config.patches_tlk.apply_replacements(dialog_tlk, memory)
         write_tlk(dialog_tlk, self.output_path + "/dialog.tlk")
         self.log.complete_patch()
 

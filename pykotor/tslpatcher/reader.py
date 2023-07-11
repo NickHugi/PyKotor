@@ -137,9 +137,10 @@ class ConfigParser(RawConfigParser):
             raise e
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, append: TLK) -> None:
+    def __init__(self, ini: ConfigParser, append: TLK, replace: TLK) -> None:
         self.ini = ini
         self.append: TLK = append
+        self.replace: TLK = replace
 
         self.config: Optional[PatcherConfig] = None
 
@@ -161,6 +162,7 @@ class ConfigReader:
         self.load_settings()
         self.load_filelist()
         self.load_stringref()
+        self.load_stringref_replacement()
         self.load_2da()
         self.load_ssf()
         self.load_gff()
@@ -200,6 +202,22 @@ class ConfigReader:
 
             modifier = ModifyTLK(token_id, entry.text, entry.voiceover)
             self.config.patches_tlk.modifiers.append(modifier)
+            
+    def load_stringref_replacement(self) -> None:
+        if "TLKReplaceList" not in self.ini:
+            return
+
+        stringrefs = dict(self.ini["TLKReplaceList"].items())
+
+        index = 0
+        
+        for name, value in stringrefs.items():
+            replace_index = int(value)
+            entry = self.replace.get(index)
+
+            modifier = ModifyTLK(replace_index, entry.text, entry.voiceover)
+            self.config.patches_tlk.modifiers.append(modifier)
+            index += 1
 
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:

@@ -79,6 +79,20 @@ class TLK:
         entry = TLKEntry(text, ResRef(sound_resref))
         self.entries.append(entry)
         return len(self.entries) - 1
+    
+    def replace(self, stringref: int, text: str, sound_resref: str = "") -> None:
+        """
+        Replaces an entry at the specified stringref with the provided text and sound resref.
+
+        Args:
+            stringref: The stringref of the entry to be replaced.
+            text: The new text for the entry.
+            sound_resref: The new sound resref for the entry.
+        """
+        if 0 <= stringref < len(self.entries):
+            self.entries[stringref] = TLKEntry(text, ResRef(sound_resref))
+        else:
+            raise IndexError("Stringref does not exist.")
 
     def resize(
             self,
