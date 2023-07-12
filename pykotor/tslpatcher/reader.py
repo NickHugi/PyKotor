@@ -221,7 +221,7 @@ class ConfigReader:
                     raise FileNotFoundError(f"Cannot find TLK file: '{value}' at key '{name}' in TLKList")
                 if value in self.ini:
                     custom_tlk_entries = dict(self.ini[value].items()) # get the entries from the custom header
-                    for token_id, change_index in custom_tlk_entries.items():
+                    for change_index, token_id in custom_tlk_entries.items():
                         entry = tlk_data_entries.get(int(token_id))
 
                         modifier = ModifyTLK(int(change_index), entry.text, entry.voiceover, is_replacement = True)
