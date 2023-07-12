@@ -1,7 +1,7 @@
 from typing import Union
 
 from pykotor.common.stream import BinaryReader
-from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter, ERFType
+from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
 from pykotor.resource.type import ResourceType
 
 
@@ -50,12 +50,6 @@ def write_erf(
         ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.ERF or file_format == ResourceType.MOD:
-        # Correct the ERF's ERFType to match the file extension
-        if file_format == ResourceType.ERF:
-            erf.erf_type = ERFType.ERF
-        elif file_format == ResourceType.MOD:
-            erf.erf_type = ERFType.MOD
-
         ERFBinaryWriter(erf, target).write()
     else:
         raise ValueError("Unsupported format specified; use ERF or MOD.")
