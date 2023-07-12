@@ -137,10 +137,10 @@ class ConfigParser(RawConfigParser):
             raise e
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, append: TLK, replace: TLK) -> None:
+    def __init__(self, ini: ConfigParser, append: TLK, mod_path: str) -> None:
         self.ini = ini
-        self.append: TLK = append
-        self.replace: TLK = replace
+        self.dialog_tlk_edits: TLK = append
+        self.mod_path: str = mod_path
 
         self.config: Optional[PatcherConfig] = None
 
@@ -161,8 +161,7 @@ class ConfigReader:
 
         self.load_settings()
         self.load_filelist()
-        self.load_stringref()
-        self.load_stringref_replacement()
+        self.load_tlk_list()
         self.load_2da()
         self.load_ssf()
         self.load_gff()
@@ -189,35 +188,57 @@ class ConfigReader:
                 file_install = InstallFile(filename, replace_existing)
                 folder_install.files.append(file_install)
 
-    def load_stringref(self) -> None:
+    def load_tlk_list(self) -> None:
         if "TLKList" not in self.ini:
             return
 
         stringrefs = dict(self.ini["TLKList"].items())
+        modifier = None
 
         for name, value in stringrefs.items():
-            token_id = int(name[6:])
-            append_index = int(value)
-            entry = self.append.get(append_index)
+            if "\\" in name:  # Handle in-line updates
+                
+                token_id = int(name.split("\\")[0])
+                property_name = name.split("\\")[1]
+                entry = self.dialog_tlk_edits.get(token_id)
 
-            modifier = ModifyTLK(token_id, entry.text, entry.voiceover)
-            self.config.patches_tlk.modifiers.append(modifier)
-            
-    def load_stringref_replacement(self) -> None:
-        if "TLKReplaceList" not in self.ini:
-            return
+                if property_name.lower() == "text":
+                    entry.text = value
+                elif property_name.lower() == "sound":
+                    entry.voiceover = value
+                else:
+                    raise KeyError(f"Invalid TLKList syntax for key '{name}' value '{value}'")
+                    
+                self.config.patches_tlk.modifiers.append(modifier)
 
-        stringrefs = dict(self.ini["TLKReplaceList"].items())
+            elif name.lower().startswith("file"):  # Handle multiple files
+                
+                tlk_file_path = os.path.join(self.mod_path, value)
+                tlk_data_entries = None
+                if os.path.exists(tlk_file_path):
+                    tlk_data_entries = read_tlk(tlk_file_path)
+                else:
+                    raise FileNotFoundError(f"Cannot find TLK file: '{value}' at key '{name}' in TLKList")
+                if value in self.ini:
+                    custom_tlk_entries = dict(self.ini[value].items()) # get the entries from the custom header
+                    for token_id, change_index in custom_tlk_entries.items():
+                        entry = tlk_data_entries.get(int(token_id))
 
-        index = 0
-        
-        for name, value in stringrefs.items():
-            replace_index = int(value)
-            entry = self.replace.get(index)
+                        modifier = ModifyTLK(change_index, entry.text, entry.voiceover, is_replacement = True)
+                        self.config.patches_tlk.modifiers.append(modifier)
+                else:
+                    raise KeyError(f"'{value}' Ini header referenced in TLKList not found.")
+                
+            elif name.lower().startswith("strref"): # Handle legacy syntax
+                token_id = int(name[6:])
+                append_index = int(value)
+                entry = self.dialog_tlk_edits.get(append_index)
 
-            modifier = ModifyTLK(replace_index, entry.text, entry.voiceover)
-            self.config.patches_tlk.modifiers.append(modifier)
-            index += 1
+                modifier = ModifyTLK(token_id, entry.text, entry.voiceover, is_replacement = False)
+                self.config.patches_tlk.modifiers.append(modifier)
+            else:
+                raise KeyError(f"Invalid key in TLKList: '{name}'")
+
 
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:
