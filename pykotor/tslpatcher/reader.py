@@ -224,7 +224,7 @@ class ConfigReader:
                     for token_id, change_index in custom_tlk_entries.items():
                         entry = tlk_data_entries.get(int(token_id))
 
-                        modifier = ModifyTLK(change_index, entry.text, entry.voiceover, is_replacement = True)
+                        modifier = ModifyTLK(int(change_index), entry.text, entry.voiceover, is_replacement = True)
                         self.config.patches_tlk.modifiers.append(modifier)
                 else:
                     raise KeyError(f"'{value}' Ini header referenced in TLKList not found.")
