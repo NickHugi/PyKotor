@@ -223,12 +223,12 @@ class ModInstaller:
             patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
-            file_name, ext = pathlib.splitext(patch.filename)
+            file_name, ext = patch.filename.stem, patch.filename.suffix
             self.write(nss_output_filepath, file_name + ext.lower().replace(".nss", ".ncs"), data, patch.replace_file)
 
             self.log.complete_patch()
 
-    def write(self, destination: str, filename: str, data: bytes, replace: bool = False) -> None:
+    def write(self, destination: Path, filename: str, data: bytes, replace: bool = False) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
         if ModuleResource.is_module_rim_file(destination):
             rim = read_rim(BinaryReader.load_file(destination)) if Path(destination).exists else RIM()
@@ -244,7 +244,7 @@ class ModInstaller:
         else:
             # todo: fix later. Check if destination is already a filename with an extension. I've somehow encountered both scenarios.
             # a better solution would be finding out what caused this, as it definitely wasn't caused by a improper changes.ini
-            base_folder_name, extension = pathlib.splitext(destination)
+            base_folder_name, extension = destination.stem, destination.suffix
             filepath = destination if extension else Path(destination, filename)
 
             if not Path(filepath).exists or replace:

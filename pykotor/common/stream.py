@@ -75,7 +75,7 @@ class BinaryReader:
     @classmethod
     def from_file(
             cls,
-            path: Path,
+            path: str,
             offset: int = 0,
             size: int = None
     ) -> BinaryReader:

@@ -183,7 +183,7 @@ def clone_module(
     write_lyt(lyt, lyt_data)
     newModule.set(identifier, ResourceType.LYT, lyt_data)
 
-    filepath = Path(installation.module_path(), identifier + ".mod")
+    filepath = installation.module_path() / identifier + ".mod"
     write_erf(newModule, filepath)
 
 def rim_to_mod(filepath: str) -> None:
@@ -203,12 +203,12 @@ def rim_to_mod(filepath: str) -> None:
     if not ModuleResource.is_module_mod_file(filepath):
         raise ValueError("Specified file must end with the .mod extension")
 
-    filename = pathlib.splitext(filepath)[0] # strip the extension
+    filename = filepath.stem # strip the extension
     filepath_rim_s = filename + "_s.rim"
     filepath_rim = filename + ".rim"
 
     rim = read_rim(filepath_rim)
-    rim_s = read_rim(filepath_rim_s) if Path(filepath_rim_s).exists else RIM()
+    rim_s = read_rim(filepath_rim_s) if filepath_rim_s.exists else RIM()
 
     mod = ERF(ERFType.MOD)
     [mod.set(res.resref.get(), res.restype, res.data) for res in rim]

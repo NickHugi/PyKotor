@@ -1,7 +1,6 @@
-import os
-import pathlib
 import sys
 
+from pathlib import Path
 from enum import Enum
 from pykotor.tslpatcher.config import ModInstaller
 from pykotor.tslpatcher.reader import NamespaceReader
@@ -31,13 +30,13 @@ if len(sys.argv) < 3 or len(sys.argv) > 4:
     print("Syntax: pykotorcli.exe [\"\\path\\to\\game\\dir\"] [\"\\path\\to\\tslpatchdata\"] {\"namespace_option_index\"}")
     sys.exit(ExitCode.NumberOfArgs)
 
-game_path = Path(sys.argv[1]).absolute()
-tslpatchdata_path = Path(sys.argv[2]).absolute()
+game_path = Path(sys.argv[1])
+tslpatchdata_path = Path(sys.argv[2])
 namespace_index = None
 changes_ini_path = None
 
 if len(sys.argv) == 3:
-    changes_ini_path = Path(tslpatchdata_path).joinpath("tslpatchdata", "changes.ini")
+    changes_ini_path = Path(tslpatchdata_path) / "tslpatchdata" / "changes.ini"
 elif len(sys.argv) == 4:
     try:
         namespace_index = int(sys.argv[3])
@@ -74,8 +73,8 @@ if not Path(changes_ini_path).exists:
     print("The 'changes.ini' file could not be found.")
     sys.exit(ExitCode.ChangesIniNotFound)
 
-mod_path = Path(changes_ini_path).parent.absolute
-ini_name = Path(changes_ini_path).name
+mod_path = changes_ini_path.parent
+ini_name = changes_ini_path.name
 
 print("Starting install...")
 installer = ModInstaller(mod_path, game_path, ini_name)

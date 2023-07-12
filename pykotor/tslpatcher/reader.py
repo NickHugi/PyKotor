@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from configparser import ConfigParser, DuplicateOptionError, DuplicateSectionError, RawConfigParser, SectionProxy
 import sys
 from typing import Dict, Optional, Union, Tuple, List
@@ -145,13 +145,13 @@ class ConfigReader:
         self.config: Optional[PatcherConfig] = None
 
     @classmethod
-    def from_filepath(cls, path: str, append_path: Optional[str]) -> PatcherConfig:
+    def from_filepath(cls, path: Path, append_path: Optional[str]) -> PatcherConfig:
         ini_text = BinaryReader.load_file(path).decode()
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        append = read_tlk(append_path) if Path(append_path).exists else TLK()
+        append = read_tlk(append_path) if append_path.exists else TLK()
 
         config = PatcherConfig()
         return ConfigReader(ini, append).load(config)

@@ -80,7 +80,7 @@ def read_tlk(
     Returns:
         An TLK instance.
     """
-    file_format = detect_tlk(source, offset)
+    file_format = detect_tlk(str(source.absolute().resolve()), offset)
 
     if file_format is ResourceType.INVALID:
         raise ValueError("Failed to determine the format of the GFF file.")
