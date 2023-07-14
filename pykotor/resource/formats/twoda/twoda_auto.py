@@ -1,3 +1,4 @@
+from pathlib import Path
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.twoda import TwoDA, TwoDABinaryReader, TwoDABinaryWriter, TwoDACSVWriter, TwoDACSVReader, \
     TwoDAJSONReader, TwoDAJSONWriter
@@ -38,10 +39,10 @@ def detect_2da(
             return ResourceType.INVALID
 
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = check(source[:4].decode('ascii', 'ignore'))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
@@ -129,7 +130,7 @@ def bytes_2da(
     """
     Returns the TwoDA data in the specified format (TwoDA, TwoDA_CSV or TwoDA_JSON) as a bytes object.
 
-    This is a convience method that wraps the write_2da() method.
+    This is a convenience method that wraps the write_2da() method.
 
     Args:
         twoda: The target TwoDA object.

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import platform
 
 from pykotor.common.misc import Game
@@ -45,8 +45,4 @@ def locate_game_path(game: Game):
     }
 
     potential = locations[platform.system()][game]
-    for path in potential:
-        if Path(path).exists:
-            return path
-    else:
-        return None
+    return next((path for path in potential if Path(path).exists()), None)

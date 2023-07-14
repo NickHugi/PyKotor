@@ -1,3 +1,4 @@
+from pathlib import Path
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFF, GFFBinaryReader, GFFBinaryWriter, GFFContent, GFFXMLWriter, GFFXMLReader
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
@@ -24,12 +25,12 @@ def detect_gff(
         The format of the GFF data.
     """
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
                 file_format = ResourceType.GFF if any(
                     x.value == file_header for x in GFFContent) else ResourceType.GFF_XML
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = ResourceType.GFF if any(
                 x for x in GFFContent if x.value == source[:4].decode('ascii', 'ignore')) else ResourceType.GFF_XML
         elif isinstance(source, BinaryReader):
@@ -113,7 +114,7 @@ def bytes_gff(
     """
     Returns the GFF data in the specified format (GFF or GFF_XML) as a bytes object.
 
-    This is a convience method that wraps the write_gff() method.
+    This is a convenience method that wraps the write_gff() method.
 
     Args:
         gff: The target GFF object.

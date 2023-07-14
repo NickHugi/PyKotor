@@ -91,7 +91,7 @@ class AddFieldGFF(ModifyGFF):
     def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
         container = self._navigate_containers(container, self.path)
         if container is None:
-            logger.add_warning("Parent field at '{}' does not exist or is not a List or Struct. Unable to add new Field '{}'...".format(self.path, self.label))
+            logger.add_warning("Parent field at '{self.path}' does not exist or is not a List or Struct. Unable to add new Field '{self.label}'...")
             return
 
         value = self.value.value(memory, self.field_type)

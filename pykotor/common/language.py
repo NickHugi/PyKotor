@@ -83,8 +83,7 @@ class LocalizedString:
         else:
             for language, gender, text in self:
                 return text
-            else:
-                return "-1"
+            return "-1"
 
     def __eq__(
             self,
@@ -94,9 +93,7 @@ class LocalizedString:
             return False
         if other.stringref != self.stringref:
             return False
-        if other._substrings != self._substrings:
-            return False
-        return True
+        return other._substrings == self._substrings
 
     def __hash__(self):
         return hash(self.stringref)

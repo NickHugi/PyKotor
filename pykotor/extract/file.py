@@ -124,17 +124,17 @@ class ResourceIdentifier(NamedTuple):
     def __hash__(
             self
     ):
-        return hash(self.resname.lower() + "." + self.restype.extension)
+        return hash(f"{self.resname.lower()}.{self.restype.extension}")
 
     def __repr__(
             self
     ):
-        return "ResourceIdentifier({}, ResourceType.{})".format(self.resname, self.restype)
+        return f"ResourceIdentifier({self.resname}, ResourceType.{self.restype})"
 
     def __str__(
             self
     ):
-        return self.resname.lower() + "." + self.restype.extension
+        return f"{self.resname.lower()}.{self.restype.extension}"
 
     def __eq__(
             self,

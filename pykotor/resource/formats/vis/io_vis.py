@@ -4,25 +4,23 @@ import os
 from typing import Optional, List
 
 from pykotor.resource.formats.vis import VIS
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class VISAsciiReader(ResourceReader):
-    def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
-    ):
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
         self._vis: Optional[VIS] = None
         self._lines: List[str] = []
 
     @autoclose
-    def load(
-            self,
-            auto_close: bool = True
-    ) -> VIS:
+    def load(self, auto_close: bool = True) -> VIS:
         self._vis = VIS()
         self._lines = self._reader.read_string(self._reader.size()).splitlines()
 
@@ -51,20 +49,13 @@ class VISAsciiReader(ResourceReader):
 
 
 class VISAsciiWriter(ResourceWriter):
-    def __init__(
-            self,
-            vis: VIS,
-            target: TARGET_TYPES
-    ):
+    def __init__(self, vis: VIS, target: TARGET_TYPES):
         super().__init__(target)
         self._vis: VIS = vis
 
     @autoclose
-    def write(
-            self,
-            auto_close: bool = True
-    ) -> None:
+    def write(self, auto_close: bool = True) -> None:
         for observer, observed in self._vis:
-            self._writer.write_string("{} {}{}}".format(observer, str(len(observed)), os.linesep))
+            self._writer.write_string(f"{observer} {len(observed)}{os.linesep}")
             for room in observed:
-                self._writer.write_string("  {}{}".format(room, os.linesep))
+                self._writer.write_string(f"  {room}{os.linesep}")

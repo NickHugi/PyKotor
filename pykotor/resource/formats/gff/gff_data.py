@@ -46,11 +46,7 @@ class GFFContent(Enum):
             cls,
             value
     ):
-        for gff_content in GFFContent:
-            if gff_content.value == value:
-                return True
-        else:
-            return False
+        return any(gff_content.value == value for gff_content in GFFContent)
 
 
 class GFFFieldType(IntEnum):
@@ -124,6 +120,23 @@ class GFF:
             indent: int = 0,
             column_len: int = 40
     ):
+        """
+        The `print_tree` function is used to print the contents of a GFFStruct object in a tree-like
+        format.
+        
+        :param root: The `root` parameter is an optional argument that represents the root node of the
+        tree. If no root node is provided, it defaults to `None`, and the root node of the tree stored
+        in the `self.root` attribute is used instead
+        :type root: Optional[GFFStruct]
+        :param indent: The `indent` parameter is used to determine the number of spaces to add before
+        each line of output in order to create a visual tree structure. It represents the depth of the
+        current node in the tree, defaults to 0
+        :type indent: int (optional)
+        :param column_len: The `column_len` parameter is used to specify the length of each column in
+        the printed tree. It determines the width of the label and value columns in the output. By
+        default, it is set to 40 characters, defaults to 40
+        :type column_len: int (optional)
+        """
         if root is None:
             root = self.root
 
@@ -140,7 +153,11 @@ class GFF:
                 self.print_tree(value, indent + 1)
             if field_type is GFFFieldType.List:
                 for i, child_struct in enumerate(value):
-                    print("  {}[Struct {}]".format("  " * indent, i).ljust(column_len), " ", child_struct.struct_id)
+                    print(
+                        f'  {"  " * indent}[Struct {i}]'.ljust(column_len),
+                        " ",
+                        child_struct.struct_id,
+                    )
                     self.print_tree(child_struct, indent + 2)
 
 
@@ -224,9 +241,7 @@ class GFFStruct:
         """
         Returns the value of the specified field.
         """
-        if not isinstance(item, str):
-            return NotImplemented
-        return self._fields[item].value()
+        return self._fields[item].value() if isinstance(item, str) else NotImplemented
 
     def remove(
             self,
@@ -955,8 +970,7 @@ class GFFList:
         """
         Iterates through _structs yielding each element.
         """
-        for struct in self._structs:
-            yield struct
+        yield from self._structs
 
     def __getitem__(
             self,
@@ -965,9 +979,7 @@ class GFFList:
         """
         Returns the struct at the specified index.
         """
-        if not isinstance(item, int):
-            return NotImplemented
-        return self._structs[item]
+        return self._structs[item] if isinstance(item, int) else NotImplemented
 
     def add(
             self,

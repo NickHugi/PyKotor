@@ -24,12 +24,12 @@ class ScriptConstant:
     def __repr__(
             self
     ):
-        return 'ScriptConstant("{}", "{}", "{}")'.format(self.datatype, self.name, self.value)
+        return f'ScriptConstant("{self.datatype}", "{self.name}", "{self.value}")'
 
     def __str__(
             self
     ):
-        return "{} {} = {};".format(self.datatype, self.name, self.value)
+        return f"{self.datatype} {self.name} = {self.value};"
 
 
 class ScriptParam:
@@ -46,15 +46,15 @@ class ScriptParam:
     def __repr__(
             self
     ):
-        return 'ScriptParam({}, {}, {})'.format(repr(self.datatype), repr(self.name), repr(self.default))
+        return f'ScriptParam({repr(self.datatype)}, {repr(self.name)}, {repr(self.default)})'
 
     def __str__(
             self
     ):
         if self.default is not None:
-            return "{} {} = {}".format(self.datatype, self.name, self.default)
+            return f"{self.datatype} {self.name} = {self.default}"
         else:
-            return "{} {}".format(self.datatype, self.name)
+            return f"{self.datatype} {self.name}"
 
 
 class ScriptFunction:
@@ -75,8 +75,7 @@ class ScriptFunction:
     def __repr__(
             self
     ):
-        return "ScriptFunction({}, {}, {}, {}, {})".format(repr(self.returntype), repr(self.name), repr(self.params),
-                                                           repr(self.description), repr(self.raw))
+        return f"ScriptFunction({repr(self.returntype)}, {repr(self.name)}, {repr(self.params)}, {repr(self.description)}, {repr(self.raw)})"
 
     def __str__(
             self
@@ -86,7 +85,7 @@ class ScriptFunction:
             param_str += str(param)
             if param is not self.params[-1]:
                 param_str += ", "
-        return "{} {}({})".format(self.returntype, self.name, param_str)
+        return f"{self.returntype} {self.name}({param_str})"
 
 
 class DataType(Enum):

@@ -66,7 +66,7 @@ class RIMBinaryWriter(ResourceWriter):
             rim: RIM,
             target: TARGET_TYPES
     ):
-        super().__init__(target)
+        super().__init__(target.resolve().absolute())
         self._rim = rim
 
     @autoclose

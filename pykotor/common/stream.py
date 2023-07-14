@@ -75,7 +75,7 @@ class BinaryReader:
     @classmethod
     def from_file(
             cls,
-            path: str,
+            path: Path,
             offset: int = 0,
             size: int = None
     ) -> BinaryReader:
@@ -90,7 +90,7 @@ class BinaryReader:
         Returns:
             A new BinaryReader instance.
         """
-        stream = open(path, 'rb')
+        stream = open(path.resolve().absolute(), 'rb')
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -117,13 +117,13 @@ class BinaryReader:
     @classmethod
     def from_auto(
             cls,
-            source: Optional[str, bytes, bytearray, BinaryReader],
+            source: Optional[Path, str, bytes, bytearray, BinaryReader],
             offset: int = 0,
             size: int = None
     ):
-        if isinstance(source, str):  # is path
+        if isinstance(source, (Path, str)):  # is path
             reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, bytes) or isinstance(source, bytearray):  # is binary data
+        elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
         elif isinstance(source, BinaryReader):
             reader = BinaryReader(source._stream, source._offset, source._size)
@@ -134,7 +134,7 @@ class BinaryReader:
 
     @staticmethod
     def load_file(
-            path: str,
+            path: Path,
             offset: int = 0,
             size: int = -1
     ) -> bytes:
@@ -149,12 +149,9 @@ class BinaryReader:
         Returns:
             The bytes of the file.
         """
-        with open(path, 'rb') as reader:
+        with open(path.resolve().absolute(), 'rb') as reader:
             reader.seek(offset)
-            if size == -1:
-                return reader.read()
-            else:
-                return reader.read(size)
+            return reader.read() if size == -1 else reader.read(size)
 
     def offset(
             self
@@ -610,7 +607,7 @@ class BinaryWriter(ABC):
     @classmethod
     def to_file(
             cls,
-            path: str
+            path: Path
     ) -> BinaryWriter:
         """
         Returns a new BinaryWriter with a stream established to the specified path.
@@ -621,7 +618,7 @@ class BinaryWriter(ABC):
         Returns:
             A new BinaryWriter instance.
         """
-        stream = open(path, 'wb')
+        stream = open(path.resolve().absolute(), 'wb')
         return BinaryWriterFile(stream)
 
     @classmethod
@@ -645,9 +642,9 @@ class BinaryWriter(ABC):
     @classmethod
     def to_auto(
             cls,
-            source: Union[str, bytearray, BinaryWriter]
+            source: Union[Path, bytearray, BinaryWriter]
     ) -> BinaryWriter:
-        if isinstance(source, str):  # is path
+        if isinstance(source, Path):  # is path
             return BinaryWriter.to_file(source)
         elif isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)
@@ -658,7 +655,7 @@ class BinaryWriter(ABC):
 
     @staticmethod
     def dump(
-            path: str,
+            path: Path,
             data: bytes
     ) -> None:
         """
@@ -668,7 +665,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        with open(path, 'wb') as file:
+        with open(path.resolve().absolute(), 'wb') as file:
             file.write(data)
 
     @abstractmethod

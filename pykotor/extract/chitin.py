@@ -27,8 +27,7 @@ class Chitin:
     def __iter__(
             self
     ):
-        for resource in self._resources:
-            yield resource
+        yield from self._resources
 
     def __len__(
             self
@@ -53,7 +52,7 @@ class Chitin:
 
             files = []
             reader.seek(file_table_offset)
-            for i in range(bif_count):
+            for _ in range(bif_count):
                 reader.skip(4)
                 file_offset = reader.read_uint32()
                 file_length = reader.read_uint16()
@@ -67,14 +66,14 @@ class Chitin:
                 bifs.append(bif)
 
             keys = {}
-            for i in range(key_count):
+            for _ in range(key_count):
                 resref = reader.read_string(16)
                 restype_id = reader.read_uint16()
                 res_id = reader.read_uint32()
                 keys[res_id] = resref
 
         for bif in bifs:
-            with BinaryReader.from_file(Path(self._kotor_path, bif)) as reader:
+            with BinaryReader.from_file(self._kotor_path / bif) as reader:
                 file_type = reader.read_string(4)
                 file_version = reader.read_string(4)
                 resource_count = reader.read_uint32()
@@ -82,13 +81,13 @@ class Chitin:
                 resource_offset = reader.read_uint32()
 
                 reader.seek(resource_offset)
-                for i in range(resource_count):
+                for _ in range(resource_count):
                     res_id = reader.read_uint32()
                     offset = reader.read_uint32()
                     size = reader.read_uint32()
                     restype = ResourceType.from_id(reader.read_uint32())
                     resref = keys[res_id]
-                    resource = FileResource(resref, restype, size, offset, Path(self._kotor_path, bif))
+                    resource = FileResource(resref, restype, size, offset, self._kotor_path / bif)
                     self._resources.append(resource)
 
     def resource(

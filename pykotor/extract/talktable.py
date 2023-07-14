@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict, NamedTuple
 
 from pykotor.common.language import Language
@@ -19,9 +20,9 @@ class TalkTable:
 
     def __init__(
             self,
-            path: str
+            path: Path
     ):
-        self._path: str = path
+        self._path: Path = path
 
     def string(
             self,
@@ -44,21 +45,24 @@ class TalkTable:
         if stringref == -1 or stringref >= entries_count:
             string = ""
         else:
-            reader.seek(20 + 40 * stringref)
-            flags = reader.read_uint32()
-            sound_resref = reader.read_string(16)
-            volume_variance = reader.read_uint32()
-            pitch_variance = reader.read_uint32()
-            text_offset = reader.read_uint32()
-            text_length = reader.read_uint32()
-            sound_length = reader.read_single()
-
-            reader.seek(texts_offset + text_offset)
-            string = reader.read_string(text_length)
-
+            string = self._extracted_from_string_22(reader, stringref, texts_offset)
         reader.close()
 
         return string
+
+    # TODO Rename this here and in `string`
+    def _extracted_from_string_22(self, reader, stringref, texts_offset):
+        reader.seek(20 + 40 * stringref)
+        flags = reader.read_uint32()
+        sound_resref = reader.read_string(16)
+        volume_variance = reader.read_uint32()
+        pitch_variance = reader.read_uint32()
+        text_offset = reader.read_uint32()
+        text_length = reader.read_uint32()
+        sound_length = reader.read_single()
+
+        reader.seek(texts_offset + text_offset)
+        return reader.read_string(text_length)
 
     def sound(
             self,
@@ -81,18 +85,23 @@ class TalkTable:
         if stringref == -1 or stringref >= entries_count:
             sound_resref = ""
         else:
-            reader.seek(20 + 40 * stringref)
-            flags = reader.read_uint32()
-            sound_resref = reader.read_string(16)
-            volume_variance = reader.read_uint32()
-            pitch_variance = reader.read_uint32()
-            text_offset = reader.read_uint32()
-            text_length = reader.read_uint32()
-            sound_length = reader.read_single()
-
+            sound_resref = self._extracted_from_sound_22(reader, stringref)
         reader.close()
 
         return ResRef(sound_resref)
+
+    # TODO Rename this here and in `sound`
+    def _extracted_from_sound_22(self, reader, stringref):
+        reader.seek(20 + 40 * stringref)
+        flags = reader.read_uint32()
+        result = reader.read_string(16)
+        volume_variance = reader.read_uint32()
+        pitch_variance = reader.read_uint32()
+        text_offset = reader.read_uint32()
+        text_length = reader.read_uint32()
+        sound_length = reader.read_single()
+
+        return result
 
     def batch(
             self,

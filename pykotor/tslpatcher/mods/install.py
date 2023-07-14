@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List
 
@@ -25,11 +24,15 @@ class InstallFile:
 
         if self.replace_existing or destination.resource(resname, restype) is None:
             if self.replace_existing and destination.resource(resname, restype) is not None:
-                log.add_note("Replacing file {} in the {} archive...".format(self.filename, destination.filename()))
+                log.add_note(
+                    f"Replacing file {self.filename} in the {destination.filename()} archive..."
+                )
             else:
-                log.add_note("Adding file {} in the {} archive...".format(self.filename, destination.filename()))
+                log.add_note(
+                    f"Adding file {self.filename} in the {destination.filename()} archive..."
+                )
 
-            data = BinaryReader.load_file("{}/{}".format(source_folder, self.filename))
+            data = BinaryReader.load_file(f"{source_folder}/{self.filename}")
             destination.add(resname, restype, data)
 
     def apply_file(self, log: PatchLogger, source_folder: Path, destination: Path, local_folder: str):
@@ -38,17 +41,23 @@ class InstallFile:
 
         if self.replace_existing or not save_file_to.exists:
             if not destination.exists:
-                log.add_note("Folder {} did not exist, creating it...".format(destination))
+                log.add_note(f"Folder {destination} did not exist, creating it...")
                 destination.mkdir(parents=True)
 
             if self.replace_existing and not save_file_to.exists:
-                log.add_note("Replacing file '{}' to the '{}' folder...".format(self.filename, local_folder))
+                log.add_note(
+                    f"Replacing file '{self.filename}' to the '{local_folder}' folder..."
+                )
             else:
-                log.add_note("Copying file '{}' to the '{}' folder...".format(self.filename, local_folder))
+                log.add_note(
+                    f"Copying file '{self.filename}' to the '{local_folder}' folder..."
+                )
 
             BinaryWriter.dump(save_file_to.resolve(), data)
-        elif not self.replace_existing and save_file_to.exists:
-            log.add_warning("A file named '{}' already exists in the '{}' folder. Skipping file...".format(self.filename, local_folder))
+        else:
+            log.add_warning(
+                f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file..."
+            )
 
 
 class InstallFolder:

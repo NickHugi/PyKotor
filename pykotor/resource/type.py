@@ -5,20 +5,21 @@ games.
 from __future__ import annotations
 
 from abc import ABC
+from pathlib import Path
 from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
-SOURCE_TYPES = Union[str, bytes, bytearray, BinaryReader]
-TARGET_TYPES = Union[str, bytearray, BinaryWriter]
+SOURCE_TYPES = Union[Path, bytes, bytearray, BinaryReader]
+TARGET_TYPES = Union[Path, bytearray, BinaryWriter]
 
 
 class ResourceReader(ABC):
     @overload
     def __init__(
             self,
-            filepath: str,
+            filepath: Path,
             offset: int = 0,
             size: int = 0
     ):
@@ -53,7 +54,7 @@ class ResourceReader(ABC):
 
     def __init__(
             self,
-            source: Union[str, bytes, bytearray, BinaryReader],
+            source: Union[Path, bytes, bytearray, BinaryReader],
             offset: int = 0,
             size: int = 0
     ):
@@ -70,7 +71,7 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
             self,
-            filepath: str
+            filepath: Path
     ):
         ...
 
@@ -97,7 +98,7 @@ class ResourceWriter(ABC):
 
     def __init__(
             self,
-            target: Union[str, bytearray, BinaryReader]
+            target: Union[Path, bytearray, BinaryReader]
     ):
         self._writer = BinaryWriter.to_auto(target)
 
@@ -226,7 +227,7 @@ class ResourceType:
         elif self is ResourceType.INVALID:
             return "ResourceType.INVALID"
         else:
-            return "ResourceType.{}".format(self.extension.upper())
+            return f"ResourceType.{self.extension.upper()}"
 
     def __str__(
             self

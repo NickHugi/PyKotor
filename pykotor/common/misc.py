@@ -13,15 +13,15 @@ T = TypeVar("T")
 
 
 class ResRef:
+    """
+    A string reference to a game resource. ResRefs can be a maximum of 16 characters in length.
+    """
+    
     class InvalidEncodingError(ValueError):
         ...
 
     class ExceedsMaxLengthError(ValueError):
         ...
-
-    """
-    A string reference to a game resource. ResRefs can be a maximum of 16 characters in length.
-    """
 
     def __init__(
             self,
@@ -52,7 +52,7 @@ class ResRef:
     def __repr__(
             self
     ):
-        return "ResRef({})".format(self._value)
+        return f"ResRef({self._value})"
 
     def __str__(
             self
@@ -102,10 +102,11 @@ class ResRef:
         Raises:
             ValueError:
         """
-        if len(text) > 16 and truncate:
-            text = text[:16]
-        elif len(text) > 16 and not truncate:
-            raise ResRef.ExceedsMaxLengthError("ResRef cannot exceed 16 characters.")
+        if len(text) > 16:
+            if truncate:
+                text = text[:16]
+            else:
+                raise ResRef.ExceedsMaxLengthError("ResRef cannot exceed 16 characters.")
         if len(text) != len(text.encode()):
             raise ResRef.InvalidEncodingError("ResRef must be in ASCII characters.")
 
@@ -148,7 +149,7 @@ class Color:
     def __repr__(
             self
     ):
-        return "Color({}, {}, {}, {})".format(self.r, self.g, self.b, self.g)
+        return f"Color({self.r}, {self.g}, {self.b}, {self.g})"
 
     def __str__(
             self
@@ -156,7 +157,7 @@ class Color:
         """
         Returns a string of each color component separated by whitespace.
         """
-        return "{} {} {} {}".format(self.r, self.g, self.b, self.a)
+        return f"{self.r} {self.g} {self.b} {self.a}"
 
     def __eq__(
             self,

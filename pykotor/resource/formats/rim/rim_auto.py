@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Union
 
 from pykotor.common.stream import BinaryReader
@@ -33,7 +34,7 @@ def read_rim(
 
 def write_rim(
         rim: RIM,
-        target: Union[str, bytearray, BinaryReader],
+        target: Union[Path, bytearray, BinaryReader],
         file_format: ResourceType = ResourceType.RIM
 ) -> None:
     """

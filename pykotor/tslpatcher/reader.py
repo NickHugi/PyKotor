@@ -1,5 +1,6 @@
 from pathlib import Path
-from configparser import ConfigParser, DuplicateOptionError, DuplicateSectionError, RawConfigParser, SectionProxy
+from configparser import ConfigParser as OriginalConfigParser
+from configparser import DuplicateOptionError, DuplicateSectionError, SectionProxy
 import sys
 from typing import Dict, Optional, Union, Tuple, List
 
@@ -26,10 +27,10 @@ from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, Targe
     CopyRow2DA, AddColumn2DA, Modifications2DA, RowValue2DAMemory, RowValueTLKMemory, RowValueHigh, RowValueRowIndex, \
     RowValueRowLabel, RowValueConstant, RowValueRowCell
 
-class ConfigParser(RawConfigParser):
+class ConfigParser(OriginalConfigParser):
     def _read(self, fp, fpname):
         """Override the _read in RawConfigParser so it doesn't throw exceptions when there's no header defined.
-        This override matches TSLPatcher.
+        This override matches what TSLPatcher is doing.
         """
         elements_added = set()
         cursect = None                        # None, or a dictionary
@@ -79,12 +80,9 @@ class ConfigParser(RawConfigParser):
             if (cursect is not None and optname and
                 cur_indent_level > indent_level):
                 cursect[optname].append(value)
-            # a section header or option header?
             else:
                 indent_level = cur_indent_level
-                # is it a section header?
-                mo = self.SECTCRE.match(value)
-                if mo:
+                if mo := self.SECTCRE.match(value):
                     sectname = mo.group('header')
                     if sectname in self._sections:
                         if self._strict and sectname in elements_added:
@@ -101,13 +99,10 @@ class ConfigParser(RawConfigParser):
                         elements_added.add(sectname)
                     # So sections can't start with a continuation line
                     optname = None
-                # no section header in the file?
                 elif cursect is None:
-                    continue # this is the patch
-                # an option line?
+                    continue # this is the patch for TSLPatcher support
                 else:
-                    mo = self._optcre.match(value)
-                    if mo:
+                    if mo := self._optcre.match(value):
                         optname, vi, optval = mo.group('option', 'vi', 'value')
                         if not optname:
                             e = self._handle_error(e, fpname, lineno, line)
@@ -137,11 +132,9 @@ class ConfigParser(RawConfigParser):
             raise e
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, append: TLK, replace: TLK) -> None:
+    def __init__(self, ini: ConfigParser, append: TLK) -> None:
         self.ini = ini
         self.append: TLK = append
-        self.replace: TLK = replace
-
         self.config: Optional[PatcherConfig] = None
 
     @classmethod
@@ -162,7 +155,6 @@ class ConfigReader:
         self.load_settings()
         self.load_filelist()
         self.load_stringref()
-        self.load_stringref_replacement()
         self.load_2da()
         self.load_ssf()
         self.load_gff()
@@ -201,18 +193,6 @@ class ConfigReader:
             entry = self.append.get(append_index)
 
             modifier = ModifyTLK(token_id, entry.text, entry.voiceover)
-            self.config.patches_tlk.modifiers.append(modifier)
-            
-    def load_stringref_replacement(self) -> None:
-        if "TLKReplaceList" not in self.ini:
-            return
-        
-        stringrefs_list = self.ini["TLKReplaceList"].values()
-
-        for index, replacement_strref in enumerate(stringrefs_list):
-            entry = self.replace.get(index)
-
-            modifier = ModifyTLK(int(replacement_strref), entry.text, entry.voiceover)
             self.config.patches_tlk.modifiers.append(modifier)
 
     def load_2da(self) -> None:
@@ -307,7 +287,7 @@ class ConfigReader:
                     modifications.destination = value
                 elif name.lower() == "!replacefile":
                     modifications.replace_file = bool(int(value))
-                elif name.lower() == "!filename" or name.lower() == "!saveas":
+                elif name.lower() in ["!filename", "!saveas"]:
                     modifications.filename = value
                 elif name.lower().startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
@@ -373,8 +353,7 @@ class ConfigReader:
             value = FieldValueConstant(locstring)
             name = name[:name.index("(lang")]
 
-        modifier = ModifyFieldGFF(name, value)
-        return modifier
+        return ModifyFieldGFF(name, value)
 
     def add_field_gff(self, identifier: str, ini_data: Dict[str, str], inside_list: bool = False) -> AddFieldGFF:
         fieldname_to_fieldtype = {
@@ -399,7 +378,7 @@ class ConfigReader:
         }
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        path = ini_data["Path"] if "Path" in ini_data else ""
+        path = ini_data.get("Path", "")
         label = ini_data.get("Label")
         raw_value = ini_data.get("Value")
 
@@ -503,7 +482,7 @@ class ConfigReader:
             target = Target(TargetType.LABEL_COLUMN, modifiers["LabelIndex"])
             modifiers.pop("LabelIndex")
         else:
-            raise WarningException("No line set to be modified for '{}'.".format(identifier))
+            raise WarningException(f"No line set to be modified for '{identifier}'.")
 
         return target
 

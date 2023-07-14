@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from copy import copy
 from enum import IntEnum
 from typing import Dict, List, Optional, Union, Tuple, Any
 
@@ -137,10 +136,10 @@ class Modify2DA(ABC):
             twoda: TwoDA,
             row: TwoDARow
     ) -> Dict[str, str]:
-        unpacked = {}
-        for column, value in cells.items():
-            unpacked[column] = value.value(memory, twoda, row)
-        return unpacked
+        return {
+            column: value.value(memory, twoda, row)
+            for column, value in cells.items()
+        }
 
     def _split_modifiers(
             self,
@@ -273,7 +272,9 @@ class AddRow2DA(Modify2DA):
 
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:
-                raise WarningException("Exclusive column {} does not exists".format(self.exclusive_column))
+                raise WarningException(
+                    f"Exclusive column {self.exclusive_column} does not exists"
+                )
 
             exclusive_value = self.cells[self.exclusive_column].value(memory, twoda, None)
             for row in twoda:
@@ -338,7 +339,9 @@ class CopyRow2DA(Modify2DA):
 
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:
-                raise WarningException("Exclusive column {} does not exists".format(self.exclusive_column))
+                raise WarningException(
+                    f"Exclusive column {self.exclusive_column} does not exists"
+                )
 
             exclusive_value = self.cells[self.exclusive_column].value(memory, twoda, None)
             for row in twoda:
