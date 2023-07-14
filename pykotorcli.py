@@ -82,7 +82,7 @@ installer.install()
 
 print ("Writing log file 'installlog.txt'...")
 
-log_file_path = Path(tslpatchdata_path, "installlog.txt")
+log_file_path = str(Path(tslpatchdata_path, "installlog.txt").resolve())
 with open(log_file_path, "w") as log_file:
     for note in installer.log.notes:
         log_file.write(f"{note.message}\n")

@@ -94,7 +94,7 @@ class FileResource:
                 self._offset = 0
                 self._size = self._filepath.sta
 
-        with open(self._filepath, 'rb') as file:
+        with open(str(self._filepath.resolve()), 'rb') as file:
             file.seek(self._offset)
             return file.read(self._size)
 

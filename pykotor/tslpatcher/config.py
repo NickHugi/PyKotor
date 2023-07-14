@@ -182,8 +182,8 @@ class ModInstaller:
                 capsules=[] if capsule is None else [capsule]
             )
 
-            norm_game_path = installation.path().resolve().absolute()
-            norm_file_path = patch.destination.resolve().absolute()
+            norm_game_path = installation.path().resolve()
+            norm_file_path = patch.destination.resolve()
             local_path = str(norm_file_path).replace(norm_game_path, "")
             local_folder = local_path.replace(patch.filename, "")
 

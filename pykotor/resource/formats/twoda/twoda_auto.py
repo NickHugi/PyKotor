@@ -40,6 +40,7 @@ def detect_2da(
 
     try:
         if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):

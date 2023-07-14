@@ -1,6 +1,7 @@
 import os
 from unittest import TestCase
 
+from pathlib import Path
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
@@ -13,7 +14,7 @@ class TestInstallation(TestCase):
         path = os.environ.get("K1_PATH")
         self.installation = Installation(path)
 
-        if not Path(self.installation.override_path().exists + "nwscript.nss"):
+        if not Path(f"{self.installation.override_path().exists}nwscript.nss"):
             raise ValueError("Place nwscript.nss in override folder before testing.")
 
     def test_resource(self):

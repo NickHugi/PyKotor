@@ -39,6 +39,7 @@ def detect_tpc(
 
     try:
         if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
         elif isinstance(source, (bytes, bytearray)):

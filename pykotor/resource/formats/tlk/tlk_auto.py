@@ -41,6 +41,7 @@ def detect_tlk(
 
     try:
         if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):
@@ -81,7 +82,7 @@ def read_tlk(
     Returns:
         An TLK instance.
     """
-    file_format = detect_tlk(str(source.absolute().resolve()), offset)
+    file_format = detect_tlk(str(source.resolve()), offset)
 
     if file_format is ResourceType.INVALID:
         raise ValueError("Failed to determine the format of the GFF file.")

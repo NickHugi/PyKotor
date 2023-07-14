@@ -105,7 +105,7 @@ class TwoDABinaryWriter(ResourceWriter):
             for header in self._twoda.get_headers():
                 value = row.get_string(header) + "\0"
                 if value not in values:
-                    value_offset = 0 if len(value_offsets) == 0 else len(values[-1]) + value_offsets[-1]
+                    value_offset = 0 if not value_offsets else len(values[-1]) + value_offsets[-1]
                     values.append(value)
                     value_offsets.append(value_offset)
                     data_size += len(value)

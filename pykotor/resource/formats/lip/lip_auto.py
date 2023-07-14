@@ -27,6 +27,7 @@ def detect_lip(
     """
     try:
         if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = ResourceType.LIP if reader.read_string(4) == "LIP " else ResourceType.LIP_XML
         elif isinstance(source, (bytes, bytearray)):

@@ -26,6 +26,7 @@ def detect_gff(
     """
     try:
         if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
                 file_format = ResourceType.GFF if any(

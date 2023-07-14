@@ -62,7 +62,7 @@ class NssLexer:
         pass
 
     def t_INCLUDE(self, t):
-        '\#include'
+        r'\#include'
         return t
 
     def t_OBJECTSELF_VALUE(self, t):
@@ -236,52 +236,52 @@ class NssLexer:
     # endregion
 
     def t_INCREMENT(self, t):
-        '\+\+'
+        r'\+\+'
         t.value = OperatorMapping([
             UnaryOperatorMapping(NCSInstructionType.INCISP, DataType.INT),
         ], [])
         return t
 
     def t_DECREMENT(self, t):
-        '\-\-'
+        r'\-\-'
         t.value = OperatorMapping([
             UnaryOperatorMapping(NCSInstructionType.DECISP, DataType.INT),
         ], [])
         return t
 
     def t_ADDITION_ASSIGNMENT_OPERATOR(self, t):
-        '\+\='
+        r'\+\='
         return t
 
     def t_SUBTRACTION_ASSIGNMENT_OPERATOR(self, t):
-        '\-\='
+        r'\-\='
         return t
 
     def t_MULTIPLICATION_ASSIGNMENT_OPERATOR(self, t):
-        '\*\='
+        r'\*\='
         return t
 
     def t_DIVISION_ASSIGNMENT_OPERATOR(self, t):
-        '/\='
+        r'/\='
         return t
 
     # region Operators
     def t_BITWISE_LEFT(self, t):
-        '<<'
+        r'<<'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.SHLEFTII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_BITWISE_RIGHT(self, t):
-        '>>'
+        r'>>'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.SHRIGHTII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_ADD(self, t):
-        '\+'
+        r'\+'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.ADDII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.ADDIF, DataType.INT, DataType.INT, DataType.FLOAT),
@@ -293,7 +293,7 @@ class NssLexer:
         return t
 
     def t_MINUS(self, t):
-        '-'
+        r'-'
         t.value = OperatorMapping([
             UnaryOperatorMapping(NCSInstructionType.NEGI, DataType.INT),
             UnaryOperatorMapping(NCSInstructionType.NEGF, DataType.FLOAT),
@@ -307,7 +307,7 @@ class NssLexer:
         return t
 
     def t_MULTIPLY(self, t):
-        '\*'
+        r'\*'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.MULII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.MULIF, DataType.INT, DataType.INT, DataType.FLOAT),
@@ -319,7 +319,7 @@ class NssLexer:
         return t
 
     def t_DIVIDE(self, t):
-        '/'
+        r'/'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.DIVII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.DIVIF, DataType.INT, DataType.INT, DataType.FLOAT),
@@ -331,14 +331,14 @@ class NssLexer:
         return t
 
     def t_MOD(self, t):
-        '\%'
+        r'\%'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.MODII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_EQUALS(self, t):
-        '\=\='
+        r'\=\='
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.EQUALII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.EQUALFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
@@ -348,7 +348,7 @@ class NssLexer:
         return t
 
     def t_NOT_EQUALS(self, t):
-        '\!='
+        r'\!='
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.NEQUALII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.NEQUALFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
@@ -358,7 +358,7 @@ class NssLexer:
         return t
 
     def t_GREATER_THAN_OR_EQUALS(self, t):
-        '>\='
+        r'>\='
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.GEQII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.GEQFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
@@ -366,7 +366,7 @@ class NssLexer:
         return t
 
     def t_GREATER_THAN(self, t):
-        '>'
+        r'>'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.GTII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.GTFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
@@ -374,7 +374,7 @@ class NssLexer:
         return t
 
     def t_LESS_THAN_OR_EQUALS(self, t):
-        '\<='
+        r'\<='
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.LEQII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.LEQFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
@@ -382,7 +382,7 @@ class NssLexer:
         return t
 
     def t_LESS_THAN(self, t):
-        '\<'
+        r'\<'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.LTII, DataType.INT, DataType.INT, DataType.INT),
             BinaryOperatorMapping(NCSInstructionType.LTFF, DataType.INT, DataType.FLOAT, DataType.FLOAT),
@@ -390,49 +390,49 @@ class NssLexer:
         return t
 
     def t_AND(self, t):
-        '&&'
+        r'&&'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.LOGANDII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_OR(self, t):
-        '\|\|'
+        r'\|\|'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.LOGORII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_NOT(self, t):
-        '\!'
+        r'\!'
         t.value = OperatorMapping([
             UnaryOperatorMapping(NCSInstructionType.NOTI, DataType.INT),
         ], [])
         return t
 
     def t_BITWISE_AND(self, t):
-        '&'
+        r'&'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.BOOLANDII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_BITWISE_OR(self, t):
-        '\|'
+        r'\|'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.INCORII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_BITWISE_XOR(self, t):
-        '\^'
+        r'\^'
         t.value = OperatorMapping([], [
             BinaryOperatorMapping(NCSInstructionType.EXCORII, DataType.INT, DataType.INT, DataType.INT),
         ])
         return t
 
     def t_BITWISE_NOT(self, t):
-        '\~'
+        r'\~'
         t.value = OperatorMapping([UnaryOperatorMapping(NCSInstructionType.COMPI, DataType.INT)], [])
         return t
     # endregion

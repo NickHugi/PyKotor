@@ -90,7 +90,7 @@ class BinaryReader:
         Returns:
             A new BinaryReader instance.
         """
-        stream = open(path.resolve().absolute(), 'rb')
+        stream = open(str(Path(path).resolve().absolute()), 'rb')
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -122,6 +122,7 @@ class BinaryReader:
             size: int = None
     ):
         if isinstance(source, (Path, str)):  # is path
+            source = Path(source)
             reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
@@ -149,7 +150,7 @@ class BinaryReader:
         Returns:
             The bytes of the file.
         """
-        with open(path.resolve().absolute(), 'rb') as reader:
+        with open(str(path.resolve()), 'rb') as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
 
@@ -618,7 +619,7 @@ class BinaryWriter(ABC):
         Returns:
             A new BinaryWriter instance.
         """
-        stream = open(path.resolve().absolute(), 'wb')
+        stream = open(str(path.resolve().absolute()), 'wb')
         return BinaryWriterFile(stream)
 
     @classmethod
@@ -665,7 +666,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        with open(path.resolve().absolute(), 'wb') as file:
+        with open(str(path.resolve()), 'wb') as file:
             file.write(data)
 
     @abstractmethod

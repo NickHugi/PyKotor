@@ -22,7 +22,7 @@ class TalkTable:
             self,
             path: Path
     ):
-        self._path: Path = path
+        self._path: Path = Path(path)
 
     def string(
             self,

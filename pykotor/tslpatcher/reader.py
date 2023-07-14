@@ -138,7 +138,9 @@ class ConfigReader:
         self.config: Optional[PatcherConfig] = None
 
     @classmethod
-    def from_filepath(cls, path: Path, append_path: Optional[str]) -> PatcherConfig:
+    def from_filepath(cls, path: Path, append_path: Optional[Path]) -> PatcherConfig:
+        append_path = Path(append_path)
+        path = Path(path)
         ini_text = BinaryReader.load_file(path).decode()
         ini = ConfigParser()
         ini.optionxform = str
@@ -576,7 +578,8 @@ class NamespaceReader:
         self.namespaces: List[PatcherNamespace] = []
 
     @classmethod
-    def from_filepath(cls, path: str) -> List[PatcherNamespace]:
+    def from_filepath(cls, path: Path) -> List[PatcherNamespace]:
+        path = Path(path)
         ini_text = BinaryReader.load_file(path).decode()
         ini = ConfigParser()
         ini.optionxform = str

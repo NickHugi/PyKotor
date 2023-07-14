@@ -26,6 +26,7 @@ def detect_mdl(
     """
     try:
         if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 first4 = reader.read_bytes(4)
                 file_format = ResourceType.MDL if first4 == b'\x00\x00\x00\x00' else ResourceType.MDL_ASCII

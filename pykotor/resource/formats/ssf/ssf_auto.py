@@ -27,6 +27,7 @@ def detect_ssf(
     """
     try:
         if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = ResourceType.SSF if reader.read_string(4) == "SSF " else ResourceType.SSF_XML
         elif isinstance(source, (bytes, bytearray)):
