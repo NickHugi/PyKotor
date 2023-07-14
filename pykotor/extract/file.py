@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Optional, NamedTuple
 
@@ -146,8 +147,8 @@ class ResourceIdentifier(NamedTuple):
             return NotImplemented
 
     @staticmethod
-    def from_path(
-            file: Path
+    def from_filename(
+            file: str
     ) -> ResourceIdentifier:
-        resname, restype_ext = file.stem, file.suffix
+        resname, restype_ext = os.path.splitext(file)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

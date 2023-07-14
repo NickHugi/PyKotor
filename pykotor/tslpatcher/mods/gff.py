@@ -150,8 +150,8 @@ class AddFieldGFF(ModifyGFF):
 
 
 class ModifyFieldGFF(ModifyGFF):
-    def __init__(self, path: str, value: FieldValue):
-        self.path: str = path.replace("")
+    def __init__(self, path: Path, value: FieldValue):
+        self.path: Path = path
         self.value: FieldValue = value
 
     def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
@@ -212,7 +212,7 @@ class ModificationsGFF:
     def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] = None, destination: str = None):
         self.filename: str = filename
         self.replace_file: bool = replace_file
-        destination = Path(destination) if destination else Path("override", filename)
+        self.destination: str = destination if destination is not None else str(Path("override", filename))
 
         self.modifiers: List[ModifyGFF] = modifiers if modifiers is not None else []
 

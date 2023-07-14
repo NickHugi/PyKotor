@@ -30,13 +30,13 @@ if len(sys.argv) < 3 or len(sys.argv) > 4:
     print("Syntax: pykotorcli.exe [\"\\path\\to\\game\\dir\"] [\"\\path\\to\\tslpatchdata\"] {\"namespace_option_index\"}")
     sys.exit(ExitCode.NumberOfArgs)
 
-game_path = Path(sys.argv[1])
-tslpatchdata_path = Path(sys.argv[2])
+game_path = Path(sys.argv[1]).resolve()
+tslpatchdata_path = Path(sys.argv[2]).resolve()
 namespace_index = None
 changes_ini_path = None
 
 if len(sys.argv) == 3:
-    changes_ini_path = Path(tslpatchdata_path) / "tslpatchdata" / "changes.ini"
+    changes_ini_path = tslpatchdata_path / "tslpatchdata" / "changes.ini"
 elif len(sys.argv) == 4:
     try:
         namespace_index = int(sys.argv[3])
@@ -44,9 +44,9 @@ elif len(sys.argv) == 4:
         print("Invalid namespace_option_index. It should be an integer.")
         sys.exit(ExitCode.NamespaceIndexOutOfRange)
 
-    namespaces_ini_path = Path(tslpatchdata_path).joinpath("tslpatchdata", "namespaces.ini")
-    print(f"Using namespaces.ini path: {namespaces_ini_path.absolute}")
-    if not Path(namespaces_ini_path).exists:
+    namespaces_ini_path = Path(tslpatchdata_path).joinpath("tslpatchdata", "namespaces.ini").resolve()
+    print(f"Using namespaces.ini path: {namespaces_ini_path}")
+    if not namespaces_ini_path.exists():
         print("The 'namespaces.ini' file was not found in the specified tslpatchdata path.")
         sys.exit(ExitCode.NamespacesIniNotFound)
 
@@ -67,9 +67,9 @@ elif len(sys.argv) == 4:
             tslpatchdata_path,
             "tslpatchdata",
             loaded_namespaces[namespace_index].ini_filename
-        )
-print(f"Using changes.ini path: '{changes_ini_path.absolute}'")
-if not Path(changes_ini_path).exists:
+        ).resolve()
+print(f"Using changes.ini path: '{changes_ini_path}'")
+if not Path(changes_ini_path).exists():
     print("The 'changes.ini' file could not be found.")
     sys.exit(ExitCode.ChangesIniNotFound)
 
@@ -82,7 +82,7 @@ installer.install()
 
 print ("Writing log file 'installlog.txt'...")
 
-log_file_path = str(Path(tslpatchdata_path, "installlog.txt").resolve())
+log_file_path = str(Path(tslpatchdata_path / "installlog.txt"))
 with open(log_file_path, "w") as log_file:
     for note in installer.log.notes:
         log_file.write(f"{note.message}\n")

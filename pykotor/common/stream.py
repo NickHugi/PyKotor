@@ -90,7 +90,7 @@ class BinaryReader:
         Returns:
             A new BinaryReader instance.
         """
-        stream = open(str(Path(path).resolve().absolute()), 'rb')
+        stream = open(str(Path(path).resolve()), 'rb')
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -619,7 +619,7 @@ class BinaryWriter(ABC):
         Returns:
             A new BinaryWriter instance.
         """
-        stream = open(str(path.resolve().absolute()), 'wb')
+        stream = open(str(path.resolve()), 'wb')
         return BinaryWriterFile(stream)
 
     @classmethod

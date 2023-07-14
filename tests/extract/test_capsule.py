@@ -3,8 +3,8 @@ from unittest import TestCase
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.type import ResourceType
 
-TEST_FILE_ERF = "../../tests/files/capsule.mod"
-TEST_FILE_RIM = "../../tests/files/capsule.rim"
+TEST_FILE_ERF = "../tests/files/capsule.mod"
+TEST_FILE_RIM = "../tests/files/capsule.rim"
 
 
 class TestCapsule(TestCase):

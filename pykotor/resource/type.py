@@ -305,10 +305,12 @@ class ResourceType:
         for resource_type in ResourceType.__annotations__:
             if not isinstance(ResourceType.__dict__[resource_type], ResourceType):
                 continue
-            if ResourceType.__dict__[resource_type].extension.upper() == extension.upper():
+            test_extension = extension.upper()[1:]  # pathlib.Path.suffix keeps the dot apparently.
+            lookup_extension = ResourceType.__dict__[resource_type].extension.upper()
+            if lookup_extension == test_extension:
                 return ResourceType.__dict__[resource_type]
         else:
-            raise ValueError("Could not find resource type with extension '{}'.".format(extension))
+            raise ValueError(f"Could not find resource type with extension '{extension}'.")
 
 
 def autoclose(func):

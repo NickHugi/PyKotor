@@ -62,7 +62,7 @@ class Chitin:
             bifs = []
             for file_offset, file_length in files:
                 reader.seek(file_offset)
-                bif = Path(reader.read_string(file_length).resolve())
+                bif = reader.read_string(file_length)
                 bifs.append(bif)
 
             keys = {}

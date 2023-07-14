@@ -172,9 +172,9 @@ class Installation:
     # TODO Rename this here and in `override_path`, `lips_path` and `texturepacks_path`
     def _extracted_from_texturepacks_path_10(self, arg0, arg1):
         override_path = self._path
-        for folder in os.listdir(self._path):
+        for folder in self._path.iterdir():
             this_path = override_path / folder
-            if this_path.is_dir() and str(folder.name).lower() == arg0:
+            if this_path.is_dir() and folder.name.lower() == arg0.lower():
                 override_path = this_path
         if override_path == self._path:
             raise ValueError(f"{arg1}{self._path}'.")
@@ -188,7 +188,7 @@ class Installation:
             The path to the rims folder.
         """
         rims_path = self._path
-        for folder in os.listdir(self._path):
+        for folder in self._path.iterdir():
             this_path = Path(rims_path, folder)
             if this_path.is_dir() and str(folder.name).lower() == "rims":
                 rims_path = this_path
@@ -203,6 +203,7 @@ class Installation:
         Returns:
             The path to the streammusic folder.
         """
+        streammusic_path = self._path
         for folder in [folder for folder in self._path.iterdir() if folder.is_dir()]:
             this_path = streammusic_path / folder
             if this_path.is_dir() and str(folder.name).lower() == "streammusic":
@@ -237,7 +238,7 @@ class Installation:
             The path to the streamvoice folder.
         """
         streamwavesvoice_path = self._path
-        for folder in os.listdir(self._path):
+        for folder in self._path.iterdir():
             this_path = streamwavesvoice_path / folder
             if this_path.is_dir() and str(folder.name).lower() in {
                 "streamvoice",
@@ -264,7 +265,7 @@ class Installation:
         """
         modules_path = self.module_path()
         self._modules = {}
-        for module in [file for file in os.listdir(modules_path) if is_mod_file(file)]:
+        for module in [file for file in modules_path.iterdir() if is_mod_file(file.name)]:
             with suppress(Exception):
                 self._modules[module] = list(Capsule(self.module_path() / module))
 
@@ -283,7 +284,7 @@ class Installation:
         """
         self._lips = {}
         lips_path = self.lips_path()
-        lip_files = [file for file in lips_path.iterdir() if is_mod_file(file)]
+        lip_files = [file for file in lips_path.iterdir() if is_mod_file(file.name)]
         for module in lip_files:
             self._lips[module] = list(Capsule(lips_path / module))
 
@@ -294,7 +295,7 @@ class Installation:
         self._texturepacks = {}
         texturepacks_path = self.texturepacks_path()
         texturepacks_files = [
-            file for file in texturepacks_path.iterdir() if is_erf_file(file)
+            file for file in texturepacks_path.iterdir() if is_erf_file(file.name)
         ]
         for module in texturepacks_files:
             self._texturepacks[module] = list(Capsule(texturepacks_path / module))
@@ -349,7 +350,7 @@ class Installation:
             for file in files:
                 file_path = Path(path, file)
                 with suppress(Exception):
-                    identifier = ResourceIdentifier.from_path(file_path)
+                    identifier = ResourceIdentifier.from_filename(file_path)
                     resource = FileResource(
                         identifier.resname,
                         identifier.restype,
@@ -369,7 +370,7 @@ class Installation:
             for file in files:
                 with suppress(Exception):
                     file_path = Path(path, file)
-                    identifier = ResourceIdentifier.from_path(file_path)
+                    identifier = ResourceIdentifier.from_filename(file_path)
                     resource = FileResource(
                         identifier.resname,
                         identifier.restype,
@@ -390,7 +391,7 @@ class Installation:
             for file in files:
                 with suppress(Exception):
                     file_path = Path(path, file)
-                    identifier = ResourceIdentifier.from_path(file_path)
+                    identifier = ResourceIdentifier.from_filename(file_path)
                     resource = FileResource(
                         identifier.resname,
                         identifier.restype,
@@ -547,7 +548,7 @@ class Installation:
         The default search order is (descending priority): 1. Folders in the folders parameter, 2. Override folders,
         3. Capsules in the capsules parameter, 4. Game modules, 5. Chitin.
 
-        This is a wrapper of the resources() method provided to make fetching for a single resource more convienent.
+        This is a wrapper of the resources() method provided to make fetching for a single resource more convenient.
 
         Args:
             resname: The name of the resource to look for.
@@ -571,7 +572,7 @@ class Installation:
         order: List[SearchLocation] = None,
         *,
         capsules: List[Capsule] = None,
-        folders: List[str] = None,
+        folders: List[Path] = None,
     ) -> Dict[ResourceIdentifier, Optional[ResourceResult]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found. If
@@ -591,7 +592,7 @@ class Installation:
         handles = {}
 
         for query in queries:
-            location = locations[query][0] if locations[query] else None
+            location = locations[query][0] or None
             if location is None:
                 results[query] = None
             else:
@@ -615,7 +616,7 @@ class Installation:
         order: List[SearchLocation] = None,
         *,
         capsules: List[Capsule] = None,
-        folders: List[str] = None,
+        folders: List[Path] = None,
     ) -> List[LocationResult]:
         """
         Returns a list filepaths for where a particular resource matching the given resref and restype are located.
@@ -649,7 +650,7 @@ class Installation:
         order: List[SearchLocation] = None,
         *,
         capsules: List[Capsule] = None,
-        folders: List[str] = None,
+        folders: List[Path] = None,
     ) -> Dict[ResourceIdentifier, List[LocationResult]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
@@ -667,7 +668,7 @@ class Installation:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        order = (
+        order = order or (
             [
                 SearchLocation.CUSTOM_FOLDERS,
                 SearchLocation.OVERRIDE,
@@ -675,8 +676,6 @@ class Installation:
                 SearchLocation.MODULES,
                 SearchLocation.CHITIN,
             ]
-            if order is None
-            else order
         )
 
         locations: Dict[ResourceIdentifier, List[LocationResult]] = {}
@@ -715,12 +714,11 @@ class Installation:
         def check_folders(values):
             for folder in values:
                 folder = Path(folder).resolve()
-                filepath = Path(folder, file)
-                for file in [file for file in folder.iterdir() if filepath.is_file()]:
+                for file in [file for file in folder.iterdir() if folder.is_file()]:
                     filepath = Path(folder, file)
                     for query in queries:
                         with suppress(Exception):
-                            identifier = ResourceIdentifier.from_path(file)
+                            identifier = ResourceIdentifier.from_filename(file)
                             if query == identifier:
                                 resource = FileResource(
                                     query.resname,
@@ -881,7 +879,7 @@ class Installation:
                 folder = Path(folder).resolve()
                 filepath = Path(folder, file)
                 for file in [file for file in folder.iterdir() if filepath.is_file()]:
-                    identifier = ResourceIdentifier.from_path(file)
+                    identifier = ResourceIdentifier.from_filename(file)
                     for resname in queries:
                         if (
                             identifier.resname == resname
@@ -1023,9 +1021,9 @@ class Installation:
             for folder in values:
                 folder = Path(folder).resolve()
                 filepath = Path(folder, file)
-                for file in [file for file in os.listdir(folder) if filepath.exists()]:
+                for file in [file for file in folder.iterdir() if filepath.exists()]:
                     filepath = Path(folder, file)
-                    identifier = ResourceIdentifier.from_path(file)
+                    identifier = ResourceIdentifier.from_filename(file)
                     for resname in resnames:
                         if (
                             identifier.resname == resname
@@ -1288,7 +1286,7 @@ class Installation:
         """
         for file in self.module_path().resolve().iterdir():
             filepath = self.module_path().resolve() / file
-            if is_mod_file(filepath) and filepath.exists():
+            if is_mod_file(filepath.name) and filepath.exists():
                 os.remove(filepath)
 
         for file in self.override_path().resolve().iterdir():

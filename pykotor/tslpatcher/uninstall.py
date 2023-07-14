@@ -16,12 +16,12 @@ def uninstall_all_mods(installation: Installation):
     dialog_tlk.entries = dialog_tlk.entries[:49265] if installation.game() == Game.K1 else dialog_tlk.entries[:136329]
 
     # Remove all override files
-    for filename in os.listdir(override_path):
+    for filename in override_path.iterdir():
         filepath = Path(override_path, filename)
         os.remove(filepath.resolve())
 
     # Remove any .MOD files
-    for filename in os.listdir(modules_path):
-        if filename.endswith(".mod"):
+    for filename in modules_path.iterdir():
+        if filename.lower().endswith(".mod"):
             filepath = Path(modules_path, filename)
             os.remove(filepath.resolve())

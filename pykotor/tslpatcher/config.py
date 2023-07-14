@@ -114,7 +114,7 @@ class ModInstaller:
             
             self.log.add_note("Reading append.tlk")
             append_tlk_filepath = self.mod_path / "append.tlk"
-            append_tlk = read_tlk(append_tlk_filepath) if append_tlk_filepath.exists else TLK()
+            append_tlk = read_tlk(append_tlk_filepath) if append_tlk_filepath.exists() else TLK()
             
             self._config = PatcherConfig()
             self._config.load(ini_text, append_tlk)
@@ -143,7 +143,7 @@ class ModInstaller:
 
         # Apply changes to 2DA files
         for patch in config.patches_2da:
-            resname, restype = ResourceIdentifier.from_path(patch.filename)
+            resname, restype = ResourceIdentifier.from_filename(patch.filename)
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             twoda = twodas[patch.filename] = read_2da(search.data)
 
@@ -155,7 +155,7 @@ class ModInstaller:
 
         # Apply changes to SSF files
         for patch in config.patches_ssf:
-            resname, restype = ResourceIdentifier.from_path(patch.filename)
+            resname, restype = ResourceIdentifier.from_filename(patch.filename)
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             soundset = soundsets[patch.filename] = read_ssf(search.data)
 
@@ -167,7 +167,7 @@ class ModInstaller:
 
         # Apply changes to GFF files
         for patch in config.patches_gff:
-            resname, restype = ResourceIdentifier.from_path(patch.filename)
+            resname, restype = ResourceIdentifier.from_filename(patch.filename)
 
             capsule = None
             gff_filepath = Path(self.output_path, patch.destination)
@@ -183,8 +183,8 @@ class ModInstaller:
             )
 
             norm_game_path = installation.path().resolve()
-            norm_file_path = patch.destination.resolve()
-            local_path = str(norm_file_path).replace(norm_game_path, "")
+            norm_file_path = Path(patch.destination).resolve()
+            local_path = str(norm_file_path).replace(str(norm_game_path), "")
             local_folder = local_path.replace(patch.filename, "")
 
             if capsule is None:
@@ -228,7 +228,7 @@ class ModInstaller:
             self.log.complete_patch()
 
     def write(self, destination: Path, filename: str, data: bytes, replace: bool = False) -> None:
-        resname, restype = ResourceIdentifier.from_path(filename)
+        resname, restype = ResourceIdentifier.from_filename(filename)
         file_extension = destination.suffix
         if is_rim_file(destination.name):
             rim = read_rim(BinaryReader.load_file(destination)) if destination.exists() else RIM()

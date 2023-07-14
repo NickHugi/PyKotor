@@ -17,7 +17,7 @@ class InstallFile:
         self.replace_existing: bool = replace_existing
 
     def _identifier(self) -> ResourceIdentifier:
-        return ResourceIdentifier.from_path(self.filename)
+        return ResourceIdentifier.from_filename(self.filename)
 
     def apply_encapsulated(self, log: PatchLogger, source_folder: str, destination: Capsule):
         resname, restype = self._identifier()
@@ -32,7 +32,7 @@ class InstallFile:
                     f"Adding file {self.filename} in the {destination.filename()} archive..."
                 )
 
-            data = BinaryReader.load_file(f"{source_folder}/{self.filename}")
+            data = BinaryReader.load_file(Path(source_folder) / self.filename)
             destination.add(resname, restype, data)
 
     def apply_file(self, log: PatchLogger, source_folder: Path, destination: Path, local_folder: str):
