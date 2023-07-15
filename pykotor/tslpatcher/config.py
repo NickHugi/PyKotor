@@ -10,7 +10,6 @@ from pykotor.resource.formats.gff.gff_auto import bytes_gff
 
 from pykotor.resource.formats.erf import read_erf, write_erf, ERF
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.common.module import ModuleResource
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
@@ -171,7 +170,7 @@ class ModInstaller:
 
             capsule = None
             gff_filepath = Path(self.output_path, patch.destination)
-            if is_mod_file(patch.destination):
+            if is_mod_file(patch.destination) or is_capsule_file(patch.destination):
                 capsule = Capsule(gff_filepath)
 
             search = installation.resource(
@@ -202,7 +201,7 @@ class ModInstaller:
         for patch in config.patches_nss:
             capsule = None
             nss_output_filepath = Path(self.output_path, patch.destination)
-            if is_capsule_file(patch.destination):
+            if is_capsule_file(patch.destination) or is_mod_file(patch.destination):
                 capsule = Capsule(nss_output_filepath)
 
             nss_input_filepath = Path(self.mod_path, patch.filename)
@@ -235,13 +234,13 @@ class ModInstaller:
             if not rim.get(resname, restype) or replace:
                 rim.set(resname, restype, data)
                 write_rim(rim, destination)
-        elif is_mod_file(destination.name) or is_rim_file(destination.name):
+        elif is_mod_file(destination.name):
             erf = read_erf(BinaryReader.load_file(destination)) if destination.exists() else ERF(ERFType.from_extension(file_extension))
             if not erf.get(resname, restype) or replace:
                 erf.set(resname, restype, data)
                 write_erf(erf, destination)
         else:
-            # todo: fix later. Check if destination is already a filename with an extension. I've somehow encountered both scenarios.
+            # TODO: fix later. Check if destination is already a filename with an extension. I've somehow encountered both scenarios.
             # a better solution would be finding out what caused this, as it definitely wasn't caused by a improper changes.ini
             filepath = destination if destination.suffix else Path(destination, filename)
             if not filepath.exists() or replace:
