@@ -146,7 +146,7 @@ class ConfigReader:
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        append = read_tlk(append_path) if append_path.exists else TLK()
+        append = read_tlk(append_path) if append_path.exists() else TLK()
 
         config = PatcherConfig()
         return ConfigReader(ini, append).load(config)

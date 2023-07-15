@@ -23,7 +23,7 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
-from pykotor.tools.misc import is_erf_file, is_mod_file
+from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -265,7 +265,7 @@ class Installation:
         """
         modules_path = self.module_path()
         self._modules = {}
-        for module in [file for file in modules_path.iterdir() if is_mod_file(file.name)]:
+        for module in [file for file in modules_path.iterdir() if (is_mod_file(file.name) or is_capsule_file(file.name))]:
             with suppress(Exception):
                 self._modules[module] = list(Capsule(self.module_path() / module))
 
@@ -330,35 +330,23 @@ class Installation:
         override_path = self.override_path()
 
         self._override[directory] = []
-        for path, subdirs, files in os.walk(override_path / directory):
-            for file in files:
-                file_path = Path(path, file)
-                with suppress(Exception):
-                    resource = FileResource(
-                        file_path.stem,
-                        ResourceType.from_extension(file_path.suffix),
-                        file_path.stat().st_size,
-                        0,
-                        file_path,
-                    )
-                    self._override[directory].append(resource)
+        files = os.listdir(str(Path(override_path, directory).resolve()))
+        for file in files:
+            with suppress(Exception):
+                name, ext = file.split('.', 1)
+                size = os.path.getsize(override_path + directory + file)
+                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, Path(override_path) / directory / file)
+                self._override[directory].append(resource)
 
     def load_streammusic(self) -> None:
         self._streammusic = []
         streammusic_path = self.streammusic_path()
-        for path, subdirs, files in os.walk(streammusic_path):
-            for file in files:
-                file_path = Path(path, file)
-                with suppress(Exception):
-                    identifier = ResourceIdentifier.from_filename(file_path)
-                    resource = FileResource(
-                        identifier.resname,
-                        identifier.restype,
-                        file_path.stat().st_size,
-                        0,
-                        file_path,
-                    )
-                    self._streammusic.append(resource)
+        for filename in list(os.listdir(str(Path(streammusic_path).resolve()))):
+            with suppress(Exception):
+                filepath = streammusic_path + filename
+                identifier = ResourceIdentifier.from_path(filepath)
+                resource = FileResource(identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
+                self._streammusic.append(resource)
 
     def load_streamsounds(self) -> None:
         """
@@ -366,19 +354,12 @@ class Installation:
         """
         self._streamsounds = []
         streamsounds_path = self.streamsounds_path()
-        for path, subdirs, files in os.walk(streamsounds_path):
-            for file in files:
-                with suppress(Exception):
-                    file_path = Path(path, file)
-                    identifier = ResourceIdentifier.from_filename(file_path)
-                    resource = FileResource(
-                        identifier.resname,
-                        identifier.restype,
-                        file_path.stat().st_size,
-                        0,
-                        file_path,
-                    )
-                    self._streamsounds.append(resource)
+        for filename in list(os.listdir(str(Path(streamsounds_path).resolve()))):
+            with suppress(Exception):
+                filepath = streamsounds_path + filename
+                identifier = ResourceIdentifier.from_path(filepath)
+                resource = FileResource(identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
+                self._streamsounds.append(resource)
 
     def load_streamvoices(self) -> None:
         """
@@ -386,20 +367,12 @@ class Installation:
         """
         self._streamvoices = []
         streamvoices_path = self.streamvoice_path()
-
-        for path, subdirs, files in os.walk(streamvoices_path):
-            for file in files:
-                with suppress(Exception):
-                    file_path = Path(path, file)
-                    identifier = ResourceIdentifier.from_filename(file_path)
-                    resource = FileResource(
-                        identifier.resname,
-                        identifier.restype,
-                        file_path.stat().st_size,
-                        0,
-                        file_path,
-                    )
-                    self._streamvoices.append(resource)
+        for filename in list(os.listdir(str(Path(streamvoices_path).resolve()))):
+            with suppress(Exception):
+                filepath = streamvoices_path / filename
+                identifier = ResourceIdentifier.from_path(filepath)
+                resource = FileResource(identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
+                self._streamvoices.append(resource)
 
     def load_rims(self) -> None:
         """
@@ -411,7 +384,7 @@ class Installation:
             filenames = [
                 file
                 for file in rims_path.iterdir()
-                if str(file).lower().endswith(".rim")
+                if is_rim_file(file.name)
             ]
             for filename in filenames:
                 self._rims[filename] = list(Capsule(rims_path, filename))
@@ -521,7 +494,7 @@ class Installation:
     # endregion
 
     def game(self) -> Game:
-        return Game(2 if (self._path / "swkotor2.exe").exists else 1)
+        return Game(2 if (self._path / "swkotor2.exe").exists() else 1)
 
     def talktable(self) -> TalkTable:
         """
@@ -1020,16 +993,14 @@ class Installation:
         def check_folders(values):
             for folder in values:
                 folder = Path(folder).resolve()
-                filepath = Path(folder, file)
-                for file in [file for file in folder.iterdir() if filepath.exists()]:
-                    filepath = Path(folder, file)
+                for file in [file for file in folder.iterdir() if folder.resolve().exists()]:
                     identifier = ResourceIdentifier.from_filename(file)
                     for resname in resnames:
                         if (
                             identifier.resname == resname
                             and identifier.restype in texture_types
                         ):
-                            data = BinaryReader.load_file(filepath)
+                            data = BinaryReader.load_file(file)
                             sounds[resname] = sound.fix_audio(data)
 
         function_map = {
@@ -1215,15 +1186,9 @@ class Installation:
         Returns:
             The ID of the area for the module.
         """
-        base_file_name, ext = os.path.splitext(module_filename)
-        new_ext = (
-            ext.lower().replace(".mod", "").replace(".erf", "").replace(".rim", "")
-        )
-        if new_ext.lower() != ext.lower():
-            ext = new_ext
-        root = base_file_name + ext
-        root = root.lower()[: -len("_s")] if root.lower().endswith("_s") else root
-        root = root.lower()[: -len("_dlg")] if root.lower().endswith("_dlg") else root
+        root = name.replace(".mod", "").replace(".erf", "").replace(".rim", "")
+        root = root[:-len("_s")] if root.endswith("_s") else root
+        root = root[:-len("_dlg")] if root.endswith("_dlg") else root
 
         if use_hardcoded:
             hardcoded = {

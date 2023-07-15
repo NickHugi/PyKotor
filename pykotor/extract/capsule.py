@@ -25,7 +25,7 @@ class Capsule:
         if not is_capsule_file(self._path.name):
             raise ValueError(f"Invalid file extension in capsule filepath '{path}'.")
 
-        if create_nonexisting and not path.exists:
+        if create_nonexisting and not path.exists():
             if is_rim_file(self._path.name):
                 write_rim(RIM(), path)
             elif is_erf_file(self._path.name):

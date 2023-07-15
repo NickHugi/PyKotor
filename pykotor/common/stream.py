@@ -601,7 +601,7 @@ class BinaryReader:
             IOError: If the given number sex exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
-            raise IOError("This operation would exceeed the streams boundaries.")
+            raise IOError("This operation would exceed the streams boundaries.")
 
 
 class BinaryWriter(ABC):
@@ -645,7 +645,7 @@ class BinaryWriter(ABC):
             cls,
             source: Union[Path, bytearray, BinaryWriter]
     ) -> BinaryWriter:
-        if isinstance(source, Path):  # is path
+        if isinstance(source, (Path, str)):  # is path
             return BinaryWriter.to_file(source)
         elif isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)
