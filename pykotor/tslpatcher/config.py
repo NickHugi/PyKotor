@@ -110,11 +110,11 @@ class ModInstaller:
 
         if self._config is None:
             ini_text = BinaryReader.load_file(self.mod_path / self.ini_file).decode()
-            
+
             self.log.add_note("Reading append.tlk")
             append_tlk_filepath = self.mod_path / "append.tlk"
             append_tlk = read_tlk(append_tlk_filepath) if append_tlk_filepath.exists() else TLK()
-            
+
             self._config = PatcherConfig()
             self._config.load(ini_text, append_tlk)
 
@@ -207,9 +207,9 @@ class ModInstaller:
             nss_input_filepath = Path(self.mod_path, patch.filename)
             nss = [BinaryReader.load_file(nss_input_filepath).decode(errors="ignore")]
 
-            norm_game_path = installation.path()
+            norm_game_path = str(installation.path())
             norm_file_path = patch.destination
-            local_path = norm_file_path.replace(norm_game_path, "")
+            local_path = str(norm_file_path).replace(norm_game_path, "")
             local_folder = local_path.replace(patch.filename, "")
 
             if capsule is None:

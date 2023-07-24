@@ -70,6 +70,6 @@ class InstallFolder:
 
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
-            [file.apply_encapsulated(log, source_path, destination) for file in self.files]
+            [file.apply_encapsulated(log, str(source_path.resolve()), destination) for file in self.files]
         else:
             [file.apply_file(log, source_path, target, self.foldername) for file in self.files]

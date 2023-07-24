@@ -139,14 +139,13 @@ class ConfigReader:
 
     @classmethod
     def from_filepath(cls, path: Path, append_path: Optional[Path]) -> PatcherConfig:
-        append_path = Path(append_path)
         path = Path(path)
         ini_text = BinaryReader.load_file(path).decode()
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        append = read_tlk(append_path) if append_path.exists() else TLK()
+        append = read_tlk(append_path) if append_path is not None and append_path.exists() else TLK()
 
         config = PatcherConfig()
         return ConfigReader(ini, append).load(config)
@@ -206,12 +205,12 @@ class ConfigReader:
         for file in files.values():
             modification_ids = dict(self.ini[file].items())
 
-            modificaitons = Modifications2DA(file)
-            self.config.patches_2da.append(modificaitons)
+            modifications = Modifications2DA(file)
+            self.config.patches_2da.append(modifications)
 
             for key, modification_id in modification_ids.items():
                 manipulation = self.discern_2da(key, modification_id, dict(self.ini[modification_id].items()))
-                modificaitons.modifiers.append(manipulation)
+                modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
         if "SSFList" not in self.ini:
@@ -254,8 +253,8 @@ class ConfigReader:
             modifications_ini = dict(self.ini[file].items())
             replace = identifier.startswith("Replace")
 
-            modificaitons = ModificationsSSF(file, replace)
-            self.config.patches_ssf.append(modificaitons)
+            modifications = ModificationsSSF(file, replace)
+            self.config.patches_ssf.append(modifications)
 
             for name, value in modifications_ini.items():
                 if value.startswith("2DAMEMORY"):
@@ -269,7 +268,7 @@ class ConfigReader:
 
                 sound = configstr_to_ssfsound[name]
                 modifier = ModifySSF(sound, value)
-                modificaitons.modifiers.append(modifier)
+                modifications.modifiers.append(modifier)
 
     def load_gff(self) -> None:
         if "GFFList" not in self.ini:
@@ -501,7 +500,7 @@ class ConfigReader:
         for modifier, value in modifiers.items():
             is_store_2da = modifier.startswith("2DAMEMORY")
             is_store_tlk = modifier.startswith("StrRef")
-            is_row_label = modifier == "RowLabel" or modifier == "NewRowLabel"
+            is_row_label = modifier in ["RowLabel", "NewRowLabel"]
 
             if value.startswith("2DAMEMORY"):
                 token_id = int(value[9:])

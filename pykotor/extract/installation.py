@@ -259,13 +259,16 @@ class Installation:
         chitin = Chitin(self._path)
         self._chitin = list(chitin)
 
-    def load_modules(self) -> None:
+    def load_modules(
+            self
+    ) -> None:
         """
         Reloads the list of modules files in the modules folder linked to the Installation.
         """
         modules_path = self.module_path()
         self._modules = {}
-        for module in [file for file in modules_path.iterdir() if (is_mod_file(file.name) or is_capsule_file(file.name))]:
+        module_files = [file for file in os.listdir(modules_path) if is_capsule_file(file)]
+        for module in module_files:
             with suppress(Exception):
                 self._modules[module] = list(Capsule(self.module_path() / module))
 
@@ -278,27 +281,32 @@ class Installation:
         """
         self._modules[module] = list(Capsule(self.module_path() / module))
 
-    def load_lips(self) -> None:
+    def load_lips(
+            self
+    ) -> None:
         """
         Reloads the list of modules in the lips folder linked to the Installation.
         """
         self._lips = {}
         lips_path = self.lips_path()
-        lip_files = [file for file in lips_path.iterdir() if is_mod_file(file.name)]
+        lip_files = [file for file in os.listdir(lips_path) if is_mod_file(file)]
         for module in lip_files:
             self._lips[module] = list(Capsule(lips_path / module))
 
-    def load_textures(self) -> None:
+
+    def load_textures(
+            self
+    ) -> None:
         """
         Reloads the list of modules files in the texturepacks folder linked to the Installation.
         """
         self._texturepacks = {}
         texturepacks_path = self.texturepacks_path()
-        texturepacks_files = [
-            file for file in texturepacks_path.iterdir() if is_erf_file(file.name)
-        ]
+        texturepacks_files = [file for file in os.listdir(texturepacks_path) if is_erf_file(file)]
         for module in texturepacks_files:
             self._texturepacks[module] = list(Capsule(texturepacks_path / module))
+
+
 
     def load_override(self) -> None:
         """
@@ -310,7 +318,7 @@ class Installation:
         for path, subdirs, files in os.walk(override_path):
             for file in files:
                 file_path = Path(path, file)
-                override_subdir = file_path.parent
+                override_subdir = str(file_path.parent.resolve())
                 self._override[override_subdir] = []
                 with suppress(Exception):
                     name, ext = file_path.stem, file_path.suffix
@@ -334,7 +342,7 @@ class Installation:
         for file in files:
             with suppress(Exception):
                 name, ext = file.split('.', 1)
-                size = os.path.getsize(override_path + directory + file)
+                size = os.path.getsize(str(override_path / directory / file))
                 resource = FileResource(name, ResourceType.from_extension(ext), size, 0, Path(override_path) / directory / file)
                 self._override[directory].append(resource)
 
@@ -343,8 +351,8 @@ class Installation:
         streammusic_path = self.streammusic_path()
         for filename in list(os.listdir(str(Path(streammusic_path).resolve()))):
             with suppress(Exception):
-                filepath = streammusic_path + filename
-                identifier = ResourceIdentifier.from_path(filepath)
+                filepath = streammusic_path / filename
+                identifier = ResourceIdentifier.from_filename(str(filepath.resolve()))
                 resource = FileResource(identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
                 self._streammusic.append(resource)
 
@@ -356,8 +364,8 @@ class Installation:
         streamsounds_path = self.streamsounds_path()
         for filename in list(os.listdir(str(Path(streamsounds_path).resolve()))):
             with suppress(Exception):
-                filepath = streamsounds_path + filename
-                identifier = ResourceIdentifier.from_path(filepath)
+                filepath = streamsounds_path / filename
+                identifier = ResourceIdentifier.from_filename(str(filepath))
                 resource = FileResource(identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
                 self._streamsounds.append(resource)
 
@@ -367,11 +375,17 @@ class Installation:
         """
         self._streamvoices = []
         streamvoices_path = self.streamvoice_path()
-        for filename in list(os.listdir(str(Path(streamvoices_path).resolve()))):
+        for filename in list(os.listdir(str(streamvoices_path.resolve()))):
             with suppress(Exception):
                 filepath = streamvoices_path / filename
-                identifier = ResourceIdentifier.from_path(filepath)
-                resource = FileResource(identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
+                identifier = ResourceIdentifier.from_filename(str(filepath))
+                resource = FileResource(
+                    identifier.resname,
+                    identifier.restype,
+                    filepath.stat().st_size,
+                    0,
+                    filepath
+                )
                 self._streamvoices.append(resource)
 
     def load_rims(self) -> None:
@@ -387,14 +401,14 @@ class Installation:
                 if is_rim_file(file.name)
             ]
             for filename in filenames:
-                self._rims[filename] = list(Capsule(rims_path, filename))
+                self._rims[filename.name] = list(Capsule(rims_path, filename))
 
     # endregion
 
     # region Get FileResources
     def chitin_resources(self) -> List[FileResource]:
         """
-        Returns the list of FileResources stored in the Chitin linked to the Installaiton.
+        Returns the list of FileResources stored in the Chitin linked to the Installation.
 
         Returns:
             A list of FileResources.
@@ -403,9 +417,11 @@ class Installation:
 
     def modules_list(self) -> List[str]:
         """
-        Returns the list of module filenames located in the modules folder linked to the Installaiton.
+        Returns the list of module filenames located in the modules folder
+        linked to the Installation.
 
-        Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
+        Module filenames are cached and require to be refreshed after a file
+        is added, deleted or renamed.
 
         Returns:
             A list of filenames.
@@ -414,10 +430,11 @@ class Installation:
 
     def module_resources(self, filename: str) -> List[FileResource]:
         """
-        Returns a list of FileResources stored in the specified module file located in the modules folder linked to the
-        Installation.
+        Returns a list of FileResources stored in the specified module file
+        located in the modules folder linked to the Installation.
 
-        Module resources are cached and require a reload after the contents have been modified.
+        Module resources are cached and require a reload after the contents
+        have been modified.
 
         Returns:
             A list of FileResources.
@@ -426,9 +443,11 @@ class Installation:
 
     def lips_list(self) -> List[str]:
         """
-        Returns the list of module filenames located in the lips folder linked to the Installaiton.
+        Returns the list of module filenames located in the lips folder
+        linked to the Installation.
 
-        Module filenames are cached and require to be refreshed after a file is added, deleted or renamed.
+        Module filenames are cached and require to be refreshed after a file
+        is added, deleted or renamed.
 
         Returns:
             A list of filenames.
@@ -437,10 +456,12 @@ class Installation:
 
     def lip_resources(self, filename: str) -> List[FileResource]:
         """
-        Returns a list of FileResources stored in the specified module file located in the lips folder linked to the
+        Returns a list of FileResources stored in the specified module file
+        located in the lips folder linked to the
         Installation.
 
-        Module resources are cached and require a reload after the contents have been modified.
+        Module resources are cached and require a reload after the contents
+        have been modified.
 
         Returns:
             A list of FileResources.
@@ -449,7 +470,8 @@ class Installation:
 
     def texturepacks_list(self) -> List[str]:
         """
-        Returns the list of texturepack filenames located in the texturepacks folder linked to the Installaiton.
+        Returns the list of texture-pack filenames located in the texturepacks
+        folder linked to the Installation.
 
         Returns:
             A list of filenames.
@@ -458,10 +480,12 @@ class Installation:
 
     def texturepack_resources(self, filename: str) -> List[FileResource]:
         """
-        Returns a list of FileResources stored in the specified module file located in the texturepacks folder linked to
+        Returns a list of FileResources stored in the specified module file
+        located in the texturepacks folder linked to
         the Installation.
 
-        Texturepacks resources are cached and require a reload after the contents have been modified.
+        Texturepacks resources are cached and require a reload after the
+        contents have been modified.
 
         Returns:
             A list of FileResources.
@@ -470,9 +494,11 @@ class Installation:
 
     def override_list(self) -> List[str]:
         """
-        Returns the list of subdirectories located in override folder linked to the Installation.
+        Returns the list of subdirectories located in override folder
+        linked to the Installation.
 
-        Subdirectories are cached and require to be refreshed after a folder is added, deleted or renamed.
+        Subdirectories are cached and require to be refreshed after a folder
+        is added, deleted or renamed.
 
         Returns:
             A list of subdirectories.
@@ -481,10 +507,12 @@ class Installation:
 
     def override_resources(self, directory: str) -> List[FileResource]:
         """
-        Returns a list of FileResources stored in the specified subdirectory located in the override folder linked to
+        Returns a list of FileResources stored in the specified subdirectory
+        located in the override folder linked to
         the Installation.
 
-        Override resources are cached and require a reload after the contents have been modified.
+        Override resources are cached and require a reload after the contents
+        have been modified.
 
         Returns:
             A list of FileResources.
@@ -535,7 +563,12 @@ class Installation:
         """
 
         query = ResourceIdentifier(resname, restype)
-        batch = self.resources([query], order, capsules=capsules, folders=folders)
+        batch = self.resources(
+            [query],
+            order,
+            capsules=capsules,
+            folders=folders
+        )
 
         return batch[query] or None
 
@@ -561,7 +594,12 @@ class Installation:
             A dictionary mapping the given items in the queries argument to a list of ResourceResult objects.
         """
         results: Dict[ResourceIdentifier, Optional[ResourceResult]] = {}
-        locations = self.locations(queries, order, capsules=capsules, folders=folders)
+        locations = self.locations(
+            queries,
+            order,
+            capsules=capsules,
+            folders=folders
+        )
         handles = {}
 
         for query in queries:
@@ -850,8 +888,11 @@ class Installation:
         def check_folders(values):
             for folder in values:
                 folder = Path(folder).resolve()
-                filepath = Path(folder, file)
-                for file in [file for file in folder.iterdir() if filepath.is_file()]:
+                for file in list(folder.iterdir()):
+                    filepath = Path(folder, file)
+                    if not filepath.is_file():
+                        continue
+
                     identifier = ResourceIdentifier.from_filename(file)
                     for resname in queries:
                         if (
@@ -1186,7 +1227,7 @@ class Installation:
         Returns:
             The ID of the area for the module.
         """
-        root = name.replace(".mod", "").replace(".erf", "").replace(".rim", "")
+        root = module_filename.replace(".mod", "").replace(".erf", "").replace(".rim", "")
         root = root[:-len("_s")] if root.endswith("_s") else root
         root = root[:-len("_dlg")] if root.endswith("_dlg") else root
 
