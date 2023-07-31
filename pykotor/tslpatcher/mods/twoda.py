@@ -168,7 +168,7 @@ class Modify2DA(ABC):
             elif value == "high()":
                 modifiers[header] = str(twoda.column_max(header))
 
-        # Break apart values into more managable categories
+        # Break apart values into more manageable categories
         for header, value in modifiers.items():
             if header.startswith("2DAMEMORY"):
                 memory_index = int(header.replace("2DAMEMORY", ""))
