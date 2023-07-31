@@ -58,8 +58,8 @@ class InstallFile:
             )
 
 class InstallFolder:
-# The `InstallFolder` class represents a folder that can be installed, and it provides a method to
-# apply the installation by copying files from a source path to a destination path.
+    # The `InstallFolder` class represents a folder that can be installed, and it provides a method to
+    # apply the installation by copying files from a source path to a destination path.
     def __init__(self, foldername: str, files: List[InstallFile] = None) -> None:
         self.foldername: str = foldername
         self.files: List[InstallFile] = [] if files is None else files
@@ -67,7 +67,7 @@ class InstallFolder:
     def apply(self, log: PatchLogger, source_path: str, destination_path: str) -> None:
         """
         The function applies changes to files in a source directory and copies them to a destination
-        directory using multithreading.
+        directory using multithreading. This method also handles capsule files, so we ensure we do not run those operations on multiple threads.
 
         :param log: The `log` parameter is an instance of the `PatchLogger` class. It is used to log any
         information or errors during the execution of the `apply` method
@@ -75,75 +75,32 @@ class InstallFolder:
         :param source_path: The `source_path` parameter is a string that represents the path to the source
         directory or file. It is the location from where the files will be copied or applied
         :type source_path: str
-        :param destination_path: The `destination_path` parameter is a string that represents the path where
-        the files will be copied to. It specifies the directory where the files will be placed
+        :param destination_path: The `destination_path` parameter is a string that represents the root folder of all install folders.
         :type destination_path: str
         """
+
+        # true destination target for the file.
+        target = f"{destination_path}/{self.foldername}"
+
         if is_capsule_file(self.foldername):
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                futures = [
-                    executor.submit(self.apply_encapsulated_file, log, source_path, destination_path, file)
-                    for file in self.files
-                ]
-                concurrent.futures.wait(futures)  # Wait for all threads to finish
+            destination = Capsule(target, create_nonexisting=True)
+            for file in self.files:
+                file.apply_encapsulated(log, source_path, destination)
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
+                # Submit each task individually using executor.submit
                 futures = [
                     executor.submit(
-                        self.apply_file, log, source_path, destination_path, self.foldername, file
+                        lambda file: file.apply_file(log, source_path, target, self.foldername),
+                        file,
                     )
                     for file in self.files
                 ]
-                concurrent.futures.wait(futures)  # Wait for all threads to finish
 
-    def apply_encapsulated_file(
-        self, log: PatchLogger, source_path: str, destination_path: str, file: InstallFile
-    ) -> None:
-        """
-        The function applies an encapsulated file to a destination path.
-
-        :param log: A PatchLogger object that is used for logging information during the file
-        application process
-        :type log: PatchLogger
-        :param source_path: The source path is the path to the file that needs to be installed or
-        copied. It is the location of the file on the local machine or in the source directory
-        :type source_path: str
-        :param destination_path: The `destination_path` parameter is a string that represents the path
-        where the file should be installed or copied to
-        :type destination_path: str
-        :param file: The `file` parameter is an instance of the `InstallFile` class
-        :type file: InstallFile
-        """
-
-        target = f"{destination_path}/{self.foldername}"
-        destination = Capsule(target, create_nonexisting=True)
-        file.apply_encapsulated(log, source_path, destination)
-
-    @staticmethod
-    def apply_file(
-        log: PatchLogger,
-        source_path: str,
-        destination_path: str,
-        foldername: str,
-        file: InstallFile,
-    ) -> None:
-        """
-        The function `apply_file` applies a file to a specified destination path with a given folder
-        name.
-
-        :param log: A PatchLogger object that is used for logging information during the file
-        application process
-        :type log: PatchLogger
-        :param source_path: The source path is the path to the file or folder that you want to copy or
-        move. It can be an absolute path or a relative path from the current working directory
-        :type source_path: str
-        :param destination_path: The destination path is the directory where the file will be copied to
-        :type destination_path: str
-        :param foldername: The `foldername` parameter is a string that represents the name of the folder
-        where the file will be applied
-        :type foldername: str
-        :param file: The `file` parameter is an instance of the `InstallFile` class
-        :type file: InstallFile
-        """
-        target = f"{destination_path}/{foldername}"
-        file.apply_file(log, source_path, target, foldername)
+                # Use as_completed to get the results as they complete
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        result = future.result() # Process the result if needed
+                    except Exception as thread_exception:
+                        # Handle any exceptions that occurred during execution
+                        print(f"Exception occurred: {thread_exception}")

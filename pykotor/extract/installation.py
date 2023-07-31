@@ -581,7 +581,7 @@ class Installation:
         query = ResourceIdentifier(resname, restype)
         batch = self.resources([query], order, capsules=capsules, folders=folders)
 
-        return batch[query] if batch[query] else None
+        return batch[query] or None
 
     def resources(
             self,
@@ -1059,43 +1059,43 @@ class Installation:
         root = root[:-len("_s")] if root.endswith("_s") else root
         root = root[:-len("_dlg")] if root.endswith("_dlg") else root
 
-        hardcoded = {
-            "STUNT_00": "Ebon Hawk - Cutscene (Vision Sequences)",
-            "STUNT_03A": "Leviathan - Cutscene (Destroy Taris)",
-            "STUNT_06": "Leviathan - Cutscene (Resume Bombardment)",
-            "STUNT_07": "Ebon Hawk - Cutscene (Escape Taris)",
-            "STUNT_12": "Leviathan - Cutscene (Calo Nord)",
-            "STUNT_14": "Leviathan - Cutscene (Darth Bandon)",
-            "STUNT_16": "Ebon Hawk - Cutscene (Leviathan Capture)",
-            "STUNT_18": "Unknown World - Cutscene (Bastila Torture)",
-            "STUNT_19": "Star Forge - Cutscene (Jawless Malak)",
-            "STUNT_31B": "Unknown World - Cutscene (Revan Reveal)",
-            "STUNT_34": "Ebon Hawk - Cutscene (Star Forge Arrival)",
-            "STUNT_35": "Ebon Hawk - Cutscene (Lehon Crash)",
-            "STUNT_42": "Ebon Hawk - Cutscene (LS Dodonna Call)",
-            "STUNT_44": "Ebon Hawk - Cutscene (DS Dodonna Call)",
-            "STUNT_50A": "Dodonna Flagship - Cutscene (Break In Formation)",
-            "STUNT_51A": "Dodonna Flagship - Cutscene (Bastilla Against Us)",
-            "STUNT_54A": "Dodonna Flagship - Cutscene (Pull Back)",
-            "STUNT_55A": "Unknown World - Cutscene (DS Ending)",
-            "STUNT_56A": "Dodona Flagship - Cutscene (Star Forge Destroyed)",
-            "STUNT_57": "Unknown World - Cutscene (LS Ending)",
-            "001EBO": "Ebon Hawk - Interior (Prologue)",
-            "004EBO": "Ebon Hawk - Interior (Red Eclipse)",
-            "005EBO": "Ebon Hawk - Interior (Escaping Peragus)",
-            "006EBO": "Ebon Hawk - Cutscene (After Rebuilt Enclave)",
-            "007EBO": "Ebon Hawk - Cutscene (After Goto's Yacht)",
-            "154HAR": "Harbinger - Cutscene (Sion Introduction)",
-            "205TEL": "Citadel Station - Cutscene (Carth Discussion)",
-            "352NAR": "Nar Shaddaa - Cutscene (Goto Introduction)",
-            "853NIH": "Ravager - Cutscene (Nihilus Introduction)",
-            "856NIH": "Ravager - Cutscene (Sion vs. Nihilus)"
-        }
-
         if use_hardcoded:
-            for key in hardcoded.keys():
+            hardcoded = {
+                "STUNT_00": "Ebon Hawk - Cutscene (Vision Sequences)",
+                "STUNT_03A": "Leviathan - Cutscene (Destroy Taris)",
+                "STUNT_06": "Leviathan - Cutscene (Resume Bombardment)",
+                "STUNT_07": "Ebon Hawk - Cutscene (Escape Taris)",
+                "STUNT_12": "Leviathan - Cutscene (Calo Nord)",
+                "STUNT_14": "Leviathan - Cutscene (Darth Bandon)",
+                "STUNT_16": "Ebon Hawk - Cutscene (Leviathan Capture)",
+                "STUNT_18": "Unknown World - Cutscene (Bastila Torture)",
+                "STUNT_19": "Star Forge - Cutscene (Jawless Malak)",
+                "STUNT_31B": "Unknown World - Cutscene (Revan Reveal)",
+                "STUNT_34": "Ebon Hawk - Cutscene (Star Forge Arrival)",
+                "STUNT_35": "Ebon Hawk - Cutscene (Lehon Crash)",
+                "STUNT_42": "Ebon Hawk - Cutscene (LS Dodonna Call)",
+                "STUNT_44": "Ebon Hawk - Cutscene (DS Dodonna Call)",
+                "STUNT_50A": "Dodonna Flagship - Cutscene (Break In Formation)",
+                "STUNT_51A": "Dodonna Flagship - Cutscene (Bastilla Against Us)",
+                "STUNT_54A": "Dodonna Flagship - Cutscene (Pull Back)",
+                "STUNT_55A": "Unknown World - Cutscene (DS Ending)",
+                "STUNT_56A": "Dodona Flagship - Cutscene (Star Forge Destroyed)",
+                "STUNT_57": "Unknown World - Cutscene (LS Ending)",
+                "001EBO": "Ebon Hawk - Interior (Prologue)",
+                "004EBO": "Ebon Hawk - Interior (Red Eclipse)",
+                "005EBO": "Ebon Hawk - Interior (Escaping Peragus)",
+                "006EBO": "Ebon Hawk - Cutscene (After Rebuilt Enclave)",
+                "007EBO": "Ebon Hawk - Cutscene (After Goto's Yacht)",
+                "154HAR": "Harbinger - Cutscene (Sion Introduction)",
+                "205TEL": "Citadel Station - Cutscene (Carth Discussion)",
+                "352NAR": "Nar Shaddaa - Cutscene (Goto Introduction)",
+                "853NIH": "Ravager - Cutscene (Nihilus Introduction)",
+                "856NIH": "Ravager - Cutscene (Sion vs. Nihilus)"
+            }
+
+            for key, value in hardcoded.items():
                 if key.upper() in module_filename.upper():
-                    return hardcoded[key]
+                    return value
 
         name = ""
 
@@ -1130,10 +1130,7 @@ class Installation:
         Returns:
             A dictionary mapping module filename to in-game module area name.
         """
-        module_names = {}
-        for module in self.modules_list():
-            module_names[module] = self.module_name(module)
-        return module_names
+        return {module: self.module_name(module) for module in self.modules_list()}
 
     def module_id(
             self,
@@ -1155,33 +1152,33 @@ class Installation:
         root = root[:-len("_s")] if root.endswith("_s") else root
         root = root[:-len("_dlg")] if root.endswith("_dlg") else root
 
-        hardcoded = {
-            "STUNT_00": "000",
-            "STUNT_03A": "m03a",
-            "STUNT_06": "m07",
-            "STUNT_07": "m07",
-            "STUNT_12": "m12",
-            "STUNT_14": "m14",
-            "STUNT_16": "m16",
-            "STUNT_18": "m18",
-            "STUNT_19": "m19",
-            "STUNT_31B": "m31b",
-            "STUNT_34": "m34",
-            "STUNT_35": "m35",
-            "STUNT_42": "m43",
-            "STUNT_44": "m44",
-            "STUNT_50A": "m50a",
-            "STUNT_51A": "m51a",
-            "STUNT_54A": "m54a",
-            "STUNT_55A": "m55a",
-            "STUNT_56A": "m56a",
-            "STUNT_57": "m57",
-        }
-
         if use_hardcoded:
-            for key in hardcoded.keys():
+            hardcoded = {
+                "STUNT_00": "000",
+                "STUNT_03A": "m03a",
+                "STUNT_06": "m07",
+                "STUNT_07": "m07",
+                "STUNT_12": "m12",
+                "STUNT_14": "m14",
+                "STUNT_16": "m16",
+                "STUNT_18": "m18",
+                "STUNT_19": "m19",
+                "STUNT_31B": "m31b",
+                "STUNT_34": "m34",
+                "STUNT_35": "m35",
+                "STUNT_42": "m43",
+                "STUNT_44": "m44",
+                "STUNT_50A": "m50a",
+                "STUNT_51A": "m51a",
+                "STUNT_54A": "m54a",
+                "STUNT_55A": "m55a",
+                "STUNT_56A": "m56a",
+                "STUNT_57": "m57",
+            }
+
+            for key, value in hardcoded.items():
                 if key.upper() in module_filename.upper():
-                    return hardcoded[key]
+                    return value
 
         mod_id = ""
 
@@ -1222,7 +1219,7 @@ class Installation:
         the modules folder.
         """
         for file in os.listdir(self.module_path()):
-            if file.endswith(".mod") and os.path.isfile(self.module_path() + file):
+            if file.lower().endswith(".mod") and os.path.isfile(self.module_path() + file):
                 os.remove(self.module_path() + file)
 
         for file in os.listdir(self.override_path()):
