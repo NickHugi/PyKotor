@@ -316,15 +316,19 @@ class ConfigReader:
             return
 
         files = dict(self.ini["CompileList"].items())
+        print("Creating collections from NSS files part 2:", files)
+
+        destination = files.pop("!destination", None)
 
         for identifier, file in files.items():
             replace = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
             self.config.patches_nss.append(modifications)
 
-            for name, value in files.items():
-                if name.lower() == "!destination":
-                    modifications.destination = value
+            if destination is not None:
+                modifications.destination = destination
+        print("Parsing NSS files done!")
+
 
     #################
     def field_value_gff(self, raw_value: str) -> FieldValue:

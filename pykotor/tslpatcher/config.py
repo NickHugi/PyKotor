@@ -131,11 +131,11 @@ class ModInstaller:
         templates = {}
 
         print("Read dialog.tlk")
-        dialog_tlk = read_tlk(installation.path() + "dialog.tlk")
+        dialog_tlk = read_tlk(f"{installation.path()}dialog.tlk")
         print("Applying any patches for dialog.tlk...")
         config.patches_tlk.apply(dialog_tlk, memory)
         print("Writing dialog.tlk")
-        write_tlk(dialog_tlk, self.output_path + "/dialog.tlk")
+        write_tlk(dialog_tlk, f"{self.output_path}/dialog.tlk")
         self.log.complete_patch()
 
         print("Executing any [InstallList] instructions...")
@@ -217,7 +217,7 @@ class ModInstaller:
             else:
                 self.log.add_note(f"Patching {patch.filename} in the {local_path} archive.")
 
-            self.log.add_note("Compiling {}".format(patch.filename))
+            self.log.add_note(f"Compiling {patch.filename}")
             patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))

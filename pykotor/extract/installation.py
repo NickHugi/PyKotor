@@ -83,7 +83,7 @@ class Installation:
         self._path: str = path.replace('\\', '/')
         if not self._path.endswith('/'): self._path += '/'
 
-        self._talktable: Optional[TalkTable] = TalkTable(self._path + "dialog.tlk")
+        self._talktable: Optional[TalkTable] = TalkTable(f"{self._path}dialog.tlk")
 
         self._chitin: List[FileResource] = []
         self._modules: Dict[str, List[FileResource]] = {}
@@ -95,14 +95,23 @@ class Installation:
         self._streamvoices: List[FileResource] = []
         self._rims: Dict[str, List[FileResource]] = {}
 
+        print("Load modules...")
         self.load_modules()
+        print("Load override...")
         self.load_override()
+        print("Load lips...")
         self.load_lips()
+        print("Load textures...")
         self.load_textures()
+        print("Load chitin...")
         self.load_chitin()
+        print("Load streammusic...")
         self.load_streammusic()
+        print("Load streamsounds...")
         self.load_streamsounds()
+        print("Load streamvoices...")
         self.load_streamvoices()
+        print("Load rims...")
         self.load_rims()
 
     # region Get Paths
@@ -126,13 +135,9 @@ class Installation:
         Returns:
             The path to the modules folder.
         """
-        module_path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(module_path + folder) and folder.lower() == "modules":
-                module_path += folder + "/"
-        if module_path == self._path:
-            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return module_path.replace("\\", "/")
+        return self._extracted_from_streamsounds_path_10(
+            "modules", "Could not find modules folder in '{}'."
+        )
 
     def override_path(
             self
@@ -143,13 +148,9 @@ class Installation:
         Returns:
             The path to the override folder.
         """
-        override_path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(override_path + folder) and folder.lower() == "override":
-                override_path += folder + "/"
-        if override_path == self._path:
-            raise ValueError("Could not find override folder in '{}'.".format(self._path))
-        return override_path.replace("\\", "/")
+        return self._extracted_from_streamsounds_path_10(
+            "override", "Could not find override folder in '{}'."
+        )
 
     def lips_path(
             self
@@ -160,13 +161,9 @@ class Installation:
         Returns:
             The path to the lips folder.
         """
-        lips_path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(lips_path + folder) and folder.lower() == "lips":
-                lips_path += folder + "/"
-        if lips_path == self._path:
-            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return lips_path.replace("\\", "/")
+        return self._extracted_from_streamsounds_path_10(
+            "lips", "Could not find modules folder in '{}'."
+        )
 
     def texturepacks_path(
             self
@@ -177,13 +174,9 @@ class Installation:
         Returns:
             The path to the texturepacks folder.
         """
-        texturepacks_path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(texturepacks_path + folder) and folder.lower() == "texturepacks":
-                texturepacks_path += folder + "/"
-        if texturepacks_path == self._path:
-            raise ValueError("Could not find modules folder in '{}'.".format(self._path))
-        return texturepacks_path.replace("\\", "/")
+        return self._extracted_from_streamsounds_path_10(
+            "texturepacks", "Could not find modules folder in '{}'."
+        )
 
     def rims_path(
             self
@@ -194,13 +187,9 @@ class Installation:
         Returns:
             The path to the rims folder.
         """
-        path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and folder.lower() == "rims":
-                path += folder + "/"
-        if path == self._path:
-            raise ValueError("Could not find rims folder in '{}'.".format(self._path))
-        return path.replace("\\", "/")
+        return self._extracted_from_streamsounds_path_10(
+            "rims", "Could not find rims folder in '{}'."
+        )
 
     def streammusic_path(
             self
@@ -211,13 +200,9 @@ class Installation:
         Returns:
             The path to the streammusic folder.
         """
-        path = self._path
-        for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and folder.lower() == "streammusic":
-                path += folder + "/"
-        if path == self._path:
-            raise ValueError("Could not find StreamMusic folder in '{}'.".format(self._path))
-        return path.replace("\\", "/")
+        return self._extracted_from_streamsounds_path_10(
+            "streammusic", "Could not find StreamMusic folder in '{}'."
+        )
 
     def streamsounds_path(
             self
@@ -228,13 +213,19 @@ class Installation:
         Returns:
             The path to the streamsounds folder.
         """
-        path = self._path
+        return self._extracted_from_streamsounds_path_10(
+            "streamsounds", "Could not find StreamSounds folder in '{}'."
+        )
+
+    # TODO Rename this here and in `module_path`, `override_path`, `lips_path`, `texturepacks_path`, `rims_path`, `streammusic_path` and `streamsounds_path`
+    def _extracted_from_streamsounds_path_10(self, arg0, arg1):
+        module_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and folder.lower() == "streamsounds":
-                path += folder + "/"
-        if path == self._path:
-            raise ValueError("Could not find StreamSounds folder in '{}'.".format(self._path))
-        return path.replace("\\", "/")
+            if os.path.isdir(module_path + folder) and folder.lower() == arg0:
+                module_path += f"{folder}/"
+        if module_path == self._path:
+            raise ValueError(arg1.format(self._path))
+        return module_path.replace("\\", "/")
 
     def streamvoice_path(
             self
@@ -518,7 +509,7 @@ class Installation:
     ) -> List[str]:
         """
         Returns the list of subdirectories located in override folder linked to the Installation.
-        
+
         Subdirectories are cached and require to be refreshed after a folder is added, deleted or renamed.
 
         Returns:
@@ -573,7 +564,7 @@ class Installation:
 
         The default search order is (descending priority): 1. Folders in the folders parameter, 2. Override folders,
         3. Capsules in the capsules parameter, 4. Game modules, 5. Chitin.
-        
+
         This is a wrapper of the resources() method provided to make fetching for a single resource more convienent.
 
         Args:
@@ -1000,12 +991,12 @@ class Installation:
     ) -> str:
         """
         Returns the string for the LocalizedString provided.
-        
+
         This is a wrapper of the strings() method provided to make searching for a single string more convienent.
-        
+
         Args:
-            locstring: 
-            default: 
+            locstring:
+            default:
 
         Returns:
 
@@ -1020,11 +1011,11 @@ class Installation:
     ) -> Dict[LocalizedString, str]:
         """
         Returns a dictionary mapping the items provided in the queries argument to a string.
-        
+
         As the method iterates through each LocalizedString it will first check if the TalkTable linked to the
         Installation has the stringref. If not it will try fallback on whatever substring exists in the LocalizedString
         and should that fail it will fallback on the default string specified.
-        
+
         Args:
             queries: A list of LocalizedStrings.
             default: The fallback string if no string could be found.
@@ -1093,7 +1084,7 @@ class Installation:
             "004EBO": "Ebon Hawk - Interior (Red Eclipse)",
             "005EBO": "Ebon Hawk - Interior (Escaping Peragus)",
             "006EBO": "Ebon Hawk - Cutscene (After Rebuilt Enclave)",
-            "007EBO": "Ebon Hawk - Cutscene (After Goto's Yatch)",
+            "007EBO": "Ebon Hawk - Cutscene (After Goto's Yacht)",
             "154HAR": "Harbinger - Cutscene (Sion Introduction)",
             "205TEL": "Citadel Station - Cutscene (Carth Discussion)",
             "352NAR": "Nar Shaddaa - Cutscene (Goto Introduction)",

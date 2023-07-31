@@ -82,13 +82,8 @@ print("Writing log file 'installlog.txt'...")
 
 LOG_FILE_PATH = os.path.join(TSLPATCHDATA_PATH, "installlog.txt")
 with open(LOG_FILE_PATH, "w", encoding="utf-8") as log_file:
-    for note in INSTALLER.log.notes:
-        log_file.write(f"{note.message}\n")
-    for warning in INSTALLER.log.warnings:
-        log_file.write(f"Warning: {warning.message}\n")
-    for error in INSTALLER.log.errors:
-        log_file.write(f"Error: {error.message}\n")
-
+    for log_message in INSTALLER.log.all_logs:
+        log_file.write(f"{log_message.message}\n")
 
 print("Logging finished")
 

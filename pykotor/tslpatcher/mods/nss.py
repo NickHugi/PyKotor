@@ -16,11 +16,13 @@ class ModificationsNSS:
     def apply(self, nss: List[str], memory: PatcherMemory, logger: PatchLogger) -> None:
         source = nss[0]
 
+        print("Looking for #2DAMEMORY\d+# entries...")
         while match := re.search(r"#2DAMEMORY\d+#", source):
             token_id = int(source[match.start() + 10:match.end() - 1])
             value = memory.memory_2da[token_id]
             source = source[0:match.start()] + str(value) + source[match.end():len(source)]
 
+        print("Looking for #StrRef\d+# entries...")
         while match := re.search(r"#StrRef\d+#", source):
             token_id = int(source[match.start() + 7:match.end() - 1])
             value = memory.memory_str[token_id]

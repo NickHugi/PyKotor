@@ -79,11 +79,10 @@ class InstallFolder:
         the files will be copied to. It specifies the directory where the files will be placed
         :type destination_path: str
         """
-        target = f"{destination_path}/{self.foldername}"
         if is_capsule_file(self.foldername):
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [
-                    executor.submit(self.apply_encapsulated_file, log, source_path, target, file)
+                    executor.submit(self.apply_encapsulated_file, log, source_path, destination_path, file)
                     for file in self.files
                 ]
                 concurrent.futures.wait(futures)  # Wait for all threads to finish
@@ -91,7 +90,7 @@ class InstallFolder:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [
                     executor.submit(
-                        self.apply_file, log, source_path, target, self.foldername, file
+                        self.apply_file, log, source_path, destination_path, self.foldername, file
                     )
                     for file in self.files
                 ]
