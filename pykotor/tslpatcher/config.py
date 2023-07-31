@@ -108,9 +108,15 @@ class ModInstaller:
         """
 
         if self._config is None:
-            ini_text = BinaryReader.load_file(self.mod_path + "/" + self.ini_file).decode()
-            append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
+            ini_text = BinaryReader.load_file(f"{self.mod_path}/{self.ini_file}").decode()
+            print("Read append.tlk")
+            append_tlk = (
+                read_tlk(f"{self.mod_path}/append.tlk")
+                if os.path.exists(f"{self.mod_path}/append.tlk")
+                else TLK()
+            )
             self._config = PatcherConfig()
+            print("Loading the rest of the changes ini")
             self._config.load(ini_text, append_tlk)
 
         return self._config
@@ -124,41 +130,44 @@ class ModInstaller:
         soundsets = {}
         templates = {}
 
-        # Apply changes to dialog.tlk
+        print("Read dialog.tlk")
         dialog_tlk = read_tlk(installation.path() + "dialog.tlk")
+        print("Applying any patches for dialog.tlk...")
         config.patches_tlk.apply(dialog_tlk, memory)
+        print("Writing dialog.tlk")
         write_tlk(dialog_tlk, self.output_path + "/dialog.tlk")
         self.log.complete_patch()
 
+        print("Executing any [InstallList] instructions...")
         for folder in config.install_list:
             folder.apply(self.log, self.mod_path, self.output_path)
             self.log.complete_patch()
 
-        # Apply changes to 2DA files
+        print("Apply any changes to 2DA files...")
         for patch in config.patches_2da:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             twoda = twodas[patch.filename] = read_2da(search.data)
 
-            self.log.add_note("Patching {}".format(patch.filename))
+            self.log.add_note(f"Patching {patch.filename}")
             patch.apply(twoda, memory)
-            write_2da(twoda, "{}/override/{}".format(self.output_path, patch.filename))
+            write_2da(twoda, f"{self.output_path}/override/{patch.filename}")
 
             self.log.complete_patch()
 
-        # Apply changes to SSF files
+        print("Apply any changes to SSF files...")
         for patch in config.patches_ssf:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             soundset = soundsets[patch.filename] = read_ssf(search.data)
 
-            self.log.add_note("Patching {}".format(patch.filename))
+            self.log.add_note(f"Patching {patch.filename}")
             patch.apply(soundset, memory)
-            write_ssf(soundset, "{}/override/{}".format(self.output_path, patch.filename))
+            write_ssf(soundset, f"{self.output_path}/override/{patch.filename}")
 
             self.log.complete_patch()
 
-        # Apply changes to GFF files
+        print("Apply any changes to GFF files...")
         for patch in config.patches_gff:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
 
@@ -190,7 +199,7 @@ class ModInstaller:
 
             self.log.complete_patch()
 
-        # Apply changes to NSS files
+        print("Apply any changes to NSS files...")
         for patch in config.patches_nss:
             capsule = None
             if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):

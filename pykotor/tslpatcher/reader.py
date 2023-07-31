@@ -76,15 +76,13 @@ class ConfigParser(RawConfigParser):
             # continuation line?
             first_nonspace = self.NONSPACECRE.search(line)
             cur_indent_level = first_nonspace.start() if first_nonspace else 0
-            if (cursect is not None and optname and
-                cur_indent_level > indent_level):
+            if (cursect is not None and optname and cur_indent_level > indent_level):
                 cursect[optname].append(value)
             # a section header or option header?
             else:
                 indent_level = cur_indent_level
                 # is it a section header?
-                mo = self.SECTCRE.match(value)
-                if mo:
+                if mo := self.SECTCRE.match(value):
                     sectname = mo.group('header')
                     if sectname in self._sections:
                         if self._strict and sectname in elements_added:
@@ -159,11 +157,17 @@ class ConfigReader:
         self.config = config
 
         self.load_settings()
+        print("Parsing file list from [InstallList]")
         self.load_filelist()
+        print("Parsing stringrefs from [TLKList]")
         self.load_stringref()
+        print("Parsing 2da from [2DAList]")
         self.load_2da()
+        print("Parsing SSF from [SSFList]")
         self.load_ssf()
+        print("Parsing GFF from [GFFList]")
         self.load_gff()
+        print("Parsing NSS from [NSSList]")
         self.load_nss()
 
         return self.config
@@ -194,6 +198,11 @@ class ConfigReader:
         stringrefs = dict(self.ini["TLKList"].items())
 
         for name, value in stringrefs.items():
+            if name[:7].lower() == "replace":
+                folder_install = InstallFolder("Override/../")
+                folder_install.files.append(InstallFile(value, True))
+                self.config.install_list.append(folder_install)
+                continue
             token_id = int(name[6:])
             append_index = int(value)
             entry = self.append.get(append_index)
@@ -210,12 +219,12 @@ class ConfigReader:
         for file in files.values():
             modification_ids = dict(self.ini[file].items())
 
-            modificaitons = Modifications2DA(file)
-            self.config.patches_2da.append(modificaitons)
+            modifications = Modifications2DA(file)
+            self.config.patches_2da.append(modifications)
 
             for key, modification_id in modification_ids.items():
                 manipulation = self.discern_2da(key, modification_id, dict(self.ini[modification_id].items()))
-                modificaitons.modifiers.append(manipulation)
+                modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
         if "SSFList" not in self.ini:
@@ -258,8 +267,8 @@ class ConfigReader:
             modifications_ini = dict(self.ini[file].items())
             replace = identifier.startswith("Replace")
 
-            modificaitons = ModificationsSSF(file, replace)
-            self.config.patches_ssf.append(modificaitons)
+            modifications = ModificationsSSF(file, replace)
+            self.config.patches_ssf.append(modifications)
 
             for name, value in modifications_ini.items():
                 if value.startswith("2DAMEMORY"):
@@ -273,7 +282,7 @@ class ConfigReader:
 
                 sound = configstr_to_ssfsound[name]
                 modifier = ModifySSF(sound, value)
-                modificaitons.modifiers.append(modifier)
+                modifications.modifiers.append(modifier)
 
     def load_gff(self) -> None:
         if "GFFList" not in self.ini:
@@ -285,22 +294,22 @@ class ConfigReader:
             modifications_ini = dict(self.ini[file].items())
             replace = identifier.startswith("Replace")
 
-            modificaitons = ModificationsGFF(file, replace)
-            self.config.patches_gff.append(modificaitons)
+            modifications = ModificationsGFF(file, replace)
+            self.config.patches_gff.append(modifications)
 
             for name, value in modifications_ini.items():
                 if name.lower() == "!destination":
-                    modificaitons.destination = value
+                    modifications.destination = value
                 elif name.lower() == "!replacefile":
-                    modificaitons.replace_file = bool(int(value))
+                    modifications.replace_file = bool(int(value))
                 elif name.lower() == "!filename":
-                    modificaitons.filename = value
+                    modifications.filename = value
                 elif name.lower().startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
-                    modificaitons.modifiers.append(modifier)
+                    modifications.modifiers.append(modifier)
                 else:
                     modifier = self.modify_field_gff(name, value)
-                    modificaitons.modifiers.append(modifier)
+                    modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
         if "CompileList" not in self.ini:
@@ -309,7 +318,7 @@ class ConfigReader:
         files = dict(self.ini["CompileList"].items())
 
         for identifier, file in files.items():
-            replace = identifier.startswith("Replace")
+            replace = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
             self.config.patches_nss.append(modifications)
 
