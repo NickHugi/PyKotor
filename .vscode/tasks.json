@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pylint: whole project",
+      "type": "shell",
+      "command": ".venv/bin/pylint --msg-template \"{path}:{line}:{column}:{category}:{symbol} - {msg}\" ${workspaceFolder}",
+      "windows": {
+        "command": ".venv\\Scripts\\pylint --msg-template \"{path}:{line}: {column}:{category}:{symbol} - {msg}\" ${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):(\\w+):(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+        "label": "Python: lint entire project with mypy",
+        "type": "shell",
+        "command": "mypy --no-pretty --show-column-numbers --package pykotor --check-untyped-defs",
+        "group": "test",
+        "presentation": {"reveal": "always", "panel": "new"},
+        "problemMatcher": {
+            "owner": "python",
+            "fileLocation": ["relative", "${workspaceFolder}"],
+            "pattern": {"regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$", "file": 1, "line": 2, "column": 3, "severity": 4, "message": 5}
+        }
+    }
+  ]
+}

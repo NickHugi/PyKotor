@@ -3,9 +3,9 @@ from __future__ import annotations
 import ntpath
 import os
 from abc import ABC, abstractmethod
-from copy import deepcopy
 from enum import Enum
-from typing import List, Optional, Tuple, Dict, NamedTuple, Union, Any
+from typing import List, Optional, Dict, NamedTuple, Union
+
 from pykotor.common.script import DataType, ScriptFunction, ScriptConstant
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType

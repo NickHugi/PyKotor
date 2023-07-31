@@ -4,6 +4,7 @@ import os
 from typing import Optional, NamedTuple
 
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_erf_file, is_mod_file, is_rim_file
 
 
 class FileResource:
@@ -28,12 +29,12 @@ class FileResource:
     def __repr__(
             self
     ):
-        return self._resname + "." + self._restype.extension
+        return f"{self._resname}.{self._restype.extension}"
 
     def __str__(
             self
     ):
-        return self._resname + "." + self._restype.extension
+        return f"{self._resname}.{self._restype.extension}"
 
     def __eq__(
             self,
@@ -83,13 +84,13 @@ class FileResource:
             Bytes data of the resource.
         """
         if reload:
-            if self._filepath.lower().endswith(".mod") or self._filepath.lower().endswith(".erf") or self._filepath.lower().endswith(".rim"):
+            if is_mod_file(self._filepath) or is_erf_file(self._filepath) or is_rim_file(self._filepath):
                 from pykotor.extract.capsule import Capsule
                 capsule = Capsule(self._filepath)
                 res = capsule.info(self._resname, self._restype)
                 self._offset = res.offset()
                 self._size = res.size()
-            elif not self._filepath.lower().endswith(".bif"):
+            elif not is_bif_file(self._filepath):
                 self._offset = 0
                 self._size = os.path.getsize(self._filepath)
 
@@ -123,17 +124,17 @@ class ResourceIdentifier(NamedTuple):
     def __hash__(
             self
     ):
-        return hash(self.resname.lower() + "." + self.restype.extension)
+        return hash(f"{self.resname.lower()}.{self.restype.extension}")
 
     def __repr__(
             self
     ):
-        return "ResourceIdentifier({}, ResourceType.{})".format(self.resname, self.restype)
+        return f"ResourceIdentifier({self.resname}, ResourceType.{self.restype})"
 
     def __str__(
             self
     ):
-        return self.resname.lower() + "." + self.restype.extension
+        return f"{self.resname.lower()}.{self.restype.extension}"
 
     def __eq__(
             self,

@@ -9,6 +9,7 @@ from typing import List, Optional
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_erf_file, is_mod_file
 
 
 class ERFType(Enum):
@@ -20,9 +21,9 @@ class ERFType(Enum):
 
     @staticmethod
     def from_extension(filepath: str) -> ERFType:
-        if filepath.lower().endswith(".erf"):
+        if is_erf_file(filepath.lower()):
             return ERFType.ERF
-        elif filepath.lower().endswith(".mod"):
+        elif is_mod_file(filepath.lower()):
             return ERFType.MOD
         else:
             raise ValueError(f"Invalid ERF extension in filepath '{filepath}'.")

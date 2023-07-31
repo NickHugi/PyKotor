@@ -3,6 +3,7 @@ import os
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tlk import read_tlk
+from pykotor.tools.misc import is_mod_file
 
 
 def uninstall_all_mods(installation: Installation):
@@ -21,6 +22,6 @@ def uninstall_all_mods(installation: Installation):
 
     # Remove any .MOD files
     for filename in os.listdir(modules_path):
-        if filename.endswith(".mod"):
+        if is_mod_file(filename):
             filepath = os.path.normpath(f"{modules_path}/{filename}")
             os.remove(filepath)

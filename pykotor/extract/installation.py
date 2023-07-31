@@ -17,6 +17,7 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
+from pykotor.tools.misc import is_mod_file
 
 
 class SearchLocation(IntEnum):
@@ -407,7 +408,7 @@ class Installation:
             rims_path = self.rims_path()
             filenames = [file for file in os.listdir(rims_path) if file.endswith('.rim')]
             for filename in filenames:
-                self._rims[filename] = [resource for resource in Capsule(rims_path + filename)]
+                self._rims[filename] = list(Capsule(rims_path + filename))
     # endregion
 
     # region Get FileResources
@@ -1219,7 +1220,7 @@ class Installation:
         the modules folder.
         """
         for file in os.listdir(self.module_path()):
-            if file.lower().endswith(".mod") and os.path.isfile(self.module_path() + file):
+            if is_mod_file(file.lower()) and os.path.isfile(self.module_path() + file):
                 os.remove(self.module_path() + file)
 
         for file in os.listdir(self.override_path()):

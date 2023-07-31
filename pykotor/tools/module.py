@@ -18,6 +18,7 @@ from pykotor.resource.generics.utp import dismantle_utp
 from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
+from pykotor.tools.misc import is_mod_file
 
 
 def clone_module(
@@ -201,17 +202,23 @@ def rim_to_mod(filepath: str) -> None:
     Args:
         filepath: The filepath of the MOD file you would like to create.
     """
-    if not filepath.endswith(".mod"):
+    if not is_mod_file(filepath):
         raise ValueError("Specified file must end with the .mod extension")
 
-    filepath_rim_s = filepath.replace(".mod", "_s.rim")
-    filepath_rim = filepath.replace(".mod", ".rim")
+    base, old_extension = os.path.splitext(filepath)
+    lowercase_extension = old_extension.lower()
 
-    rim = read_rim(filepath_rim)
+    rim_s_extension = lowercase_extension.replace(".mod", "_s.rim")
+    rim_extension = lowercase_extension.replace(".mod", ".rim")
+
+    filepath_rim_s = base + rim_s_extension if rim_s_extension != lowercase_extension else filepath
+    filepath_rim = base + rim_extension if rim_extension != lowercase_extension else filepath
+
+    rim = read_rim(filepath_rim) if os.path.exists(filepath_rim) else RIM()
     rim_s = read_rim(filepath_rim_s) if os.path.exists(filepath_rim_s) else RIM()
 
     mod = ERF(ERFType.MOD)
-    [mod.set(res.resref.get(), res.restype, res.data) for res in rim]
-    [mod.set(res.resref.get(), res.restype, res.data) for res in rim_s]
+    for res in rim + rim_s:
+        mod.set(res.resref.get(), res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.ERF)

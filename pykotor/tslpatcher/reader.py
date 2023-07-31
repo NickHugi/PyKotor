@@ -465,6 +465,24 @@ class ConfigReader:
 
     #################
     def discern_2da(self, key: str, identifier: str, modifiers: Dict[str, str]) -> Modify2DA:
+        """
+        The `discern_2da` function takes in various parameters and based on the value of the `key`
+        parameter, it creates and returns an instance of a specific class.
+
+        :param key: The `key` parameter is a string that indicates the type of modification to be performed
+        on a 2DA file. It is used to determine which modification class should be instantiated
+        :type key: str
+        :param identifier: The `identifier` parameter is a string that represents the identifier of the 2DA
+        file. It is used to specify which 2DA file the modification should be applied to
+        :type identifier: str
+        :param modifiers: The `modifiers` parameter is a dictionary that contains additional information or
+        options for the function. It is used to modify the behavior of the function based on the specific
+        requirements or conditions
+        :type modifiers: Dict[str, str]
+        :return: an instance of the `Modify2DA` class, which is determined based on the value of the `key`
+        parameter. The specific type of modification object returned depends on the value of `key` and the
+        provided `modifiers`.
+        """
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
@@ -511,10 +529,10 @@ class ConfigReader:
             return modifiers.pop("ExclusiveColumn")
         return None
 
-    def cells_2da(self, identifier: str, modifiers: Dict[str, str]) -> Tuple:
-        cells = {}
-        store_2da = {}
-        store_tlk = {}
+    def cells_2da(self, identifier: str, modifiers: Dict[str, str]) -> Tuple[Dict[str, str], Dict[int, str], Dict[int, str]]:
+        cells: Dict[str, str] = {}
+        store_2da: Dict[int, str] = {}
+        store_tlk: Dict[int, str] = {}
 
         for modifier, value in modifiers.items():
             is_store_2da = modifier.startswith("2DAMEMORY")
@@ -559,7 +577,21 @@ class ConfigReader:
         else:
             return None
 
-    def column_inserts_2da(self, identifier: str, modifiers: Dict[str, str]) -> Tuple:
+    def column_inserts_2da(self, identifier: str, modifiers: Dict[str, str]) -> Tuple[Dict[str, str], Dict[str, str], Dict[str, str]]:
+        """
+        The function `column_inserts_2da` takes an identifier and a dictionary of modifiers, and returns
+        three dictionaries: `index_insert`, `label_insert`, and `store_2da`.
+
+        :param identifier: The `identifier` parameter is a string that represents an identifier for the
+        column inserts. It is used to uniquely identify the column inserts in the context of the program or
+        system
+        :type identifier: str
+        :param modifiers: The `modifiers` parameter is a dictionary that contains key-value pairs. The keys
+        represent modifiers, and the values represent the corresponding values for those modifiers
+        :type modifiers: Dict[str, str]
+        :return: The function `column_inserts_2da` returns a tuple containing three dictionaries:
+        `index_insert`, `label_insert`, and `store_2da`.
+        """
         index_insert = {}
         label_insert = {}
         store_2da = {}
@@ -590,6 +622,7 @@ class ConfigReader:
         return index_insert, label_insert, store_2da
 
 
+# The `NamespaceReader` class is responsible for reading and loading namespaces from the namespaces.ini file.
 class NamespaceReader:
     def __init__(self, ini: ConfigParser):
         self.ini = ini
@@ -597,16 +630,32 @@ class NamespaceReader:
 
     @classmethod
     def from_filepath(cls, path: str) -> List[PatcherNamespace]:
+        """
+        The function `from_filepath` reads an INI file from a given file path, parses it using
+        `ConfigParser`, and returns a list of `PatcherNamespace` objects.
+
+        :param cls: The parameter `cls` is a reference to the class itself. It is used to call the class
+        method `from_filepath` from within the class or its subclasses
+        :param path: The `path` parameter is a string that represents the file path of the INI file that
+        needs to be loaded
+        :type path: str
+        :return: a list of `PatcherNamespace` objects.
+        """
         ini_text = BinaryReader.load_file(path).decode()
         ini = ConfigParser()
-        ini.optionxform = str
+        ini.optionxform = lambda optionstr: optionstr
         ini.read_string(ini_text)
         return NamespaceReader(ini).load()
 
     def load(self) -> List[PatcherNamespace]:
+        """
+        The function `load` loads data from an INI file and creates a list of `PatcherNamespace` objects
+        based on the loaded data.
+        :return: a list of `PatcherNamespace` objects.
+        """
         namespace_ids = dict(self.ini["Namespaces"].items()).values()
         self.ini = {key.lower(): value for key, value in self.ini.items()}
-        namespaces = []
+        namespaces: List[PatcherNamespace] = []
 
         for namespace_id in namespace_ids:
             namespace = PatcherNamespace()

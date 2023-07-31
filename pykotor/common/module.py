@@ -41,6 +41,14 @@ from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import (
+    is_bif_file,
+    is_capsule_file,
+    is_erf_or_mod_file,
+    is_mod_file,
+    is_rim_file,
+)
+
 from pykotor.tools.model import list_lightmaps, list_textures
 
 T = TypeVar("T")
@@ -122,7 +130,6 @@ class Module:
                     self.add_locations(
                         resource.resname(), resource.restype(), [resource.filepath()]
                     )
-
         # Any resource linked in the GIT not present in the module files
         original = self.git().active()
         look_for = []
@@ -143,7 +150,6 @@ class Module:
                     ResourceIdentifier(room.model, ResourceType.WOK),
                 ))
         self.layout().activate(original)
-
 
         search = self._installation.locations(
             look_for, [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
@@ -193,10 +199,9 @@ class Module:
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
         filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
-        filename = "{}.{}".format(resname, filename_ext)
+        filename = f"{resname}.{filename_ext}"
         if filename not in self.resources:
             self.resources[filename] = ModuleResource(resname, restype, self._installation)
-
         self.resources[filename].add_locations(locations)
 
     def installation(self) -> Installation:
@@ -341,10 +346,13 @@ class Module:
         ]
 
     def model(self, resname: str) -> Optional[ModuleResource[MDL]]:
-        for resource in self.resources.values():
-            if resname == resource.resname() and resource.restype() == ResourceType.MDL:
-                return resource
-        return None
+        return next((
+            resource
+            for resource in self.resources.values()
+            if resname == resource.resname() and resource.restype() == ResourceType.MDL
+            ),
+            None,
+        )
 
     def model_ext(self, resname: str) -> Optional[ModuleResource]:
         for resource in self.resources.values():
@@ -456,17 +464,12 @@ class ModuleResource(Generic[T]):
 
         if self._active is None:
             raise ValueError(
-                "No file is currently active for resource '{}.{}'.".format(
-                    self.resname, self._restype.extension
-            ))
-        if (
-            self._active.endswith(".erf")
-            or self._active.endswith(".mod")
-            or self._active.endswith(".rim")
-        ):
+                f"No file is currently active for resource '{self.resname}.{self._restype.extension}'."
+            )
+        if is_capsule_file(self._active):
             capsule = Capsule(self._active)
             return capsule.resource(self._resname, self._restype)
-        if self._active.endswith("bif"):
+        if is_bif_file(self._active):
             return self._installation.resource(
                 self._resname, self._restype, [SearchLocation.CHITIN]
             ).data
@@ -506,14 +509,10 @@ class ModuleResource(Generic[T]):
 
             if self._active is None:
                 self._resource = None
-            elif (
-                self._active.endswith(".erf")
-                or self._active.endswith(".mod")
-                or self._active.endswith(".rim")
-            ):
+            elif is_capsule_file(self._active):
                 data = Capsule(self._active).resource(self._resname, self._restype)
                 self._resource = conversions[self._restype](data)
-            elif self._active.endswith("bif"):
+            elif is_bif_file(self._active):
                 data = self._installation.resource(
                     self._resname, self._restype, [SearchLocation.CHITIN]
                 ).data
@@ -559,9 +558,8 @@ class ModuleResource(Generic[T]):
             self._active = filepath
         else:
             raise ValueError(
-                "The filepath '{}' is not being tracked as a location for the resource.".format(
-                    self._active
-            ))
+                f"The filepath '{self._active}' is not being tracked as a location for the resource."
+            )
 
     def unload(self) -> None:
         """
@@ -613,16 +611,16 @@ class ModuleResource(Generic[T]):
             raise ValueError(
                 f"No active file selected for resource '{self._resname}.{self._restype.extension}'"
             )
-        if self._active.endswith(".erf") or self._active.endswith(".mod"):
+        if is_erf_or_mod_file(self._active):
             erf = read_erf(self._active)
-            erf.erf_type = ERFType.ERF if self._active.endswith(".erf") else ERFType.MOD
+            erf.erf_type = ERFType.MOD if is_mod_file(self._active) else ERFType.ERF
             erf.set(self._resname, self._restype, conversions[self._restype](self.resource()))
             write_erf(erf, self._active)
-        elif self._active.endswith(".rim"):
+        elif is_rim_file(self._active):
             rim = read_rim(self._active)
             rim.set(self._resname, self._restype, conversions[self._restype](self.resource()))
             write_rim(rim, self._active)
-        elif self._active.endswith("bif"):
+        elif is_bif_file(self._active):
             raise ValueError("Cannot save file to BIF.")
         else:
             BinaryWriter.dump(self._active, conversions[self._restype](self.resource()))

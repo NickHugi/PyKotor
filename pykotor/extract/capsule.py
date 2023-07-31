@@ -7,7 +7,7 @@ from pykotor.extract.file import FileResource, ResourceResult, ResourceIdentifie
 from pykotor.resource.formats.erf import ERF, read_erf, write_erf, ERFType
 from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_rim_file, is_erf_file, is_capsule_file
+from pykotor.tools.misc import is_rim_file, is_erf_or_mod_file, is_capsule_file
 
 
 class Capsule:
@@ -30,7 +30,7 @@ class Capsule:
         if create_nonexisting and not os.path.exists(path):
             if is_rim_file(path):
                 write_rim(RIM(), path)
-            elif is_erf_file(path):
+            elif is_erf_or_mod_file(path):
                 write_erf(ERF(ERFType.from_extension(path)), path)
 
         self.reload()
@@ -142,9 +142,9 @@ class Capsule:
             restype: ResourceType,
             resdata: bytes
     ):
-        container = read_rim(self._path) if self._path.endswith(".rim") else read_erf(self._path)
+        container = read_rim(self._path) if is_rim_file(self._path) else read_erf(self._path)
         container.set(resname, restype, resdata)
-        write_rim(container, self._path) if self._path.endswith(".rim") else write_erf(container, self._path)
+        write_rim(container, self._path) if is_rim_file(self._path) else write_erf(container, self._path)
 
     def path(
             self

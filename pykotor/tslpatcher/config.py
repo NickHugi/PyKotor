@@ -20,6 +20,7 @@ from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
+from pykotor.tools.misc import is_bif_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
@@ -172,7 +173,7 @@ class ModInstaller:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
 
             capsule = None
-            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
+            if is_rim_file(patch.destination) or is_bif_file(patch.destination) or is_mod_file(patch.destination):
                 capsule = Capsule(self.output_path + "/" + patch.destination)
 
             search = installation.resource(
@@ -202,7 +203,7 @@ class ModInstaller:
         print("Apply any changes to NSS files...")
         for patch in config.patches_nss:
             capsule = None
-            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
+            if is_rim_file(patch.destination) or is_erf_file(patch.destination) or is_mod_file(patch.destination):
                 capsule = Capsule(self.output_path + "/" + patch.destination)
 
             nss = [BinaryReader.load_file(f"{self.mod_path}/{patch.filename}").decode(errors="ignore")]
