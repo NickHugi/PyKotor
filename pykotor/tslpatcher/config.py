@@ -74,7 +74,7 @@ class PatcherConfig:
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        ConfigReader(ini, append, mod_path).load(self)
+        ConfigReader(ini, append).load(self)
 
     def patch_count(self) -> int:
         return len(self.patches_2da) + len(self.patches_gff) + len(self.patches_ssf) + 1 + len(self.install_list) + len(self.patches_nss)

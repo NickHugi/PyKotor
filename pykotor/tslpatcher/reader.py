@@ -326,8 +326,6 @@ class ConfigReader:
             return
 
         files = dict(self.ini["CompileList"].items())
-        print("Creating collections from NSS files part 2:", files)
-
         destination = files.pop("!destination", None)
 
         for identifier, file in files.items():
