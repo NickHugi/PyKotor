@@ -146,7 +146,17 @@ class ConfigReader:
 
     @classmethod
     def from_filepath(cls, path: str, append_path: Optional[str]) -> PatcherConfig:
-        ini_text = BinaryReader.load_file(path).decode()
+        ini_file_bytes = BinaryReader.load_file(path)
+        ini_text = None
+        try:
+            ini_text = ini_file_bytes.decode()
+        except UnicodeDecodeError:
+            try:
+                # If UTF-8 failed, try 'cp1252' (similar to ANSI)
+                ini_text = ini_file_bytes.decode('cp1252')
+            except UnicodeDecodeError:
+                # Raise an exception if all decodings failed
+                raise Exception('Could not decode file')
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
@@ -197,7 +207,7 @@ class ConfigReader:
 
         for name, value in stringrefs.items():
             if "\\" in name:  # Handle in-line updates
-                
+
                 token_id = int(name.split("\\")[0])
                 property_name = name.split("\\")[1]
                 entry = self.dialog_tlk_edits.get(token_id)
@@ -208,11 +218,11 @@ class ConfigReader:
                     entry.voiceover = value
                 else:
                     raise KeyError(f"Invalid TLKList syntax for key '{name}' value '{value}'")
-                    
+
                 self.config.patches_tlk.modifiers.append(modifier)
 
             elif name.lower().startswith("file"):  # Handle multiple files
-                
+
                 tlk_file_path = os.path.join(self.mod_path, value)
                 tlk_data_entries = None
                 if os.path.exists(tlk_file_path):
@@ -228,7 +238,7 @@ class ConfigReader:
                         self.config.patches_tlk.modifiers.append(modifier)
                 else:
                     raise KeyError(f"'{value}' Ini header referenced in TLKList not found.")
-                
+
             elif name.lower().startswith("strref"): # Handle legacy syntax
                 token_id = int(name[6:])
                 append_index = int(value)
@@ -623,7 +633,17 @@ class NamespaceReader:
 
     @classmethod
     def from_filepath(cls, path: str) -> List[PatcherNamespace]:
-        ini_text = BinaryReader.load_file(path).decode()
+        ini_file_bytes = BinaryReader.load_file(path)
+        ini_text = None
+        try:
+            ini_text = ini_file_bytes.decode()
+        except UnicodeDecodeError:
+            try:
+                # If UTF-8 failed, try 'cp1252' (similar to ANSI)
+                ini_text = ini_file_bytes.decode('cp1252')
+            except UnicodeDecodeError:
+                # Raise an exception if all decodings failed
+                raise Exception('Could not decode file')
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)

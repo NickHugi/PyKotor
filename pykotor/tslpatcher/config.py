@@ -107,8 +107,22 @@ class ModInstaller:
         """
 
         if self._config is None:
-            ini_text = BinaryReader.load_file(self.mod_path + "/" + self.ini_file).decode()
-            append_tlk = read_tlk(self.mod_path + "/append.tlk") if os.path.exists(self.mod_path + "/append.tlk") else TLK()
+            ini_file_bytes = BinaryReader.load_file(f"{self.mod_path}/{self.ini_file}")
+            ini_text = None
+            try:
+                ini_text = ini_file_bytes.decode()
+            except UnicodeDecodeError:
+                try:
+                    # If UTF-8 failed, try 'cp1252' (similar to ANSI)
+                    ini_text = ini_file_bytes.decode('cp1252')
+                except UnicodeDecodeError as e:
+                    # Raise an exception if all decodings failed
+                    raise Exception('Could not decode file') from e
+            append_tlk = (
+                read_tlk(f"{self.mod_path}/append.tlk")
+                if os.path.exists(f"{self.mod_path}/append.tlk")
+                else TLK()
+            )
             self._config = PatcherConfig()
             self._config.load(ini_text, append_tlk, self.mod_path)
 
