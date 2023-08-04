@@ -651,7 +651,6 @@ class NamespaceReader:
         :type path: str
         :return: a list of `PatcherNamespace` objects.
         """
-        ini_text = BinaryReader.load_file(path).decode()
         ini_file_bytes = BinaryReader.load_file(path)
         ini_text = None
         try:
