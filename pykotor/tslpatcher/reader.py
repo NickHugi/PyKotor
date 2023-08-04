@@ -143,7 +143,17 @@ class ConfigReader:
 
     @classmethod
     def from_filepath(cls, path: str, append_path: Optional[str]) -> PatcherConfig:
-        ini_text = BinaryReader.load_file(path).decode()
+        ini_file_bytes = BinaryReader.load_file(path)
+        ini_text = None
+        try:
+            ini_text = ini_file_bytes.decode()
+        except UnicodeDecodeError:
+            try:
+                # If UTF-8 failed, try 'cp1252' (similar to ANSI)
+                ini_text = ini_file_bytes.decode('cp1252')
+            except UnicodeDecodeError:
+                # Raise an exception if all decodings failed
+                raise Exception('Could not decode file')
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
@@ -642,6 +652,17 @@ class NamespaceReader:
         :return: a list of `PatcherNamespace` objects.
         """
         ini_text = BinaryReader.load_file(path).decode()
+        ini_file_bytes = BinaryReader.load_file(path)
+        ini_text = None
+        try:
+            ini_text = ini_file_bytes.decode()
+        except UnicodeDecodeError:
+            try:
+                # If UTF-8 failed, try 'cp1252' (similar to ANSI)
+                ini_text = ini_file_bytes.decode('cp1252')
+            except UnicodeDecodeError:
+                # Raise an exception if all decodings failed
+                raise Exception('Could not decode file')
         ini = ConfigParser()
         ini.optionxform = lambda optionstr: optionstr
         ini.read_string(ini_text)
