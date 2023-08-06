@@ -439,10 +439,7 @@ class TwoDARow:
         value = default
         with suppress(ValueError):
             cell = self._data[header]
-            if cell.startswith("0x"):
-                value = int(cell, 16)
-            else:
-                value = int(cell)
+            value = int(cell, 16) if cell.startswith("0x") else int(cell)
         return value
 
     def get_float(

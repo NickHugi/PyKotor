@@ -200,25 +200,9 @@ class GFFXMLWriter(ResourceWriter):
             xml_field.tag = "data"
             xml_field.text = base64.b64encode(value).decode()
         elif field_type == GFFFieldType.Vector4:
-            xml_field.tag = "orientation"
-            x_element = ElementTree.Element("double")
-            x_element.text = str(value.x)
-            y_element = ElementTree.Element("double")
-            y_element.text = str(value.y)
-            z_element = ElementTree.Element("double")
-            z_element.text = str(value.z)
-            w_element = ElementTree.Element("double")
-            w_element.text = str(value.w)
-            xml_field.extend([x_element, y_element, z_element, w_element])
+            self._extracted_from__build_field_60(xml_field, value)
         elif field_type == GFFFieldType.Vector3:
-            xml_field.tag = "vector"
-            x_element = ElementTree.Element("double")
-            x_element.text = str(value.x)
-            y_element = ElementTree.Element("double")
-            y_element.text = str(value.y)
-            z_element = ElementTree.Element("double")
-            z_element.text = str(value.z)
-            xml_field.extend([x_element, y_element, z_element])
+            self._extracted_from__build_field_71(xml_field, value)
         elif field_type == GFFFieldType.Struct:
             xml_field.tag = "struct"
             self._build_struct(value, xml_field)
@@ -228,3 +212,27 @@ class GFFXMLWriter(ResourceWriter):
                 subelement = ElementTree.Element("struct")
                 xml_field.append(subelement)
                 self._build_struct(gff_struct, subelement)
+
+    # TODO Rename this here and in `_build_field`
+    def _extracted_from__build_field_71(self, xml_field, value):
+        xml_field.tag = "vector"
+        x_element = ElementTree.Element("double")
+        x_element.text = str(value.x)
+        y_element = ElementTree.Element("double")
+        y_element.text = str(value.y)
+        z_element = ElementTree.Element("double")
+        z_element.text = str(value.z)
+        xml_field.extend([x_element, y_element, z_element])
+
+    # TODO Rename this here and in `_build_field`
+    def _extracted_from__build_field_60(self, xml_field, value):
+        xml_field.tag = "orientation"
+        x_element = ElementTree.Element("double")
+        x_element.text = str(value.x)
+        y_element = ElementTree.Element("double")
+        y_element.text = str(value.y)
+        z_element = ElementTree.Element("double")
+        z_element.text = str(value.z)
+        w_element = ElementTree.Element("double")
+        w_element.text = str(value.w)
+        xml_field.extend([x_element, y_element, z_element, w_element])
