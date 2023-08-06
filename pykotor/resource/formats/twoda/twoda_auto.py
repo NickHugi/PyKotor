@@ -5,7 +5,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def detect_2da(
-        source: SOURCE_TYPES,
+        source: SOURCE_TYPES | object,
         offset: int = 0
 ) -> ResourceType:
     """
@@ -41,7 +41,7 @@ def detect_2da(
         if isinstance(source, str):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = check(source[:4].decode('ascii', 'ignore'))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
@@ -129,7 +129,7 @@ def bytes_2da(
     """
     Returns the TwoDA data in the specified format (TwoDA, TwoDA_CSV or TwoDA_JSON) as a bytes object.
 
-    This is a convience method that wraps the write_2da() method.
+    This is a convenience method that wraps the write_2da() method.
 
     Args:
         twoda: The target TwoDA object.

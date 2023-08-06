@@ -46,11 +46,7 @@ class GFFContent(Enum):
             cls,
             value
     ):
-        for gff_content in GFFContent:
-            if gff_content.value == value:
-                return True
-        else:
-            return False
+        return any(gff_content.value == value for gff_content in GFFContent)
 
 
 class GFFFieldType(IntEnum):
@@ -224,9 +220,7 @@ class GFFStruct:
         """
         Returns the value of the specified field.
         """
-        if not isinstance(item, str):
-            return NotImplemented
-        return self._fields[item].value()
+        return self._fields[item].value() if isinstance(item, str) else NotImplemented
 
     def remove(
             self,
@@ -955,8 +949,7 @@ class GFFList:
         """
         Iterates through _structs yielding each element.
         """
-        for struct in self._structs:
-            yield struct
+        yield from self._structs
 
     def __getitem__(
             self,
@@ -965,9 +958,7 @@ class GFFList:
         """
         Returns the struct at the specified index.
         """
-        if not isinstance(item, int):
-            return NotImplemented
-        return self._structs[item]
+        return self._structs[item] if isinstance(item, int) else NotImplemented
 
     def add(
             self,

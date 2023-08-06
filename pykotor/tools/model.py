@@ -80,7 +80,6 @@ def list_textures(
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        offsets = {}
         nodes = [root_offset]
         while nodes:
             node_offset = nodes.pop()

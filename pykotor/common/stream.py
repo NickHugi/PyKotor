@@ -122,7 +122,7 @@ class BinaryReader:
     ):
         if isinstance(source, str):  # is path
             reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, bytes) or isinstance(source, bytearray):  # is binary data
+        elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
         elif isinstance(source, BinaryReader):
             reader = BinaryReader(source._stream, source._offset, source._size)
@@ -1293,7 +1293,7 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._extracted_from_write_vector4_14(big, value)
+        self._write_generic_vector(big, value)
 
     def write_vector4(
             self,
@@ -1308,11 +1308,10 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._extracted_from_write_vector4_14(big, value)
+        self._write_generic_vector(big, value)
         self._stream.write(struct.pack(_endian_char(big) + 'f', value.w))
 
-    # TODO Rename this here and in `write_vector3` and `write_vector4`
-    def _extracted_from_write_vector4_14(self, big, value):
+    def _write_generic_vector(self, big: bool, value: Union[Vector3, Vector4]):
         self._stream.write(struct.pack(_endian_char(big) + 'f', value.x))
         self._stream.write(struct.pack(_endian_char(big) + 'f', value.y))
         self._stream.write(struct.pack(_endian_char(big) + 'f', value.z))
@@ -1376,7 +1375,7 @@ class BinaryWriterFile(BinaryWriter):
     def write_line(
             self,
             indent: int,
-            *args
+            *args: Union[float, str]
     ) -> None:
         """
         Writes a line with specified indentation and array of values that are separated by whitespace.
@@ -1387,10 +1386,7 @@ class BinaryWriterFile(BinaryWriter):
         """
         line = "  " * indent
         for arg in args:
-            if isinstance(arg, float):
-                line += str(round(arg, 7))
-            else:
-                line += str(arg)
+            line += str(round(arg, 7)) if isinstance(arg, float) else str(arg)
             line += " "
         line += "\n"
         self._stream.write(line.encode())
@@ -1711,9 +1707,7 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'f', value.x)
-        self._ba[self._position + 4:self._position + 8] = struct.pack(_endian_char(big) + 'f', value.y)
-        self._ba[self._position + 8:self._position + 12] = struct.pack(_endian_char(big) + 'f', value.z)
+        self._write_generic_vector(big, value)
         self._position += 12
 
     def write_vector4(
@@ -1729,11 +1723,21 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._ba[self._position:self._position + 4] = struct.pack(_endian_char(big) + 'f', value.x)
-        self._ba[self._position + 4:self._position + 8] = struct.pack(_endian_char(big) + 'f', value.y)
-        self._ba[self._position + 8:self._position + 12] = struct.pack(_endian_char(big) + 'f', value.z)
+        self._write_generic_vector(big, value)
         self._ba[self._position + 12:self._position + 16] = struct.pack(_endian_char(big) + 'f', value.w)
         self._position += 16
+
+    # TODO Rename this here and in `write_vector3` and `write_vector4`
+    def _write_generic_vector(self, big, value):
+        self._ba[self._position : self._position + 4] = struct.pack(
+            _endian_char(big) + 'f', value.x
+        )
+        self._ba[self._position + 4 : self._position + 8] = struct.pack(
+            _endian_char(big) + 'f', value.y
+        )
+        self._ba[self._position + 8 : self._position + 12] = struct.pack(
+            _endian_char(big) + 'f', value.z
+        )
 
     def write_bytes(
             self,
@@ -1789,9 +1793,7 @@ class BinaryWriterBytearray(BinaryWriter):
                 value += padding
             value = value[:string_length]
 
-        encoded = value.encode(encoding)
-        self._ba[self._position:self._position + len(encoded)] = encoded
-        self._position += len(encoded)
+        self._extracted_from_write_line_42(value, encoding)
 
     def write_line(
             self,
@@ -1807,14 +1809,15 @@ class BinaryWriterBytearray(BinaryWriter):
         """
         line = "  " * indent
         for arg in args:
-            if isinstance(arg, float):
-                line += str(round(arg, 7))
-            else:
-                line += str(arg)
+            line += str(round(arg, 7)) if isinstance(arg, float) else str(arg)
             line += " "
         line += "\n"
 
-        encoded = line.encode('ascii')
+        self._extracted_from_write_line_42(line, 'ascii')
+
+    # TODO Rename this here and in `write_string` and `write_line`
+    def _extracted_from_write_line_42(self, arg0, arg1):
+        encoded = arg0.encode(arg1)
         self._ba[self._position:self._position + len(encoded)] = encoded
         self._position += len(encoded)
 

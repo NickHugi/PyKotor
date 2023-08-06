@@ -28,6 +28,4 @@ def get_model(
     if placeables is None:
         placeables = installation.resource("genericdoors", ResourceType.TwoDA)
 
-    model = placeables.get_row(utp.appearance_id).get_string("modelname")
-
-    return model
+    return placeables.get_row(utp.appearance_id).get_string("modelname")

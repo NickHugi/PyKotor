@@ -5,7 +5,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def detect_lip(
-        source: SOURCE_TYPES,
+        source: SOURCE_TYPES | object,
         offset: int = 0
 ) -> ResourceType:
     """
@@ -28,7 +28,7 @@ def detect_lip(
         if isinstance(source, str):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = ResourceType.LIP if reader.read_string(4) == "LIP " else ResourceType.LIP_XML
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = ResourceType.LIP if source[:4].decode('ascii', 'ignore') == "LIP " else ResourceType.LIP_XML
         elif isinstance(source, BinaryReader):
             file_format = ResourceType.LIP if source.read_string(4) == "LIP " else ResourceType.LIP_XML
@@ -110,7 +110,7 @@ def bytes_lip(
     """
     Returns the LIP data in the specified format (LIP or LIP_XML) as a bytes object.
 
-    This is a convience method that wraps the write_lip() method.
+    This is a convenience method that wraps the write_lip() method.
 
     Args:
         lip: The target LIP object.

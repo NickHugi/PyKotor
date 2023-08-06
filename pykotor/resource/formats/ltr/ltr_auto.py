@@ -6,7 +6,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 def read_ltr(
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = None
+        size: int | None = None
 ) -> LTR:
     """
     Returns an LTR instance from the source.
@@ -24,8 +24,8 @@ def read_ltr(
     """
     try:
         return LTRBinaryReader(source, offset, size).load()
-    except (IOError, ValueError):
-        raise ValueError("Tried to load an unsupported or corrupted LTR file.")
+    except (IOError, ValueError) as e:
+        raise ValueError("Tried to load an unsupported or corrupted LTR file.") from e
 
 
 def write_ltr(
@@ -57,7 +57,7 @@ def bytes_ltr(
     """
     Returns the LTR data in the specified format (LTR only) as a bytes object.
 
-    This is a convience method that wraps the write_ltr() method.
+    This is a convenience method that wraps the write_ltr() method.
 
     Args:
         ltr: The target LTR object.

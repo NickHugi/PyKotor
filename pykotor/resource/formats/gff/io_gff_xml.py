@@ -17,7 +17,7 @@ class GFFXMLReader(ResourceReader):
             self,
             source: SOURCE_TYPES,
             offset: int = 0,
-            size: int = None
+            size: int | None = None
     ):
         super().__init__(source, offset, size)
         self._gff: Optional[GFF] = None

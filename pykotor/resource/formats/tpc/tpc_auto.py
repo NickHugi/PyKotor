@@ -4,7 +4,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def detect_tpc(
-        source: SOURCE_TYPES,
+        source: SOURCE_TYPES | object,
         offset: int = 0
 ) -> ResourceType:
     """
@@ -40,7 +40,7 @@ def detect_tpc(
         if isinstance(source, str):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = do_check(source[:100])
         elif isinstance(source, BinaryReader):
             file_format = do_check(source.read_bytes(100))
@@ -124,7 +124,7 @@ def bytes_tpc(
     """
     Returns the TPC data in the specified format (TPC, TGA or BMP) as a bytes object.
 
-    This is a convience method that wraps the write_tpc() method.
+    This is a convenience method that wraps the write_tpc() method.
 
     Args:
         tpc: The target TPC object.

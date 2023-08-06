@@ -62,7 +62,7 @@ def bytes_lyt(
     """
     Returns the LYT data in the specified format (LYT only) as a bytes object.
 
-    This is a convience method that wraps the write_lyt() method.
+    This is a convenience method that wraps the write_lyt() method.
 
     Args:
         lyt: The target LYT.

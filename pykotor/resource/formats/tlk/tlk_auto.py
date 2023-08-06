@@ -42,7 +42,7 @@ def detect_tlk(
         if isinstance(source, str):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = check(source[:4].decode('ascii', 'ignore'))
         elif isinstance(source, BinaryReader):
             file_format = check(source.read_string(4))
@@ -128,7 +128,7 @@ def bytes_tlk(
     """
     Returns the TLK data in the specified format (TLK or TLK_XML or TLK_JSON) as a bytes object.
 
-    This is a convience method that wraps the write_tlk() method.
+    This is a convenience method that wraps the write_tlk() method.
 
     Args:
         tlk: The target TLK object.

@@ -131,7 +131,7 @@ class Vector2:
             key,
             value
     ):
-        if isinstance(key, int) and (isinstance(value, float) or isinstance(value, int)):
+        if isinstance(key, int) and (isinstance(value, (float, int))):
             if key == 0:
                 self.x = value
             elif key == 1:
@@ -312,10 +312,7 @@ class Vector2:
         Returns:
             True if the Vector2 exists in the container.
         """
-        for item in container:
-            if item is self:
-                return True
-        return False
+        return any(item is self for item in container)
 
     def angle(
             self
@@ -421,7 +418,7 @@ class Vector3:
         """
         Multiplies the components by a scalar integer.
         """
-        if isinstance(other, int) or isinstance(other, float):
+        if isinstance(other, (int, float)):
             new = Vector3.from_vector3(self)
             new.x *= other
             new.y *= other
@@ -462,7 +459,7 @@ class Vector3:
             key,
             value
     ):
-        if isinstance(key, int) and (isinstance(value, float) or isinstance(value, int)):
+        if isinstance(key, int) and (isinstance(value, (float, int))):
             if key == 0:
                 self.x = value
             elif key == 1:
@@ -634,10 +631,7 @@ class Vector3:
         Returns:
             True if the Vector3 exists in the container.
         """
-        for item in container:
-            if item is self:
-                return True
-        return False
+        return any(item is self for item in container)
 
 
 class Vector4:
@@ -866,8 +860,8 @@ class Vector4:
         roll = math.atan2(t0, t1)
 
         t2 = 2 * (self.w*self.y - self.z*self.x)
-        t2 = 1 if t2 > 1 else t2
-        t2 = -1 if t2 < -1 else t2
+        t2 = min(t2, 1)
+        t2 = max(t2, -1)
         pitch = math.asin(t2)
 
         t3 = 2 * (self.w*self.z + self.x*self.y)
@@ -1142,8 +1136,7 @@ class Polygon2:
     def __iter__(
             self
     ):
-        for point in self.points:
-            yield point
+        yield from self.points
 
     def __len__(
             self
@@ -1226,16 +1219,15 @@ class Polygon2:
                         break
                     elif point.x < min(p1.x, p2.x):
                         inside = not inside
-            else:
-                if min(p1.y, p2.y) <= point.y <= max(p1.y, p2.y):
-                    xinters = (point.y - p1.y) * (p2.x - p1.x) / float(p2.y - p1.y) + p1.x
+            elif min(p1.y, p2.y) <= point.y <= max(p1.y, p2.y):
+                xinters = (point.y - p1.y) * (p2.x - p1.x) / float(p2.y - p1.y) + p1.x
 
-                    if point.x == xinters:
-                        inside = include_edges
-                        break
+                if point.x == xinters:
+                    inside = include_edges
+                    break
 
-                    if point.x < xinters:
-                        inside = not inside
+                if point.x < xinters:
+                    inside = not inside
             p1 = p2
         return inside
 
@@ -1247,7 +1239,7 @@ class Polygon2:
 
         n = len(self.points)
         area = 0.0
-        for i in range(0, n - 1):
+        for i in range(n - 1):
             area += -self.points[i].y * self.points[i + 1].x + self.points[i].x * self.points[i + 1].y
         area += -self.points[n - 1].y * self.points[0].x + self.points[n - 1].x * self.points[0].y
         area = 0.5 * math.fabs(area)

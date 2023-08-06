@@ -62,7 +62,7 @@ def bytes_vis(
     """
     Returns the VIS data in the specified format (VIS only) as a bytes object.
 
-    This is a convience method that wraps the write_vis() method.
+    This is a convenience method that wraps the write_vis() method.
 
     Args:
         vis: The target VIS object.

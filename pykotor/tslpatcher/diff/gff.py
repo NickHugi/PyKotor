@@ -35,9 +35,8 @@ class DiffGFF:
                     new_child = new_value.at(i)
                     if not self.is_same(old_child, new_child):
                         return False
-            else:
-                if new_value != old_value:
-                    print("Value has changed:", label, new_value, old_value)
-                    return False
+            elif new_value != old_value:
+                print("Value has changed:", label, new_value, old_value)
+                return False
 
         return True

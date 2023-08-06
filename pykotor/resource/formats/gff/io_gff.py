@@ -61,9 +61,7 @@ class GFFBinaryReader(ResourceReader):
 
         self._labels = []
         self._reader.seek(label_offset)
-        for i in range(label_count):
-            self._labels.append(self._reader.read_string(16))
-
+        self._labels.extend(self._reader.read_string(16) for i in range(label_count))
         self._load_struct(self._gff.root, 0)
 
         return self._gff
@@ -82,9 +80,7 @@ class GFFBinaryReader(ResourceReader):
             self._load_field(gff_struct, data)
         elif field_count > 1:
             self._reader.seek(self._field_indices_offset + data)
-            indices = []
-            for i in range(field_count):
-                indices.append(self._reader.read_uint32())
+            indices = [self._reader.read_uint32() for i in range(field_count)]
             for index in indices:
                 self._load_field(gff_struct, index)
 
@@ -131,34 +127,37 @@ class GFFBinaryReader(ResourceReader):
             self._load_struct(value, struct_index)
             gff_struct.set_struct(label, value)
         elif field_type is GFFFieldType.List:
-            offset = self._reader.read_uint32()  # relative to list indices
-            self._reader.seek(self._list_indices_offset + offset)
-            value = GFFList()
-            count = self._reader.read_uint32()
-            list_indices = []
-            for i in range(count):
-                struct_index = self._reader.read_uint32()
-                list_indices.append(struct_index)
-            for struct_index in list_indices:
-                value.add(0)
-                child = value.at(len(value) - 1)
-                self._load_struct(child, struct_index)
-            gff_struct.set_list(label, value)
-        else:
-            if field_type is GFFFieldType.UInt8:
-                gff_struct.set_uint8(label, self._reader.read_uint8())
-            elif field_type is GFFFieldType.Int8:
-                gff_struct.set_int8(label, self._reader.read_int8())
-            elif field_type is GFFFieldType.UInt16:
-                gff_struct.set_uint16(label, self._reader.read_uint16())
-            elif field_type is GFFFieldType.Int16:
-                gff_struct.set_int16(label, self._reader.read_int16())
-            elif field_type is GFFFieldType.UInt32:
-                gff_struct.set_uint32(label, self._reader.read_uint32())
-            elif field_type is GFFFieldType.Int32:
-                gff_struct.set_int32(label, self._reader.read_int32())
-            elif field_type is GFFFieldType.Single:
-                gff_struct.set_single(label, self._reader.read_single())
+            self._extracted_from__load_field_44(gff_struct, label)
+        elif field_type is GFFFieldType.UInt8:
+            gff_struct.set_uint8(label, self._reader.read_uint8())
+        elif field_type is GFFFieldType.Int8:
+            gff_struct.set_int8(label, self._reader.read_int8())
+        elif field_type is GFFFieldType.UInt16:
+            gff_struct.set_uint16(label, self._reader.read_uint16())
+        elif field_type is GFFFieldType.Int16:
+            gff_struct.set_int16(label, self._reader.read_int16())
+        elif field_type is GFFFieldType.UInt32:
+            gff_struct.set_uint32(label, self._reader.read_uint32())
+        elif field_type is GFFFieldType.Int32:
+            gff_struct.set_int32(label, self._reader.read_int32())
+        elif field_type is GFFFieldType.Single:
+            gff_struct.set_single(label, self._reader.read_single())
+
+    # TODO Rename this here and in `_load_field`
+    def _extracted_from__load_field_44(self, gff_struct, label):
+        offset = self._reader.read_uint32()  # relative to list indices
+        self._reader.seek(self._list_indices_offset + offset)
+        value = GFFList()
+        count = self._reader.read_uint32()
+        list_indices = []
+        for i in range(count):
+            struct_index = self._reader.read_uint32()
+            list_indices.append(struct_index)
+        for struct_index in list_indices:
+            value.add(0)
+            child = value.at(len(value) - 1)
+            self._load_struct(child, struct_index)
+        gff_struct.set_list(label, value)
 
 
 class GFFBinaryWriter(ResourceWriter):
@@ -244,19 +243,21 @@ class GFFBinaryWriter(ResourceWriter):
             for label, field_type, value in gff_struct:
                 self._build_field(label, value, field_type)
         elif len(gff_struct) > 1:
-            self._struct_writer.write_uint32(self._field_indices_writer.size())
-            self._struct_writer.write_uint32(field_count)
+            self._extracted_from__build_struct_21(field_count, gff_struct)
 
-            self._field_indices_writer.end()
-            pos = self._field_indices_writer.position()
-            self._field_indices_writer.write_bytes(b'\x00\x00\x00\x00' * field_count)
+    # TODO Rename this here and in `_build_struct`
+    def _extracted_from__build_struct_21(self, field_count, gff_struct):
+        self._struct_writer.write_uint32(self._field_indices_writer.size())
+        self._struct_writer.write_uint32(field_count)
 
-            i = 0
-            for label, field_type, value in gff_struct:
-                self._field_indices_writer.seek(pos + i * 4)
-                self._field_indices_writer.write_uint32(self._field_count)
-                self._build_field(label, value, field_type)
-                i += 1
+        self._field_indices_writer.end()
+        pos = self._field_indices_writer.position()
+        self._field_indices_writer.write_bytes(b'\x00\x00\x00\x00' * field_count)
+
+        for i, (label, field_type, value) in enumerate(gff_struct):
+            self._field_indices_writer.seek(pos + i * 4)
+            self._field_indices_writer.write_uint32(self._field_count)
+            self._build_field(label, value, field_type)
 
     def _build_list(
             self,
@@ -313,23 +314,22 @@ class GFFBinaryWriter(ResourceWriter):
         elif field_type is GFFFieldType.List:
             self._field_writer.write_uint32(self._list_indices_writer.size())
             self._build_list(value)
+        elif field_type is GFFFieldType.UInt8:
+            self._field_writer.write_uint32(value, max_neg1=True)
+        elif field_type is GFFFieldType.Int8:
+            self._field_writer.write_int32(value)
+        elif field_type is GFFFieldType.UInt16:
+            self._field_writer.write_uint32(value, max_neg1=True)
+        elif field_type is GFFFieldType.Int16:
+            self._field_writer.write_int32(value)
+        elif field_type is GFFFieldType.UInt32:
+            self._field_writer.write_uint32(value, max_neg1=True)
+        elif field_type is GFFFieldType.Int32:
+            self._field_writer.write_int32(value)
+        elif field_type is GFFFieldType.Single:
+            self._field_writer.write_single(value)
         else:
-            if field_type is GFFFieldType.UInt8:
-                self._field_writer.write_uint32(value, max_neg1=True)
-            elif field_type is GFFFieldType.Int8:
-                self._field_writer.write_int32(value)
-            elif field_type is GFFFieldType.UInt16:
-                self._field_writer.write_uint32(value, max_neg1=True)
-            elif field_type is GFFFieldType.Int16:
-                self._field_writer.write_int32(value)
-            elif field_type is GFFFieldType.UInt32:
-                self._field_writer.write_uint32(value, max_neg1=True)
-            elif field_type is GFFFieldType.Int32:
-                self._field_writer.write_int32(value)
-            elif field_type is GFFFieldType.Single:
-                self._field_writer.write_single(value)
-            else:
-                raise ValueError("Unknown field type")
+            raise ValueError("Unknown field type")
 
     def _label_index(
             self,
@@ -337,6 +337,5 @@ class GFFBinaryWriter(ResourceWriter):
     ) -> int:
         if label in self._labels:
             return self._labels.index(label)
-        else:
-            self._labels.append(label)
-            return len(self._labels) - 1
+        self._labels.append(label)
+        return len(self._labels) - 1

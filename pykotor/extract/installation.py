@@ -244,7 +244,10 @@ class Installation:
         """
         path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(path + folder) and (folder.lower() == "streamvoice" or folder.lower() == "streamwaves"):
+            if os.path.isdir(path + folder) and folder.lower() in [
+                "streamvoice",
+                "streamwaves",
+            ]:
                 path += folder + "/"
         if path == self._path:
             raise ValueError(
@@ -260,7 +263,7 @@ class Installation:
         Reloads the list of resouces in the Chitin linked to the Installation.
         """
         chitin = Chitin(self._path)
-        self._chitin = [resource for resource in chitin]
+        self._chitin = list(chitin)
 
     def load_modules(
             self
@@ -274,8 +277,7 @@ class Installation:
             '.mod') or file.endswith('.rim') or file.endswith('.erf')]
         for module in module_files:
             with suppress(Exception):
-                self._modules[module] = [
-                    resource for resource in Capsule(self.module_path() + module)]
+                self._modules[module] = list(Capsule(self.module_path() + module))
 
     def reload_module(
             self,
@@ -287,8 +289,7 @@ class Installation:
         Args:
             module: The filename of the module.
         """
-        self._modules[module] = [
-            resource for resource in Capsule(self.module_path() + module)]
+        self._modules[module] = list(Capsule(self.module_path() + module))
 
     def load_lips(
             self
@@ -301,8 +302,7 @@ class Installation:
         lip_files = [file for file in os.listdir(
             lips_path) if file.endswith('.mod')]
         for module in lip_files:
-            self._lips[module] = [
-                resource for resource in Capsule(lips_path + module)]
+            self._lips[module] = list(Capsule(lips_path + module))
 
     def load_textures(
             self
@@ -315,8 +315,7 @@ class Installation:
         texturepacks_files = [file for file in os.listdir(
             texturepacks_path) if file.endswith('.erf')]
         for module in texturepacks_files:
-            self._texturepacks[module] = [
-                resource for resource in Capsule(texturepacks_path + module)]
+            self._texturepacks[module] = list(Capsule(texturepacks_path + module))
 
     def load_override(
             self
@@ -742,7 +741,7 @@ class Installation:
 
         def check_folders(values: List[str]):
             for folder in values:
-                folder = folder + '/' if not folder.endswith('/') else folder
+                folder = folder if folder.endswith('/') else folder + '/'
                 for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                     filepath = folder + file
                     for query in queries:

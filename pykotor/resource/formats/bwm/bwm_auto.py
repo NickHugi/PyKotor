@@ -61,7 +61,7 @@ def bytes_bwm(
     """
     Returns the BWM data in the specified format (WOK only) as a bytes object.
 
-    This is a convience method that wraps the write_bwm() method.
+    This is a convenience method that wraps the write_bwm() method.
 
     Args:
         bwm: The target BWM.

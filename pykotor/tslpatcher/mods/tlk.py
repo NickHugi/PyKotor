@@ -17,7 +17,7 @@ class ModificationsTLK:
 
 
 class ModifyTLK:
-    def __init__(self, token_id, text: str, sound: ResRef):
+    def __init__(self, token_id: int, text: str, sound: ResRef):
         self.token_id: int = token_id
         self.text: str = text
         self.sound: ResRef = sound

@@ -284,8 +284,7 @@ class ResourceType:
         for value in ResourceType.__dict__.values():
             if value == type_id:
                 return value
-        else:
-            raise ValueError("Could not find resource type with ID {}.".format(type_id))
+        raise ValueError("Could not find resource type with ID {}.".format(type_id))
 
     @classmethod
     def from_extension(

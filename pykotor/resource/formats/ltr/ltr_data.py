@@ -41,7 +41,7 @@ class LTR:
     def generate(
             self,
             seed: Optional[int] = None
-    ) -> str:
+    ) -> str | None:
         """
         Returns a randomly generated name based on the LTR instance data.
 
@@ -105,7 +105,7 @@ class LTR:
                         break
                 else:
                     attempts += 1
-                    if len(name) - 1 < 3 or attempts > 100:
+                    if len(name) < 4 or attempts > 100:
                         break
 
     def set_singles_start(

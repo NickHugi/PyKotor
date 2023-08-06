@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter

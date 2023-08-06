@@ -32,8 +32,7 @@ class LIP:
         """
         Iterates through the stored list of keyframes yielding the LIPKeyFrame each iteration.
         """
-        for frame in self.frames:
-            yield frame
+        yield from self.frames
 
     def __len__(
             self
@@ -59,9 +58,7 @@ class LIP:
         Returns:
             The corresponding LIPKeyFrame object.
         """
-        if not isinstance(item, int):
-            return NotImplemented
-        return self.frames[item]
+        return self.frames[item] if isinstance(item, int) else NotImplemented
 
     def add(
             self,

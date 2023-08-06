@@ -62,7 +62,7 @@ def bytes_rim(
     """
     Returns the RIM data in the specified format (RIM only) as a bytes object.
 
-    This is a convience method that wraps the write_rim() method.
+    This is a convenience method that wraps the write_rim() method.
 
     Args:
         rim: The target RIM object.

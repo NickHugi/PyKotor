@@ -168,25 +168,18 @@ class TwoDA:
             self,
             row_label: str
     ) -> Optional[TwoDARow]:
-        for row in self:
-            if row.label() == row_label:
-                return row
-        return None
+        return next((row for row in self if row.label() == row_label), None)
 
     def row_index(
             self,
             row: TwoDARow
     ) -> Optional[int]:
-        for i, searching in enumerate(self):
-            if searching == row:
-                return i
-        else:
-            return None
+        return next((i for i, searching in enumerate(self) if searching == row), None)
 
     def add_row(
             self,
             row_label: Optional[str] = None,
-            cells: Dict[str, Any] = None
+            cells: Dict[str, Any] | None = None
     ) -> int:
         """
         Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
@@ -218,7 +211,7 @@ class TwoDA:
             self,
             source_row: TwoDARow,
             row_label: Optional[str] = None,
-            override_cells: Dict[str, Any] = None
+            override_cells: Dict[str, Any] | None = None
     ) -> int:
         """
         Adds a new row to the end of the table with the same values as the source row.
@@ -248,7 +241,7 @@ class TwoDA:
 
     def get_cell(
             self,
-            row_index,
+            row_index: int,
             column: str
     ) -> str:
         """
@@ -343,7 +336,7 @@ class TwoDA:
             header: str
     ) -> int:
         """
-        Returns the highest numerical value underneath the specificied column.
+        Returns the highest numerical value underneath the specified column.
 
         Returns:
             Highest numerical value underneath the column.
@@ -377,7 +370,7 @@ class TwoDARow:
         self._row_label: str = row_label
         self._data: Dict[str, str] = row_data
 
-    def __eq__(self, other):
+    def __eq__(self, other: TwoDARow | object):
         if isinstance(other, TwoDARow):
             return (self._row_label == other._row_label) and (self._data == other._data)
         else:

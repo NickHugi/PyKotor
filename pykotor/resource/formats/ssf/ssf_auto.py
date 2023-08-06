@@ -110,7 +110,7 @@ def bytes_ssf(
     """
     Returns the SSF data in the specified format (SSF or SSF_XML) as a bytes object.
 
-    This is a convience method that wraps the write_ssf() method.
+    This is a convenience method that wraps the write_ssf() method.
 
     Args:
         ssf: The target SSF object.
