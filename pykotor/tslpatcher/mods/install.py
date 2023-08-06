@@ -1,12 +1,9 @@
 import os.path
-from typing import List
-
 import concurrent.futures
+from typing import List, Optional
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-
 from pykotor.extract.capsule import Capsule
-
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tslpatcher.logger import PatchLogger
@@ -40,29 +37,40 @@ class InstallFile:
     def apply_file(
         self, log: PatchLogger, source_folder: str, destination: str, local_folder: str
     ) -> None:
-        data = BinaryReader.load_file(f"{source_folder}/{self.filename}")
-        save_file_to = f"{destination}/{self.filename}"
-
-        if self.replace_existing or not os.path.exists(save_file_to):
-            if not os.path.exists(destination):
-                log.add_note(f"Folder {destination} did not exist, creating it...")
-                os.makedirs(destination)
-            if self.replace_existing and not os.path.exists(save_file_to):
-                log.add_note(f"Replacing file {self.filename} to the {local_folder} folder...")
-            else:
-                log.add_note(f"Copying file {self.filename} to the {local_folder} folder...")
-            BinaryWriter.dump(save_file_to, data)
-        elif not self.replace_existing and os.path.exists(save_file_to):
+        data = BinaryReader.load_file(os.path.join(source_folder, self.filename))
+        save_file_to = os.path.join(destination, self.filename)
+        if not self.replace_existing and os.path.exists(save_file_to):
             log.add_warning(
                 f"A file named {self.filename} already exists in the {local_folder} folder. Skipping file..."
             )
+        else:
+            if not os.path.exists(destination):
+                log.add_note(f"Folder {destination} did not exist, creating it...")
+                os.makedirs(destination)
+
+            if self.replace_existing and os.path.exists(save_file_to):
+                log.add_note(f"Replacing file {self.filename} in the {local_folder} folder...")
+                try:
+                    os.remove(save_file_to)
+                    log.add_note(f"'{self.filename}' has been deleted from the {local_folder}.")
+                except PermissionError:
+                    log.add_error(f"Permission denied: Unable to delete '{self.filename}'.")
+                except Exception as e:
+                    log.add_error(f"An error occurred while deleting '{self.filename}': {str(e)}")
+            else:
+                log.add_note(f"Copying file {self.filename} to the {local_folder} folder...")
+            BinaryWriter.dump(save_file_to, data)
 
 class InstallFolder:
     # The `InstallFolder` class represents a folder that can be installed, and it provides a method to
     # apply the installation by copying files from a source path to a destination path.
-    def __init__(self, foldername: str, files: List[InstallFile] = None) -> None:
+    def __init__(
+        self,
+        foldername: str,
+        files: Optional[List[InstallFile]] = None
+    ) -> None:
         self.foldername: str = foldername
-        self.files: List[InstallFile] = [] if files is None else files
+        self.files: List[InstallFile] = files or []
 
     def apply(self, log: PatchLogger, source_path: str, destination_path: str) -> None:
         """

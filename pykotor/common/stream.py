@@ -13,7 +13,7 @@ from pykotor.common.language import LocalizedString
 
 
 def _endian_char(
-        big
+        big: bool
 ) -> str:
     """
     Returns the character that represents either big endian or small endian in struct unpack.
@@ -46,7 +46,7 @@ class BinaryReader:
             self,
             stream: BinaryIO,
             offset: int = 0,
-            size: int = None
+            size: Optional[int] = None
     ):
         self._stream: BinaryIO = stream
         self._offset: int = offset
@@ -116,7 +116,7 @@ class BinaryReader:
     @classmethod
     def from_auto(
             cls,
-            source: Optional[str, bytes, bytearray, BinaryReader],
+            source: Optional[Union[str, bytes, bytearray, BinaryReader]],
             offset: int = 0,
             size: int = None
     ):
@@ -150,10 +150,7 @@ class BinaryReader:
         """
         with open(path, 'rb') as reader:
             reader.seek(offset)
-            if size == -1:
-                return reader.read()
-            else:
-                return reader.read(size)
+            return reader.read() if size == -1 else reader.read(size)
 
     def offset(
             self
@@ -214,7 +211,7 @@ class BinaryReader:
 
     def skip(
             self,
-            length
+            length: int
     ) -> None:
         """
         Skips ahead in the stream the specified number of bytes.
@@ -238,7 +235,7 @@ class BinaryReader:
 
     def seek(
             self,
-            position
+            position: int
     ) -> None:
         """
         Moves the stream pointer to the byte offset.
@@ -602,7 +599,7 @@ class BinaryReader:
             IOError: If the given number sex exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
-            raise IOError("This operation would exceeed the streams boundaries.")
+            raise IOError("This operation would exceed the streams boundaries.")
 
 
 class BinaryWriter(ABC):
@@ -1080,7 +1077,7 @@ class BinaryWriterFile(BinaryWriter):
 
     def seek(
             self,
-            position
+            position: int
     ) -> None:
         """
         Moves the stream pointer to the byte offset.
@@ -1296,9 +1293,7 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._stream.write(struct.pack(_endian_char(big) + 'f', value.x))
-        self._stream.write(struct.pack(_endian_char(big) + 'f', value.y))
-        self._stream.write(struct.pack(_endian_char(big) + 'f', value.z))
+        self._extracted_from_write_vector4_14(big, value)
 
     def write_vector4(
             self,
@@ -1313,10 +1308,14 @@ class BinaryWriterFile(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
+        self._extracted_from_write_vector4_14(big, value)
+        self._stream.write(struct.pack(_endian_char(big) + 'f', value.w))
+
+    # TODO Rename this here and in `write_vector3` and `write_vector4`
+    def _extracted_from_write_vector4_14(self, big, value):
         self._stream.write(struct.pack(_endian_char(big) + 'f', value.x))
         self._stream.write(struct.pack(_endian_char(big) + 'f', value.y))
         self._stream.write(struct.pack(_endian_char(big) + 'f', value.z))
-        self._stream.write(struct.pack(_endian_char(big) + 'f', value.w))
 
     def write_bytes(
             self,
@@ -1432,7 +1431,7 @@ class BinaryWriterBytearray(BinaryWriter):
     ):
         self._ba = ba
         self._offset: int = offset
-        self._position = 0
+        self._position: int = 0
 
     def __enter__(
             self

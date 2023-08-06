@@ -16,6 +16,8 @@ class Diff2DA:
 
         for old_row in self.old:
             index = self.old.row_index(old_row)
+            if index is None:
+                raise ValueError("Row mismatch")
             new_row = self.new.get_row(index)
 
             for header in old_columns:

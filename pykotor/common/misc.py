@@ -13,15 +13,15 @@ T = TypeVar("T")
 
 
 class ResRef:
+    """
+    A string reference to a game resource. ResRefs can be a maximum of 16 characters in length.
+    """
     class InvalidEncodingError(ValueError):
         ...
 
     class ExceedsMaxLengthError(ValueError):
         ...
 
-    """
-    A string reference to a game resource. ResRefs can be a maximum of 16 characters in length.
-    """
 
     def __init__(
             self,
@@ -37,22 +37,18 @@ class ResRef:
 
     def __eq__(
             self,
-            other
+            other: ResRef | str | object
     ):
         """
         A ResRef can be compared to another ResRef or a str.
         """
-        if isinstance(other, ResRef):
-            return other.get().lower() == self.get().lower()
-        elif isinstance(other, str):
-            return other.lower() == self.get().lower()
-        else:
-            return NotImplemented
+        other_value = other.get().lower() if isinstance(other, ResRef) else other.lower() if isinstance(other, str) else None
+        return other_value == self._value.lower() if other_value is not None else NotImplemented
 
     def __repr__(
             self
     ):
-        return "ResRef({})".format(self._value)
+        return f"ResRef({self._value})"
 
     def __str__(
             self
@@ -69,7 +65,7 @@ class ResRef:
         Returns:
             A new ResRef instance.
         """
-        return ResRef("")
+        return cls("")
 
     @classmethod
     def from_path(
@@ -85,7 +81,7 @@ class ResRef:
         Returns:
             A new ResRef instance.
         """
-        return ResRef(os.path.splitext(path)[0].replace('\\', '/').split('/')[-1])
+        return cls(os.path.splitext(os.path.basename(path.replace('\\', '/')))[0])
 
     def set(
             self,
@@ -102,12 +98,15 @@ class ResRef:
         Raises:
             ValueError:
         """
-        if len(text) > 16 and truncate:
-            text = text[:16]
-        elif len(text) > 16 and not truncate:
-            raise ResRef.ExceedsMaxLengthError("ResRef cannot exceed 16 characters.")
-        if len(text) != len(text.encode()):
-            raise ResRef.InvalidEncodingError("ResRef must be in ASCII characters.")
+        if len(text) > 16:
+            if truncate:
+                text = text[:16]
+            else:
+                raise ResRef.ExceedsMaxLengthError(
+                    "ResRef cannot exceed 16 characters.")
+        if len(text.encode()) != len(text):
+            raise ResRef.InvalidEncodingError(
+                "ResRef must be in ASCII characters.")
 
         self._value = text
 

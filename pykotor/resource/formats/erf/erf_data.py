@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from copy import copy
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
@@ -26,7 +26,8 @@ class ERFType(Enum):
         elif is_mod_file(filepath.lower()):
             return ERFType.MOD
         else:
-            raise ValueError(f"Invalid ERF extension in filepath '{filepath}'.")
+            raise ValueError(
+                f"Invalid ERF extension in filepath '{filepath}'.")
 
 
 class ERF:
@@ -46,13 +47,16 @@ class ERF:
         self.erf_type: ERFType = erf_type
         self._resources: List[ERFResource] = []
 
+        # used for faster lookups
+        self._resource_dict: Dict[Tuple[str, ResourceType], ERFResource] = {}
+
     def __iter__(
             self
     ):
         """
         Iterates through the stored resources yielding a copied resource each iteration.
         """
-        for resource in self._resources:
+        for resource in self._resource_dict.values():
             yield copy(resource)
 
     def __len__(
@@ -64,8 +68,8 @@ class ERF:
         return len(self._resources)
 
     def __getitem__(
-            self,
-            item
+        self,
+        item: Union[int, str, Any]
     ):
         """
         Returns a resource at the specified index or with the specified resref.
@@ -73,11 +77,10 @@ class ERF:
         if isinstance(item, int):
             return self._resources[item]
         elif isinstance(item, str):
-            resource = next([resource for resource in self._resources if resource.resref == item], None)
-            if resource is None:
-                raise KeyError
-            else:
-                return resource
+            key = next((key for key in self._resource_dict if key[0] == item.casefold()), None)
+            if key:
+                return self._resource_dict[key]
+            raise KeyError
         else:
             return NotImplemented
 
@@ -88,29 +91,28 @@ class ERF:
             data: bytes
     ) -> None:
         """
-        Sets the data of the resource with the specified resref/restype pair. If it does not exists, a resource is
-        appended to the resource list.
+        The `set` function updates or adds a resource in a dictionary based on the given resource reference,
+        resource type, and data.
 
         Args:
-            resref: The resref.
-            restype: The resource type.
-            data: The new resource data.
+            resref: The `resref` as a string
+            restype: The `restype` parameter is of type `ResourceType`. It represents the type of the
+                resource being set
+            data: The `data` parameter is of type `bytes` and represents the binary data of the resource.
+                It is the actual content of the resource that you want to set
         """
-        resource = next(
-            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
-            None)
+        key = (resref.casefold(), restype)
+        resource = self._resource_dict.get(key)
         if resource is None:
-            self._resources.append(ERFResource(ResRef(resref), restype, data))
+            resource = ERFResource(ResRef(resref), restype, data)
+            self._resources.append(resource)
+            self._resource_dict[key] = resource
         else:
             resource.resref = ResRef(resref)
             resource.restype = restype
             resource.data = data
 
-    def get(
-            self,
-            resref: str,
-            restype: ResourceType
-    ) -> Optional[bytes]:
+    def get(self, resref: str, restype: ResourceType) -> Optional[bytes]:
         """
         Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
 
@@ -121,10 +123,9 @@ class ERF:
         Returns:
             The bytes data of the resource or None.
         """
-        resource = next(
-            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
-            None)
-        return None if resource is None else resource.data
+        resource = self._resource_dict.get((resref.casefold(), restype))
+        return resource.data if resource else None
+
 
     def remove(
             self,
@@ -138,7 +139,10 @@ class ERF:
             resref: The resref.
             restype: The resource type.
         """
-        self._resources = [res for res in self._resources if res.resref != resref and res.restype != restype]
+        key = (resref.casefold(), restype)
+        resource = self._resource_dict.pop(key, None)
+        if resource:
+            self._resources.remove(resource)
 
     def to_rim(
             self

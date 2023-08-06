@@ -2,7 +2,7 @@ import ntpath
 import os.path
 from configparser import ConfigParser
 from enum import IntEnum
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 from pykotor.extract.capsule import Capsule
 
@@ -19,6 +19,8 @@ from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
+from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
@@ -32,20 +34,20 @@ from pykotor.tslpatcher.mods.twoda import Modifications2DA
 class LogLevel(IntEnum):
     # Docstrings taken from ChangeEdit docs
 
-    Nothing = 0
+    NOTHING = 0
     """No feedback at all. The text from "info.rtf" will continue to be displayed during installation"""
 
-    General = 1
+    GENERAL = 1
     """Only general progress information will be displayed. Not recommended."""
 
-    Errors = 2
+    ERRORS = 2
     """General progress information is displayed, along with any serious errors encountered."""
 
-    Warnings = 3
+    WARNINGS = 3
     """General progress information, serious errors and warnings are displayed. This is
     recommended for the release version of your mod."""
 
-    Full = 4
+    FULL = 4
     """Full feedback. On top of what is displayed at level 3, it also shows verbose progress
     information that may be useful for a Modder to see what is happening. Intended for
     Debugging."""
@@ -91,7 +93,7 @@ class PatcherNamespace:
 
 
 class ModInstaller:
-    def __init__(self, mod_path: str, game_path: str, ini_file: str, logger: PatchLogger = None):
+    def __init__(self, mod_path: str, game_path: str, ini_file: str, logger: Union[PatchLogger, None] = None):
         self.game_path: str = game_path
         self.mod_path: str = mod_path
         self.ini_file: str = ini_file
@@ -150,8 +152,14 @@ class ModInstaller:
         # Apply changes to 2DA files
         for patch in config.patches_2da:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
-            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
-            twoda = twodas[patch.filename] = read_2da(search.data)
+            search = installation.resource(
+                resname,
+                restype,
+                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
+                folders=[self.mod_path]
+            )
+            twoda = read_2da(search.data) # type: ignore
+            twodas[patch.filename] = twoda
 
             self.log.add_note("Patching {}".format(patch.filename))
             patch.apply(twoda, memory)
@@ -176,7 +184,7 @@ class ModInstaller:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
 
             capsule = None
-            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
+            if is_capsule_file(patch.destination):
                 capsule = Capsule(self.output_path + "/" + patch.destination)
 
             search = installation.resource(
@@ -206,7 +214,7 @@ class ModInstaller:
         # Apply changes to NSS files
         for patch in config.patches_nss:
             capsule = None
-            if patch.destination.endswith(".rim") or patch.destination.endswith(".erf") or patch.destination.endswith(".mod"):
+            if is_capsule_file(patch.destination):
                 capsule = Capsule(self.output_path + "/" + patch.destination)
 
             nss = [BinaryReader.load_file(f"{self.mod_path}/{patch.filename}").decode(errors="ignore")]
@@ -231,12 +239,12 @@ class ModInstaller:
 
     def write(self, destination: str, filename: str, data: bytes, replace: bool = False) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
-        if destination.endswith(".rim"):
+        if is_rim_file(destination):
             rim = read_rim(BinaryReader.load_file(destination)) if os.path.exists(destination) else RIM()
             if not rim.get(resname, restype) or replace:
                 rim.set(resname, restype, data)
                 write_rim(rim, destination)
-        elif destination.endswith(".mod") or destination.endswith(".erf"):
+        elif is_erf_or_mod_file(destination):
             erf = read_erf(BinaryReader.load_file(destination)) if os.path.exists(destination) else ERF()
             if not erf.get(resname, restype) or replace:
                 erf.set(resname, restype, data)

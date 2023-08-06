@@ -17,11 +17,7 @@ class ERFBinaryReader(ResourceReader):
         self._erf: Optional[ERF] = None
 
     @autoclose
-    def load(
-            self,
-            auto_close: bool = True
-    ) -> ERF:
-
+    def load(self, auto_close: bool = True) -> ERF:
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
 
@@ -29,7 +25,7 @@ class ERFBinaryReader(ResourceReader):
 
         if file_type not in erf_type_map:
             raise ValueError(f"Not a valid ERF file: '{file_type}'")
-        
+
         self._erf = ERF(erf_type_map.get(file_type))
 
         if file_version != "V1.0":
@@ -41,22 +37,26 @@ class ERFBinaryReader(ResourceReader):
         offset_to_keys = self._reader.read_uint32()
         offset_to_resources = self._reader.read_uint32()
 
-        resrefs = []
-        resids = []
-        restypes = []
+        resrefs = [None] * entry_count
+        resids = [None] * entry_count
+        restypes = [None] * entry_count
         self._reader.seek(offset_to_keys)
-        for i in range(entry_count):
-            resrefs.append(self._reader.read_string(16))
-            resids.append(self._reader.read_uint32())
-            restypes.append(self._reader.read_uint16())
-            self._reader.skip(2)
+        keys_data = self._reader.read_bytes(24 * entry_count)  # 16 bytes for resref, 4 for resid, 2 for restype, 2 skipped
 
-        resoffsets = []
-        ressizes = []
-        self._reader.seek(offset_to_resources)
         for i in range(entry_count):
-            resoffsets.append(self._reader.read_uint32())
-            ressizes.append(self._reader.read_uint32())
+            resref_data = keys_data[i * 24:i * 24 + 16].split(b'\0')[0]
+            resrefs[i] = resref_data.decode('windows-1252')
+            resids[i] = int.from_bytes(keys_data[i * 24 + 16:i * 24 + 20], byteorder='little')
+            restypes[i] = int.from_bytes(keys_data[i * 24 + 20:i * 24 + 22], byteorder='little')
+
+        resoffsets = [None] * entry_count
+        ressizes = [None] * entry_count
+        self._reader.seek(offset_to_resources)
+        resources_data = self._reader.read_bytes(8 * entry_count)
+
+        for i in range(entry_count):
+            resoffsets[i] = int.from_bytes(resources_data[i * 8:i * 8 + 4], byteorder='little')
+            ressizes[i] = int.from_bytes(resources_data[i * 8 + 4:i * 8 + 8], byteorder='little')
 
         for i in range(entry_count):
             self._reader.seek(resoffsets[i])
@@ -64,6 +64,7 @@ class ERFBinaryReader(ResourceReader):
             self._erf.set(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
 
         return self._erf
+
 
 
 class ERFBinaryWriter(ResourceWriter):

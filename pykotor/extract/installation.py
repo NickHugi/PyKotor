@@ -4,6 +4,7 @@ import os
 from contextlib import suppress
 from copy import copy
 from enum import IntEnum
+import re
 from typing import Dict, List, Optional, NamedTuple
 
 from pykotor.common.language import Language, Gender, LocalizedString
@@ -82,9 +83,11 @@ class Installation:
             path: str
     ):
         self._path: str = path.replace('\\', '/')
-        if not self._path.endswith('/'): self._path += '/'
+        if not self._path.endswith('/'):
+            self._path += '/'
 
-        self._talktable: Optional[TalkTable] = TalkTable(f"{self._path}dialog.tlk")
+        self._talktable: Optional[TalkTable] = TalkTable(
+            f"{self._path}dialog.tlk")
 
         self._chitin: List[FileResource] = []
         self._modules: Dict[str, List[FileResource]] = {}
@@ -244,7 +247,8 @@ class Installation:
             if os.path.isdir(path + folder) and (folder.lower() == "streamvoice" or folder.lower() == "streamwaves"):
                 path += folder + "/"
         if path == self._path:
-            raise ValueError("Could not find voice over folder in '{}'.".format(self._path))
+            raise ValueError(
+                "Could not find voice over folder in '{}'.".format(self._path))
         return path.replace("\\", "/")
     # endregion
 
@@ -266,10 +270,12 @@ class Installation:
         """
         modules_path = self.module_path()
         self._modules = {}
-        module_files = [file for file in os.listdir(modules_path) if file.endswith('.mod') or file.endswith('.rim') or file.endswith('.erf')]
+        module_files = [file for file in os.listdir(modules_path) if file.endswith(
+            '.mod') or file.endswith('.rim') or file.endswith('.erf')]
         for module in module_files:
             with suppress(Exception):
-                self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
+                self._modules[module] = [
+                    resource for resource in Capsule(self.module_path() + module)]
 
     def reload_module(
             self,
@@ -281,7 +287,8 @@ class Installation:
         Args:
             module: The filename of the module.
         """
-        self._modules[module] = [resource for resource in Capsule(self.module_path() + module)]
+        self._modules[module] = [
+            resource for resource in Capsule(self.module_path() + module)]
 
     def load_lips(
             self
@@ -291,9 +298,11 @@ class Installation:
         """
         self._lips = {}
         lips_path = self.lips_path()
-        lip_files = [file for file in os.listdir(lips_path) if file.endswith('.mod')]
+        lip_files = [file for file in os.listdir(
+            lips_path) if file.endswith('.mod')]
         for module in lip_files:
-            self._lips[module] = [resource for resource in Capsule(lips_path + module)]
+            self._lips[module] = [
+                resource for resource in Capsule(lips_path + module)]
 
     def load_textures(
             self
@@ -303,9 +312,11 @@ class Installation:
         """
         self._texturepacks = {}
         texturepacks_path = self.texturepacks_path()
-        texturepacks_files = [file for file in os.listdir(texturepacks_path) if file.endswith('.erf')]
+        texturepacks_files = [file for file in os.listdir(
+            texturepacks_path) if file.endswith('.erf')]
         for module in texturepacks_files:
-            self._texturepacks[module] = [resource for resource in Capsule(texturepacks_path + module)]
+            self._texturepacks[module] = [
+                resource for resource in Capsule(texturepacks_path + module)]
 
     def load_override(
             self
@@ -318,14 +329,16 @@ class Installation:
 
         for path, subdirs, files in os.walk(override_path):
             directory = path.replace("\\", "/").replace(override_path, "")
-            path = (path if path.endswith("/") else path + "/").replace("\\", "/")
+            path = (path if path.endswith("/")
+                    else path + "/").replace("\\", "/")
             self._override[directory] = []
 
             for file in files:
                 with suppress(Exception):
                     name, ext = file.split('.', 1)
                     size = os.path.getsize(path + file)
-                    resource = FileResource(name, ResourceType.from_extension(ext), size, 0, path + file)
+                    resource = FileResource(
+                        name, ResourceType.from_extension(ext), size, 0, path + file)
                     self._override[directory].append(resource)
 
     def reload_override(
@@ -347,7 +360,8 @@ class Installation:
             with suppress(Exception):
                 name, ext = file.split('.', 1)
                 size = os.path.getsize(override_path + directory + file)
-                resource = FileResource(name, ResourceType.from_extension(ext), size, 0, override_path + directory + file)
+                resource = FileResource(name, ResourceType.from_extension(
+                    ext), size, 0, override_path + directory + file)
                 self._override[directory].append(resource)
 
     def load_streammusic(
@@ -355,11 +369,12 @@ class Installation:
     ) -> None:
         self._streammusic = []
         streammusic_path = self.streammusic_path()
-        for filename in [file for file in os.listdir(streammusic_path)]:
+        for filename in list(os.listdir(streammusic_path)):
             with suppress(Exception):
                 filepath = streammusic_path + filename
                 identifier = ResourceIdentifier.from_path(filepath)
-                resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                resource = FileResource(
+                    identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
                 self._streammusic.append(resource)
 
     def load_streamsounds(
@@ -370,11 +385,12 @@ class Installation:
         """
         self._streamsounds = []
         streamsounds_path = self.streamsounds_path()
-        for filename in [file for file in os.listdir(streamsounds_path)]:
+        for filename in list(os.listdir(streamsounds_path)):
             with suppress(Exception):
                 filepath = streamsounds_path + filename
                 identifier = ResourceIdentifier.from_path(filepath)
-                resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                resource = FileResource(
+                    identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
                 self._streamsounds.append(resource)
 
     def load_streamvoices(
@@ -394,7 +410,8 @@ class Installation:
                         folderpath += "/"
                     filepath = folderpath + filename
                     identifier = ResourceIdentifier.from_path(filepath)
-                    resource = FileResource(identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
+                    resource = FileResource(
+                        identifier.resname, identifier.restype, os.path.getsize(filepath), 0, filepath)
                     self._streamvoices.append(resource)
 
     def load_rims(
@@ -406,7 +423,8 @@ class Installation:
         self._rims = {}
         with suppress(ValueError):
             rims_path = self.rims_path()
-            filenames = [file for file in os.listdir(rims_path) if file.endswith('.rim')]
+            filenames = [file for file in os.listdir(
+                rims_path) if file.endswith('.rim')]
             for filename in filenames:
                 self._rims[filename] = list(Capsule(rims_path + filename))
     # endregion
@@ -580,7 +598,8 @@ class Installation:
         """
 
         query = ResourceIdentifier(resname, restype)
-        batch = self.resources([query], order, capsules=capsules, folders=folders)
+        batch = self.resources(
+            [query], order, capsules=capsules, folders=folders)
 
         return batch[query] or None
 
@@ -606,8 +625,9 @@ class Installation:
             A dictionary mapping the given items in the queries argument to a list of ResourceResult objects.
         """
         results: Dict[ResourceIdentifier, Optional[ResourceResult]] = {}
-        locations = self.locations(queries, order, capsules=capsules, folders=folders)
-        handles = {}
+        locations = self.locations(
+            queries, order, capsules=capsules, folders=folders)
+        handles: Dict[ResourceIdentifier, BinaryReader] = {}
 
         for query in queries:
             location = locations[query][0] if locations[query] else None
@@ -618,7 +638,8 @@ class Installation:
                     handles[query] = BinaryReader.from_file(location.filepath)
                 handles[query].seek(location.offset)
                 data = handles[query].read_bytes(location.size)
-                results[query] = ResourceResult(query.resname, query.restype, location.filepath, data)
+                results[query] = ResourceResult(
+                    query.resname, query.restype, location.filepath, data)
 
         for handle in handles.values():
             handle.close()
@@ -629,10 +650,10 @@ class Installation:
             self,
             resname: str,
             restype: ResourceType,
-            order: List[SearchLocation] = None,
+            order: Optional[List[SearchLocation]] = None,
             *,
-            capsules: List[Capsule] = None,
-            folders: List[str] = None
+            capsules: Optional[List[Capsule]] = None,
+            folders: Optional[List[str]] = None
     ) -> List[LocationResult]:
         """
         Returns a list filepaths for where a particular resource matching the given resref and restype are located.
@@ -654,17 +675,22 @@ class Installation:
 
         query: ResourceIdentifier = ResourceIdentifier(resname, restype)
 
-        locations = self.locations([query], order, capsules=capsules, folders=folders)[query]
+        locations = self.locations(
+            [query],
+            order,
+            capsules=capsules,
+            folders=folders
+        )[query]
 
         return locations
 
     def locations(
             self,
             queries: List[ResourceIdentifier],
-            order: List[SearchLocation] = None,
+            order: Optional[List[SearchLocation]] = None,
             *,
-            capsules: List[Capsule] = None,
-            folders: List[str] = None
+            capsules: Optional[List[Capsule]] = None,
+            folders: Optional[List[str]] = None
     ) -> Dict[ResourceIdentifier, List[LocationResult]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
@@ -689,39 +715,45 @@ class Installation:
         for qinden in queries:
             locations[qinden] = []
 
-        def check_dict(values):
+        def check_dict(values: Dict[str, List[FileResource]]):
             for resources in values.values():
                 for resource in resources:
                     if resource in queries:
-                        location = LocationResult(resource.filepath(), resource.offset(), resource.size())
+                        location = LocationResult(
+                            resource.filepath(), resource.offset(), resource.size())
                         locations[resource.identifier()].append(location)
 
-        def check_list(values):
+        def check_list(values: List[FileResource]):
             for resource in values:
                 if resource in queries:
-                    location = LocationResult(resource.filepath(), resource.offset(), resource.size())
+                    location = LocationResult(
+                        resource.filepath(), resource.offset(), resource.size())
                     locations[resource.identifier()].append(location)
 
-        def check_capsules(values):
+        def check_capsules(values: List[Capsule]):
             for capsule in values:
                 for query in queries:
                     if capsule.exists(query.resname, query.restype):
-                        resource = capsule.info(query.resname, query.restype, reload=True)
-                        location = LocationResult(resource.filepath(), resource.offset(), resource.size())
+                        resource = capsule.info(
+                            query.resname, query.restype, reload=True)
+                        location = LocationResult(
+                            resource.filepath(), resource.offset(), resource.size())
                         locations[resource.identifier()].append(location)
 
-        def check_folders(values):
+        def check_folders(values: List[str]):
             for folder in values:
                 folder = folder + '/' if not folder.endswith('/') else folder
                 for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
                     filepath = folder + file
                     for query in queries:
                         with suppress(Exception):
-                                identifier = ResourceIdentifier.from_path(file)
-                                if query == identifier:
-                                    resource = FileResource(query.resname, query.restype, os.path.getsize(filepath), 0, filepath)
-                                    location = LocationResult(resource.filepath(), resource.offset(), resource.size())
-                                    locations[identifier].append(location)
+                            identifier = ResourceIdentifier.from_path(file)
+                            if query == identifier:
+                                resource = FileResource(
+                                    query.resname, query.restype, os.path.getsize(filepath), 0, filepath)
+                                location = LocationResult(
+                                    resource.filepath(), resource.offset(), resource.size())
+                                locations[identifier].append(location)
 
         function_map = {
             SearchLocation.OVERRIDE: lambda: check_dict(self._override),
@@ -746,11 +778,11 @@ class Installation:
         return locations
 
     def texture(
-            self,resname: str,
-            order: List[SearchLocation] = None,
+            self, resname: str,
+            order: Optional[List[SearchLocation]] = None,
             *,
-            capsules: List[Capsule] = None,
-            folders: List[str] = None
+            capsules: Optional[List[Capsule]] = None,
+            folders: Optional[List[str]] = None
     ) -> Optional[TPC]:
         """
         Returns a TPC object loaded from a resource with the specified name. If the specified texture could not be found
@@ -777,16 +809,17 @@ class Installation:
             TPC object or None.
         """
 
-        batch = self.textures([resname], order, capsules=capsules, folders=folders)
+        batch = self.textures(
+            [resname], order, capsules=capsules, folders=folders)
         return batch[resname] if batch else None
 
     def textures(
             self,
             queries: List[str],
-            order: List[SearchLocation] = None,
+            order: Optional[List[SearchLocation]] = None,
             *,
-            capsules: List[Capsule] = None,
-            folders: List[str] = None
+            capsules: Optional[List[Capsule]] = None,
+            folders: Optional[List[str]] = None
     ) -> CaseInsensitiveDict[Optional[TPC]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
@@ -804,8 +837,13 @@ class Installation:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
-                 SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN] if order is None else order
+        order = order if order is not None else [
+            SearchLocation.CUSTOM_FOLDERS,
+            SearchLocation.OVERRIDE,
+            SearchLocation.CUSTOM_MODULES,
+            SearchLocation.TEXTURES_TPA,
+            SearchLocation.CHITIN
+        ]
 
         textures: CaseInsensitiveDict[Optional[TPC]] = CaseInsensitiveDict[Optional[TPC]]()
         texture_types = [ResourceType.TPC, ResourceType.TGA]
@@ -814,20 +852,21 @@ class Installation:
         for resname in queries:
             textures[resname] = None
 
-        def check_dict(values):
+        def check_dict(values: Dict[str, List[FileResource]]):
             for resources in values.values():
                 for resource in resources:
                     if resource.resname() in copy(queries) and resource.restype() in texture_types:
                         queries.remove(resource.resname())
-                        textures[resource.resname()] = read_tpc(resource.data())
+                        textures[resource.resname()] = read_tpc(
+                            resource.data())
 
-        def check_list(values):
+        def check_list(values: List[FileResource]):
             for resource in values:
                 if resource.resname() in copy(queries) and resource.restype() in texture_types:
                     queries.remove(resource.resname())
                     textures[resource.resname()] = read_tpc(resource.data())
 
-        def check_capsules(values):
+        def check_capsules(values: List[Capsule]):
             for capsule in values:
                 for resname in queries:
                     if capsule.exists(resname, ResourceType.TPC):
@@ -837,11 +876,10 @@ class Installation:
                         queries.remove(resname)
                         textures[resname] = read_tpc(capsule.resource(resname, ResourceType.TGA))
 
-        def check_folders(values):
+        def check_folders(values: List[str]):
             for folder in values:
-                folder = folder + '/' if not folder.endswith('/') else folder
-                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
-                    filepath = folder + file
+                for file in [file for file in os.listdir(folder) if os.path.isfile(os.path.join(folder, file))]:
+                    filepath: str = os.path.join(folder, file)
                     identifier = ResourceIdentifier.from_path(file)
                     for resname in queries:
                         if identifier.resname == resname and identifier.restype in texture_types:
@@ -873,10 +911,10 @@ class Installation:
     def sound(
             self,
             queries: str,
-            order: List[SearchLocation] = None,
+            order: Optional[List[SearchLocation]] = None,
             *,
-            capsules: List[Capsule] = None,
-            folders: List[str] = None
+            capsules: Optional[List[Capsule]] = None,
+            folders: Optional[List[str]] = None
     ) -> Optional[Optional[bytes]]:
         """
         Returns the bytes of a sound resource if it can be found, otherwise returns None.
@@ -892,16 +930,17 @@ class Installation:
         Returns:
             A bytes object or None.
         """
-        batch = self.sounds([queries], order, capsules=capsules, folders=folders)
+        batch = self.sounds(
+            [queries], order, capsules=capsules, folders=folders)
         return batch[queries] if batch else None
 
     def sounds(
             self,
             resnames: List[str],
-            order: List[SearchLocation] = None,
+            order: Optional[List[SearchLocation]] = None,
             *,
-            capsules: List[Capsule] = None,
-            folders: List[str] = None
+            capsules: Optional[List[Capsule]] = None,
+            folders: Optional[List[str]] = None
     ) -> CaseInsensitiveDict[Optional[bytes]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to a bytes object if the respective
@@ -916,47 +955,57 @@ class Installation:
         Returns:
             A dictionary mapping a case-insensitive string to a bytes object or None.
         """
-        capsules = [] if capsules is None else capsules
-        folders = [] if folders is None else folders
+        capsules = capsules or []
+        folders = folders or []
 
-        order = [SearchLocation.CUSTOM_FOLDERS, SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES,
-                 SearchLocation.SOUND, SearchLocation.CHITIN] if not order else order
+        order = order if order is not None else [
+            SearchLocation.CUSTOM_FOLDERS,
+            SearchLocation.OVERRIDE,
+            SearchLocation.CUSTOM_MODULES,
+            SearchLocation.SOUND, SearchLocation.CHITIN
+        ]
 
-        sounds: CaseInsensitiveDict[Optional[bytes]] = CaseInsensitiveDict[Optional[bytes]]()
+        sounds: CaseInsensitiveDict[Optional[bytes]
+                                    ] = CaseInsensitiveDict[Optional[bytes]]()
         texture_types = [ResourceType.WAV, ResourceType.MP3]
         resnames = [resname.lower() for resname in resnames]
 
         for resname in resnames:
             sounds[resname] = None
 
-        def check_dict(values):
+        def check_dict(values: Dict[str, List[FileResource]]):
             for resources in values.values():
                 for resource in resources:
                     if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                         resnames.remove(resource.resname())
-                        sounds[resource.resname()] = sound.fix_audio(resource.data())
+                        sounds[resource.resname()] = sound.fix_audio(
+                            resource.data())
 
-        def check_list(values):
+        def check_list(values: List[FileResource]):
             for resource in values:
                 if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                     resnames.remove(resource.resname())
-                    sounds[resource.resname()] = sound.fix_audio(resource.data())
+                    sounds[resource.resname()] = sound.fix_audio(
+                        resource.data())
 
-        def check_capsules(values):
+        def check_capsules(values: List[Capsule]):
             for capsule in values:
                 for resname in resnames:
                     if capsule.exists(resname, ResourceType.WAV):
                         resnames.remove(resname)
-                        sounds[resname] = sound.fix_audio(capsule.resource(resname, ResourceType.TPC))
+                        tpc_bytes = capsule.resource(resname, ResourceType.TPC)
+                        if tpc_bytes:
+                            sounds[resname] = sound.fix_audio(tpc_bytes)
                     if capsule.exists(resname, ResourceType.MP3):
                         resnames.remove(resname)
-                        sounds[resname] = sound.fix_audio(capsule.resource(resname, ResourceType.TGA))
+                        tga_bytes = capsule.resource(resname, ResourceType.TGA)
+                        if tga_bytes:
+                            sounds[resname] = sound.fix_audio(tga_bytes)
 
-        def check_folders(values):
+        def check_folders(values: List[str]):
             for folder in values:
-                folder = folder + '/' if not folder.endswith('/') else folder
-                for file in [file for file in os.listdir(folder) if os.path.isfile(folder + file)]:
-                    filepath = folder + file
+                for file in [file for file in os.listdir(folder) if os.path.isfile(os.path.join(folder, file))]:
+                    filepath: str = os.path.join(folder, file)
                     identifier = ResourceIdentifier.from_path(file)
                     for resname in resnames:
                         if identifier.resname == resname and identifier.restype in texture_types:
@@ -1027,7 +1076,7 @@ class Installation:
         stringrefs = [locstring.stringref for locstring in queries]
         batch = self.talktable().batch(stringrefs)
 
-        results = {}
+        results: Dict[LocalizedString, str] = {}
         for locstring in queries:
             if locstring.stringref in batch and locstring.stringref != -1:
                 results[locstring] = batch[locstring.stringref].text
@@ -1056,7 +1105,9 @@ class Installation:
         Returns:
             The name of the area for the module.
         """
-        root = module_filename.replace(".mod", "").replace(".erf", "").replace(".rim", "")
+        root = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
+        root = re.sub(r"\.erf$", "", root, flags=re.IGNORECASE)
+        root = re.sub(r"\.rim$", "", root, flags=re.IGNORECASE)
         root = root[:-len("_s")] if root.endswith("_s") else root
         root = root[:-len("_dlg")] if root.endswith("_dlg") else root
 
@@ -1077,7 +1128,7 @@ class Installation:
                 "STUNT_42": "Ebon Hawk - Cutscene (LS Dodonna Call)",
                 "STUNT_44": "Ebon Hawk - Cutscene (DS Dodonna Call)",
                 "STUNT_50A": "Dodonna Flagship - Cutscene (Break In Formation)",
-                "STUNT_51A": "Dodonna Flagship - Cutscene (Bastilla Against Us)",
+                "STUNT_51A": "Dodonna Flagship - Cutscene (Bastila Against Us)",
                 "STUNT_54A": "Dodonna Flagship - Cutscene (Pull Back)",
                 "STUNT_55A": "Unknown World - Cutscene (DS Ending)",
                 "STUNT_56A": "Dodona Flagship - Cutscene (Star Forge Destroyed)",
@@ -1098,7 +1149,7 @@ class Installation:
                 if key.upper() in module_filename.upper():
                     return value
 
-        name = ""
+        name: str = ""
 
         for module in self.modules_list():
             if root not in module:
@@ -1114,9 +1165,9 @@ class Installation:
                 are = read_gff(capsule.resource(tag, ResourceType.ARE))
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
-                    name = self._talktable.string(locstring.stringref)
+                    name = self._talktable.string(locstring.stringref) or ""
                 elif locstring.exists(Language.ENGLISH, Gender.MALE):
-                    name = locstring.get(Language.ENGLISH, Gender.MALE)
+                    name = locstring.get(Language.ENGLISH, Gender.MALE) or ""
                 break
 
         return name
@@ -1149,7 +1200,9 @@ class Installation:
         Returns:
             The ID of the area for the module.
         """
-        root = module_filename.replace(".mod", "").replace(".erf", "").replace(".rim", "")
+        root = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
+        root = re.sub(r"\.erf$", "", root, flags=re.IGNORECASE)
+        root = re.sub(r"\.rim$", "", root, flags=re.IGNORECASE)
         root = root[:-len("_s")] if root.endswith("_s") else root
         root = root[:-len("_dlg")] if root.endswith("_dlg") else root
 
@@ -1190,8 +1243,9 @@ class Installation:
             capsule = Capsule(self.module_path() + module)
 
             if capsule.exists("module", ResourceType.IFO):
-                ifo = read_gff(capsule.resource("module", ResourceType.IFO))
-                mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
+                if these_bytes := capsule.resource("module", ResourceType.IFO):
+                    ifo = read_gff(these_bytes)
+                    mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
 
         return mod_id
 
@@ -1205,9 +1259,9 @@ class Installation:
         Returns:
             A dictionary mapping module filename to in-game module id.
         """
-        module_ids = {}
-        for module in self.modules_list():
-            module_ids[module] = self.module_id(module)
+        module_ids: Dict[str, str] = {
+            module: self.module_id(module) for module in self.modules_list()
+        }
         return module_ids
 
     def uninstall_mods(
@@ -1220,7 +1274,7 @@ class Installation:
         the modules folder.
         """
         for file in os.listdir(self.module_path()):
-            if is_mod_file(file.lower()) and os.path.isfile(self.module_path() + file):
+            if is_mod_file(file) and os.path.isfile(os.path.join(self.module_path(), file)):
                 os.remove(self.module_path() + file)
 
         for file in os.listdir(self.override_path()):

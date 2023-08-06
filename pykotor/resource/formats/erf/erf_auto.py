@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
@@ -8,7 +8,7 @@ from pykotor.resource.type import ResourceType
 def read_erf(
         source: Union[str, bytes, bytearray, BinaryReader],
         offset: int = 0,
-        size: int = None
+        size: int = 0
 ) -> ERF:
     """
     Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
@@ -28,7 +28,7 @@ def read_erf(
     Returns:
         An ERF instance.
     """
-    return ERFBinaryReader(source, offset).load()
+    return ERFBinaryReader(source, offset, size).load()
 
 
 def write_erf(
@@ -49,7 +49,7 @@ def write_erf(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    if file_format == ResourceType.ERF or file_format == ResourceType.MOD:
+    if file_format in [ResourceType.ERF, ResourceType.MOD]:
         ERFBinaryWriter(erf, target).write()
     else:
         raise ValueError("Unsupported format specified; use ERF or MOD.")
@@ -62,7 +62,7 @@ def bytes_erf(
     """
     Returns the ERF data in the specified format (ERF or MOD) as a bytes object.
 
-    This is a convience method that wraps the write_erf() method.
+    This is a convenience method that wraps the write_erf() method.
 
     Args:
         erf: The target ERF object.

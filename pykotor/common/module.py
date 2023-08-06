@@ -136,6 +136,15 @@ class Module:
         for location in self.git().locations():
             self.git().activate(location)
             self.git().resource()
+            git = self.git().resource()
+            [look_for.append(ResourceIdentifier(creature.resref.get(), ResourceType.UTC)) for creature in git.creatures]
+            [look_for.append(ResourceIdentifier(placeable.resref.get(), ResourceType.UTP)) for placeable in git.placeables]
+            [look_for.append(ResourceIdentifier(door.resref.get(), ResourceType.UTD)) for door in git.doors]
+            [look_for.append(ResourceIdentifier(sound.resref.get(), ResourceType.UTS)) for sound in git.sounds]
+            [look_for.append(ResourceIdentifier(waypoint.resref.get(), ResourceType.UTW)) for waypoint in git.waypoints]
+            [look_for.append(ResourceIdentifier(encounter.resref.get(), ResourceType.UTE)) for encounter in git.encounters]
+            [look_for.append(ResourceIdentifier(trigger.resref.get(), ResourceType.UTT)) for trigger in git.triggers]
+            [look_for.append(ResourceIdentifier(store.resref.get(), ResourceType.UTM)) for store in git.stores]
         self.git().activate(original)
 
         # Models referenced in LYTs

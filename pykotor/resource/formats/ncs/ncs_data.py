@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import IntEnum, Enum
-from typing import NamedTuple, Optional, List
+from typing import Any, NamedTuple, Optional, List
 
 from pykotor.common.misc import Game
 
@@ -197,7 +197,13 @@ class NCS:
             else:
                 print("{}:\t{} {}".format(i, instruction.ins_type.name.ljust(8), instruction.args))
 
-    def add(self, instruction_type: NCSInstructionType, args: List = None, jump: Optional[NCSInstruction] = None, index: int = None) -> NCSInstruction:
+    def add(
+        self,
+        instruction_type: NCSInstructionType,
+        args: Optional[List[Any]],
+        jump: Optional[NCSInstruction] = None,
+        index: Optional[int] = None
+    ) -> NCSInstruction:
         instruction = NCSInstruction(instruction_type, args, jump)
         self.instructions.insert(index, instruction) if index is not None else self.instructions.append(instruction)
         return instruction
@@ -209,18 +215,37 @@ class NCS:
         return [inst for inst in self.instructions if inst.jump is target]
 
     def optimize(self, optimizers: List[NCSOptimizer]) -> None:
+        """
+        The `optimize` function takes a list of optimizers and applies each optimizer to optimize the
+        current object.
+
+        :param optimizers: A list of NCSOptimizer objects
+        :type optimizers: List[NCSOptimizer]
+        """
         for optimizer in optimizers:
             optimizer.optimize(self)
 
     def merge(self, other: NCS) -> None:
+        """
+        The `merge` function takes another `NCS` object and appends its instructions to the instructions of
+        the current object.
+
+        :param other: The parameter "other" is of type NCS, which is likely a custom class or data structure
+        :type other: NCS
+        """
         self.instructions.extend(other.instructions)
 
 
 class NCSInstruction:
-    def __init__(self, ins_type: NCSInstructionType = NCSInstructionType.NOP, args: List = None, jump: Optional[NCSInstruction] = None):
+    def __init__(
+        self,
+        ins_type: NCSInstructionType = NCSInstructionType.NOP,
+        args: Optional[List[Any]] = None,
+        jump: Optional[NCSInstruction] = None
+    ):
         self.ins_type: NCSInstructionType = ins_type
         self.jump: Optional[NCSInstruction] = jump
-        self.args: List = args if args is not None else []
+        self.args: List[Any] = args if args is not None else []
 
     def __str__(self):
         if self.jump is None:

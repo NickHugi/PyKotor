@@ -77,18 +77,18 @@ class ModifyGFF(ABC):
 
 
 class AddFieldGFF(ModifyGFF):
-    def __init__(self, identifier: str, label: str, field_type: GFFFieldType, value: FieldValue, path: str = "", modifiers: List[ModifyGFF] = None, index_to_list_token: Optional[int] = None):
+    def __init__(self, identifier: str, label: str, field_type: GFFFieldType, value: FieldValue, path: str, modifiers: Optional[List[ModifyGFF]] = None, index_to_list_token: Optional[int] = None):
         self.identifier: str = identifier
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: Optional[str] = path
+        self.path: str = path
         self.index_to_list_token: Optional[int] = index_to_list_token
 
         self.modifiers: List[ModifyGFF] = [] if modifiers is None else modifiers
 
-    def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
-        container = self._navigate_containers(container, self.path)
+    def apply(self, container_arg: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
+        container = self._navigate_containers(container_arg, self.path)
         if container is None:
             logger.add_warning("Parent field at '{}' does not exist or is not a List or Struct. Unable to add new Field '{}'...".format(self.path, self.label))
             return
@@ -136,7 +136,7 @@ class AddFieldGFF(ModifyGFF):
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
-    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> GFFStruct:
+    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> GFFStruct | None:
         hierarchy = [container for container in path.split("\\") if container != ""]
 
         for step in hierarchy:

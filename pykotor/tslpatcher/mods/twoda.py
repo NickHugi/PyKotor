@@ -30,11 +30,11 @@ class Target:
             raise ValueError("Target value must be int if type is row index.")
 
     def search(self, twoda: TwoDA) -> Optional[TwoDARow]:
-        source_row = None
+        source_row: TwoDARow | None = None
         if self.target_type == TargetType.ROW_INDEX:
-            source_row = twoda.get_row(self.value)
+            source_row = twoda.get_row(int(self.value))
         elif self.target_type == TargetType.ROW_LABEL:
-            source_row = twoda.find_row(self.value)
+            source_row = twoda.find_row(str(self.value))
         elif self.target_type == TargetType.LABEL_COLUMN:
             if "label" not in twoda.get_headers():
                 raise WarningException()
@@ -214,8 +214,8 @@ class ChangeRow2DA(Modify2DA):
             identifier: str,
             target: Target,
             cells: Dict[str, RowValue],
-            store_2da: Dict[int, RowValue] = None,
-            store_tlk: Dict[int, RowValue] = None,
+            store_2da: Optional[Dict[int, RowValue]] = None,
+            store_tlk: Optional[Dict[int, RowValue]] = None,
     ):
         super().__init__()
         self.identifier: str = identifier
@@ -255,13 +255,13 @@ class AddRow2DA(Modify2DA):
             exclusive_column: Optional[str],
             row_label: Optional[str],
             cells: Dict[str, RowValue],
-            store_2da: Dict[int, RowValue] = None,
-            store_tlk: Dict[int, RowValue] = None,
+            store_2da: Optional[Dict[int, RowValue]] = None,
+            store_tlk: Optional[Dict[int, RowValue]] = None,
     ):
         super().__init__()
         self.identifier: str = identifier
         self.exclusive_column: Optional[str] = exclusive_column if exclusive_column != "" else None
-        self.row_label: str = row_label
+        self.row_label: Optional[str] = row_label
         self.cells: Dict[str, RowValue] = cells
         self.store_2da: Dict[int, RowValue] = {} if store_2da is None else store_2da
         self.store_tlk: Dict[int, RowValue] = {} if store_tlk is None else store_tlk
@@ -321,7 +321,7 @@ class CopyRow2DA(Modify2DA):
         self.identifier: str = identifier
         self.target: Target = target
         self.exclusive_column: Optional[str] = exclusive_column if exclusive_column != "" else None
-        self.row_label: str = row_label
+        self.row_label: Optional[str] = row_label
         self.cells: Dict[str, RowValue] = cells
         self.store_2da: Dict[int, RowValue] = {} if store_2da is None else store_2da
         self.store_tlk: Dict[int, RowValue] = {} if store_tlk is None else store_tlk
@@ -384,7 +384,7 @@ class AddColumn2DA(Modify2DA):
             default: str,
             index_insert: Dict[int, RowValue],
             label_insert: Dict[str, RowValue],
-            store_2da: Dict[int, str] = None
+            store_2da: Union[Dict[int, str], None] = None
     ):
         super().__init__()
         self.identifier: str = identifier
@@ -400,12 +400,20 @@ class AddColumn2DA(Modify2DA):
             row.set_string(self.header, self.default)
 
         for row_index, value in self.index_insert.items():
-            value = value.value(memory, twoda, None)
-            twoda.get_row(row_index).set_string(self.header, value)
+            index_str: str = value.value(memory, twoda, None)
+            this_row = twoda.get_row(row_index)
+            if this_row:
+                this_row.set_string(self.header, index_str)
+            else:
+                raise WarningException("Could not find row {} in {}".format(row_index, self.header))
 
         for row_label, value in self.label_insert.items():
-            value = value.value(memory, twoda, None)
-            twoda.find_row(row_label).set_string(self.header, value)
+            label_str: str = value.value(memory, twoda, None)
+            this_row = twoda.find_row(row_label)
+            if this_row:
+                this_row.set_string(self.header, label_str)
+            else:
+                raise WarningException("Could not find row {} in {}".format(row_label, self.header))
 
         for token_id, value in self.store_2da.items():
             # TODO: Exception handling

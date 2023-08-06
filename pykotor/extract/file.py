@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, NamedTuple
+from typing import Any, Optional, NamedTuple, Union
 
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_erf_file, is_mod_file, is_rim_file
+from pykotor.tools.misc import is_bif_file, is_capsule_file
 
 
 class FileResource:
@@ -38,7 +38,7 @@ class FileResource:
 
     def __eq__(
             self,
-            other: FileResource
+            other: Union[FileResource, ResourceIdentifier]
     ):
         if isinstance(other, FileResource):
             return other._resname.lower() == self._resname.lower() and other._restype == self._restype
@@ -84,7 +84,7 @@ class FileResource:
             Bytes data of the resource.
         """
         if reload:
-            if is_mod_file(self._filepath) or is_erf_file(self._filepath) or is_rim_file(self._filepath):
+            if is_capsule_file(self._filepath):
                 from pykotor.extract.capsule import Capsule
                 capsule = Capsule(self._filepath)
                 res = capsule.info(self._resname, self._restype)
