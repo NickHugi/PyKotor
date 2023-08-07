@@ -200,7 +200,7 @@ class NCS:
     def add(
         self,
         instruction_type: NCSInstructionType,
-        args: Optional[List[Any]],
+        args: Optional[List[Any]] = None,
         jump: Optional[NCSInstruction] = None,
         index: Optional[int] = None
     ) -> NCSInstruction:
