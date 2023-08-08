@@ -74,14 +74,13 @@ ini_name = os.path.basename(changes_ini_path)
 installer = ModInstaller(mod_path, GAME_PATH, ini_name)
 
 
-def profile_installation():
-    installer.install()
+#def profile_installation():
+#    installer.install()
+# cProfile.run('profile_installation()', 'output.prof')
 
-
-cProfile.run('profile_installation()', 'output.prof')
+installer.install()
 
 print("Writing log file 'installlog.txt'...")
-
 log_file_path = os.path.join(TSLPATCHDATA_PATH, "installlog.txt")
 with open(log_file_path, "w", encoding="utf-8") as log_file:
     for note in installer.log.notes:
