@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
@@ -77,43 +78,43 @@ def clone_module(
 
     if keepDoors:
         for i, door in enumerate(git.doors):
-            oldResname = door.resref.get()
-            newResname = "{}_dor{}".format(identifier, i)
-            door.resref.set(newResname)
-            door.tag = newResname
+            old_resname = door.resref.get()
+            new_resname = "{}_dor{}".format(identifier, i)
+            door.resref.set(new_resname)
+            door.tag = new_resname
 
-            utd = oldModule.door(oldResname).resource()
+            utd = oldModule.door(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_utd(utd), data)
-            newModule.set(newResname, ResourceType.UTD, data)
+            newModule.set(new_resname, ResourceType.UTD, data)
     else:
         git.doors = []
 
     if keepPlaceables:
         for i, placeable in enumerate(git.placeables):
-            oldResname = placeable.resref.get()
-            newResname = "{}_plc{}".format(identifier, i)
-            placeable.resref.set(newResname)
-            placeable.tag = newResname
+            old_resname = placeable.resref.get()
+            new_resname = "{}_plc{}".format(identifier, i)
+            placeable.resref.set(new_resname)
+            placeable.tag = new_resname
 
-            utp = oldModule.placeable(oldResname).resource()
+            utp = oldModule.placeable(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_utp(utp), data)
-            newModule.set(newResname, ResourceType.UTP, data)
+            newModule.set(new_resname, ResourceType.UTP, data)
     else:
         git.placeables = []
 
     if keepSounds:
         for i, sound in enumerate(git.sounds):
-            oldResname = sound.resref.get()
-            newResname = "{}_snd{}".format(identifier, i)
-            sound.resref.set(newResname)
-            sound.tag = newResname
+            old_resname = sound.resref.get()
+            new_resname = "{}_snd{}".format(identifier, i)
+            sound.resref.set(new_resname)
+            sound.tag = new_resname
 
-            uts = oldModule.sound(oldResname).resource()
+            uts = oldModule.sound(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_uts(uts), data)
-            newModule.set(newResname, ResourceType.UTS, data)
+            newModule.set(new_resname, ResourceType.UTS, data)
     else:
         git.sounds = []
 
@@ -146,7 +147,8 @@ def clone_module(
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set(rgba.width, rgba.height, [
+                            rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
@@ -156,15 +158,18 @@ def clone_module(
         if copyLightmaps:
             for lightmap in model.list_lightmaps(mdlData):
                 if lightmap not in newLightmaps:
-                    newLightmapName = "{}_lm_{}".format(identifier, len(newLightmaps.keys()))
+                    newLightmapName = "{}_lm_{}".format(
+                        identifier, len(newLightmaps.keys()))
                     newLightmaps[lightmap] = newLightmapName
 
-                    tpc = installation.texture(lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+                    tpc = installation.texture(
+                        lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
                     tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set(rgba.width, rgba.height, [
+                            rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
@@ -184,11 +189,11 @@ def clone_module(
     write_lyt(lyt, lyt_data)
     newModule.set(identifier, ResourceType.LYT, lyt_data)
 
-    filepath = installation.module_path() + identifier + ".mod"
+    filepath = installation.module_path() / (identifier + ".mod")
     write_erf(newModule, filepath)
 
 
-def rim_to_mod(filepath: str) -> None:
+def rim_to_mod(filepath: Path) -> None:
     """
     Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
@@ -202,20 +207,23 @@ def rim_to_mod(filepath: str) -> None:
     Args:
         filepath: The filepath of the MOD file you would like to create.
     """
-    if not is_mod_file(filepath):
+    if not is_mod_file(filepath.suffix):
         raise ValueError("Specified file must end with the .mod extension")
 
-    base, old_extension = os.path.splitext(filepath)
+    base: str = filepath.stem
+    old_extension: str = filepath.suffix
     lowercase_extension = old_extension.lower()
 
     rim_s_extension = lowercase_extension.replace(".mod", "_s.rim")
     rim_extension = lowercase_extension.replace(".mod", ".rim")
 
-    filepath_rim_s = base + rim_s_extension if rim_s_extension != lowercase_extension else filepath
+    filepath_rim_s = base + \
+        rim_s_extension if rim_s_extension != lowercase_extension else filepath
     filepath_rim = base + rim_extension if rim_extension != lowercase_extension else filepath
 
     rim = read_rim(filepath_rim) if os.path.exists(filepath_rim) else RIM()
-    rim_s = read_rim(filepath_rim_s) if os.path.exists(filepath_rim_s) else RIM()
+    rim_s = read_rim(filepath_rim_s) if os.path.exists(
+        filepath_rim_s) else RIM()
 
     mod = ERF(ERFType.MOD)
     for res in rim + rim_s:

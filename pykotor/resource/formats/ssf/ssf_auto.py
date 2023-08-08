@@ -1,3 +1,4 @@
+from pathlib import Path
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFXMLReader, SSFBinaryWriter
 from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLWriter
@@ -25,10 +26,11 @@ def detect_ssf(
         The format of the SSF data.
     """
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = ResourceType.SSF if reader.read_string(4) == "SSF " else ResourceType.SSF_XML
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = ResourceType.SSF if source[:4].decode('ascii', 'ignore') == "SSF " else ResourceType.SSF_XML
         elif isinstance(source, BinaryReader):
             file_format = ResourceType.SSF if source.read_string(4) == "SSF " else ResourceType.SSF_XML

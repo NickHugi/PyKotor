@@ -1,3 +1,4 @@
+from pathlib import Path
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.mdl import MDL, MDLBinaryReader, MDLBinaryWriter, MDLAsciiReader, MDLAsciiWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
@@ -24,11 +25,12 @@ def detect_mdl(
         The format of the MDL data.
     """
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 first4 = reader.read_bytes(4)
                 file_format = ResourceType.MDL if first4 == b'\x00\x00\x00\x00' else ResourceType.MDL_ASCII
-        elif isinstance(source, bytes) or isinstance(source, bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = ResourceType.MDL if source[:4] == b'\x00\x00\x00\x00' else ResourceType.MDL_ASCII
         elif isinstance(source, BinaryReader):
             first4 = source.read_bytes(4)

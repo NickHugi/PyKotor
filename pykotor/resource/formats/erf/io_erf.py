@@ -102,14 +102,11 @@ class ERFBinaryWriter(ResourceWriter):
         self._writer.write_uint32(0xFFFFFFFF)
         self._writer.write_bytes(b'\0' * 116)
 
-        resid = 0
-        for resource in self.erf:
+        for resid, resource in enumerate(self.erf):
             self._writer.write_string(resource.resref.get(), string_length=16)
             self._writer.write_uint32(resid)
             self._writer.write_uint16(resource.restype.type_id)
             self._writer.write_uint16(0)
-            resid += 1
-
         data_offset = offset_to_resources + ERFBinaryWriter.RESOURCE_ELEMENT_SIZE * entry_count
         for resource in self.erf:
             self._writer.write_uint32(data_offset)

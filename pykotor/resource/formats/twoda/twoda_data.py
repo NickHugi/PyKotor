@@ -64,7 +64,7 @@ class TwoDA:
             A list of cells.
         """
         if header not in self._headers:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         return [self._rows[i][header] for i in range(self.get_height())]
 
@@ -83,7 +83,7 @@ class TwoDA:
         """
 
         if header in self._headers:
-            raise KeyError("The header '{}' already exists.".format(header))
+            raise KeyError(f"The header '{header}' already exists.")
 
         self._headers.append(header)
         for row in self._rows:
@@ -203,7 +203,7 @@ class TwoDA:
             cells[header] = str(cells[header])
 
         for header in self._headers:
-            self._rows[-1][header] = cells[header] if header in cells else ""
+            self._rows[-1][header] = cells.get(header, "")
 
         return len(self._rows) - 1
 
@@ -328,7 +328,7 @@ class TwoDA:
             self._rows = self._rows[:row_count]
         else:
             # insert the new rows with each cell filled in blank
-            for i in range(row_count - current_height):
+            for _ in range(row_count - current_height):
                 self.add_row()
 
     def column_max(
@@ -411,7 +411,7 @@ class TwoDARow:
             The cell value.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
         return self._data[header]
 
     def get_integer(
@@ -434,7 +434,7 @@ class TwoDARow:
             The cell value as an integer or a default value.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         value = default
         with suppress(ValueError):
@@ -462,7 +462,7 @@ class TwoDARow:
             The cell value as a float or default value.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         value = default
         with suppress(ValueError):
@@ -491,7 +491,7 @@ class TwoDARow:
             The cell value as a enum or default value.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         value = default
         if enum_type(self._data[header]) != "":
@@ -514,7 +514,7 @@ class TwoDARow:
             KeyError: If the specified header does not exist.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         value = "" if value is None else value
         self._data[header] = value
@@ -536,7 +536,7 @@ class TwoDARow:
             KeyError: If the specified header does not exist.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         value = "" if value is None else value
         self._data[header] = str(value)
@@ -558,7 +558,7 @@ class TwoDARow:
             KeyError: If the specified header does not exist.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         value = "" if value is None else value
         self._data[header] = str(value)
@@ -580,7 +580,7 @@ class TwoDARow:
             KeyError: If the specified header does not exist.
         """
         if header not in self._data:
-            raise KeyError("The header '{}' does not exist.".format(header))
+            raise KeyError(f"The header '{header}' does not exist.")
 
         value = "" if value is None else value.value
         self._data[header] = value

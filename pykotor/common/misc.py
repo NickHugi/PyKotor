@@ -3,7 +3,7 @@ This module holds various unrelated classes.
 """
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from enum import IntEnum, Enum
 from typing import TypeVar, Generic, Dict
 
@@ -16,12 +16,12 @@ class ResRef:
     """
     A string reference to a game resource. ResRefs can be a maximum of 16 characters in length.
     """
+
     class InvalidEncodingError(ValueError):
         ...
 
     class ExceedsMaxLengthError(ValueError):
         ...
-
 
     def __init__(
             self,
@@ -42,7 +42,8 @@ class ResRef:
         """
         A ResRef can be compared to another ResRef or a str.
         """
-        other_value = other.get().lower() if isinstance(other, ResRef) else other.lower() if isinstance(other, str) else None
+        other_value = other.get().lower() if isinstance(
+            other, ResRef) else other.lower() if isinstance(other, str) else None
         return other_value == self._value.lower() if other_value is not None else NotImplemented
 
     def __repr__(
@@ -70,7 +71,7 @@ class ResRef:
     @classmethod
     def from_path(
             cls,
-            path: str
+            path: Path
     ) -> ResRef:
         """
         Returns a ResRef from the filename in the specified path.
@@ -81,7 +82,7 @@ class ResRef:
         Returns:
             A new ResRef instance.
         """
-        return cls(os.path.splitext(os.path.basename(path.replace('\\', '/')))[0])
+        return cls(path.stem)
 
     def set(
             self,
@@ -103,10 +104,12 @@ class ResRef:
                 text = text[:16]
             else:
                 raise ResRef.ExceedsMaxLengthError(
-                    "ResRef cannot exceed 16 characters.")
-        if len(text.encode()) != len(text):
+                    "ResRef cannot exceed 16 characters."
+                )
+        if len(text) != len(text.encode()):
             raise ResRef.InvalidEncodingError(
-                "ResRef must be in ASCII characters.")
+                "ResRef must be in ASCII characters."
+            )
 
         self._value = text
 
@@ -147,7 +150,7 @@ class Color:
     def __repr__(
             self
     ):
-        return "Color({}, {}, {}, {})".format(self.r, self.g, self.b, self.g)
+        return f"Color({self.r}, {self.g}, {self.b}, {self.g})"
 
     def __str__(
             self
@@ -155,11 +158,11 @@ class Color:
         """
         Returns a string of each color component separated by whitespace.
         """
-        return "{} {} {} {}".format(self.r, self.g, self.b, self.a)
+        return f"{self.r} {self.g} {self.b} {self.a}"
 
     def __eq__(
             self,
-            other
+            other: Color | object
     ):
         """
         Two Color instances are equal if their color components are equal.

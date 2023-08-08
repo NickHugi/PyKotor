@@ -1,3 +1,4 @@
+from pathlib import Path
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import TLK, TLKBinaryReader, TLKXMLReader, TLKBinaryWriter
 from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader, TLKJSONWriter
@@ -39,7 +40,8 @@ def detect_tlk(
             return ResourceType.INVALID
 
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):
@@ -80,7 +82,7 @@ def read_tlk(
     Returns:
         An TLK instance.
     """
-    file_format = detect_tlk(source, offset)
+    file_format = detect_tlk(str(source.resolve()), offset)
 
     if file_format is ResourceType.INVALID:
         raise ValueError("Failed to determine the format of the GFF file.")

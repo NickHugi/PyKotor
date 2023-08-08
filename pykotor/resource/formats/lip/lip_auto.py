@@ -1,3 +1,4 @@
+from pathlib import Path
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lip import LIP, LIPBinaryReader, LIPXMLReader, LIPBinaryWriter
 from pykotor.resource.formats.lip.io_lip_xml import LIPXMLWriter
@@ -25,7 +26,8 @@ def detect_lip(
         The format of the LIP data.
     """
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = ResourceType.LIP if reader.read_string(4) == "LIP " else ResourceType.LIP_XML
         elif isinstance(source, (bytes, bytearray)):

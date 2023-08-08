@@ -58,14 +58,12 @@ class TwoDACSVWriter(ResourceWriter):
         headers = self._twoda.get_headers()
 
         insert = [""]
-        for header in headers:
-            insert.append(header)
+        insert.extend(iter(headers))
         self._csv_writer.writerow(insert)
 
         for row in self._twoda:
             insert = [str(row.label())]
-            for header in headers:
-                insert.append(row.get_string(header))
+            insert.extend(row.get_string(header) for header in headers)
             self._csv_writer.writerow(insert)
 
         data = self._csv_string.getvalue().encode('ascii')

@@ -1,3 +1,4 @@
+from pathlib import Path
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFF, GFFBinaryReader, GFFBinaryWriter, GFFContent, GFFXMLWriter, GFFXMLReader
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
@@ -24,7 +25,8 @@ def detect_gff(
         The format of the GFF data.
     """
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
+            source = Path(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
                 file_format = ResourceType.GFF if any(

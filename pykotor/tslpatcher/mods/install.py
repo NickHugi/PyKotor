@@ -1,6 +1,7 @@
-import os.path
 import concurrent.futures
 from typing import List, Optional
+from pathlib import Path
+from typing import List
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -15,7 +16,7 @@ class InstallFile:
         self.replace_existing: bool = replace_existing
 
     def _identifier(self) -> ResourceIdentifier:
-        return ResourceIdentifier.from_path(self.filename)
+        return ResourceIdentifier.from_filename(self.filename)
 
     def apply_encapsulated(
         self, log: PatchLogger, source_folder: str, destination: Capsule
@@ -31,35 +32,34 @@ class InstallFile:
                 log.add_note(
                     f"Adding file {self.filename} in the {destination.filename()} archive..."
                 )
-            data = BinaryReader.load_file(f"{source_folder}/{self.filename}")
+
+            data = BinaryReader.load_file(Path(source_folder) / self.filename)
             destination.add(resname, restype, data)
 
-    def apply_file(
-        self, log: PatchLogger, source_folder: str, destination: str, local_folder: str
-    ) -> None:
-        data = BinaryReader.load_file(os.path.join(source_folder, self.filename))
-        save_file_to = os.path.join(destination, self.filename)
-        if not self.replace_existing and os.path.exists(save_file_to):
-            log.add_warning(
-                f"A file named {self.filename} already exists in the {local_folder} folder. Skipping file..."
-            )
-        else:
-            if not os.path.exists(destination):
-                log.add_note(f"Folder {destination} did not exist, creating it...")
-                os.makedirs(destination)
+    def apply_file(self, log: PatchLogger, source_folder: Path, destination: Path, local_folder: str):
+        data = BinaryReader.load_file(source_folder / self.filename)
+        save_file_to = destination / self.filename
 
-            if self.replace_existing and os.path.exists(save_file_to):
-                log.add_note(f"Replacing file {self.filename} in the {local_folder} folder...")
-                try:
-                    os.remove(save_file_to)
-                    log.add_note(f"'{self.filename}' has been deleted from the {local_folder}.")
-                except PermissionError:
-                    log.add_error(f"Permission denied: Unable to delete '{self.filename}'.")
-                except Exception as e:
-                    log.add_error(f"An error occurred while deleting '{self.filename}': {str(e)}")
+        if self.replace_existing or not save_file_to.exists():
+            if not destination.exists():
+                log.add_note(f"Folder {destination} did not exist, creating it...")
+                destination.mkdir(parents=True)
+
+            if self.replace_existing and not save_file_to.exists():
+                log.add_note(
+                    f"Replacing file '{self.filename}' to the '{local_folder}' folder..."
+                )
             else:
-                log.add_note(f"Copying file {self.filename} to the {local_folder} folder...")
-            BinaryWriter.dump(save_file_to, data)
+                log.add_note(
+                    f"Copying file '{self.filename}' to the '{local_folder}' folder..."
+                )
+
+            BinaryWriter.dump(save_file_to.resolve(), data)
+        else:
+            log.add_warning(
+                f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file..."
+            )
+
 
 class InstallFolder:
     # The `InstallFolder` class represents a folder that can be installed, and it provides a method to
@@ -72,28 +72,12 @@ class InstallFolder:
         self.foldername: str = foldername
         self.files: List[InstallFile] = files or []
 
-    def apply(self, log: PatchLogger, source_path: str, destination_path: str) -> None:
-        """
-        The function applies changes to files in a source directory and copies them to a destination
-        directory using multithreading. This method also handles capsule files, so we ensure we do not run those operations on multiple threads.
-
-        :param log: The `log` parameter is an instance of the `PatchLogger` class. It is used to log any
-        information or errors during the execution of the `apply` method
-        :type log: PatchLogger
-        :param source_path: The `source_path` parameter is a string that represents the path to the source
-        directory or file. It is the location from where the files will be copied or applied
-        :type source_path: str
-        :param destination_path: The `destination_path` parameter is a string that represents the root folder of all install folders.
-        :type destination_path: str
-        """
-
-        # true destination target for the file.
-        target = f"{destination_path}/{self.foldername}"
+    def apply(self, log: PatchLogger, source_path: Path, destination_path: Path):
+        target = destination_path / self.foldername
 
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
-            for file in self.files:
-                file.apply_encapsulated(log, source_path, destination)
+            [file.apply_encapsulated(log, str(source_path.resolve()), destination) for file in self.files]
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # Submit each task individually using executor.submit

@@ -113,16 +113,23 @@ def get_weapon_models(
     lhand_resref = utc.equipment[EquipmentSlot.LEFT_HAND].resref.get() if EquipmentSlot.LEFT_HAND in utc.equipment else None
 
     if rhand_resref is not None:
-        rhand_uti = read_uti(installation.resource(rhand_resref, ResourceType.UTI).data)
-        default_model = baseitems.get_row(rhand_uti.base_item).get_string("defaultmodel")
-        rhand_model = default_model.replace("001", str(rhand_uti.model_variation).rjust(3, "0"))
-
+        rhand_model = _extracted_from_get_weapon_models_37(
+            installation, rhand_resref, baseitems
+        )
     if lhand_resref is not None:
-        lhand_uti = read_uti(installation.resource(lhand_resref, ResourceType.UTI).data)
-        default_model = baseitems.get_row(lhand_uti.base_item).get_string("defaultmodel")
-        lhand_model = default_model.replace("001", str(lhand_uti.model_variation).rjust(3, "0"))
-
+        lhand_model = _extracted_from_get_weapon_models_37(
+            installation, lhand_resref, baseitems
+        )
     return rhand_model, lhand_model
+
+
+# TODO Rename this here and in `get_weapon_models`
+def _extracted_from_get_weapon_models_37(installation, arg1, baseitems):
+    rhand_uti = read_uti(installation.resource(arg1, ResourceType.UTI).data)
+    default_model = baseitems.get_row(rhand_uti.base_item).get_string("defaultmodel")
+    return default_model.replace(
+        "001", str(rhand_uti.model_variation).rjust(3, "0")
+    )
 
 
 def get_head_model(

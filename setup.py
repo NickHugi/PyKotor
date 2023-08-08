@@ -1,7 +1,7 @@
 import pathlib
 from setuptools import setup, find_namespace_packages
 
-HERE = pathlib.Path(__file__).parent
+HERE = Path(__file__).parent
 
 NAME = "PyKotor"
 VERSION = "1.6.2"
