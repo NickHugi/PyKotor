@@ -10,7 +10,7 @@ from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
-SOURCE_TYPES = Union[str, bytes, bytearray, BinaryReader]
+SOURCE_TYPES = Union[Path, str, bytes, bytearray, BinaryReader]
 TARGET_TYPES = Union[str, bytearray, BinaryWriter]
 
 
@@ -53,7 +53,7 @@ class ResourceReader(ABC):
 
     def __init__(
             self,
-            source: Union[str, bytes, bytearray, BinaryReader],
+            source: Union[Path, str, bytes, bytearray, BinaryReader],
             offset: int = 0,
             size: int = 0
     ):

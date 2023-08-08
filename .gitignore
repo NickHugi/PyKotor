@@ -11,3 +11,6 @@ pykotor/gl
 debug.log
 pykotorcli.spec
 pykotorcli.build/*
+.history/*
+*.heapsnapshot
+*.cpuprofile
