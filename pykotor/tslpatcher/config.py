@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Union
 
 from pykotor.extract.capsule import Capsule
+from pykotor.resource.formats.erf.erf_data import ERFType
 
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
 
@@ -19,7 +20,7 @@ from pykotor.resource.formats.rim import read_rim, write_rim, RIM
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
-from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_mod_file, is_rim_file
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
@@ -163,7 +164,7 @@ class ModInstaller:
             twoda = read_2da(search.data) # type: ignore
             twodas[patch.filename] = twoda
 
-            self.log.add_note(f"Patching '{patch.name}'")
+            self.log.add_note(f"Patching '{patch.filename}'")
             patch.apply(twoda, memory)
             write_2da(twoda, self.output_path / "override" / patch.filename)
 
@@ -171,7 +172,7 @@ class ModInstaller:
 
         # Apply changes to SSF files
         for patch in config.patches_ssf:
-            resname, restype = ResourceIdentifier.from_filename(patch.filename)
+            resname, restype = ResourceIdentifier.from_path(patch.filename)
             search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
             soundset = soundsets[patch.filename] = read_ssf(search.data)
 
@@ -183,7 +184,7 @@ class ModInstaller:
 
         # Apply changes to GFF files
         for patch in config.patches_gff:
-            resname, restype = ResourceIdentifier.from_filename(patch.filename)
+            resname, restype = ResourceIdentifier.from_path(patch.filename)
 
             capsule = None
             gff_filepath = self.output_path / patch.destination
@@ -238,13 +239,13 @@ class ModInstaller:
             patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
-            file_name, ext = patch.filename.stem, patch.filename.suffix
-            self.write(nss_output_filepath, file_name + ext.lower().replace(".nss", ".ncs"), data, patch.replace_file)
+            file_name, ext = patch.filename.split('.', 1)
+            self.write(nss_output_filepath, file_name + "." + ext.lower().replace(".nss", ".ncs"), data, patch.replace_file)
 
             self.log.complete_patch()
 
     def write(self, destination: Path, filename: str, data: bytes, replace: bool = False) -> None:
-        resname, restype = ResourceIdentifier.from_filename(filename)
+        resname, restype = ResourceIdentifier.from_path(filename)
         file_extension = destination.suffix
         if is_rim_file(destination.name):
             rim = read_rim(BinaryReader.load_file(destination)) if destination.exists() else RIM()

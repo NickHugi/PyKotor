@@ -138,5 +138,5 @@ def determine_namespaces(tslpatchdata_path: Path, namespace_index: int) -> Path:
         )
     )
 
-
+main()
 sys.exit()

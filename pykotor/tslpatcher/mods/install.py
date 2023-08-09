@@ -16,7 +16,7 @@ class InstallFile:
         self.replace_existing: bool = replace_existing
 
     def _identifier(self) -> ResourceIdentifier:
-        return ResourceIdentifier.from_filename(self.filename)
+        return ResourceIdentifier.from_path(self.filename)
 
     def apply_encapsulated(
         self, log: PatchLogger, source_folder: str, destination: Capsule
@@ -36,7 +36,7 @@ class InstallFile:
             data = BinaryReader.load_file(Path(source_folder) / self.filename)
             destination.add(resname, restype, data)
 
-    def apply_file(self, log: PatchLogger, source_folder: Path, destination: Path, local_folder: str):
+    def apply_file(self, log: PatchLogger, source_folder: Path, destination: Path, local_folder: str) -> None:
         data = BinaryReader.load_file(source_folder / self.filename)
         save_file_to = destination / self.filename
 
@@ -77,7 +77,8 @@ class InstallFolder:
 
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
-            [file.apply_encapsulated(log, str(source_path.resolve()), destination) for file in self.files]
+            for file in self.files:
+                file.apply_encapsulated(log, str(source_path.resolve()), destination)
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # Submit each task individually using executor.submit

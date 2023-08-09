@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, NamedTuple, Union
 from pathlib import Path
+from typing import Optional, NamedTuple
 
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_capsule_file
+from pykotor.tools.misc import is_bif_file, is_erf_file, is_mod_file, is_rim_file
 
 
 class FileResource:
@@ -19,12 +19,12 @@ class FileResource:
             restype: ResourceType,
             size: int,
             offset: int,
-            filepath: Path | str
+            filepath: str | Path
     ):
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: Path = Path(filepath).resolve()
+        self._filepath: str = str(Path(filepath).resolve())
         self._offset: int = offset
 
     def __repr__(
@@ -39,7 +39,7 @@ class FileResource:
 
     def __eq__(
             self,
-            other: Union[FileResource, ResourceIdentifier] | object
+            other: FileResource | ResourceIdentifier | object
     ):
         if isinstance(other, FileResource):
             return other._resname.lower() == self._resname.lower() and other._restype == self._restype
@@ -65,7 +65,7 @@ class FileResource:
 
     def filepath(
             self
-    ) -> Path:
+    ) -> str:
         return self._filepath
 
     def offset(
@@ -85,17 +85,17 @@ class FileResource:
             Bytes data of the resource.
         """
         if reload:
-            if is_capsule_file(self._filepath.name):
+            if is_mod_file(self._filepath) or is_erf_file(self._filepath) or is_rim_file(self._filepath):
                 from pykotor.extract.capsule import Capsule
                 capsule = Capsule(self._filepath)
                 res = capsule.info(self._resname, self._restype)
                 self._offset = res.offset()
                 self._size = res.size()
-            elif not is_bif_file(self._filepath.name):
+            elif not is_bif_file(self._filepath):
                 self._offset = 0
-                self._size = self._filepath.stat().st_size
+                self._size = os.path.getsize(self._filepath)
 
-        with open(str(self._filepath.resolve()), 'rb') as file:
+        with open(self._filepath, 'rb') as file:
             file.seek(self._offset)
             return file.read(self._size)
 
@@ -108,12 +108,12 @@ class FileResource:
 class ResourceResult(NamedTuple):
     resname: str
     restype: ResourceType
-    filepath: Path
+    filepath: str
     data: Optional[bytes]
 
 
 class LocationResult(NamedTuple):
-    filepath: Path
+    filepath: str
     offset: int
     size: int
 
@@ -147,8 +147,9 @@ class ResourceIdentifier(NamedTuple):
             return NotImplemented
 
     @staticmethod
-    def from_filename(
-            file: str
+    def from_path(
+            filepath: str
     ) -> ResourceIdentifier:
-        resname, restype_ext = os.path.splitext(file)
+        filename = os.path.basename(filepath)
+        resname, restype_ext = filename.split(".", 1)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

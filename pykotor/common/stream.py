@@ -93,7 +93,7 @@ class BinaryReader:
         Returns:
             A new BinaryReader instance.
         """
-        stream = open(path, 'rb')
+        stream = open(str(path), 'rb')
         return BinaryReader(stream, offset, size)
 
     @classmethod

@@ -340,7 +340,7 @@ class Installation:
                 name, ext = file.split('.', 1)
                 size = (override_path / directory / file).stat().st_size
                 resource = FileResource(name, ResourceType.from_extension(
-                    ext), size, 0, override_path / directory / file)
+                    ext), size, 0, (override_path / directory / file))
                 self._override[directory].append(resource)
 
     def load_streammusic(self) -> None:
@@ -349,7 +349,7 @@ class Installation:
         for filename in list(os.listdir(str(Path(streammusic_path)))):
             with suppress(Exception):
                 filepath = (streammusic_path / filename).resolve()
-                identifier = ResourceIdentifier.from_filename(
+                identifier = ResourceIdentifier.from_path(
                     str(filepath.resolve()))
                 resource = FileResource(
                     identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
@@ -365,7 +365,7 @@ class Installation:
         for filename in list(os.listdir(str(Path(streamsounds_path)))):
             with suppress(Exception):
                 filepath = (streamsounds_path / filename).resolve()
-                identifier = ResourceIdentifier.from_filename(str(filepath))
+                identifier = ResourceIdentifier.from_path(str(filepath))
                 resource = FileResource(
                     identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
 
@@ -380,7 +380,7 @@ class Installation:
         for filename in list(os.listdir(str(streamvoices_path.resolve()))):
             with suppress(Exception):
                 filepath = streamvoices_path / filename
-                identifier = ResourceIdentifier.from_filename(str(filepath))
+                identifier = ResourceIdentifier.from_path(str(filepath))
                 resource = FileResource(
                     identifier.resname,
                     identifier.restype,
@@ -581,7 +581,7 @@ class Installation:
         order: List[SearchLocation] | None = None,
         *,
         capsules: List[Capsule] | None = None,
-        folders: List[str] | None = None,
+        folders: List[Path] | None = None,
     ) -> Dict[ResourceIdentifier, Optional[ResourceResult]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found. If
@@ -610,7 +610,7 @@ class Installation:
             if location is None:
                 results[query] = None
             elif query not in handles:
-                    handles[query] = BinaryReader.from_file(location.filepath)
+                handles[query] = BinaryReader.from_file(location.filepath)
                 handles[query].seek(location.offset)
                 data = handles[query].read_bytes(location.size)
                 results[query] = ResourceResult(
@@ -666,7 +666,7 @@ class Installation:
         order: List[SearchLocation] | None = None,
         *,
         capsules: List[Capsule] | None = None,
-        folders: List[str] | None = None,
+        folders: List[Path] | None = None,
     ) -> Dict[ResourceIdentifier, List[LocationResult]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
@@ -727,14 +727,14 @@ class Installation:
                         )
                         locations[resource.identifier()].append(location)
 
-        def check_folders(values: List[str]):
+        def check_folders(values: List[Path]):
             for folder in values:
                 folder = Path(folder).resolve()
-                for file in [file for file in folder.iterdir() if folder.is_file()]:
+                for file in [file for file in folder.iterdir() if file.is_file()]:
                     filepath = Path(folder, file)
                     for query in queries:
                         with suppress(Exception):
-                            identifier = ResourceIdentifier.from_filename(file.name)
+                            identifier = ResourceIdentifier.from_path(file.name)
                             if query == identifier:
                                 resource = FileResource(
                                     query.resname,
@@ -892,11 +892,12 @@ class Installation:
                             capsule.resource(resname, ResourceType.TGA)
                         )
 
-        def check_folders(values: List[str]):
+        def check_folders(values: List[Path]):
             for folder in values:
-                for file in [file for file in os.listdir(folder) if os.path.isfile(os.path.join(folder, file))]:
-                    identifier = ResourceIdentifier.from_path(file)
-                    filepath: str = os.path.join(folder, file)
+                folder = Path(folder).resolve()
+                for file in [file for file in folder.iterdir() if file.is_file()]:
+                    identifier = ResourceIdentifier.from_path(file.name)
+                    filepath: Path = Path(folder, file).resolve()
                     for resname in queries:
                         if (
                             identifier.resname == resname
@@ -1037,11 +1038,11 @@ class Installation:
                             capsule.resource(resname, ResourceType.TGA)
                         )
 
-        def check_folders(values: List[str]):
+        def check_folders(values: List[str] | List[Path]):
             for folder in values:
                 filepath: Path = Path(folder).resolve()
                 for file in [file for file in filepath.iterdir() if file.is_file()]:
-                    identifier = ResourceIdentifier.from_filename(file.name)
+                    identifier = ResourceIdentifier.from_path(file.name)
                     for resname in resnames:
                         if (
                             identifier.resname == resname

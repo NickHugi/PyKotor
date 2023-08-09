@@ -5,6 +5,7 @@ games.
 from __future__ import annotations
 
 from abc import ABC
+from pathlib import Path
 from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 

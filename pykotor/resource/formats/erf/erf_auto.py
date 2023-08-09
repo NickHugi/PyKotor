@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Union
 
 from pykotor.common.stream import BinaryReader

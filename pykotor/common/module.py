@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import pathlib
+from pathlib import Path
 from contextlib import suppress
 from copy import copy
 from typing import Any, Generic, List, Optional, TypeVar
@@ -51,7 +51,6 @@ from pykotor.tools.misc import (
 
 from pykotor.tools.model import list_lightmaps, list_textures
 from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
-from pykotor.tools.model import list_textures, list_lightmaps
 
 T = TypeVar('T')
 SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES, SearchLocation.CHITIN]
@@ -59,7 +58,10 @@ SEARCH_ORDER = [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_MODULES, SearchLo
 
 class Module:
     def __init__(
-        self, root: str, installation: Installation, custom_capsule: Optional[Capsule] = None
+        self,
+        root: str,
+        installation: Installation,
+        custom_capsule: Optional[Capsule] = None
     ):
         self._installation = installation
         self._root = root = root.lower()
@@ -84,7 +86,7 @@ class Module:
 
     @staticmethod
     def get_root(
-            filepath: pathlib.Path
+            filepath: Path
     ) -> str:
         """
         Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
@@ -96,12 +98,14 @@ class Module:
         Returns:
             The string for the root name of a module.
         """
-        root = str(filepath.stem).lower().replace(".rim", "").replace(".erf", "").replace(".mod", "").lower()
-        roota = root[:5]
-        rootb = root[5:]
-        if "_" in rootb:
-            rootb = rootb[:rootb.index("_")]
-        return roota + rootb
+        root = (
+            case_insensitive_replace(case_insensitive_replace(case_insensitive_replace(filepath, ".rim", ""), ".erf", ""), ".mod", "")
+        )
+        root_a = root[:5]
+        root_b = root[5:]
+        if "_" in root_b:
+            root_b = root_b[: root_b.index("_")]
+        return root_a + root_b
 
     def capsules(self) -> List[Capsule]:
         """
@@ -118,16 +122,16 @@ class Module:
             for resource in capsule:
                 resname = resource.resname()
                 restype = resource.restype()
-                self.add_locations(resname, restype, [capsule.path()])
+                self.add_locations(resname, restype, [str(capsule.path().resolve())])
         # Look for LYT/VIS
         for resource in self._installation.chitin_resources():
             if resource.resname() == self._id:
                 self.add_locations(resource.resname(), resource.restype(), [
-                                   resource.filepath()])
+                                   str(resource.filepath().resolve())])
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
                 if resource.resname() == self._id:
-                    self.add_locations(resource.resname(), resource.restype(), [resource.filepath()])
+                    self.add_locations(resource.resname(), resource.restype(), [str(resource.filepath().resolve())])
 
         # Any resource linked in the GIT not present in the module files
         original = self.git().active()
@@ -427,10 +431,7 @@ class Module:
             if resource.restype() == ResourceType.UTE
         ]
 
-    def store(
-            self,
-            resname: str
-    ) -> Optional[ModuleResource[UTM]]:
+    def store(self, resname: str) -> Optional[ModuleResource[UTM]]:
         return next(
             (
                 resource

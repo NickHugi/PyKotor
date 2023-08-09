@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from pykotor.resource.formats.rim import RIM
 from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
@@ -36,11 +36,11 @@ class RIMBinaryReader(ResourceReader):
         entry_count = self._reader.read_uint32()
         offset_to_keys = self._reader.read_uint32()
 
-        resrefs = []
-        resids = []
-        restypes = []
-        resoffsets = []
-        ressizes = []
+        resrefs: List[str] = []
+        resids: List[int] = []
+        restypes: List[int] = []
+        resoffsets: List[int] = []
+        ressizes: List[int] = []
         self._reader.seek(offset_to_keys)
         for i in range(entry_count):
             resrefs.append(self._reader.read_string(16))
@@ -66,7 +66,7 @@ class RIMBinaryWriter(ResourceWriter):
             rim: RIM,
             target: TARGET_TYPES
     ):
-        super().__init__(target.resolve())
+        super().__init__(target)
         self._rim = rim
 
     @autoclose
