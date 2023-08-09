@@ -2,7 +2,6 @@ import ntpath
 import os.path
 from configparser import ConfigParser
 from enum import IntEnum
-from pathlib import Path
 from typing import List, Dict, Optional, Union
 
 from pykotor.extract.capsule import Capsule
@@ -94,11 +93,11 @@ class PatcherNamespace:
 
 
 class ModInstaller:
-    def __init__(self, mod_path: Path, game_path: Path, ini_file: str, logger: Union[PatchLogger, None] = None):
-        self.game_path: Path = game_path
-        self.mod_path: Path = mod_path
+    def __init__(self, mod_path: str, game_path: str, ini_file: str, logger: Union[PatchLogger, None] = None):
+        self.game_path: str = game_path
+        self.mod_path: str = mod_path
         self.ini_file: str = ini_file
-        self.output_path: Path = game_path
+        self.output_path: str = game_path
         self.log: PatchLogger = PatchLogger() if logger is None else logger
 
         self._config: Optional[PatcherConfig] = None
@@ -110,7 +109,7 @@ class ModInstaller:
         """
 
         if self._config is None:
-            ini_file_bytes = BinaryReader.load_file(self.mod_path / self.ini_file)
+            ini_file_bytes = BinaryReader.load_file(f"{self.mod_path}/{self.ini_file}")
             ini_text = None
             try:
                 ini_text = ini_file_bytes.decode()

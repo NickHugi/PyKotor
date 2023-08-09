@@ -4,7 +4,6 @@ This module holds classes relating to read and write operations.
 from __future__ import annotations
 
 import io
-from pathlib import Path
 import struct
 from abc import ABC, abstractmethod
 from typing import BinaryIO, Union, Optional
@@ -117,12 +116,12 @@ class BinaryReader:
     @classmethod
     def from_auto(
             cls,
-            source: Optional[Union[Path, str, bytes, bytearray, BinaryReader]],
+            source: Optional[Union[str, bytes, bytearray, BinaryReader]],
             offset: int = 0,
-            size: int | None = None
+            size: int = None
     ):
-        if isinstance(source, (str, Path)):  # is path
-            reader = BinaryReader.from_file(str(source), offset, size)
+        if isinstance(source, str):  # is path
+            reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
         elif isinstance(source, BinaryReader):
@@ -134,7 +133,7 @@ class BinaryReader:
 
     @staticmethod
     def load_file(
-            path: Path,
+            path: str,
             offset: int = 0,
             size: int = -1
     ) -> bytes:
@@ -142,7 +141,7 @@ class BinaryReader:
         Returns bytes of a file at from specified path.
 
         Args:
-            path: The path of the file. Must be a path-like object.
+            path: The path of the file.
             offset: The offset into the file.
             size: The amount of bytes to load, if size equals -1 loads the whole file.
 
@@ -250,11 +249,6 @@ class BinaryReader:
     def read_all(
             self
     ) -> bytes:
-        """
-        The `read_all` function reads and returns all the bytes from a stream starting from the current
-        offset.
-        :return: The `read_all` method returns a `bytes` object.
-        """
         length = self.size() - self._offset
         self._stream.seek(self._offset)
         return self._stream.read(length)

@@ -6,7 +6,7 @@ from pykotor.resource.type import ResourceType
 
 
 def read_rim(
-        source: Union[Path, str, bytes, bytearray, BinaryReader],
+        source: Union[str, bytes, bytearray, BinaryReader],
         offset: int = 0,
         size: int = None
 ) -> RIM:
