@@ -96,7 +96,7 @@ class RowValueHigh(RowValue):
         self.column: Optional[str] = column
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: Optional[TwoDARow]) -> str:
-        return str(twoda.column_max(self.column)) if self.column is not None else twoda.label_max()
+        return str(twoda.column_max(self.column)) if self.column is not None else str(twoda.label_max())
 
 
 class RowValueRowIndex(RowValue):

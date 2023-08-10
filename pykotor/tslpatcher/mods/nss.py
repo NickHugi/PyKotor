@@ -1,11 +1,9 @@
 import re
-from abc import ABC, abstractmethod
-from typing import List, Union, Tuple
+from typing import List
 from pathlib import Path
 
-from pykotor.resource.formats.ssf import SSF, SSFSound
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
+from pykotor.tslpatcher.memory import PatcherMemory
 
 
 class ModificationsNSS:
@@ -17,13 +15,13 @@ class ModificationsNSS:
     def apply(self, nss: List[str], memory: PatcherMemory, logger: PatchLogger) -> None:
         source = nss[0]
 
-        print("Looking for #2DAMEMORY\d+# entries...")
+        print("Looking for #2DAMEMORY# entries...")
         while match := re.search(r"#2DAMEMORY\d+#", source):
             token_id = int(source[match.start() + 10:match.end() - 1])
             value_str: str = memory.memory_2da[token_id]
             source = source[0:match.start()] + value_str + source[match.end():len(source)]
 
-        print("Looking for #StrRef\d+# entries...")
+        print("Looking for #StrRef# entries...")
         while match := re.search(r"#StrRef\d+#", source):
             token_id = int(source[match.start() + 7:match.end() - 1])
             value: int = memory.memory_str[token_id]

@@ -28,7 +28,7 @@ from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, Targe
     RowValueRowLabel, RowValueConstant, RowValueRowCell
 
 class ConfigParser(RawConfigParser):
-    def _read(self, fp, fpname):
+    def _read(self, fp, fpname):  # sourcery skip: low-code-quality
         """Override the _read in RawConfigParser so it doesn't throw exceptions when there's no header defined.
         This override matches TSLPatcher.
         """
