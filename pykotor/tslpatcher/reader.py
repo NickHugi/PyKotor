@@ -137,15 +137,14 @@ class ConfigParser(RawConfigParser):
             raise e
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, append: TLK, mod_path: str) -> None:
+    def __init__(self, ini: ConfigParser, mod_path: str) -> None:
         self.ini = ini
-        self.dialog_tlk_edits: TLK = append
         self.mod_path: str = mod_path
 
         self.config: Optional[PatcherConfig] = None
 
     @classmethod
-    def from_filepath(cls, path: str, append_path: Optional[str]) -> PatcherConfig:
+    def from_filepath(cls, path: str) -> PatcherConfig:
         ini_file_bytes = BinaryReader.load_file(path)
         ini_text = None
         try:
@@ -161,10 +160,8 @@ class ConfigReader:
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        append = read_tlk(append_path) if os.path.exists(append_path) else TLK()
-
         config = PatcherConfig()
-        return ConfigReader(ini, append).load(config)
+        return ConfigReader(ini).load(config)
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
@@ -201,58 +198,80 @@ class ConfigReader:
     def load_tlk_list(self) -> None:
         if "TLKList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError("Config at self.config not defined! Nowhere to append patcher changes!")
 
-        stringrefs = dict(self.ini["TLKList"].items())
+        dialog_tlk_edits = dict(self.ini["TLKList"].items())
         modifier = None
+        modifier_dict: Dict[int, Dict[str, Union[str, ResRef]]] = {}
 
-        for name, value in stringrefs.items():
-            if "\\" in name:  # Handle in-line updates
+        append_tlk_edits: TLK | None = None
 
-                token_id = int(name.split("\\")[0])
-                property_name = name.split("\\")[1]
-                entry = self.dialog_tlk_edits.get(token_id)
-
-                if property_name.lower() == "text":
-                    entry.text = value
-                elif property_name.lower() == "sound":
-                    entry.voiceover = value
-                else:
-                    raise KeyError(f"Invalid TLKList syntax for key '{name}' value '{value}'")
-
-                self.config.patches_tlk.modifiers.append(modifier)
-
-            elif name.lower().startswith("file"):  # Handle multiple files
-
-                tlk_file_path = os.path.join(self.mod_path, value)
-                tlk_data_entries = None
-                if os.path.exists(tlk_file_path):
-                    tlk_data_entries = read_tlk(tlk_file_path)
-                else:
-                    raise FileNotFoundError(f"Cannot find TLK file: '{value}' at key '{name}' in TLKList")
-                if value in self.ini:
-                    custom_tlk_entries = dict(self.ini[value].items()) # get the entries from the custom header
-                    for change_index, token_id in custom_tlk_entries.items():
-                        entry = tlk_data_entries.get(int(token_id))
-
-                        modifier = ModifyTLK(int(change_index), entry.text, entry.voiceover, is_replacement = True)
-                        self.config.patches_tlk.modifiers.append(modifier)
-                else:
-                    raise KeyError(f"'{value}' Ini header referenced in TLKList not found.")
-
-            elif name.lower().startswith("strref"): # Handle legacy syntax
-                token_id = int(name[6:])
+        for key, value in dialog_tlk_edits.items():
+            key = key.lower()
+            token_id: int
+            if key.startswith("strref"): # Handle legacy syntax e.g. StrRef6=3
+                token_id = int(key[6:])
                 append_index = int(value)
-                entry = self.dialog_tlk_edits.get(append_index)
+                if append_tlk_edits is None: # Don't load the tlk unless actively needed, for performance reasons.
+                    append_path = os.path.join(self.mod_path, "append.tlk")
+                    append_tlk_edits = read_tlk(append_path) if os.path.exists(append_path) else TLK()
+                entry = append_tlk_edits.get(append_index)
 
                 modifier = ModifyTLK(token_id, entry.text, entry.voiceover, is_replacement = False)
                 self.config.patches_tlk.modifiers.append(modifier)
+
+            elif key.startswith("file"):  # Handle multiple files e.g. File0=update1.tlk
+                # Load referenced TLK file.
+                tlk_file_path = os.path.join(self.mod_path, value)
+                tlk_data_entries: TLK | None = None
+                if os.path.exists(tlk_file_path):
+                    tlk_data_entries = read_tlk(tlk_file_path)
+                else:
+                    raise FileNotFoundError(f"Cannot find TLK file: '{value}' at key '{key}' in TLKList")
+
+                # build modifications from replacement TLK
+                if value not in self.ini:
+                    raise KeyError(f"INI header for '{value}' referenced in TLKList key '{key}' not found.")
+                custom_tlk_entries = dict(self.ini[value].items()) # get the entries from the custom header e.g. [update1.tlk]
+                for change_index, token_id_str in custom_tlk_entries.items(): # replace the specified indices e.g. 1977=421
+                    entry = tlk_data_entries.get(int(token_id_str))
+                    modifier = ModifyTLK(int(change_index), entry.text, entry.voiceover, is_replacement = True)
+                    self.config.patches_tlk.modifiers.append(modifier)
+            elif "\\" in key or "/" in key:  # Handle in-line updates e.g. 2003\Text="Peace is a lie; there is only passion."
+                delimiter = "\\" if "\\" in key else "/"
+                token_id_str, property_name = key.split(delimiter)
+                token_id = int(token_id_str)
+
+                if token_id not in modifier_dict:
+                    modifier_dict[token_id] = {
+                        "text": "",
+                        "voiceover": ""
+                    }
+
+                if property_name == "text":
+                    modifier_dict[token_id]["text"] = value
+                elif property_name == "sound":
+                    modifier_dict[token_id]["voiceover"] = ResRef(value)
+                else:
+                    raise KeyError(f"Invalid TLKList syntax for key '{key}' value '{value}'")
+
+                text = modifier_dict[token_id].get("text")
+                voiceover = modifier_dict[token_id].get("voiceover")
+
+                #TODO: replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
+                if isinstance(text, str) and isinstance(voiceover, ResRef):
+                    modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
+                    self.config.patches_tlk.modifiers.append(modifier)
             else:
-                raise KeyError(f"Invalid key in TLKList: '{name}'")
+                raise KeyError(f"Invalid key in TLKList: '{key}'")
 
 
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError("Config at self.config not defined! Nowhere to append patcher changes!")
 
         files = dict(self.ini["2DAList"].items())
 
@@ -269,6 +288,8 @@ class ConfigReader:
     def load_ssf(self) -> None:
         if "SSFList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError("Config at self.config not defined! Nowhere to append patcher changes!")
 
         configstr_to_ssfsound = {
             "Battlecry 1": SSFSound.BATTLE_CRY_1,
@@ -327,6 +348,8 @@ class ConfigReader:
     def load_gff(self) -> None:
         if "GFFList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError("Config at self.config not defined! Nowhere to append patcher changes!")
 
         files = dict(self.ini["GFFList"].items())
 
@@ -354,6 +377,8 @@ class ConfigReader:
     def load_nss(self) -> None:
         if "CompileList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError("Config at self.config not defined! Nowhere to append patcher changes!")
 
         files = dict(self.ini["CompileList"].items())
 

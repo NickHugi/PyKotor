@@ -67,14 +67,14 @@ class PatcherConfig:
         self.patches_nss: List[ModificationsNSS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
-    def load(self, ini_text: str, append: TLK, mod_path: str) -> None:
+    def load(self, ini_text: str, mod_path: str) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
 
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        ConfigReader(ini, append, mod_path).load(self)
+        ConfigReader(ini, mod_path).load(self)
 
     def patch_count(self) -> int:
         return len(self.patches_2da) + len(self.patches_gff) + len(self.patches_ssf) + 1 + len(self.install_list) + len(self.patches_nss)
@@ -118,13 +118,8 @@ class ModInstaller:
                 except UnicodeDecodeError as e:
                     # Raise an exception if all decodings failed
                     raise Exception('Could not decode file') from e
-            append_tlk = (
-                read_tlk(f"{self.mod_path}/append.tlk")
-                if os.path.exists(f"{self.mod_path}/append.tlk")
-                else TLK()
-            )
             self._config = PatcherConfig()
-            self._config.load(ini_text, append_tlk, self.mod_path)
+            self._config.load(ini_text, self.mod_path)
 
         return self._config
 
