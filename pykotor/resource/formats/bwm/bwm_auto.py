@@ -2,7 +2,7 @@ from typing import Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, BWMBinaryWriter
-from pykotor.resource.type import ResourceType, SOURCE_TYPES
+from pykotor.resource.type import TARGET_TYPES, ResourceType, SOURCE_TYPES
 
 
 def read_bwm(
@@ -32,7 +32,7 @@ def read_bwm(
 
 def write_bwm(
         wok: BWM,
-        target: Union[str, bytearray, BinaryReader],
+        target: TARGET_TYPES,
         file_format: ResourceType = ResourceType.WOK
 ) -> None:
     """

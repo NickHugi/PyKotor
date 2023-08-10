@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.mdl import MDL, MDLBinaryReader, MDLBinaryWriter, MDLAsciiReader, MDLAsciiWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
@@ -50,7 +51,7 @@ def read_mdl(
         source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
-        source_ext: SOURCE_TYPES = None,
+        source_ext: Optional[SOURCE_TYPES] = None,
         offset_ext: int = 0,
         size_ext: int = 0
 ) -> MDL:
@@ -90,7 +91,7 @@ def write_mdl(
         mdl: MDL,
         target: TARGET_TYPES,
         file_format: ResourceType = ResourceType.MDL,
-        target_ext: TARGET_TYPES = None
+        target_ext: Optional[TARGET_TYPES] = None
 ) -> None:
     """
     Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).

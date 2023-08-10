@@ -18,9 +18,9 @@ def uninstall_all_mods(installation: Installation):
 
     # Remove all override files
     for file_path in override_path.iterdir():
-        os.remove(file_path.resolve())
+        os.remove(file_path)
 
     # Remove any .MOD files
     for file_path in modules_path.iterdir():
         if is_mod_file(file_path.name):
-            os.remove(file_path.resolve())
+            os.remove(file_path)

@@ -1,5 +1,6 @@
 import os
 from configparser import ConfigParser, DuplicateOptionError, DuplicateSectionError, RawConfigParser, SectionProxy
+from pathlib import Path
 import sys
 from typing import Dict, Optional, Union, Tuple, List
 
@@ -142,25 +143,30 @@ class ConfigReader:
         self.config: Optional[PatcherConfig] = None
 
     @classmethod
-    def from_filepath(cls, path: str, append_path: Optional[str]) -> PatcherConfig:
+    def from_filepath(cls, path: Path | str, append_path_arg: Union[Path, str] | None) -> PatcherConfig: # type: ignore
+        append_path: Path | None = Path(append_path_arg) if append_path_arg else None
         ini_file_bytes = BinaryReader.load_file(path)
         ini_text = None
         try:
             ini_text = ini_file_bytes.decode()
-        except UnicodeDecodeError:
+        except UnicodeDecodeError as ex:
             try:
                 # If UTF-8 failed, try 'cp1252' (similar to ANSI)
                 ini_text = ini_file_bytes.decode('cp1252')
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as ex2:
                 # Raise an exception if all decodings failed
-                raise Exception('Could not decode file')
+                raise ex2 from ex
+
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
-        append = read_tlk(append_path) if os.path.exists(append_path) else TLK()
-
         config = PatcherConfig()
+        append: TLK | None = None
+        if append_path is not None and append_path.exists():
+            append = read_tlk(append_path)
+        if append is None:
+            append = TLK()
         return ConfigReader(ini, append).load(config)
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
@@ -380,8 +386,7 @@ class ConfigReader:
             value = FieldValueConstant(locstring)
             name = name[:name.index("(lang")]
 
-        modifier = ModifyFieldGFF(name, value)
-        return modifier
+        return ModifyFieldGFF(name, value)
 
     def add_field_gff(self, identifier: str, ini_data: Dict[str, str], inside_list: bool = False) -> AddFieldGFF:
         fieldname_to_fieldtype = {
@@ -406,7 +411,7 @@ class ConfigReader:
         }
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        path = ini_data["Path"] if "Path" in ini_data else ""
+        path = ini_data.get("Path", "")
         label = ini_data.get("Label")
         raw_value = ini_data.get("Value")
 
@@ -545,7 +550,7 @@ class ConfigReader:
         for modifier, value in modifiers.items():
             is_store_2da = modifier.startswith("2DAMEMORY")
             is_store_tlk = modifier.startswith("StrRef")
-            is_row_label = modifier == "RowLabel" or modifier == "NewRowLabel"
+            is_row_label = modifier in ["RowLabel", "NewRowLabel"]
 
             if value.startswith("2DAMEMORY"):
                 token_id = int(value[9:])

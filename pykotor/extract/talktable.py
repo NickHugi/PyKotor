@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict, NamedTuple
 
 from pykotor.common.language import Language
@@ -19,9 +20,9 @@ class TalkTable:
 
     def __init__(
             self,
-            path: str
+            path: Path
     ):
-        self._path: str = path
+        self._path: Path = path
 
     def string(
             self,

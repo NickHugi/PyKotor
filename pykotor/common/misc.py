@@ -42,8 +42,7 @@ class ResRef:
         """
         A ResRef can be compared to another ResRef or a str.
         """
-        other_value = other.get().lower() if isinstance(
-            other, ResRef) else other.lower() if isinstance(other, str) else None
+        other_value = other.get().lower() if isinstance(other, ResRef) else other.lower() if isinstance(other, str) else None
         return other_value == self._value.lower() if other_value is not None else NotImplemented
 
     def __repr__(
@@ -277,9 +276,9 @@ class Color:
         Returns:
             A integer representing a color.
         """
-        red = int(self.r * 255) << 0
-        green = int(self.g * 255) << 8
-        blue = int(self.b * 255) << 16
+        red = int(self.r * 0xFF) << 0
+        green = int(self.g * 0xFF) << 8
+        blue = int(self.b * 0xFF) << 16
         return red + green + blue
 
     def rgba_integer(
@@ -291,10 +290,10 @@ class Color:
         Returns:
             A integer representing a color.
         """
-        red = int(self.r * 255) << 0
-        green = int(self.g * 255) << 8
-        blue = int(self.b * 255) << 16
-        alpha = int(self.a * 255) << 24
+        red = int(self.r * 0xFF) << 0
+        green = int(self.g * 0xFF) << 8
+        blue = int(self.b * 0xFF) << 16
+        alpha = int(self.a * 0xFF) << 24
         return red + green + blue + alpha
 
     def bgr_integer(
@@ -350,7 +349,7 @@ class WrappedInt:
 
     def __add__(
             self,
-            other
+            other: WrappedInt | int | object
     ):
         if isinstance(other, WrappedInt):
             self._value += other.get()
@@ -361,7 +360,7 @@ class WrappedInt:
 
     def __eq__(
             self,
-            other
+            other: WrappedInt | int | object
     ):
         if isinstance(other, WrappedInt):
             return self.get() == other.get()

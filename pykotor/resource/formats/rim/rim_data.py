@@ -57,6 +57,27 @@ class RIM:
         else:
             return NotImplemented
 
+    def __add__(self, other: RIM) -> RIM:
+        """
+        Combines the resources of two RIM instances into a new RIM instance.
+
+        Args:
+            other: Another RIM instance.
+
+        Returns:
+            A new RIM instance containing the combined resources.
+        """
+        if not isinstance(other, RIM):
+            return NotImplemented
+
+        combined_rim = RIM()
+        for resource in self:
+            combined_rim.set(resource.resref.get(), resource.restype, resource.data)
+        for resource in other:
+            combined_rim.set(resource.resref.get(), resource.restype, resource.data)
+
+        return combined_rim
+
     def set(
             self,
             resref: str,

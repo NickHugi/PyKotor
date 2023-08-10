@@ -1,5 +1,3 @@
-import ntpath
-import os.path
 from pathlib import Path
 from typing import List, Optional, Dict
 
@@ -22,7 +20,7 @@ class Capsule:
             path: Path | str,
             create_nonexisting: bool = False
     ):
-        self._path: Path = Path(path).resolve()
+        self._path: Path = Path(path)
         self._resources: List[FileResource] = []
 
         str_path = str(self._path)
@@ -41,8 +39,7 @@ class Capsule:
     def __iter__(
             self
     ):
-        for resource in self._resources:
-            yield resource
+        yield from self._resources
 
     def __len__(
             self
@@ -151,13 +148,13 @@ class Capsule:
 
     def path(
             self
-    ) -> str:
-        return os.path.normpath(self._path)
+    ) -> Path:
+        return self._path
 
     def filename(
             self
     ) -> str:
-        return ntpath.basename(self._path)
+        return self._path.name
 
     def _load_erf(
             self,

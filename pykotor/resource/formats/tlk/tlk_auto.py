@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import TLK, TLKBinaryReader, TLKXMLReader, TLKBinaryWriter
 from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader, TLKJSONWriter
@@ -62,7 +63,7 @@ def detect_tlk(
 def read_tlk(
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = None
+        size: Optional[int] = None
 ) -> TLK:
     """
     Returns an TLK instance from the source. The file format (TLK, TLK_XML or TLK_JSON) is automatically determined
@@ -82,11 +83,13 @@ def read_tlk(
     Returns:
         An TLK instance.
     """
-    file_format = detect_tlk(str(source.resolve()), offset)
+    print("Detect tlk...")
+    file_format = detect_tlk(source, offset)
 
     if file_format is ResourceType.INVALID:
         raise ValueError("Failed to determine the format of the GFF file.")
 
+    print("Reading tlk...")
     if file_format == ResourceType.TLK:
         return TLKBinaryReader(source, offset, size).load()
     elif file_format == ResourceType.TLK_XML:
@@ -113,6 +116,7 @@ def write_tlk(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
+    print("Writing tlk...")
     if file_format == ResourceType.TLK:
         TLKBinaryWriter(tlk, target).write()
     elif file_format == ResourceType.TLK_XML:

@@ -76,7 +76,7 @@ class SearchLocation(IntEnum):
 class ItemTuple(NamedTuple):
     resname: str
     name: str
-    filepath: str
+    filepath: Path
 
 
 class Installation:
@@ -90,7 +90,7 @@ class Installation:
     def __init__(self, path: Path):
         self._path: Path = path
 
-        self._talktable: TalkTable = TalkTable(str((self._path / "dialog.tlk").resolve()))
+        self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
 
         self._chitin: List[FileResource] = []
         self._modules: Dict[str, List[FileResource]] = {}
@@ -215,7 +215,7 @@ class Installation:
                 module_path = module_path / folder
         if module_path == self._path:
             raise ValueError(error_msg.format(self._path))
-        return Path(module_path).resolve()
+        return Path(module_path)
 
     def streamvoice_path(self) -> Path:
         """
@@ -237,7 +237,7 @@ class Installation:
         if streamwavesvoice_path == self._path:
             raise ValueError(
                 f"Could not find voice over folder in '{self._path}'.")
-        return Path(streamwavesvoice_path).resolve()
+        return Path(streamwavesvoice_path)
 
     # endregion
 
@@ -308,14 +308,14 @@ class Installation:
         override_path = self.override_path()
 
         for path, subdirs, files in os.walk(override_path):
-            directory = str(Path(path).resolve()).replace(
-                str(override_path.resolve()), "")
+            directory = str(Path(path)).replace(
+                str(override_path), "")
             path = (path if path.endswith("/")
                     else path + "/").replace("\\", "/")
             self._override[directory] = []
             for file in files:
-                file_path = Path(path, file).resolve()
-                override_subdir = str(file_path.parent.resolve())
+                file_path = Path(path, file)
+                override_subdir = str(file_path.parent)
                 self._override[override_subdir] = []
                 with suppress(Exception):
                     name, ext = file.split('.', 1)
@@ -348,9 +348,9 @@ class Installation:
         streammusic_path = self.streammusic_path()
         for filename in list(os.listdir(str(Path(streammusic_path)))):
             with suppress(Exception):
-                filepath = (streammusic_path / filename).resolve()
+                filepath = (streammusic_path / filename)
                 identifier = ResourceIdentifier.from_path(
-                    str(filepath.resolve()))
+                    str(filepath))
                 resource = FileResource(
                     identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
 
@@ -362,9 +362,9 @@ class Installation:
         """
         self._streamsounds = []
         streamsounds_path = self.streamsounds_path()
-        for filename in list(os.listdir(str(Path(streamsounds_path)))):
+        for filename in streamsounds_path.iterdir():
             with suppress(Exception):
-                filepath = (streamsounds_path / filename).resolve()
+                filepath = (streamsounds_path / filename)
                 identifier = ResourceIdentifier.from_path(str(filepath))
                 resource = FileResource(
                     identifier.resname, identifier.restype, filepath.stat().st_size, 0, filepath)
@@ -377,7 +377,7 @@ class Installation:
         """
         self._streamvoices = []
         streamvoices_path = self.streamvoice_path()
-        for filename in list(os.listdir(str(streamvoices_path.resolve()))):
+        for filename in list(os.listdir(str(streamvoices_path))):
             with suppress(Exception):
                 filepath = streamvoices_path / filename
                 identifier = ResourceIdentifier.from_path(str(filepath))
@@ -629,7 +629,7 @@ class Installation:
         order: List[SearchLocation] | None = None,
         *,
         capsules: List[Capsule] | None = None,
-        folders: List[str] | None = None,
+        folders: List[Path] | None = None,
     ) -> List[LocationResult]:
         """
         Returns a list filepaths for where a particular resource matching the given resref and restype are located.
@@ -729,7 +729,7 @@ class Installation:
 
         def check_folders(values: List[Path]):
             for folder in values:
-                folder = Path(folder).resolve()
+                folder = Path(folder)
                 for file in [file for file in folder.iterdir() if file.is_file()]:
                     filepath = Path(folder, file)
                     for query in queries:
@@ -792,7 +792,7 @@ class Installation:
         Returns a TPC object loaded from a resource with the specified name. If the specified texture could not be found
         then the method returns None.
 
-        This is a wrapper of the textures() method provided to make searching for a single texture more convienent.
+        This is a wrapper of the textures() method provided to make searching for a single texture more convenient.
 
         Texture is search for in the following order:
             1. "folders" parameter.
@@ -823,7 +823,7 @@ class Installation:
         order: List[SearchLocation] | None = None,
         *,
         capsules: List[Capsule] | None = None,
-        folders: List[str] | None = None,
+        folders: List[Path] | None = None,
     ) -> CaseInsensitiveDict[Optional[TPC]]:
         """
         Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
@@ -894,10 +894,10 @@ class Installation:
 
         def check_folders(values: List[Path]):
             for folder in values:
-                folder = Path(folder).resolve()
+                folder = Path(folder)
                 for file in [file for file in folder.iterdir() if file.is_file()]:
                     identifier = ResourceIdentifier.from_path(file.name)
-                    filepath: Path = Path(folder, file).resolve()
+                    filepath: Path = Path(folder, file)
                     for resname in queries:
                         if (
                             identifier.resname == resname
@@ -947,7 +947,7 @@ class Installation:
         """
         Returns the bytes of a sound resource if it can be found, otherwise returns None.
 
-        This is a wrapper of the sounds() method provided to make searching for a single resource more convienent.
+        This is a wrapper of the sounds() method provided to make searching for a single resource more convenient.
 
         Args:
             queries: The name of the resource to look for.
@@ -1040,7 +1040,7 @@ class Installation:
 
         def check_folders(values: List[str] | List[Path]):
             for folder in values:
-                filepath: Path = Path(folder).resolve()
+                filepath: Path = Path(folder)
                 for file in [file for file in filepath.iterdir() if file.is_file()]:
                     identifier = ResourceIdentifier.from_path(file.name)
                     for resname in resnames:
@@ -1085,7 +1085,7 @@ class Installation:
         """
         Returns the string for the LocalizedString provided.
 
-        This is a wrapper of the strings() method provided to make searching for a single string more convienent.
+        This is a wrapper of the strings() method provided to make searching for a single string more convenient.
 
         Args:
             locstring:
@@ -1142,12 +1142,7 @@ class Installation:
         Returns:
             The name of the area for the module.
         """
-        root = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
-        root = re.sub(r"\.erf$", "", root, flags=re.IGNORECASE)
-        root = re.sub(r"\.rim$", "", root, flags=re.IGNORECASE)
-        root = root[:-len("_s")] if root.endswith("_s") else root
-        root = root[:-len("_dlg")] if root.endswith("_dlg") else root
-
+        root = self._replace_module_extensions(module_filename)
         if use_hardcoded:
             hardcoded = {
                 "STUNT_00": "Ebon Hawk - Cutscene (Vision Sequences)",
@@ -1230,12 +1225,7 @@ class Installation:
         Returns:
             The ID of the area for the module.
         """
-        root = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
-        root = re.sub(r"\.erf$", "", root, flags=re.IGNORECASE)
-        root = re.sub(r"\.rim$", "", root, flags=re.IGNORECASE)
-        root = root[:-len("_s")] if root.endswith("_s") else root
-        root = root[:-len("_dlg")] if root.endswith("_dlg") else root
-
+        root = self._replace_module_extensions(module_filename)
         if use_hardcoded:
             hardcoded = {
                 "STUNT_00": "000",
@@ -1278,6 +1268,15 @@ class Installation:
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
 
         return mod_id
+
+    # TODO Rename this here and in `module_name` and `module_id`
+    def _replace_module_extensions(self, module_filename):
+        result = re.sub("\.mod$", "", module_filename, flags=re.IGNORECASE)
+        result = re.sub("\.erf$", "", result, flags=re.IGNORECASE)
+        result = re.sub("\.rim$", "", result, flags=re.IGNORECASE)
+        result = result[:-len("_s")] if result.endswith("_s") else result
+        result = result[:-len("_dlg")] if result.endswith("_dlg") else result
+        return result
 
     def module_ids(self) -> Dict[str, str]:
         """

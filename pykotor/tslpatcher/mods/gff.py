@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import List, Any, Optional, Union, Tuple
 
 from pykotor.common.language import LocalizedString
@@ -206,10 +207,10 @@ class ModifyFieldGFF(ModifyGFF):
 # endregion
 
 class ModificationsGFF:
-    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] = None, destination: str = None):
+    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] | None = None, destination: str | None = None):
         self.filename: str = filename
         self.replace_file: bool = replace_file
-        self.destination: str = destination if destination is not None else "/override/"+filename
+        self.destination: str = destination if destination is not None else str(Path("override", filename))
         self.modifiers: List[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(self, gff: GFF, memory: PatcherMemory, logger: PatchLogger) -> None:

@@ -1230,7 +1230,7 @@ class MDLBinaryReader:
             source: SOURCE_TYPES,
             offset: int = 0,
             size: int = 0,
-            source_ext: SOURCE_TYPES = None,
+            source_ext: Optional[SOURCE_TYPES] = None,
             offset_ext: int = 0,
             size_ext: int = 0
     ):

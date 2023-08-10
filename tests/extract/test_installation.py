@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
@@ -12,9 +13,13 @@ from pykotor.tools.misc import is_bif_file, is_nss_file
 class TestInstallation(TestCase):
     def setUp(self) -> None:
         path = os.environ.get("K1_PATH")
+        if path is not None:
+            path = Path(path)
+        else:
+            raise ValueError("K1_PATH environment variable not set.")
         self.installation = Installation(path)
 
-        if not os.path.exists(f"self.installation.override_path(){nwscript.nss}"):
+        if not Path(self.installation.override_path() / "nwscript.nss").exists():
             raise ValueError("Place nwscript.nss in override folder before testing.")
 
     def test_resource(self):
@@ -100,14 +105,16 @@ class TestInstallation(TestCase):
         self.assertTrue(
             is_bif_file(
                 installation.resource(
-                    "nwscript", ResourceType.NSS, [SearchLocation.CHITIN, SearchLocation.OVERRIDE]
-                ).filepath
+                    "nwscript",
+                    ResourceType.NSS,
+                    [SearchLocation.CHITIN, SearchLocation.OVERRIDE]
+                ).filepath.name
         ))
         self.assertTrue(
             is_nss_file(
                 installation.resource(
                     "nwscript", ResourceType.NSS, [SearchLocation.OVERRIDE, SearchLocation.CHITIN]
-                ).filepath
+                ).filepath.name
         ))
 
     def test_resources(self):
@@ -118,19 +125,19 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.utc"),
         ]
         chitin_results = installation.resources(chitin_resources, [SearchLocation.CHITIN])
-        self._extracted_from_test_locations_9(chitin_results, "c_bantha.utc", "x.utc")
+        self._assert_from_path_tests(chitin_results, "c_bantha.utc", "x.utc")
         modules_resources = [
             ResourceIdentifier.from_path("m01aa.are"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         modules_results = installation.resources(modules_resources, [SearchLocation.MODULES])
-        self._extracted_from_test_locations_9(modules_results, "m01aa.are", "x.tpc")
+        self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
         override_resources = [
             ResourceIdentifier.from_path("nwscript.nss"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         override_results = installation.resources(override_resources, [SearchLocation.OVERRIDE])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             override_results, "nwscript.nss", "x.tpc"
         )
         voices_resources = [
@@ -138,7 +145,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.mp3"),
         ]
         voices_results = installation.resources(voices_resources, [SearchLocation.VOICE])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             voices_results, "NM17AE04NI04008_.wav", "x.mp3"
         )
         music_resources = [
@@ -146,7 +153,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.mp3"),
         ]
         music_results = installation.resources(music_resources, [SearchLocation.MUSIC])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             music_results, "mus_theme_carth.wav", "x.mp3"
         )
         sounds_resources = [
@@ -154,7 +161,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.mp3"),
         ]
         sounds_results = installation.resources(sounds_resources, [SearchLocation.SOUND])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             sounds_results, "P_ZAALBAR_POIS.wav", "x.mp3"
         )
         lips_resources = [
@@ -162,7 +169,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.lip"),
         ]
         lips_results = installation.resources(lips_resources, [SearchLocation.LIPS])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             lips_results, "n_gendro_coms1.lip", "x.lip"
         )
         rims_resources = [
@@ -170,31 +177,31 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.ssf"),
         ]
         rims_results = installation.resources(rims_resources, [SearchLocation.RIMS])
-        self._extracted_from_test_locations_9(rims_results, "darkjedi.ssf", "x.ssf")
+        self._assert_from_path_tests(rims_results, "darkjedi.ssf", "x.ssf")
         texa_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texa_results = installation.resources(texa_resources, [SearchLocation.TEXTURES_TPA])
-        self._extracted_from_test_locations_9(texa_results, "blood.tpc", "x.tpc")
+        self._assert_from_path_tests(texa_results, "blood.tpc", "x.tpc")
         texb_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texb_results = installation.resources(texb_resources, [SearchLocation.TEXTURES_TPB])
-        self._extracted_from_test_locations_9(texb_results, "blood.tpc", "x.tpc")
+        self._assert_from_path_tests(texb_results, "blood.tpc", "x.tpc")
         texc_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texc_results = installation.resources(texc_resources, [SearchLocation.TEXTURES_TPC])
-        self._extracted_from_test_locations_9(texc_results, "blood.tpc", "x.tpc")
+        self._assert_from_path_tests(texc_results, "blood.tpc", "x.tpc")
         texg_resources = [
             ResourceIdentifier.from_path("1024x768back.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texg_results = installation.resources(texg_resources, [SearchLocation.TEXTURES_GUI])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             texg_results, "1024x768back.tpc", "x.tpc"
         )
         capsules = [Capsule(f"{installation.module_path()}danm13.rim")]
@@ -205,7 +212,7 @@ class TestInstallation(TestCase):
         capsules_results = installation.resources(
             capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
         )
-        self._extracted_from_test_locations_9(capsules_results, "m13aa.are", "xyz.ifo")
+        self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
         folders = [installation.override_path()]
         folders_resources = [
             ResourceIdentifier.from_path("nwscript.nss"),
@@ -214,7 +221,7 @@ class TestInstallation(TestCase):
         folders_results = installation.resources(
             folders_resources, [SearchLocation.CUSTOM_FOLDERS], folders=folders
         )
-        self._extracted_from_test_locations_9(folders_results, "nwscript.nss", "x.utc")
+        self._assert_from_path_tests(folders_results, "nwscript.nss", "x.utc")
 
     def test_location(self):
         installation = self.installation
@@ -285,19 +292,19 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.utc"),
         ]
         chitin_results = installation.locations(chitin_resources, [SearchLocation.CHITIN])
-        self._extracted_from_test_locations_9(chitin_results, "c_bantha.utc", "x.utc")
+        self._assert_from_path_tests(chitin_results, "c_bantha.utc", "x.utc")
         modules_resources = [
             ResourceIdentifier.from_path("m01aa.are"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         modules_results = installation.locations(modules_resources, [SearchLocation.MODULES])
-        self._extracted_from_test_locations_9(modules_results, "m01aa.are", "x.tpc")
+        self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
         override_resources = [
             ResourceIdentifier.from_path("nwscript.nss"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         override_results = installation.locations(override_resources, [SearchLocation.OVERRIDE])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             override_results, "nwscript.nss", "x.tpc"
         )
         voices_resources = [
@@ -305,7 +312,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.mp3"),
         ]
         voices_results = installation.locations(voices_resources, [SearchLocation.VOICE])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             voices_results, "NM17AE04NI04008_.wav", "x.mp3"
         )
         music_resources = [
@@ -313,7 +320,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.mp3"),
         ]
         music_results = installation.locations(music_resources, [SearchLocation.MUSIC])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             music_results, "mus_theme_carth.wav", "x.mp3"
         )
         sounds_resources = [
@@ -321,7 +328,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.mp3"),
         ]
         sounds_results = installation.locations(sounds_resources, [SearchLocation.SOUND])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             sounds_results, "P_ZAALBAR_POIS.wav", "x.mp3"
         )
         lips_resources = [
@@ -329,7 +336,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.lip"),
         ]
         lips_results = installation.locations(lips_resources, [SearchLocation.LIPS])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             lips_results, "n_gendro_coms1.lip", "x.lip"
         )
         rims_resources = [
@@ -337,34 +344,34 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("x.ssf"),
         ]
         rims_results = installation.locations(rims_resources, [SearchLocation.RIMS])
-        self._extracted_from_test_locations_9(rims_results, "darkjedi.ssf", "x.ssf")
+        self._assert_from_path_tests(rims_results, "darkjedi.ssf", "x.ssf")
         texa_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texa_results = installation.locations(texa_resources, [SearchLocation.TEXTURES_TPA])
-        self._extracted_from_test_locations_9(texa_results, "blood.tpc", "x.tpc")
+        self._assert_from_path_tests(texa_results, "blood.tpc", "x.tpc")
         texb_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texb_results = installation.locations(texb_resources, [SearchLocation.TEXTURES_TPB])
-        self._extracted_from_test_locations_9(texb_results, "blood.tpc", "x.tpc")
+        self._assert_from_path_tests(texb_results, "blood.tpc", "x.tpc")
         texc_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texc_results = installation.locations(texc_resources, [SearchLocation.TEXTURES_TPC])
-        self._extracted_from_test_locations_9(texc_results, "blood.tpc", "x.tpc")
+        self._assert_from_path_tests(texc_results, "blood.tpc", "x.tpc")
         texg_resources = [
             ResourceIdentifier.from_path("1024x768back.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
         texg_results = installation.locations(texg_resources, [SearchLocation.TEXTURES_GUI])
-        self._extracted_from_test_locations_9(
+        self._assert_from_path_tests(
             texg_results, "1024x768back.tpc", "x.tpc"
         )
-        capsules = [Capsule(installation.module_path() + "danm13.rim")]
+        capsules = [Capsule(installation.module_path() / "danm13.rim")]
         capsules_resources = [
             ResourceIdentifier.from_path("m13aa.are"),
             ResourceIdentifier.from_path("xyz.ifo"),
@@ -372,7 +379,7 @@ class TestInstallation(TestCase):
         capsules_results = installation.locations(
             capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
         )
-        self._extracted_from_test_locations_9(capsules_results, "m13aa.are", "xyz.ifo")
+        self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
         folders = [installation.override_path()]
         folders_resources = [
             ResourceIdentifier.from_path("nwscript.nss"),
@@ -381,10 +388,9 @@ class TestInstallation(TestCase):
         folders_results = installation.locations(
             folders_resources, [SearchLocation.CUSTOM_FOLDERS], folders=folders
         )
-        self._extracted_from_test_locations_9(folders_results, "nwscript.nss", "x.utc")
+        self._assert_from_path_tests(folders_results, "nwscript.nss", "x.utc")
 
-    # TODO Rename this here and in `test_resources` and `test_locations`
-    def _extracted_from_test_locations_9(self, arg0, arg1, arg2):
+    def _assert_from_path_tests(self, arg0, arg1, arg2):
         self.assertTrue(arg0[ResourceIdentifier.from_path(arg1)])
         self.assertFalse(arg0[ResourceIdentifier.from_path(arg2)])
         self.assertEqual(2, len(arg0))

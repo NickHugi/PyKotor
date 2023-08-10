@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, NamedTuple
 
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_erf_file, is_mod_file, is_rim_file
+from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 
 
 class FileResource:
@@ -24,7 +24,7 @@ class FileResource:
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: str = str(Path(filepath).resolve())
+        self._filepath: Path = Path(filepath)
         self._offset: int = offset
 
     def __repr__(
@@ -65,7 +65,7 @@ class FileResource:
 
     def filepath(
             self
-    ) -> str:
+    ) -> Path:
         return self._filepath
 
     def offset(
@@ -85,13 +85,13 @@ class FileResource:
             Bytes data of the resource.
         """
         if reload:
-            if is_mod_file(self._filepath) or is_erf_file(self._filepath) or is_rim_file(self._filepath):
+            if is_capsule_file(self._filepath.name):
                 from pykotor.extract.capsule import Capsule
                 capsule = Capsule(self._filepath)
                 res = capsule.info(self._resname, self._restype)
                 self._offset = res.offset()
                 self._size = res.size()
-            elif not is_bif_file(self._filepath):
+            elif not is_bif_file(self._filepath.name):
                 self._offset = 0
                 self._size = os.path.getsize(self._filepath)
 
@@ -108,12 +108,12 @@ class FileResource:
 class ResourceResult(NamedTuple):
     resname: str
     restype: ResourceType
-    filepath: str
+    filepath: Path
     data: Optional[bytes]
 
 
 class LocationResult(NamedTuple):
-    filepath: str
+    filepath: Path
     offset: int
     size: int
 

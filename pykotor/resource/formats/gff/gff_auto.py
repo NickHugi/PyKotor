@@ -51,7 +51,7 @@ def detect_gff(
 def read_gff(
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = None
+        size: int | None = None
 ) -> GFF:
     """
     Returns an GFF instance from the source. The file format (GFF or GFF_XML) is automatically determined before parsing

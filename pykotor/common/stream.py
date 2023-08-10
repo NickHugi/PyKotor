@@ -139,7 +139,7 @@ class BinaryReader:
 
     @staticmethod
     def load_file(
-            path: Path,
+            path: Union[str, Path],
             offset: int = 0,
             size: int = -1
     ) -> bytes:
@@ -654,11 +654,11 @@ class BinaryWriter(ABC):
 
     @classmethod
     def to_auto(
-            cls,
-            source: Union[Path, str, bytearray, BinaryWriter] | object
+        cls,
+        source: Union[Path, str, bytes, bytearray, BinaryReader] | object
     ) -> BinaryWriter:
         if isinstance(source, (Path, str)):  # is path
-            return BinaryWriter.to_file(Path(source).resolve())
+            return BinaryWriter.to_file(Path(source))
         elif isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)
         elif isinstance(source, BinaryWriter):
@@ -680,7 +680,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        with open(str(path.resolve()), 'wb') as file:
+        with open(str(path), 'wb') as file:
             file.write(data)
 
     @abstractmethod

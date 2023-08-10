@@ -2,13 +2,13 @@ from typing import Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.vis import VIS, VISAsciiWriter, VISAsciiReader
-from pykotor.resource.type import ResourceType
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def read_vis(
-        source: Union[Path, str, bytes, bytearray, BinaryReader],
+        source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = None
+        size: int | None = None
 ) -> VIS:
     """
     Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
@@ -33,7 +33,7 @@ def read_vis(
 
 def write_vis(
         vis: VIS,
-        target: Union[str, bytearray, BinaryReader],
+        target: TARGET_TYPES,
         file_format: ResourceType = ResourceType.VIS
 ) -> None:
     """

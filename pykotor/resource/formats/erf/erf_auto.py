@@ -3,11 +3,11 @@ from typing import Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
-from pykotor.resource.type import ResourceType
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def read_erf(
-        source: Union[Path, str, bytes, bytearray, BinaryReader],
+        source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0
 ) -> ERF:
@@ -34,7 +34,7 @@ def read_erf(
 
 def write_erf(
         erf: ERF,
-        target: Union[str, bytearray, BinaryReader],
+        target: TARGET_TYPES,
         file_format: ResourceType = ResourceType.ERF
 ) -> None:
     """

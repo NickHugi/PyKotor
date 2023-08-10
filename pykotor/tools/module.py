@@ -190,7 +190,7 @@ def clone_module(
     newModule.set(identifier, ResourceType.LYT, lyt_data)
 
     filepath = installation.module_path() / (identifier + ".mod")
-    write_erf(newModule, filepath)
+    write_erf(newModule, str(filepath))
 
 
 def rim_to_mod(filepath: Path) -> None:
@@ -207,26 +207,24 @@ def rim_to_mod(filepath: Path) -> None:
     Args:
         filepath: The filepath of the MOD file you would like to create.
     """
-    if not is_mod_file(filepath.suffix):
+    if not is_mod_file(filepath.name):
         raise ValueError("Specified file must end with the .mod extension")
 
     base: str = filepath.stem
     old_extension: str = filepath.suffix
-    lowercase_extension = old_extension.lower()
+    lowercase_extension: str = old_extension.lower()
 
-    rim_s_extension = lowercase_extension.replace(".mod", "_s.rim")
-    rim_extension = lowercase_extension.replace(".mod", ".rim")
+    rim_s_extension: str = lowercase_extension.replace(".mod", "_s.rim")
+    rim_extension: str = lowercase_extension.replace(".mod", ".rim")
 
-    filepath_rim_s = base + \
-        rim_s_extension if rim_s_extension != lowercase_extension else filepath
-    filepath_rim = base + rim_extension if rim_extension != lowercase_extension else filepath
+    filepath_rim_s: Path = filepath.parent / (base + rim_s_extension) if rim_s_extension != lowercase_extension else filepath
+    filepath_rim: Path = filepath.parent / (base + rim_extension) if rim_extension != lowercase_extension else filepath
 
-    rim = read_rim(filepath_rim) if os.path.exists(filepath_rim) else RIM()
-    rim_s = read_rim(filepath_rim_s) if os.path.exists(
-        filepath_rim_s) else RIM()
+    rim: RIM = read_rim(filepath_rim) if filepath_rim.exists() else RIM()
+    rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
 
     mod = ERF(ERFType.MOD)
     for res in rim + rim_s:
         mod.set(res.resref.get(), res.restype, res.data)
 
-    write_erf(mod, filepath, ResourceType.ERF)
+    write_erf(mod, str(filepath), ResourceType.ERF)

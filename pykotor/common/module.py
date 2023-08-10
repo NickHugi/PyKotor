@@ -42,6 +42,7 @@ from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import (
+    case_insensitive_replace,
     is_bif_file,
     is_capsule_file,
     is_erf_or_mod_file,
@@ -68,7 +69,7 @@ class Module:
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
         self._capsules.extend([
-            Capsule(installation.module_path() + module)
+            Capsule(installation.module_path() / module)
             for module in installation.module_names()
             if root in module.lower()
         ])
@@ -99,7 +100,7 @@ class Module:
             The string for the root name of a module.
         """
         root = (
-            case_insensitive_replace(case_insensitive_replace(case_insensitive_replace(filepath, ".rim", ""), ".erf", ""), ".mod", "")
+            case_insensitive_replace(case_insensitive_replace(case_insensitive_replace(str(filepath), ".rim", ""), ".erf", ""), ".mod", "")
         )
         root_a = root[:5]
         root_b = root[5:]
@@ -122,16 +123,16 @@ class Module:
             for resource in capsule:
                 resname = resource.resname()
                 restype = resource.restype()
-                self.add_locations(resname, restype, [str(capsule.path().resolve())])
+                self.add_locations(resname, restype, [capsule.path()])
         # Look for LYT/VIS
         for resource in self._installation.chitin_resources():
             if resource.resname() == self._id:
                 self.add_locations(resource.resname(), resource.restype(), [
-                                   str(resource.filepath().resolve())])
+                                   resource.filepath()])
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
                 if resource.resname() == self._id:
-                    self.add_locations(resource.resname(), resource.restype(), [str(resource.filepath().resolve())])
+                    self.add_locations(resource.resname(), resource.restype(), [resource.filepath()])
 
         # Any resource linked in the GIT not present in the module files
         original = self.git().active()
@@ -231,7 +232,7 @@ class Module:
         for resource in self.resources.values():
             resource.activate()
 
-    def add_locations(self, resname: str, restype: ResourceType, locations: List[str]):
+    def add_locations(self, resname: str, restype: ResourceType, locations: List[Path]):
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
         filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
@@ -586,9 +587,9 @@ class ModuleResource(Generic[T]):
         self._resname: str = resname
         self._installation = installation
         self._restype: ResourceType = restype
-        self._active: Optional[str] = None
+        self._active: Optional[Path] = None
         self._resource: Any = None
-        self._locations: List[str] = []
+        self._locations: List[Path] = []
 
     def resname(self) -> str:
         """
@@ -609,6 +610,7 @@ class ModuleResource(Generic[T]):
         return self._restype
 
     def localized_name(self) -> Optional[str]:
+        # sourcery skip: assign-if-exp, reintroduce-else
         res = self.resource()
         if res is None:
             return None
@@ -643,10 +645,10 @@ class ModuleResource(Generic[T]):
 
         if self._active is None:
             raise ValueError(f"No file is currently active for resource '{self.resname}.{self._restype.extension}'.")
-        elif is_capsule_file(self._active):
+        elif is_capsule_file(self._active.name):
             capsule = Capsule(self._active)
             return capsule.resource(self._resname, self._restype)
-        elif is_bif_file(self._active):
+        elif is_bif_file(self._active.name):
             return self._installation.resource(self._resname, self._restype, [SearchLocation.CHITIN]).data
         else:
             return BinaryReader.load_file(self._active)
@@ -685,10 +687,10 @@ class ModuleResource(Generic[T]):
 
             if self._active is None:
                 self._resource = None
-            elif is_capsule_file(self._active):
+            elif is_capsule_file(self._active.name):
                 data = Capsule(self._active).resource(self._resname, self._restype)
                 self._resource = conversions[self._restype](data)
-            elif is_bif_file(self._active):
+            elif is_bif_file(self._active.name):
                 data = self._installation.resource(self._resname, self._restype, [SearchLocation.CHITIN]).data
                 self._resource = conversions[self._restype](data)
             else:
@@ -696,7 +698,7 @@ class ModuleResource(Generic[T]):
                 self._resource = conversions[self._restype](data)
         return self._resource
 
-    def add_locations(self, filepaths: List[str]) -> None:
+    def add_locations(self, filepaths: List[Path]) -> None:
         """
         Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
         ignored.
@@ -712,10 +714,10 @@ class ModuleResource(Generic[T]):
 
     def locations(
         self,
-    ) -> List[str]:
+    ) -> List[Path]:
         return self._locations
 
-    def activate(self, filepath: str = None) -> None:
+    def activate(self, filepath: Path | None = None) -> None:
         """
         Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
@@ -747,7 +749,7 @@ class ModuleResource(Generic[T]):
         self._resource = None
         self.resource()
 
-    def active(self) -> Optional[str]:
+    def active(self) -> Optional[Path]:
         """
         Returns the filepath of the currently active file for the resource.
 
@@ -787,18 +789,17 @@ class ModuleResource(Generic[T]):
 
         if self._active is None:
             raise ValueError("No active file selected for resource '{self._resname}.{self._restype.extension}'")
-        elif is_erf_file(self._active) or is_mod_file(self._active):
+        elif is_erf_or_mod_file(self._active.name):
             erf = read_erf(self._active)
-            erf.erf_type = ERFType.ERF if is_erf_file(self._active) else ERFType.MOD
+            erf.erf_type = ERFType.ERF if is_erf_file(self._active.name) else ERFType.MOD
             erf.set(self._resname, self._restype, conversions[self._restype](self.resource()))
             write_erf(erf, self._active)
-        elif is_rim_file(self._active):
+        elif is_rim_file(self._active.name):
             rim = read_rim(self._active)
             rim.set(self._resname, self._restype,
                     conversions[self._restype](self.resource()))
             write_rim(rim, self._active)
-        elif is_bif_file(self._active):
+        elif is_bif_file(self._active.name):
             raise ValueError("Cannot save file to BIF.")
         else:
-            BinaryWriter.dump(
-                self._active, conversions[self._restype](self.resource()))
+            BinaryWriter.dump(self._active, conversions[self._restype](self.resource()))

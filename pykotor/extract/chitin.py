@@ -19,7 +19,7 @@ class Chitin:
             self,
             kotor_path: Path
     ):
-        self._kotor_path = Path( kotor_path ).resolve()
+        self._kotor_path = Path( kotor_path )
 
         self._resources: List[FileResource] = []
         self.load()

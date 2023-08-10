@@ -1,15 +1,14 @@
-from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, RIMBinaryWriter
-from pykotor.resource.type import ResourceType
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 def read_rim(
-        source: Union[Path, str, bytes, bytearray, BinaryReader],
+        source: SOURCE_TYPES,
         offset: int = 0,
-        size: int = None
+        size: int | None = None
 ) -> RIM:
     """
     Returns an RIM instance from the source. The file format (RIM only) is automatically determined before parsing
@@ -34,7 +33,7 @@ def read_rim(
 
 def write_rim(
         rim: RIM,
-        target: Union[Path, bytearray, BinaryReader],
+        target: TARGET_TYPES,
         file_format: ResourceType = ResourceType.RIM
 ) -> None:
     """

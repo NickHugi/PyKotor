@@ -12,14 +12,14 @@ from xml.etree.ElementTree import ParseError
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
 SOURCE_TYPES = Union[Path, str, bytes, bytearray, BinaryReader]
-TARGET_TYPES = Union[str, bytearray, BinaryWriter]
+TARGET_TYPES = Union[Path, str, bytearray, BinaryWriter]
 
 
 class ResourceReader(ABC):
     @overload
     def __init__(
             self,
-            filepath: str,
+            filepath: str | Path,
             offset: int = 0,
             size: int = 0
     ):
@@ -37,15 +37,6 @@ class ResourceReader(ABC):
     @overload
     def __init__(
             self,
-            data: bytearray,
-            offset: int = 0,
-            size: int = 0
-    ):
-        ...
-
-    @overload
-    def __init__(
-            self,
             reader: BinaryReader,
             offset: int = 0,
             size: int = 0
@@ -54,7 +45,7 @@ class ResourceReader(ABC):
 
     def __init__(
             self,
-            source: Union[Path, str, bytes, bytearray, BinaryReader],
+            source: SOURCE_TYPES,
             offset: int = 0,
             size: int = 0
     ):
@@ -71,7 +62,7 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
             self,
-            filepath: str
+            filepath: str | Path
     ):
         ...
 
@@ -85,20 +76,13 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
             self,
-            data: bytearray
-    ):
-        ...
-
-    @overload
-    def __init__(
-            self,
             reader: BinaryWriter
     ):
         ...
 
     def __init__(
             self,
-            target: Union[str, bytearray, BinaryReader]
+            target: TARGET_TYPES
     ):
         self._writer = BinaryWriter.to_auto(target)
 

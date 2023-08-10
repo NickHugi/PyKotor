@@ -55,7 +55,7 @@ class GIT:
         Returns:
             A list of all stored instances.
         """
-        instances = []
+        instances: List[GITInstance] = []
         # We could just add these all together rather than using the extend method, but then PyCharms would get cranky
         # about the type hints...
         instances.extend(self.cameras)
@@ -129,8 +129,8 @@ class GIT:
                 return self.stores.index(instance)
             else:
                 raise ValueError
-        except ValueError:
-            raise ValueError("Could not find instance in GIT object.")
+        except ValueError as e:
+            raise ValueError("Could not find instance in GIT object.") from e
 
     def add(
             self,
@@ -630,7 +630,7 @@ class GITStore(GITInstance):
             self
     ) -> Optional[bytes]:
         return bytes_utm(UTM())
-    
+
     def classification(
             self
     ) -> str:

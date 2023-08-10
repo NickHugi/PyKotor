@@ -54,7 +54,7 @@ class InstallFile:
                     f"Copying file '{self.filename}' to the '{local_folder}' folder..."
                 )
 
-            BinaryWriter.dump(save_file_to.resolve(), data)
+            BinaryWriter.dump(save_file_to, data)
         else:
             log.add_warning(
                 f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file..."
@@ -78,7 +78,7 @@ class InstallFolder:
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
             for file in self.files:
-                file.apply_encapsulated(log, str(source_path.resolve()), destination)
+                file.apply_encapsulated(log, str(source_path), destination)
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # Submit each task individually using executor.submit
