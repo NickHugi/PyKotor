@@ -603,14 +603,16 @@ class Installation:
             capsules=capsules,
             folders=folders
         )
-        handles = {}
+        handles: Dict[ResourceIdentifier, BinaryReader] = {}
 
         for query in queries:
-            location = locations[query][0] or None
+            location_list = locations.get(query)
+            location = location_list[0] if location_list and len(location_list) > 0 else None
             if location is None:
                 results[query] = None
-            elif query not in handles:
-                handles[query] = BinaryReader.from_file(location.filepath)
+            else:
+                if query not in handles:
+                    handles[query] = BinaryReader.from_file(location.filepath)
                 handles[query].seek(location.offset)
                 data = handles[query].read_bytes(location.size)
                 results[query] = ResourceResult(

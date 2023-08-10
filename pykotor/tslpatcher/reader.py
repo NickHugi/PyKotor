@@ -314,13 +314,14 @@ class ConfigReader:
             self.config.patches_gff.append(modifications)
 
             for name, value in modifications_ini.items():
-                if name.lower() == "!destination":
+                lowercase_name = name.lower()
+                if lowercase_name == "!destination":
                     modifications.destination = value
-                elif name.lower() == "!replacefile":
+                elif lowercase_name == "!replacefile":
                     modifications.replace_file = bool(int(value))
-                elif name.lower() == "!filename":
+                elif lowercase_name == "!filename" or lowercase_name == "!saveas":
                     modifications.filename = value
-                elif name.lower().startswith("addfield"):
+                elif lowercase_name.startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     modifications.modifiers.append(modifier)
                 else:
