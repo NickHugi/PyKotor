@@ -27,6 +27,7 @@ from pykotor.tslpatcher.mods.twoda import Modify2DA, ChangeRow2DA, Target, Targe
     CopyRow2DA, AddColumn2DA, Modifications2DA, RowValue2DAMemory, RowValueTLKMemory, RowValueHigh, RowValueRowIndex, \
     RowValueRowLabel, RowValueConstant, RowValueRowCell
 
+
 class ConfigParser(RawConfigParser):
     def _read(self, fp, fpname):  # sourcery skip: low-code-quality
         """Override the _read in RawConfigParser so it doesn't throw exceptions when there's no header defined.
@@ -68,8 +69,8 @@ class ConfigParser(RawConfigParser):
                     if (comment_start is None and
                         cursect is not None and
                         optname and
-                        cursect[optname] is not None):
-                        cursect[optname].append('') # newlines added at join
+                            cursect[optname] is not None):
+                        cursect[optname].append('')  # newlines added at join
                 else:
                     # empty line marks end of value
                     indent_level = sys.maxsize
@@ -102,7 +103,7 @@ class ConfigParser(RawConfigParser):
                     optname = None
                 # no section header in the file?
                 elif cursect is None:
-                    continue # this is the patch
+                    continue  # this is the patch
                 # an option line?
                 else:
                     mo = self._optcre.match(value)
@@ -112,7 +113,7 @@ class ConfigParser(RawConfigParser):
                             e = self._handle_error(e, fpname, lineno, line)
                         optname = self.optionxform(optname.rstrip())
                         if (self._strict and
-                            (sectname, optname) in elements_added):
+                                (sectname, optname) in elements_added):
                             raise DuplicateOptionError(sectname, optname,
                                                        fpname, lineno)
                         elements_added.add((sectname, optname))
@@ -135,16 +136,16 @@ class ConfigParser(RawConfigParser):
         if e:
             raise e
 
+
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, append: TLK) -> None:
+    def __init__(self, ini: ConfigParser, mod_path: str) -> None:
         self.ini = ini
-        self.append: TLK = append
+        self.mod_path: str = mod_path
 
         self.config: Optional[PatcherConfig] = None
 
     @classmethod
-    def from_filepath(cls, path: Path | str, append_path_arg: Union[Path, str] | None) -> PatcherConfig: # type: ignore
-        append_path: Path | None = Path(append_path_arg) if append_path_arg else None
+    def from_filepath(cls, path: str) -> PatcherConfig:
         ini_file_bytes = BinaryReader.load_file(path)
         ini_text = None
         try:
@@ -162,12 +163,7 @@ class ConfigReader:
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        append: TLK | None = None
-        if append_path is not None and append_path.exists():
-            append = read_tlk(append_path)
-        if append is None:
-            append = TLK()
-        return ConfigReader(ini, append).load(config)
+        return ConfigReader(ini).load(config)
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
@@ -176,7 +172,7 @@ class ConfigReader:
         print("Parsing file list from [InstallList]")
         self.load_filelist()
         print("Parsing stringrefs from [TLKList]")
-        self.load_stringref()
+        self.load_tlk_list()
         print("Parsing 2da from [2DAList]")
         self.load_2da()
         print("Parsing SSF from [SSFList]")
@@ -189,11 +185,16 @@ class ConfigReader:
         return self.config
 
     def load_settings(self) -> None:
-        self.config.window_title = self.ini.get("Settings", "WindowCaption", fallback="")
-        self.config.confirm_message = self.ini.get("Settings", "ConfirmMessage", fallback="")
-        self.config.game_number = self.ini.get("Settings", "LookupGameNumber", fallback=None)
-        self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
-        self.config.required_message = self.ini.get("Settings", "Required", fallback="")
+        self.config.window_title = self.ini.get(
+            "Settings", "WindowCaption", fallback="")
+        self.config.confirm_message = self.ini.get(
+            "Settings", "ConfirmMessage", fallback="")
+        self.config.game_number = self.ini.get(
+            "Settings", "LookupGameNumber", fallback=None)
+        self.config.required_file = self.ini.get(
+            "Settings", "Required", fallback=None)
+        self.config.required_message = self.ini.get(
+            "Settings", "Required", fallback="")
 
     def load_filelist(self) -> None:
         folders_ini = dict(self.ini["InstallList"].items())
@@ -207,28 +208,93 @@ class ConfigReader:
                 file_install = InstallFile(filename, replace_existing)
                 folder_install.files.append(file_install)
 
-    def load_stringref(self) -> None:
+    def load_tlk_list(self) -> None:
         if "TLKList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError(
+                "Config at self.config not defined! Nowhere to append patcher changes!")
 
-        stringrefs = dict(self.ini["TLKList"].items())
+        dialog_tlk_edits = dict(self.ini["TLKList"].items())
+        modifier = None
+        modifier_dict: Dict[int, Dict[str, Union[str, ResRef]]] = {}
 
-        for name, value in stringrefs.items():
-            if name[:7].lower() == "replace":
-                folder_install = InstallFolder("Override/../")
-                folder_install.files.append(InstallFile(value, True))
-                self.config.install_list.append(folder_install)
-                continue
-            token_id = int(name[6:])
-            append_index = int(value)
-            entry = self.append.get(append_index)
+        append_tlk_edits: TLK | None = None
 
-            modifier = ModifyTLK(token_id, entry.text, entry.voiceover)
-            self.config.patches_tlk.modifiers.append(modifier)
+        for key, value in dialog_tlk_edits.items():
+            key = key.lower()
+            token_id: int
+            if key.startswith("strref"):  # Handle legacy syntax e.g. StrRef6=3
+                token_id = int(key[6:])
+                append_index = int(value)
+                # Don't load the tlk unless actively needed, for performance reasons.
+                if append_tlk_edits is None:
+                    append_path = os.path.join(self.mod_path, "append.tlk")
+                    append_tlk_edits = read_tlk(
+                        append_path) if os.path.exists(append_path) else TLK()
+                entry = append_tlk_edits.get(append_index)
+
+                modifier = ModifyTLK(token_id, entry.text,
+                                     entry.voiceover, is_replacement=False)
+                self.config.patches_tlk.modifiers.append(modifier)
+
+            elif key.startswith("file"):  # Handle multiple files e.g. File0=update1.tlk
+                # Load referenced TLK file.
+                tlk_file_path = os.path.join(self.mod_path, value)
+                tlk_data_entries: TLK | None = None
+                if os.path.exists(tlk_file_path):
+                    tlk_data_entries = read_tlk(tlk_file_path)
+                else:
+                    raise FileNotFoundError(
+                        f"Cannot find TLK file: '{value}' at key '{key}' in TLKList")
+
+                # build modifications from replacement TLK
+                if value not in self.ini:
+                    raise KeyError(
+                        f"INI header for '{value}' referenced in TLKList key '{key}' not found.")
+                # get the entries from the custom header e.g. [update1.tlk]
+                custom_tlk_entries = dict(self.ini[value].items())
+                for change_index, token_id_str in custom_tlk_entries.items():  # replace the specified indices e.g. 1977=421
+                    entry = tlk_data_entries.get(int(token_id_str))
+                    modifier = ModifyTLK(
+                        int(change_index), entry.text, entry.voiceover, is_replacement=True)
+                    self.config.patches_tlk.modifiers.append(modifier)
+            elif "\\" in key or "/" in key:  # Handle in-line updates e.g. 2003\Text="Peace is a lie; there is only passion."
+                delimiter = "\\" if "\\" in key else "/"
+                token_id_str, property_name = key.split(delimiter)
+                token_id = int(token_id_str)
+
+                if token_id not in modifier_dict:
+                    modifier_dict[token_id] = {
+                        "text": "",
+                        "voiceover": ""
+                    }
+
+                if property_name == "text":
+                    modifier_dict[token_id]["text"] = value
+                elif property_name == "sound":
+                    modifier_dict[token_id]["voiceover"] = ResRef(value)
+                else:
+                    raise KeyError(
+                        f"Invalid TLKList syntax for key '{key}' value '{value}'")
+
+                text = modifier_dict[token_id].get("text")
+                voiceover = modifier_dict[token_id].get("voiceover")
+
+                # TODO: replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
+                if isinstance(text, str) and isinstance(voiceover, ResRef):
+                    modifier = ModifyTLK(
+                        token_id, text, voiceover, is_replacement=True)
+                    self.config.patches_tlk.modifiers.append(modifier)
+            else:
+                raise KeyError(f"Invalid key in TLKList: '{key}'")
 
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError(
+                "Config at self.config not defined! Nowhere to append patcher changes!")
 
         files = dict(self.ini["2DAList"].items())
 
@@ -239,12 +305,16 @@ class ConfigReader:
             self.config.patches_2da.append(modifications)
 
             for key, modification_id in modification_ids.items():
-                manipulation = self.discern_2da(key, modification_id, dict(self.ini[modification_id].items()))
+                manipulation = self.discern_2da(
+                    key, modification_id, dict(self.ini[modification_id].items()))
                 modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
         if "SSFList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError(
+                "Config at self.config not defined! Nowhere to append patcher changes!")
 
         configstr_to_ssfsound = {
             "Battlecry 1": SSFSound.BATTLE_CRY_1,
@@ -303,6 +373,9 @@ class ConfigReader:
     def load_gff(self) -> None:
         if "GFFList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError(
+                "Config at self.config not defined! Nowhere to append patcher changes!")
 
         files = dict(self.ini["GFFList"].items())
 
@@ -331,6 +404,9 @@ class ConfigReader:
     def load_nss(self) -> None:
         if "CompileList" not in self.ini:
             return
+        if self.config is None:
+            raise RuntimeError(
+                "Config at self.config not defined! Nowhere to append patcher changes!")
 
         files = dict(self.ini["CompileList"].items())
         destination = files.pop("!destination", None)
@@ -344,8 +420,8 @@ class ConfigReader:
                 modifications.destination = destination
         print("Parsing NSS files done!")
 
-
     #################
+
     def field_value_gff(self, raw_value: str) -> FieldValue:
         if raw_value.startswith("StrRef"):
             token_id = int(raw_value[6:])
@@ -369,12 +445,15 @@ class ConfigReader:
             value = FieldValueConstant(float(string_value))
         elif string_value.count("|") == 2:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector3(*[float(x) for x in components]))
+            value = FieldValueConstant(
+                Vector3(*[float(x) for x in components]))
         elif string_value.count("|") == 3:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector4(*[float(x) for x in components]))
+            value = FieldValueConstant(
+                Vector4(*[float(x) for x in components]))
         else:
-            value = FieldValueConstant(string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
+            value = FieldValueConstant(string_value.replace(
+                "<#LF#>", "\n").replace("<#CR#>", "\r"))
 
         if "(strref)" in name:
             value = FieldValueConstant(LocalizedStringDelta(value))
@@ -397,8 +476,8 @@ class ConfigReader:
             "Short": GFFFieldType.Int16,
             "DWORD": GFFFieldType.UInt32,
             "Int": GFFFieldType.Int32,
-            #"DWord64": GFFFieldType.UInt64,
-            #"Binary": GFFFieldType.Binary,
+            # "DWord64": GFFFieldType.UInt64,
+            # "Binary": GFFFieldType.Binary,
             "Int64": GFFFieldType.Int64,
             "Float": GFFFieldType.Single,
             "Double": GFFFieldType.Double,
@@ -430,7 +509,8 @@ class ConfigReader:
             float_val = raw_value.replace(',', '.')
             value = FieldValueConstant(float(float_val))
         elif field_type.return_type() == str:
-            value = FieldValueConstant(raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
+            value = FieldValueConstant(raw_value.replace(
+                "<#LF#>", "\n").replace("<#CR#>", "\r"))
         elif field_type.return_type() == ResRef:
             value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == LocalizedString:
@@ -445,10 +525,12 @@ class ConfigReader:
                 value.set(language, gender, text)
             value = FieldValueConstant(value)
         elif field_type.return_type() == Vector3:
-            components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
+            components = [float(axis.replace(",", "."))
+                          for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector3(*components))
         elif field_type.return_type() == Vector4:
-            components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
+            components = [float(axis.replace(",", "."))
+                          for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector4(*components))
         elif field_type.return_type() == GFFList:
             value = FieldValueConstant(GFFList())
@@ -465,7 +547,8 @@ class ConfigReader:
                 continue
 
             is_list = field_type.return_type() == GFFList
-            modifier = self.add_field_gff(x, dict(self.ini[x].items()), is_list)
+            modifier = self.add_field_gff(
+                x, dict(self.ini[x].items()), is_list)
             nested_modifiers.append(modifier)
 
         index_in_list_token = None
@@ -473,7 +556,8 @@ class ConfigReader:
             if key.startswith("2DAMEMORY") and memvalue == "ListIndex" and field_type.return_type() != GFFStruct:
                 index_in_list_token = int(key[9:])
 
-        modifier = AddFieldGFF(identifier, label, field_type, value, path, nested_modifiers, index_in_list_token)
+        modifier = AddFieldGFF(identifier, label, field_type,
+                               value, path, nested_modifiers, index_in_list_token)
 
         return modifier
 
@@ -500,24 +584,29 @@ class ConfigReader:
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
-            modification = ChangeRow2DA(identifier, target, cells, store_2da, store_tlk)
+            modification = ChangeRow2DA(
+                identifier, target, cells, store_2da, store_tlk)
         elif key.startswith("AddRow"):
             exclusive_column = self.exclusive_column_2da(modifiers)
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
-            modification = AddRow2DA(identifier, exclusive_column, row_label, cells, store_2da, store_tlk)
+            modification = AddRow2DA(
+                identifier, exclusive_column, row_label, cells, store_2da, store_tlk)
         elif key.startswith("CopyRow"):
             target = self.target_2da(identifier, modifiers)
             exclusive_column = self.exclusive_column_2da(modifiers)
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
-            modification = CopyRow2DA(identifier, target, exclusive_column, row_label, cells, store_2da, store_tlk)
+            modification = CopyRow2DA(
+                identifier, target, exclusive_column, row_label, cells, store_2da, store_tlk)
         elif key.startswith("AddColumn"):
             header = modifiers.pop("ColumnLabel")
             default = modifiers.pop("DefaultValue")
             default = default if default != "****" else ""
-            index_insert, label_insert, store_2da = self.column_inserts_2da(identifier, modifiers)
-            modification = AddColumn2DA(identifier, header, default, index_insert, label_insert, store_2da)
+            index_insert, label_insert, store_2da = self.column_inserts_2da(
+                identifier, modifiers)
+            modification = AddColumn2DA(
+                identifier, header, default, index_insert, label_insert, store_2da)
         else:
             raise WarningException()
 
@@ -534,7 +623,8 @@ class ConfigReader:
             target = Target(TargetType.LABEL_COLUMN, modifiers["LabelIndex"])
             modifiers.pop("LabelIndex")
         else:
-            raise WarningException("No line set to be modified for '{}'.".format(identifier))
+            raise WarningException(
+                "No line set to be modified for '{}'.".format(identifier))
 
         return target
 
@@ -560,7 +650,8 @@ class ConfigReader:
                 token_id = int(value[6:])
                 row_value = RowValueTLKMemory(token_id)
             elif value == "high()":
-                row_value = RowValueHigh(None) if modifier == "RowLabel" else RowValueHigh(value)
+                row_value = RowValueHigh(
+                    None) if modifier == "RowLabel" else RowValueHigh(value)
             elif value == "RowIndex":
                 row_value = RowValueRowIndex()
             elif value == "RowLabel":
@@ -573,7 +664,8 @@ class ConfigReader:
                 row_value = RowValueConstant(value)
 
             if is_store_2da or is_store_tlk:
-                token_id = int(modifier[9:]) if is_store_2da else int(modifier[6:])
+                token_id = int(modifier[9:]) if is_store_2da else int(
+                    modifier[6:])
                 store = store_2da if is_store_2da else store_tlk
                 store[token_id] = row_value
             elif is_row_label:

@@ -12,22 +12,23 @@ class ModificationsTLK:
         self.modifiers: List[ModifyTLK] = []
 
     def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
-        # do replacements first.
         for modifier in self.modifiers:
-            modifier.apply_replacements(dialog, memory)
-        for modifier in self.modifiers:
-            modifier.apply(dialog, memory)
+            if modifier.is_replacement:
+                modifier.replace(dialog)
+            else:
+                modifier.insert(dialog, memory)
 
 
 class ModifyTLK:
-    def __init__(self, token_id: int, text: str, sound: ResRef):
+    def __init__(self, token_id: int, text: str, sound: ResRef, is_replacement: bool):
         self.token_id: int = token_id
         self.text: str = text
         self.sound: ResRef = sound
+        self.is_replacement: bool = is_replacement
 
-    def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
+    def insert(self, dialog: TLK, memory: PatcherMemory) -> None:
         dialog.add(self.text, self.sound.get())
         memory.memory_str[self.token_id] = len(dialog.entries) - 1
 
-    def apply_replacements(self, dialog: TLK, memory: PatcherMemory) -> None:
+    def replace(self, dialog: TLK) -> None:
         dialog.replace(self.token_id, self.text, self.sound.get())
