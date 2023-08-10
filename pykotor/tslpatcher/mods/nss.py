@@ -1,6 +1,7 @@
 import re
 from abc import ABC, abstractmethod
 from typing import List, Union, Tuple
+from pathlib import Path
 
 from pykotor.resource.formats.ssf import SSF, SSFSound
 from pykotor.tslpatcher.logger import PatchLogger
@@ -10,7 +11,7 @@ from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
 class ModificationsNSS:
     def __init__(self, filename: str, replace_file: bool):
         self.filename: str = filename
-        self.destination: str = "override"
+        self.destination: str = str(Path("override", filename))
         self.replace_file: bool = replace_file
 
     def apply(self, nss: List[str], memory: PatcherMemory, logger: PatchLogger) -> None:

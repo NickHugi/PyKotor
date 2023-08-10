@@ -218,7 +218,7 @@ class ModInstaller:
         # Apply changes to NSS files
         for patch in config.patches_nss:
             capsule = None
-            nss_output_filepath = Path(self.output_path, patch.destination)
+            nss_output_filepath = self.output_path / patch.destination
             if is_capsule_file(patch.destination):
                 capsule = Capsule(nss_output_filepath)
 
@@ -241,6 +241,7 @@ class ModInstaller:
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
             file_name, ext = patch.filename.split('.', 1)
+
             self.write(nss_output_filepath, file_name + "." + ext.lower().replace(".nss", ".ncs"), data, patch.replace_file)
 
             self.log.complete_patch()
