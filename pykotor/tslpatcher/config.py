@@ -226,8 +226,9 @@ class ModInstaller:
             nss = [BinaryReader.load_file(nss_input_filepath).decode(errors="ignore")]
 
             norm_game_path = installation.path()
-            norm_file_path = Path(patch.destination)
-            local_path = norm_file_path.relative_to(str(norm_game_path))
+            norm_file_path_rel = Path(patch.destination)
+            norm_file_path = norm_game_path / norm_file_path_rel
+            local_path = norm_file_path.relative_to(norm_game_path)
             local_folder = local_path.parent
 
             if capsule is None:
