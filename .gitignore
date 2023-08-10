@@ -10,3 +10,7 @@ pykotor/gl
 .vscode/launch.json
 debug.log
 pykotorcli.spec
+pykotorcli.build/*
+.history/*
+*.heapsnapshot
+*.cpuprofile
