@@ -185,16 +185,11 @@ class ConfigReader:
         return self.config
 
     def load_settings(self) -> None:
-        self.config.window_title = self.ini.get(
-            "Settings", "WindowCaption", fallback="")
-        self.config.confirm_message = self.ini.get(
-            "Settings", "ConfirmMessage", fallback="")
-        self.config.game_number = self.ini.get(
-            "Settings", "LookupGameNumber", fallback=None)
-        self.config.required_file = self.ini.get(
-            "Settings", "Required", fallback=None)
-        self.config.required_message = self.ini.get(
-            "Settings", "Required", fallback="")
+        self.config.window_title = self.ini.get("Settings", "WindowCaption", fallback="")
+        self.config.confirm_message = self.ini.get("Settings", "ConfirmMessage", fallback="")
+        self.config.game_number = self.ini.get("Settings", "LookupGameNumber", fallback=None)
+        self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
+        self.config.required_message = self.ini.get("Settings", "Required", fallback="")
 
     def load_filelist(self) -> None:
         folders_ini = dict(self.ini["InstallList"].items())
@@ -234,8 +229,7 @@ class ConfigReader:
                         append_path) if os.path.exists(append_path) else TLK()
                 entry = append_tlk_edits.get(append_index)
 
-                modifier = ModifyTLK(token_id, entry.text,
-                                     entry.voiceover, is_replacement=False)
+                modifier = ModifyTLK(token_id, entry.text, entry.voiceover, is_replacement=False)
                 self.config.patches_tlk.modifiers.append(modifier)
 
             elif key.startswith("file"):  # Handle multiple files e.g. File0=update1.tlk
@@ -245,19 +239,16 @@ class ConfigReader:
                 if os.path.exists(tlk_file_path):
                     tlk_data_entries = read_tlk(tlk_file_path)
                 else:
-                    raise FileNotFoundError(
-                        f"Cannot find TLK file: '{value}' at key '{key}' in TLKList")
+                    raise FileNotFoundError(f"Cannot find TLK file: '{value}' at key '{key}' in TLKList")
 
                 # build modifications from replacement TLK
                 if value not in self.ini:
-                    raise KeyError(
-                        f"INI header for '{value}' referenced in TLKList key '{key}' not found.")
+                    raise KeyError(f"INI header for '{value}' referenced in TLKList key '{key}' not found.")
                 # get the entries from the custom header e.g. [update1.tlk]
                 custom_tlk_entries = dict(self.ini[value].items())
                 for change_index, token_id_str in custom_tlk_entries.items():  # replace the specified indices e.g. 1977=421
                     entry = tlk_data_entries.get(int(token_id_str))
-                    modifier = ModifyTLK(
-                        int(change_index), entry.text, entry.voiceover, is_replacement=True)
+                    modifier = ModifyTLK(int(change_index), entry.text, entry.voiceover, is_replacement=True)
                     self.config.patches_tlk.modifiers.append(modifier)
             elif "\\" in key or "/" in key:  # Handle in-line updates e.g. 2003\Text="Peace is a lie; there is only passion."
                 delimiter = "\\" if "\\" in key else "/"
@@ -283,8 +274,7 @@ class ConfigReader:
 
                 # TODO: replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
                 if isinstance(text, str) and isinstance(voiceover, ResRef):
-                    modifier = ModifyTLK(
-                        token_id, text, voiceover, is_replacement=True)
+                    modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
                     self.config.patches_tlk.modifiers.append(modifier)
             else:
                 raise KeyError(f"Invalid key in TLKList: '{key}'")
@@ -305,8 +295,7 @@ class ConfigReader:
             self.config.patches_2da.append(modifications)
 
             for key, modification_id in modification_ids.items():
-                manipulation = self.discern_2da(
-                    key, modification_id, dict(self.ini[modification_id].items()))
+                manipulation = self.discern_2da(key, modification_id, dict(self.ini[modification_id].items()))
                 modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
@@ -392,7 +381,7 @@ class ConfigReader:
                     modifications.destination = value
                 elif lowercase_name == "!replacefile":
                     modifications.replace_file = bool(int(value))
-                elif lowercase_name == "!filename" or lowercase_name == "!saveas":
+                elif lowercase_name in ["!filename", "!saveas"]:
                     modifications.filename = value
                 elif lowercase_name.startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
@@ -449,11 +438,9 @@ class ConfigReader:
                 Vector3(*[float(x) for x in components]))
         elif string_value.count("|") == 3:
             components = string_value.split("|")
-            value = FieldValueConstant(
-                Vector4(*[float(x) for x in components]))
+            value = FieldValueConstant(Vector4(*[float(x) for x in components]))
         else:
-            value = FieldValueConstant(string_value.replace(
-                "<#LF#>", "\n").replace("<#CR#>", "\r"))
+            value = FieldValueConstant(string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
 
         if "(strref)" in name:
             value = FieldValueConstant(LocalizedStringDelta(value))
@@ -509,8 +496,7 @@ class ConfigReader:
             float_val = raw_value.replace(',', '.')
             value = FieldValueConstant(float(float_val))
         elif field_type.return_type() == str:
-            value = FieldValueConstant(raw_value.replace(
-                "<#LF#>", "\n").replace("<#CR#>", "\r"))
+            value = FieldValueConstant(raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
         elif field_type.return_type() == ResRef:
             value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == LocalizedString:
