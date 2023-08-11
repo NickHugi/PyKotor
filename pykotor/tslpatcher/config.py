@@ -229,7 +229,7 @@ class ModInstaller:
 
             template = templates[patch.filename] = read_gff(search.data)
             patch.apply(template, memory, self.log)
-            self.write(gff_filepath, patch.filename, bytes_gff(template), True)
+            self.write(gff_filepath, patch.filename, bytes_gff(template), replace=True)
 
             self.log.complete_patch()
 
