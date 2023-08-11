@@ -146,9 +146,10 @@ class ModInstaller:
         templates = {}
 
         # Apply changes to dialog.tlk
-        dialog_tlk = read_tlk(installation.path() / "dialog.tlk")
-        config.patches_tlk.apply(dialog_tlk, memory)
-        write_tlk(dialog_tlk, str(self.output_path / "dialog.tlk"))
+        if len(config.patches_tlk.modifiers) > 0:
+            dialog_tlk = read_tlk(installation.path() / "dialog.tlk")
+            config.patches_tlk.apply(dialog_tlk, memory)
+            write_tlk(dialog_tlk, str(self.output_path / "dialog.tlk"))
         self.log.complete_patch()
 
         for folder in config.install_list:
@@ -164,7 +165,7 @@ class ModInstaller:
                 [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
                 folders=[self.mod_path],
             )
-            twoda = read_2da(search.data)  # type: ignore
+            twoda = read_2da(search.data)
             twodas[patch.filename] = twoda
 
             self.log.add_note(f"Patching '{patch.filename}'")
@@ -219,11 +220,11 @@ class ModInstaller:
 
             if capsule is None:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_folder}' folder."
+                    f"Patching '{patch.filename}' in the '{local_folder}' folder.",
                 )
             else:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_path}' archive."
+                    f"Patching '{patch.filename}' in the '{local_path}' archive.",
                 )
 
             template = templates[patch.filename] = read_gff(search.data)
@@ -250,11 +251,11 @@ class ModInstaller:
 
             if capsule is None:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_folder}' folder."
+                    f"Patching '{patch.filename}' in the '{local_folder}' folder.",
                 )
             else:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_path}' archive."
+                    f"Patching '{patch.filename}' in the '{local_path}' archive.",
                 )
 
             self.log.add_note(f"Compiling '{patch.filename}'")
@@ -273,7 +274,11 @@ class ModInstaller:
             self.log.complete_patch()
 
     def write(
-        self, destination: Path, filename: str, data: bytes, replace: bool = False
+        self,
+        destination: Path,
+        filename: str,
+        data: bytes,
+        replace: bool = False,
     ) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
         file_extension = destination.suffix

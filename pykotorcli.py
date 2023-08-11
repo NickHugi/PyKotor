@@ -23,7 +23,9 @@ def parse_args():
     parser.add_argument("--game-dir", type=str, help="Path to game directory")
     parser.add_argument("--tslpatchdata", type=str, help="Path to tslpatchdata")
     parser.add_argument(
-        "--namespace-option-index", type=int, help="Namespace option index"
+        "--namespace-option-index",
+        type=int,
+        help="Namespace option index",
     )
 
     # Add additional named arguments here if needed
@@ -49,7 +51,7 @@ def main():
 
     if args.game_dir is None or args.tslpatchdata is None:
         print(
-            'Syntax: pykotorcli.exe ["\\path\\to\\game\\dir"] ["\\path\\to\\tslpatchdata"] {"namespace_option_index"}'
+            'Syntax: pykotorcli.exe ["\\path\\to\\game\\dir"] ["\\path\\to\\tslpatchdata"] {"namespace_option_index"}',
         )
         sys.exit(ExitCode.NUMBER_OF_ARGS)
 
@@ -114,12 +116,14 @@ def determine_namespaces(tslpatchdata_path: Path, namespace_index: int) -> Path:
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
     namespaces_ini_path: Path = Path(
-        tslpatchdata_path, "tslpatchdata", "namespaces.ini"
+        tslpatchdata_path,
+        "tslpatchdata",
+        "namespaces.ini",
     ).resolve()
     print(f"Using namespaces.ini path: {namespaces_ini_path}")
     if not namespaces_ini_path.exists():
         print(
-            "The 'namespaces.ini' file was not found in the specified tslpatchdata path."
+            "The 'namespaces.ini' file was not found in the specified tslpatchdata path.",
         )
         sys.exit(ExitCode.NAMESPACES_INI_NOT_FOUND)
 

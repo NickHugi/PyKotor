@@ -52,7 +52,7 @@ class TLK:
     def get(
         self,
         stringref: int,
-    ) -> TLKEntry:
+    ) -> TLKEntry | None:
         """Returns an entry for the specified stringref if it exists, otherwise returns None.
 
         Args:
@@ -103,7 +103,7 @@ class TLK:
             self.entries = self.entries[:size]
         else:
             self.entries.extend(
-                [TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)]
+                [TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)],
             )
 
 
