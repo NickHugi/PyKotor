@@ -1,23 +1,24 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Any, Optional, Union, Tuple
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
+from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
 
-from pykotor.resource.formats.gff import GFF, GFFStruct, GFFList, GFFFieldType
-from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.memory import PatcherMemory
-
+if TYPE_CHECKING:
+    from pykotor.tslpatcher.logger import PatchLogger
+    from pykotor.tslpatcher.memory import PatcherMemory
 
 # TODO: 2DAMEMORY# as field path+label, store+save
 
 
 class LocalizedStringDelta(LocalizedString):
-    def __init__(self, stringref: Optional[FieldValue] = None):
+    def __init__(self, stringref: FieldValue | None = None):
         super().__init__(0)
-        self.stringref: Optional[FieldValue] = stringref
+        self.stringref: FieldValue | None = stringref
 
     def apply(self, locstring: LocalizedString, memory: PatcherMemory) -> None:
         if self.stringref is not None:
@@ -66,31 +67,50 @@ class FieldValueTLKMemory(FieldValue):
 
     def value(self, memory: PatcherMemory, field_type: GFFFieldType) -> Any:
         return self.validate(memory.memory_str[self.token_id], field_type)
+
+
 # endregion
 
 
 # region Modify GFF
 class ModifyGFF(ABC):
     @abstractmethod
-    def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
+    def apply(
+        self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger
+    ) -> None:
         ...
 
 
 class AddFieldGFF(ModifyGFF):
-    def __init__(self, identifier: str, label: str, field_type: GFFFieldType, value: FieldValue, path: str, modifiers: Optional[List[ModifyGFF]] = None, index_to_list_token: Optional[int] = None):
+    def __init__(
+        self,
+        identifier: str,
+        label: str,
+        field_type: GFFFieldType,
+        value: FieldValue,
+        path: str,
+        modifiers: list[ModifyGFF] | None = None,
+        index_to_list_token: int | None = None,
+    ):
         self.identifier: str = identifier
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
         self.path: str = path
-        self.index_to_list_token: Optional[int] = index_to_list_token
+        self.index_to_list_token: int | None = index_to_list_token
 
-        self.modifiers: List[ModifyGFF] = [] if modifiers is None else modifiers
+        self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
-    def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None: # type: ignore
-        container: Union[GFFStruct, GFFList] | None = self._navigate_containers(container, self.path)
+    def apply(self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger) -> None:  # type: ignore
+        container: GFFStruct | GFFList | None = self._navigate_containers(
+            container, self.path
+        )
         if container is None:
-            logger.add_warning("Parent field at '{}' does not exist or is not a List or Struct. Unable to add new Field '{}'...".format(self.path, self.label))
+            logger.add_warning(
+                "Parent field at '{}' does not exist or is not a List or Struct. Unable to add new Field '{}'...".format(
+                    self.path, self.label
+                )
+            )
             return
 
         value = self.value.value(memory, self.field_type)
@@ -105,6 +125,7 @@ class AddFieldGFF(ModifyGFF):
                 return container.set_struct(self.label, value)
             elif isinstance(container, GFFList):
                 return container.add(value.struct_id)
+            return None
 
         def set_list():
             return container.set_list(self.label, value)
@@ -136,7 +157,9 @@ class AddFieldGFF(ModifyGFF):
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
-    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> GFFStruct | None:
+    def _navigate_containers(
+        self, container: GFFStruct | GFFList, path: str
+    ) -> GFFStruct | None:
         hierarchy = [container for container in path.split("\\") if container != ""]
 
         for step in hierarchy:
@@ -153,10 +176,16 @@ class ModifyFieldGFF(ModifyGFF):
         self.path: str = path
         self.value: FieldValue = value
 
-    def apply(self, container: Union[GFFStruct, GFFList], memory: PatcherMemory, logger: PatchLogger) -> None:
+    def apply(
+        self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger
+    ) -> None:
         navigationtuple = self._navigate_containers(container, self.path)
         if navigationtuple is None:
-            logger.add_warning("Unable to find a field label matching '{}', skipping...".format(self.path))
+            logger.add_warning(
+                "Unable to find a field label matching '{}', skipping...".format(
+                    self.path
+                )
+            )
             return
 
         container, label, field_type = navigationtuple
@@ -189,7 +218,9 @@ class ModifyFieldGFF(ModifyGFF):
         }
         func_map[field_type]()
 
-    def _navigate_containers(self, container: Union[GFFStruct, GFFList], path: str) -> Optional[Tuple[GFFStruct, str, GFFFieldType]]:
+    def _navigate_containers(
+        self, container: GFFStruct | GFFList, path: str
+    ) -> tuple[GFFStruct, str, GFFFieldType] | None:
         hierarchy, label = path.split("\\")[:-1], path.split("\\")[-1:][0]
 
         for step in hierarchy:
@@ -203,14 +234,25 @@ class ModifyFieldGFF(ModifyGFF):
 
         field_type = container.what_type(label)
         return container, label, field_type
+
+
 # endregion
 
+
 class ModificationsGFF:
-    def __init__(self, filename: str, replace_file: bool, modifiers: List[ModifyGFF] = None, destination: str = None):
+    def __init__(
+        self,
+        filename: str,
+        replace_file: bool,
+        modifiers: list[ModifyGFF] | None = None,
+        destination: str | None = None,
+    ):
         self.filename: str = filename
         self.replace_file: bool = replace_file
-        self.destination: str = destination if destination is not None else "/override/"+filename
-        self.modifiers: List[ModifyGFF] = modifiers if modifiers is not None else []
+        self.destination: str = (
+            destination if destination is not None else str(Path("override", filename))
+        )
+        self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(self, gff: GFF, memory: PatcherMemory, logger: PatchLogger) -> None:
         for change_field in self.modifiers:

@@ -18,7 +18,10 @@ class TestJRL(TestCase):
 
     def validate_io(self, jrl):
         quest = jrl.quests[0]
-        self.assertEqual("Plot to be considered worthy to hear the Sand People history.", quest.comment)
+        self.assertEqual(
+            "Plot to be considered worthy to hear the Sand People history.",
+            quest.comment,
+        )
         self.assertEqual(33089, quest.name.stringref)
         self.assertEqual(4, quest.planet_id)
         self.assertEqual(72, quest.plot_index)

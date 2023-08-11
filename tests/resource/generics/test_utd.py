@@ -72,4 +72,3 @@ class TestUTD(TestCase):
         self.assertEqual("onfailtoopen", utd.on_open_failed)
         self.assertEqual(1, utd.palette_id)
         self.assertEqual("abcdefg", utd.comment)
-

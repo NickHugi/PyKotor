@@ -1,7 +1,8 @@
-import pathlib
-from setuptools import setup, find_namespace_packages
+from pathlib import Path
 
-HERE = pathlib.Path(__file__).parent
+from setuptools import find_namespace_packages, setup
+
+HERE = Path(__file__).parent
 
 NAME = "PyKotor"
 VERSION = "1.6.2"
@@ -22,5 +23,5 @@ setup(
     long_description=README,
     packages=PACKAGES,
     url=URL,
-    long_description_content_type='text/markdown'
+    long_description_content_type="text/markdown",
 )

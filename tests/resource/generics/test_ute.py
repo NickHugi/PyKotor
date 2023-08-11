@@ -45,4 +45,3 @@ class TestUTE(TestCase):
         self.assertEqual("g_kataarn02", ute.creatures[1].resref)
         self.assertEqual(1, ute.creatures[1].guaranteed_count)
         self.assertTrue(ute.creatures[1].single_spawn)
-

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
@@ -6,8 +6,8 @@ from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-from pykotor.resource.formats.rim import read_rim, RIM
-from pykotor.resource.formats.tpc import TPCTextureFormat, TPC, write_tpc
+from pykotor.resource.formats.rim import RIM, read_rim
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
 from pykotor.resource.formats.vis import write_vis
 from pykotor.resource.generics.are import dismantle_are
 from pykotor.resource.generics.git import dismantle_git
@@ -22,18 +22,18 @@ from pykotor.tools.misc import is_mod_file
 
 
 def clone_module(
-        root: str,
-        identifier: str,
-        prefix: str,
-        name: str,
-        installation: Installation,
-        *,
-        copyTextures: bool = False,
-        copyLightmaps: bool = False,
-        keepDoors: bool = False,
-        keepPlaceables: bool = False,
-        keepSounds: bool = False,
-        keepPathing: bool = False
+    root: str,
+    identifier: str,
+    prefix: str,
+    name: str,
+    installation: Installation,
+    *,
+    copyTextures: bool = False,
+    copyLightmaps: bool = False,
+    keepDoors: bool = False,
+    keepPlaceables: bool = False,
+    keepSounds: bool = False,
+    keepPathing: bool = False,
 ) -> None:
     installation = installation
     root = root
@@ -77,43 +77,43 @@ def clone_module(
 
     if keepDoors:
         for i, door in enumerate(git.doors):
-            oldResname = door.resref.get()
-            newResname = "{}_dor{}".format(identifier, i)
-            door.resref.set(newResname)
-            door.tag = newResname
+            old_resname = door.resref.get()
+            new_resname = f"{identifier}_dor{i}"
+            door.resref.set(new_resname)
+            door.tag = new_resname
 
-            utd = oldModule.door(oldResname).resource()
+            utd = oldModule.door(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_utd(utd), data)
-            newModule.set(newResname, ResourceType.UTD, data)
+            newModule.set(new_resname, ResourceType.UTD, data)
     else:
         git.doors = []
 
     if keepPlaceables:
         for i, placeable in enumerate(git.placeables):
-            oldResname = placeable.resref.get()
-            newResname = "{}_plc{}".format(identifier, i)
-            placeable.resref.set(newResname)
-            placeable.tag = newResname
+            old_resname = placeable.resref.get()
+            new_resname = f"{identifier}_plc{i}"
+            placeable.resref.set(new_resname)
+            placeable.tag = new_resname
 
-            utp = oldModule.placeable(oldResname).resource()
+            utp = oldModule.placeable(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_utp(utp), data)
-            newModule.set(newResname, ResourceType.UTP, data)
+            newModule.set(new_resname, ResourceType.UTP, data)
     else:
         git.placeables = []
 
     if keepSounds:
         for i, sound in enumerate(git.sounds):
-            oldResname = sound.resref.get()
-            newResname = "{}_snd{}".format(identifier, i)
-            sound.resref.set(newResname)
-            sound.tag = newResname
+            old_resname = sound.resref.get()
+            new_resname = f"{identifier}_snd{i}"
+            sound.resref.set(new_resname)
+            sound.tag = new_resname
 
-            uts = oldModule.sound(oldResname).resource()
+            uts = oldModule.sound(old_resname).resource()
             data = bytearray()
             write_gff(dismantle_uts(uts), data)
-            newModule.set(newResname, ResourceType.UTS, data)
+            newModule.set(new_resname, ResourceType.UTS, data)
     else:
         git.sounds = []
 
@@ -156,10 +156,12 @@ def clone_module(
         if copyLightmaps:
             for lightmap in model.list_lightmaps(mdlData):
                 if lightmap not in newLightmaps:
-                    newLightmapName = "{}_lm_{}".format(identifier, len(newLightmaps.keys()))
+                    newLightmapName = f"{identifier}_lm_{len(newLightmaps.keys())}"
                     newLightmaps[lightmap] = newLightmapName
 
-                    tpc = installation.texture(lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+                    tpc = installation.texture(
+                        lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE]
+                    )
                     tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
@@ -184,41 +186,52 @@ def clone_module(
     write_lyt(lyt, lyt_data)
     newModule.set(identifier, ResourceType.LYT, lyt_data)
 
-    filepath = installation.module_path() + identifier + ".mod"
-    write_erf(newModule, filepath)
+    filepath = installation.module_path() / (identifier + ".mod")
+    write_erf(newModule, str(filepath))
 
 
-def rim_to_mod(filepath: str) -> None:
-    """
-    Creates a MOD file at the given filepath and copies the resources from the corresponding
+def rim_to_mod(filepath: Path) -> None:
+    """Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
     Raises:
+    ------
         ValueError: If the file was corrupted or the format could not be determined.
         FileNotFoundError: If the file could not be found.
         IsADirectoryError: If the specified path is a directory (Unix-like systems only).
         PermissionError: If the file could not be accessed.
 
     Args:
+    ----
         filepath: The filepath of the MOD file you would like to create.
     """
-    if not is_mod_file(filepath):
-        raise ValueError("Specified file must end with the .mod extension")
+    if not is_mod_file(filepath.name):
+        msg = "Specified file must end with the .mod extension"
+        raise ValueError(msg)
 
-    base, old_extension = os.path.splitext(filepath)
-    lowercase_extension = old_extension.lower()
+    base: str = filepath.stem
+    old_extension: str = filepath.suffix
+    lowercase_extension: str = old_extension.lower()
 
-    rim_s_extension = lowercase_extension.replace(".mod", "_s.rim")
-    rim_extension = lowercase_extension.replace(".mod", ".rim")
+    rim_s_extension: str = lowercase_extension.replace(".mod", "_s.rim")
+    rim_extension: str = lowercase_extension.replace(".mod", ".rim")
 
-    filepath_rim_s = base + rim_s_extension if rim_s_extension != lowercase_extension else filepath
-    filepath_rim = base + rim_extension if rim_extension != lowercase_extension else filepath
+    filepath_rim_s: Path = (
+        filepath.parent / (base + rim_s_extension)
+        if rim_s_extension != lowercase_extension
+        else filepath
+    )
+    filepath_rim: Path = (
+        filepath.parent / (base + rim_extension)
+        if rim_extension != lowercase_extension
+        else filepath
+    )
 
-    rim = read_rim(filepath_rim) if os.path.exists(filepath_rim) else RIM()
-    rim_s = read_rim(filepath_rim_s) if os.path.exists(filepath_rim_s) else RIM()
+    rim: RIM = read_rim(filepath_rim) if filepath_rim.exists() else RIM()
+    rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
 
     mod = ERF(ERFType.MOD)
     for res in rim + rim_s:
         mod.set(res.resref.get(), res.restype, res.data)
 
-    write_erf(mod, filepath, ResourceType.ERF)
+    write_erf(mod, str(filepath), ResourceType.ERF)

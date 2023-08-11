@@ -1,13 +1,12 @@
-from typing import List
-
-
 class PatchLogger:
     def __init__(self):
-        self.notes: List[PatchLog] = []
-        self.warnings: List[PatchLog] = []
-        self.errors: List[PatchLog] = []
-        self.verbose_logs: List[PatchLog] = []
-        self.all_logs: List[PatchLog] = [] # used so logging is done in order of operations
+        self.notes: list[PatchLog] = []
+        self.warnings: list[PatchLog] = []
+        self.errors: list[PatchLog] = []
+        self.verbose_logs: list[PatchLog] = []
+        self.all_logs: list[
+            PatchLog
+        ] = []  # used so logging is done in order of operations
 
         self.patches_completed: int = 0
 

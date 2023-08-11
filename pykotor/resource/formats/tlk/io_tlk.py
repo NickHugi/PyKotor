@@ -1,12 +1,16 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
 from pykotor.resource.formats.tlk import TLK, TLKEntry
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 _FILE_HEADER_SIZE = 20
 _ENTRY_SIZE = 40
@@ -14,20 +18,20 @@ _ENTRY_SIZE = 40
 
 class TLKBinaryReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._tlk: Optional[TLK] = None
+        self._tlk: TLK | None = None
         self._texts_offset = 0
         self._text_headers = []
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> TLK:
         self._tlk = TLK()
         self._texts_offset = 0
@@ -42,7 +46,7 @@ class TLKBinaryReader(ResourceReader):
         return self._tlk
 
     def _load_file_header(
-            self
+        self,
     ):
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
@@ -50,8 +54,10 @@ class TLKBinaryReader(ResourceReader):
         string_count = self._reader.read_uint32()
         entries_offset = self._reader.read_uint32()
 
-        if file_version != "V3.0": raise IOError("Invalid file version.")
-        if file_type != "TLK ": raise IOError("Invalid file type.")
+        if file_version != "V3.0":
+            raise OSError("Invalid file version.")
+        if file_type != "TLK ":
+            raise OSError("Invalid file type.")
 
         self._tlk.language = Language(language_id)
         self._tlk.resize(string_count)
@@ -59,24 +65,24 @@ class TLKBinaryReader(ResourceReader):
         self._texts_offset = entries_offset
 
     def _load_entry(
-            self,
-            stringref: int
+        self,
+        stringref: int,
     ):
-        flags = self._reader.read_uint32()  # unused
+        self._reader.read_uint32()  # unused
         sound_resref = self._reader.read_string(16)
-        volume_variance = self._reader.read_uint32()  # unused
-        pitch_variance = self._reader.read_uint32()  # unused
+        self._reader.read_uint32()  # unused
+        self._reader.read_uint32()  # unused
         text_offset = self._reader.read_uint32()
         text_length = self._reader.read_uint32()
-        sound_length = self._reader.read_single()  # unused
+        self._reader.read_single()  # unused
 
         self._tlk.entries[stringref].voiceover = ResRef(sound_resref)
 
         self._text_headers.append(ArrayHead(text_offset, text_length))
 
     def _load_text(
-            self,
-            stringref: int
+        self,
+        stringref: int,
     ):
         text_header = self._text_headers[stringref]
 
@@ -88,17 +94,17 @@ class TLKBinaryReader(ResourceReader):
 
 class TLKBinaryWriter(ResourceWriter):
     def __init__(
-            self,
-            tlk: TLK,
-            target: TARGET_TYPES
+        self,
+        tlk: TLK,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._tlk = tlk
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         self._write_file_header()
 
@@ -107,12 +113,12 @@ class TLKBinaryWriter(ResourceWriter):
         [self._writer.write_string(entry.text) for entry in self._tlk.entries]
 
     def _calculate_entries_offset(
-            self
+        self,
     ):
         return _FILE_HEADER_SIZE + len(self._tlk) * _ENTRY_SIZE
 
     def _write_file_header(
-            self
+        self,
     ) -> None:
         language_id = self._tlk.language.value
         string_count = len(self._tlk)
@@ -125,9 +131,9 @@ class TLKBinaryWriter(ResourceWriter):
         self._writer.write_uint32(entries_offset)
 
     def _write_entry(
-            self,
-            entry: TLKEntry,
-            previous_offset: WrappedInt
+        self,
+        entry: TLKEntry,
+        previous_offset: WrappedInt,
     ):
         sound_resref = entry.voiceover.get()
         text_offset = previous_offset.get()

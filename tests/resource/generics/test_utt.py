@@ -44,5 +44,3 @@ class TestUTT(TestCase):
         self.assertEqual("onuserdefined", utt.on_user_defined)
         self.assertEqual(6, utt.palette_id)
         self.assertEqual("comment", utt.comment)
-
-

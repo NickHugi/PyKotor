@@ -1,10 +1,11 @@
 import struct
+from collections.abc import Callable
 from copy import copy
 from inspect import signature
-from typing import List, Any, NamedTuple, Callable, Dict, Union
+from typing import Any, NamedTuple
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.script import ScriptFunction, DataType
+from pykotor.common.script import DataType, ScriptFunction
 from pykotor.common.scriptdefs import KOTOR_FUNCTIONS
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
 
@@ -13,23 +14,21 @@ class Interpreter:
     def __init__(self, ncs: NCS):
         self._ncs: NCS = ncs
         self._cursor: NCSInstruction = ncs.instructions[0]
-        self._functions: List[ScriptFunction] = KOTOR_FUNCTIONS
+        self._functions: list[ScriptFunction] = KOTOR_FUNCTIONS
 
         self._stack: Stack = Stack()
-        self._returns: List[NCSInstruction] = [None]
+        self._returns: list[NCSInstruction] = [None]
 
-        self._mocks: Dict[str, Callable] = {}
+        self._mocks: dict[str, Callable] = {}
 
-        self.stack_snapshots: List[StackSnapshot] = []
-        self.action_snapshots: List[ActionSnapshot] = []
+        self.stack_snapshots: list[StackSnapshot] = []
+        self.action_snapshots: list[ActionSnapshot] = []
 
     def run(self):
         # TODO - limit how many instructions can be run before raising an error
         while self._cursor is not None:
             index = self._ncs.instructions.index(self._cursor)
             jump_value = None
-
-            #print(str(index).ljust(3), str(self._cursor).ljust(40)[:40], str(self._stack.state()).ljust(30), f"BP={self._stack.base_pointer()//4}")
 
             if self._cursor.ins_type == NCSInstructionType.CONSTS:
                 self._stack.add(DataType.STRING, self._cursor.args[0])
@@ -50,35 +49,58 @@ class Interpreter:
                 self._stack.copy_down(self._cursor.args[0], self._cursor.args[1])
 
             elif self._cursor.ins_type == NCSInstructionType.ACTION:
-                self.do_action(self._functions[self._cursor.args[0]], self._cursor.args[1])
+                self.do_action(
+                    self._functions[self._cursor.args[0]], self._cursor.args[1]
+                )
 
             elif self._cursor.ins_type == NCSInstructionType.MOVSP:
                 self._stack.move(self._cursor.args[0])
 
-            elif self._cursor.ins_type in [NCSInstructionType.ADDII, NCSInstructionType.ADDIF,
-                                           NCSInstructionType.ADDFF, NCSInstructionType.ADDFI,
-                                           NCSInstructionType.ADDSS, NCSInstructionType.ADDVV]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.ADDII,
+                NCSInstructionType.ADDIF,
+                NCSInstructionType.ADDFF,
+                NCSInstructionType.ADDFI,
+                NCSInstructionType.ADDSS,
+                NCSInstructionType.ADDVV,
+            ]:
                 self._stack.addition_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.SUBII, NCSInstructionType.SUBIF,
-                                           NCSInstructionType.SUBFF, NCSInstructionType.SUBFI,
-                                           NCSInstructionType.SUBVV]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.SUBII,
+                NCSInstructionType.SUBIF,
+                NCSInstructionType.SUBFF,
+                NCSInstructionType.SUBFI,
+                NCSInstructionType.SUBVV,
+            ]:
                 self._stack.subtraction_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.MULII, NCSInstructionType.MULIF,
-                                           NCSInstructionType.MULFF, NCSInstructionType.MULFI,
-                                           NCSInstructionType.MULVF, NCSInstructionType.MULFV]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.MULII,
+                NCSInstructionType.MULIF,
+                NCSInstructionType.MULFF,
+                NCSInstructionType.MULFI,
+                NCSInstructionType.MULVF,
+                NCSInstructionType.MULFV,
+            ]:
                 self._stack.multiplication_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.DIVII, NCSInstructionType.DIVIF,
-                                           NCSInstructionType.DIVFF, NCSInstructionType.DIVFI,
-                                           NCSInstructionType.DIVVF]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.DIVII,
+                NCSInstructionType.DIVIF,
+                NCSInstructionType.DIVFF,
+                NCSInstructionType.DIVFI,
+                NCSInstructionType.DIVVF,
+            ]:
                 self._stack.division_op()
 
             elif self._cursor.ins_type in [NCSInstructionType.MODII]:
                 self._stack.modulus_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.NEGI, NCSInstructionType.NEGF]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.NEGI,
+                NCSInstructionType.NEGF,
+            ]:
                 self._stack.negation_op()
 
             elif self._cursor.ins_type in [NCSInstructionType.COMPI]:
@@ -102,24 +124,44 @@ class Interpreter:
             elif self._cursor.ins_type in [NCSInstructionType.BOOLANDII]:
                 self._stack.bitwise_and_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.EQUALII, NCSInstructionType.EQUALFF,
-                                           NCSInstructionType.EQUALSS, NCSInstructionType.EQUALOO]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.EQUALII,
+                NCSInstructionType.EQUALFF,
+                NCSInstructionType.EQUALSS,
+                NCSInstructionType.EQUALOO,
+            ]:
                 self._stack.logical_equality_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.NEQUALII, NCSInstructionType.NEQUALFF,
-                                           NCSInstructionType.NEQUALSS, NCSInstructionType.NEQUALOO]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.NEQUALII,
+                NCSInstructionType.NEQUALFF,
+                NCSInstructionType.NEQUALSS,
+                NCSInstructionType.NEQUALOO,
+            ]:
                 self._stack.logical_inequality_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.GTII, NCSInstructionType.GTFF]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.GTII,
+                NCSInstructionType.GTFF,
+            ]:
                 self._stack.compare_greaterthan_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.GEQII, NCSInstructionType.GEQFF]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.GEQII,
+                NCSInstructionType.GEQFF,
+            ]:
                 self._stack.compare_greaterthanorequal_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.LTII, NCSInstructionType.LTFF]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.LTII,
+                NCSInstructionType.LTFF,
+            ]:
                 self._stack.compare_lessthan_op()
 
-            elif self._cursor.ins_type in [NCSInstructionType.LEQII, NCSInstructionType.LEQFF]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.LEQII,
+                NCSInstructionType.LEQFF,
+            ]:
                 self._stack.compare_lessthanorequal_op()
 
             elif self._cursor.ins_type in [NCSInstructionType.SHLEFTII]:
@@ -181,13 +223,18 @@ class Interpreter:
                 return_to = self._ncs.instructions[index_return_to]
                 self._returns.append(return_to)
 
-            elif self._cursor.ins_type in [NCSInstructionType.JZ, NCSInstructionType.JNZ]:
+            elif self._cursor.ins_type in [
+                NCSInstructionType.JZ,
+                NCSInstructionType.JNZ,
+            ]:
                 jump_value = self._stack.pop()
 
             elif self._cursor.ins_type in [NCSInstructionType.STORE_STATE]:
                 self.store_state()
 
-            self.stack_snapshots.append(StackSnapshot(self._cursor, self._stack.state()))
+            self.stack_snapshots.append(
+                StackSnapshot(self._cursor, self._stack.state())
+            )
 
             # Control flow
             if self._cursor.ins_type in [NCSInstructionType.RETN]:
@@ -214,7 +261,7 @@ class Interpreter:
         self._stack.store_state()
 
         index = self._ncs.instructions.index(self._cursor)
-        tempcursor = self._ncs.instructions[index+2]
+        tempcursor = self._ncs.instructions[index + 2]
 
         block = []
         while tempcursor.ins_type != NCSInstructionType.RETN:
@@ -229,14 +276,22 @@ class Interpreter:
 
         for i in range(args):
             if function.params[i].datatype == DataType.VECTOR:
-                vector_object = StackObject(DataType.VECTOR, Vector3(self._stack.pop().value, self._stack.pop().value, self._stack.pop().value))
+                vector_object = StackObject(
+                    DataType.VECTOR,
+                    Vector3(
+                        self._stack.pop().value,
+                        self._stack.pop().value,
+                        self._stack.pop().value,
+                    ),
+                )
                 args_snap.append(vector_object)
             else:
                 args_snap.append(self._stack.pop())
 
         for i in range(args):
             if function.params[i].datatype != args_snap[i].data_type:
-                raise ValueError(f"Invoked action '{function.name}' received the wrong data type for parameter '{function.params[i].name}' valued at '{args_snap[i]}'.")
+                msg = f"Invoked action '{function.name}' received the wrong data type for parameter '{function.params[i].name}' valued at '{args_snap[i]}'."
+                raise ValueError(msg)
 
         if function.returntype != DataType.VOID:
             if function.name in self._mocks:
@@ -265,15 +320,24 @@ class Interpreter:
             print(snap.instruction, "\n", snap.stack, "\n")
 
     def set_mock(self, function_name: str, mock: Callable):
-        function = next((function for function in self._functions if function.name == function_name), None)
+        function = next(
+            (
+                function
+                for function in self._functions
+                if function.name == function_name
+            ),
+            None,
+        )
 
         if function is None:
-            raise ValueError(f"Function '{function_name}' does not exist.")
+            msg = f"Function '{function_name}' does not exist."
+            raise ValueError(msg)
 
         mock_param_count = len(signature(mock).parameters)
         routine_param_count = len(function.params)
         if mock_param_count != routine_param_count:
-            raise ValueError(f"Function '{function_name}' expects {routine_param_count} parameters not {mock_param_count}.")
+            msg = f"Function '{function_name}' expects {routine_param_count} parameters not {mock_param_count}."
+            raise ValueError(msg)
 
         self._mocks[function_name] = mock
 
@@ -285,23 +349,23 @@ class StackV2:
     def __init__(self):
         self._stack: bytearray = bytearray()
         self._base_pointer: int = 0
-        self._base_pointer_saved: List[int] = []
-        self._stack_types: List = []
+        self._base_pointer_saved: list[int] = []
+        self._stack_types: list = []
 
     def state(self) -> bytearray:
         return copy(self._stack)
 
     def copy_down(self, offset: int, size: int) -> None:
         stacksize = len(self._stack)
-        copied = self._stack[stacksize-size:stacksize]
-        self._stack[stacksize-offset:stacksize-offset+size] = copied
+        copied = self._stack[stacksize - size : stacksize]
+        self._stack[stacksize - offset : stacksize - offset + size] = copied
 
     def copy_to_top(self, offset: int, size: int) -> None:
         stacksize = len(self._stack)
-        copied = self._stack[stacksize-offset:stacksize-offset+size]
+        copied = self._stack[stacksize - offset : stacksize - offset + size]
         self._stack.extend(copied)
 
-    def add(self, datatype: DataType, value: Union[int, float]):
+    def add(self, datatype: DataType, value: int | float):
         if datatype == DataType.INT:
             if not isinstance(value, int):
                 raise ValueError
@@ -316,11 +380,11 @@ class StackV2:
 
 class Stack:
     def __init__(self):
-        self._stack: List[StackObject] = []
+        self._stack: list[StackObject] = []
         self._bp: int = 0
-        self._bp_buffer: List[int] = []
+        self._bp_buffer: list[int] = []
 
-    def state(self) -> List:
+    def state(self) -> list:
         return copy(self._stack)
 
     def add(self, data_type: DataType, value: Any) -> None:
@@ -358,7 +422,7 @@ class Stack:
         return self._stack[real_index]
 
     def copy_to_top(self, offset: int, size: int) -> None:
-        for i in range(size//4):
+        for _i in range(size // 4):
             self._stack.append(self.peek(offset))
 
     def copy_down(self, offset: int, size: int) -> None:
@@ -537,19 +601,19 @@ class StackObject:
 
 
 class ActionStackValue(NamedTuple):
-    block: List[NCSInstruction]
-    stack: List
+    block: list[NCSInstruction]
+    stack: list
 
 
 class ActionSnapshot(NamedTuple):
     function_name: str
-    arg_values: List
+    arg_values: list
     return_value: Any
 
 
 class StackSnapshot(NamedTuple):
     instruction: NCSInstruction
-    stack: List[StackObject]
+    stack: list[StackObject]
 
 
 class EngineRoutineMock:

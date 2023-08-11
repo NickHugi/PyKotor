@@ -32,4 +32,3 @@ class TestUTM(TestCase):
         self.assertFalse(utm.inventory[0].infinite)
         self.assertTrue(utm.inventory[1].infinite)
         self.assertEqual("g_i_drdltplat002", utm.inventory[1].resref)
-

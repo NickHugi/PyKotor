@@ -69,4 +69,3 @@ class TestLocalizedStringDelta(TestCase):
         self.assertEqual("1", locstring.get(Language.ENGLISH, Gender.MALE))
         self.assertEqual("2", locstring.get(Language.GERMAN, Gender.MALE))
         self.assertEqual("b", locstring.get(Language.FRENCH, Gender.MALE))
-

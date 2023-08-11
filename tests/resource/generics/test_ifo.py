@@ -17,7 +17,7 @@ class TestIFO(TestCase):
         self.validate_io(ifo)
 
     def validate_io(self, ifo):
-        self.assertEqual(b'R:\xe5\x9e\xe3sq\x1d\x0f\xf0i\x9c\xb9a\x9f\xa7', ifo.mod_id)
+        self.assertEqual(b"R:\xe5\x9e\xe3sq\x1d\x0f\xf0i\x9c\xb9a\x9f\xa7", ifo.mod_id)
         self.assertEqual(2, ifo.creator_id)
         self.assertEqual(3, ifo.version)
         self.assertEqual("262", ifo.vo_id)

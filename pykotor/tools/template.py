@@ -1,5 +1,5 @@
 from pykotor.common.language import LocalizedString
-from pykotor.resource.formats.gff import read_gff, GFFContent
+from pykotor.resource.formats.gff import GFFContent, read_gff
 
 
 def extract_name(data: bytes) -> LocalizedString:

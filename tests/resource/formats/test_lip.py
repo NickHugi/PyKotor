@@ -1,7 +1,15 @@
 import platform
 from unittest import TestCase
 
-from pykotor.resource.formats.lip import LIP, LIPShape, LIPBinaryReader, detect_lip, write_lip, LIPXMLReader, read_lip
+from pykotor.resource.formats.lip import (
+    LIP,
+    LIPShape,
+    LIPBinaryReader,
+    detect_lip,
+    write_lip,
+    LIPXMLReader,
+    read_lip,
+)
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "../../files/test.lip"
@@ -56,5 +64,7 @@ class TestLIP(TestCase):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, write_lip, LIP(), ".", ResourceType.LIP)
         else:
-            self.assertRaises(IsADirectoryError, write_lip, LIP(), ".", ResourceType.LIP)
+            self.assertRaises(
+                IsADirectoryError, write_lip, LIP(), ".", ResourceType.LIP
+            )
         self.assertRaises(ValueError, write_lip, LIP(), ".", ResourceType.INVALID)

@@ -1,22 +1,27 @@
 from __future__ import annotations
 
 import struct
-from typing import Optional
 
-from pykotor.common.geometry import Vector3, SurfaceMaterial
+from pykotor.common.geometry import SurfaceMaterial, Vector3
 from pykotor.resource.formats.bwm import BWM, BWMFace, BWMType
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class BWMBinaryReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._wok: Optional[BWM] = None
+        self._wok: BWM | None = None
         self.position: Vector3 = Vector3.from_null()
         self.relative_hook1: Vector3 = Vector3.from_null()
         self.relative_hook2: Vector3 = Vector3.from_null()
@@ -25,8 +30,8 @@ class BWMBinaryReader(ResourceReader):
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> BWM:
         self._wok = BWM()
 
@@ -34,10 +39,12 @@ class BWMBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "BWM ":
-            raise ValueError("Not a valid binary BWM file.")
+            msg = "Not a valid binary BWM file."
+            raise ValueError(msg)
 
         if file_version != "V1.0":
-            raise ValueError("The BWM version of the file is unsupported.")
+            msg = "The BWM version of the file is unsupported."
+            raise ValueError(msg)
 
         self._wok.walkmesh_type = BWMType(self._reader.read_uint32())
         self._wok.relative_hook1 = self._reader.read_vector3()
@@ -51,28 +58,32 @@ class BWMBinaryReader(ResourceReader):
         face_count = self._reader.read_uint32()
         indices_offset = self._reader.read_uint32()
         materials_offset = self._reader.read_uint32()
-        normals_offset = self._reader.read_uint32()
-        planar_distances_offset = self._reader.read_uint32()
+        self._reader.read_uint32()
+        self._reader.read_uint32()
 
-        aabb_count = self._reader.read_uint32()
-        aabb_offset = self._reader.read_uint32()
+        self._reader.read_uint32()
+        self._reader.read_uint32()
         self._reader.skip(4)
-        adjacencies_count = self._reader.read_uint32()
-        adjacencies_offset = self._reader.read_uint32()
+        self._reader.read_uint32()
+        self._reader.read_uint32()
         edges_count = self._reader.read_uint32()
         edges_offset = self._reader.read_uint32()
-        perimeters_count = self._reader.read_uint32()
-        perimeters_offset = self._reader.read_uint32()
+        self._reader.read_uint32()
+        self._reader.read_uint32()
 
         vertices = []
         self._reader.seek(vertices_offset)
-        for i in range(vertices_count):
+        for _i in range(vertices_count):
             vertices.append(self._reader.read_vector3())
 
         faces = []
         self._reader.seek(indices_offset)
-        for i in range(face_count):
-            i1, i2, i3 = self._reader.read_uint32(), self._reader.read_uint32(), self._reader.read_uint32()
+        for _i in range(face_count):
+            i1, i2, i3 = (
+                self._reader.read_uint32(),
+                self._reader.read_uint32(),
+                self._reader.read_uint32(),
+            )
             v1, v2, v3 = vertices[i1], vertices[i2], vertices[i3]
             faces.append(BWMFace(v1, v2, v3))
 
@@ -86,7 +97,7 @@ class BWMBinaryReader(ResourceReader):
 
         self._reader.seek(edges_offset)
         x = []
-        for i in range(edges_count):
+        for _i in range(edges_count):
             edge_index = self._reader.read_uint32()
             x.append(edge_index)
             transition = self._reader.read_uint32()
@@ -110,17 +121,17 @@ class BWMBinaryWriter(ResourceWriter):
     HEADER_SIZE = 136
 
     def __init__(
-            self,
-            wok: BWM,
-            target: TARGET_TYPES
+        self,
+        wok: BWM,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._wok: BWM = wok
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         vertices = self._wok.vertices()
 
@@ -137,7 +148,11 @@ class BWMBinaryWriter(ResourceWriter):
         indices_offset = vertex_offset + len(vertex_data)
         indices_data = bytearray()
         for face in faces:
-            i1, i2, i3 = vertices.index(face.v1), vertices.index(face.v2), vertices.index(face.v3)
+            i1, i2, i3 = (
+                vertices.index(face.v1),
+                vertices.index(face.v2),
+                vertices.index(face.v3),
+            )
             indices_data += struct.pack("III", i1, i2, i3)
 
         material_offset = indices_offset + len(indices_data)
@@ -161,11 +176,18 @@ class BWMBinaryWriter(ResourceWriter):
         for aabb in aabbs:
             aabb_data += struct.pack("fff", aabb.bb_min.x, aabb.bb_min.y, aabb.bb_min.z)
             aabb_data += struct.pack("fff", aabb.bb_max.x, aabb.bb_max.y, aabb.bb_max.z)
-            aabb_data += struct.pack("I", faces.index(aabb.face) if aabb.face is not None else 0xFFFFFFFF)
+            aabb_data += struct.pack(
+                "I", faces.index(aabb.face) if aabb.face is not None else 0xFFFFFFFF
+            )
             aabb_data += struct.pack("I", 4)
             aabb_data += struct.pack("I", aabb.sigplane.value)
-            aabb_data += struct.pack("I", aabbs.index(aabb.left) + 1 if aabb.left is not None else 0xFFFFFFFF)
-            aabb_data += struct.pack("I", aabbs.index(aabb.right) + 1 if aabb.right is not None else 0xFFFFFFFF)
+            aabb_data += struct.pack(
+                "I", aabbs.index(aabb.left) + 1 if aabb.left is not None else 0xFFFFFFFF
+            )
+            aabb_data += struct.pack(
+                "I",
+                aabbs.index(aabb.right) + 1 if aabb.right is not None else 0xFFFFFFFF,
+            )
 
         adjacency_offset = aabb_offset + len(aabb_data)
         adjacency_data = bytearray()
@@ -173,7 +195,11 @@ class BWMBinaryWriter(ResourceWriter):
             adjancencies = self._wok.adjacencies(face)
             indexes = []
             for adjacency in adjancencies:
-                indexes.append(faces.index(adjacency.face) * 3 + adjacency.edge if adjacency is not None else -1)
+                indexes.append(
+                    faces.index(adjacency.face) * 3 + adjacency.edge
+                    if adjacency is not None
+                    else -1
+                )
             adjacency_data += struct.pack("iii", *indexes)
 
         edges = self._wok.edges()

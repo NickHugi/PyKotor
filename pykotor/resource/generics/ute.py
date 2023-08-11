@@ -1,17 +1,15 @@
-from typing import List
-
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef, Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.common.misc import Game, ResRef
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTE:
-    """
-    Stores encounter data.
+    """Stores encounter data.
 
-    Attributes:
+    Attributes
+    ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.
         active: "Active" field.
@@ -40,7 +38,7 @@ class UTE:
     BINARY_TYPE = ResourceType.UTE
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.tag: str = ""
@@ -65,7 +63,7 @@ class UTE:
         self.on_entered: ResRef = ResRef.from_blank()
         self.on_user_defined: ResRef = ResRef.from_blank()
 
-        self.creatures: List[UTECreature] = []
+        self.creatures: list[UTECreature] = []
 
         # Deprecated:
         self.name: LocalizedString = LocalizedString.from_invalid()
@@ -74,10 +72,10 @@ class UTE:
 
 
 class UTECreature:
-    """
-    Stores data for a creature that can be spawned by an encounter.
+    """Stores data for a creature that can be spawned by an encounter.
 
-    Attributes:
+    Attributes
+    ----------
         appearance_id: "Appearance" field.
         challenge_rating: "CR" field.
         resref: "ResRef" field.
@@ -86,7 +84,7 @@ class UTECreature:
     """
 
     def __init__(
-            self
+        self,
     ):
         self.appearance_id: int = 0
         self.challenge_rating: float = 0.0
@@ -96,9 +94,9 @@ class UTECreature:
 
 
 def utd_version(
-        gff: GFF
+    gff: GFF,
 ) -> Game:
-    for label in ("GuaranteedCount"):
+    for label in "GuaranteedCount":
         for creature_struct in gff.root.acquire("CreatureList", GFFList()):
             if creature_struct.exists(label):
                 return Game.K2
@@ -106,7 +104,7 @@ def utd_version(
 
 
 def construct_ute(
-        gff: GFF
+    gff: GFF,
 ) -> UTE:
     ute = UTE()
 
@@ -147,10 +145,10 @@ def construct_ute(
 
 
 def dismantle_ute(
-        ute: UTE,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    ute: UTE,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTE)
 
@@ -195,33 +193,32 @@ def dismantle_ute(
 
 
 def read_ute(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTE:
     gff = read_gff(source, offset, size)
-    ute = construct_ute(gff)
-    return ute
+    return construct_ute(gff)
 
 
 def write_ute(
-        ute: UTE,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    ute: UTE,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_ute(
-        ute: UTE,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    ute: UTE,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
     gff = dismantle_ute(ute, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

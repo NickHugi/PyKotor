@@ -3,8 +3,16 @@ from unittest import TestCase
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
-from pykotor.resource.formats.tlk import TLK, TLKEntry, detect_tlk, TLKBinaryReader, write_tlk, read_tlk, TLKXMLReader, \
-    TLKJSONReader
+from pykotor.resource.formats.tlk import (
+    TLK,
+    TLKEntry,
+    detect_tlk,
+    TLKBinaryReader,
+    write_tlk,
+    read_tlk,
+    TLKXMLReader,
+    TLKJSONReader,
+)
 from pykotor.resource.type import ResourceType
 
 
@@ -84,5 +92,7 @@ class TestTLK(TestCase):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, write_tlk, TLK(), ".", ResourceType.TLK)
         else:
-            self.assertRaises(IsADirectoryError, write_tlk, TLK(), ".", ResourceType.TLK)
+            self.assertRaises(
+                IsADirectoryError, write_tlk, TLK(), ".", ResourceType.TLK
+            )
         self.assertRaises(ValueError, write_tlk, TLK(), ".", ResourceType.INVALID)

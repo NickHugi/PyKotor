@@ -44,4 +44,3 @@ class TestUTS(TestCase):
 
         self.assertEqual(4, len(uts.sounds))
         self.assertEqual("c_drdastro_atk2", uts.sounds[3])
-

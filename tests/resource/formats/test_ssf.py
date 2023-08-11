@@ -1,7 +1,15 @@
 import platform
 from unittest import TestCase
 
-from pykotor.resource.formats.ssf import SSF, SSFSound, SSFBinaryReader, detect_ssf, SSFXMLReader, write_ssf, read_ssf
+from pykotor.resource.formats.ssf import (
+    SSF,
+    SSFSound,
+    SSFBinaryReader,
+    detect_ssf,
+    SSFXMLReader,
+    write_ssf,
+    read_ssf,
+)
 from pykotor.resource.type import ResourceType
 
 
@@ -78,5 +86,7 @@ class TestSSF(TestCase):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, write_ssf, SSF(), ".", ResourceType.SSF)
         else:
-            self.assertRaises(IsADirectoryError, write_ssf, SSF(), ".", ResourceType.SSF)
+            self.assertRaises(
+                IsADirectoryError, write_ssf, SSF(), ".", ResourceType.SSF
+            )
         self.assertRaises(ValueError, write_ssf, SSF(), ".", ResourceType.INVALID)

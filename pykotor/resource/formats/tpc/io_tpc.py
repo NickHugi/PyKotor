@@ -1,15 +1,19 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceWriter, ResourceReader, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 def _get_size(
-        width: int,
-        height: int,
-        tpc_format: TPCTextureFormat
+    width: int,
+    height: int,
+    tpc_format: TPCTextureFormat,
 ) -> int:
     if tpc_format is TPCTextureFormat.Greyscale:
         return width * height * 1
@@ -21,27 +25,27 @@ def _get_size(
         return max(8, ((width + 3) // 4) * ((height + 3) // 4) * 8)
     elif tpc_format is TPCTextureFormat.DXT5:
         return max(16, ((width + 3) // 4) * ((height + 3) // 4) * 16)
+    return None
 
 
 class TPCBinaryReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._tpc: Optional[TPC] = None
+        self._tpc: TPC | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> TPC:
         self._tpc = TPC()
 
         size = self._reader.read_uint32()
-        min_size = -1
         compressed = size != 0
 
         self._reader.skip(4)
@@ -55,27 +59,22 @@ class TPCBinaryReader(ResourceReader):
         if compressed:
             if color_depth == 2:
                 tpc_format = TPCTextureFormat.DXT1
-                min_size = 8
             elif color_depth == 4:
                 tpc_format = TPCTextureFormat.DXT5
-                min_size = 16
         else:
             if color_depth == 1:
                 tpc_format = TPCTextureFormat.Greyscale
                 size = width * height
-                min_size = 1
             elif color_depth == 2:
                 tpc_format = TPCTextureFormat.RGB
                 size = width * height * 3
-                min_size = 3
             elif color_depth == 4:
                 tpc_format = TPCTextureFormat.RGBA
                 size = width * height * 4
-                min_size = 4
 
         mipmaps = []
         mm_width, mm_height = width, height
-        for i in range(mipmap_count):
+        for _i in range(mipmap_count):
             mm_size = _get_size(mm_width, mm_height, tpc_format)
             mm_data = self._reader.read_bytes(mm_size)
             mipmaps.append(mm_data)
@@ -96,19 +95,18 @@ class TPCBinaryReader(ResourceReader):
 
 class TPCBinaryWriter(ResourceWriter):
     def __init__(
-            self,
-            tpc: TPC,
-            target: TARGET_TYPES
+        self,
+        tpc: TPC,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._tpc = tpc
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
-
         data = bytearray()
         size = 0
 
@@ -131,7 +129,8 @@ class TPCBinaryWriter(ResourceWriter):
         elif self._tpc.format() == TPCTextureFormat.DXT5:
             encoding = 4
         else:
-            raise ValueError("Invalid TPC texture format.")
+            msg = "Invalid TPC texture format."
+            raise ValueError(msg)
 
         width, height = self._tpc.dimensions()
 
@@ -141,6 +140,6 @@ class TPCBinaryWriter(ResourceWriter):
         self._writer.write_uint16(height)
         self._writer.write_uint8(encoding)
         self._writer.write_uint8(self._tpc.mipmap_count())
-        self._writer.write_bytes(b'\x00' * 114)
+        self._writer.write_bytes(b"\x00" * 114)
         self._writer.write_bytes(data)
-        self._writer.write_bytes(self._tpc.txi.encode('ascii'))
+        self._writer.write_bytes(self._tpc.txi.encode("ascii"))
