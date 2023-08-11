@@ -20,7 +20,7 @@ def locate_game_path(game: Game):
                 r"C:\Program Files\LucasArts\SWKotOR2",
                 r"C:\Program Files (x86)\LucasArts\SWKotOR2",
                 r"C:\GOG Games\Star Wars - KotOR2",
-            ]
+            ],
         },
         "Darwin": {
             Game.K1: [
@@ -28,7 +28,7 @@ def locate_game_path(game: Game):
             ],
             Game.K2: [
                 "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/Knights of the Old Republic II.app/Contents/Assets",
-            ]
+            ],
         },
         "Linux": {
             Game.K1: [
@@ -40,8 +40,8 @@ def locate_game_path(game: Game):
                 "~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II",
                 "~/.local/share/Steam/common/steamapps/Knights of the Old Republic II",
                 "~/.local/share/Steam/common/Knights of the Old Republic II",
-            ]
-        }
+            ],
+        },
     }
 
     potential = locations[platform.system()][game]

@@ -50,5 +50,7 @@ class TestVIS(TestCase):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, write_vis, VIS(), ".", ResourceType.VIS)
         else:
-            self.assertRaises(IsADirectoryError, write_vis, VIS(), ".", ResourceType.VIS)
+            self.assertRaises(
+                IsADirectoryError, write_vis, VIS(), ".", ResourceType.VIS
+            )
         self.assertRaises(ValueError, write_vis, VIS(), ".", ResourceType.INVALID)

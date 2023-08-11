@@ -12,10 +12,28 @@ from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
-from pykotor.tslpatcher.mods.gff import ModifyFieldGFF, AddFieldGFF, AddStructToListGFF, LocalizedStringDelta, \
-    FieldValueConstant, FieldValueTLKMemory, FieldValue2DAMemory
-from pykotor.tslpatcher.mods.twoda import ChangeRow2DA, TargetType, RowValueRowIndex, RowValueRowLabel, RowValueRowCell, \
-    RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA, CopyRow2DA, AddColumn2DA
+from pykotor.tslpatcher.mods.gff import (
+    ModifyFieldGFF,
+    AddFieldGFF,
+    AddStructToListGFF,
+    LocalizedStringDelta,
+    FieldValueConstant,
+    FieldValueTLKMemory,
+    FieldValue2DAMemory,
+)
+from pykotor.tslpatcher.mods.twoda import (
+    ChangeRow2DA,
+    TargetType,
+    RowValueRowIndex,
+    RowValueRowLabel,
+    RowValueRowCell,
+    RowValueConstant,
+    RowValue2DAMemory,
+    RowValueTLKMemory,
+    AddRow2DA,
+    CopyRow2DA,
+    AddColumn2DA,
+)
 from pykotor.tslpatcher.reader import ConfigReader
 
 
@@ -24,8 +42,7 @@ class TestConfigReader(TestCase):
         ...
 
     def test_tlk(self):
-        ini_text = \
-            """
+        ini_text = """
             [TLKList]
             StrRef0=2
             StrRef1=1
@@ -56,8 +73,7 @@ class TestConfigReader(TestCase):
     def test_2da_changerow_identifier(self):
         """Test that identifier is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -91,16 +107,15 @@ class TestConfigReader(TestCase):
     def test_2da_changerow_targets(self):
         """Test that target values (line to modify) are loading correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
-            
+
             [test.2da]
             ChangeRow0=change_row_0
             ChangeRow1=change_row_1
             ChangeRow2=change_row_2
-            
+
             [change_row_0]
             RowIndex=1
             [change_row_1]
@@ -136,8 +151,7 @@ class TestConfigReader(TestCase):
     def test_2da_changerow_store2da(self):
         """Test that 2DAMEMORY values are set to be stored correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -179,8 +193,7 @@ class TestConfigReader(TestCase):
     def test_2da_changerow_cells(self):
         """Test that cells are set to be modified correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -220,14 +233,14 @@ class TestConfigReader(TestCase):
         cell_0_appearance: RowValue2DAMemory = mod_2da_0.cells["appearance"]
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
+
     # endregion
 
     # region 2DA: Add Row
     def test_2da_addrow_identifier(self):
         """Test that identifier is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -259,8 +272,7 @@ class TestConfigReader(TestCase):
     def test_2da_addrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -297,8 +309,7 @@ class TestConfigReader(TestCase):
     def test_2da_addrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -335,8 +346,7 @@ class TestConfigReader(TestCase):
     def test_2da_addrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -377,8 +387,7 @@ class TestConfigReader(TestCase):
     def test_2da_addrow_cells(self):
         """Test that cells will be assigned properly correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -417,14 +426,14 @@ class TestConfigReader(TestCase):
         cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
+
     # endregion Add Row
 
     # region 2DA: Copy Row
     def test_2da_copyrow_identifier(self):
         """Test that identifier is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -458,8 +467,7 @@ class TestConfigReader(TestCase):
     def test_2da_copyrow_target(self):
         """Test that target values (line to modify) are loading correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -503,8 +511,7 @@ class TestConfigReader(TestCase):
     def test_2da_copyrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -543,8 +550,7 @@ class TestConfigReader(TestCase):
     def test_2da_copyrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -583,8 +589,7 @@ class TestConfigReader(TestCase):
     def test_2da_copyrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -626,8 +631,7 @@ class TestConfigReader(TestCase):
     def test_2da_copyrow_cells(self):
         """Test that cells will be assigned properly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -667,14 +671,14 @@ class TestConfigReader(TestCase):
         cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
+
     # endregion
 
     # region 2DA: Add Column
     def test_2da_addcolumn_basic(self):
         """Test that column will be inserted with correct label and default values."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -686,7 +690,7 @@ class TestConfigReader(TestCase):
             ColumnLabel=label
             DefaultValue=****
             2DAMEMORY2=I2
-            
+
             [add_column_1]
             ColumnLabel=someint
             DefaultValue=0
@@ -715,8 +719,7 @@ class TestConfigReader(TestCase):
     def test_2da_addcolumn_indexinsert(self):
         """Test that cells will be inserted to the new column at the given index correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -758,8 +761,7 @@ class TestConfigReader(TestCase):
     def test_2da_addcolumn_labelinsert(self):
         """Test that cells will be inserted to the new column at the given label correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -801,8 +803,7 @@ class TestConfigReader(TestCase):
     def test_2da_addcolumn_2damemory(self):
         """Test that 2DAMEMORY will be stored correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -829,14 +830,14 @@ class TestConfigReader(TestCase):
 
         value = mod_0.store_2da[2]
         self.assertEqual("I2", value)
+
     # endregion
 
     # region SSF
     def test_ssf_replace(self):
         """Test that the replace file boolean is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test1.ssf
             Replace0=test2.ssf
@@ -860,8 +861,7 @@ class TestConfigReader(TestCase):
     def test_ssf_stored_constant(self):
         """Test that the set sound as constant stringref is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -890,8 +890,7 @@ class TestConfigReader(TestCase):
     def test_ssf_stored_2da(self):
         """Test that the set sound as 2DAMEMORY value is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -920,8 +919,7 @@ class TestConfigReader(TestCase):
     def test_ssf_stored_tlk(self):
         """Test that the set sound as StrRef is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -950,8 +948,7 @@ class TestConfigReader(TestCase):
     def test_ssf_set(self):
         """Test that each sound is mapped and will register correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -1052,14 +1049,14 @@ class TestConfigReader(TestCase):
         self.assertEqual(SSFSound.SEPARATED_FROM_PARTY, mod_leaveparty.sound)
         self.assertEqual(SSFSound.REJOINED_PARTY, mod_rejoinparty.sound)
         self.assertEqual(SSFSound.POISONED, mod_poisoned.sound)
+
     # endregion
 
     # region GFF: Modify
     def test_gff_modify_pathing(self):
         """Test that the modify path for the field registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1083,8 +1080,7 @@ class TestConfigReader(TestCase):
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1110,8 +1106,7 @@ class TestConfigReader(TestCase):
     def test_gff_modify_type_string(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1137,8 +1132,7 @@ class TestConfigReader(TestCase):
     def test_gff_modify_type_vector3(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1164,8 +1158,7 @@ class TestConfigReader(TestCase):
     def test_gff_modify_type_vector4(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1191,8 +1184,7 @@ class TestConfigReader(TestCase):
     def test_gff_modify_type_locstring(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1234,15 +1226,16 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_2.value, FieldValueConstant)
         self.assertIsInstance(mod_2.value.stored, LocalizedStringDelta)
         self.assertEqual("LocString", mod_2.path)
-        self.assertEqual("world", mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE))
+        self.assertEqual(
+            "world", mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE)
+        )
         self.assertIsNone(mod_2.value.stored.stringref)
         self.assertEqual(1, len(mod_2.value.stored))
 
     def test_gff_modify_2damemory(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1272,12 +1265,11 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_1, ModifyFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueTLKMemory)
         self.assertEqual(2, mod_1.value.token_id)
-    
+
     def test_gff_modify_tlkmemory(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1298,14 +1290,14 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValue2DAMemory)
         self.assertEqual(12, mod_0.value.token_id)
+
     # endregion
 
     # region GFF: Add
     def test_gff_add_ints(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1317,43 +1309,43 @@ class TestConfigReader(TestCase):
             AddField4=add_uint32
             AddField5=add_int32
             AddField7=add_int64
-            
+
             [add_uint8]
             FieldType=Byte
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int8]
             FieldType=Char
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_uint16]
             FieldType=Word
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int16]
             FieldType=Short
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_uint32]
             FieldType=DWord
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int32]
             FieldType=Int
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int64]
             FieldType=Int64
             Path=SomeList
@@ -1422,8 +1414,7 @@ class TestConfigReader(TestCase):
     def test_gff_add_floats(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1470,8 +1461,7 @@ class TestConfigReader(TestCase):
     def test_gff_add_string(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1504,8 +1494,7 @@ class TestConfigReader(TestCase):
     def test_gff_add_vector3(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1538,8 +1527,7 @@ class TestConfigReader(TestCase):
     def test_gff_add_vector4(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1572,8 +1560,7 @@ class TestConfigReader(TestCase):
     def test_gff_add_resref(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1606,8 +1593,7 @@ class TestConfigReader(TestCase):
     def test_gff_add_locstring(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1622,7 +1608,7 @@ class TestConfigReader(TestCase):
             StrRef=123
             lang0=abc
             lang3=lmnop
-            
+
             [add_locstring2]
             FieldType=ExoLocString
             Path=
@@ -1648,7 +1634,9 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
         self.assertEqual(123, mod_0.value.stored.stringref.stored)
         self.assertEqual("abc", mod_0.value.stored.get(Language.ENGLISH, Gender.MALE))
-        self.assertEqual("lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE))
+        self.assertEqual(
+            "lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE)
+        )
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
@@ -1660,14 +1648,13 @@ class TestConfigReader(TestCase):
     def test_gff_add_inside_struct(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             AddField0=add_struct
-            
+
             [add_struct]
             FieldType=Struct
             Path=
@@ -1708,8 +1695,7 @@ class TestConfigReader(TestCase):
     def test_gff_add_inside_list(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1748,4 +1734,5 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_1, AddStructToListGFF)
         self.assertEqual(111, mod_1.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
+
     # endregion

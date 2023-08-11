@@ -1,4 +1,4 @@
-from pykotor.resource.formats.gff import GFF, GFFStruct, read_gff, GFFFieldType
+from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFStruct
 
 
 class DiffGFF:
@@ -6,7 +6,9 @@ class DiffGFF:
         self.old: GFF = old
         self.new: GFF = new
 
-    def is_same(self, old_struct: GFFStruct = None, new_struct: GFFStruct = None) -> bool:
+    def is_same(
+        self, old_struct: GFFStruct = None, new_struct: GFFStruct = None
+    ) -> bool:
         old_struct = self.old.root if old_struct is None else old_struct
         new_struct = self.new.root if new_struct is None else new_struct
 

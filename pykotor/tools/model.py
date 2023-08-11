@@ -1,6 +1,6 @@
 import struct
 from copy import deepcopy
-from typing import Dict, List, NamedTuple
+from typing import NamedTuple
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.misc import Game
@@ -65,15 +65,15 @@ class MDLMDXTuple(NamedTuple):
 
 
 def rename(
-        data: bytes,
-        name: str
+    data: bytes,
+    name: str,
 ) -> bytes:
-    return data[:20] + name.ljust(32, '\0').encode('ascii') + data[52:]
+    return data[:20] + name.ljust(32, "\0").encode("ascii") + data[52:]
 
 
 def list_textures(
-        data: bytes
-) -> List[str]:
+    data: bytes,
+) -> list[str]:
     textures = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
@@ -91,28 +91,31 @@ def list_textures(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            for i in range(child_offsets_count):
+            for _i in range(child_offsets_count):
                 nodes.append(reader.read_uint32())
 
             if node_id & 32:
                 reader.seek(node_offset + 168)
                 texture = reader.read_string(32)
-                if texture != "" and texture != "NULL" and texture.lower() not in textures:
+                if (
+                    texture != ""
+                    and texture != "NULL"
+                    and texture.lower() not in textures
+                ):
                     textures.append(texture.lower())
 
     return textures
 
 
 def list_lightmaps(
-        data: bytes
-) -> List[str]:
+    data: bytes,
+) -> list[str]:
     lightmaps = []
 
     with BinaryReader.from_bytes(data, 12) as reader:
         reader.seek(168)
         root_offset = reader.read_uint32()
 
-        offsets = {}
         nodes = [root_offset]
         while nodes:
             node_offset = nodes.pop()
@@ -124,21 +127,25 @@ def list_lightmaps(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            for i in range(child_offsets_count):
+            for _i in range(child_offsets_count):
                 nodes.append(reader.read_uint32())
 
             if node_id & 32:
                 reader.seek(node_offset + 200)
                 lightmap = reader.read_string(32)
-                if lightmap != "" and lightmap != "NULL" and lightmap.lower() not in lightmaps:
+                if (
+                    lightmap != ""
+                    and lightmap != "NULL"
+                    and lightmap.lower() not in lightmaps
+                ):
                     lightmaps.append(lightmap.lower())
 
     return lightmaps
 
 
 def change_textures(
-        data: bytes,
-        textures: Dict[str, str]
+    data: bytes,
+    textures: dict[str, str],
 ) -> bytes:
     data = bytearray(data)
     offsets = {}
@@ -163,7 +170,7 @@ def change_textures(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            for i in range(child_offsets_count):
+            for _i in range(child_offsets_count):
                 nodes.append(reader.read_uint32())
 
             if node_id & 32:
@@ -179,15 +186,20 @@ def change_textures(
         for texture, offsets in offsets.items():
             for offset in offsets:
                 offset += 12
-                data = data[:offset] + struct.pack('32s', textures[texture].ljust(32, '\0').encode('ascii')) + data[
-                                                                                                               offset + 32:]
+                data = (
+                    data[:offset]
+                    + struct.pack(
+                        "32s", textures[texture].ljust(32, "\0").encode("ascii")
+                    )
+                    + data[offset + 32 :]
+                )
 
     return bytes(data)
 
 
 def change_lightmaps(
-        data: bytes,
-        textures: Dict[str, str]
+    data: bytes,
+    textures: dict[str, str],
 ) -> bytes:
     data = bytearray(data)
     offsets = {}
@@ -212,7 +224,7 @@ def change_lightmaps(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            for i in range(child_offsets_count):
+            for _i in range(child_offsets_count):
                 nodes.append(reader.read_uint32())
 
             if node_id & 32:
@@ -228,21 +240,26 @@ def change_lightmaps(
         for texture, offsets in offsets.items():
             for offset in offsets:
                 offset += 12
-                data = data[:offset] + struct.pack('32s', textures[texture].ljust(32, '\0').encode('ascii')) + data[
-                                                                                                               offset + 32:]
+                data = (
+                    data[:offset]
+                    + struct.pack(
+                        "32s", textures[texture].ljust(32, "\0").encode("ascii")
+                    )
+                    + data[offset + 32 :]
+                )
 
     return bytes(data)
 
 
 def detect_version(
-        data: bytes
+    data: bytes,
 ) -> Game:
     pointer = struct.unpack("I", data[12:16])[0]
     return Game.K1 if pointer == _GEOM_ROOT_FP0_K1 else Game.K2
 
 
 def convert_to_k1(
-        data: bytes
+    data: bytes,
 ) -> bytes:
     if detect_version(data) == Game.K1:
         return data
@@ -267,7 +284,7 @@ def convert_to_k1(
             child_offsets_count = reader.read_uint32()
 
             reader.seek(child_offsets_offset)
-            for i in range(child_offsets_count):
+            for _i in range(child_offsets_count):
                 nodes.append(reader.read_uint32())
 
     start = data[:12]
@@ -281,37 +298,39 @@ def convert_to_k1(
     for node_type, node_offset in trim:
         mesh_start = node_offset + 80  # Start of mesh header
 
-        offset_start = node_offset + 80 + 332  # Location of start of bytes to be shifted
+        offset_start = (
+            node_offset + 80 + 332
+        )  # Location of start of bytes to be shifted
         offset_size = 8  # How many bytes we have to shift
 
         if node_type & _NODE_TYPE_SKIN:
             offset_size += _SKIN_HEADER_SIZE
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _MESH_FP0_K1)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _MESH_FP1_K1)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _MESH_FP0_K1)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _MESH_FP1_K1)
 
         if node_type & _NODE_TYPE_DANGLY:
             offset_size += _DANGLY_HEADER_SIZE
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _DANGLY_FP0_K1)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _DANGLY_FP1_K1)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _DANGLY_FP0_K1)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _DANGLY_FP1_K1)
 
         if node_type & _NODE_TYPE_SABER:
             offset_size += _SABER_HEADER_SIZE
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _SABER_FP0_K1)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _SABER_FP1_K1)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _SABER_FP0_K1)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _SABER_FP1_K1)
 
         if node_type & _NODE_TYPE_AABB:
             offset_size += _AABB_HEADER_SIZE
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _AABB_FP0_K1)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _AABB_FP1_K1)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _AABB_FP0_K1)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _AABB_FP1_K1)
 
-        shifting = data[offset_start:offset_start + offset_size]
-        data[offset_start - 8:offset_start - 8 + offset_size] = shifting
+        shifting = data[offset_start : offset_start + offset_size]
+        data[offset_start - 8 : offset_start - 8 + offset_size] = shifting
 
     return bytes(start + data)
 
 
 def convert_to_k2(
-        data: bytes
+    data: bytes,
 ) -> bytes:
     if detect_version(data) == Game.K2:
         return data
@@ -322,8 +341,9 @@ def convert_to_k2(
 
     # First, we build a dictionary of every offset in the file plus a list of the mesh nodes
     with BinaryReader.from_bytes(data, 12) as reader:
+
         def node_recursive(
-                offset_to_root_offset
+            offset_to_root_offset,
         ):
             nodes = [offset_to_root_offset]
             while nodes:
@@ -331,7 +351,8 @@ def convert_to_k2(
                 reader.seek(offset_to_node_offset)
                 node_offset = reader.read_uint32()
                 offsets[
-                    offset_to_node_offset] = node_offset  # Geometry header/Node children offsets array -> Node offset
+                    offset_to_node_offset
+                ] = node_offset  # Geometry header/Node children offsets array -> Node offset
 
                 reader.seek(node_offset)
                 node_type = reader.read_uint16()
@@ -341,79 +362,126 @@ def convert_to_k2(
                     mesh_offsets.append([node_offset, node_type])
 
                     reader.seek(base_offset + 8)
-                    offsets[base_offset + 8] = reader.read_uint32()  # Node header -> Face array offset
+                    offsets[
+                        base_offset + 8
+                    ] = reader.read_uint32()  # Node header -> Face array offset
 
                     reader.seek(base_offset + 176)
-                    offsets[base_offset + 176] = reader.read_uint32()  # Node header -> Vertex indices count array
+                    offsets[
+                        base_offset + 176
+                    ] = (
+                        reader.read_uint32()
+                    )  # Node header -> Vertex indices count array
                     indicies_array_count = reader.read_uint32()
 
                     reader.seek(base_offset + 188)
-                    offsets[base_offset + 188] = reader.read_uint32()  # Node header -> Vertex indices locations array
+                    offsets[
+                        base_offset + 188
+                    ] = (
+                        reader.read_uint32()
+                    )  # Node header -> Vertex indices locations array
                     if indicies_array_count == 1:
                         indices_locations_offset = offsets[base_offset + 188]
                         reader.seek(indices_locations_offset)
                         offsets[
-                            indices_locations_offset] = reader.read_uint32()  # Vertex indices locations array -> Vertex indices array
+                            indices_locations_offset
+                        ] = (
+                            reader.read_uint32()
+                        )  # Vertex indices locations array -> Vertex indices array
 
                     reader.seek(base_offset + 200)
-                    offsets[base_offset + 200] = reader.read_uint32()  # Node header -> Inverted counter array
+                    offsets[
+                        base_offset + 200
+                    ] = reader.read_uint32()  # Node header -> Inverted counter array
 
                     reader.seek(base_offset + 328)
-                    offsets[base_offset + 328] = reader.read_uint32()  # Node header -> Vertex array
+                    offsets[
+                        base_offset + 328
+                    ] = reader.read_uint32()  # Node header -> Vertex array
 
                     base_offset += _MESH_HEADER_SIZE_K1
 
                 if node_type & _NODE_TYPE_LIGHT:
                     reader.seek(base_offset + 4)
-                    offsets[base_offset + 4] = reader.read_uint32()  # Node header -> Lens flare size array
+                    offsets[
+                        base_offset + 4
+                    ] = reader.read_uint32()  # Node header -> Lens flare size array
 
                     reader.seek(base_offset + 16)
-                    offsets[base_offset + 16] = reader.read_uint32()  # Node header -> Lens flare size array
+                    offsets[
+                        base_offset + 16
+                    ] = reader.read_uint32()  # Node header -> Lens flare size array
 
                     reader.seek(base_offset + 28)
-                    offsets[base_offset + 28] = reader.read_uint32()  # Node header -> Lens flare positions array
+                    offsets[
+                        base_offset + 28
+                    ] = (
+                        reader.read_uint32()
+                    )  # Node header -> Lens flare positions array
 
                     reader.seek(base_offset + 40)
-                    offsets[base_offset + 40] = reader.read_uint32()  # Node header -> Flare colour shifts array
+                    offsets[
+                        base_offset + 40
+                    ] = reader.read_uint32()  # Node header -> Flare colour shifts array
 
                     reader.seek(base_offset + 52)
-                    offsets[base_offset + 52] = reader.read_uint32()  # Node header -> Flare texture names offsets array
+                    offsets[
+                        base_offset + 52
+                    ] = (
+                        reader.read_uint32()
+                    )  # Node header -> Flare texture names offsets array
                     texture_count = reader.read_uint32()
 
                     for i in range(texture_count):
                         reader.seek(offsets[base_offset + 52] + i * 4)
-                        offsets[offsets[base_offset + 52] + i * 4] = reader.read_uint32()
+                        offsets[
+                            offsets[base_offset + 52] + i * 4
+                        ] = reader.read_uint32()
 
                 if node_type & _NODE_TYPE_EMITTER:
                     ...  # No offsets. Hooray.
 
                 if node_type & _NODE_TYPE_SKIN:
                     reader.seek(base_offset + 20)
-                    offsets[base_offset + 20] = reader.read_uint32()  # Node header -> Bone map array
+                    offsets[
+                        base_offset + 20
+                    ] = reader.read_uint32()  # Node header -> Bone map array
 
                     reader.seek(base_offset + 28)
-                    offsets[base_offset + 28] = reader.read_uint32()  # Node header -> QBones array
+                    offsets[
+                        base_offset + 28
+                    ] = reader.read_uint32()  # Node header -> QBones array
 
                     reader.seek(base_offset + 40)
-                    offsets[base_offset + 40] = reader.read_uint32()  # Node header -> TBones Array
+                    offsets[
+                        base_offset + 40
+                    ] = reader.read_uint32()  # Node header -> TBones Array
 
                     reader.seek(base_offset + 52)
-                    offsets[base_offset + 52] = reader.read_uint32()  # Node header -> Array8
+                    offsets[
+                        base_offset + 52
+                    ] = reader.read_uint32()  # Node header -> Array8
 
                     base_offset += _SKIN_HEADER_SIZE
 
                 if node_type & _NODE_TYPE_DANGLY:
                     reader.seek(base_offset + 0)
-                    offsets[base_offset + 0] = reader.read_uint32()  # Node header -> Dangly constraint array
+                    offsets[
+                        base_offset + 0
+                    ] = reader.read_uint32()  # Node header -> Dangly constraint array
 
                     reader.seek(base_offset + 24)
-                    offsets[base_offset + 24] = reader.read_uint32()  # Node header -> Unknown
+                    offsets[
+                        base_offset + 24
+                    ] = reader.read_uint32()  # Node header -> Unknown
 
                     base_offset += _DANGLY_HEADER_SIZE
 
                 if node_type & _NODE_TYPE_AABB:
                     reader.seek(base_offset + 0)
-                    offsets[base_offset + 0] = reader.read_uint32()  # Node header -> AABB root node
+                    offsets[
+                        base_offset + 0
+                    ] = reader.read_uint32()  # Node header -> AABB root node
 
                     aabbs = [offsets[base_offset + 0]]
                     while aabbs:
@@ -435,32 +503,48 @@ def convert_to_k2(
 
                 if node_type & _NODE_TYPE_SABER:
                     reader.seek(base_offset + 0)
-                    offsets[base_offset + 0] = reader.read_uint32()  # Node header -> Saber Verts array
+                    offsets[
+                        base_offset + 0
+                    ] = reader.read_uint32()  # Node header -> Saber Verts array
 
                     reader.seek(base_offset + 4)
-                    offsets[base_offset + 4] = reader.read_uint32()  # Node header -> Saber UVs array
+                    offsets[
+                        base_offset + 4
+                    ] = reader.read_uint32()  # Node header -> Saber UVs array
 
                     reader.seek(base_offset + 8)
-                    offsets[base_offset + 8] = reader.read_uint32()  # Node header -> Saber Normals array
+                    offsets[
+                        base_offset + 8
+                    ] = reader.read_uint32()  # Node header -> Saber Normals array
 
                     base_offset += _SABER_HEADER_SIZE
 
                 reader.seek(node_offset + 8)
-                offsets[node_offset + 8] = reader.read_uint32()  # Node header -> Geometry header
+                offsets[
+                    node_offset + 8
+                ] = reader.read_uint32()  # Node header -> Geometry header
 
                 reader.seek(node_offset + 12)
-                offsets[node_offset + 12] = reader.read_uint32()  # Node header -> Parent node
+                offsets[
+                    node_offset + 12
+                ] = reader.read_uint32()  # Node header -> Parent node
 
                 reader.seek(node_offset + 56)
-                offsets[node_offset + 56] = reader.read_uint32()  # Node header -> controller array offset
+                offsets[
+                    node_offset + 56
+                ] = reader.read_uint32()  # Node header -> controller array offset
 
                 reader.seek(node_offset + 68)
-                offsets[node_offset + 68] = reader.read_uint32()  # Node header -> controller data offset
+                offsets[
+                    node_offset + 68
+                ] = reader.read_uint32()  # Node header -> controller data offset
 
                 reader.seek(node_offset + 44)
                 child_offsets_offset = reader.read_uint32()
                 child_offsets_count = reader.read_uint32()
-                offsets[node_offset + 44] = child_offsets_offset  # Node header -> Child node offsets array
+                offsets[
+                    node_offset + 44
+                ] = child_offsets_offset  # Node header -> Child node offsets array
 
                 for i in range(child_offsets_count):
                     nodes.append(child_offsets_offset + i * 4)
@@ -470,11 +554,11 @@ def convert_to_k2(
         anim_count = reader.read_uint32()
 
         reader.seek(168)
-        root_offset = reader.read_uint32()
-        node_count = reader.read_uint32()
+        reader.read_uint32()
+        reader.read_uint32()
 
         reader.seek(184)
-        name_offsets = reader.read_uint32()
+        reader.read_uint32()
         name_count = reader.read_uint32()
 
         reader.seek(40)
@@ -491,16 +575,22 @@ def convert_to_k2(
 
         for i in range(name_count):
             reader.seek(offsets[184] + i * 4)
-            offsets[offsets[184] + i * 4] = reader.read_uint32()  # Name offset array -> Name
+            offsets[
+                offsets[184] + i * 4
+            ] = reader.read_uint32()  # Name offset array -> Name
 
         for i in range(anim_count):
             reader.seek(anim_locations_offset + i * 4)
             animation_offset = reader.read_uint32()
-            offsets[anim_locations_offset + i * 4] = animation_offset  # Event locations array -> Offset to event
+            offsets[
+                anim_locations_offset + i * 4
+            ] = animation_offset  # Event locations array -> Offset to event
             anim_offsets.append(animation_offset)
 
             reader.seek(animation_offset + 120)
-            offsets[animation_offset + 120] = reader.read_uint32()  # Animation header -> Offset to event array
+            offsets[
+                animation_offset + 120
+            ] = reader.read_uint32()  # Animation header -> Offset to event array
 
             reader.seek(animation_offset + 40)
             node_recursive(animation_offset + 40)
@@ -515,42 +605,47 @@ def convert_to_k2(
     data[4:8] = struct.pack("I", _GEOM_ROOT_FP1_K2)
 
     for anim_offset in anim_offsets:
-        data[anim_offset:anim_offset + 4] = struct.pack("I", _GEOM_ANIM_FP0_K2)
-        data[anim_offset + 4:anim_offset + 8] = struct.pack("I", _GEOM_ANIM_FP1_K2)
+        data[anim_offset : anim_offset + 4] = struct.pack("I", _GEOM_ANIM_FP0_K2)
+        data[anim_offset + 4 : anim_offset + 8] = struct.pack("I", _GEOM_ANIM_FP1_K2)
 
     for node_offset, node_type in mesh_offsets:
         mesh_start = node_offset + 80  # Start of mesh header
 
         if node_type & _NODE_TYPE_SKIN:
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _MESH_FP0_K2)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _MESH_FP1_K2)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _MESH_FP0_K2)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _MESH_FP1_K2)
 
         if node_type & _NODE_TYPE_DANGLY:
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _DANGLY_FP0_K2)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _DANGLY_FP1_K2)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _DANGLY_FP0_K2)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _DANGLY_FP1_K2)
 
         if node_type & _NODE_TYPE_SABER:
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _SABER_FP0_K1)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _SABER_FP1_K2)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _SABER_FP0_K1)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _SABER_FP1_K2)
 
         if node_type & _NODE_TYPE_AABB:
-            data[mesh_start:mesh_start + 4] = struct.pack("I", _AABB_FP0_K2)
-            data[mesh_start + 4:mesh_start + 8] = struct.pack("I", _AABB_FP1_K2)
+            data[mesh_start : mesh_start + 4] = struct.pack("I", _AABB_FP0_K2)
+            data[mesh_start + 4 : mesh_start + 8] = struct.pack("I", _AABB_FP1_K2)
 
-    offsets = {k: v for k, v in sorted(list(offsets.items()), reverse=True)}
+    offsets = dict(sorted(offsets.items(), reverse=True))
 
     # Third, we will add the extra data in the mesh headers and update all offsets in our dictionary
     shifted = 0
     for i in range(len(mesh_offsets)):
         node_offset, node_type = mesh_offsets[i]
         insert_location = node_offset + 80 + 324
-        data = data[:insert_location] + bytes([0 for i in range(8)]) + data[insert_location:]
+        data = (
+            data[:insert_location]
+            + bytes([0 for i in range(8)])
+            + data[insert_location:]
+        )
 
         for offset_location, offset_value in deepcopy(offsets).items():
             if insert_location < offset_location:
                 del offsets[offset_location]
                 if offset_location + 8 in offsets:
-                    raise ValueError("whoops")
+                    msg = "whoops"
+                    raise ValueError(msg)
                 offsets[offset_location + 8] = offset_value
 
         for offset_location, offset_value in deepcopy(offsets).items():
@@ -565,25 +660,26 @@ def convert_to_k2(
 
     # Finally, we update the offsets in the bytes with the offsets in our dictionary
     for offset_location, offset_value in offsets.items():
-        data[offset_location:offset_location + 4] = struct.pack("I", offset_value)
+        data[offset_location : offset_location + 4] = struct.pack("I", offset_value)
 
     return bytes([0 for i in range(4)]) + struct.pack("I", len(data)) + mdx_size + data
 
 
 def transform(
-        data: bytes,
-        translation: Vector3,
-        rotation: float
+    data: bytes,
+    translation: Vector3,
+    rotation: float,
 ) -> bytes:
-    """
-    Performs a translation and then rotation on the target MDL data.
+    """Performs a translation and then rotation on the target MDL data.
 
     Args:
+    ----
         data: MDL data.
         translation: Translation value.
         rotation: Rotation value.
 
     Returns:
+    -------
         The MDL data post-transformation.
     """
     orientation = Vector4.from_euler(0, 0, rotation)
@@ -598,9 +694,9 @@ def transform(
         root_offset = reader.read_uint32()
 
         reader.seek(root_offset)
-        type_id = reader.read_uint16()
-        supernode_id = reader.read_uint16()
-        label_id = reader.read_uint32()
+        reader.read_uint16()
+        reader.read_uint16()
+        reader.read_uint32()
         reader.skip(6)
         reader.skip(4)
         reader.skip(4)
@@ -621,30 +717,35 @@ def transform(
 
     data[44:48] = struct.pack("I", node_count + 1)
 
-    data[root_offset+44:root_offset+48] = struct.pack("I", root_child_array_offset)
-    data[root_offset+48:root_offset+52] = struct.pack("I", 1)
-    data[root_offset+52:root_offset+56] = struct.pack("I", 1)
+    data[root_offset + 44 : root_offset + 48] = struct.pack(
+        "I", root_child_array_offset
+    )
+    data[root_offset + 48 : root_offset + 52] = struct.pack("I", 1)
+    data[root_offset + 52 : root_offset + 56] = struct.pack("I", 1)
 
     data += struct.pack("I", insert_node_offset)
-    data += struct.pack("HHHH II fff ffff III III III",
-                        1,                      # Node Type
-                        node_count + 1,         # Node ID
-                        1,                      # Label ID (steal some existing node's label)
-                        0,                      # Padding
-
-                        0,
-                        root_offset,
-                        *translation,              # Node Position
-                        orientation.w, orientation.x, orientation.y, orientation.z,           # Node Orientation
-                        child_array_offset,     # Child Array Offset
-                        child_count,
-                        child_count,
-                        insert_controller_offset,  # Controller Array
-                        2,
-                        2,
-                        insert_controller_data_offset,  # Controller Data Array
-                        9,
-                        9
+    data += struct.pack(
+        "HHHH II fff ffff III III III",
+        1,  # Node Type
+        node_count + 1,  # Node ID
+        1,  # Label ID (steal some existing node's label)
+        0,  # Padding
+        0,
+        root_offset,
+        *translation,  # Node Position
+        orientation.w,
+        orientation.x,
+        orientation.y,
+        orientation.z,  # Node Orientation
+        child_array_offset,  # Child Array Offset
+        child_count,
+        child_count,
+        insert_controller_offset,  # Controller Array
+        2,
+        2,
+        insert_controller_data_offset,  # Controller Data Array
+        9,
+        9,
     )
 
     data += struct.pack("IHHHHBBBB", 8, 0xFFFF, 1, 0, 1, 3, 0, 0, 0)
@@ -656,24 +757,24 @@ def transform(
 
 
 def flip(
-        mdl_data: bytes,
-        mdx_data: bytes,
-        flip_x: bool,
-        flip_y: bool
+    mdl_data: bytes,
+    mdx_data: bytes,
+    flip_x: bool,
+    flip_y: bool,
 ) -> MDLMDXTuple:
-    """
-    Returns the given MDL and MDX data with the vertices flipped along the specified axes.
+    """Returns the given MDL and MDX data with the vertices flipped along the specified axes.
 
     Args:
+    ----
         mdl_data: The raw MDL data.
         mdx_data: The raw MDX data.
         flip_x: Flip the vertices across the X-axis.
         flip_y: Flip the vertices across the Y-axis.
 
     Returns:
+    -------
         The MDL and MDX data post-flip.
     """
-
     # If neither bools are set to True, no transformations need to be done and we can just return the original data
     if not flip_x and not flip_y:
         return MDLMDXTuple(mdl_data, mdx_data)
@@ -688,8 +789,12 @@ def flip(
     mdx_data = bytearray(mdx_data)
 
     mdl_vertex_offsets = []  # This is a list of tuples: (count, offset)
-    mdx_vertex_offsets = []  # This is a list of tuples: (count, offset, stride, position)
-    mdx_normal_offsets = []  # This is a list of tuples: (count, offset, stride, position)
+    mdx_vertex_offsets = (
+        []
+    )  # This is a list of tuples: (count, offset, stride, position)
+    mdx_normal_offsets = (
+        []
+    )  # This is a list of tuples: (count, offset, stride, position)
     elements_offsets = []  # This is a list of tuples: (count, offset)
     faces_offsets = []  # This is a list of tuples: (count, offset)
     with BinaryReader.from_bytes(mdl_data) as reader:
@@ -702,7 +807,7 @@ def flip(
             reader.seek(node_offset)
             node_id = reader.read_uint32()
 
-            mdl_vertex_offsets.append((1, node_offset+16))
+            mdl_vertex_offsets.append((1, node_offset + 16))
 
             # Need to determine the location of the position controller
             reader.seek(node_offset + 56)
@@ -711,15 +816,17 @@ def flip(
 
             reader.seek(node_offset + 68)
             controller_datas_offset = reader.read_uint32()
-            controller_datas_count = reader.read_uint32()
+            reader.read_uint32()
 
             for i in range(controllers_count):
-                reader.seek(controllers_offset + i*16)
+                reader.seek(controllers_offset + i * 16)
                 controller_type = reader.read_uint32()
                 if controller_type == 8:
                     reader.skip(6)
                     data_offset = reader.read_uint16()
-                    mdl_vertex_offsets.append((1, controller_datas_offset + data_offset*4))
+                    mdl_vertex_offsets.append(
+                        (1, controller_datas_offset + data_offset * 4)
+                    )
 
             reader.seek(node_offset + 44)
             child_offsets_offset = reader.read_uint32()
@@ -730,91 +837,101 @@ def flip(
                 nodes.append(reader.read_uint32())
 
             if node_id & 32:
-                reader.seek(node_offset+80)
+                reader.seek(node_offset + 80)
                 fp = reader.read_uint32()
-                tsl = False if fp in [_MESH_FP0_K1, _SKIN_FP0_K1, _DANGLY_FP0_K2, _AABB_FP0_K1, _SABER_FP0_K1] else True
+                tsl = fp not in [
+                    _MESH_FP0_K1,
+                    _SKIN_FP0_K1,
+                    _DANGLY_FP0_K2,
+                    _AABB_FP0_K1,
+                    _SABER_FP0_K1,
+                ]
 
-                reader.seek(node_offset+80+8)
+                reader.seek(node_offset + 80 + 8)
                 faces_offset = reader.read_uint32()
                 faces_count = reader.read_uint32()
                 faces_offsets.append((faces_count, faces_offset))
 
-                reader.seek(node_offset+80+188)
+                reader.seek(node_offset + 80 + 188)
                 offset_to_elements_offset = reader.read_uint32()
                 reader.seek(offset_to_elements_offset)
                 elements_offset = reader.read_uint32()
                 elements_offsets.append((faces_count, elements_offset))
 
-                reader.seek(node_offset+80+304)
+                reader.seek(node_offset + 80 + 304)
                 vertex_count = reader.read_uint16()
-                reader.seek(node_offset+80+336 if tsl else node_offset+80+328)
+                reader.seek(node_offset + 80 + 336 if tsl else node_offset + 80 + 328)
                 vertex_offset = reader.read_uint32()
                 mdl_vertex_offsets.append((vertex_count, vertex_offset))
 
-                reader.seek(node_offset+80+252)
+                reader.seek(node_offset + 80 + 252)
                 mdx_stride = reader.read_uint32()
-                mdx_bitmap = reader.read_uint32()
-                reader.seek(node_offset+80+260)
+                reader.read_uint32()
+                reader.seek(node_offset + 80 + 260)
                 mdx_offset_pos = reader.read_uint32()
                 mdx_offset_norm = reader.read_uint32()
-                reader.seek(node_offset+80+332 if tsl else node_offset+80+324)
+                reader.seek(node_offset + 80 + 332 if tsl else node_offset + 80 + 324)
                 mdx_start = reader.read_uint32()
-                mdx_vertex_offsets.append((vertex_count, mdx_start, mdx_stride, mdx_offset_pos))
-                mdx_normal_offsets.append((vertex_count, mdx_start, mdx_stride, mdx_offset_norm))
+                mdx_vertex_offsets.append(
+                    (vertex_count, mdx_start, mdx_stride, mdx_offset_pos)
+                )
+                mdx_normal_offsets.append(
+                    (vertex_count, mdx_start, mdx_stride, mdx_offset_norm)
+                )
 
     # Fix vertex order
     if flip_x != flip_y:
         for count, start_offset in elements_offsets:
             for i in range(count):
-                offset = start_offset + i*6
-                v1 = struct.unpack("H", mdl_data[offset:offset+2])[0]
-                v2 = struct.unpack("H", mdl_data[offset+2:offset+4])[0]
-                v3 = struct.unpack("H", mdl_data[offset+4:offset+6])[0]
-                mdl_data[offset:offset+2] = struct.pack("H", v1)
-                mdl_data[offset+2:offset+4] = struct.pack("H", v3)
-                mdl_data[offset+4:offset+6] = struct.pack("H", v2)
+                offset = start_offset + i * 6
+                v1 = struct.unpack("H", mdl_data[offset : offset + 2])[0]
+                v2 = struct.unpack("H", mdl_data[offset + 2 : offset + 4])[0]
+                v3 = struct.unpack("H", mdl_data[offset + 4 : offset + 6])[0]
+                mdl_data[offset : offset + 2] = struct.pack("H", v1)
+                mdl_data[offset + 2 : offset + 4] = struct.pack("H", v3)
+                mdl_data[offset + 4 : offset + 6] = struct.pack("H", v2)
         for count, start_offset in faces_offsets:
             for i in range(count):
-                offset = start_offset + i*32 + 26
-                v1 = struct.unpack("H", mdl_data[offset:offset+2])[0]
-                v2 = struct.unpack("H", mdl_data[offset+2:offset+4])[0]
-                v3 = struct.unpack("H", mdl_data[offset+4:offset+6])[0]
-                mdl_data[offset:offset+2] = struct.pack("H", v1)
-                mdl_data[offset+2:offset+4] = struct.pack("H", v3)
-                mdl_data[offset+4:offset+6] = struct.pack("H", v2)
+                offset = start_offset + i * 32 + 26
+                v1 = struct.unpack("H", mdl_data[offset : offset + 2])[0]
+                v2 = struct.unpack("H", mdl_data[offset + 2 : offset + 4])[0]
+                v3 = struct.unpack("H", mdl_data[offset + 4 : offset + 6])[0]
+                mdl_data[offset : offset + 2] = struct.pack("H", v1)
+                mdl_data[offset + 2 : offset + 4] = struct.pack("H", v3)
+                mdl_data[offset + 4 : offset + 6] = struct.pack("H", v2)
 
     # Update the MDL vertices
     for count, start_offset in mdl_vertex_offsets:
         for i in range(count):
-            offset = start_offset + i*12
+            offset = start_offset + i * 12
             if flip_x:
-                x = struct.unpack("f", mdl_data[offset:offset+4])[0]
-                mdl_data[offset:offset+4] = struct.pack("f", -x)
+                x = struct.unpack("f", mdl_data[offset : offset + 4])[0]
+                mdl_data[offset : offset + 4] = struct.pack("f", -x)
             if flip_y:
-                y = struct.unpack("f", mdl_data[offset+4:offset+8])[0]
-                mdl_data[offset+4:offset+8] = struct.pack("f", -y)
+                y = struct.unpack("f", mdl_data[offset + 4 : offset + 8])[0]
+                mdl_data[offset + 4 : offset + 8] = struct.pack("f", -y)
 
     # Update the MDX vertices
     for count, start_offset, stride, position in mdx_vertex_offsets:
         for i in range(count):
-            offset = start_offset + i*stride + position
+            offset = start_offset + i * stride + position
             if flip_x:
-                x = struct.unpack("f", mdx_data[offset:offset+4])[0]
-                mdx_data[offset:offset+4] = struct.pack("f", -x)
+                x = struct.unpack("f", mdx_data[offset : offset + 4])[0]
+                mdx_data[offset : offset + 4] = struct.pack("f", -x)
             if flip_y:
-                y = struct.unpack("f", mdx_data[offset+4:offset+8])[0]
-                mdx_data[offset+4:offset+8] = struct.pack("f", -y)
+                y = struct.unpack("f", mdx_data[offset + 4 : offset + 8])[0]
+                mdx_data[offset + 4 : offset + 8] = struct.pack("f", -y)
 
     # Update the MDX normals
     for count, start_offset, stride, position in mdx_normal_offsets:
         for i in range(count):
             offset = start_offset + i * stride + position
             if flip_x:
-                x = struct.unpack("f", mdx_data[offset:offset + 4])[0]
-                mdx_data[offset:offset + 4] = struct.pack("f", -x)
+                x = struct.unpack("f", mdx_data[offset : offset + 4])[0]
+                mdx_data[offset : offset + 4] = struct.pack("f", -x)
             if flip_y:
-                y = struct.unpack("f", mdx_data[offset + 4:offset + 8])[0]
-                mdx_data[offset + 4:offset + 8] = struct.pack("f", -y)
+                y = struct.unpack("f", mdx_data[offset + 4 : offset + 8])[0]
+                mdx_data[offset + 4 : offset + 8] = struct.pack("f", -y)
 
     # Readd the first 12 bytes
     mdl_data = mdl_start + mdl_data

@@ -18,4 +18,18 @@ class ExternalNCSCompiler(NCSCompiler):
         self.nwnnsscomp_path: str = nwnnsscomp_path
 
     def compile(self, source_filepath: str, output_filepath: str, game: Game) -> None:
-        subprocess.call([self.nwnnsscomp_path, "-c", source_filepath, "-o", output_filepath, "-g", str(game.value)], stdin=None, stdout=None, stderr=None, shell=False)
+        subprocess.call(
+            [
+                self.nwnnsscomp_path,
+                "-c",
+                source_filepath,
+                "-o",
+                output_filepath,
+                "-g",
+                str(game.value),
+            ],
+            stdin=None,
+            stdout=None,
+            stderr=None,
+            shell=False,
+        )

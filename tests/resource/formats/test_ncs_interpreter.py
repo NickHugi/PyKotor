@@ -6,12 +6,11 @@ from pykotor.resource.formats.ncs.compiler.interpreter import Stack
 
 
 class TestStack(TestCase):
-
     def test_peek_past_vector(self):
         stack = Stack()
-        stack.add(DataType.FLOAT, 1.0)                      # -20
+        stack.add(DataType.FLOAT, 1.0)  # -20
         stack.add(DataType.VECTOR, Vector3(2.0, 3.0, 4.0))  # -16
-        stack.add(DataType.FLOAT, 5.0)                      # -4
+        stack.add(DataType.FLOAT, 5.0)  # -4
         print(stack.peek(-20))
 
     def test_move_negative(self):

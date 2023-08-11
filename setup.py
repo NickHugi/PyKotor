@@ -1,5 +1,6 @@
 from pathlib import Path
-from setuptools import setup, find_namespace_packages
+
+from setuptools import find_namespace_packages, setup
 
 HERE = Path(__file__).parent
 
@@ -22,5 +23,5 @@ setup(
     long_description=README,
     packages=PACKAGES,
     url=URL,
-    long_description_content_type='text/markdown'
+    long_description_content_type="text/markdown",
 )

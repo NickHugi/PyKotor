@@ -106,8 +106,3 @@ class TestUTC(TestCase):
         self.assertEqual(6, utc.repair)
         self.assertEqual(7, utc.security)
         self.assertEqual(8, utc.treat_injury)
-
-
-
-
-

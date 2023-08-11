@@ -22,9 +22,9 @@ class TestRIM(TestCase):
 
     def validate_io(self, rim: RIM):
         self.assertEqual(len(rim), 3)
-        self.assertEqual(rim.get("1", ResourceType.TXT), b'abc')
-        self.assertEqual(rim.get("2", ResourceType.TXT), b'def')
-        self.assertEqual(rim.get("3", ResourceType.TXT), b'ghi')
+        self.assertEqual(rim.get("1", ResourceType.TXT), b"abc")
+        self.assertEqual(rim.get("2", ResourceType.TXT), b"def")
+        self.assertEqual(rim.get("3", ResourceType.TXT), b"ghi")
 
     def test_read_raises(self):
         if platform.system() == "Windows":
@@ -38,5 +38,7 @@ class TestRIM(TestCase):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, write_rim, RIM(), ".", ResourceType.RIM)
         else:
-            self.assertRaises(IsADirectoryError, write_rim, RIM(), ".", ResourceType.RIM)
+            self.assertRaises(
+                IsADirectoryError, write_rim, RIM(), ".", ResourceType.RIM
+            )
         self.assertRaises(ValueError, write_rim, RIM(), ".", ResourceType.INVALID)

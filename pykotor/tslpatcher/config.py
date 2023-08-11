@@ -1,33 +1,32 @@
-from pathlib import Path
 from configparser import ConfigParser
 from enum import IntEnum
-from typing import List, Optional, Union
+from pathlib import Path
+from typing import TYPE_CHECKING
 
-from pykotor.extract.capsule import Capsule
-from pykotor.resource.formats.erf.erf_data import ERFType
-
-from pykotor.resource.formats.gff.gff_auto import bytes_gff
-
-from pykotor.resource.formats.erf import read_erf, write_erf, ERF
 from pykotor.common.stream import BinaryReader, BinaryWriter
-
+from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.resource.formats.erf import ERF, read_erf, write_erf
+from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
+from pykotor.resource.formats.gff.gff_auto import bytes_gff
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
-from pykotor.resource.formats.rim import read_rim, write_rim, RIM
+from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
-from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
+from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.mods.gff import ModificationsGFF
 from pykotor.tslpatcher.memory import PatcherMemory
-from pykotor.tslpatcher.mods.install import InstallFolder
-from pykotor.tslpatcher.mods.nss import ModificationsNSS
-from pykotor.tslpatcher.mods.ssf import ModificationsSSF
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
-from pykotor.tslpatcher.mods.twoda import Modifications2DA
+
+if TYPE_CHECKING:
+    from pykotor.tslpatcher.mods.gff import ModificationsGFF
+    from pykotor.tslpatcher.mods.install import InstallFolder
+    from pykotor.tslpatcher.mods.nss import ModificationsNSS
+    from pykotor.tslpatcher.mods.ssf import ModificationsSSF
+    from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
 class LogLevel(IntEnum):
@@ -56,16 +55,16 @@ class PatcherConfig:
     def __init__(self):
         self.window_title: str = ""
         self.confirm_message: str = ""
-        self.game_number: Optional[int] = None
+        self.game_number: int | None = None
 
-        self.required_file: Optional[str] = None
+        self.required_file: str | None = None
         self.required_message: str = ""
 
-        self.install_list: List[InstallFolder] = []
-        self.patches_2da: List[Modifications2DA] = []
-        self.patches_gff: List[ModificationsGFF] = []
-        self.patches_ssf: List[ModificationsSSF] = []
-        self.patches_nss: List[ModificationsNSS] = []
+        self.install_list: list[InstallFolder] = []
+        self.patches_2da: list[Modifications2DA] = []
+        self.patches_gff: list[ModificationsGFF] = []
+        self.patches_ssf: list[ModificationsSSF] = []
+        self.patches_nss: list[ModificationsNSS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
     def load(self, ini_text: str, mod_path: str) -> None:
@@ -78,7 +77,14 @@ class PatcherConfig:
         ConfigReader(ini, mod_path).load(self)
 
     def patch_count(self) -> int:
-        return len(self.patches_2da) + len(self.patches_gff) + len(self.patches_ssf) + 1 + len(self.install_list) + len(self.patches_nss)
+        return (
+            len(self.patches_2da)
+            + len(self.patches_gff)
+            + len(self.patches_ssf)
+            + 1
+            + len(self.install_list)
+            + len(self.patches_nss)
+        )
 
 
 class PatcherNamespace:
@@ -92,21 +98,25 @@ class PatcherNamespace:
 
 
 class ModInstaller:
-    def __init__(self, mod_path: Path, game_path: Path, ini_file: str, logger: Union[PatchLogger, None] = None):
+    def __init__(
+        self,
+        mod_path: Path,
+        game_path: Path,
+        ini_file: str,
+        logger: PatchLogger | None = None,
+    ):
         self.game_path: Path = game_path
         self.mod_path: Path = mod_path
         self.ini_file: str = ini_file
         self.output_path: Path = game_path
         self.log: PatchLogger = PatchLogger() if logger is None else logger
 
-        self._config: Optional[PatcherConfig] = None
+        self._config: PatcherConfig | None = None
 
     def config(self) -> PatcherConfig:
-        """
-        Returns the PatcherConfig object associated with the mod installer. The object is created when the method is
+        """Returns the PatcherConfig object associated with the mod installer. The object is created when the method is
         first called then cached for future calls.
         """
-
         if self._config is None:
             ini_file_bytes = BinaryReader.load_file(self.mod_path / self.ini_file)
             ini_text = None
@@ -115,10 +125,11 @@ class ModInstaller:
             except UnicodeDecodeError:
                 try:
                     # If UTF-8 failed, try 'cp1252' (similar to ANSI)
-                    ini_text = ini_file_bytes.decode('cp1252')
+                    ini_text = ini_file_bytes.decode("cp1252")
                 except UnicodeDecodeError as e:
                     # Raise an exception if all decodings failed
-                    raise Exception('Could not decode file') from e
+                    msg = "Could not decode file"
+                    raise Exception(msg) from e
             self._config = PatcherConfig()
             self._config.load(ini_text, self.mod_path)
 
@@ -151,9 +162,9 @@ class ModInstaller:
                 resname,
                 restype,
                 [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
-                folders=[self.mod_path]
+                folders=[self.mod_path],
             )
-            twoda = read_2da(search.data) # type: ignore
+            twoda = read_2da(search.data)  # type: ignore
             twodas[patch.filename] = twoda
 
             self.log.add_note(f"Patching '{patch.filename}'")
@@ -165,10 +176,15 @@ class ModInstaller:
         # Apply changes to SSF files
         for patch in config.patches_ssf:
             resname, restype = ResourceIdentifier.from_path(patch.filename)
-            search = installation.resource(resname, restype, [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS], folders=[self.mod_path])
+            search = installation.resource(
+                resname,
+                restype,
+                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
+                folders=[self.mod_path],
+            )
             soundset = soundsets[patch.filename] = read_ssf(search.data)
 
-            self.log.add_note("Patching '{}'".format(patch.filename))
+            self.log.add_note(f"Patching '{patch.filename}'")
             patch.apply(soundset, memory)
             write_ssf(soundset, self.output_path / "override" / patch.filename)
 
@@ -186,9 +202,13 @@ class ModInstaller:
             search = installation.resource(
                 resname,
                 restype,
-                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS, SearchLocation.CUSTOM_MODULES],
+                [
+                    SearchLocation.OVERRIDE,
+                    SearchLocation.CUSTOM_FOLDERS,
+                    SearchLocation.CUSTOM_MODULES,
+                ],
                 folders=[self.mod_path],
-                capsules=[] if capsule is None else [capsule]
+                capsules=[] if capsule is None else [capsule],
             )
 
             norm_game_path = installation.path()
@@ -198,9 +218,13 @@ class ModInstaller:
             local_folder = local_path.parent
 
             if capsule is None:
-                self.log.add_note(f"Patching '{patch.filename}' in the '{local_folder}' folder.")
+                self.log.add_note(
+                    f"Patching '{patch.filename}' in the '{local_folder}' folder."
+                )
             else:
-                self.log.add_note(f"Patching '{patch.filename}' in the '{local_path}' archive.")
+                self.log.add_note(
+                    f"Patching '{patch.filename}' in the '{local_path}' archive."
+                )
 
             template = templates[patch.filename] = read_gff(search.data)
             patch.apply(template, memory, self.log)
@@ -225,30 +249,49 @@ class ModInstaller:
             local_folder = local_path.parent
 
             if capsule is None:
-                self.log.add_note(f"Patching '{patch.filename}' in the '{local_folder}' folder.")
+                self.log.add_note(
+                    f"Patching '{patch.filename}' in the '{local_folder}' folder."
+                )
             else:
-                self.log.add_note(f"Patching '{patch.filename}' in the '{local_path}' archive.")
+                self.log.add_note(
+                    f"Patching '{patch.filename}' in the '{local_path}' archive."
+                )
 
             self.log.add_note(f"Compiling '{patch.filename}'")
             patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
-            file_name, ext = patch.filename.split('.', 1)
+            file_name, ext = patch.filename.split(".", 1)
 
-            self.write(nss_output_filepath, file_name + "." + ext.lower().replace(".nss", ".ncs"), data, patch.replace_file)
+            self.write(
+                nss_output_filepath,
+                file_name + "." + ext.lower().replace(".nss", ".ncs"),
+                data,
+                patch.replace_file,
+            )
 
             self.log.complete_patch()
 
-    def write(self, destination: Path, filename: str, data: bytes, replace: bool = False) -> None:
+    def write(
+        self, destination: Path, filename: str, data: bytes, replace: bool = False
+    ) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
         file_extension = destination.suffix
         if is_rim_file(destination.name):
-            rim = read_rim(BinaryReader.load_file(destination)) if destination.exists() else RIM()
+            rim = (
+                read_rim(BinaryReader.load_file(destination))
+                if destination.exists()
+                else RIM()
+            )
             if not rim.get(resname, restype) or replace:
                 rim.set(resname, restype, data)
                 write_rim(rim, destination)
         elif is_mod_file(destination.name):
-            erf = read_erf(BinaryReader.load_file(destination)) if destination.exists() else ERF(ERFType.from_extension(file_extension))
+            erf = (
+                read_erf(BinaryReader.load_file(destination))
+                if destination.exists()
+                else ERF(ERFType.from_extension(file_extension))
+            )
             if not erf.get(resname, restype) or replace:
                 erf.set(resname, restype, data)
                 write_erf(erf, str(destination))

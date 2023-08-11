@@ -1,15 +1,11 @@
-from abc import ABC
-from typing import List
-
 from pykotor.common.misc import ResRef
-
 from pykotor.resource.formats.tlk import TLK
 from pykotor.tslpatcher.memory import PatcherMemory
 
 
 class ModificationsTLK:
     def __init__(self):
-        self.modifiers: List[ModifyTLK] = []
+        self.modifiers: list[ModifyTLK] = []
 
     def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
         for modifier in self.modifiers:

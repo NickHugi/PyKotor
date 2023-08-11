@@ -1,7 +1,6 @@
 from __future__ import annotations
-import os
 
-from typing import Optional, List
+import os
 
 from pykotor.resource.formats.vis import VIS
 from pykotor.resource.type import (
@@ -16,8 +15,8 @@ from pykotor.resource.type import (
 class VISAsciiReader(ResourceReader):
     def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
-        self._vis: Optional[VIS] = None
-        self._lines: List[str] = []
+        self._vis: VIS | None = None
+        self._lines: list[str] = []
 
     @autoclose
     def load(self, auto_close: bool = True) -> VIS:
@@ -34,7 +33,7 @@ class VISAsciiReader(ResourceReader):
             self._vis.add_room(when_inside)
 
             count = int(tokens[1])
-            for i in range(count):
+            for _i in range(count):
                 show = next(iterator).split()[0]
                 pairs.append((when_inside, show))
 

@@ -1,104 +1,142 @@
-from typing import List, Dict, Optional
-
 from ply import yacc
 from ply.lex import LexToken
-from ply.yacc import YaccProduction
 
-from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, KOTOR_CONSTANTS
-
-from pykotor.common.script import ScriptFunction, ScriptConstant
-from pykotor.common.scriptlib import KOTOR_LIBRARY
-
-from pykotor.resource.formats.ncs import NCS
-from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, \
-    CodeBlock, \
-    Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalBlock, \
-    FunctionDefinition, FunctionDefinitionParam, CodeRoot, UnaryOperatorExpression, BitwiseNotExpression, \
-    LogicalNotExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
-    SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
-    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
-    SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
-    DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
-    StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
-    PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression, \
-    GlobalVariableInitialization, VariableDeclarator, VariableInitializer, NopStatement, CompileException
+from pykotor.common.script import ScriptConstant, ScriptFunction
+from pykotor.resource.formats.ncs.compiler.classes import (
+    AdditionAssignment,
+    Assignment,
+    BinaryOperatorExpression,
+    BreakStatement,
+    CodeBlock,
+    CodeRoot,
+    CompileException,
+    ConditionalBlock,
+    ConditionAndBlock,
+    ContinueStatement,
+    DeclarationStatement,
+    DefaultSwitchLabel,
+    DivisionAssignment,
+    DoWhileLoopBlock,
+    DynamicDataType,
+    EmptyStatement,
+    EngineCallExpression,
+    Expression,
+    ExpressionStatement,
+    ExpressionSwitchLabel,
+    FieldAccess,
+    FieldAccessExpression,
+    ForLoopBlock,
+    FunctionCallExpression,
+    FunctionDefinition,
+    FunctionDefinitionParam,
+    FunctionForwardDeclaration,
+    GlobalVariableDeclaration,
+    GlobalVariableInitialization,
+    Identifier,
+    IdentifierExpression,
+    IncludeScript,
+    MultiplicationAssignment,
+    NopStatement,
+    PostfixDecrementExpression,
+    PostfixIncrementExpression,
+    PrefixDecrementExpression,
+    PrefixIncrementExpression,
+    ReturnStatement,
+    StructDefinition,
+    StructMember,
+    SubtractionAssignment,
+    SwitchBlock,
+    SwitchStatement,
+    UnaryOperatorExpression,
+    VariableDeclarator,
+    VariableInitializer,
+    VectorExpression,
+    WhileLoopBlock,
+)
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 
 
 class NssParser:
     def __init__(
-            self,
-            functions: List[ScriptFunction],
-            constants: List[ScriptConstant],
-            library: Dict[str, bytes],
-            library_lookup: Optional[List[str]],
-            errorlog=yacc.NullLogger()
+        self,
+        functions: list[ScriptFunction],
+        constants: list[ScriptConstant],
+        library: dict[str, bytes],
+        library_lookup: list[str] | None,
+        errorlog=yacc.NullLogger(),
     ):
-        self.parser = yacc.yacc(module=self,
-                                errorlog=errorlog,
-                                write_tables=False,
-                                debug=False,
-                                debuglog=yacc.NullLogger()
-                                )
-        self.functions: List[ScriptFunction] = functions
-        self.constants: List[ScriptConstant] = constants
-        self.library: Dict[str, bytes] = library
-        self.library_lookup: Optional[List[str]] = library_lookup
+        self.parser = yacc.yacc(
+            module=self,
+            errorlog=errorlog,
+            write_tables=False,
+            debug=False,
+            debuglog=yacc.NullLogger(),
+        )
+        self.functions: list[ScriptFunction] = functions
+        self.constants: list[ScriptConstant] = constants
+        self.library: dict[str, bytes] = library
+        self.library_lookup: list[str] | None = library_lookup
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
 
     precedence = (
-        ('left', 'OR'),
-        ('left', 'AND'),
-        ('left', 'BITWISE_OR'),
-        ('left', 'BITWISE_XOR'),
-        ('left', 'BITWISE_AND'),
-        ('left', 'EQUALS', 'NOT_EQUALS'),
-        ('left', 'GREATER_THAN', 'LESS_THAN', 'GREATER_THAN_OR_EQUALS', 'LESS_THAN_OR_EQUALS'),
-        ('left', 'BITWISE_LEFT', 'BITWISE_RIGHT'),
-        ('left', 'ADD', 'MINUS'),
-        ('left', 'MULTIPLY', 'DIVIDE', 'MOD'),
-        ('right', 'BITWISE_NOT', 'NOT'),
-        ('left', 'INCREMENT', 'DECREMENT'),
+        ("left", "OR"),
+        ("left", "AND"),
+        ("left", "BITWISE_OR"),
+        ("left", "BITWISE_XOR"),
+        ("left", "BITWISE_AND"),
+        ("left", "EQUALS", "NOT_EQUALS"),
+        (
+            "left",
+            "GREATER_THAN",
+            "LESS_THAN",
+            "GREATER_THAN_OR_EQUALS",
+            "LESS_THAN_OR_EQUALS",
+        ),
+        ("left", "BITWISE_LEFT", "BITWISE_RIGHT"),
+        ("left", "ADD", "MINUS"),
+        ("left", "MULTIPLY", "DIVIDE", "MOD"),
+        ("right", "BITWISE_NOT", "NOT"),
+        ("left", "INCREMENT", "DECREMENT"),
     )
 
     def p_error(self, p: LexToken):
-        raise CompileException(f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'")
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"
+        raise CompileException(msg)
 
     def p_code_root(self, p):
-        """
-        code_root : code_root code_root_object
-                  |
+        """code_root : code_root code_root_object
+        |.
         """
         if len(p) == 3:
             p[1].objects.append(p[2])
             p[0] = p[1]
         else:
-            p[0] = CodeRoot(constants=self.constants, functions=self.functions, library_lookup=self.library_lookup,
-                            library=self.library)
+            p[0] = CodeRoot(
+                constants=self.constants,
+                functions=self.functions,
+                library_lookup=self.library_lookup,
+                library=self.library,
+            )
 
     def p_code_root_object(self, p):
-        """
-        code_root_object : function_definition
-                         | include_script
-                         | function_forward_declaration
-                         | global_variable_declaration
-                         | global_variable_initialization
-                         | struct_definition
+        """code_root_object : function_definition
+        | include_script
+        | function_forward_declaration
+        | global_variable_declaration
+        | global_variable_initialization
+        | struct_definition.
         """
         p[0] = p[1]
 
     def p_struct_definition(self, p):
-        """
-        struct_definition : STRUCT IDENTIFIER '{' struct_members '}' ';'
-        """
+        """struct_definition : STRUCT IDENTIFIER '{' struct_members '}' ';'."""
         p[0] = StructDefinition(p[2], p[4])
 
     def p_struct_members(self, p):
-        """
-        struct_members : struct_members struct_member
-                       |
+        """struct_members : struct_members struct_member
+        |.
         """
         if len(p) == 3:
             p[1].append(p[2])
@@ -107,46 +145,33 @@ class NssParser:
             p[0] = []
 
     def p_struct_member(self, p):
-        """
-        struct_member : data_type IDENTIFIER ';'
-        """
+        """struct_member : data_type IDENTIFIER ';'."""
         p[0] = StructMember(p[1], p[2])
 
     def p_include_script(self, p):
-        """
-        include_script : INCLUDE STRING_VALUE
-        """
+        """include_script : INCLUDE STRING_VALUE."""
         p[0] = IncludeScript(p[2], library=self.library)
 
     def p_global_variable_initialization(self, p):
-        """
-        global_variable_initialization : data_type IDENTIFIER '=' expression ';'
-        """
+        """global_variable_initialization : data_type IDENTIFIER '=' expression ';'."""
         p[0] = GlobalVariableInitialization(p[2], p[1], p[4])
 
     def p_global_variable_declaration(self, p):
-        """
-        global_variable_declaration : data_type IDENTIFIER ';'
-        """
+        """global_variable_declaration : data_type IDENTIFIER ';'."""
         p[0] = GlobalVariableDeclaration(p[2], p[1])
 
     def p_function_forward_declaration(self, p):
-        """
-        function_forward_declaration : data_type IDENTIFIER '(' function_definition_params ')' ';'
-        """
+        """function_forward_declaration : data_type IDENTIFIER '(' function_definition_params ')' ';'."""
         p[0] = FunctionForwardDeclaration(p[1], p[2], p[4])
 
     def p_function_definition(self, p):
-        """
-        function_definition : data_type IDENTIFIER '(' function_definition_params ')' '{' code_block '}'
-        """
+        """function_definition : data_type IDENTIFIER '(' function_definition_params ')' '{' code_block '}'."""
         p[0] = FunctionDefinition(p[1], p[2], p[4], p[7])
 
     def p_function_definition_params(self, p):
-        """
-        function_definition_params : function_definition_params ',' function_definition_param
-                                   | function_definition_param
-                                   |
+        """function_definition_params : function_definition_params ',' function_definition_param
+        | function_definition_param
+        |.
         """
         if len(p) == 4:
             p[1].append(p[3])
@@ -157,22 +182,17 @@ class NssParser:
             p[0] = []
 
     def p_function_definition_param(self, p):
-        """
-        function_definition_param : data_type IDENTIFIER
-        """
+        """function_definition_param : data_type IDENTIFIER."""
         p[0] = FunctionDefinitionParam(p[1], p[2])
 
     def p_function_definition_param_with_default(self, p):
-        """
-        function_definition_param : data_type IDENTIFIER '=' expression
-        """
+        """function_definition_param : data_type IDENTIFIER '=' expression."""
         p[0] = FunctionDefinitionParam(p[1], p[2], p[4])
 
     def p_code_block(self, p):
-        """
-        code_block : code_block statement
-                   | statement
-                   |
+        """code_block : code_block statement
+        | statement
+        |.
         """
         if len(p) == 3:
             block: CodeBlock = p[1]
@@ -186,83 +206,62 @@ class NssParser:
             p[0] = CodeBlock()
 
     def p_while_loop(self, p):
-        """
-        while_loop : WHILE_CONTROL '(' expression ')' '{' code_block '}'
-        """
+        """while_loop : WHILE_CONTROL '(' expression ')' '{' code_block '}'."""
         p[0] = WhileLoopBlock(p[3], p[6])
 
     def p_do_while_loop(self, p):
-        """
-        do_while_loop : DO_CONTROL '{' code_block '}' WHILE_CONTROL '(' expression ')' ';'
-        """
+        """do_while_loop : DO_CONTROL '{' code_block '}' WHILE_CONTROL '(' expression ')' ';'."""
         p[0] = DoWhileLoopBlock(p[7], p[3])
 
     def p_for_loop(self, p):
-        """
-        for_loop : FOR_CONTROL '(' expression ';' expression ';' expression ')' '{' code_block '}'
-        """
+        """for_loop : FOR_CONTROL '(' expression ';' expression ';' expression ')' '{' code_block '}'."""
         p[0] = ForLoopBlock(p[3], p[5], p[7], p[10])
 
     def p_scoped_block(self, p):
-        """
-        scoped_block : '{' code_block '}'
-        """
+        """scoped_block : '{' code_block '}'."""
         p[0] = p[2]
 
     def p_statement(self, p):
-        """
-        statement : ';'
-                  | declaration_statement
-                  | condition_statement
-                  | return_statement
-                  | while_loop
-                  | do_while_loop
-                  | for_loop
-                  | switch_statement
-                  | break_statement
-                  | continue_statement
-                  | scoped_block
+        """Statement : ';'
+        | declaration_statement
+        | condition_statement
+        | return_statement
+        | while_loop
+        | do_while_loop
+        | for_loop
+        | switch_statement
+        | break_statement
+        | continue_statement
+        | scoped_block.
         """
         if p[1] == ";":
             p[0] = EmptyStatement()
         else:
             p[0] = p[1]
-        #p[0].linenum = p.lineno(1)
 
     def p_nop_statement(self, p):
-        """
-        statement : NOP STRING_VALUE ';'
-        """
+        """Statement : NOP STRING_VALUE ';'."""
         p[0] = NopStatement(p[2].value)
 
     def p_expression_statement(self, p):
-        """
-        statement : expression ';'
-        """
+        """Statement : expression ';'."""
         p[0] = ExpressionStatement(p[1])
 
     def p_break_statement(self, p):
-        """
-        break_statement : BREAK_CONTROL ';'
-        """
+        """break_statement : BREAK_CONTROL ';'."""
         p[0] = BreakStatement()
 
     def p_continue_statement(self, p):
-        """
-        continue_statement : CONTINUE_CONTROL ';'
-        """
+        """continue_statement : CONTINUE_CONTROL ';'."""
         p[0] = ContinueStatement()
 
     def p_declaration_statement(self, p):
-        """
-        declaration_statement : data_type variable_declarators ';'
-        """
+        """declaration_statement : data_type variable_declarators ';'."""
         p[0] = DeclarationStatement(p[1], p[2])
 
     def p_variable_declarators(self, p):
-        """
-        variable_declarators : variable_declarators ',' variable_declarator
-                             | variable_declarator
+        """variable_declarators : variable_declarators ',' variable_declarator
+        | variable_declarator.
         """
         if len(p) == 4:
             p[1].append(p[3])
@@ -271,74 +270,52 @@ class NssParser:
             p[0] = [p[1]]
 
     def p_variable_declarator_no_initializer(self, p):
-        """
-        variable_declarator : IDENTIFIER
-        """
+        """variable_declarator : IDENTIFIER."""
         p[0] = VariableDeclarator(p[1])
 
     def p_variable_declarator_initializer(self, p):
-        """
-        variable_declarator : IDENTIFIER '=' expression
-        """
+        """variable_declarator : IDENTIFIER '=' expression."""
         p[0] = VariableInitializer(p[1], p[3])
 
     def p_normal_assignment(self, p):
-        """
-        assignment : field_access '=' expression
-        """
+        """Assignment : field_access '=' expression."""
         p[0] = Assignment(p[1], p[3])
 
     def p_addition_assignment(self, p):
-        """
-        assignment : field_access ADDITION_ASSIGNMENT_OPERATOR expression
-        """
+        """Assignment : field_access ADDITION_ASSIGNMENT_OPERATOR expression."""
         p[0] = AdditionAssignment(p[1], p[3])
 
     def p_subtraction_assignment(self, p):
-        """
-        assignment : field_access SUBTRACTION_ASSIGNMENT_OPERATOR expression
-        """
+        """Assignment : field_access SUBTRACTION_ASSIGNMENT_OPERATOR expression."""
         p[0] = SubtractionAssignment(p[1], p[3])
 
     def p_multiplication_assignment(self, p):
-        """
-        assignment : field_access MULTIPLICATION_ASSIGNMENT_OPERATOR expression
-        """
+        """Assignment : field_access MULTIPLICATION_ASSIGNMENT_OPERATOR expression."""
         p[0] = MultiplicationAssignment(p[1], p[3])
 
     def p_division_assignment(self, p):
-        """
-        assignment : field_access DIVISION_ASSIGNMENT_OPERATOR expression
-        """
+        """Assignment : field_access DIVISION_ASSIGNMENT_OPERATOR expression."""
         p[0] = DivisionAssignment(p[1], p[3])
 
     # region If Statement
     def p_condition_statement(self, p):
-        """
-        condition_statement : if_statement else_if_statements else_statement
-        """
+        """condition_statement : if_statement else_if_statements else_statement."""
         p[0] = ConditionalBlock(p[1], p[2], p[3])
         # IF_CONTROL '(' expression ')' '{' code_block '}'
-        # p[0] = ConditionalBlock(p[3], p[6])
 
     def p_if_statement(self, p):
-        """
-        if_statement : IF_CONTROL '(' expression ')' '{' code_block '}'
-        """
+        """if_statement : IF_CONTROL '(' expression ')' '{' code_block '}'."""
         p[0] = ConditionAndBlock(p[3], p[6])
 
     def p_if_statement_single(self, p):
-        """
-        if_statement : IF_CONTROL '(' expression ')' statement
-        """
+        """if_statement : IF_CONTROL '(' expression ')' statement."""
         block = CodeBlock()
         block.add(p[5])
         p[0] = ConditionAndBlock(p[3], block)
 
     def p_else_statement(self, p):
-        """
-        else_statement : ELSE_CONTROL '{' code_block '}'
-                       |
+        """else_statement : ELSE_CONTROL '{' code_block '}'
+        |.
         """
         if len(p) == 1:
             p[0] = None
@@ -346,31 +323,24 @@ class NssParser:
             p[0] = p[3]
 
     def p_else_statement_single(self, p):
-        """
-        else_statement : ELSE_CONTROL statement
-        """
+        """else_statement : ELSE_CONTROL statement."""
         block = CodeBlock()
         block.add(p[2])
         p[0] = block
 
     def p_else_if_statement(self, p):
-        """
-        else_if_statement : ELSE_CONTROL IF_CONTROL '(' expression ')' '{' code_block '}'
-        """
+        """else_if_statement : ELSE_CONTROL IF_CONTROL '(' expression ')' '{' code_block '}'."""
         p[0] = ConditionAndBlock(p[4], p[7])
 
     def p_else_if_statement_single(self, p):
-        """
-        else_if_statement : ELSE_CONTROL IF_CONTROL '(' expression ')' statement
-        """
+        """else_if_statement : ELSE_CONTROL IF_CONTROL '(' expression ')' statement."""
         block = CodeBlock()
         block.add(p[6])
         p[0] = ConditionAndBlock(p[4], block)
 
     def p_else_if_statements(self, p):
-        """
-        else_if_statements : else_if_statements else_if_statement
-                           |
+        """else_if_statements : else_if_statements else_if_statement
+        |.
         """
         if len(p) == 1:
             p[0] = []
@@ -381,46 +351,41 @@ class NssParser:
     # endregion
 
     def p_parenthesis_expression(self, p):
-        """
-        expression : '(' expression ')'
-        """
+        """Expression : '(' expression ')'."""
         p[0] = p[2]
 
     def p_binary_operator(self, p):
-        """
-        expression : expression GREATER_THAN expression
-                   | expression GREATER_THAN_OR_EQUALS expression
-                   | expression LESS_THAN expression
-                   | expression LESS_THAN_OR_EQUALS expression
-                   | expression AND expression
-                   | expression NOT_EQUALS expression
-                   | expression EQUALS expression
-                   | expression OR expression
-                   | expression ADD expression
-                   | expression MINUS expression
-                   | expression MULTIPLY expression
-                   | expression DIVIDE expression
-                   | expression BITWISE_OR expression
-                   | expression BITWISE_XOR expression
-                   | expression BITWISE_AND expression
-                   | expression BITWISE_LEFT expression
-                   | expression BITWISE_RIGHT expression
-                   | expression MOD expression
+        """Expression : expression GREATER_THAN expression
+        | expression GREATER_THAN_OR_EQUALS expression
+        | expression LESS_THAN expression
+        | expression LESS_THAN_OR_EQUALS expression
+        | expression AND expression
+        | expression NOT_EQUALS expression
+        | expression EQUALS expression
+        | expression OR expression
+        | expression ADD expression
+        | expression MINUS expression
+        | expression MULTIPLY expression
+        | expression DIVIDE expression
+        | expression BITWISE_OR expression
+        | expression BITWISE_XOR expression
+        | expression BITWISE_AND expression
+        | expression BITWISE_LEFT expression
+        | expression BITWISE_RIGHT expression
+        | expression MOD expression.
         """
         p[0] = BinaryOperatorExpression(p[1], p[3], p[2].binary)
 
     def p_unary_expression(self, p):
-        """
-        expression : MINUS expression
-                   | BITWISE_NOT expression
-                   | NOT expression
+        """Expression : MINUS expression
+        | BITWISE_NOT expression
+        | NOT expression.
         """
         p[0] = UnaryOperatorExpression(p[2], p[1].unary)
 
     def p_return_statement(self, p):
-        """
-        return_statement : RETURN ';'
-                         | RETURN expression ';'
+        """return_statement : RETURN ';'
+        | RETURN expression ';'.
         """
         if len(p) == 3:
             p[0] = ReturnStatement()
@@ -428,11 +393,10 @@ class NssParser:
             p[0] = ReturnStatement(p[2])
 
     def p_expression(self, p):
-        """
-        expression : function_call
-                   | IDENTIFIER
-                   | assignment
-                   | constant_expression
+        """Expression : function_call
+        | IDENTIFIER
+        | assignment
+        | constant_expression.
         """
         if isinstance(p[1], Identifier):
             p[0] = IdentifierExpression(p[1])
@@ -440,44 +404,40 @@ class NssParser:
             p[0] = p[1]
 
     def p_constant_expression(self, p):
-        """
-        constant_expression : INT_VALUE
-                            | FLOAT_VALUE
-                            | STRING_VALUE
-                            | OBJECTSELF_VALUE
-                            | OBJECTINVALID_VALUE
-                            | TRUE_VALUE
-                            | FALSE_VALUE
-                            | INT_HEX_VALUE
+        """constant_expression : INT_VALUE
+        | FLOAT_VALUE
+        | STRING_VALUE
+        | OBJECTSELF_VALUE
+        | OBJECTINVALID_VALUE
+        | TRUE_VALUE
+        | FALSE_VALUE
+        | INT_HEX_VALUE.
         """
         p[0] = p[1]
 
     def p_field_access_expression(self, p):
-        """
-        expression : field_access
-        """
+        """Expression : field_access."""
         p[0] = FieldAccessExpression(p[1])
 
     def p_function_call(self, p):
-        """
-        function_call : IDENTIFIER '(' function_call_params ')'
-        """
+        """function_call : IDENTIFIER '(' function_call_params ')'."""
         identifier = p[1]
-        args: List[Expression] = p[3]
+        args: list[Expression] = p[3]
 
-        if engine_function := next((x for x in self.functions if x.name == identifier), None):
+        if engine_function := next(
+            (x for x in self.functions if x.name == identifier), None
+        ):
             routine_id = self.functions.index(engine_function)
             data_type = engine_function.returntype
             p[0] = EngineCallExpression(engine_function, routine_id, data_type, args)
         else:
-            args: List[Expression] = p[3]
+            args: list[Expression] = p[3]
             p[0] = FunctionCallExpression(identifier, args)
 
     def p_function_call_params(self, p):
-        """
-        function_call_params : function_call_params ',' expression
-                             | expression
-                             |
+        """function_call_params : function_call_params ',' expression
+        | expression
+        |.
         """
         if len(p) == 4:
             p[1].append(p[3])
@@ -488,20 +448,19 @@ class NssParser:
             p[0] = []
 
     def p_data_type(self, p):
-        """
-        data_type : INT_TYPE
-                  | FLOAT_TYPE
-                  | OBJECT_TYPE
-                  | VOID_TYPE
-                  | EVENT_TYPE
-                  | EFFECT_TYPE
-                  | ITEMPROPERTY_TYPE
-                  | LOCATION_TYPE
-                  | STRING_TYPE
-                  | TALENT_TYPE
-                  | VECTOR_TYPE
-                  | ACTION_TYPE
-                  | STRUCT IDENTIFIER
+        """data_type : INT_TYPE
+        | FLOAT_TYPE
+        | OBJECT_TYPE
+        | VOID_TYPE
+        | EVENT_TYPE
+        | EFFECT_TYPE
+        | ITEMPROPERTY_TYPE
+        | LOCATION_TYPE
+        | STRING_TYPE
+        | TALENT_TYPE
+        | VECTOR_TYPE
+        | ACTION_TYPE
+        | STRUCT IDENTIFIER.
         """
         if len(p) == 3:
             p[0] = DynamicDataType(p[1], p[2].label)
@@ -509,10 +468,9 @@ class NssParser:
             p[0] = DynamicDataType(p[1])
 
     def p_field_access(self, p):
-        """
-        field_access : IDENTIFIER
-                     | IDENTIFIER '.' IDENTIFIER
-                     | field_access '.' IDENTIFIER
+        """field_access : IDENTIFIER
+        | IDENTIFIER '.' IDENTIFIER
+        | field_access '.' IDENTIFIER.
         """
         if len(p) == 2:
             p[0] = FieldAccess([p[1]])
@@ -523,46 +481,33 @@ class NssParser:
             p[0].identifiers.append(p[3])
 
     def p_prefix_increment_expression(self, p):
-        """
-        expression : INCREMENT field_access
-        """
+        """Expression : INCREMENT field_access."""
         p[0] = PrefixIncrementExpression(p[2])
 
     def p_postfix_increment_expression(self, p):
-        """
-        expression : field_access INCREMENT
-        """
+        """Expression : field_access INCREMENT."""
         p[0] = PostfixIncrementExpression(p[1])
 
     def p_prefix_decrement_expression(self, p):
-        """
-        expression : DECREMENT field_access
-        """
+        """Expression : DECREMENT field_access."""
         p[0] = PrefixDecrementExpression(p[2])
 
     def p_postfix_decrement_expression(self, p):
-        """
-        expression : field_access DECREMENT
-        """
+        """Expression : field_access DECREMENT."""
         p[0] = PostfixDecrementExpression(p[1])
 
     def p_vector_expression(self, p):
-        """
-        expression : '[' FLOAT_VALUE ',' FLOAT_VALUE ',' FLOAT_VALUE ']'
-        """
+        """Expression : '[' FLOAT_VALUE ',' FLOAT_VALUE ',' FLOAT_VALUE ']'."""
         p[0] = VectorExpression(p[2], p[4], p[6])
 
     # region Switch Statement
     def p_switch_statement(self, p):
-        """
-        switch_statement : SWITCH_CONTROL '(' expression ')' '{' switch_blocks '}'
-        """
+        """switch_statement : SWITCH_CONTROL '(' expression ')' '{' switch_blocks '}'."""
         p[0] = SwitchStatement(p[3], p[6])
 
     def p_switch_blocks(self, p):
-        """
-        switch_blocks : switch_blocks switch_block
-                      |
+        """switch_blocks : switch_blocks switch_block
+        |.
         """
         if len(p) == 3:
             p[1].append(p[2])
@@ -571,15 +516,12 @@ class NssParser:
             p[0] = []
 
     def p_switch_block(self, p):
-        """
-        switch_block : switch_labels block_statements
-        """
+        """switch_block : switch_labels block_statements."""
         p[0] = SwitchBlock(p[1], p[2])
 
     def p_switch_labels(self, p):
-        """
-        switch_labels : switch_labels switch_label
-                      |
+        """switch_labels : switch_labels switch_label
+        |.
         """
         if len(p) == 3:
             p[1].append(p[2])
@@ -588,25 +530,21 @@ class NssParser:
             p[0] = []
 
     def p_expression_switch_label(self, p):
-        """
-        switch_label : CASE_CONTROL expression ':'
-        """
+        """switch_label : CASE_CONTROL expression ':'."""
         p[0] = ExpressionSwitchLabel(p[2])
 
     def p_default_switch_label(self, p):
-        """
-        switch_label : DEFAULT_CONTROL ':'
-        """
+        """switch_label : DEFAULT_CONTROL ':'."""
         p[0] = DefaultSwitchLabel()
 
     def p_block_statements(self, p):
-        """
-        block_statements : block_statements statement
-                         |
+        """block_statements : block_statements statement
+        |.
         """
         if len(p) == 3:
             p[1].append(p[2])
             p[0] = p[1]
         else:
             p[0] = []
+
     # endregion

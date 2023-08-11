@@ -1,10 +1,9 @@
 import argparse
 import os
-from pathlib import Path
 import sys
-# import cProfile
-
 from enum import IntEnum
+from pathlib import Path
+
 from pykotor.tslpatcher.config import ModInstaller
 from pykotor.tslpatcher.reader import NamespaceReader
 
@@ -23,7 +22,9 @@ def parse_args():
     # Positional arguments for the old syntax
     parser.add_argument("--game-dir", type=str, help="Path to game directory")
     parser.add_argument("--tslpatchdata", type=str, help="Path to tslpatchdata")
-    parser.add_argument("--namespace-option-index", type=int, help="Namespace option index")
+    parser.add_argument(
+        "--namespace-option-index", type=int, help="Namespace option index"
+    )
 
     # Add additional named arguments here if needed
 
@@ -47,25 +48,27 @@ def main():
     args = parse_args()
 
     if args.game_dir is None or args.tslpatchdata is None:
-        print("Syntax: pykotorcli.exe [\"\\path\\to\\game\\dir\"] [\"\\path\\to\\tslpatchdata\"] {\"namespace_option_index\"}")
+        print(
+            'Syntax: pykotorcli.exe ["\\path\\to\\game\\dir"] ["\\path\\to\\tslpatchdata"] {"namespace_option_index"}'
+        )
         sys.exit(ExitCode.NUMBER_OF_ARGS)
 
-    game_path: Path = Path(args.game_dir).resolve()          # argument 1
+    game_path: Path = Path(args.game_dir).resolve()  # argument 1
     tslpatchdata_path: Path = Path(args.tslpatchdata).resolve()  # argument 2
-    namespace_index: int | None = None                       # argument 3
+    namespace_index: int | None = None  # argument 3
     changes_ini_path: Path
 
     if len(sys.argv) == 3:
         changes_ini_path = Path(
             tslpatchdata_path,
             "tslpatchdata",
-            "changes.ini"
+            "changes.ini",
         ).resolve()
     elif len(sys.argv) == 4:
         namespace_index = int(args.namespace_option_index)
         changes_ini_path = determine_namespaces(
             tslpatchdata_path,
-            namespace_index
+            namespace_index,
         ).resolve()
     else:
         sys.exit(ExitCode.CHANGES_INI_NOT_FOUND)
@@ -74,7 +77,7 @@ def main():
     if not changes_ini_path.exists():
         print(
             "The 'changes.ini' file does not exist"
-            " anywhere in the tslpatchdata provided."
+            " anywhere in the tslpatchdata provided.",
         )
         sys.exit(ExitCode.CHANGES_INI_NOT_FOUND)
 
@@ -84,8 +87,6 @@ def main():
     installer = ModInstaller(mod_path, game_path, ini_name)
 
     # def profile_installation():
-    #     installer.install()
-    # cProfile.run('profile_installation()', 'output.prof')
 
     installer.install()
 
@@ -112,10 +113,14 @@ def determine_namespaces(tslpatchdata_path: Path, namespace_index: int) -> Path:
         print("Invalid namespace_option_index. It should be an integer.")
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
-    namespaces_ini_path: Path = Path(tslpatchdata_path, "tslpatchdata", "namespaces.ini").resolve()
-    print("Using namespaces.ini path: {}".format(namespaces_ini_path))
+    namespaces_ini_path: Path = Path(
+        tslpatchdata_path, "tslpatchdata", "namespaces.ini"
+    ).resolve()
+    print(f"Using namespaces.ini path: {namespaces_ini_path}")
     if not namespaces_ini_path.exists():
-        print("The 'namespaces.ini' file was not found in the specified tslpatchdata path.")
+        print(
+            "The 'namespaces.ini' file was not found in the specified tslpatchdata path."
+        )
         sys.exit(ExitCode.NAMESPACES_INI_NOT_FOUND)
 
     loaded_namespaces = NamespaceReader.from_filepath(str(namespaces_ini_path))
@@ -137,6 +142,7 @@ def determine_namespaces(tslpatchdata_path: Path, namespace_index: int) -> Path:
             loaded_namespaces[namespace_index].ini_filename,
         )
     )
+
 
 main()
 sys.exit()

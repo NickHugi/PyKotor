@@ -1,7 +1,14 @@
 import platform
 from unittest import TestCase
 
-from pykotor.resource.formats.twoda import write_2da, TwoDABinaryReader, read_2da, detect_2da, TwoDACSVReader, TwoDA
+from pykotor.resource.formats.twoda import (
+    write_2da,
+    TwoDABinaryReader,
+    read_2da,
+    detect_2da,
+    TwoDACSVReader,
+    TwoDA,
+)
 from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader
 from pykotor.resource.type import ResourceType
 
@@ -73,9 +80,13 @@ class TestTwoDA(TestCase):
 
     def test_write_raises(self):
         if platform.system() == "Windows":
-            self.assertRaises(PermissionError, write_2da, TwoDA(), ".", ResourceType.TwoDA)
+            self.assertRaises(
+                PermissionError, write_2da, TwoDA(), ".", ResourceType.TwoDA
+            )
         else:
-            self.assertRaises(IsADirectoryError, write_2da, TwoDA(), ".", ResourceType.TwoDA)
+            self.assertRaises(
+                IsADirectoryError, write_2da, TwoDA(), ".", ResourceType.TwoDA
+            )
         self.assertRaises(ValueError, write_2da, TwoDA(), ".", ResourceType.INVALID)
 
     def test_row_max(self):

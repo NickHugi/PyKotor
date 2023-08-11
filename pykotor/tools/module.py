@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from pykotor.common.language import LocalizedString
@@ -7,8 +6,8 @@ from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.formats.lyt.lyt_auto import write_lyt
-from pykotor.resource.formats.rim import read_rim, RIM
-from pykotor.resource.formats.tpc import TPCTextureFormat, TPC, write_tpc
+from pykotor.resource.formats.rim import RIM, read_rim
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
 from pykotor.resource.formats.vis import write_vis
 from pykotor.resource.generics.are import dismantle_are
 from pykotor.resource.generics.git import dismantle_git
@@ -23,18 +22,18 @@ from pykotor.tools.misc import is_mod_file
 
 
 def clone_module(
-        root: str,
-        identifier: str,
-        prefix: str,
-        name: str,
-        installation: Installation,
-        *,
-        copyTextures: bool = False,
-        copyLightmaps: bool = False,
-        keepDoors: bool = False,
-        keepPlaceables: bool = False,
-        keepSounds: bool = False,
-        keepPathing: bool = False
+    root: str,
+    identifier: str,
+    prefix: str,
+    name: str,
+    installation: Installation,
+    *,
+    copyTextures: bool = False,
+    copyLightmaps: bool = False,
+    keepDoors: bool = False,
+    keepPlaceables: bool = False,
+    keepSounds: bool = False,
+    keepPathing: bool = False,
 ) -> None:
     installation = installation
     root = root
@@ -79,7 +78,7 @@ def clone_module(
     if keepDoors:
         for i, door in enumerate(git.doors):
             old_resname = door.resref.get()
-            new_resname = "{}_dor{}".format(identifier, i)
+            new_resname = f"{identifier}_dor{i}"
             door.resref.set(new_resname)
             door.tag = new_resname
 
@@ -93,7 +92,7 @@ def clone_module(
     if keepPlaceables:
         for i, placeable in enumerate(git.placeables):
             old_resname = placeable.resref.get()
-            new_resname = "{}_plc{}".format(identifier, i)
+            new_resname = f"{identifier}_plc{i}"
             placeable.resref.set(new_resname)
             placeable.tag = new_resname
 
@@ -107,7 +106,7 @@ def clone_module(
     if keepSounds:
         for i, sound in enumerate(git.sounds):
             old_resname = sound.resref.get()
-            new_resname = "{}_snd{}".format(identifier, i)
+            new_resname = f"{identifier}_snd{i}"
             sound.resref.set(new_resname)
             sound.tag = new_resname
 
@@ -147,8 +146,7 @@ def clone_module(
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [
-                            rgba.data], TPCTextureFormat.RGBA)
+                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
@@ -158,18 +156,17 @@ def clone_module(
         if copyLightmaps:
             for lightmap in model.list_lightmaps(mdlData):
                 if lightmap not in newLightmaps:
-                    newLightmapName = "{}_lm_{}".format(
-                        identifier, len(newLightmaps.keys()))
+                    newLightmapName = f"{identifier}_lm_{len(newLightmaps.keys())}"
                     newLightmaps[lightmap] = newLightmapName
 
                     tpc = installation.texture(
-                        lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE])
+                        lightmap, [SearchLocation.CHITIN, SearchLocation.OVERRIDE]
+                    )
                     tpc = TPC() if tpc is None else tpc
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [
-                            rgba.data], TPCTextureFormat.RGBA)
+                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
@@ -194,21 +191,23 @@ def clone_module(
 
 
 def rim_to_mod(filepath: Path) -> None:
-    """
-    Creates a MOD file at the given filepath and copies the resources from the corresponding
+    """Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
     Raises:
+    ------
         ValueError: If the file was corrupted or the format could not be determined.
         FileNotFoundError: If the file could not be found.
         IsADirectoryError: If the specified path is a directory (Unix-like systems only).
         PermissionError: If the file could not be accessed.
 
     Args:
+    ----
         filepath: The filepath of the MOD file you would like to create.
     """
     if not is_mod_file(filepath.name):
-        raise ValueError("Specified file must end with the .mod extension")
+        msg = "Specified file must end with the .mod extension"
+        raise ValueError(msg)
 
     base: str = filepath.stem
     old_extension: str = filepath.suffix
@@ -217,8 +216,16 @@ def rim_to_mod(filepath: Path) -> None:
     rim_s_extension: str = lowercase_extension.replace(".mod", "_s.rim")
     rim_extension: str = lowercase_extension.replace(".mod", ".rim")
 
-    filepath_rim_s: Path = filepath.parent / (base + rim_s_extension) if rim_s_extension != lowercase_extension else filepath
-    filepath_rim: Path = filepath.parent / (base + rim_extension) if rim_extension != lowercase_extension else filepath
+    filepath_rim_s: Path = (
+        filepath.parent / (base + rim_s_extension)
+        if rim_s_extension != lowercase_extension
+        else filepath
+    )
+    filepath_rim: Path = (
+        filepath.parent / (base + rim_extension)
+        if rim_extension != lowercase_extension
+        else filepath
+    )
 
     rim: RIM = read_rim(filepath_rim) if filepath_rim.exists() else RIM()
     rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()

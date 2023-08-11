@@ -49,7 +49,7 @@ class TestGFF(TestCase):
 
         self.assertEqual("abcdefghij123456789", gff.root.get_string("string"))
         self.assertEqual("resref01", gff.root.get_resref("resref"))
-        self.assertEqual(b'binarydata', gff.root.get_binary("binary"))
+        self.assertEqual(b"binarydata", gff.root.get_binary("binary"))
 
         self.assertEqual(gff.root.get_vector4("orientation"), Vector4(1, 2, 3, 4))
         self.assertEqual(gff.root.get_vector3("position"), Vector3(11, 22, 33))
@@ -60,7 +60,9 @@ class TestGFF(TestCase):
         self.assertEqual(locstring.get(Language.ENGLISH, Gender.MALE), "male_eng")
         self.assertEqual(locstring.get(Language.GERMAN, Gender.FEMALE), "fem_german")
 
-        self.assertEqual(gff.root.get_struct("child_struct").get_uint8("child_uint8"), 4)
+        self.assertEqual(
+            gff.root.get_struct("child_struct").get_uint8("child_uint8"), 4
+        )
         self.assertEqual(gff.root.get_list("list").at(0).struct_id, 1)
         self.assertEqual(gff.root.get_list("list").at(1).struct_id, 2)
 
@@ -77,5 +79,7 @@ class TestGFF(TestCase):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, write_gff, GFF(), ".", ResourceType.GFF)
         else:
-            self.assertRaises(IsADirectoryError, write_gff, GFF(), ".", ResourceType.GFF)
+            self.assertRaises(
+                IsADirectoryError, write_gff, GFF(), ".", ResourceType.GFF
+            )
         self.assertRaises(ValueError, write_gff, GFF(), ".", ResourceType.INVALID)

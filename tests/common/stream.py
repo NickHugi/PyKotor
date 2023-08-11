@@ -5,10 +5,20 @@ from pykotor.common.stream import BinaryReader
 
 class TestBinaryReader(TestCase):
     def setUp(self) -> None:
-        self.data1 = b'\x01' + b'\x02\x00' + b'\x03\x00\x00\x00' + b'\x04\x00\x00\x00\x00\x00\x00\x00'
-        self.data2 = b'helloworld\x00'
-        self.data3 = b'\xFF' + b'\xFE\xFF' + b'\xFD\xFF\xFF\xFF' + b'\xFC\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
-        self.data4 = b'\x79\xE9\xF6\xC2' + b'\x68\x91\xED\x7C\x3F\xDD\x5E\x40'
+        self.data1 = (
+            b"\x01"
+            + b"\x02\x00"
+            + b"\x03\x00\x00\x00"
+            + b"\x04\x00\x00\x00\x00\x00\x00\x00"
+        )
+        self.data2 = b"helloworld\x00"
+        self.data3 = (
+            b"\xFF"
+            + b"\xFE\xFF"
+            + b"\xFD\xFF\xFF\xFF"
+            + b"\xFC\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
+        )
+        self.data4 = b"\x79\xE9\xF6\xC2" + b"\x68\x91\xED\x7C\x3F\xDD\x5E\x40"
 
         self.reader1 = BinaryReader.from_bytes(self.data1)
         self.reader1b = BinaryReader.from_bytes(self.data1, 3)
@@ -114,9 +124,9 @@ class TestBinaryReader(TestCase):
 
     def test_peek(self):
         self.reader1.skip(3)
-        self.assertEqual(b'\x03', self.reader1.peek(1))
+        self.assertEqual(b"\x03", self.reader1.peek(1))
 
         self.reader1b.skip(4)
-        self.assertEqual(b'\x04', self.reader1b.peek(1))
+        self.assertEqual(b"\x04", self.reader1b.peek(1))
 
-        self.assertEqual(b'\x03', self.reader1c.peek(1))
+        self.assertEqual(b"\x03", self.reader1c.peek(1))

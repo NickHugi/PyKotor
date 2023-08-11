@@ -2,22 +2,22 @@ import struct
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import ResourceWriter, TARGET_TYPES, autoclose
+from pykotor.resource.type import TARGET_TYPES, ResourceWriter, autoclose
 
 
 class TPCBMPWriter(ResourceWriter):
     def __init__(
-            self,
-            tpc: TPC,
-            target: TARGET_TYPES
+        self,
+        tpc: TPC,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._tpc = tpc
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         width, height, data = self._tpc.convert(TPCTextureFormat.RGB, 0)
         file_size = 14 + 40 + (width * height * 3)
@@ -53,4 +53,4 @@ class TPCBMPWriter(ResourceWriter):
             x = i % width
             y = height - (i // width) - 1
             index = x + width * y
-            self._writer.write_bytes(struct.pack('BBB', *temp_pixels[index]))
+            self._writer.write_bytes(struct.pack("BBB", *temp_pixels[index]))

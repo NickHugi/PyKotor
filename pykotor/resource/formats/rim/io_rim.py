@@ -1,25 +1,30 @@
 from __future__ import annotations
 
-from typing import List, Optional
-
 from pykotor.resource.formats.rim import RIM
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceType,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class RIMBinaryReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._rim: Optional[RIM] = None
+        self._rim: RIM | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> RIM:
         self._rim = RIM()
 
@@ -27,20 +32,22 @@ class RIMBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "RIM ":
-            raise ValueError("The RIM file type that was loaded was unrecognized.")
+            msg = "The RIM file type that was loaded was unrecognized."
+            raise ValueError(msg)
 
         if file_version != "V1.0":
-            raise ValueError("The RIM version that was loaded is not supported.")
+            msg = "The RIM version that was loaded is not supported."
+            raise ValueError(msg)
 
         self._reader.skip(4)
         entry_count = self._reader.read_uint32()
         offset_to_keys = self._reader.read_uint32()
 
-        resrefs: List[str] = []
-        resids: List[int] = []
-        restypes: List[int] = []
-        resoffsets: List[int] = []
-        ressizes: List[int] = []
+        resrefs: list[str] = []
+        resids: list[int] = []
+        restypes: list[int] = []
+        resoffsets: list[int] = []
+        ressizes: list[int] = []
         self._reader.seek(offset_to_keys)
         for i in range(entry_count):
             resrefs.append(self._reader.read_string(16))
@@ -62,17 +69,17 @@ class RIMBinaryWriter(ResourceWriter):
     KEY_ELEMENT_SIZE = 32
 
     def __init__(
-            self,
-            rim: RIM,
-            target: TARGET_TYPES
+        self,
+        rim: RIM,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._rim = rim
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         entry_count = len(self._rim)
         offset_to_keys = RIMBinaryWriter.FILE_HEADER_SIZE
@@ -82,7 +89,7 @@ class RIMBinaryWriter(ResourceWriter):
         self._writer.write_uint32(0)
         self._writer.write_uint32(entry_count)
         self._writer.write_uint32(offset_to_keys)
-        self._writer.write_bytes(b'\0' * 100)
+        self._writer.write_bytes(b"\0" * 100)
 
         resid = 0
         data_offset = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count

@@ -8,7 +8,6 @@ from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 
 
 class TestNCSOptimizers(TestCase):
-
     def compile(self, script: str) -> NCS:
         nssLexer = NssLexer()
         nssParser = NssParser()
@@ -22,7 +21,8 @@ class TestNCSOptimizers(TestCase):
         return ncs
 
     def test_no_op_optimizer(self):
-        ncs = self.compile("""
+        ncs = self.compile(
+            """
             void main()
             {
                 int value = 3;
@@ -35,7 +35,8 @@ class TestNCSOptimizers(TestCase):
                     }
                 }
             }
-        """)
+        """
+        )
 
         ncs.optimize([RemoveNopOptimizer()])
         ncs.print()

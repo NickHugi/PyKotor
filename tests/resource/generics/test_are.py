@@ -88,4 +88,3 @@ class TestARE(TestCase):
         self.assertEqual(123, are.dirty_argb_1.bgr_integer())
         self.assertEqual(1234, are.dirty_argb_2.bgr_integer())
         self.assertEqual(12345, are.dirty_argb_3.bgr_integer())
-

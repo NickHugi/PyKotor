@@ -1,25 +1,29 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class SSFBinaryReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._ssf: Optional[SSF] = None
+        self._ssf: SSF | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> SSF:
         self._ssf = SSF()
 
@@ -27,10 +31,12 @@ class SSFBinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "SSF ":
-            raise ValueError("Attempted to load an invalid SSF was loaded.")
+            msg = "Attempted to load an invalid SSF was loaded."
+            raise ValueError(msg)
 
         if file_version != "V1.1":
-            raise ValueError("The supplied SSF file version is not supported.")
+            msg = "The supplied SSF file version is not supported."
+            raise ValueError(msg)
 
         sounds_offset = self._reader.read_uint32()
         self._reader.seek(sounds_offset)
@@ -60,7 +66,9 @@ class SSFBinaryReader(ResourceReader):
         self._ssf.set(SSFSound.BEGIN_UNLOCK, self._reader.read_uint32(max_neg1=True))
         self._ssf.set(SSFSound.UNLOCK_FAILED, self._reader.read_uint32(max_neg1=True))
         self._ssf.set(SSFSound.UNLOCK_SUCCESS, self._reader.read_uint32(max_neg1=True))
-        self._ssf.set(SSFSound.SEPARATED_FROM_PARTY, self._reader.read_uint32(max_neg1=True))
+        self._ssf.set(
+            SSFSound.SEPARATED_FROM_PARTY, self._reader.read_uint32(max_neg1=True)
+        )
         self._ssf.set(SSFSound.REJOINED_PARTY, self._reader.read_uint32(max_neg1=True))
         self._ssf.set(SSFSound.POISONED, self._reader.read_uint32(max_neg1=True))
 
@@ -69,17 +77,17 @@ class SSFBinaryReader(ResourceReader):
 
 class SSFBinaryWriter(ResourceWriter):
     def __init__(
-            self,
-            ssf: SSF,
-            target: TARGET_TYPES
+        self,
+        ssf: SSF,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._ssf: SSF = ssf
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         self._writer.write_string("SSF ")
         self._writer.write_string("V1.1")
@@ -110,9 +118,11 @@ class SSFBinaryWriter(ResourceWriter):
         self._writer.write_uint32(self._ssf.get(SSFSound.BEGIN_UNLOCK), max_neg1=True)
         self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_FAILED), max_neg1=True)
         self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_SUCCESS), max_neg1=True)
-        self._writer.write_uint32(self._ssf.get(SSFSound.SEPARATED_FROM_PARTY), max_neg1=True)
+        self._writer.write_uint32(
+            self._ssf.get(SSFSound.SEPARATED_FROM_PARTY), max_neg1=True
+        )
         self._writer.write_uint32(self._ssf.get(SSFSound.REJOINED_PARTY), max_neg1=True)
         self._writer.write_uint32(self._ssf.get(SSFSound.POISONED), max_neg1=True)
 
-        for i in range(12):
+        for _i in range(12):
             self._writer.write_uint32(0xFFFFFFFF)

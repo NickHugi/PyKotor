@@ -1,5 +1,4 @@
-"""
-This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both
+"""This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both
 games.
 """
 from __future__ import annotations
@@ -18,42 +17,42 @@ TARGET_TYPES = Union[Path, str, bytearray, BinaryWriter]
 class ResourceReader(ABC):
     @overload
     def __init__(
-            self,
-            filepath: str | Path,
-            offset: int = 0,
-            size: int = 0
+        self,
+        filepath: str | Path,
+        offset: int = 0,
+        size: int = 0,
     ):
         ...
 
     @overload
     def __init__(
-            self,
-            data: bytes,
-            offset: int = 0,
-            size: int = 0
+        self,
+        data: bytes,
+        offset: int = 0,
+        size: int = 0,
     ):
         ...
 
     @overload
     def __init__(
-            self,
-            reader: BinaryReader,
-            offset: int = 0,
-            size: int = 0
+        self,
+        reader: BinaryReader,
+        offset: int = 0,
+        size: int = 0,
     ):
         ...
 
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         self._reader = BinaryReader.from_auto(source, offset)
         self._size = self._reader.remaining() if size == 0 else size
 
     def close(
-            self
+        self,
     ):
         self._reader.close()
 
@@ -61,44 +60,44 @@ class ResourceReader(ABC):
 class ResourceWriter(ABC):
     @overload
     def __init__(
-            self,
-            filepath: str | Path
+        self,
+        filepath: str | Path,
     ):
         ...
 
     @overload
     def __init__(
-            self,
-            data: bytes
+        self,
+        data: bytes,
     ):
         ...
 
     @overload
     def __init__(
-            self,
-            reader: BinaryWriter
+        self,
+        reader: BinaryWriter,
     ):
         ...
 
     def __init__(
-            self,
-            target: TARGET_TYPES
+        self,
+        target: TARGET_TYPES,
     ):
         self._writer = BinaryWriter.to_auto(target)
 
     def close(
-            self
+        self,
     ):
         self._writer.close()
 
 
 class ResourceType:
-    """
-    Represents a resource type that is used within either games.
+    """Represents a resource type that is used within either games.
 
     Stored in the class is also several static attributes, each an actual resource type used by the games.
 
-    Attributes:
+    Attributes
+    ----------
         type_id: Integer id of the resource type as recognized by the games.
         extension: File extension associated with the resource type and as recognized by the game.
         category: Short description on what kind of data the resource type stores.
@@ -192,11 +191,11 @@ class ResourceType:
     TLK_JSON: ResourceType
 
     def __init__(
-            self,
-            type_id: int,
-            extension: str,
-            category: str,
-            contents: str
+        self,
+        type_id: int,
+        extension: str,
+        category: str,
+        contents: str,
     ):
         self.type_id = type_id
         self.extension = extension
@@ -204,37 +203,32 @@ class ResourceType:
         self.contents = contents
 
     def __repr__(
-            self
+        self,
     ):
         if self is ResourceType.TwoDA:
             return "ResourceType.TwoDA"
         elif self is ResourceType.INVALID:
             return "ResourceType.INVALID"
         else:
-            return "ResourceType.{}".format(self.extension.upper())
+            return f"ResourceType.{self.extension.upper()}"
 
     def __str__(
-            self
+        self,
     ):
-        """
-        Returns the extension in all caps.
-        """
+        """Returns the extension in all caps."""
         return self.extension.upper()
 
     def __int__(
-            self
+        self,
     ):
-        """
-        Returns the type_id.
-        """
+        """Returns the type_id."""
         return self.type_id
 
     def __eq__(
-            self,
-            other: Union[ResourceType, str, int]
+        self,
+        other: ResourceType | str | int,
     ):
-        """
-        Two ResourceTypes are equal if they are the same.
+        """Two ResourceTypes are equal if they are the same.
         A ResourceType and a str are equal if the extension is equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
@@ -248,61 +242,70 @@ class ResourceType:
             return NotImplemented
 
     def __hash__(
-            self
+        self,
     ):
         return hash(str(self.extension))
 
     @classmethod
     def from_id(
-            cls,
-            type_id: int
+        cls,
+        type_id: int,
     ) -> ResourceType:
-        """
-        Returns the ResourceType for the specified id.
+        """Returns the ResourceType for the specified id.
 
         Args:
+        ----
             type_id: The resource id.
 
         Returns:
+        -------
             The corresponding ResourceType object.
         """
         for value in ResourceType.__dict__.values():
             if value == type_id:
                 return value
-        raise ValueError("Could not find resource type with ID {}.".format(type_id))
+        msg = f"Could not find resource type with ID {type_id}."
+        raise ValueError(msg)
 
     @classmethod
     def from_extension(
-            cls,
-            extension: str
+        cls,
+        extension: str,
     ) -> ResourceType:
-        """
-        Returns the ResourceType for the specified extension.
+        """Returns the ResourceType for the specified extension.
 
         Args:
+        ----
             extension: The resource extension.
 
         Returns:
+        -------
             The corresponding ResourceType object.
         """
         for resource_type in ResourceType.__annotations__:
             if not isinstance(ResourceType.__dict__[resource_type], ResourceType):
                 continue
-            if ResourceType.__dict__[resource_type].extension.upper() == extension.upper():
+            if (
+                ResourceType.__dict__[resource_type].extension.upper()
+                == extension.upper()
+            ):
                 return ResourceType.__dict__[resource_type]
-        raise ValueError("Could not find resource type with extension '{}'.".format(extension))
+        msg = f"Could not find resource type with extension '{extension}'."
+        raise ValueError(msg)
 
 
 def autoclose(func):
     def _autoclose(self: ResourceReader | ResourceWriter, auto_close: bool = True):
         try:
             resource = func(self, auto_close)
-        except (IOError, ParseError, ValueError, IndexError, StopIteration) as e:
-            raise ValueError("Tried to load an unsupported or corrupted file.", e)
+        except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
+            msg = "Tried to load an unsupported or corrupted file."
+            raise ValueError(msg, e)
         finally:
             if auto_close:
                 self.close()
         return resource
+
     return _autoclose
 
 

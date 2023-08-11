@@ -21,10 +21,10 @@ class TestERF(TestCase):
 
     def validate_io(self, erf: ERF):
         self.assertEqual(len(erf), 3)
-        self.assertEqual(erf.get("1", ResourceType.TXT), b'abc')
-        self.assertEqual(erf.get("2", ResourceType.TXT), b'def')
-        self.assertEqual(erf.get("3", ResourceType.TXT), b'ghi')
-    
+        self.assertEqual(erf.get("1", ResourceType.TXT), b"abc")
+        self.assertEqual(erf.get("2", ResourceType.TXT), b"def")
+        self.assertEqual(erf.get("3", ResourceType.TXT), b"ghi")
+
     def test_read_raises(self):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, read_erf, ".")
@@ -37,6 +37,7 @@ class TestERF(TestCase):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, write_erf, ERF(), ".", ResourceType.ERF)
         else:
-            self.assertRaises(IsADirectoryError, write_erf, ERF(), ".", ResourceType.ERF)
+            self.assertRaises(
+                IsADirectoryError, write_erf, ERF(), ".", ResourceType.ERF
+            )
         self.assertRaises(ValueError, write_erf, ERF(), ".", ResourceType.INVALID)
-    
