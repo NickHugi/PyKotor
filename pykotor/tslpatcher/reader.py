@@ -235,8 +235,8 @@ class ConfigReader:
                     raise KeyError(f"INI header for '{value}' referenced in TLKList key '{key}' not found.")
                 custom_tlk_entries = dict(self.ini[value].items()) # get the entries from the custom header e.g. [update1.tlk]
                 for change_index, token_id_str in custom_tlk_entries.items(): # replace the specified indices e.g. 1977=421
-                    entry = tlk_data_entries.get(int(token_id_str))
-                    modifier = ModifyTLK(int(change_index), entry.text, entry.voiceover, is_replacement = True)
+                    entry = tlk_data_entries.get(int(change_index))
+                    modifier = ModifyTLK(int(token_id_str), entry.text, entry.voiceover, is_replacement = True)
                     self.config.patches_tlk.modifiers.append(modifier)
             elif "\\" in key or "/" in key:  # Handle in-line updates e.g. 2003\Text="Peace is a lie; there is only passion."
                 delimiter = "\\" if "\\" in key else "/"
