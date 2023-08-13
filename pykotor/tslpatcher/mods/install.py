@@ -1,5 +1,5 @@
 import concurrent.futures
-from pykotor.tools.path import Path
+from pathlib import Path
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar
 from pykotor.common.geometry import Vector3
 
 if TYPE_CHECKING:
-    from pykotor.tools.path import Path
+    from pathlib import Path
 
 T = TypeVar("T")
 

@@ -5,6 +5,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import IntEnum
+from pathlib import Path
 from typing import NamedTuple, Optional
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -24,7 +25,6 @@ from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
-from pykotor.tools.path import Path
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -137,7 +137,7 @@ class Installation:
             The path to the modules folder.
         """
         return self._find_resource_folderpath(
-            "modules",
+            ("Modules",),
             "Could not find modules folder in '{}'.",
         )
 
@@ -149,7 +149,7 @@ class Installation:
             The path to the override folder.
         """
         return self._find_resource_folderpath(
-            "Override",
+            ("Override",),
             "Could not find override folder in '{}'.",
         )
 
@@ -161,7 +161,7 @@ class Installation:
             The path to the lips folder.
         """
         return self._find_resource_folderpath(
-            "lips",
+            ("lips",),
             "Could not find modules folder in '{}'.",
         )
 
@@ -173,7 +173,7 @@ class Installation:
             The path to the texturepacks folder.
         """
         return self._find_resource_folderpath(
-            "texturepacks",
+            ("texturepacks",),
             "Could not find modules folder in '{}'.",
         )
 
@@ -185,7 +185,7 @@ class Installation:
             The path to the rims folder.
         """
         return self._find_resource_folderpath(
-            "rims",
+            ("rims",),
             "Could not find rims folder in '{}'.",
         )
 
@@ -197,7 +197,7 @@ class Installation:
             The path to the streammusic folder.
         """
         return self._find_resource_folderpath(
-            "streammusic",
+            ("streammusic",),
             "Could not find StreamMusic folder in '{}'.",
         )
 
@@ -209,18 +209,27 @@ class Installation:
             The path to the streamsounds folder.
         """
         return self._find_resource_folderpath(
-            "streamsounds",
+            ("streamsounds",),
             "Could not find StreamSounds folder in '{}'.",
         )
 
-    def _find_resource_folderpath(self, foldername: str, error_msg: str):
-        module_path = self._path
-        for folder in os.listdir(self._path):
-            if (module_path / folder).is_dir() and folder.lower() == foldername:
-                module_path = module_path / folder
-        if module_path == self._path:
+    def _find_resource_folderpath(
+        self,
+        folder_names: tuple[str, ...],
+        error_msg: str,
+    ) -> Path:
+        resource_path = Path(self._path)
+        folder_names_lower = {name.lower() for name in folder_names}
+
+        for folder_path in resource_path.iterdir():
+            if folder_path.is_dir() and folder_path.name.lower() in folder_names_lower:
+                resource_path = folder_path
+                break
+
+        if resource_path == self._path:
             raise ValueError(error_msg.format(self._path))
-        return Path(module_path)
+
+        return resource_path
 
     def streamvoice_path(self) -> Path:
         """Returns the path to streamvoice folder of the Installation. This method maintains the case of the foldername.
@@ -231,22 +240,15 @@ class Installation:
         -------
             The path to the streamvoice folder.
         """
-        streamwavesvoice_path = self._path
-        for folder in self._path.iterdir():
-            this_path = streamwavesvoice_path / folder
-            if this_path.is_dir() and str(folder.name).lower() in {
-                "streamvoice",
-                "streamwaves",
-            }:
-                streamwavesvoice_path = this_path
-        if streamwavesvoice_path == self._path:
-            msg = f"Could not find voice over folder in '{self._path}'."
-            raise ValueError(msg)
-        return Path(streamwavesvoice_path)
+        return self._find_resource_folderpath(
+            ("streamvoice", "streamwaves"),
+            "Could not find voice over folder in '{}'.",
+        )
 
     # endregion
 
     # region Load Data
+
     def load_chitin(self) -> None:
         """Reloads the list of resources in the Chitin linked to the Installation."""
         chitin = Chitin(self._path)
@@ -259,11 +261,11 @@ class Installation:
         modules_path = self.module_path()
         self._modules = {}
         module_files = [
-            file for file in os.listdir(modules_path) if is_capsule_file(file)
+            file for file in modules_path.iterdir() if is_capsule_file(file.name)
         ]
         for module in module_files:
             with suppress(Exception):
-                self._modules[module] = list(Capsule(self.module_path() / module))
+                self._modules[module.name] = list(Capsule(self.module_path() / module))
 
     def reload_module(self, module: str) -> None:
         """Reloads the list of resources in specified module in the modules folder linked to the Installation.
@@ -280,9 +282,9 @@ class Installation:
         """Reloads the list of modules in the lips folder linked to the Installation."""
         self._lips = {}
         lips_path = self.lips_path()
-        lip_files = [file for file in os.listdir(lips_path) if is_mod_file(file)]
+        lip_files = [file for file in lips_path.iterdir() if is_mod_file(file.name)]
         for module in lip_files:
-            self._lips[module] = list(Capsule(lips_path / module))
+            self._lips[module.name] = list(Capsule(lips_path / module))
 
     def load_textures(
         self,
@@ -291,10 +293,10 @@ class Installation:
         self._texturepacks = {}
         texturepacks_path = self.texturepacks_path()
         texturepacks_files = [
-            file for file in os.listdir(texturepacks_path) if is_erf_file(file)
+            file for file in texturepacks_path.iterdir() if is_erf_file(file.name)
         ]
         for module in texturepacks_files:
-            self._texturepacks[module] = list(Capsule(texturepacks_path / module))
+            self._texturepacks[module.name] = list(Capsule(texturepacks_path / module))
 
     def load_override(self) -> None:
         """Reloads the list of subdirectories in the override folder linked to the Installation."""
@@ -348,16 +350,16 @@ class Installation:
     def load_streammusic(self) -> None:
         self._streammusic = []
         streammusic_path = self.streammusic_path()
-        for filename in list(os.listdir(str(Path(streammusic_path)))):
+        for filename in list(streammusic_path.iterdir()):
             with suppress(Exception):
-                filepath = streammusic_path / filename
-                identifier = ResourceIdentifier.from_path(str(filepath))
+                file_path = streammusic_path / filename
+                identifier = ResourceIdentifier.from_path(file_path)
                 resource = FileResource(
                     identifier.resname,
                     identifier.restype,
-                    filepath.stat().st_size,
+                    file_path.stat().st_size,
                     0,
-                    filepath,
+                    file_path,
                 )
 
                 self._streammusic.append(resource)
@@ -368,14 +370,14 @@ class Installation:
         streamsounds_path = self.streamsounds_path()
         for filename in streamsounds_path.iterdir():
             with suppress(Exception):
-                filepath = streamsounds_path / filename
-                identifier = ResourceIdentifier.from_path(str(filepath))
+                file_path = streamsounds_path / filename
+                identifier = ResourceIdentifier.from_path(file_path)
                 resource = FileResource(
                     identifier.resname,
                     identifier.restype,
-                    filepath.stat().st_size,
+                    file_path.stat().st_size,
                     0,
-                    filepath,
+                    file_path,
                 )
 
                 self._streamsounds.append(resource)
@@ -384,16 +386,16 @@ class Installation:
         """Reloads the list of resources in the streamvoices folder linked to the Installation."""
         self._streamvoices = []
         streamvoices_path = self.streamvoice_path()
-        for filename in list(os.listdir(str(streamvoices_path))):
+        for filename in list(streamvoices_path.iterdir()):
             with suppress(Exception):
-                filepath = streamvoices_path / filename
-                identifier = ResourceIdentifier.from_path(str(filepath))
+                file_path = streamvoices_path / filename
+                identifier = ResourceIdentifier.from_path(file_path)
                 resource = FileResource(
                     identifier.resname,
                     identifier.restype,
-                    filepath.stat().st_size,
+                    file_path.stat().st_size,
                     0,
-                    filepath,
+                    file_path,
                 )
                 self._streamvoices.append(resource)
 

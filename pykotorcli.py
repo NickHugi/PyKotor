@@ -1,8 +1,8 @@
 import argparse
 import sys
 from enum import IntEnum
+from pathlib import Path
 
-from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import ModInstaller
 from pykotor.tslpatcher.reader import NamespaceReader
 

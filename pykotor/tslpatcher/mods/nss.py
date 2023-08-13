@@ -1,6 +1,6 @@
 import re
 
-from pykotor.tools.path import Path
+from pathlib import Path
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 

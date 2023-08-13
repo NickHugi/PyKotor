@@ -6,6 +6,7 @@ from configparser import (
     RawConfigParser,
     SectionProxy,
 )
+from pathlib import Path
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -15,7 +16,6 @@ from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
-from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -309,12 +309,12 @@ class ConfigReader:
                 ) in (
                     custom_tlk_entries.items()
                 ):  # replace the specified indices e.g. 1977=421
-                    entry = tlk_data_entries.get(int(token_id_str))
+                    entry = tlk_data_entries.get(int(change_index))
                     if not entry:
                         msg = "TLKEntry invalid"
                         raise ValueError(msg)
                     modifier = ModifyTLK(
-                        int(change_index),
+                        int(token_id_str),
                         entry.text,
                         entry.voiceover,
                         is_replacement=True,

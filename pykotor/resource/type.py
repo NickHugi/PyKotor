@@ -4,7 +4,7 @@ games.
 from __future__ import annotations
 
 from abc import ABC
-from pykotor.tools.path import Path
+from pathlib import Path
 from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 

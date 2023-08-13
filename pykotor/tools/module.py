@@ -17,7 +17,7 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
-from pykotor.tools.path import Path
+from pathlib import Path
 
 
 def clone_module(

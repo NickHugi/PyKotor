@@ -1,5 +1,5 @@
 import os
-from pykotor.tools.path import Path
+from pathlib import Path
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString

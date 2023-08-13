@@ -7,7 +7,7 @@ from typing import NamedTuple
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
-from pykotor.tools.path import Path
+from pathlib import Path
 
 
 # TODO: 3 conditionals doing the same check why?

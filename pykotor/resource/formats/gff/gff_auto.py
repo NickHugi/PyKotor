@@ -1,4 +1,4 @@
-from pykotor.tools.path import Path
+from pathlib import Path
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import (

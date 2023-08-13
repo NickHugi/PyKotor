@@ -8,7 +8,7 @@ from typing import BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.tools.path import Path
+from pathlib import Path
 
 
 def _endian_char(

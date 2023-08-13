@@ -1,34 +1,33 @@
 import os
 import platform
-from pathlib import Path as OriginalPath
+from pathlib import Path
 
 from pykotor.common.misc import Game
 
 
-class Path(OriginalPath):
-    def resolve_case_insensitive(self):
-        # Quick checks for cases where resolving is unnecessary.
-        if os.name != "posix" or self.exists():
-            return self
+def resolve_case_insensitive(path: Path):
+    # Quick checks for cases where resolving is unnecessary.
+    if os.name != "posix" or path.exists():
+        return path
 
-        current_path = Path(self.root)
-        for part in self.parts[1:]:
-            # Using a set for faster membership checks.
-            # Note: We're assuming case-insensitive filesystem, so we lowercase everything.
-            entries = {entry.name.lower() for entry in current_path.iterdir()}
+    current_path = Path(path.root)
+    for part in path.parts[1:]:
+        # Using a set for faster membership checks.
+        # Note: We're assuming case-insensitive filesystem, so we lowercase everything.
+        entries = {entry.name.lower() for entry in current_path.iterdir()}
 
-            if part.lower() in entries:
-                # Reconstruct the original path, retaining the case of filenames.
-                current_path /= next(
-                    entry
-                    for entry in current_path.iterdir()
-                    if entry.name.lower() == part.lower()
-                )
-            else:
-                # If part was not found, just return the original path
-                return self
+        if part.lower() in entries:
+            # Reconstruct the original path, retaining the case of filenames.
+            current_path /= next(
+                entry
+                for entry in current_path.iterdir()
+                if entry.name.lower() == part.lower()
+            )
+        else:
+            # If part was not found, just return the original path
+            return path
 
-        return current_path
+    return current_path
 
 
 def locate_game_path(game: Game):

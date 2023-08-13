@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from pykotor.tools.path import Path
+from pathlib import Path
 from typing import NamedTuple
 
 from pykotor.resource.type import ResourceType
@@ -154,13 +154,13 @@ class ResourceIdentifier(NamedTuple):
                 self.resname.lower() == other.resname.lower()
                 and self.restype == other.restype
             )
-        else:
-            return NotImplemented
+        return NotImplemented
 
     @staticmethod
     def from_path(
-        filepath: str,
+        file_path: Path | str,
     ) -> ResourceIdentifier:
-        filename = os.path.basename(filepath)
-        resname, restype_ext = filename.split(".", 1)
+        file_path = Path(file_path)
+        file_name = file_path.name
+        resname, restype_ext = file_name.split(".", 1)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

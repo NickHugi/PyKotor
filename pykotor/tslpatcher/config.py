@@ -16,7 +16,7 @@ from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
-from pykotor.tools.path import Path
+from pathlib import Path
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK

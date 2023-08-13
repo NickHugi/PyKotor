@@ -2,7 +2,7 @@ from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tlk import read_tlk
 from pykotor.tools.misc import is_mod_file
-from pykotor.tools.path import Path
+from pathlib import Path
 
 
 def uninstall_all_mods(installation: Installation):

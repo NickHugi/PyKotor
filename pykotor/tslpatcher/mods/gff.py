@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.tools.path import Path
+from pathlib import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger

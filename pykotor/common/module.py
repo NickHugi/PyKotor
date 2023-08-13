@@ -47,7 +47,7 @@ from pykotor.tools.model import list_lightmaps, list_textures
 if TYPE_CHECKING:
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
-    from pykotor.tools.path import Path
+    from pathlib import Path
 
 T = TypeVar("T")
 SEARCH_ORDER = [
