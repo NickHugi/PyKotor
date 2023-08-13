@@ -4,11 +4,11 @@ from __future__ import annotations
 import io
 import struct
 from abc import ABC, abstractmethod
-from pykotor.tools.path import Path
 from typing import BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
+from pykotor.tools.path import Path
 
 
 def _endian_char(
@@ -90,7 +90,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = open(str(path), "rb")
+        stream = path.open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -153,7 +153,8 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        with open(path, "rb") as reader:
+        path = Path(path)
+        with path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
 
@@ -651,7 +652,7 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
-        stream = open(path, "wb")
+        stream = path.open("wb")
         return BinaryWriterFile(stream)
 
     @classmethod
@@ -680,15 +681,12 @@ class BinaryWriter(ABC):
     ) -> BinaryWriter:
         if isinstance(source, Path | str):  # is path
             return BinaryWriter.to_file(Path(source))
-        elif isinstance(source, bytearray):  # is binary data
+        if isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)
-        elif isinstance(source, BinaryWriter):
+        if isinstance(source, BinaryWriter):
             return source
-        else:
-            msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
-            raise NotImplementedError(
-                msg,
-            )
+        msg = "Must specify a path, bytes object or an existing BinaryWriter instance."
+        raise NotImplementedError(msg)
 
     @staticmethod
     def dump(
@@ -1549,7 +1547,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 1] = struct.pack(
-            _endian_char(big) + "B", value
+            _endian_char(big) + "B",
+            value,
         )
         self._position += 1
 
@@ -1567,7 +1566,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 1] = struct.pack(
-            _endian_char(big) + "b", value
+            _endian_char(big) + "b",
+            value,
         )
         self._position += 1
 
@@ -1585,7 +1585,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 2] = struct.pack(
-            _endian_char(big) + "H", value
+            _endian_char(big) + "H",
+            value,
         )
         self._position += 2
 
@@ -1603,7 +1604,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 2] = struct.pack(
-            _endian_char(big) + "h", value
+            _endian_char(big) + "h",
+            value,
         )
         self._position += 2
 
@@ -1628,7 +1630,8 @@ class BinaryWriterBytearray(BinaryWriter):
         if max_neg1 and value == -1:
             value = 4294967295
         self._ba[self._position : self._position + 4] = struct.pack(
-            _endian_char(big) + "I", value
+            _endian_char(big) + "I",
+            value,
         )
         self._position += 4
 
@@ -1646,7 +1649,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 4] = struct.pack(
-            _endian_char(big) + "i", value
+            _endian_char(big) + "i",
+            value,
         )
         self._position += 4
 
@@ -1664,7 +1668,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 8] = struct.pack(
-            _endian_char(big) + "Q", value
+            _endian_char(big) + "Q",
+            value,
         )
         self._position += 8
 
@@ -1682,7 +1687,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 8] = struct.pack(
-            _endian_char(big) + "q", value
+            _endian_char(big) + "q",
+            value,
         )
         self._position += 8
 
@@ -1700,7 +1706,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write int bytes as big endian.
         """
         self._ba[self._position : self._position + 4] = struct.pack(
-            _endian_char(big) + "f", value
+            _endian_char(big) + "f",
+            value,
         )
         self._position += 4
 
@@ -1718,7 +1725,8 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write bytes as big endian.
         """
         self._ba[self._position : self._position + 8] = struct.pack(
-            _endian_char(big) + "d", value
+            _endian_char(big) + "d",
+            value,
         )
         self._position += 8
 
@@ -1736,10 +1744,12 @@ class BinaryWriterBytearray(BinaryWriter):
             big: Write bytes as big endian.
         """
         self._ba[self._position : self._position + 4] = struct.pack(
-            _endian_char(big) + "f", value.x
+            _endian_char(big) + "f",
+            value.x,
         )
         self._ba[self._position + 4 : self._position + 8] = struct.pack(
-            _endian_char(big) + "f", value.y
+            _endian_char(big) + "f",
+            value.y,
         )
         self._position += 8
 
@@ -1774,7 +1784,8 @@ class BinaryWriterBytearray(BinaryWriter):
         """
         self._write_generic_vector(big, value)
         self._ba[self._position + 12 : self._position + 16] = struct.pack(
-            _endian_char(big) + "f", value.w
+            _endian_char(big) + "f",
+            value.w,
         )
         self._position += 16
 
@@ -1827,7 +1838,9 @@ class BinaryWriterBytearray(BinaryWriter):
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
             padding: What character is used as padding where applicable.
         """
-        if prefix_length == 1:
+        if prefix_length == 0:
+            pass
+        elif prefix_length == 1:
             if len(value) > 255:
                 msg = "The string length is too large for a prefix length of 1."
                 raise ValueError(msg)
@@ -1842,7 +1855,7 @@ class BinaryWriterBytearray(BinaryWriter):
                 msg = "The string length is too large for a prefix length of 4."
                 raise ValueError(msg)
             self.write_uint32(len(value), big=big)
-        elif prefix_length != 0:
+        else:
             msg = "An invalid prefix length was provided."
             raise ValueError(msg)
 

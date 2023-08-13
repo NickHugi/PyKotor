@@ -14,3 +14,5 @@ pykotorcli.build/*
 .history/*
 *.heapsnapshot
 *.cpuprofile
+*.prof
+.vscode/PythonImportHelper*.json

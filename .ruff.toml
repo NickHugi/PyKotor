@@ -1,6 +1,6 @@
 # The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
 
-target-version = "py310"
+target-version = "py39"
 
 select = ["ALL"]
 
@@ -26,9 +26,6 @@ ignore = [
 [per-file-ignores]
 "tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
-"webapp/homeassistant_util_color.py" = ["ALL"]
-"webapp/app.py" = ["INP001", "DTZ011", "A002"]
-"custom_components/adaptive_lighting/homeassistant_util_color.py" = ["ALL"]
 
 [flake8-pytest-style]
 fixture-parentheses = false
