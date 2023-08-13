@@ -1,7 +1,6 @@
-import os
 import sys
 from configparser import (
-    ConfigParser,
+    ConfigParser,  # type: ignore
     DuplicateOptionError,
     DuplicateSectionError,
     RawConfigParser,
@@ -16,6 +15,7 @@ from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
+from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -27,6 +27,7 @@ from pykotor.tslpatcher.mods.gff import (
     LocalizedStringDelta,
     ModificationsGFF,
     ModifyFieldGFF,
+    ModifyGFF,
 )
 from pykotor.tslpatcher.mods.install import InstallFile, InstallFolder
 from pykotor.tslpatcher.mods.nss import ModificationsNSS
@@ -39,6 +40,7 @@ from pykotor.tslpatcher.mods.twoda import (
     CopyRow2DA,
     Modifications2DA,
     Modify2DA,
+    RowValue,
     RowValue2DAMemory,
     RowValueConstant,
     RowValueHigh,
@@ -52,8 +54,9 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 
 
-class ConfigParser(RawConfigParser):
-    def _read(self, fp, fpname):  # sourcery skip: low-code-quality
+# pylint: disable=all
+class ConfigParser(RawConfigParser):  # noqa
+    def _read(self, fp, fpname):  # sourcery skip: low-code-quality  #  type: ignore
         """Override the _read in RawConfigParser so it doesn't throw exceptions when there's no header defined.
         This override matches TSLPatcher.
         """
@@ -165,12 +168,14 @@ class ConfigParser(RawConfigParser):
             raise e
 
 
-class ConfigReader:
-    def __init__(self, ini: ConfigParser, mod_path: str) -> None:
-        self.ini = ini
-        self.mod_path: str = mod_path
+# pylint: enable=all
 
-        self.config: PatcherConfig | None = None
+
+class ConfigReader:
+    def __init__(self, ini: ConfigParser, mod_path: Path | str) -> None:
+        self.ini = ini
+        self.mod_path: Path = Path(mod_path)
+        self.config: PatcherConfig
 
     @classmethod
     def from_filepath(cls, path: str) -> PatcherConfig:
@@ -187,14 +192,14 @@ class ConfigReader:
                 raise ex2 from ex
 
         ini = ConfigParser()
-        ini.optionxform = str
+        ini.optionxform = str  # type: ignore
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        return ConfigReader(ini).load(config)
+        return ConfigReader(ini, path).load(config)
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
-        self.config = config
+        self.config: PatcherConfig = config
 
         self.load_settings()
         print("Parsing file list from [InstallList]")
@@ -223,32 +228,34 @@ class ConfigReader:
             "ConfirmMessage",
             fallback="",
         )
-        self.config.game_number = self.ini.get(
-            "Settings",
-            "LookupGameNumber",
-            fallback=None,
-        )
+        # Try to get the value and convert it to an integer
+        lookup_game_number = self.ini.get("Settings", "LookupGameNumber", fallback=None)
+        if lookup_game_number is not None:
+            try:
+                self.config.game_number = int(lookup_game_number)
+            except ValueError:
+                # Handle invalid integer conversion here if needed
+                print(f"Invalid game number: {lookup_game_number}")
+        else:
+            self.config.game_number = None
         self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
         self.config.required_message = self.ini.get("Settings", "Required", fallback="")
 
     def load_filelist(self) -> None:
         folders_ini = dict(self.ini["InstallList"].items())
-        for _, foldername in folders_ini.items():
+        for key, foldername in folders_ini.items():
             folder_install = InstallFolder(foldername)
             self.config.install_list.append(folder_install)
 
-            files_ini = dict(self.ini[_].items())
-            for __, filename in files_ini.items():
-                replace_existing = __.lower().startswith("replace")
+            files_ini = dict(self.ini[key].items())
+            for key2, filename in files_ini.items():
+                replace_existing = key2.lower().startswith("replace")
                 file_install = InstallFile(filename, replace_existing)
                 folder_install.files.append(file_install)
 
     def load_tlk_list(self) -> None:
         if "TLKList" not in self.ini:
             return
-        if self.config is None:
-            msg = "Config at self.config not defined!"
-            raise RuntimeError(msg)
 
         dialog_tlk_edits = dict(self.ini["TLKList"].items())
         modifier = None
@@ -264,12 +271,14 @@ class ConfigReader:
                 append_index = int(value)
                 # Don't load the tlk unless actively needed, for performance reasons.
                 if append_tlk_edits is None:
-                    append_path = os.path.join(self.mod_path, "append.tlk")
+                    append_path = self.mod_path / "append.tlk"
                     append_tlk_edits = (
-                        read_tlk(append_path) if os.path.exists(append_path) else TLK()
+                        read_tlk(append_path) if append_path.exists() else TLK()
                     )
                 entry = append_tlk_edits.get(append_index)
-
+                if not entry:
+                    msg = "TLKEntry invalid"
+                    raise ValueError(msg)
                 modifier = ModifyTLK(
                     token_id,
                     entry.text,
@@ -280,9 +289,9 @@ class ConfigReader:
 
             elif key.startswith("file"):  # Handle multiple files e.g. File0=update1.tlk
                 # Load referenced TLK file.
-                tlk_file_path = os.path.join(self.mod_path, value)
+                tlk_file_path = self.mod_path / value
                 tlk_data_entries: TLK | None = None
-                if os.path.exists(tlk_file_path):
+                if tlk_file_path.exists():
                     tlk_data_entries = read_tlk(tlk_file_path)
                 else:
                     msg = f"Cannot find TLK file: '{value}' at key '{key}' in TLKList"
@@ -301,6 +310,9 @@ class ConfigReader:
                     custom_tlk_entries.items()
                 ):  # replace the specified indices e.g. 1977=421
                     entry = tlk_data_entries.get(int(token_id_str))
+                    if not entry:
+                        msg = "TLKEntry invalid"
+                        raise ValueError(msg)
                     modifier = ModifyTLK(
                         int(change_index),
                         entry.text,
@@ -308,9 +320,8 @@ class ConfigReader:
                         is_replacement=True,
                     )
                     self.config.patches_tlk.modifiers.append(modifier)
-            elif (
-                "\\" in key or "/" in key
-            ):  # Handle in-line updates e.g. 2003\Text="Peace is a lie; there is only passion."
+            # Handle in-line updates e.g. 2003\Text="Peace is a lie; there is only passion."
+            elif "\\" in key or "/" in key:
                 delimiter = "\\" if "\\" in key else "/"
                 token_id_str, property_name = key.split(delimiter)
                 token_id = int(token_id_str)
@@ -343,9 +354,6 @@ class ConfigReader:
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:
             return
-        if self.config is None:
-            msg = "Config at self.config not defined!"
-            raise RuntimeError(msg)
 
         files = dict(self.ini["2DAList"].items())
 
@@ -366,9 +374,6 @@ class ConfigReader:
     def load_ssf(self) -> None:
         if "SSFList" not in self.ini:
             return
-        if self.config is None:
-            msg = "Config at self.config not defined!"
-            raise RuntimeError(msg)
 
         configstr_to_ssfsound = {
             "Battlecry 1": SSFSound.BATTLE_CRY_1,
@@ -427,9 +432,6 @@ class ConfigReader:
     def load_gff(self) -> None:
         if "GFFList" not in self.ini:
             return
-        if self.config is None:
-            msg = "Config at self.config not defined!"
-            raise RuntimeError(msg)
 
         files = dict(self.ini["GFFList"].items())
 
@@ -458,9 +460,6 @@ class ConfigReader:
     def load_nss(self) -> None:
         if "CompileList" not in self.ini:
             return
-        if self.config is None:
-            msg = "Config at self.config not defined!"
-            raise RuntimeError(msg)
 
         files = dict(self.ini["CompileList"].items())
         destination = files.pop("!destination", None)
@@ -480,11 +479,10 @@ class ConfigReader:
         if raw_value.startswith("StrRef"):
             token_id = int(raw_value[6:])
             return FieldValueTLKMemory(token_id)
-        elif raw_value.startswith("2DAMEMORY"):
+        if raw_value.startswith("2DAMEMORY"):
             token_id = int(raw_value[9:])
             return FieldValueTLKMemory(token_id)
-        else:
-            return FieldValueConstant(int(raw_value))
+        return FieldValueConstant(int(raw_value))
 
     def modify_field_gff(self, name: str, string_value: str) -> ModifyFieldGFF:
         if string_value.startswith("2DAMEMORY"):
@@ -548,13 +546,31 @@ class ConfigReader:
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
         path = ini_data.get("Path", "")
-        label = ini_data.get("Label")
+        label = ini_data["Label"]
         raw_value = ini_data.get("Value")
+        if raw_value is None:
+            if field_type.return_type() == LocalizedString:
+                stringref = self.field_value_gff(ini_data["StrRef"])
 
-        if raw_value is not None and raw_value.startswith("2DAMEMORY"):
+                value = LocalizedStringDelta(stringref)
+                for substring, text in ini_data.items():
+                    if not substring.startswith("lang"):
+                        continue
+                    substring_id = int(substring[4:])
+                    language, gender = value.substring_pair(substring_id)
+                    value.set(language, gender, text)
+                value = FieldValueConstant(value)
+            elif field_type.return_type() == GFFList:
+                value = FieldValueConstant(GFFList())
+            elif field_type.return_type() == GFFStruct:
+                struct_id = int(ini_data["TypeId"])
+                value = FieldValueConstant(GFFStruct(struct_id))
+            else:
+                raise ValueError(field_type)
+        elif raw_value.startswith("2DAMEMORY"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
-        elif raw_value is not None and raw_value.endswith("StrRef"):
+        elif raw_value.endswith("StrRef"):
             token_id = int(raw_value[6:])
             value = FieldValueTLKMemory(token_id)
 
@@ -570,17 +586,6 @@ class ConfigReader:
             )
         elif field_type.return_type() == ResRef:
             value = FieldValueConstant(ResRef(raw_value))
-        elif field_type.return_type() == LocalizedString:
-            stringref = self.field_value_gff(ini_data["StrRef"])
-
-            value = LocalizedStringDelta(stringref)
-            for substring, text in ini_data.items():
-                if not substring.startswith("lang"):
-                    continue
-                substring_id = int(substring[4:])
-                language, gender = value.substring_pair(substring_id)
-                value.set(language, gender, text)
-            value = FieldValueConstant(value)
         elif field_type.return_type() == Vector3:
             components = [
                 float(axis.replace(",", ".")) for axis in raw_value.split("|")
@@ -591,16 +596,11 @@ class ConfigReader:
                 float(axis.replace(",", ".")) for axis in raw_value.split("|")
             ]
             value = FieldValueConstant(Vector4(*components))
-        elif field_type.return_type() == GFFList:
-            value = FieldValueConstant(GFFList())
-        elif field_type.return_type() == GFFStruct:
-            struct_id = int(ini_data["TypeId"])
-            value = FieldValueConstant(GFFStruct(struct_id))
         else:
             raise ValueError(field_type)
 
         # Get nested fields/struct
-        nested_modifiers = []
+        nested_modifiers: list[ModifyGFF] = []
         for key, x in ini_data.items():
             if not key.startswith("AddField"):
                 continue
@@ -635,23 +635,6 @@ class ConfigReader:
         identifier: str,
         modifiers: dict[str, str],
     ) -> Modify2DA:
-        """The `discern_2da` function takes in various parameters and based on the value of the `key`
-        parameter, it creates and returns an instance of a specific class.
-
-        :param key: The `key` parameter is a string that indicates the type of modification to be performed
-        on a 2DA file. It is used to determine which modification class should be instantiated
-        :type key: str
-        :param identifier: The `identifier` parameter is a string that represents the identifier of the 2DA
-        file. It is used to specify which 2DA file the modification should be applied to
-        :type identifier: str
-        :param modifiers: The `modifiers` parameter is a dictionary that contains additional information or
-        options for the function. It is used to modify the behavior of the function based on the specific
-        requirements or conditions
-        :type modifiers: Dict[str, str]
-        :return: an instance of the `Modify2DA` class, which is determined based on the value of the `key`
-        parameter. The specific type of modification object returned depends on the value of `key` and the
-        provided `modifiers`.
-        """
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
@@ -728,10 +711,10 @@ class ConfigReader:
         self,
         identifier: str,
         modifiers: dict[str, str],
-    ) -> tuple[dict[str, str], dict[int, str], dict[int, str]]:
-        cells: dict[str, str] = {}
-        store_2da: dict[int, str] = {}
-        store_tlk: dict[int, str] = {}
+    ) -> tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]]:
+        cells: dict[str, RowValue] = {}
+        store_2da: dict[int, RowValue] = {}
+        store_tlk: dict[int, RowValue] = {}
 
         for modifier, value in modifiers.items():
             is_store_2da = modifier.startswith("2DAMEMORY")
@@ -775,32 +758,18 @@ class ConfigReader:
     def row_label_2da(self, identifier: str, modifiers: dict[str, str]) -> str | None:
         if "RowLabel" in modifiers:
             return modifiers.pop("RowLabel")
-        elif "NewRowLabel" in modifiers:
+        if "NewRowLabel" in modifiers:
             return modifiers.pop("NewRowLabel")
-        else:
-            return None
+        return None
 
     def column_inserts_2da(
         self,
         identifier: str,
         modifiers: dict[str, str],
-    ) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-        """The function `column_inserts_2da` takes an identifier and a dictionary of modifiers, and returns
-        three dictionaries: `index_insert`, `label_insert`, and `store_2da`.
-
-        :param identifier: The `identifier` parameter is a string that represents an identifier for the
-        column inserts. It is used to uniquely identify the column inserts in the context of the program or
-        system
-        :type identifier: str
-        :param modifiers: The `modifiers` parameter is a dictionary that contains key-value pairs. The keys
-        represent modifiers, and the values represent the corresponding values for those modifiers
-        :type modifiers: Dict[str, str]
-        :return: The function `column_inserts_2da` returns a tuple containing three dictionaries:
-        `index_insert`, `label_insert`, and `store_2da`.
-        """
-        index_insert = {}
-        label_insert = {}
-        store_2da = {}
+    ) -> tuple[dict[int, RowValue], dict[str, RowValue], dict[int, str]]:
+        index_insert: dict[int, RowValue] = {}
+        label_insert: dict[str, RowValue] = {}
+        store_2da: dict[int, str] = {}
 
         for modifier, value in modifiers.items():
             is_store_2da = value.startswith("2DAMEMORY")
@@ -836,38 +805,23 @@ class NamespaceReader:
 
     @classmethod
     def from_filepath(cls, path: str) -> list[PatcherNamespace]:
-        """The function `from_filepath` reads an INI file from a given file path, parses it using
-        `ConfigParser`, and returns a list of `PatcherNamespace` objects.
-
-        :param cls: The parameter `cls` is a reference to the class itself. It is used to call the class
-        method `from_filepath` from within the class or its subclasses
-        :param path: The `path` parameter is a string that represents the file path of the INI file that
-        needs to be loaded
-        :type path: str
-        :return: a list of `PatcherNamespace` objects.
-        """
         ini_file_bytes = BinaryReader.load_file(path)
         ini_text = None
         try:
             ini_text = ini_file_bytes.decode()
-        except UnicodeDecodeError:
+        except UnicodeDecodeError as ex:
             try:
                 # If UTF-8 failed, try 'cp1252' (similar to ANSI)
                 ini_text = ini_file_bytes.decode("cp1252")
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as ex2:
                 # Raise an exception if all decodings failed
-                msg = "Could not decode file"
-                raise Exception(msg)
+                raise ex2 from ex
         ini = ConfigParser()
         ini.optionxform = lambda optionstr: optionstr
         ini.read_string(ini_text)
         return NamespaceReader(ini).load()
 
     def load(self) -> list[PatcherNamespace]:
-        """The function `load` loads data from an INI file and creates a list of `PatcherNamespace` objects
-        based on the loaded data.
-        :return: a list of `PatcherNamespace` objects.
-        """
         namespace_ids = dict(self.ini["Namespaces"].items()).values()
         self.ini = {key.lower(): value for key, value in self.ini.items()}
         namespaces: list[PatcherNamespace] = []

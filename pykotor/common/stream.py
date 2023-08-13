@@ -4,7 +4,7 @@ from __future__ import annotations
 import io
 import struct
 from abc import ABC, abstractmethod
-from pathlib import Path
+from pykotor.tools.path import Path
 from typing import BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4

@@ -10,11 +10,18 @@
     "Bioware",
     "Calo",
     "Carth",
+    "configstr",
     "Cutscene",
+    "DAMEMORY",
     "danm",
+    "defaultmodel",
     "Dodonna",
     "endregion",
     "folderpath",
+    "headtexe",
+    "headtexve",
+    "headtexvve",
+    "headtexvvve",
     "installlog",
     "ITEMPROPERTY",
     "kotor",
@@ -24,6 +31,7 @@
     "Modder",
     "Nihilus",
     "Nord",
+    "normalhead",
     "nwscript",
     "Peragus",
     "placeables",
@@ -39,7 +47,9 @@
     "restypes",
     "Revan",
     "Shaddaa",
+    "soundset",
     "soundsets",
+    "ssfsound",
     "stackoverflow",
     "steamapps",
     "streammusic",
@@ -70,5 +80,13 @@
   "python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": true,
   "python.testing.pytestEnabled": false,
-  "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "*test*.py"]
+  "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "*test*.py"],
+  "cmake.configureOnOpen": false,
+  "pylint.args": ["--disable=C0301,C0103"],
+  "flake8.args": [
+    "--ignore=E501,W503"
+  ],
+  "ruff.args": [
+    "--ignore=D101,D205,PLR5501,PLW2901"
+  ]
 }

@@ -1,6 +1,6 @@
 import re
-from pathlib import Path
 
+from pykotor.tools.path import Path
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 
@@ -8,7 +8,7 @@ from pykotor.tslpatcher.memory import PatcherMemory
 class ModificationsNSS:
     def __init__(self, filename: str, replace_file: bool):
         self.filename: str = filename
-        self.destination: str = str(Path("override", filename))
+        self.destination: str = str(Path("Override", filename))
         self.replace_file: bool = replace_file
 
     def apply(self, nss: list[str], memory: PatcherMemory, logger: PatchLogger) -> None:

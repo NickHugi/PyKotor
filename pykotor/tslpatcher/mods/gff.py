@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
+from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
@@ -76,7 +76,10 @@ class FieldValueTLKMemory(FieldValue):
 class ModifyGFF(ABC):
     @abstractmethod
     def apply(
-        self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger
+        self,
+        container: GFFStruct | GFFList,
+        memory: PatcherMemory,
+        logger: PatchLogger,
     ) -> None:
         ...
 
@@ -103,13 +106,15 @@ class AddFieldGFF(ModifyGFF):
 
     def apply(self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger) -> None:  # type: ignore
         container: GFFStruct | GFFList | None = self._navigate_containers(
-            container, self.path
+            container,
+            self.path,
         )
         if container is None:
             logger.add_warning(
                 "Parent field at '{}' does not exist or is not a List or Struct. Unable to add new Field '{}'...".format(
-                    self.path, self.label
-                )
+                    self.path,
+                    self.label,
+                ),
             )
             return
 
@@ -127,7 +132,7 @@ class AddFieldGFF(ModifyGFF):
                 return container.add(value.struct_id)
             return None
 
-        def set_list():
+        def set_list() -> GFFList:
             return container.set_list(self.label, value)
 
         func_map = {
@@ -143,13 +148,17 @@ class AddFieldGFF(ModifyGFF):
             GFFFieldType.Double: lambda: container.set_double(self.label, value),
             GFFFieldType.String: lambda: container.set_string(self.label, value),
             GFFFieldType.ResRef: lambda: container.set_resref(self.label, value),
-            GFFFieldType.LocalizedString: lambda: set_locstring(),
+            GFFFieldType.LocalizedString: lambda: set_locstring(),  # pylint: disable=unnecessary-lambda
             GFFFieldType.Vector3: lambda: container.set_vector3(self.label, value),
             GFFFieldType.Vector4: lambda: container.set_vector4(self.label, value),
-            GFFFieldType.Struct: lambda: set_struct(),
-            GFFFieldType.List: lambda: set_list(),
+            GFFFieldType.Struct: lambda: set_struct(),  # pylint: disable=unnecessary-lambda
+            GFFFieldType.List: lambda: set_list(),  # pylint: disable=unnecessary-lambda
         }
         container = func_map[self.field_type]()
+
+        if not isinstance(container, GFFStruct | GFFList):
+            msg = "container not a valid type"
+            raise TypeError(msg)
 
         if self.index_to_list_token is not None and isinstance(container, GFFList):
             memory.memory_2da[self.index_to_list_token] = str(len(container) - 1)
@@ -158,9 +167,12 @@ class AddFieldGFF(ModifyGFF):
             add_field.apply(container, memory, logger)
 
     def _navigate_containers(
-        self, container: GFFStruct | GFFList, path: str
+        self,
+        container: GFFStruct | GFFList | None,
+        path: str | Path,
     ) -> GFFStruct | None:
-        hierarchy = [container for container in path.split("\\") if container != ""]
+        path = Path(path)
+        hierarchy = [part for part in path.parts if part]
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
@@ -177,14 +189,15 @@ class ModifyFieldGFF(ModifyGFF):
         self.value: FieldValue = value
 
     def apply(
-        self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger
+        self,
+        container: GFFStruct | GFFList,
+        memory: PatcherMemory,
+        logger: PatchLogger,
     ) -> None:
         navigationtuple = self._navigate_containers(container, self.path)
         if navigationtuple is None:
             logger.add_warning(
-                "Unable to find a field label matching '{}', skipping...".format(
-                    self.path
-                )
+                f"Unable to find a field label matching '{self.path}', skipping...",
             )
             return
 
@@ -212,22 +225,26 @@ class ModifyFieldGFF(ModifyGFF):
             GFFFieldType.Double: lambda: container.set_double(label, value),
             GFFFieldType.String: lambda: container.set_string(label, value),
             GFFFieldType.ResRef: lambda: container.set_resref(label, value),
-            GFFFieldType.LocalizedString: lambda: set_locstring(),
+            GFFFieldType.LocalizedString: lambda: set_locstring(),  # pylint: disable=unnecessary-lambda
             GFFFieldType.Vector3: lambda: container.set_vector3(label, value),
             GFFFieldType.Vector4: lambda: container.set_vector4(label, value),
         }
         func_map[field_type]()
 
     def _navigate_containers(
-        self, container: GFFStruct | GFFList, path: str
+        self,
+        container: GFFStruct | GFFList | object,
+        path: Path | str,
     ) -> tuple[GFFStruct, str, GFFFieldType] | None:
-        hierarchy, label = path.split("\\")[:-1], path.split("\\")[-1:][0]
+        path = Path(path)
+        hierarchy = list(path.parents)[::-1][1:]  # Removing the root
+        label = path.name
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
-                container = container.acquire(step, None, (GFFStruct, GFFList))
+                container = container.acquire(step.name, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
-                container = container.at(int(step))
+                container = container.at(int(step.name))
 
         if container is None:
             return None
@@ -250,7 +267,7 @@ class ModificationsGFF:
         self.filename: str = filename
         self.replace_file: bool = replace_file
         self.destination: str = (
-            destination if destination is not None else str(Path("override", filename))
+            destination if destination is not None else str(Path("Override", filename))
         )
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 

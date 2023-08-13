@@ -87,14 +87,12 @@ class TestConfigReader(TestCase):
             RowLabel=1
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -124,14 +122,12 @@ class TestConfigReader(TestCase):
             LabelIndex=3
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -165,14 +161,12 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -207,14 +201,12 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -252,14 +244,12 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -285,14 +275,12 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -322,14 +310,12 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -359,14 +345,12 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -400,14 +384,12 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -447,14 +429,12 @@ class TestConfigReader(TestCase):
             RowLabel=1
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -484,14 +464,12 @@ class TestConfigReader(TestCase):
             LabelIndex=3
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -526,14 +504,12 @@ class TestConfigReader(TestCase):
             RowIndex=0
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -565,14 +541,12 @@ class TestConfigReader(TestCase):
             RowIndex=0
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -603,14 +577,12 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -645,14 +617,12 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
@@ -697,14 +667,12 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=I2
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
@@ -734,14 +702,12 @@ class TestConfigReader(TestCase):
             I2=StrRef5
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
@@ -776,14 +742,12 @@ class TestConfigReader(TestCase):
             L2=StrRef5
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
@@ -816,14 +780,12 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=I2
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
@@ -846,14 +808,12 @@ class TestConfigReader(TestCase):
             [test2.ssf]
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         self.assertFalse(config.patches_ssf[0].replace_file)
         self.assertTrue(config.patches_ssf[1].replace_file)
@@ -870,14 +830,12 @@ class TestConfigReader(TestCase):
             Battlecry 2=456
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, NoTokenUsage)
@@ -899,14 +857,12 @@ class TestConfigReader(TestCase):
             Battlecry 2=2DAMEMORY6
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsage2DA)
@@ -928,14 +884,12 @@ class TestConfigReader(TestCase):
             Battlecry 2=StrRef6
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsageTLK)
@@ -983,14 +937,12 @@ class TestConfigReader(TestCase):
             Poisoned=28
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_battlecry1 = config.patches_ssf[0].modifiers.pop(0)
         mod_battlecry2 = config.patches_ssf[0].modifiers.pop(0)
@@ -1064,14 +1016,12 @@ class TestConfigReader(TestCase):
             ClassList\\0\\Class=123
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1088,14 +1038,12 @@ class TestConfigReader(TestCase):
             SomeInt=123
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1114,14 +1062,12 @@ class TestConfigReader(TestCase):
             SomeString=abc
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1140,14 +1086,12 @@ class TestConfigReader(TestCase):
             SomeVector=1|2|3
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1166,14 +1110,12 @@ class TestConfigReader(TestCase):
             SomeVector=1|2|3|4
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1194,14 +1136,12 @@ class TestConfigReader(TestCase):
             LocString(lang3)=world
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1244,14 +1184,12 @@ class TestConfigReader(TestCase):
             SomeField=StrRef2
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1277,14 +1215,12 @@ class TestConfigReader(TestCase):
             SomeField=2DAMEMORY12
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
@@ -1353,14 +1289,12 @@ class TestConfigReader(TestCase):
             Value=123
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1435,14 +1369,12 @@ class TestConfigReader(TestCase):
             Value=1.23
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1475,14 +1407,12 @@ class TestConfigReader(TestCase):
             Value=abc
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1508,14 +1438,12 @@ class TestConfigReader(TestCase):
             Value=1|2|3
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1541,14 +1469,12 @@ class TestConfigReader(TestCase):
             Value=1|2|3|4
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1574,14 +1500,12 @@ class TestConfigReader(TestCase):
             Value=abc
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1616,14 +1540,12 @@ class TestConfigReader(TestCase):
             StrRef=StrRef8
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1669,14 +1591,12 @@ class TestConfigReader(TestCase):
             Value=123
             """
 
-        tlk = TLK()
-
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
@@ -1715,14 +1635,13 @@ class TestConfigReader(TestCase):
             2DAMEMORY5=ListIndex
             """
         # TODO: Add field to struct
-        tlk = TLK()
 
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)

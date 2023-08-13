@@ -156,10 +156,10 @@ class Modify2DA(ABC):
         """This will split the modifiers dictionary into a tuple containing three values: The dictionary mapping column
         headers to new values, the 2DA memory values if not available, and the row label or None.
         """
-        new_values = {}
-        memory_values = {}
-        row_label = None
-        new_row_label = None
+        new_values: dict[str, str] = {}
+        memory_values: dict[int, str] = {}
+        row_label: str | None = None
+        new_row_label: str | None = None
 
         # Update special values
         for header, value in modifiers.items():
@@ -287,7 +287,9 @@ class AddRow2DA(Modify2DA):
                 )
 
             exclusive_value = self.cells[self.exclusive_column].value(
-                memory, twoda, None
+                memory,
+                twoda,
+                None,
             )
             for row in twoda:
                 if row.get_string(self.exclusive_column) == exclusive_value:
@@ -300,7 +302,7 @@ class AddRow2DA(Modify2DA):
             index = twoda.add_row(row_label, {})
             self._row = target_row = twoda.get_row(index)
             target_row.update_values(
-                self._unpack(self.cells, memory, twoda, target_row)
+                self._unpack(self.cells, memory, twoda, target_row),
             )
         else:
             cells = self._unpack(self.cells, memory, twoda, target_row)
@@ -366,7 +368,9 @@ class CopyRow2DA(Modify2DA):
                 )
 
             exclusive_value = self.cells[self.exclusive_column].value(
-                memory, twoda, None
+                memory,
+                twoda,
+                None,
             )
             for row in twoda:
                 if row.get_string(self.exclusive_column) == exclusive_value:

@@ -1,9 +1,8 @@
 import argparse
-import os
 import sys
 from enum import IntEnum
-from pathlib import Path
 
+from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import ModInstaller
 from pykotor.tslpatcher.reader import NamespaceReader
 
@@ -93,16 +92,10 @@ def main():
     installer.install()
 
     print("Writing log file 'installlog.txt'...")
-    log_file_path = os.path.join(tslpatchdata_path, "installlog.txt")
-    with open(log_file_path, "w", encoding="utf-8") as log_file:
-        for note in installer.log.notes:
-            log_file.write(f"{note.message}\n")
-
-        for warning in installer.log.warnings:
-            log_file.write(f"Warning: {warning.message}\n")
-
-        for error in installer.log.errors:
-            log_file.write(f"Error: {error.message}\n")
+    log_file_path = tslpatchdata_path / "installlog.txt"
+    with log_file_path.open("w", encoding="utf-8") as log_file:
+        for log in installer.log.all_logs:
+            log_file.write(f"{log.message}\n")
 
     print("Logging finished")
     sys.exit(ExitCode.SUCCESS)

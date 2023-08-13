@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import Path
 from typing import NamedTuple
 
 from pykotor.common.language import Language

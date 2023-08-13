@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import Path
 
 from setuptools import find_namespace_packages, setup
 

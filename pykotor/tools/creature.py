@@ -54,7 +54,7 @@ def get_body_model(
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
             armor_uti = read_uti(
-                installation.resource(armor_resref, ResourceType.UTI).data
+                installation.resource(armor_resref, ResourceType.UTI).data,
             )
             armor_variation = (
                 baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
@@ -71,7 +71,7 @@ def get_body_model(
             model_column = "model" + armor_variation
             body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
             override_texture = appearance.get_row(utc.appearance_id).get_string(
-                tex_column
+                tex_column,
             ) + str(armor_uti.texture_variation).rjust(2, "0")
 
     if body_model == "":
@@ -140,12 +140,16 @@ def get_weapon_models(
 
 
 # TODO Rename this here and in `get_weapon_models`
-def _extracted_from_get_weapon_models_37(installation, arg1, baseitems):
-    rhand_uti = read_uti(installation.resource(arg1, ResourceType.UTI).data)
-    default_model = baseitems.get_row(rhand_uti.base_item).get_string("defaultmodel")
+def _extracted_from_get_weapon_models_37(
+    installation: Installation,
+    hand_resref: str,
+    baseitems: TwoDA | None,
+):
+    hand_uti = read_uti(installation.resource(hand_resref, ResourceType.UTI).data)
+    default_model = baseitems.get_row(hand_uti.base_item).get_string("defaultmodel")
     return default_model.replace(
         "001",
-        str(rhand_uti.model_variation).rjust(3, "0"),
+        str(hand_uti.model_variation).rjust(3, "0"),
     )
 
 

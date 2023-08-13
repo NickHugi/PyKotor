@@ -45,10 +45,9 @@ from pykotor.tools.misc import (
 from pykotor.tools.model import list_lightmaps, list_textures
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
+    from pykotor.tools.path import Path
 
 T = TypeVar("T")
 SEARCH_ORDER = [
@@ -74,7 +73,7 @@ class Module:
                 Capsule(installation.module_path() / module)
                 for module in installation.module_names()
                 if root in module.lower()
-            ]
+            ],
         )
 
         for capsule in self._capsules:
@@ -106,7 +105,9 @@ class Module:
         """
         root = case_insensitive_replace(
             case_insensitive_replace(
-                case_insensitive_replace(str(filepath), ".rim", ""), ".erf", ""
+                case_insensitive_replace(str(filepath), ".rim", ""),
+                ".erf",
+                "",
             ),
             ".mod",
             "",
@@ -137,13 +138,17 @@ class Module:
         for resource in self._installation.chitin_resources():
             if resource.resname() == self._id:
                 self.add_locations(
-                    resource.resname(), resource.restype(), [resource.filepath()]
+                    resource.resname(),
+                    resource.restype(),
+                    [resource.filepath()],
                 )
         for directory in self._installation.override_list():
             for resource in self._installation.override_resources(directory):
                 if resource.resname() == self._id:
                     self.add_locations(
-                        resource.resname(), resource.restype(), [resource.filepath()]
+                        resource.resname(),
+                        resource.restype(),
+                        [resource.filepath()],
                     )
 
         # Any resource linked in the GIT not present in the module files
@@ -216,7 +221,7 @@ class Module:
             )
         # Also try get paths for textures in models
         look_for = []
-        textures = set()
+        textures: set[str] = set()
         for model in self.models():
             with suppress(Exception):
                 data = model.data()
@@ -259,7 +264,9 @@ class Module:
         filename = f"{resname}.{filename_ext}"
         if filename not in self.resources:
             self.resources[filename] = ModuleResource(
-                resname, restype, self._installation
+                resname,
+                restype,
+                self._installation,
             )
         self.resources[filename].add_locations(locations)
 
@@ -275,22 +282,30 @@ class Module:
         return self.resources[filename] if filename in self.resources else None
 
     def layout(self) -> ModuleResource[LYT]:
-        for resource in self.resources.values():
-            if (
-                resource.resname().lower() == self._id
-                and resource.restype() == ResourceType.LYT
-            ):
-                return resource
-        return None
+        return next(
+            (
+                resource
+                for resource in self.resources.values()
+                if (
+                    resource.resname().lower() == self._id
+                    and resource.restype() == ResourceType.LYT
+                )
+            ),
+            None,
+        )
 
     def vis(self) -> ModuleResource[VIS]:
-        for resource in self.resources.values():
-            if (
-                resource.resname().lower() == self._id
-                and resource.restype() == ResourceType.VIS
-            ):
-                return resource
-        return None
+        return next(
+            (
+                resource
+                for resource in self.resources.values()
+                if (
+                    resource.resname().lower() == self._id
+                    and resource.restype() == ResourceType.VIS
+                )
+            ),
+            None,
+        )
 
     def are(
         self,
@@ -299,13 +314,17 @@ class Module:
         matching resource name and type.
         :return: a ModuleResource object of type ARE.
         """
-        for resource in self.resources.values():
-            if (
-                resource.resname().lower() == self._id
-                and resource.restype() == ResourceType.ARE
-            ):
-                return resource
-        return None
+        return next(
+            (
+                resource
+                for resource in self.resources.values()
+                if (
+                    resource.resname().lower() == self._id
+                    and resource.restype() == ResourceType.ARE
+                )
+            ),
+            None,
+        )
 
     def git(
         self,
@@ -315,13 +334,17 @@ class Module:
         :return: The code is returning a resource of type GIT from the self.resources dictionary. The
         resource is identified by its filename and is matched based on its resname and restype.
         """
-        for resource in self.resources.values():
-            if (
-                resource.resname().lower() == self._id
-                and resource.restype() == ResourceType.GIT
-            ):
-                return resource
-        return None
+        return next(
+            (
+                resource
+                for resource in self.resources.values()
+                if (
+                    resource.resname().lower() == self._id
+                    and resource.restype() == ResourceType.GIT
+                )
+            ),
+            None,
+        )
 
     def pth(
         self,
@@ -329,13 +352,17 @@ class Module:
         """The function `pth` returns a `ModuleResource` object with a specific resname and restype.
         :return: a ModuleResource object of type PTH.
         """
-        for resource in self.resources.values():
-            if (
-                resource.resname().lower() == self._id
-                and resource.restype() == ResourceType.PTH
-            ):
-                return resource
-        return None
+        return next(
+            (
+                resource
+                for resource in self.resources.values()
+                if (
+                    resource.resname().lower() == self._id
+                    and resource.restype() == ResourceType.PTH
+                )
+            ),
+            None,
+        )
 
     def info(
         self,
@@ -343,13 +370,17 @@ class Module:
         """The function returns the resource object with the name "module" and the type ResourceType.IFO.
         :return: a ModuleResource object of type IFO.
         """
-        for resource in self.resources.values():
-            if (
-                resource.resname().lower() == "module"
-                and resource.restype() == ResourceType.IFO
-            ):
-                return resource
-        return None
+        return next(
+            (
+                resource
+                for resource in self.resources.values()
+                if (
+                    resource.resname().lower() == "module"
+                    and resource.restype() == ResourceType.IFO
+                )
+            ),
+            None,
+        )
 
     def creature(
         self,
@@ -655,9 +686,9 @@ class ModuleResource(Generic[T]):
         res = self.resource()
         if res is None:
             return None
-        elif isinstance(res, UTC):
+        if isinstance(res, UTC):
             return f"{self._installation.string(res.first_name)} {self._installation.string(res.last_name)}"
-        elif isinstance(res, UTP):
+        if isinstance(res, UTP):
             return self._installation.string(res.name)
         if isinstance(res, UTD):
             return self._installation.string(res.name)
@@ -687,15 +718,16 @@ class ModuleResource(Generic[T]):
         if self._active is None:
             msg = f"No file is currently active for resource '{self.resname}.{self._restype.extension}'."
             raise ValueError(msg)
-        elif is_capsule_file(self._active.name):
+        if is_capsule_file(self._active.name):
             capsule = Capsule(self._active)
             return capsule.resource(self._resname, self._restype)
-        elif is_bif_file(self._active.name):
+        if is_bif_file(self._active.name):
             return self._installation.resource(
-                self._resname, self._restype, [SearchLocation.CHITIN]
+                self._resname,
+                self._restype,
+                [SearchLocation.CHITIN],
             ).data
-        else:
-            return BinaryReader.load_file(self._active)
+        return BinaryReader.load_file(self._active)
 
     def resource(self) -> T | None:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
@@ -735,7 +767,9 @@ class ModuleResource(Generic[T]):
                 self._resource = conversions[self._restype](data)
             elif is_bif_file(self._active.name):
                 data = self._installation.resource(
-                    self._resname, self._restype, [SearchLocation.CHITIN]
+                    self._resname,
+                    self._restype,
+                    [SearchLocation.CHITIN],
                 ).data
                 self._resource = conversions[self._restype](data)
             else:
@@ -830,7 +864,11 @@ class ModuleResource(Generic[T]):
         if self._active is None:
             msg = "No active file selected for resource '{self._resname}.{self._restype.extension}'"
             raise ValueError(msg)
-        elif is_erf_or_mod_file(self._active.name):
+        if is_bif_file(self._active.name):
+            msg = "Cannot save file to BIF."
+            raise ValueError(msg)
+
+        if is_erf_or_mod_file(self._active.name):
             erf = read_erf(self._active)
             erf.erf_type = (
                 ERFType.ERF if is_erf_file(self._active.name) else ERFType.MOD
@@ -849,8 +887,5 @@ class ModuleResource(Generic[T]):
                 conversions[self._restype](self.resource()),
             )
             write_rim(rim, self._active)
-        elif is_bif_file(self._active.name):
-            msg = "Cannot save file to BIF."
-            raise ValueError(msg)
         else:
             BinaryWriter.dump(self._active, conversions[self._restype](self.resource()))

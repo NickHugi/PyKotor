@@ -5,7 +5,6 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import IntEnum
-from pathlib import Path
 from typing import NamedTuple, Optional
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -25,6 +24,7 @@ from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import sound
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
+from pykotor.tools.path import Path
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -149,7 +149,7 @@ class Installation:
             The path to the override folder.
         """
         return self._find_resource_folderpath(
-            "override",
+            "Override",
             "Could not find override folder in '{}'.",
         )
 
@@ -216,7 +216,7 @@ class Installation:
     def _find_resource_folderpath(self, foldername: str, error_msg: str):
         module_path = self._path
         for folder in os.listdir(self._path):
-            if os.path.isdir(module_path / folder) and folder.lower() == foldername:
+            if (module_path / folder).is_dir() and folder.lower() == foldername:
                 module_path = module_path / folder
         if module_path == self._path:
             raise ValueError(error_msg.format(self._path))
@@ -301,21 +301,25 @@ class Installation:
         self._override = {}
         override_path = self.override_path()
 
-        for path, _subdirs, files in os.walk(override_path):
-            directory = str(Path(path)).replace(str(override_path), "")
-            path = (path if path.endswith("/") else path + "/").replace("\\", "/")
-            self._override[directory] = []
+        for current_path, _, files in os.walk(override_path):
+            current_path_obj = Path(current_path)
+            relative_dir = str(current_path_obj.relative_to(override_path))
+
+            self._override[relative_dir] = []
+
             for file in files:
-                file_path = Path(path, file)
-                override_subdir = str(file_path.parent)
-                self._override[override_subdir] = []
+                full_file_path = current_path_obj / file
                 with suppress(Exception):
-                    name, ext = file.split(".", 1)
-                    size = os.path.getsize(path + file)
+                    name, ext = file.rsplit(".", 1)
+                    size = full_file_path.stat().st_size
                     resource = FileResource(
-                        name, ResourceType.from_extension(ext), size, 0, path + file
+                        name,
+                        ResourceType.from_extension(ext),
+                        size,
+                        0,
+                        str(full_file_path),
                     )
-                    self._override[directory].append(resource)
+                    self._override[relative_dir].append(resource)
 
     def reload_override(self, directory: str) -> None:
         """Reloads the list of resources in subdirectory of the override folder linked to the Installation.
@@ -1312,9 +1316,9 @@ class Installation:
         for file in self.module_path().iterdir():
             filepath = self.module_path() / file
             if is_mod_file(filepath.name) and filepath.exists():
-                os.remove(filepath)
+                filepath.unlink()
 
         for file in self.override_path().iterdir():
             filepath = self.override_path() / file
             if filepath.exists():
-                os.remove(filepath)
+                filepath.unlink()

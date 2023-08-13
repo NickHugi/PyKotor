@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import Path
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier

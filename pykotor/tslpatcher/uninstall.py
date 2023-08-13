@@ -1,10 +1,8 @@
-import os
-from pathlib import Path
-
 from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tlk import read_tlk
 from pykotor.tools.misc import is_mod_file
+from pykotor.tools.path import Path
 
 
 def uninstall_all_mods(installation: Installation):
@@ -22,9 +20,9 @@ def uninstall_all_mods(installation: Installation):
 
     # Remove all override files
     for file_path in override_path.iterdir():
-        os.remove(file_path)
+        file_path.unlink()
 
     # Remove any .MOD files
     for file_path in modules_path.iterdir():
         if is_mod_file(file_path.name):
-            os.remove(file_path)
+            file_path.unlink()

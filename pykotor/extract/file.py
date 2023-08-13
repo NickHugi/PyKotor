@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from pykotor.tools.path import Path
 from typing import NamedTuple
 
 from pykotor.resource.type import ResourceType

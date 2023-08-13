@@ -1,6 +1,5 @@
 from configparser import ConfigParser
 from enum import IntEnum
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -17,6 +16,7 @@ from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
+from pykotor.tools.path import Path
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
@@ -67,9 +67,10 @@ class PatcherConfig:
         self.patches_nss: list[ModificationsNSS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
-    def load(self, ini_text: str, mod_path: str) -> None:
+    def load(self, ini_text: str, mod_path: Path | str) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
 
+        mod_path: Path = Path(mod_path)
         ini = ConfigParser()
         ini.optionxform = str
         ini.read_string(ini_text)
@@ -122,14 +123,13 @@ class ModInstaller:
             ini_text = None
             try:
                 ini_text = ini_file_bytes.decode()
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as ex:
                 try:
                     # If UTF-8 failed, try 'cp1252' (similar to ANSI)
                     ini_text = ini_file_bytes.decode("cp1252")
-                except UnicodeDecodeError as e:
+                except UnicodeDecodeError as ex2:
                     # Raise an exception if all decodings failed
-                    msg = "Could not decode file"
-                    raise Exception(msg) from e
+                    raise ex2 from ex
             self._config = PatcherConfig()
             self._config.load(ini_text, self.mod_path)
 
@@ -170,7 +170,7 @@ class ModInstaller:
 
             self.log.add_note(f"Patching '{patch.filename}'")
             patch.apply(twoda, memory)
-            write_2da(twoda, str(self.output_path / "override" / patch.filename))
+            write_2da(twoda, str(self.output_path / "Override" / patch.filename))
 
             self.log.complete_patch()
 
@@ -187,7 +187,7 @@ class ModInstaller:
 
             self.log.add_note(f"Patching '{patch.filename}'")
             patch.apply(soundset, memory)
-            write_ssf(soundset, self.output_path / "override" / patch.filename)
+            write_ssf(soundset, self.output_path / "Override" / patch.filename)
 
             self.log.complete_patch()
 
