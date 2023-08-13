@@ -57,6 +57,7 @@
     "isglobal",
     "ITEMPROPERTY",
     "kotor",
+    "lightmap",
     "localizedstring",
     "locstring",
     "loopend",
@@ -144,7 +145,7 @@
   "cmake.configureOnOpen": false,
   "pylint.args": ["--disable=C0301,C0103"],
   "flake8.args": [
-    "--ignore=E501,W503"
+    "--ignore=E501,W503,E203"
   ],
   "ruff.args": [
     "--ignore=D101,D205,PLR5501,PLW2901"

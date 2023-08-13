@@ -1506,7 +1506,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
     def seek(
         self,
-        position,
+        position: int,
     ) -> None:
         """Moves the stream pointer to the byte offset.
 
@@ -1758,7 +1758,7 @@ class BinaryWriterBytearray(BinaryWriter):
         value: Vector3,
         *,
         big: bool = False,
-    ) -> None:
+    ) -> None:  # sourcery skip: class-extract-method
         """Writes three 32-bit floating point numbers to the stream.
 
         Args:
@@ -1766,7 +1766,18 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._write_generic_vector(big, value)
+        self._ba[self._position : self._position + 4] = struct.pack(
+            _endian_char(big) + "f",
+            value.x,
+        )
+        self._ba[self._position + 4 : self._position + 8] = struct.pack(
+            _endian_char(big) + "f",
+            value.y,
+        )
+        self._ba[self._position + 8 : self._position + 12] = struct.pack(
+            _endian_char(big) + "f",
+            value.z,
+        )
         self._position += 12
 
     def write_vector4(
@@ -1782,15 +1793,6 @@ class BinaryWriterBytearray(BinaryWriter):
             value: The value to be written.
             big: Write bytes as big endian.
         """
-        self._write_generic_vector(big, value)
-        self._ba[self._position + 12 : self._position + 16] = struct.pack(
-            _endian_char(big) + "f",
-            value.w,
-        )
-        self._position += 16
-
-    # TODO Rename this here and in `write_vector3` and `write_vector4`
-    def _write_generic_vector(self, big: bool, value: Vector3 | Vector4):
         self._ba[self._position : self._position + 4] = struct.pack(
             _endian_char(big) + "f",
             value.x,
@@ -1803,6 +1805,11 @@ class BinaryWriterBytearray(BinaryWriter):
             _endian_char(big) + "f",
             value.z,
         )
+        self._ba[self._position + 12 : self._position + 16] = struct.pack(
+            _endian_char(big) + "f",
+            value.w,
+        )
+        self._position += 16
 
     def write_bytes(
         self,
@@ -1869,7 +1876,7 @@ class BinaryWriterBytearray(BinaryWriter):
     def write_line(
         self,
         indent: int,
-        *args,
+        *args: list[float] | list[str],
     ) -> None:
         """Writes a line with specified indentation and array of values that are separated by whitespace.
 
@@ -1886,7 +1893,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
         self._extracted_from_write_line_42(line, "ascii")
 
-    # TODO Rename this here and in `write_string` and `write_line`
+    # TODO: Rename this here and in `write_string` and `write_line`
     def _extracted_from_write_line_42(self, value: str, encoding: str):
         encoded = value.encode(encoding)
         self._ba[self._position : self._position + len(encoded)] = encoded

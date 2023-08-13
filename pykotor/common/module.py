@@ -153,11 +153,12 @@ class Module:
 
         # Any resource linked in the GIT not present in the module files
         original = self.git().active()
-        look_for = []
+        look_for: list[ResourceIdentifier] = []
         for location in self.git().locations():
             self.git().activate(location)
             self.git().resource()
             git = self.git().resource()
+            assert git is not None
             look_for.extend(
                 [
                     ResourceIdentifier(creature.resref.get(), ResourceType.UTC)
@@ -199,6 +200,7 @@ class Module:
         for location in self.layout().locations():
             self.layout().activate(location)
             layout = self.layout().resource()
+            assert layout is not None
             for room in layout.rooms:
                 look_for.extend(
                     (
@@ -386,13 +388,6 @@ class Module:
         self,
         resname: str,
     ) -> ModuleResource[UTC] | None:
-        """The function "creature" searches for a npc character type and returns it if found.
-
-        :param resname: The `resname` parameter is a string that represents the name of the resource
-        :type resname: str
-        :return: a ModuleResource object of type UTC if the resname matches the resource's resname and
-        the resource's restype is ResourceType.UTC. If no matching resource is found, it returns None.
-        """
         return next(
             (
                 resource

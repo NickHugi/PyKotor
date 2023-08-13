@@ -223,7 +223,7 @@ class GFFStruct:
 
     def __getitem__(
         self,
-        item,
+        item: str,
     ):
         """Returns the value of the specified field."""
         return self._fields[item].value() if isinstance(item, str) else NotImplemented
