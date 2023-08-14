@@ -18,9 +18,8 @@ from pykotor.tslpatcher.mods.gff import (
     FieldValueConstant,
     FieldValueTLKMemory,
     FieldValue2DAMemory,
-    ModifyGFF,
 )
-from pykotor.tslpatcher.mods.tlk import ModifyTLK
+from pykotor.tslpatcher.mods.ssf import ModifySSF
 from pykotor.tslpatcher.mods.twoda import (
     ChangeRow2DA,
     TargetType,
@@ -61,9 +60,9 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
 
         ConfigReader(ini, tlk).load(config)
-        tlk_mod0: ModifyTLK = config.patches_tlk.modifiers.pop(0)
-        tlk_mod1: ModifyTLK = config.patches_tlk.modifiers.pop(0)
-        tlk_mod2: ModifyTLK = config.patches_tlk.modifiers.pop(0)
+        tlk_mod0 = config.patches_tlk.modifiers.pop(0)
+        tlk_mod1 = config.patches_tlk.modifiers.pop(0)
+        tlk_mod2 = config.patches_tlk.modifiers.pop(0)
 
         self.assertEqual(tlk_mod0.text, "Num3")
         self.assertEqual(tlk_mod1.text, "Num2")
@@ -130,17 +129,17 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_INDEX, mod_2da_0.target.target_type)
         self.assertEqual(1, mod_2da_0.target.value)
 
         # noinspection PyTypeChecker
-        mod_2da_1: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_1: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_LABEL, mod_2da_1.target.target_type)
         self.assertEqual("2", mod_2da_1.target.value)
 
         # noinspection PyTypeChecker
-        mod_2da_2: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_2: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.LABEL_COLUMN, mod_2da_2.target.target_type)
         self.assertEqual("3", mod_2da_2.target.value)
 
@@ -169,18 +168,18 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        store_2da_0a: RowValueRowIndex = mod_2da_0.store_2da[0]
+        store_2da_0a: RowValueRowIndex = mod_2da_0.store_2da[0]  # type: ignore
         self.assertIsInstance(store_2da_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
-        store_2da_0b: RowValueRowLabel = mod_2da_0.store_2da[1]
+        store_2da_0b: RowValueRowLabel = mod_2da_0.store_2da[1]  # type: ignore
         self.assertIsInstance(store_2da_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
-        store_2da_0c: RowValueRowCell = mod_2da_0.store_2da[2]
+        store_2da_0c: RowValueRowCell = mod_2da_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_2da_0c, RowValueRowCell)
         self.assertEqual("label", store_2da_0c.column)
 
@@ -209,20 +208,20 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        cell_0_label: RowValueConstant = mod_2da_0.cells["label"]
+        cell_0_label: RowValueConstant = mod_2da_0.cells["label"]  # type: ignore
         self.assertIsInstance(cell_0_label, RowValueConstant)
         self.assertEqual("Test123", cell_0_label.string)
 
         # noinspection PyTypeChecker
-        cell_0_dialog: RowValueTLKMemory = mod_2da_0.cells["dialog"]
+        cell_0_dialog: RowValueTLKMemory = mod_2da_0.cells["dialog"]  # type: ignore
         self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
         self.assertEqual(4, cell_0_dialog.token_id)
 
         # noinspection PyTypeChecker
-        cell_0_appearance: RowValue2DAMemory = mod_2da_0.cells["appearance"]
+        cell_0_appearance: RowValue2DAMemory = mod_2da_0.cells["appearance"]  # type: ignore
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
 
@@ -252,11 +251,11 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("add_row_0", mod_0.identifier)
 
         # noinspection PyTypeChecker
-        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("add_row_1", mod_1.identifier)
 
     def test_2da_addrow_exclusivecolumn(self):
@@ -283,13 +282,13 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, AddRow2DA)
         self.assertEqual("add_row_0", mod_0.identifier)
         self.assertEqual("label", mod_0.exclusive_column)
 
         # noinspection PyTypeChecker
-        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, AddRow2DA)
         self.assertEqual("add_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.exclusive_column)
@@ -318,13 +317,13 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, AddRow2DA)
         self.assertEqual("add_row_0", mod_0.identifier)
         self.assertEqual("123", mod_0.row_label)
 
         # noinspection PyTypeChecker
-        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, AddRow2DA)
         self.assertEqual("add_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.row_label)
@@ -353,18 +352,18 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        store_0a: RowValueRowIndex = mod_0.store_2da[0]
+        store_0a: RowValueRowIndex = mod_0.store_2da[0]  # type: ignore
         self.assertIsInstance(store_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
-        store_0b: RowValueRowLabel = mod_0.store_2da[1]
+        store_0b: RowValueRowLabel = mod_0.store_2da[1]  # type: ignore
         self.assertIsInstance(store_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
-        store_0c: RowValueRowCell = mod_0.store_2da[2]
+        store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_0c, RowValueRowCell)
         self.assertEqual("label", store_0c.column)
 
@@ -392,20 +391,20 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        cell_0_label: RowValueConstant = mod_0.cells["label"]
+        cell_0_label: RowValueConstant = mod_0.cells["label"]  # type: ignore
         self.assertIsInstance(cell_0_label, RowValueConstant)
         self.assertEqual("Test123", cell_0_label.string)
 
         # noinspection PyTypeChecker
-        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]
+        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]  # type: ignore
         self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
         self.assertEqual(4, cell_0_dialog.token_id)
 
         # noinspection PyTypeChecker
-        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
+        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]  # type: ignore
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
 
@@ -437,11 +436,11 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_0", mod_0.identifier)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_1", mod_1.identifier)
 
     def test_2da_copyrow_target(self):
@@ -472,17 +471,17 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_INDEX, mod_0.target.target_type)
         self.assertEqual(1, mod_0.target.value)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_LABEL, mod_1.target.target_type)
         self.assertEqual("2", mod_1.target.value)
 
         # noinspection PyTypeChecker
-        mod_2: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.LABEL_COLUMN, mod_2.target.target_type)
         self.assertEqual("3", mod_2.target.value)
 
@@ -512,13 +511,13 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, CopyRow2DA)
         self.assertEqual("copy_row_0", mod_0.identifier)
         self.assertEqual("label", mod_0.exclusive_column)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, CopyRow2DA)
         self.assertEqual("copy_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.exclusive_column)
@@ -549,13 +548,13 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, CopyRow2DA)
         self.assertEqual("copy_row_0", mod_0.identifier)
         self.assertEqual("123", mod_0.row_label)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, CopyRow2DA)
         self.assertEqual("copy_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.row_label)
@@ -585,18 +584,18 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        store_0a: RowValueRowIndex = mod_0.store_2da[0]
+        store_0a: RowValueRowIndex = mod_0.store_2da[0]  # type: ignore
         self.assertIsInstance(store_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
-        store_0b: RowValueRowLabel = mod_0.store_2da[1]
+        store_0b: RowValueRowLabel = mod_0.store_2da[1]  # type: ignore
         self.assertIsInstance(store_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
-        store_0c: RowValueRowCell = mod_0.store_2da[2]
+        store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_0c, RowValueRowCell)
         self.assertEqual("label", store_0c.column)
 
@@ -625,20 +624,20 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        cell_0_label: RowValueConstant = mod_0.cells["label"]
+        cell_0_label: RowValueConstant = mod_0.cells["label"]  # type: ignore
         self.assertIsInstance(cell_0_label, RowValueConstant)
         self.assertEqual("Test123", cell_0_label.string)
 
         # noinspection PyTypeChecker
-        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]
+        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]  # type: ignore
         self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
         self.assertEqual(4, cell_0_dialog.token_id)
 
         # noinspection PyTypeChecker
-        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
+        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]  # type: ignore
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
 
@@ -675,12 +674,12 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("label", mod_0.header)
         self.assertEqual("", mod_0.default)
 
         # noinspection PyTypeChecker
-        mod_1: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("someint", mod_1.header)
         self.assertEqual("0", mod_1.default)
 
@@ -712,17 +711,17 @@ class TestConfigReader(TestCase):
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
 
-        value = mod_0.index_insert[0]
+        value = mod_0.label_insert["0"]
         self.assertIsInstance(value, RowValueConstant)
-        self.assertEqual("abc", value.string)
+        self.assertEqual("abc", value.string)  # type: ignore
 
-        value = mod_0.index_insert[1]
+        value = mod_0.label_insert["1"]
         self.assertIsInstance(value, RowValue2DAMemory)
-        self.assertEqual(4, value.token_id)
+        self.assertEqual(4, value.token_id)  # type: ignore
 
-        value = mod_0.index_insert[2]
+        value = mod_0.label_insert["2"]
         self.assertIsInstance(value, RowValueTLKMemory)
-        self.assertEqual(5, value.token_id)
+        self.assertEqual(5, value.token_id)  # type: ignore
 
     def test_2da_addcolumn_labelinsert(self):
         """Test that cells will be inserted to the new column at the given label correctly."""
@@ -754,15 +753,15 @@ class TestConfigReader(TestCase):
 
         value = mod_0.label_insert["0"]
         self.assertIsInstance(value, RowValueConstant)
-        self.assertEqual("abc", value.string)
+        self.assertEqual("abc", value.string)  # type: ignore
 
         value = mod_0.label_insert["1"]
         self.assertIsInstance(value, RowValue2DAMemory)
-        self.assertEqual(4, value.token_id)
+        self.assertEqual(4, value.token_id)  # type: ignore
 
         value = mod_0.label_insert["2"]
         self.assertIsInstance(value, RowValueTLKMemory)
-        self.assertEqual(5, value.token_id)
+        self.assertEqual(5, value.token_id)  # type: ignore
 
     def test_2da_addcolumn_2damemory(self):
         """Test that 2DAMEMORY will be stored correctly."""
@@ -788,7 +787,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.store_2da[2]
         self.assertEqual("I2", value)
@@ -837,11 +836,11 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, NoTokenUsage)
         self.assertEqual("123", mod_0.stringref.stored)
 
-        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, NoTokenUsage)
         self.assertEqual("456", mod_1.stringref.stored)
 
@@ -864,11 +863,11 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsage2DA)
         self.assertEqual(5, mod_0.stringref.token_id)
 
-        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, TokenUsage2DA)
         self.assertEqual(6, mod_1.stringref.token_id)
 
@@ -891,11 +890,11 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsageTLK)
         self.assertEqual(5, mod_0.stringref.token_id)
 
-        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, TokenUsageTLK)
         self.assertEqual(6, mod_1.stringref.token_id)
 
@@ -1296,49 +1295,49 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
         self.assertEqual("SomeField", mod_0.label)
         self.assertEqual(123, mod_0.value.stored)
 
-        mod_1: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_1.path))
         self.assertEqual("SomeField", mod_1.label)
         self.assertEqual(123, mod_1.value.stored)
 
-        mod_2: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_2 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_2, AddFieldGFF)
         self.assertIsInstance(mod_2.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_2.path))
         self.assertEqual("SomeField", mod_2.label)
         self.assertEqual(123, mod_2.value.stored)
 
-        mod_3: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_3 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_3, AddFieldGFF)
         self.assertIsInstance(mod_3.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_3.path))
         self.assertEqual("SomeField", mod_3.label)
         self.assertEqual(123, mod_3.value.stored)
 
-        mod_4: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_4 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_4, AddFieldGFF)
         self.assertIsInstance(mod_4.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_4.path))
         self.assertEqual("SomeField", mod_4.label)
         self.assertEqual(123, mod_4.value.stored)
 
-        mod_5: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_5 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_5, AddFieldGFF)
         self.assertIsInstance(mod_5.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_5.path))
         self.assertEqual("SomeField", mod_5.label)
         self.assertEqual(123, mod_5.value.stored)
 
-        mod_6: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_6 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_6, AddFieldGFF)
         self.assertIsInstance(mod_6.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_6.path))
@@ -1376,14 +1375,14 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
         self.assertEqual("SomeField", mod_0.label)
         self.assertEqual(1.23, mod_0.value.stored)
 
-        mod_1: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_1.path))
@@ -1414,7 +1413,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1445,7 +1444,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1476,7 +1475,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1507,7 +1506,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1547,7 +1546,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
@@ -1560,7 +1559,7 @@ class TestConfigReader(TestCase):
             "lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE)
         )
 
-        mod_1: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
         self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
@@ -1598,14 +1597,14 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual(".", str(mod_0.path))
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
 
-        mod_1: AddFieldGFF = mod_0.modifiers.pop(0)
+        mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
         self.assertEqual(".", str(mod_1.path))
@@ -1643,13 +1642,13 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual(".", str(mod_0.path))
         self.assertEqual("SomeList", mod_0.label)
 
-        mod_1: ModifyGFF = mod_0.modifiers.pop(0)
+        mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddStructToListGFF)
         self.assertEqual(111, mod_1.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
