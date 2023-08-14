@@ -1023,6 +1023,7 @@ class SurfaceMaterial(IntEnum):
     def walkable(
         self,
     ) -> bool:
+        """Returns True if the surface material is walkable, False otherwise."""
         return self in [
             SurfaceMaterial.DIRT,
             SurfaceMaterial.GRASS,
@@ -1340,11 +1341,10 @@ class Polygon3:
 
         Returns:
         -------
-            A Polygon2 object.
+            A Polygon3 object with the Z-axis of its points set to 0.
         """
         poly3 = Polygon3()
-        for point in poly3:
-            poly3.points.append(Vector3(point.x, point.y, point.z))
+        poly3.points = [Vector3(point.x, point.y, 0) for point in poly2.points]
         return poly3
 
     def append(
