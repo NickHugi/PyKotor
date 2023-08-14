@@ -1,24 +1,33 @@
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
-    hooks:
-      - id: check-added-large-files
-        always_run: true
-      - id: trailing-whitespace
-        always_run: true
-      - id: end-of-file-fixer
-        always_run: true
-      - id: mixed-line-ending
-        args: ["--fix=lf"]
-        always_run: true
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.282
-    hooks:
-      - id: ruff
-        args: ["--fix"]
-        always_run: true
-  - repo: https://github.com/psf/black
-    rev: 23.7.0
-    hooks:
-      - id: black
-        always_run: true
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.4.0
+  hooks:
+  - id: check-added-large-files
+    always_run: true
+  - id: trailing-whitespace
+    always_run: true
+  - id: end-of-file-fixer
+    always_run: true
+  - id: mixed-line-ending
+    args: [--fix=lf]
+    always_run: true
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.0.282
+  hooks:
+  - id: ruff
+    args: [--fix]
+    always_run: true
+- repo: https://github.com/psf/black
+  rev: 23.7.0
+  hooks:
+  - id: black
+    always_run: true
+
+- repo: https://github.com/sourcery-ai/sourcery
+  rev: v1.7.0
+  hooks:
+  - id: sourcery
+    # The best way to use Sourcery in a pre-commit hook:
+    # * review only changed lines:
+    # * omit the summary
+    args: [--diff=git diff HEAD, --no-summary]

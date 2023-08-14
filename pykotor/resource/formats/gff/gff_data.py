@@ -1,9 +1,8 @@
-"""This module handles classes relating to editing LIP files."""
 from __future__ import annotations
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -11,7 +10,7 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator, Iterator
     from types import NotImplementedType
 
 T = TypeVar("T")
@@ -74,6 +73,17 @@ class GFFFieldType(IntEnum):
 
     def return_type(
         self,
+    ) -> (
+        type[int]
+        | type[str]
+        | type[ResRef]
+        | type[Vector3]
+        | type[Vector4]
+        | type[LocalizedString]
+        | type[GFFStruct]
+        | type[GFFList]
+        | type[bytes]
+        | type[float]
     ):
         if self in [
             GFFFieldType.UInt8,
@@ -86,32 +96,31 @@ class GFFFieldType(IntEnum):
             GFFFieldType.Int64,
         ]:
             return int
-        elif self in [GFFFieldType.String]:
+        if self in [GFFFieldType.String]:
             return str
-        elif self in [GFFFieldType.ResRef]:
+        if self in [GFFFieldType.ResRef]:
             return ResRef
-        elif self in [GFFFieldType.Vector3]:
+        if self in [GFFFieldType.Vector3]:
             return Vector3
-        elif self in [GFFFieldType.Vector4]:
+        if self in [GFFFieldType.Vector4]:
             return Vector4
-        elif self in [GFFFieldType.LocalizedString]:
+        if self in [GFFFieldType.LocalizedString]:
             return LocalizedString
-        elif self in [GFFFieldType.Struct]:
+        if self in [GFFFieldType.Struct]:
             return GFFStruct
-        elif self in [GFFFieldType.List]:
+        if self in [GFFFieldType.List]:
             return GFFList
-        elif self in [GFFFieldType.Binary]:
+        if self in [GFFFieldType.Binary]:
             return bytes
-        elif self in [GFFFieldType.Double, GFFFieldType.Single]:
+        if self in [GFFFieldType.Double, GFFFieldType.Single]:
             return float
-        else:
-            raise ValueError(self)
+        raise ValueError(self)
 
 
 class GFF:
     """Represents the data of a GFF file."""
 
-    BINARY_TYPE = ResourceType.GFF
+    BINARY_TYPE: ResourceType = ResourceType.GFF
 
     def __init__(
         self,
@@ -125,7 +134,7 @@ class GFF:
         root: GFFStruct | None = None,
         indent: int = 0,
         column_len: int = 40,
-    ):
+    ) -> None:
         if root is None:
             root = self.root
 
@@ -153,7 +162,7 @@ class GFF:
 class _GFFField:
     """Read-only data structure for items stored in GFFStruct."""
 
-    INTEGER_TYPES = {
+    INTEGER_TYPES: ClassVar[set[GFFFieldType]] = {
         GFFFieldType.Int8,
         GFFFieldType.UInt8,
         GFFFieldType.Int16,
@@ -163,8 +172,14 @@ class _GFFField:
         GFFFieldType.Int64,
         GFFFieldType.UInt64,
     }
-    STRING_TYPES = {GFFFieldType.String, GFFFieldType.ResRef}
-    FLOAT_TYPES = {GFFFieldType.Single, GFFFieldType.Double}
+    STRING_TYPES: ClassVar[set[GFFFieldType]] = {
+        GFFFieldType.String,
+        GFFFieldType.ResRef,
+    }
+    FLOAT_TYPES: ClassVar[set[GFFFieldType]] = {
+        GFFFieldType.Single,
+        GFFFieldType.Double,
+    }
 
     def __init__(
         self,
@@ -214,13 +229,13 @@ class GFFStruct:
 
     def __len__(
         self,
-    ):
+    ) -> int:
         """Returns the number of fields."""
         return len(self._fields.values())
 
     def __iter__(
         self,
-    ):
+    ) -> Generator[tuple[str, GFFFieldType, Any], Any, None]:
         """Iterates through the stored fields yielding each field's (label, type, value)."""
         for label, field in self._fields.items():
             yield label, field.field_type(), field.value()
@@ -228,7 +243,7 @@ class GFFStruct:
     def __getitem__(
         self,
         item: str,
-    ):
+    ) -> Any | NotImplementedType:
         """Returns the value of the specified field."""
         return self._fields[item].value() if isinstance(item, str) else NotImplemented
 
@@ -259,7 +274,7 @@ class GFFStruct:
         -------
             A GFFFieldType value.
         """
-        return True if label in self._fields else None
+        return label in self._fields
 
     def what_type(
         self,
