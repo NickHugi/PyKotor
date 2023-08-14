@@ -709,7 +709,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.label_insert["0"]
         self.assertIsInstance(value, RowValueConstant)
@@ -1142,34 +1142,31 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_0.path)
+        mod_0 = self._assert_types_and_path(config)
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
         self.assertEqual(5, mod_0.value.stored.stringref.stored)
         self.assertEqual(0, len(mod_0.value.stored))
 
-        mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, ModifyFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_1.path)
+        mod_1 = self._assert_types_and_path(config)
         self.assertIsNone(mod_1.value.stored.stringref)
         self.assertEqual("hello", mod_1.value.stored.get(Language.ENGLISH, Gender.MALE))
         self.assertEqual(1, len(mod_1.value.stored))
 
-        mod_2 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_2, ModifyFieldGFF)
-        self.assertIsInstance(mod_2.value, FieldValueConstant)
-        self.assertIsInstance(mod_2.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_2.path)
+        mod_2 = self._assert_types_and_path(config)
         self.assertEqual(
             "world", mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE)
         )
         self.assertIsNone(mod_2.value.stored.stringref)
         self.assertEqual(1, len(mod_2.value.stored))
+
+    # TODO Rename this here and in `test_gff_modify_type_locstring`
+    def _assert_types_and_path(self, config):
+        result = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(result, ModifyFieldGFF)
+        self.assertIsInstance(result.value, FieldValueConstant)
+        self.assertIsInstance(result.value.stored, LocalizedStringDelta)
+        self.assertEqual("LocString", result.path)
+        return result
 
     def test_gff_modify_2damemory(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1296,53 +1293,33 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_0.path))
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(123, mod_0.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_0, 123)
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, AddFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_1.path))
-        self.assertEqual("SomeField", mod_1.label)
-        self.assertEqual(123, mod_1.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_1, 123)
 
         mod_2 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_2, AddFieldGFF)
-        self.assertIsInstance(mod_2.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_2.path))
-        self.assertEqual("SomeField", mod_2.label)
-        self.assertEqual(123, mod_2.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_2, 123)
 
         mod_3 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_3, AddFieldGFF)
-        self.assertIsInstance(mod_3.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_3.path))
-        self.assertEqual("SomeField", mod_3.label)
-        self.assertEqual(123, mod_3.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_3, 123)
 
         mod_4 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_4, AddFieldGFF)
-        self.assertIsInstance(mod_4.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_4.path))
-        self.assertEqual("SomeField", mod_4.label)
-        self.assertEqual(123, mod_4.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_4, 123)
 
         mod_5 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_5, AddFieldGFF)
-        self.assertIsInstance(mod_5.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_5.path))
-        self.assertEqual("SomeField", mod_5.label)
-        self.assertEqual(123, mod_5.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_5, 123)
 
         mod_6 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_6, AddFieldGFF)
-        self.assertIsInstance(mod_6.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_6.path))
-        self.assertEqual("SomeField", mod_6.label)
-        self.assertEqual(123, mod_6.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_6, 123)
+
+    # TODO Rename this here and in `test_gff_add_ints`
+    def _extracted_from_test_gff_add_ints_67(self, this_mod, stored):
+        self.assertIsInstance(this_mod, AddFieldGFF)
+        self.assertIsInstance(this_mod.value, FieldValueConstant)
+        self.assertEqual("SomeList", str(this_mod.path))
+        self.assertEqual("SomeField", this_mod.label)
+        self.assertEqual(stored, this_mod.value.stored)
 
     def test_gff_add_floats(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1376,18 +1353,10 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_0.path))
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(1.23, mod_0.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_0, 1.23)
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, AddFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_1.path))
-        self.assertEqual("SomeField", mod_1.label)
-        self.assertEqual(1.23, mod_1.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_1, 1.23)
 
     def test_gff_add_string(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1414,11 +1383,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_0.path))
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual("abc", mod_0.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_0, "abc")
 
     def test_gff_add_vector3(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1445,11 +1410,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_0.path))
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(Vector3(1, 2, 3), mod_0.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_0, Vector3(1, 2, 3))
 
     def test_gff_add_vector4(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1476,11 +1437,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_0.path))
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(Vector4(1, 2, 3, 4), mod_0.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_0, Vector4(1, 2, 3, 4))
 
     def test_gff_add_resref(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1507,11 +1464,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", str(mod_0.path))
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(ResRef("abc"), mod_0.value.stored)
+        self._extracted_from_test_gff_add_ints_67(mod_0, ResRef("abc"))
 
     def test_gff_add_locstring(self):
         """Test that the add field modifiers are registered correctly."""
