@@ -55,7 +55,7 @@ class PTH:
             x for x in self._connections if x.source != index and x.target != index
         ]
 
-        for _i, connection in enumerate(self._connections):
+        for connection in self._connections:
             connection.source = (
                 connection.source - 1
                 if connection.source > index
@@ -94,8 +94,8 @@ class PTH:
         target: int,
     ) -> None:
         for edge in copy(self._connections):
-            hasSource = edge.source == source or edge.source == target
-            hasTarget = edge.target == source or edge.target == target
+            hasSource = edge.source in [source, target]
+            hasTarget = edge.target in [source, target]
             if hasSource and hasTarget:
                 self._connections.remove(edge)
 
@@ -110,21 +110,21 @@ class PTH:
         self,
         source: int,
     ) -> list[PTHEdge]:
-        connections = []
-        for connection in self._connections:
-            if connection.source == source:
-                connections.append(connection)
-        return connections
+        return [
+            connection
+            for connection in self._connections
+            if connection.source == source
+        ]
 
     def incoming(
         self,
         target: int,
     ) -> list[PTHEdge]:
-        connections = []
-        for connection in self._connections:
-            if connection.target == target:
-                connections.append(connection)
-        return connections
+        return [
+            connection
+            for connection in self._connections
+            if connection.target == target
+        ]
 
 
 class PTHEdge:

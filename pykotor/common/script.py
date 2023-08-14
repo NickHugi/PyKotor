@@ -50,9 +50,7 @@ class ScriptParam:
     def __repr__(
         self,
     ):
-        return "ScriptParam({}, {}, {})".format(
-            repr(self.datatype), repr(self.name), repr(self.default)
-        )
+        return f"ScriptParam({self.datatype!r}, {self.name!r}, {self.default!r})"
 
     def __str__(
         self,
@@ -81,13 +79,7 @@ class ScriptFunction:
     def __repr__(
         self,
     ):
-        return "ScriptFunction({}, {}, {}, {}, {})".format(
-            repr(self.returntype),
-            repr(self.name),
-            repr(self.params),
-            repr(self.description),
-            repr(self.raw),
-        )
+        return f"ScriptFunction({self.returntype!r}, {self.name!r}, {self.params!r}, {self.description!r}, {self.raw!r})"
 
     def __str__(
         self,

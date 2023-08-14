@@ -111,14 +111,10 @@ class ResRef:
                 text = text[:16]
             else:
                 msg = "ResRef cannot exceed 16 characters."
-                raise ResRef.ExceedsMaxLengthError(
-                    msg,
-                )
+                raise ResRef.ExceedsMaxLengthError(msg)
         if len(text) != len(text.encode()):
             msg = "ResRef must be in ASCII characters."
-            raise ResRef.InvalidEncodingError(
-                msg,
-            )
+            raise ResRef.InvalidEncodingError(msg)
 
         self._value = text
 

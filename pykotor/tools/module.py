@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
@@ -17,7 +19,6 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
-from pathlib import Path
 
 
 def clone_module(
@@ -191,7 +192,7 @@ def clone_module(
     write_lyt(lyt, lyt_data)
     new_module.set(identifier, ResourceType.LYT, lyt_data)
 
-    filepath = installation.module_path() / (identifier + ".mod")
+    filepath = installation.module_path() / f"{identifier}.mod"
     write_erf(new_module, str(filepath))
 
 

@@ -101,9 +101,12 @@
     "RSADDS",
     "RSADDTAL",
     "SAVEBP",
+    "scriptdefs",
+    "scriptlib",
     "Shaddaa",
     "soundset",
     "soundsets",
+    "sourcery",
     "ssfsound",
     "stackoverflow",
     "steamapps",
@@ -142,7 +145,13 @@
   "python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": true,
   "python.testing.pytestEnabled": false,
-  "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "*test*.py"],
+  "python.testing.unittestArgs": [
+    "-v",
+    "-s",
+    "./tests",
+    "-p",
+    "test*.py"
+],
   "cmake.configureOnOpen": false,
   "pylint.args": ["--disable=C0301,C0103"],
   "flake8.args": [
@@ -150,5 +159,11 @@
   ],
   "ruff.args": [
     "--ignore=D101,D205,PLR5501,PLW2901"
-  ]
+],
+"pythonTestExplorer.testplanEnabled": false,
+"python.analysis.inlayHints.callArgumentNames": true,
+"python.analysis.inlayHints.functionReturnTypes": true,
+"python.analysis.inlayHints.pytestParameters": true,
+"python.analysis.inlayHints.variableTypes": true,
+"python.analysis.typeCheckingMode": "basic"
 }

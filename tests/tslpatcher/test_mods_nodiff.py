@@ -13,7 +13,6 @@ from pykotor.tslpatcher.mods.gff import (
     ModificationsGFF,
     ModifyFieldGFF,
     AddFieldGFF,
-    AddStructToListGFF,
     LocalizedStringDelta,
     FieldValueConstant,
     FieldValue2DAMemory,

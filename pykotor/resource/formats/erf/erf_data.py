@@ -68,10 +68,10 @@ class ERF:
         if isinstance(item, int):
             return self._resources[item]
         elif isinstance(item, str):
-            key = next(
-                (key for key in self._resource_dict if key[0] == item.casefold()), None
-            )
-            if key:
+            if key := next(
+                (key for key in self._resource_dict if key[0] == item.casefold()),
+                None,
+            ):
                 return self._resource_dict[key]
             raise KeyError
         else:
@@ -133,8 +133,7 @@ class ERF:
             restype: The resource type.
         """
         key = (resref.casefold(), restype)
-        resource = self._resource_dict.pop(key, None)
-        if resource:
+        if resource := self._resource_dict.pop(key, None):
             self._resources.remove(resource)
 
     def to_rim(

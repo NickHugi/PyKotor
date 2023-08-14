@@ -3,12 +3,16 @@ from __future__ import annotations
 
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from types import NotImplementedType
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -139,7 +143,7 @@ class GFF:
             if field_type is GFFFieldType.List:
                 for i, child_struct in enumerate(value):
                     print(
-                        "  {}[Struct {}]".format("  " * indent, i).ljust(column_len),
+                        f'  {"  " * indent}[Struct {i}]'.ljust(column_len),
                         " ",
                         child_struct.struct_id,
                     )
@@ -994,25 +998,25 @@ class GFFList:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self._structs: list[GFFStruct] = []
 
     def __len__(
         self,
-    ):
+    ) -> int:
         """Returns the number of elements in _structs."""
         return len(self._structs)
 
     def __iter__(
         self,
-    ):
+    ) -> Iterator[GFFStruct]:
         """Iterates through _structs yielding each element."""
         yield from self._structs
 
     def __getitem__(
         self,
-        item,
-    ):
+        item: int,
+    ) -> GFFStruct | NotImplementedType:
         """Returns the struct at the specified index."""
         return self._structs[item] if isinstance(item, int) else NotImplemented
 

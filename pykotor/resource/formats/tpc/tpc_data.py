@@ -35,7 +35,7 @@ class TPC:
         self,
     ):
         self._texture_format: TPCTextureFormat = TPCTextureFormat.RGB
-        self._mipmaps: list[bytes] = [bytes([0 for i in range(4 * 4 * 3)])]
+        self._mipmaps: list[bytes] = [bytes(0 for i in range(4 * 4 * 3))]
         self._width: int = 4
         self._height: int = 4
         self.txi: str = ""
@@ -113,10 +113,7 @@ class TPC:
         raw_data = self._mipmaps[mipmap]
         data = b""
 
-        if (
-            convert_format == TPCTextureFormat.DXT1
-            or convert_format == TPCTextureFormat.DXT5
-        ):
+        if convert_format in [TPCTextureFormat.DXT1, TPCTextureFormat.DXT5]:
             raise NotImplementedError
 
         if convert_format == TPCTextureFormat.Greyscale:
@@ -253,7 +250,7 @@ class TPC:
                         [
                             TPC._interpolate_rgb(0.3333333, c0, c1),
                             TPC._interpolate_rgb(0.6666666, c0, c1),
-                        ]
+                        ],
                     )
                 else:
                     cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
@@ -270,10 +267,9 @@ class TPC:
                     alpha_code.append(int((4.0 * alpha0 + 1.0 * alpha1 + 1) / 5))
                     alpha_code.append(int((3.0 * alpha0 + 2.0 * alpha1 + 2) / 5))
                     alpha_code.append(int((2.0 * alpha0 + 3.0 * alpha1 + 2) / 5))
-                    alpha_code.append(int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5))
-                    alpha_code.append(0)
-                    alpha_code.append(255)
-
+                    alpha_code.extend(
+                        (int((1.0 * alpha0 + 4.0 * alpha1 + 2) / 5), 0, 255),
+                    )
                 for y in [3, 2, 1, 0]:
                     for x in [0, 1, 2, 3]:
                         pixelc_code = dxt_pixels & 3
@@ -312,7 +308,7 @@ class TPC:
                         [
                             TPC._interpolate_rgb(0.3333333, c0, c1),
                             TPC._interpolate_rgb(0.6666666, c0, c1),
-                        ]
+                        ],
                     )
                 else:
                     cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
@@ -347,7 +343,7 @@ class TPC:
                         rgb_reader.read_uint8(),
                         rgb_reader.read_uint8(),
                         255,
-                    ]
+                    ],
                 )
 
         return new_data
@@ -423,7 +419,7 @@ class TPC:
                         [
                             TPC._interpolate_rgb(0.3333333, c0, c1),
                             TPC._interpolate_rgb(0.6666666, c0, c1),
-                        ]
+                        ],
                     )
                 else:
                     cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
@@ -463,7 +459,7 @@ class TPC:
                         [
                             TPC._interpolate_rgb(0.3333333, c0, c1),
                             TPC._interpolate_rgb(0.6666666, c0, c1),
-                        ]
+                        ],
                     )
                 else:
                     cc.extend([TPC._interpolate_rgb(0.5555555, c0, c1), (0, 0, 0)])
@@ -496,7 +492,7 @@ class TPC:
                         rgb_reader.read_uint8(),
                         rgb_reader.read_uint8(),
                         rgb_reader.read_uint8(),
-                    ]
+                    ],
                 )
                 rgb_reader.skip(1)
 

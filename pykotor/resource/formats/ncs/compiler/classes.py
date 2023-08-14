@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 from typing import NamedTuple
 
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
-from pathlib import Path
 
 
 # TODO: 3 conditionals doing the same check why?
@@ -19,10 +19,6 @@ def get_logical_equality_instruction(
         return NCSInstructionType.EQUALII
     if type1 == DataType.FLOAT and type2 == DataType.FLOAT:
         return NCSInstructionType.EQUALFF
-    if type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-        return NCSInstructionType.EQUALSS
-    if type1 == DataType.FLOAT and type2 == DataType.FLOAT:
-        return NCSInstructionType.EQUALOO
     msg = f"Tried an unsupported comparison between '{type1}' '{type2}'."
     raise CompileException(msg)
 
@@ -298,7 +294,7 @@ class CodeRoot:
             if obj not in included and obj not in script_globals
         ]
 
-        if len(script_globals) > 0:
+        if script_globals:
             for global_def in script_globals:
                 global_def.compile(ncs, self)
             ncs.add(NCSInstructionType.SAVEBP, args=[])
@@ -490,10 +486,7 @@ class CodeBlock:
 
     def scope_size(self, root: CodeRoot) -> int:
         """Returns size of local scope."""
-        size = 0
-        for scoped in self.scope:
-            size += scoped.data_type.size(root)
-        return size
+        return sum(scoped.data_type.size(root) for scoped in self.scope)
 
     def full_scope_size(self, root: CodeRoot) -> int:
         """Returns size of scope, including outer blocks."""
@@ -620,7 +613,6 @@ class FunctionDefinition(TopLevelObject):
             #       - how to handle? need some kind of warning system maybe.
             # if self.parameters[i].default != prototype.parameters[i].default:
             #     retrn False
-
         return True
 
 
@@ -644,7 +636,7 @@ class IncludeScript(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
         assert root.library_lookup is not None
         for folder in root.library_lookup:
-            filepath = Path(folder, self.file.value + ".nss").resolve_case_insensitive()
+            filepath = Path(folder, f"{self.file.value}.nss").resolve_case_insensitive()
             if filepath.exists():
                 source = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break

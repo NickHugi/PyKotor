@@ -91,15 +91,13 @@ class RIMBinaryWriter(ResourceWriter):
         self._writer.write_uint32(offset_to_keys)
         self._writer.write_bytes(b"\0" * 100)
 
-        resid = 0
         data_offset = offset_to_keys + RIMBinaryWriter.KEY_ELEMENT_SIZE * entry_count
-        for resource in self._rim:
+        for resid, resource in enumerate(self._rim):
             self._writer.write_string(resource.resref.get(), string_length=16)
             self._writer.write_uint32(resource.restype.type_id)
             self._writer.write_uint32(resid)
             self._writer.write_uint32(data_offset)
             self._writer.write_uint32(len(resource.data))
-            resid += 1
             data_offset += len(resource.data)
 
         for resource in self._rim:

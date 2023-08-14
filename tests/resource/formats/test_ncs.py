@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 
 from pykotor.common.stream import BinaryReader
@@ -14,7 +15,11 @@ class TestNCS(TestCase):
         ncs = NCSBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(ncs)
 
-        write_ncs(ncs, r"C:\Users\hugin\Desktop\ext\output.ncs")
+        user_profile_path = os.environ.get("USERPROFILE")
+        assert user_profile_path is not None
+        file_path = os.path.join(user_profile_path, "Documents", "ext", "output.ncs")
+
+        write_ncs(ncs, file_path)
         data = bytes_ncs(ncs)
         ncs = read_ncs(data)
         self.validate_io(ncs)

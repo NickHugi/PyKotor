@@ -60,15 +60,15 @@ def get_body_model(
                 baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
             )
 
-            normal_tex_column = "tex" + armor_variation
-            evil_tex_column = "tex" + armor_variation + "evil"
+            normal_tex_column = f"tex{armor_variation}"
+            evil_tex_column = f"tex{armor_variation}evil"
             print(utc.alignment, evil_tex_column)
             if utc.alignment <= 25 and evil_tex_column in appearance.get_headers():
                 tex_column = evil_tex_column
             else:
                 tex_column = normal_tex_column
 
-            model_column = "model" + armor_variation
+            model_column = f"model{armor_variation}"
             body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
             override_texture = appearance.get_row(utc.appearance_id).get_string(
                 tex_column,

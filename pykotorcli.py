@@ -74,7 +74,7 @@ def main():
     else:
         sys.exit(ExitCode.CHANGES_INI_NOT_FOUND)
 
-    print("Using changes.ini path: " + str(changes_ini_path))
+    print(f"Using changes.ini path: {changes_ini_path!s}")
     if not changes_ini_path.exists():
         print(
             "The 'changes.ini' file does not exist"

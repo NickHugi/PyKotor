@@ -147,10 +147,19 @@ class UTD:
 def utd_version(
     gff: GFF,
 ) -> Game:
-    for label in ("NotBlastable", "OpenLockDiff", "OpenLockDiffMod", "OpenState"):
-        if gff.root.exists(label):
-            return Game.K2
-    return Game.K1
+    return next(
+        (
+            Game.K2
+            for label in (
+                "NotBlastable",
+                "OpenLockDiff",
+                "OpenLockDiffMod",
+                "OpenState",
+            )
+            if gff.root.exists(label)
+        ),
+        Game.K1,
+    )
 
 
 def construct_utd(

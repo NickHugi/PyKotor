@@ -19,7 +19,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 def read_ncs(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: int | None = None,
+    size: int = 0,
 ) -> NCS:
     """Returns an NCS instance from the source.
 
@@ -105,7 +105,7 @@ def compile_nss(
         optimizers: What post-compilation optimizers to apply to the NCS object.
     """
     NssLexer()
-    nssParser = NssParser(
+    nss_parser = NssParser(
         library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
         functions=KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS,
         constants=KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS,
@@ -114,7 +114,7 @@ def compile_nss(
 
     ncs = NCS()
 
-    block = nssParser.parser.parse(source, tracking=True)
+    block = nss_parser.parser.parse(source, tracking=True)
     block.compile(ncs)
 
     optimizers = (
@@ -122,8 +122,7 @@ def compile_nss(
         if optimizers is None
         else [RemoveNopOptimizer(), *optimizers]
     )
-    [optimizer.reset() for optimizer in optimizers]
-
+    for optimizer in optimizers:
+        optimizer.reset()
     ncs.optimize(optimizers)
-
     return ncs

@@ -71,11 +71,8 @@ class BWMBinaryReader(ResourceReader):
         self._reader.read_uint32()
         self._reader.read_uint32()
 
-        vertices = []
         self._reader.seek(vertices_offset)
-        for _i in range(vertices_count):
-            vertices.append(self._reader.read_vector3())
-
+        vertices = [self._reader.read_vector3() for _i in range(vertices_count)]
         faces = []
         self._reader.seek(indices_offset)
         for _i in range(face_count):
@@ -107,9 +104,9 @@ class BWMBinaryReader(ResourceReader):
                 trans_index = edge_index % 3
                 if trans_index == 0:
                     faces[face_index].trans1 = transition
-                if trans_index == 1:
+                elif trans_index == 1:
                     faces[face_index].trans2 = transition
-                if trans_index == 2:
+                elif trans_index == 2:
                     faces[face_index].trans3 = transition
 
         self._wok.faces = faces
@@ -177,12 +174,14 @@ class BWMBinaryWriter(ResourceWriter):
             aabb_data += struct.pack("fff", aabb.bb_min.x, aabb.bb_min.y, aabb.bb_min.z)
             aabb_data += struct.pack("fff", aabb.bb_max.x, aabb.bb_max.y, aabb.bb_max.z)
             aabb_data += struct.pack(
-                "I", faces.index(aabb.face) if aabb.face is not None else 0xFFFFFFFF
+                "I",
+                faces.index(aabb.face) if aabb.face is not None else 0xFFFFFFFF,
             )
             aabb_data += struct.pack("I", 4)
             aabb_data += struct.pack("I", aabb.sigplane.value)
             aabb_data += struct.pack(
-                "I", aabbs.index(aabb.left) + 1 if aabb.left is not None else 0xFFFFFFFF
+                "I",
+                aabbs.index(aabb.left) + 1 if aabb.left is not None else 0xFFFFFFFF,
             )
             aabb_data += struct.pack(
                 "I",
@@ -193,13 +192,12 @@ class BWMBinaryWriter(ResourceWriter):
         adjacency_data = bytearray()
         for face in walkable:
             adjancencies = self._wok.adjacencies(face)
-            indexes = []
-            for adjacency in adjancencies:
-                indexes.append(
-                    faces.index(adjacency.face) * 3 + adjacency.edge
-                    if adjacency is not None
-                    else -1
-                )
+            indexes = [
+                faces.index(adjacency.face) * 3 + adjacency.edge
+                if adjacency is not None
+                else -1
+                for adjacency in adjancencies
+            ]
             adjacency_data += struct.pack("iii", *indexes)
 
         edges = self._wok.edges()

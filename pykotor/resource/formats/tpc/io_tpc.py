@@ -61,16 +61,15 @@ class TPCBinaryReader(ResourceReader):
                 tpc_format = TPCTextureFormat.DXT1
             elif color_depth == 4:
                 tpc_format = TPCTextureFormat.DXT5
-        else:
-            if color_depth == 1:
-                tpc_format = TPCTextureFormat.Greyscale
-                size = width * height
-            elif color_depth == 2:
-                tpc_format = TPCTextureFormat.RGB
-                size = width * height * 3
-            elif color_depth == 4:
-                tpc_format = TPCTextureFormat.RGBA
-                size = width * height * 4
+        elif color_depth == 1:
+            tpc_format = TPCTextureFormat.Greyscale
+            size = width * height
+        elif color_depth == 2:
+            tpc_format = TPCTextureFormat.RGB
+            size = width * height * 3
+        elif color_depth == 4:
+            tpc_format = TPCTextureFormat.RGBA
+            size = width * height * 4
 
         mipmaps = []
         mm_width, mm_height = width, height

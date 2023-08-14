@@ -46,14 +46,15 @@ class MDLAsciiWriter:
     ) -> None:
         self._writer.write_line(0, f"newmodel {self._mdl.name}")
         self._writer.write_line(
-            0, "setsupermodel {} {}".format(self._mdl.name, self._mdl.supermodel)
+            0,
+            f"setsupermodel {self._mdl.name} {self._mdl.supermodel}",
         )
         self._writer.write_line(0, f"ignorefog {int(not self._mdl.fog)}")
 
         self._writer.write_line(0, f"beginmodelgeom {self._mdl.name}")
-        self._writer.write_line(1, f"bmin {0} {0} {0}")
-        self._writer.write_line(1, f"bmax {0} {0} {0}")
-        self._writer.write_line(1, f"radius {0}")
+        self._writer.write_line(1, "bmin 0 0 0")
+        self._writer.write_line(1, "bmax 0 0 0")
+        self._writer.write_line(1, "radius 0")
 
         all_nodes = self._mdl.all_nodes()
         for node in all_nodes:
@@ -86,40 +87,27 @@ class MDLAsciiWriter:
         newline = self._writer.write_line
 
         newline(indent + 0, f"node {self._node_type(node)} {node.name}")
-        newline(
-            indent + 1, "parent {}".format("NULL" if parent is None else parent.name)
-        )
+        newline(indent + 1, f'parent {"NULL" if parent is None else parent.name}')
 
         if parent is not None or not anim:
             newline(
                 indent + 1,
-                "orientation {} {} {} {}".format(
-                    node.orientation.x,
-                    node.orientation.y,
-                    node.orientation.z,
-                    node.orientation.w,
-                ),
+                f"orientation {node.orientation.x} {node.orientation.y} {node.orientation.z} {node.orientation.w}",
             )
             newline(
                 indent + 1,
-                "position {} {} {}".format(
-                    node.position.x, node.position.y, node.position.z
-                ),
+                f"position {node.position.x} {node.position.y} {node.position.z}",
             )
             self._write_controllers(node, node.controllers, indent + 1)
 
             if node.mesh:
                 newline(
                     indent + 1,
-                    "diffuse {} {} {}".format(
-                        node.mesh.diffuse.r, node.mesh.diffuse.g, node.mesh.diffuse.b
-                    ),
+                    f"diffuse {node.mesh.diffuse.r} {node.mesh.diffuse.g} {node.mesh.diffuse.b}",
                 )
                 newline(
                     indent + 1,
-                    "ambient {} {} {}".format(
-                        node.mesh.ambient.r, node.mesh.ambient.g, node.mesh.ambient.b
-                    ),
+                    f"ambient {node.mesh.ambient.r} {node.mesh.ambient.g} {node.mesh.ambient.b}",
                 )
                 newline(indent + 1, f"bitmap {node.mesh.texture_1}")
                 newline(indent + 1, f"transparencyhint {node.mesh.transparency_hint}")
@@ -131,9 +119,7 @@ class MDLAsciiWriter:
                 newline(indent + 1, f"rotatetexture {int(node.mesh.rotate_texture)}")
                 newline(
                     indent + 1,
-                    "m_bIsBackgroundGeometry {}".format(
-                        int(node.mesh.background_geometry)
-                    ),
+                    f"m_bIsBackgroundGeometry {int(node.mesh.background_geometry)}",
                 )
                 newline(indent + 1, f"shadow {int(node.mesh.shadow)}")
                 newline(indent + 1, f"beaming {int(node.mesh.beaming)}")
@@ -142,7 +128,7 @@ class MDLAsciiWriter:
                 newline(indent + 1, f"dirt_texture {int(node.mesh.dirt_texture)}")
                 newline(
                     indent + 1,
-                    "hologram_donotdraw {}".format(int(node.mesh.hide_in_hologram)),
+                    f"hologram_donotdraw {int(node.mesh.hide_in_hologram)}",
                 )
 
                 newline(indent + 1, f"verts {len(node.mesh.vertex_positions)}")
@@ -159,16 +145,7 @@ class MDLAsciiWriter:
                     # 4th value -> smoothing group
                     newline(
                         indent + 2,
-                        "{} {} {}  {}  {} {} {}  {}".format(
-                            face.v1,
-                            face.v2,
-                            face.v3,
-                            0,
-                            face.v1,
-                            face.v2,
-                            face.v3,
-                            face.material.value,
-                        ),
+                        f"{face.v1} {face.v2} {face.v3}  0  {face.v1} {face.v2} {face.v3}  {face.material.value}",
                     )
 
                 if node.skin:
@@ -246,7 +223,7 @@ class MDLAsciiWriter:
                 # Ascii rotation controller values are axis-aligned as opposed to binary which are quaternions
                 for row in controller.rows:
                     aa = AxisAngle.from_quaternion(
-                        Vector4(row.data[0], row.data[1], row.data[2], row.data[3])
+                        Vector4(row.data[0], row.data[1], row.data[2], row.data[3]),
                     )
                     row.data[0] = aa.axis.x
                     row.data[1] = aa.axis.y

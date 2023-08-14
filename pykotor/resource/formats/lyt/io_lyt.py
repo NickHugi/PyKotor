@@ -104,7 +104,10 @@ class LYTAsciiReader(ResourceReader):
             door = tokens[1]
             position = Vector3(float(tokens[3]), float(tokens[4]), float(tokens[5]))
             orientation = Vector4(
-                float(tokens[6]), float(tokens[7]), float(tokens[8]), float(tokens[9])
+                float(tokens[6]),
+                float(tokens[7]),
+                float(tokens[8]),
+                float(tokens[9]),
             )
             self._lyt.doorhooks.append(LYTDoorHook(room, door, position, orientation))
 
@@ -133,45 +136,25 @@ class LYTAsciiWriter(ResourceWriter):
         self._writer.write_string(f"   roomcount {roomcount}\r\n")
         for room in self._lyt.rooms:
             self._writer.write_string(
-                "      {} {} {} {}\r\n".format(
-                    room.model, room.position.x, room.position.y, room.position.z
-                )
+                f"      {room.model} {room.position.x} {room.position.y} {room.position.z}\r\n",
             )
 
         self._writer.write_string(f"   trackcount {trackcount}\r\n")
         for track in self._lyt.tracks:
             self._writer.write_string(
-                "      {} {} {} {}\r\n".format(
-                    track.model, track.position.x, track.position.y, track.position.z
-                )
+                f"      {track.model} {track.position.x} {track.position.y} {track.position.z}\r\n",
             )
 
         self._writer.write_string(f"   obstaclecount {obstaclecount}\r\n")
         for obstacle in self._lyt.obstacles:
             self._writer.write_string(
-                "      {} {} {} {}\r\n".format(
-                    obstacle.model,
-                    obstacle.position.x,
-                    obstacle.position.y,
-                    obstacle.position.z,
-                )
+                f"      {obstacle.model} {obstacle.position.x} {obstacle.position.y} {obstacle.position.z}\r\n",
             )
 
         self._writer.write_string(f"   doorhookcount {doorhookcount}\r\n")
         for doorhook in self._lyt.doorhooks:
             self._writer.write_string(
-                "      {} {} {} {} {} {} {} {} {} {}\r\n".format(
-                    doorhook.room,
-                    doorhook.door,
-                    0,
-                    doorhook.position.x,
-                    doorhook.position.y,
-                    doorhook.position.z,
-                    doorhook.orientation.x,
-                    doorhook.orientation.y,
-                    doorhook.orientation.z,
-                    doorhook.orientation.w,
-                )
+                f"      {doorhook.room} {doorhook.door} 0 {doorhook.position.x} {doorhook.position.y} {doorhook.position.z} {doorhook.orientation.x} {doorhook.orientation.y} {doorhook.orientation.z} {doorhook.orientation.w}\r\n",
             )
 
         self._writer.write_string("donelayout")

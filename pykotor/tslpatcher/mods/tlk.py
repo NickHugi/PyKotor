@@ -16,7 +16,13 @@ class ModificationsTLK:
 
 
 class ModifyTLK:
-    def __init__(self, token_id: int, text: str, sound: ResRef, is_replacement: bool):
+    def __init__(
+        self,
+        token_id: int,
+        text: str,
+        sound: ResRef,
+        is_replacement: bool = False,
+    ):
         self.token_id: int = token_id
         self.text: str = text
         self.sound: ResRef = sound

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
-from pathlib import Path
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
@@ -91,7 +91,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: str,
+        path: str | Path,
         modifiers: list[ModifyGFF] | None = None,
         index_to_list_token: int | None = None,
     ):
@@ -99,7 +99,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: str = path
+        self.path: Path = Path(path)
         self.index_to_list_token: int | None = index_to_list_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -128,7 +128,7 @@ class AddFieldGFF(ModifyGFF):
         def set_struct():
             if isinstance(container, GFFStruct):
                 return container.set_struct(self.label, value)
-            elif isinstance(container, GFFList):
+            if isinstance(container, GFFList):
                 return container.add(value.struct_id)
             return None
 

@@ -101,16 +101,19 @@ class DLG:
     ):
         for link in links:
             if link.node not in seen_nodes:
-                print("{}-> {}".format(" " * indent, link.node.text))
+                print(f'{" " * indent}-> {link.node.text}')
                 seen_links.append(link)
 
                 if link.node not in seen_nodes:
                     seen_nodes.append(link.node)
                     self._print_tree(
-                        link.node.links, indent + 3, seen_links, seen_nodes
+                        link.node.links,
+                        indent + 3,
+                        seen_links,
+                        seen_nodes,
                     )
             else:
-                print("{}-> [LINK] {}".format(" " * indent, link.node.text))
+                print(f'{" " * indent}-> [LINK] {link.node.text}')
 
     def all_entries(
         self,
@@ -490,7 +493,7 @@ def construct_dlg(
             node.target_height = gff_struct.acquire("TarHeightOffset", 0.0)
         if gff_struct.exists("FadeColor"):
             node.fade_color = Color.from_bgr_vector3(
-                gff_struct.acquire("FadeColor", Vector3.from_null())
+                gff_struct.acquire("FadeColor", Vector3.from_null()),
             )
 
     def construct_link(

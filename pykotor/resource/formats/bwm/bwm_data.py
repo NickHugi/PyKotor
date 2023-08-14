@@ -87,10 +87,8 @@ class BWM:
         for face in faces:
             for vertex in [face.v1, face.v2, face.v3]:
                 for axis in range(3):
-                    if bbmin[axis] > vertex[axis]:
-                        bbmin[axis] = vertex[axis]
-                    if bbmax[axis] < vertex[axis]:
-                        bbmax[axis] = vertex[axis]
+                    bbmin[axis] = min(bbmin[axis], vertex[axis])
+                    bbmax[axis] = max(bbmax[axis], vertex[axis])
             bbcentre += face.centre()
         bbcentre = bbcentre / len(faces)
 
@@ -186,7 +184,7 @@ class BWM:
                                 transition = self.faces[face_id].trans3
 
                             edges.append(
-                                BWMEdge(self.faces[next_face], next_edge, transition)
+                                BWMEdge(self.faces[next_face], next_edge, transition),
                             )
 
                             visited.add(edge_index)
@@ -242,15 +240,18 @@ class BWM:
             other_index = walkable.index(other)
             if matches(other_index, adj1) != -1:
                 adj_index1 = BWMAdjacency(
-                    walkable[other_index], matches(other_index, adj1)
+                    walkable[other_index],
+                    matches(other_index, adj1),
                 )
             if matches(other_index, adj2) != -1:
                 adj_index2 = BWMAdjacency(
-                    walkable[other_index], matches(other_index, adj2)
+                    walkable[other_index],
+                    matches(other_index, adj2),
                 )
             if matches(other_index, adj3) != -1:
                 adj_index3 = BWMAdjacency(
-                    walkable[other_index], matches(other_index, adj3)
+                    walkable[other_index],
+                    matches(other_index, adj3),
                 )
 
         return adj_index1, adj_index2, adj_index3

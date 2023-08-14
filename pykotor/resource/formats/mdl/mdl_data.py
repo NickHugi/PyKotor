@@ -91,28 +91,28 @@ class MDL:
     def all_textures(
         self,
     ) -> set[str]:
-        textures = set()
-        for node in self.all_nodes():
+        return {
+            node.mesh.texture_1
+            for node in self.all_nodes()
             if (
                 node.mesh
                 and node.mesh.texture_1 != "NULL"
                 and node.mesh.texture_1 != ""
-            ):
-                textures.add(node.mesh.texture_1)
-        return textures
+            )
+        }
 
     def all_lightmaps(
         self,
     ) -> set[str]:
-        lightmaps = set()
-        for node in self.all_nodes():
+        return {
+            node.mesh.texture_2
+            for node in self.all_nodes()
             if (
                 node.mesh
                 and node.mesh.texture_2 != "NULL"
                 and node.mesh.texture_2 != ""
-            ):
-                lightmaps.add(node.mesh.texture_2)
-        return lightmaps
+            )
+        }
 
 
 # region Animation Data
@@ -219,8 +219,7 @@ class MDLNode:
         for child in self.children:
             if child.name == name:
                 return child
-        else:
-            raise KeyError
+        raise KeyError
 
 
 class MDLLight:

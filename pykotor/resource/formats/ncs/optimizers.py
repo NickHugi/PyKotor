@@ -66,7 +66,7 @@ class RemoveUnusedBlocksOptimizer(NCSOptimizer):
         # Find list of unreachable instructions
         reachable = set()
         checking = [0]
-        while len(checking) > 0:
+        while checking:
             check = checking.pop(0)
             if check > len(ncs.instructions):
                 continue

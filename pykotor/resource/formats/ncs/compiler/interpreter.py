@@ -50,7 +50,8 @@ class Interpreter:
 
             elif self._cursor.ins_type == NCSInstructionType.ACTION:
                 self.do_action(
-                    self._functions[self._cursor.args[0]], self._cursor.args[1]
+                    self._functions[self._cursor.args[0]],
+                    self._cursor.args[1],
                 )
 
             elif self._cursor.ins_type == NCSInstructionType.MOVSP:
@@ -233,7 +234,7 @@ class Interpreter:
                 self.store_state()
 
             self.stack_snapshots.append(
-                StackSnapshot(self._cursor, self._stack.state())
+                StackSnapshot(self._cursor, self._stack.state()),
             )
 
             # Control flow
@@ -366,16 +367,13 @@ class StackV2:
         self._stack.extend(copied)
 
     def add(self, datatype: DataType, value: int | float):
-        if datatype == DataType.INT:
-            if not isinstance(value, int):
-                raise ValueError
-            self._stack.extend(struct.pack("i", value))
-        elif datatype == DataType.FLOAT:
-            if not isinstance(value, int):
-                raise ValueError
-            self._stack.extend(struct.pack("i", value))
-        else:
+        if datatype != DataType.INT and (
+            datatype == DataType.INT or datatype != DataType.FLOAT
+        ):
             raise NotImplementedError
+        if not isinstance(value, int):
+            raise ValueError
+        self._stack.extend(struct.pack("i", value))
 
 
 class Stack:

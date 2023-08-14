@@ -109,7 +109,6 @@ class ConfigParser(RawConfigParser):  # noqa
             cur_indent_level = first_nonspace.start() if first_nonspace else 0
             if cursect is not None and optname and cur_indent_level > indent_level:
                 cursect[optname].append(value)
-            # a section header or option header?
             else:
                 indent_level = cur_indent_level
                 # is it a section header?
@@ -129,13 +128,10 @@ class ConfigParser(RawConfigParser):  # noqa
                         elements_added.add(sectname)
                     # So sections can't start with a continuation line
                     optname = None
-                # no section header in the file?
                 elif cursect is None:
                     continue  # this is the patch
-                # an option line?
                 else:
-                    mo = self._optcre.match(value)
-                    if mo:
+                    if mo := self._optcre.match(value):
                         optname, vi, optval = mo.group("option", "vi", "value")
                         if not optname:
                             e = self._handle_error(e, fpname, lineno, line)

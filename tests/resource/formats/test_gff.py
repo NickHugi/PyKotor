@@ -37,9 +37,9 @@ class TestGFF(TestCase):
     def validate_io(self, gff: GFF):
         self.assertEqual(gff.root.get_uint8("uint8"), 255)
         self.assertEqual(gff.root.get_int8("int8"), -127)
-        self.assertEqual(gff.root.get_uint16("uint16"), 65535)
+        self.assertEqual(gff.root.get_uint16("uint16"), 0xFFFF)
         self.assertEqual(gff.root.get_int16("int16"), -32768)
-        self.assertEqual(gff.root.get_uint32("uint32"), 4294967295)
+        self.assertEqual(gff.root.get_uint32("uint32"), 0xFFFFFFFF)
         self.assertEqual(gff.root.get_int32("int32"), -2147483648)
         # K-GFF does not seem to handle int64 correctly?
         self.assertEqual(gff.root.get_uint64("uint64"), 4294967296)

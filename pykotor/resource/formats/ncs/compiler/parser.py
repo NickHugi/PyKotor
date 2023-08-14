@@ -65,7 +65,7 @@ class NssParser:
         library_lookup: list[str] | None,
         errorlog=yacc.NullLogger(),
     ):
-        self.parser = yacc.yacc(
+        self.parser: yacc.LRParser = yacc.yacc(
             module=self,
             errorlog=errorlog,
             write_tables=False,
@@ -189,7 +189,8 @@ class NssParser:
         """function_definition_param : data_type IDENTIFIER '=' expression."""
         p[0] = FunctionDefinitionParam(p[1], p[2], p[4])
 
-    def p_code_block(self, p):
+    def p_code_block(self, p: list[CodeBlock]):
+        # sourcery skip: class-extract-method
         """code_block : code_block statement
         | statement
         |.
@@ -425,7 +426,8 @@ class NssParser:
         args: list[Expression] = p[3]
 
         if engine_function := next(
-            (x for x in self.functions if x.name == identifier), None
+            (x for x in self.functions if x.name == identifier),
+            None,
         ):
             routine_id = self.functions.index(engine_function)
             data_type = engine_function.returntype
