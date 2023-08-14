@@ -169,11 +169,7 @@ class AddFieldGFF(ModifyGFF):
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
-    def _navigate_containers(
-        self,
-        container: GFFStruct | GFFList,
-        path: str | Path,
-    ) -> GFFStruct | GFFList:
+    def _navigate_containers(self, container, path):
         path = Path(path)
         hierarchy: list[str] = [part for part in path.parts if part]
 
@@ -197,11 +193,7 @@ class ModifyFieldGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
-        navigation_tuple: tuple[
-            GFFStruct | GFFList,
-            str,
-            GFFFieldType,
-        ] | None = self._navigate_containers(container, self.path)
+        navigation_tuple = self._navigate_containers(container, self.path)
         if navigation_tuple is None:
             logger.add_warning(
                 f"Unable to find a field label matching '{self.path}', skipping...",
@@ -239,25 +231,20 @@ class ModifyFieldGFF(ModifyGFF):
         }
         func_map[field_type]()
 
-    def _navigate_containers(
-        self,
-        container: GFFStruct | GFFList,
-        path: Path | str,
-    ) -> tuple[GFFStruct | GFFList, str, GFFFieldType] | None:
+    def _navigate_containers(self, container, path):
         path = Path(path)
-        hierarchy: list[Path] = list(path.parents)[::-1][1:]  # Removing the root
-        label: str = path.name
+        hierarchy = list(path.parents)[::-1][1:]  # Removing the root
+        label = path.name
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
                 container = container.acquire(step.name, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
                 container = container.at(int(step.name))
+            else:
+                return None
 
-        if container is None:
-            return None
-
-        field_type: GFFFieldType = container.what_type(label)
+        field_type = container.what_type(label)
         return container, label, field_type
 
 
