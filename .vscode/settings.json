@@ -161,7 +161,7 @@
     "--ignore=D101,D205,PLR5501,PLW2901"
 ],
 "pythonTestExplorer.testplanEnabled": false,
-"python.analysis.inlayHints.callArgumentNames": true,
+"python.analysis.inlayHints.callArgumentNames": false,
 "python.analysis.inlayHints.functionReturnTypes": true,
 "python.analysis.inlayHints.pytestParameters": true,
 "python.analysis.inlayHints.variableTypes": true,

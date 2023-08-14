@@ -238,6 +238,9 @@ class ConfigReader:
         self.config.required_message = self.ini.get("Settings", "Required", fallback="")
 
     def load_filelist(self) -> None:
+        if "InstallList" not in self.ini:
+            return
+
         folders_ini = dict(self.ini["InstallList"].items())
         for key, foldername in folders_ini.items():
             folder_install = InstallFolder(foldername)

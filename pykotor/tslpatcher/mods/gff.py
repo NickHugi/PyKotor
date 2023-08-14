@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class LocalizedStringDelta(LocalizedString):
-    def __init__(self, stringref: FieldValue | None = None):
+    def __init__(self, stringref: FieldValue | None = None) -> None:
         super().__init__(0)
         self.stringref: FieldValue | None = stringref
 
@@ -104,11 +104,16 @@ class AddFieldGFF(ModifyGFF):
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
-    def apply(self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger) -> None:  # type: ignore
-        container: GFFStruct | GFFList | None = self._navigate_containers(
+    def apply(
+        self,
+        container: GFFStruct,
+        memory: PatcherMemory,
+        logger: PatchLogger,
+    ) -> None:
+        container = self._navigate_containers(
             container,
             self.path,
-        )
+        )  # type: ignore
         if container is None:
             logger.add_warning(
                 "Parent field at '{}' does not exist or is not a List or Struct. Unable to add new Field '{}'...".format(
@@ -117,15 +122,15 @@ class AddFieldGFF(ModifyGFF):
                 ),
             )
             return
-
+        assert container is not None
         value = self.value.value(memory, self.field_type)
 
-        def set_locstring():
+        def set_locstring() -> None:
             original = LocalizedString(0)
             value.apply(original, memory)
             container.set_locstring(self.label, original)
 
-        def set_struct():
+        def set_struct() -> GFFStruct | None:
             if isinstance(container, GFFStruct):
                 return container.set_struct(self.label, value)
             if isinstance(container, GFFList):
@@ -135,7 +140,7 @@ class AddFieldGFF(ModifyGFF):
         def set_list() -> GFFList:
             return container.set_list(self.label, value)
 
-        func_map = {
+        func_map: dict[GFFFieldType, Any] = {
             GFFFieldType.Int8: lambda: container.set_int8(self.label, value),
             GFFFieldType.UInt8: lambda: container.set_uint8(self.label, value),
             GFFFieldType.Int16: lambda: container.set_int16(self.label, value),
@@ -168,11 +173,11 @@ class AddFieldGFF(ModifyGFF):
 
     def _navigate_containers(
         self,
-        container: GFFStruct | GFFList | None,
+        container: GFFStruct | GFFList,
         path: str | Path,
-    ) -> GFFStruct | None:
+    ) -> GFFStruct | GFFList:
         path = Path(path)
-        hierarchy = [part for part in path.parts if part]
+        hierarchy: list[str] = [part for part in path.parts if part]
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
@@ -184,7 +189,7 @@ class AddFieldGFF(ModifyGFF):
 
 
 class ModifyFieldGFF(ModifyGFF):
-    def __init__(self, path: str, value: FieldValue):
+    def __init__(self, path: str, value: FieldValue) -> None:
         self.path: str = path
         self.value: FieldValue = value
 
@@ -204,15 +209,15 @@ class ModifyFieldGFF(ModifyGFF):
         container, label, field_type = navigationtuple
         value = self.value.value(memory, field_type)
 
-        def set_locstring():
+        def set_locstring() -> None:
             if container.exists(label):
-                original = container.get_locstring(label)
+                original: LocalizedString = container.get_locstring(label)
                 value.apply(original, memory)
                 container.set_locstring(label, original)
             else:
                 container.set_locstring(label, value)
 
-        func_map = {
+        func_map: dict[GFFFieldType, Callable] = {
             GFFFieldType.Int8: lambda: container.set_int8(label, value),
             GFFFieldType.UInt8: lambda: container.set_uint8(label, value),
             GFFFieldType.Int16: lambda: container.set_int16(label, value),
@@ -237,8 +242,8 @@ class ModifyFieldGFF(ModifyGFF):
         path: Path | str,
     ) -> tuple[GFFStruct, str, GFFFieldType] | None:
         path = Path(path)
-        hierarchy = list(path.parents)[::-1][1:]  # Removing the root
-        label = path.name
+        hierarchy: list[Path] = list(path.parents)[::-1][1:]  # Removing the root
+        label: str = path.name
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
@@ -263,7 +268,7 @@ class ModificationsGFF:
         replace_file: bool,
         modifiers: list[ModifyGFF] | None = None,
         destination: str | None = None,
-    ):
+    ) -> None:
         self.filename: str = filename
         self.replace_file: bool = replace_file
         self.destination: str = (
@@ -271,6 +276,11 @@ class ModificationsGFF:
         )
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
-    def apply(self, gff: GFF, memory: PatcherMemory, logger: PatchLogger) -> None:
+    def apply(
+        self,
+        gff: GFF,
+        memory: PatcherMemory,
+        logger: PatchLogger,
+    ) -> None:
         for change_field in self.modifiers:
             change_field.apply(gff.root, memory, logger)
