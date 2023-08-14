@@ -3,6 +3,11 @@ from __future__ import annotations
 
 import math
 from enum import IntEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from types import NotImplementedType
 
 
 class Vector2:
@@ -24,12 +29,12 @@ class Vector2:
 
     def __iter__(
         self,
-    ):
+    ) -> Iterator[float]:
         return iter((self.x, self.y))
 
     def __repr__(
         self,
-    ):
+    ) -> str:
         return f"Vector2({self.x}, {self.y})"
 
     def __str__(
@@ -41,7 +46,7 @@ class Vector2:
     def __eq__(
         self,
         other,
-    ):
+    ) -> bool | NotImplementedType:
         """Two Vector2 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -53,7 +58,7 @@ class Vector2:
     def __add__(
         self,
         other,
-    ):
+    ) -> Vector2 | NotImplementedType:
         """Adds the components of two Vector2 objects."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -79,7 +84,7 @@ class Vector2:
     def __mul__(
         self,
         other,
-    ):
+    ) -> Vector2 | NotImplementedType:
         """Multiplies the components by a scalar integer."""
         if not isinstance(other, int):
             return NotImplemented
@@ -92,7 +97,7 @@ class Vector2:
     def __truediv__(
         self,
         other,
-    ):
+    ) -> Vector2 | NotImplementedType:
         if isinstance(other, int):
             new = Vector2.from_vector2(self)
             new.x /= other
@@ -104,31 +109,29 @@ class Vector2:
     def __getitem__(
         self,
         item,
-    ):
+    ) -> float | None | NotImplementedType:
         if isinstance(item, int):
             if item == 0:
                 return self.x
-            elif item == 1:
+            if item == 1:
                 return self.y
             return None
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __setitem__(
         self,
         key,
         value,
-    ):
+    ) -> None | NotImplementedType:
         if isinstance(key, int) and (isinstance(value, float | int)):
             if key == 0:
                 self.x = value
                 return None
-            elif key == 1:
+            if key == 1:
                 self.y = value
                 return None
             return None
-        else:
-            return NotImplemented
+        return NotImplemented
 
     @classmethod
     def from_vector2(
@@ -344,7 +347,7 @@ class Vector3:
 
     def __iter__(
         self,
-    ):
+    ) -> Iterator[float]:
         return iter((self.x, self.y, self.z))
 
     def __repr__(
@@ -360,8 +363,8 @@ class Vector3:
 
     def __eq__(
         self,
-        other,
-    ):
+        other: Vector3,
+    ) -> NotImplementedType | bool:
         """Two Vector3 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -373,8 +376,8 @@ class Vector3:
 
     def __add__(
         self,
-        other,
-    ):
+        other: Vector3,
+    ) -> NotImplementedType | Vector3:
         """Adds the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -388,7 +391,7 @@ class Vector3:
     def __sub__(
         self,
         other,
-    ):
+    ) -> NotImplementedType | Vector3:
         """Subtracts the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -401,8 +404,8 @@ class Vector3:
 
     def __mul__(
         self,
-        other,
-    ):
+        other: int | float,
+    ) -> Vector3 | NotImplementedType:
         """Multiplies the components by a scalar integer."""
         if isinstance(other, int | float):
             new = Vector3.from_vector3(self)
@@ -410,8 +413,7 @@ class Vector3:
             new.y *= other
             new.z *= other
             return new
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __truediv__(
         self,
@@ -423,23 +425,21 @@ class Vector3:
             new.y /= other
             new.z /= other
             return new
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __getitem__(
         self,
-        item,
-    ):
+        item: int,
+    ) -> float | None | NotImplementedType:
         if isinstance(item, int):
             if item == 0:
                 return self.x
-            elif item == 1:
+            if item == 1:
                 return self.y
-            elif item == 2:
+            if item == 2:
                 return self.z
             return None
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __setitem__(
         self,
@@ -450,15 +450,14 @@ class Vector3:
             if key == 0:
                 self.x = value
                 return None
-            elif key == 1:
+            if key == 1:
                 self.y = value
                 return None
-            elif key == 2:
+            if key == 2:
                 self.z = value
                 return None
             return None
-        else:
-            return NotImplemented
+        return NotImplemented
 
     @classmethod
     def from_vector2(
@@ -616,7 +615,7 @@ class Vector3:
         container: list,
     ) -> bool:
         """Checks to see if the same Vector3 object in located in the specified list. This differs from using the 'in'
-        keyword as that will return True for Vector3 objects that have simular coordinates.
+        keyword as that will return True for Vector3 objects that have similar coordinates.
 
         Args:
         ----
@@ -654,7 +653,7 @@ class Vector4:
 
     def __iter__(
         self,
-    ):
+    ) -> Iterator[float]:
         return iter((self.x, self.y, self.z, self.w))
 
     def __repr__(
@@ -671,7 +670,7 @@ class Vector4:
     def __eq__(
         self,
         other,
-    ):
+    ) -> NotImplementedType | bool:
         """Two Vector4 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -685,8 +684,8 @@ class Vector4:
     def __add__(
         self,
         other,
-    ):
-        """Adds the components of two Vectorr objects."""
+    ) -> NotImplementedType | Vector4:
+        """Adds the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
 
@@ -700,7 +699,7 @@ class Vector4:
     def __sub__(
         self,
         other,
-    ):
+    ) -> NotImplementedType | Vector4:
         """Subtracts the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -835,16 +834,16 @@ class Vector4:
         yaw = z
 
         qx = math.sin(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) - math.cos(
-            roll / 2
+            roll / 2,
         ) * math.sin(pitch / 2) * math.sin(yaw / 2)
         qy = math.cos(roll / 2) * math.sin(pitch / 2) * math.cos(yaw / 2) + math.sin(
-            roll / 2
+            roll / 2,
         ) * math.cos(pitch / 2) * math.sin(yaw / 2)
         qz = math.cos(roll / 2) * math.cos(pitch / 2) * math.sin(yaw / 2) - math.sin(
-            roll / 2
+            roll / 2,
         ) * math.sin(pitch / 2) * math.cos(yaw / 2)
         qw = math.cos(roll / 2) * math.cos(pitch / 2) * math.cos(yaw / 2) + math.sin(
-            roll / 2
+            roll / 2,
         ) * math.sin(pitch / 2) * math.sin(yaw / 2)
 
         return Vector4(qx, qy, qz, qw)
@@ -958,7 +957,8 @@ class AxisAngle:
         quaternion.normalize()
 
         aa.angle = 2.0 * math.atan2(
-            Vector3(quaternion.x, quaternion.y, quaternion.z).magnitude(), quaternion.w
+            Vector3(quaternion.x, quaternion.y, quaternion.z).magnitude(),
+            quaternion.w,
         )
 
         s = math.sin(aa.angle / 2.0)
@@ -1118,7 +1118,7 @@ class Face:
         y: float,
     ):
         """Returns the Z-component determined from the given X and Y components. This method does not check if the point
-        exists within the face, that must be done seperatley with inside().
+        exists within the face, that must be done separately with inside().
 
         Returns
         -------
@@ -1145,40 +1145,38 @@ class Polygon2:
 
     def __iter__(
         self,
-    ):
+    ) -> Iterator[Vector2]:
         yield from self.points
 
     def __len__(
         self,
-    ):
+    ) -> int:
         return len(self.points)
 
     def __repr__(
         self,
-    ):
+    ) -> str:
         return f"Polygon3({self.points})"
 
     def __getitem__(
         self,
-        item: int,
-    ):
+        item: int | slice,
+    ) -> Vector2 | list[Vector2] | NotImplementedType:
         if isinstance(item, int):
             return self.points[item]
-        elif isinstance(item, slice):
+        if isinstance(item, slice):
             return self.points[item.start : item.stop : item.step]
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __setitem__(
         self,
         key: int,
         value: Vector2,
-    ):
+    ) -> None | NotImplementedType:
         if isinstance(key, int) and isinstance(value, Vector2):
             self.points[key] = value
             return None
-        else:
-            return NotImplemented
+        return NotImplemented
 
     @classmethod
     def from_polygon3(
@@ -1196,8 +1194,7 @@ class Polygon2:
             A Polygon2 object.
         """
         poly2 = Polygon2()
-        for point in poly3:
-            poly2.points.append(Vector2(point.x, point.y))
+        poly2.points = [Vector2(point.x, point.y) for point in poly3]
         return poly2
 
     def inside(
@@ -1230,7 +1227,7 @@ class Polygon2:
                     if min(p1.x, p2.x) <= point.x <= max(p1.x, p2.x):
                         inside = include_edges
                         break
-                    elif point.x < min(p1.x, p2.x):
+                    if point.x < min(p1.x, p2.x):
                         inside = not inside
             elif min(p1.y, p2.y) <= point.y <= max(p1.y, p2.y):
                 xinters = (point.y - p1.y) * (p2.x - p1.x) / float(p2.y - p1.y) + p1.x
@@ -1297,12 +1294,12 @@ class Polygon3:
 
     def __iter__(
         self,
-    ):
+    ) -> Iterator[Vector3]:
         yield from self.points
 
     def __len__(
         self,
-    ):
+    ) -> int:
         return len(self.points)
 
     def __repr__(
@@ -1313,24 +1310,22 @@ class Polygon3:
     def __getitem__(
         self,
         item: int,
-    ):
+    ) -> Vector3 | list[Vector3] | NotImplementedType:
         if isinstance(item, int):
             return self.points[item]
-        elif isinstance(item, slice):
+        if isinstance(item, slice):
             return self.points[item.start : item.stop : item.step]
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __setitem__(
         self,
         key: int,
         value: Vector3,
-    ):
+    ) -> None | NotImplementedType:
         if isinstance(key, int) and isinstance(value, Vector3):
             self.points[key] = value
             return None
-        else:
-            return NotImplemented
+        return NotImplemented
 
     @classmethod
     def from_polygon2(
