@@ -119,7 +119,6 @@ class AddFieldGFF(ModifyGFF):
                 f"Parent field at '{self.path}' does not exist or is not a List or Struct. Unable to add new Field '{self.label}'...",
             )
             return
-        assert container is not None
         value = self.value.value(memory, self.field_type)
 
         def set_locstring() -> None:
