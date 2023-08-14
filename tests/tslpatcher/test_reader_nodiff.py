@@ -20,6 +20,7 @@ from pykotor.tslpatcher.mods.gff import (
     FieldValue2DAMemory,
     ModifyGFF,
 )
+from pykotor.tslpatcher.mods.tlk import ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (
     ChangeRow2DA,
     TargetType,
@@ -60,9 +61,9 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
 
         ConfigReader(ini, tlk).load(config)
-        tlk_mod0 = config.patches_tlk.modifiers.pop(0)
-        tlk_mod1 = config.patches_tlk.modifiers.pop(0)
-        tlk_mod2 = config.patches_tlk.modifiers.pop(0)
+        tlk_mod0: ModifyTLK = config.patches_tlk.modifiers.pop(0)
+        tlk_mod1: ModifyTLK = config.patches_tlk.modifiers.pop(0)
+        tlk_mod2: ModifyTLK = config.patches_tlk.modifiers.pop(0)
 
         self.assertEqual(tlk_mod0.text, "Num3")
         self.assertEqual(tlk_mod1.text, "Num2")
@@ -1375,14 +1376,14 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: ModifyGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
         self.assertEqual("SomeField", mod_0.label)
         self.assertEqual(1.23, mod_0.value.stored)
 
-        mod_1: ModifyGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_1: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_1.path))
@@ -1413,7 +1414,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1444,7 +1445,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1475,7 +1476,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1506,7 +1507,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual("SomeList", str(mod_0.path))
@@ -1546,7 +1547,7 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: ModifyGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
@@ -1559,7 +1560,7 @@ class TestConfigReader(TestCase):
             "lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE)
         )
 
-        mod_1: ModifyGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_1: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
         self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
@@ -1597,14 +1598,14 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: ModifyGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual(".", str(mod_0.path))
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
 
-        mod_1: ModifyGFF = mod_0.modifiers.pop(0)
+        mod_1: AddFieldGFF = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
         self.assertEqual(".", str(mod_1.path))
@@ -1642,13 +1643,13 @@ class TestConfigReader(TestCase):
         config = PatcherConfig()
         ConfigReader(ini, "").load(config)
 
-        mod_0: ModifyGFF = config.patches_gff[0].modifiers.pop(0)
+        mod_0: AddFieldGFF = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertEqual(".", str(mod_0.path))
         self.assertEqual("SomeList", mod_0.label)
 
-        mod_1 = mod_0.modifiers.pop(0)
+        mod_1: ModifyGFF = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddStructToListGFF)
         self.assertEqual(111, mod_1.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
