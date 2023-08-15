@@ -1,5 +1,8 @@
 from configparser import ConfigParser
+import os
+from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 from pykotor.common.language import Language, Gender
 
@@ -9,6 +12,9 @@ from pykotor.common.geometry import Vector3, Vector4
 
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK
+from pykotor.resource.formats.tlk.tlk_auto import write_tlk
+from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+from pykotor.resource.type import ResourceType
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -40,33 +46,214 @@ class TestConfigReader(TestCase):
     def test(self):
         ...
 
-    def test_tlk(self):
+    def setUp(self):
+        self.config = PatcherConfig()
+        self.ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        self.ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
+        self.test_tlk_data: TLK = self.create_test_tlk(
+            {
+                0: {"text": "Entry 0", "voiceover": "vo_0"},
+                1: {"text": "Entry 1", "voiceover": "vo_1"},
+                2: {"text": "Entry 2", "voiceover": "vo_2"},
+                3: {"text": "Entry 3", "voiceover": "vo_3"},
+                4: {"text": "Entry 4", "voiceover": "vo_4"},
+                5: {"text": "Entry 5", "voiceover": "vo_5"},
+                6: {"text": "Entry 6", "voiceover": "vo_6"},
+                7: {"text": "Entry 7", "voiceover": "vo_7"},
+                8: {"text": "Entry 8", "voiceover": "vo_8"},
+                9: {"text": "Entry 9", "voiceover": "vo_9"},
+                10: {"text": "Entry 10", "voiceover": "vo_10"},
+            }
+        )
+        self.modified_tlk_data: TLK = self.create_test_tlk(
+            {
+                0: {"text": "Modified 0", "voiceover": "vo_mod_0"},
+                1: {"text": "Modified 1", "voiceover": "vo_mod_1"},
+                2: {"text": "Modified 2", "voiceover": "vo_mod_2"},
+                3: {"text": "Modified 3", "voiceover": "vo_mod_3"},
+                4: {"text": "Modified 4", "voiceover": "vo_mod_4"},
+                5: {"text": "Modified 5", "voiceover": "vo_mod_5"},
+                6: {"text": "Modified 6", "voiceover": "vo_mod_6"},
+                7: {"text": "Modified 7", "voiceover": "vo_mod_7"},
+                8: {"text": "Modified 8", "voiceover": "vo_mod_8"},
+                9: {"text": "Modified 9", "voiceover": "vo_mod_9"},
+                10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
+            }
+        )
+        self.mod_path = Path("tmp", "mock_mod_path").resolve()
+        self.mod_path.mkdir(parents=True, exist_ok=True)
+
+        # write it to a real file
+        write_tlk(
+            self.test_tlk_data,
+            str(Path(self.mod_path) / "tlk_test_file.tlk"),
+            ResourceType.TLK,
+        )
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path) / "tlk_modifications_file.tlk"),
+            ResourceType.TLK,
+        )
+
+        # Load the INI file and the TLK file
+        self.config_reader = ConfigReader(self.ini, self.mod_path)  # type: ignore
+
+    def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
+        tlk = TLK()
+        for v in data.values():
+            tlk.add(text=v["text"], sound_resref=v["voiceover"])
+        return tlk
+
+    def test_tlk_range_functionality(self):
         ini_text = """
             [TLKList]
-            StrRef0=2
-            StrRef1=1
-            StrRef2=0
-            """
+            File0=tlk_modifications_file.tlk
 
-        tlk = TLK()
-        tlk.add("Num1")
-        tlk.add("Num2")
-        tlk.add("Num3")
+            [tlk_modifications_file.tlk]
+            0:2=4:6
+        """
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
 
-        ini = ConfigParser()
-        ini.read_string(ini_text)
-        ini.optionxform = str
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
+            for mod in self.config.patches_tlk.modifiers
+        }
+        self.maxDiff = None
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                4: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
+                5: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
+                6: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+            },
+        )
 
-        config = PatcherConfig()
+    def test_tlk_strref_range_functionality(self):
+        ini_text = """
+            [TLKList]
+            StrRef4:6=0:2
+        """
 
-        ConfigReader(ini, tlk).load(config)
-        tlk_mod0 = config.patches_tlk.modifiers.pop(0)
-        tlk_mod1 = config.patches_tlk.modifiers.pop(0)
-        tlk_mod2 = config.patches_tlk.modifiers.pop(0)
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path) / "append.tlk"),
+            ResourceType.TLK,
+        )
 
-        self.assertEqual(tlk_mod0.text, "Num3")
-        self.assertEqual(tlk_mod1.text, "Num2")
-        self.assertEqual(tlk_mod2.text, "Num1")
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
+            for mod in self.config.patches_tlk.modifiers
+        }
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                0: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                1: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5")},
+                2: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
+            },
+        )
+
+    def test_tlk_strref_ignore_functionality(self):
+        ini_text = """
+            [TLKList]
+            StrRef0:4=2:6
+            Ignore1:2=
+        """
+
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path) / "append.tlk"),
+            ResourceType.TLK,
+        )
+
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
+            for mod in self.config.patches_tlk.modifiers
+        }
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                2: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
+                5: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
+                6: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+            },
+        )
+
+    def test_tlk_file_range_functionality(self):
+        ini_text = """
+            [TLKList]
+            File0=tlk_modifications_file.tlk
+
+            [tlk_modifications_file.tlk]
+            0:4=0:4
+        """
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 5)
+        modifiers_dict = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
+            for mod in self.config.patches_tlk.modifiers
+        }
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                0: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
+                1: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
+                2: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+                3: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
+                4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+            },
+        )
+
+    def test_tlk_file_ignore_functionality(self):
+        ini_text = """
+            [TLKList]
+            File0=tlk_modifications_file.tlk
+            Ignore1:2=
+
+            [tlk_modifications_file.tlk]
+            0:4=2:6
+        """
+
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path) / "append.tlk"),
+            ResourceType.TLK,
+        )
+
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
+            for mod in self.config.patches_tlk.modifiers
+        }
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                2: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
+                5: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
+                6: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+            },
+        )
 
     # region 2DA: Change Row
     def test_2da_changerow_identifier(self):
@@ -86,8 +273,14 @@ class TestConfigReader(TestCase):
             RowLabel=1
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -121,8 +314,14 @@ class TestConfigReader(TestCase):
             LabelIndex=3
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -160,8 +359,14 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -200,8 +405,14 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -243,8 +454,14 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -274,8 +491,14 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -309,8 +532,14 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -344,8 +573,14 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -383,8 +618,14 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -428,8 +669,14 @@ class TestConfigReader(TestCase):
             RowLabel=1
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -463,8 +710,14 @@ class TestConfigReader(TestCase):
             LabelIndex=3
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -503,8 +756,14 @@ class TestConfigReader(TestCase):
             RowIndex=0
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -540,8 +799,14 @@ class TestConfigReader(TestCase):
             RowIndex=0
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -576,8 +841,14 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -616,8 +887,14 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -666,8 +943,14 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=I2
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -701,8 +984,14 @@ class TestConfigReader(TestCase):
             I2=StrRef5
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -741,8 +1030,14 @@ class TestConfigReader(TestCase):
             L2=StrRef5
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -779,8 +1074,14 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=I2
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -807,8 +1108,14 @@ class TestConfigReader(TestCase):
             [test2.ssf]
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -829,8 +1136,14 @@ class TestConfigReader(TestCase):
             Battlecry 2=456
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -856,8 +1169,14 @@ class TestConfigReader(TestCase):
             Battlecry 2=2DAMEMORY6
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -883,8 +1202,14 @@ class TestConfigReader(TestCase):
             Battlecry 2=StrRef6
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -936,8 +1261,14 @@ class TestConfigReader(TestCase):
             Poisoned=28
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1015,8 +1346,14 @@ class TestConfigReader(TestCase):
             ClassList\\0\\Class=123
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1037,8 +1374,14 @@ class TestConfigReader(TestCase):
             SomeInt=123
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1061,8 +1404,14 @@ class TestConfigReader(TestCase):
             SomeString=abc
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1085,8 +1434,14 @@ class TestConfigReader(TestCase):
             SomeVector=1|2|3
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1109,8 +1464,14 @@ class TestConfigReader(TestCase):
             SomeVector=1|2|3|4
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1135,8 +1496,14 @@ class TestConfigReader(TestCase):
             LocString(lang3)=world
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1180,8 +1547,14 @@ class TestConfigReader(TestCase):
             SomeField=StrRef2
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1211,8 +1584,14 @@ class TestConfigReader(TestCase):
             SomeField=2DAMEMORY12
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1285,8 +1664,14 @@ class TestConfigReader(TestCase):
             Value=123
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1345,8 +1730,14 @@ class TestConfigReader(TestCase):
             Value=1.23
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1375,8 +1766,14 @@ class TestConfigReader(TestCase):
             Value=abc
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1402,8 +1799,14 @@ class TestConfigReader(TestCase):
             Value=1|2|3
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1429,8 +1832,14 @@ class TestConfigReader(TestCase):
             Value=1|2|3|4
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1456,8 +1865,14 @@ class TestConfigReader(TestCase):
             Value=abc
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1492,8 +1907,14 @@ class TestConfigReader(TestCase):
             StrRef=StrRef8
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1543,8 +1964,14 @@ class TestConfigReader(TestCase):
             Value=123
             """
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -1588,8 +2015,14 @@ class TestConfigReader(TestCase):
             """
         # TODO: Add field to struct
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()

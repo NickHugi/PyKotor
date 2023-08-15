@@ -71,8 +71,14 @@ class PatcherConfig:
         from pykotor.tslpatcher.reader import ConfigReader
 
         mod_path: Path = Path(mod_path)
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
+
         ini.read_string(ini_text)
 
         ConfigReader(ini, mod_path).load(self)

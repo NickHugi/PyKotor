@@ -1,12 +1,9 @@
-import sys
-from configparser import (
-    ConfigParser,  # type: ignore
-    DuplicateOptionError,
-    DuplicateSectionError,
-    RawConfigParser,
-    SectionProxy,
-)
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal
+
+from chardet import UniversalDetector
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -53,118 +50,8 @@ from pykotor.tslpatcher.mods.twoda import (
     WarningException,
 )
 
-
-# pylint: disable=all
-class ConfigParser(RawConfigParser):  # noqa
-    def _read(self, fp, fpname):  # sourcery skip: low-code-quality  #  type: ignore
-        """Override the _read in RawConfigParser so it doesn't throw exceptions when there's no header defined.
-        This override matches TSLPatcher.
-        """
-        elements_added = set()
-        cursect = None  # None, or a dictionary
-        sectname = None
-        optname = None
-        lineno = 0
-        indent_level = 0
-        e = None  # None, or an exception
-        for lineno, line in enumerate(fp, start=1):
-            comment_start = sys.maxsize
-            # strip inline comments
-            inline_prefixes = {p: -1 for p in self._inline_comment_prefixes}
-            while comment_start == sys.maxsize and inline_prefixes:
-                next_prefixes = {}
-                for prefix, index in inline_prefixes.items():
-                    index = line.find(prefix, index + 1)
-                    if index == -1:
-                        continue
-                    next_prefixes[prefix] = index
-                    if index == 0 or (index > 0 and line[index - 1].isspace()):
-                        comment_start = min(comment_start, index)
-                inline_prefixes = next_prefixes
-            # strip full line comments
-            for prefix in self._comment_prefixes:
-                if line.strip().startswith(prefix):
-                    comment_start = 0
-                    break
-            if comment_start == sys.maxsize:
-                comment_start = None
-            value = line[:comment_start].strip()
-            if not value:
-                if self._empty_lines_in_values:
-                    # add empty line to the value, but only if there was no
-                    # comment on the line
-                    if (
-                        comment_start is None
-                        and cursect is not None
-                        and optname
-                        and cursect[optname] is not None
-                    ):
-                        cursect[optname].append("")  # newlines added at join
-                else:
-                    # empty line marks end of value
-                    indent_level = sys.maxsize
-                continue
-            # continuation line?
-            first_nonspace = self.NONSPACECRE.search(line)
-            cur_indent_level = first_nonspace.start() if first_nonspace else 0
-            if cursect is not None and optname and cur_indent_level > indent_level:
-                cursect[optname].append(value)
-            else:
-                indent_level = cur_indent_level
-                # is it a section header?
-                if mo := self.SECTCRE.match(value):
-                    sectname = mo.group("header")
-                    if sectname in self._sections:
-                        if self._strict and sectname in elements_added:
-                            raise DuplicateSectionError(sectname, fpname, lineno)
-                        cursect = self._sections[sectname]
-                        elements_added.add(sectname)
-                    elif sectname == self.default_section:
-                        cursect = self._defaults
-                    else:
-                        cursect = self._dict()
-                        self._sections[sectname] = cursect
-                        self._proxies[sectname] = SectionProxy(self, sectname)
-                        elements_added.add(sectname)
-                    # So sections can't start with a continuation line
-                    optname = None
-                elif cursect is None:
-                    continue  # this is the patch
-                else:
-                    if mo := self._optcre.match(value):
-                        optname, vi, optval = mo.group("option", "vi", "value")
-                        if not optname:
-                            e = self._handle_error(e, fpname, lineno, line)
-                        optname = self.optionxform(optname.rstrip())
-                        if self._strict and (sectname, optname) in elements_added:
-                            raise DuplicateOptionError(
-                                sectname,
-                                optname,
-                                fpname,
-                                lineno,
-                            )
-                        elements_added.add((sectname, optname))
-                        # This check is fine because the OPTCRE cannot
-                        # match if it would set optval to None
-                        if optval is not None:
-                            optval = optval.strip()
-                            cursect[optname] = [optval]
-                        else:
-                            # valueless option handling
-                            cursect[optname] = None
-                    else:
-                        # a non-fatal parsing error occurred. set up the
-                        # exception but keep going. the exception will be
-                        # raised at the end of the file and will contain a
-                        # list of all bogus lines
-                        e = self._handle_error(e, fpname, lineno, line)
-        self._join_multiline_values()
-        # if any parsing errors occurred, raise an exception
-        if e:
-            raise e
-
-
-# pylint: enable=all
+if TYPE_CHECKING:
+    from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 
 
 class ConfigReader:
@@ -176,19 +63,21 @@ class ConfigReader:
     @classmethod
     def from_filepath(cls, path: str) -> PatcherConfig:
         ini_file_bytes = BinaryReader.load_file(path)
-        ini_text = None
-        try:
-            ini_text = ini_file_bytes.decode()
-        except UnicodeDecodeError as ex:
-            try:
-                # If UTF-8 failed, try 'cp1252' (similar to ANSI)
-                ini_text = ini_file_bytes.decode("cp1252")
-            except UnicodeDecodeError as ex2:
-                # Raise an exception if all decodings failed
-                raise ex2 from ex
 
-        ini = ConfigParser()
-        ini.optionxform = str  # type: ignore
+        detector = UniversalDetector()
+        detector.feed(ini_file_bytes)
+        detector.close()
+        encoding = detector.result["encoding"]
+
+        ini_text = ini_file_bytes.decode(encoding)
+
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
         ini.read_string(ini_text)
 
         config = PatcherConfig()
@@ -256,72 +145,115 @@ class ConfigReader:
         if "TLKList" not in self.ini:
             return
 
-        dialog_tlk_edits = dict(self.ini["TLKList"].items())
-        modifier = None
+        tlk_list_edits = dict(self.ini["TLKList"].items())
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
+        append_tlk_edits = None
 
-        append_tlk_edits: TLK | None = None
+        def load_tlk(tlk_path: Path) -> TLK:
+            return read_tlk(tlk_path) if tlk_path.exists() else TLK()
 
-        for key, value in dialog_tlk_edits.items():
-            key = key.lower()
-            token_id: int
-            if key.startswith("strref"):  # Handle legacy syntax e.g. StrRef6=3
-                token_id = int(key[6:])
-                append_index = int(value)
-                # Don't load the tlk unless actively needed, for performance reasons.
-                if append_tlk_edits is None:
-                    append_path = self.mod_path / "append.tlk"
-                    append_tlk_edits = (
-                        read_tlk(append_path) if append_path.exists() else TLK()
-                    )
-                entry = append_tlk_edits.get(append_index)
-                if not entry:
-                    msg = "TLKEntry invalid"
-                    raise ValueError(msg)
-                modifier = ModifyTLK(
-                    token_id,
-                    entry.text,
-                    entry.voiceover,
-                    is_replacement=False,
-                )
+        range_delims = [":", "-", "to"]
+
+        def extract_range_parts(range_str) -> tuple[int, int | None]:
+            if range_str.lower().startswith("strref") or range_str.lower().startswith(
+                "ignore",
+            ):
+                range_str = range_str[6:]
+            for delim in range_delims:
+                if delim in range_str:
+                    parts = range_str.split(delim)
+                    start = int(parts[0].strip()) if parts[0].strip() else 0
+                    end = int(parts[1].strip()) if parts[1].strip() else None
+                    return start, end
+            return int(range_str), None
+
+        def parse_range(range_str: str, max_value: int) -> range:
+            start, end = extract_range_parts(range_str)
+            if end is None:
+                return range(int(range_str), int(range_str) + 1)
+            if end < start:
+                msg = f"start of range {start} must be less than end of range {end}"
+                raise ValueError(msg)
+            return range(start, end + 1)
+
+        tlk_list_ignored_indices: set[int] = set()
+
+        def process_tlk_entries(
+            tlk_data: TLK,
+            modifications_ini_keys,
+            modifications_ini_values,
+            is_replacement,
+        ):
+            def append_modifier(token_id, text, voiceover, is_replacement):
+                modifier = ModifyTLK(token_id, text, voiceover, is_replacement)
                 self.config.patches_tlk.modifiers.append(modifier)
 
-            elif key.startswith("file"):  # Handle multiple files e.g. File0=update1.tlk
-                # Load referenced TLK file.
-                tlk_file_path = self.mod_path / value
-                tlk_data_entries: TLK | None = None
-                if tlk_file_path.exists():
-                    tlk_data_entries = read_tlk(tlk_file_path)
-                else:
-                    msg = f"Cannot find TLK file: '{value}' at key '{key}' in TLKList"
-                    raise FileNotFoundError(msg)
+            for mod_key, mod_value in zip(
+                modifications_ini_keys,
+                modifications_ini_values,
+            ):
+                change_indices = (
+                    parse_range(str(mod_key), len(tlk_data))
+                    if not isinstance(mod_key, range)
+                    else mod_key
+                )
+                value_range = (
+                    parse_range(str(mod_value), len(tlk_data))
+                    if not isinstance(mod_value, range) and mod_value != ""
+                    else mod_key
+                )
 
-                # build modifications from replacement TLK
+                for mod_index, token_id in zip(change_indices, value_range):
+                    if mod_index in tlk_list_ignored_indices:
+                        continue
+                    entry: TLKEntry = tlk_data[mod_index]
+                    append_modifier(
+                        token_id,
+                        entry.text,
+                        entry.voiceover,
+                        is_replacement,
+                    )
+
+        for i in tlk_list_edits:
+            if i.lower().startswith("ignore"):
+                # load append.tlk only if it's needed.
+                if append_tlk_edits is None:
+                    append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
+                tlk_list_ignored_indices.update(
+                    parse_range(i[6:], len(append_tlk_edits)),
+                )
+
+        for key, value in tlk_list_edits.items():
+            key: str = key.lower()
+            if key.startswith("ignore"):
+                continue
+            if key.startswith("strref"):
+                # load append.tlk only if it's needed.
+                if append_tlk_edits is None:
+                    append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
+                strref_range = parse_range(key, len(append_tlk_edits))
+                token_id_range = parse_range(value, len(append_tlk_edits))
+                process_tlk_entries(
+                    append_tlk_edits,
+                    strref_range,
+                    token_id_range,
+                    is_replacement=False,
+                )
+            elif key.startswith("file"):
+                tlk_modifications_path: Path = self.mod_path / value
                 if value not in self.ini:
                     msg = f"INI header for '{value}' referenced in TLKList key '{key}' not found."
                     raise KeyError(msg)
-                # get the entries from the custom header e.g. [update1.tlk]
-                custom_tlk_entries = dict(self.ini[value].items())
-                for (
-                    change_index,
-                    token_id_str,
-                ) in (
-                    custom_tlk_entries.items()
-                ):  # replace the specified indices e.g. 1977=421
-                    entry = tlk_data_entries.get(int(change_index))
-                    if not entry:
-                        msg = "TLKEntry invalid"
-                        raise ValueError(msg)
-                    modifier = ModifyTLK(
-                        int(token_id_str),
-                        entry.text,
-                        entry.voiceover,
-                        is_replacement=True,
-                    )
-                    self.config.patches_tlk.modifiers.append(modifier)
-            # Handle in-line updates e.g. 2003\Text="Peace is a lie; there is only passion."
+                tlk_ini_edits = dict(self.ini[value].items())
+                modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
+                process_tlk_entries(
+                    modifications_tlk_data,
+                    tlk_ini_edits.keys(),
+                    tlk_ini_edits.values(),
+                    is_replacement=True,
+                )
             elif "\\" in key or "/" in key:
-                delimiter = "\\" if "\\" in key else "/"
+                delimiter: Literal["\\", "/"] = "\\" if "\\" in key else "/"
                 token_id_str, property_name = key.split(delimiter)
                 token_id = int(token_id_str)
 
@@ -342,7 +274,8 @@ class ConfigReader:
                 text = modifier_dict[token_id].get("text")
                 voiceover = modifier_dict[token_id].get("voiceover")
 
-                # TODO: replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
+                # TODO(th3w1zard1): replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
+                # EDIT: looked into the above todo, would require a large restructure of the way TLK is stored.
                 if isinstance(text, str) and isinstance(voiceover, ResRef):
                     modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
                     self.config.patches_tlk.modifiers.append(modifier)
@@ -374,7 +307,7 @@ class ConfigReader:
         if "SSFList" not in self.ini:
             return
 
-        configstr_to_ssfsound = {
+        configstr_to_ssfsound: dict[str, SSFSound] = {
             "Battlecry 1": SSFSound.BATTLE_CRY_1,
             "Battlecry 2": SSFSound.BATTLE_CRY_2,
             "Battlecry 3": SSFSound.BATTLE_CRY_3,
@@ -805,18 +738,21 @@ class NamespaceReader:
     @classmethod
     def from_filepath(cls, path: str) -> list[PatcherNamespace]:
         ini_file_bytes = BinaryReader.load_file(path)
-        ini_text = None
-        try:
-            ini_text = ini_file_bytes.decode()
-        except UnicodeDecodeError as ex:
-            try:
-                # If UTF-8 failed, try 'cp1252' (similar to ANSI)
-                ini_text = ini_file_bytes.decode("cp1252")
-            except UnicodeDecodeError as ex2:
-                # Raise an exception if all decodings failed
-                raise ex2 from ex
-        ini = ConfigParser()
-        ini.optionxform = lambda optionstr: optionstr
+
+        detector = UniversalDetector()
+        detector.feed(ini_file_bytes)
+        detector.close()
+        encoding = detector.result["encoding"]
+
+        ini_text = ini_file_bytes.decode(encoding)
+
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
         ini.read_string(ini_text)
         return NamespaceReader(ini).load()
 
