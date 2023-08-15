@@ -567,6 +567,7 @@ class ConfigReader:
         identifier: str,
         modifiers: dict[str, str],
     ) -> Modify2DA:
+        modification: None = None
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
@@ -707,6 +708,7 @@ class ConfigReader:
             is_store_2da = value.startswith("2DAMEMORY")
             is_store_tlk = value.startswith("StrRef")
 
+            row_value: None = None
             if is_store_2da:
                 token_id = int(value[9:])
                 row_value = RowValue2DAMemory(token_id)

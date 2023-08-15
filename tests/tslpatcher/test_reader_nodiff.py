@@ -1000,15 +1000,15 @@ class TestConfigReader(TestCase):
         # noinspection PyTypeChecker
         mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
-        value = mod_0.label_insert["0"]
+        value = mod_0.index_insert[0]
         self.assertIsInstance(value, RowValueConstant)
         self.assertEqual("abc", value.string)  # type: ignore
 
-        value = mod_0.label_insert["1"]
+        value = mod_0.index_insert[1]
         self.assertIsInstance(value, RowValue2DAMemory)
         self.assertEqual(4, value.token_id)  # type: ignore
 
-        value = mod_0.label_insert["2"]
+        value = mod_0.index_insert[2]
         self.assertIsInstance(value, RowValueTLKMemory)
         self.assertEqual(5, value.token_id)  # type: ignore
 
