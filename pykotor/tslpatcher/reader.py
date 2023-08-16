@@ -233,7 +233,7 @@ class ConfigReader:
                 # load append.tlk only if it's needed.
                 if append_tlk_edits is None:
                     append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
-                strref_range = parse_range(key, len(append_tlk_edits))
+                strref_range = parse_range(key[6:], len(append_tlk_edits))
                 token_id_range = parse_range(value, len(append_tlk_edits))
                 process_tlk_entries(
                     append_tlk_edits,
