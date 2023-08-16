@@ -219,7 +219,7 @@ class Installation:
         error_msg: str,
     ) -> Path:
         resource_path = Path(self._path)
-        folder_names_lower = {name.lower() for name in folder_names}
+        folder_names_lower: set[str] = {name.lower() for name in folder_names}
 
         for folder_path in resource_path.iterdir():
             if folder_path.is_dir() and folder_path.name.lower() in folder_names_lower:
@@ -386,18 +386,19 @@ class Installation:
         """Reloads the list of resources in the streamvoices folder linked to the Installation."""
         self._streamvoices = []
         streamvoices_path = self.streamvoice_path()
-        for filename in list(streamvoices_path.iterdir()):
-            with suppress(Exception):
-                file_path = streamvoices_path / filename
-                identifier = ResourceIdentifier.from_path(file_path)
-                resource = FileResource(
-                    identifier.resname,
-                    identifier.restype,
-                    file_path.stat().st_size,
-                    0,
-                    file_path,
-                )
-                self._streamvoices.append(resource)
+        for dirpath, _dirnames, filenames in os.walk(streamvoices_path):
+            for filename in filenames:
+                with suppress(Exception):
+                    file_path = Path(dirpath) / filename
+                    identifier = ResourceIdentifier.from_path(file_path)
+                    resource = FileResource(
+                        identifier.resname,
+                        identifier.restype,
+                        file_path.stat().st_size,
+                        0,
+                        file_path,
+                    )
+                    self._streamvoices.append(resource)
 
     def load_rims(
         self,
@@ -405,10 +406,12 @@ class Installation:
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = {}
         with suppress(ValueError):
-            rims_path = self.rims_path()
-            filenames = [file for file in rims_path.iterdir() if is_rim_file(file.name)]
-            for filename in filenames:
-                self._rims[filename.name] = list(Capsule(rims_path / filename))
+            rims_path: Path = self.rims_path()
+            file_list: list[Path] = [
+                file for file in rims_path.iterdir() if is_rim_file(file.name)
+            ]
+            for file_path in file_list:
+                self._rims[file_path.name] = list(Capsule(rims_path / file_path))
 
     # endregion
 
@@ -524,7 +527,7 @@ class Installation:
         -------
             A list of FileResources.
         """
-        return list(self._override[directory])
+        return self._override[directory]
 
     # endregion
 
@@ -570,7 +573,7 @@ class Installation:
             A ResourceResult object if the specified resource is found, otherwise None.
         """
         query = ResourceIdentifier(resname, restype)
-        batch = self.resources(
+        batch: dict[ResourceIdentifier, ResourceResult | None] = self.resources(
             [query],
             order,
             capsules=capsules,
@@ -602,7 +605,7 @@ class Installation:
             A dictionary mapping the given items in the queries argument to a list of ResourceResult objects.
         """
         results: dict[ResourceIdentifier, ResourceResult | None] = {}
-        locations = self.locations(
+        locations: dict[ResourceIdentifier, list[LocationResult]] = self.locations(
             queries,
             order,
             capsules=capsules,
@@ -696,14 +699,18 @@ class Installation:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        order = order or (
-            [
-                SearchLocation.CUSTOM_FOLDERS,
-                SearchLocation.OVERRIDE,
-                SearchLocation.CUSTOM_MODULES,
-                SearchLocation.MODULES,
-                SearchLocation.CHITIN,
-            ]
+        order = (
+            order
+            if order is not None
+            else (
+                [
+                    SearchLocation.CUSTOM_FOLDERS,
+                    SearchLocation.OVERRIDE,
+                    SearchLocation.CUSTOM_MODULES,
+                    SearchLocation.MODULES,
+                    SearchLocation.CHITIN,
+                ]
+            )
         )
 
         locations: dict[ResourceIdentifier, list[LocationResult]] = {}
@@ -842,7 +849,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[Path] | None = None,
+        folders: list[Path | str] | None = None,
     ) -> CaseInsensitiveDict[TPC | None]:
         """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
         texture could not be found then the value is None.
@@ -900,14 +907,14 @@ class Installation:
                 for resname in queries:
                     if capsule.exists(resname, ResourceType.TPC):
                         queries.remove(resname)
-                        textures[resname] = read_tpc(
-                            capsule.resource(resname, ResourceType.TPC),
-                        )
+                        resource = capsule.resource(resname, ResourceType.TPC)
+                        assert resource is not None
+                        textures[resname] = read_tpc(resource)
                     if capsule.exists(resname, ResourceType.TGA):
                         queries.remove(resname)
-                        textures[resname] = read_tpc(
-                            capsule.resource(resname, ResourceType.TGA),
-                        )
+                        resource = capsule.resource(resname, ResourceType.TGA)
+                        assert resource is not None
+                        textures[resname] = read_tpc(resource)
 
         def check_folders(values: list[Path]):
             for folder in values:

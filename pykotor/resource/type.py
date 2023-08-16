@@ -207,10 +207,9 @@ class ResourceType:
     ):
         if self is ResourceType.TwoDA:
             return "ResourceType.TwoDA"
-        elif self is ResourceType.INVALID:
+        if self is ResourceType.INVALID:
             return "ResourceType.INVALID"
-        else:
-            return f"ResourceType.{self.extension.upper()}"
+        return f"ResourceType.{self.extension.upper()}"
 
     def __str__(
         self,

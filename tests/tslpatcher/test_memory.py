@@ -2,17 +2,22 @@ from unittest import TestCase
 
 from pykotor.common.language import LocalizedString, Gender, Language
 from pykotor.tslpatcher.memory import PatcherMemory
-from pykotor.tslpatcher.mods.gff import LocalizedStringDelta
+from pykotor.tslpatcher.mods.gff import (
+    FieldValue2DAMemory,
+    FieldValueConstant,
+    FieldValueTLKMemory,
+    LocalizedStringDelta,
+)
 
 
 class TestLocalizedStringDelta(TestCase):
     def test_apply_stringref_2damemory(self):
         locstring = LocalizedString(0)
 
-        delta = LocalizedStringDelta("2DAMEMORY5")
+        delta = LocalizedStringDelta(FieldValueConstant("2DAMEMORY5"))
 
         memory = PatcherMemory()
-        memory.memory_2da[5] = "123"
+        memory.memory_2da[5] = FieldValue2DAMemory("123")
 
         delta.apply(locstring, memory)
 
@@ -24,7 +29,7 @@ class TestLocalizedStringDelta(TestCase):
         delta = LocalizedStringDelta("StrRef5")
 
         memory = PatcherMemory()
-        memory.memory_str[5] = 123
+        memory.memory_str[5] = FieldValueTLKMemory(123)
 
         delta.apply(locstring, memory)
 
@@ -33,7 +38,7 @@ class TestLocalizedStringDelta(TestCase):
     def test_apply_stringref_int(self):
         locstring = LocalizedString(0)
 
-        delta = LocalizedStringDelta(123)
+        delta = LocalizedStringDelta(FieldValueConstant(123))
 
         memory = PatcherMemory()
 

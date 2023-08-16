@@ -21,7 +21,7 @@ class TalkTable:
         self,
         path: Path,
     ):
-        self._path: Path = path
+        self._path: Path = Path(path)
 
     def string(
         self,
@@ -46,7 +46,8 @@ class TalkTable:
             string = ""
         else:
             _, _, _, _, text_offset, text_length, _ = self._extract_common_data(
-                reader, stringref
+                reader,
+                stringref,
             )
             reader.seek(texts_offset + text_offset)
             string = reader.read_string(text_length)
@@ -76,7 +77,8 @@ class TalkTable:
             sound_resref = ""
         else:
             _, sound_resref, _, _, _, _, _ = self._extract_common_data(
-                reader, stringref
+                reader,
+                stringref,
             )
         reader.close()
         return ResRef(sound_resref)

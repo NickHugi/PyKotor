@@ -16,6 +16,7 @@ from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
+from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
@@ -171,7 +172,7 @@ class ModInstaller:
                 [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
                 folders=[self.mod_path],
             )
-            twoda = read_2da(search.data)
+            twoda: TwoDA = read_2da(search.data)
             twodas[patch.filename] = twoda
 
             self.log.add_note(f"Patching '{patch.filename}'")

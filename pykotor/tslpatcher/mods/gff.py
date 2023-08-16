@@ -91,7 +91,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: str | Path,
+        path: str | Path | None = None,
         modifiers: list[ModifyGFF] | None = None,
         index_to_list_token: int | None = None,
     ):
@@ -99,7 +99,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: Path = Path(path)
+        self.path: Path | None = Path(path) if path else None
         self.index_to_list_token: int | None = index_to_list_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -110,15 +110,18 @@ class AddFieldGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
-        container = self._navigate_containers(
-            container,
-            self.path,
-        )
+        if self.path is not None:
+            container = self._navigate_containers(
+                container,
+                self.path,
+            )
         if container is None:
             logger.add_warning(
                 f"Parent field at '{self.path}' does not exist or is not a List or Struct. Unable to add new Field '{self.label}'...",
             )
             return
+        assert container is not None
+
         value = self.value.value(memory, self.field_type)
 
         def set_locstring() -> None:
@@ -159,10 +162,6 @@ class AddFieldGFF(ModifyGFF):
         }
         container = func_map[self.field_type]()
 
-        if not isinstance(container, GFFStruct | GFFList):
-            msg = "container not a valid type"
-            raise TypeError(msg)
-
         if self.index_to_list_token is not None and isinstance(container, GFFList):
             memory.memory_2da[self.index_to_list_token] = str(len(container) - 1)
 
@@ -171,7 +170,7 @@ class AddFieldGFF(ModifyGFF):
 
     def _navigate_containers(self, container, path):
         path = Path(path)
-        hierarchy: list[str] = [part for part in path.parts if part]
+        hierarchy: tuple[str, ...] = path.parts
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):

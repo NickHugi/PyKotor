@@ -69,6 +69,7 @@ class ConfigReader:
         detector.feed(ini_file_bytes)
         detector.close()
         encoding = detector.result["encoding"]
+        assert encoding is not None
 
         ini_text = ini_file_bytes.decode(encoding)
 
@@ -121,7 +122,7 @@ class ConfigReader:
                 self.config.game_number = int(lookup_game_number)
             except ValueError:
                 # Handle invalid integer conversion here if needed
-                print(f"Invalid game number: {lookup_game_number}")
+                print(f"Invalid game number: '{lookup_game_number}'")
         else:
             self.config.game_number = None
         self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
@@ -297,7 +298,7 @@ class ConfigReader:
             self.config.patches_2da.append(modifications)
 
             for key, modification_id in modification_ids.items():
-                manipulation = self.discern_2da(
+                manipulation: Modify2DA = self.discern_2da(
                     key,
                     modification_id,
                     dict(self.ini[modification_id].items()),
@@ -418,6 +419,7 @@ class ConfigReader:
         return FieldValueConstant(int(raw_value))
 
     def modify_field_gff(self, name: str, string_value: str) -> ModifyFieldGFF:
+        value = None
         if string_value.startswith("2DAMEMORY"):
             token_id = int(string_value[9:])
             value = FieldValue2DAMemory(token_id)
@@ -481,6 +483,7 @@ class ConfigReader:
         path = ini_data.get("Path", "")
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
+        value = None
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
                 stringref = self.field_value_gff(ini_data["StrRef"])
@@ -568,7 +571,7 @@ class ConfigReader:
         identifier: str,
         modifiers: dict[str, str],
     ) -> Modify2DA:
-        modification: None = None
+        modification = None
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
@@ -655,6 +658,7 @@ class ConfigReader:
             is_store_tlk = modifier.startswith("StrRef")
             is_row_label = modifier in ["RowLabel", "NewRowLabel"]
 
+            row_value: None = None
             if value.startswith("2DAMEMORY"):
                 token_id = int(value[9:])
                 row_value = RowValue2DAMemory(token_id)
@@ -746,6 +750,7 @@ class NamespaceReader:
         detector.feed(ini_file_bytes)
         detector.close()
         encoding = detector.result["encoding"]
+        assert encoding is not None
 
         ini_text = ini_file_bytes.decode(encoding)
 

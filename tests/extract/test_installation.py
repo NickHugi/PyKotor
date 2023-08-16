@@ -1,4 +1,8 @@
+import sys
 import os
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(project_root)
 from pathlib import Path
 from unittest import TestCase
 
@@ -140,7 +144,7 @@ class TestInstallation(TestCase):
                 "m13aa",
                 ResourceType.ARE,
                 [SearchLocation.CUSTOM_MODULES],
-                capsules=[Capsule(f"{installation.module_path()}danm13.rim")],
+                capsules=[Capsule(installation.module_path() / "danm13.rim")],
             ).data
         )
 
@@ -256,7 +260,7 @@ class TestInstallation(TestCase):
             texg_resources, [SearchLocation.TEXTURES_GUI]
         )
         self._assert_from_path_tests(texg_results, "1024x768back.tpc", "x.tpc")
-        capsules = [Capsule(f"{installation.module_path()}danm13.rim")]
+        capsules = [Capsule(installation.module_path() / "danm13.rim")]
         capsules_resources = [
             ResourceIdentifier.from_path("m13aa.are"),
             ResourceIdentifier.from_path("xyz.ifo"),

@@ -1,9 +1,14 @@
+import sys
+import os
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(project_root)
 from unittest import TestCase
 
 from pykotor.common.language import Language
 from pykotor.extract.talktable import TalkTable
 
-TEST_FILE = "../../tests/files/test.tlk"
+TEST_FILE = "tests/files/test.tlk"
 
 
 class TestTalkTable(TestCase):
