@@ -4,7 +4,7 @@ from pykotor.common.geometry import Vector2
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.pth import construct_pth, dismantle_pth
 
-TEST_FILE = "../../files/test.pth"
+TEST_FILE = "tests/files/test.pth"
 
 
 class TestPTH(TestCase):

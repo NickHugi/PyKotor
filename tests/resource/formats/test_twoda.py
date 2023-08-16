@@ -13,13 +13,13 @@ from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader
 from pykotor.resource.type import ResourceType
 
 
-BINARY_TEST_FILE = "../../files/test.2da"
-CSV_TEST_FILE = "../../files/test.2da.csv"
-JSON_TEST_FILE = "../../files/test.2da.json"
+BINARY_TEST_FILE = "tests/files/test.2da"
+CSV_TEST_FILE = "tests/files/test.2da.csv"
+JSON_TEST_FILE = "tests/files/test.2da.json"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.2da"
-CORRUPT_CSV_TEST_FILE = "../../files/test_corrupted.2da.csv"
-CORRUPT_JSON_TEST_FILE = "../../files/test_corrupted.2da.json"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.2da"
+CORRUPT_CSV_TEST_FILE = "tests/files/test_corrupted.2da.csv"
+CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.2da.json"
 
 
 class TestTwoDA(TestCase):

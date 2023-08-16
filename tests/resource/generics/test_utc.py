@@ -4,7 +4,7 @@ from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utc import construct_utc, dismantle_utc, UTC
 
-TEST_FILE = "../../files/test.utc"
+TEST_FILE = "tests/files/test.utc"
 
 
 class TestUTC(TestCase):

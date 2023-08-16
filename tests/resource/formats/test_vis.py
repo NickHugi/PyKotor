@@ -6,9 +6,9 @@ from pykotor.resource.formats.vis.vis_auto import write_vis, read_vis
 from pykotor.resource.type import ResourceType
 
 
-ASCII_TEST_FILE = "../../files/test.vis"
+ASCII_TEST_FILE = "tests/files/test.vis"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_ASCII_TEST_FILE = "../../files/test_corrupted.vis"
+CORRUPT_ASCII_TEST_FILE = "tests/files/test_corrupted.vis"
 
 
 class TestVIS(TestCase):

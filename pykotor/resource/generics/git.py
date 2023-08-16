@@ -261,7 +261,9 @@ class GITCamera(GITInstance):
         self.mic_range: float = 0.0
         self.pitch: float = 0.0
         self.orientation: Vector4 = Vector4.from_euler(
-            math.pi / 2 - yaw, roll, math.pi - pitch
+            math.pi / 2 - yaw,
+            roll,
+            math.pi - pitch,
         )
 
     def move(
@@ -816,7 +818,8 @@ def construct_git(
         creature.position.y = creature_struct.acquire("YPosition", 0.0)
         creature.position.z = creature_struct.acquire("ZPosition", 0.0)
         rot_x, rot_y = creature_struct.acquire(
-            "XOrientation", 0.0
+            "XOrientation",
+            0.0,
         ), creature_struct.acquire("YOrientation", 0.0)
         creature.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
@@ -829,10 +832,12 @@ def construct_git(
         door.linked_to = door_struct.acquire("LinkedTo", "")
         door.linked_to_flags = GITModuleLink(door_struct.acquire("LinkedToFlags", 0))
         door.linked_to_module = door_struct.acquire(
-            "LinkedToModule", ResRef.from_blank()
+            "LinkedToModule",
+            ResRef.from_blank(),
         )
         door.transition_destination = door_struct.acquire(
-            "TransitionDestin", LocalizedString.from_invalid()
+            "TransitionDestin",
+            LocalizedString.from_invalid(),
         )
         door.position.x = door_struct.acquire("X", 0.0)
         door.position.y = door_struct.acquire("Y", 0.0)
@@ -853,7 +858,8 @@ def construct_git(
         git.encounters.append(encounter)
         encounter.position = Vector3(x, y, z)
         encounter.resref = encounter_struct.acquire(
-            "TemplateResRef", ResRef.from_blank()
+            "TemplateResRef",
+            ResRef.from_blank(),
         )
 
         for geometry_struct in encounter_struct.get_list("Geometry"):
@@ -876,7 +882,8 @@ def construct_git(
         git.placeables.append(placeable)
 
         placeable.resref = placeable_struct.acquire(
-            "TemplateResRef", ResRef.from_blank()
+            "TemplateResRef",
+            ResRef.from_blank(),
         )
         placeable.position.x = placeable_struct.acquire("X", 0.0)
         placeable.position.y = placeable_struct.acquire("Y", 0.0)
@@ -908,7 +915,8 @@ def construct_git(
         store.position.z = store_struct.acquire("ZPosition", 0.0)
 
         rot_x, rot_y = store_struct.acquire("XOrientation", 0.0), store_struct.acquire(
-            "YOrientation", 0.0
+            "YOrientation",
+            0.0,
         )
         store.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
@@ -923,13 +931,15 @@ def construct_git(
         trigger.tag = trigger_struct.acquire("Tag", "")
         trigger.linked_to = trigger_struct.acquire("LinkedTo", "")
         trigger.linked_to_flags = GITModuleLink(
-            trigger_struct.acquire("LinkedToFlags", 0)
+            trigger_struct.acquire("LinkedToFlags", 0),
         )
         trigger.linked_to_module = trigger_struct.acquire(
-            "LinkedToModule", ResRef.from_blank()
+            "LinkedToModule",
+            ResRef.from_blank(),
         )
         trigger.transition_destination = trigger_struct.acquire(
-            "TransitionDestin", LocalizedString.from_invalid()
+            "TransitionDestin",
+            LocalizedString.from_invalid(),
         )
 
         for geometry_struct in trigger_struct.get_list("Geometry"):
@@ -943,7 +953,8 @@ def construct_git(
         git.waypoints.append(waypoint)
 
         waypoint.name = waypoint_struct.acquire(
-            "LocalizedName", LocalizedString.from_invalid()
+            "LocalizedName",
+            LocalizedString.from_invalid(),
         )
         waypoint.tag = waypoint_struct.acquire("Tag", "")
         waypoint.resref = waypoint_struct.acquire("TemplateResRef", ResRef.from_blank())
@@ -954,12 +965,14 @@ def construct_git(
         waypoint.has_map_note = waypoint_struct.acquire("HasMapNote", 0)
         if waypoint.has_map_note:
             waypoint.map_note = waypoint_struct.acquire(
-                "MapNote", LocalizedString.from_invalid()
+                "MapNote",
+                LocalizedString.from_invalid(),
             )
             waypoint.map_note_enabled = waypoint_struct.acquire("MapNoteEnabled", 0)
 
         rot_x, rot_y = waypoint_struct.acquire(
-            "XOrientation", 0.0
+            "XOrientation",
+            0.0,
         ), waypoint_struct.acquire("YOrientation", 0.0)
         waypoint.bearing = Vector2(rot_x, rot_y).angle() - math.pi / 2
 
@@ -1070,7 +1083,8 @@ def dismantle_git(
             )
             placeable_struct.set_uint32("TweakColor", tweak_color)
             placeable_struct.set_uint8(
-                "UseTweakColor", 0 if placeable.tweak_color is None else 1
+                "UseTweakColor",
+                0 if placeable.tweak_color is None else 1,
             )
 
     sound_list = root.set_list("SoundList", GFFList())

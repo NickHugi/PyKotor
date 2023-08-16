@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.are import construct_are, dismantle_are
 
-TEST_FILE = "../../files/test.are"
+TEST_FILE = "tests/files/test.are"
 
 
 class TestARE(TestCase):

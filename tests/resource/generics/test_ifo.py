@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ifo import construct_ifo, dismantle_ifo
 
-TEST_FILE = "../../files/test.ifo"
+TEST_FILE = "tests/files/test.ifo"
 
 
 class TestIFO(TestCase):

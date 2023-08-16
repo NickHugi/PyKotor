@@ -7,7 +7,7 @@ from pykotor.resource.formats.lip import LIP
 from pykotor.resource.formats.ncs import NCSBinaryReader, NCS, NCSBinaryWriter
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, write_ncs, read_ncs
 
-BINARY_TEST_FILE = "../../files/test.ncs"
+BINARY_TEST_FILE = "tests/files/test.ncs"
 
 
 class TestNCS(TestCase):

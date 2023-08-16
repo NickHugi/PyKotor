@@ -4,7 +4,7 @@ from pykotor.common.misc import Color
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.git import construct_git, dismantle_git
 
-TEST_FILE = "../../files/test.git"
+TEST_FILE = "tests/files/test.git"
 
 
 class TestGIT(TestCase):

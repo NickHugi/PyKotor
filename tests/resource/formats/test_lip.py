@@ -12,11 +12,11 @@ from pykotor.resource.formats.lip import (
 )
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "../../files/test.lip"
-XML_TEST_FILE = "../../files/test.lip.xml"
+BINARY_TEST_FILE = "tests/files/test.lip"
+XML_TEST_FILE = "tests/files/test.lip.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.lip"
-CORRUPT_XML_TEST_FILE = "../../files/test_corrupted.lip.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.lip"
+CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.lip.xml"
 
 
 class TestLIP(TestCase):

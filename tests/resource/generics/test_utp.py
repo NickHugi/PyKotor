@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utp import construct_utp, dismantle_utp, UTP
 
-TEST_FILE = "../../files/test.utp"
+TEST_FILE = "tests/files/test.utp"
 
 
 class Test(TestCase):

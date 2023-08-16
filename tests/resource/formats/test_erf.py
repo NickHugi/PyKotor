@@ -1,12 +1,20 @@
+from pathlib import Path
+import sys
+import os
+
+project_root = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..")
+)
+sys.path.append(project_root)
 import platform
 from unittest import TestCase
 
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, write_erf, read_erf
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = "../../files/test.erf"
+BINARY_TEST_FILE = Path("tests/files/test.erf").resolve()
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.gff"
+CORRUPT_BINARY_TEST_FILE = Path("tests/files/test_corrupted.gff").resolve()
 
 
 class TestERF(TestCase):

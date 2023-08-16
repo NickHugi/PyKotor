@@ -5,9 +5,9 @@ from pykotor.resource.formats.rim import RIM, RIMBinaryReader, write_rim, read_r
 from pykotor.resource.type import ResourceType
 
 
-BINARY_TEST_FILE = "../../files/test.rim"
+BINARY_TEST_FILE = "tests/files/test.rim"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.rim"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.rim"
 
 
 class TestRIM(TestCase):

@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
 
-TEST_FILE = "../../files/test.jrl"
+TEST_FILE = "tests/files/test.jrl"
 
 
 class TestJRL(TestCase):

@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ute import construct_ute, dismantle_ute
 
-TEST_FILE = "../../files/test.ute"
+TEST_FILE = "tests/files/test.ute"
 
 
 class TestUTE(TestCase):

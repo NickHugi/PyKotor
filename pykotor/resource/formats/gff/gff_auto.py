@@ -76,7 +76,7 @@ def read_gff(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
-) -> GFF:
+) -> GFF | None:
     """Returns an GFF instance from the source. The file format (GFF or GFF_XML) is automatically determined before parsing
     the data.
 
@@ -105,7 +105,7 @@ def read_gff(
 
     if file_format == ResourceType.GFF:
         return GFFBinaryReader(source, offset, size).load()
-    elif file_format == ResourceType.GFF_XML:
+    if file_format == ResourceType.GFF_XML:
         return GFFXMLReader(source, offset, size).load()
     return None
 
