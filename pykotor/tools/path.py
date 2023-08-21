@@ -3,19 +3,15 @@ from __future__ import annotations
 import os
 import platform
 from pathlib import Path, PurePosixPath, PureWindowsPath
+import re
 
 from pykotor.common.misc import Game
 
 class CustomPath(Path):
-    _flavour = PureWindowsPath._flavour if os.name == 'nt' else PurePosixPath._flavour
+    _flavour = PureWindowsPath._flavour if os.name == 'nt' else PurePosixPath._flavour # type: ignore
 
     def __new__(cls, *args, **kwargs):
-        new_args = []
-        for arg in args:
-            if isinstance(arg, Path):
-                new_args.append(str(arg).replace("\\", "/"))
-            else:
-                new_args.append(arg.replace("\\", "/"))
+        new_args: list[str] = [str(arg).replace("\\", "/") for arg in args]
         return super().__new__(cls, *new_args, **kwargs)
 
 def fix_path_formatting(path):
@@ -30,7 +26,7 @@ def fix_path_formatting(path):
     if os.altsep is not None:
         formatted_path = formatted_path.replace(os.altsep, os.sep)
 
-    formatted_path = re.sub(
+    formatted_path: str = re.sub(
         f"(?<!:){re.escape(os.sep)}+",
         os.sep,
         formatted_path
@@ -56,6 +52,7 @@ def get_case_sensitive_path(path: str) -> str:
         parts[0] += os.path.sep
 
     case_sensitive_current_path = None
+    i: int = 0
     for i in range(1, len(parts)):
         current_path: str = os.path.join(os.path.sep.join(parts[:i]), parts[i])
         if os.name != "nt" and os.path.isdir(os.path.sep.join(parts[:i])):
@@ -65,7 +62,6 @@ def get_case_sensitive_path(path: str) -> str:
             else:
                 case_sensitive_current_path = os.path.sep.join(parts[:i])
                 break
-
     return os.path.join(case_sensitive_current_path or "", os.path.sep.join(parts[i:]))
 
 def get_matching_characters_count(str1, str2) -> int:

@@ -3,7 +3,7 @@ import sys
 from enum import IntEnum
 from pykotor.tools.path import CustomPath
 
-from pykotor.tslpatcher.config import ModInstaller
+from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.reader import NamespaceReader
 
 
@@ -120,7 +120,7 @@ def determine_namespaces(tslpatchdata_path: CustomPath, namespace_index: int) ->
         )
         sys.exit(ExitCode.NAMESPACES_INI_NOT_FOUND)
 
-    loaded_namespaces = NamespaceReader.from_filepath(str(namespaces_ini_path))
+    loaded_namespaces: list[PatcherNamespace] = NamespaceReader.from_filepath(str(namespaces_ini_path))
     if namespace_index >= len(loaded_namespaces):
         print("Namespace index is out of range.")
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
