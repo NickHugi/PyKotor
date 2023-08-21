@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
@@ -196,7 +196,7 @@ def clone_module(
     write_erf(new_module, str(filepath))
 
 
-def rim_to_mod(filepath: Path) -> None:
+def rim_to_mod(filepath: CustomPath) -> None:
     """Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
@@ -222,12 +222,12 @@ def rim_to_mod(filepath: Path) -> None:
     rim_s_extension: str = lowercase_extension.replace(".mod", "_s.rim")
     rim_extension: str = lowercase_extension.replace(".mod", ".rim")
 
-    filepath_rim_s: Path = (
+    filepath_rim_s: CustomPath = (
         filepath.parent / (base + rim_s_extension)
         if rim_s_extension != lowercase_extension
         else filepath
     )
-    filepath_rim: Path = (
+    filepath_rim: CustomPath = (
         filepath.parent / (base + rim_extension)
         if rim_extension != lowercase_extension
         else filepath

@@ -1,6 +1,6 @@
 from configparser import ConfigParser
 import os
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -86,18 +86,18 @@ class TestConfigReader(TestCase):
                 10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
             }
         )
-        self.mod_path = Path("tmp", "mock_mod_path").resolve()
+        self.mod_path = CustomPath("tmp", "mock_mod_path").resolve()
         self.mod_path.mkdir(parents=True, exist_ok=True)
 
         # write it to a real file
         write_tlk(
             self.test_tlk_data,
-            str(Path(self.mod_path) / "tlk_test_file.tlk"),
+            str(CustomPath(self.mod_path) / "tlk_test_file.tlk"),
             ResourceType.TLK,
         )
         write_tlk(
             self.modified_tlk_data,
-            str(Path(self.mod_path) / "tlk_modifications_file.tlk"),
+            str(CustomPath(self.mod_path) / "tlk_modifications_file.tlk"),
             ResourceType.TLK,
         )
 
@@ -144,7 +144,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(Path(self.mod_path) / "append.tlk"),
+            str(CustomPath(self.mod_path) / "append.tlk"),
             ResourceType.TLK,
         )
 
@@ -174,7 +174,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(Path(self.mod_path) / "append.tlk"),
+            str(CustomPath(self.mod_path) / "append.tlk"),
             ResourceType.TLK,
         )
 
@@ -234,7 +234,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(Path(self.mod_path) / "append.tlk"),
+            str(CustomPath(self.mod_path) / "append.tlk"),
             ResourceType.TLK,
         )
 
@@ -1623,43 +1623,43 @@ class TestConfigReader(TestCase):
 
             [add_uint8]
             FieldType=Byte
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=123
 
             [add_int8]
             FieldType=Char
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=123
 
             [add_uint16]
             FieldType=Word
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=123
 
             [add_int16]
             FieldType=Short
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=123
 
             [add_uint32]
             FieldType=DWORD
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=123
 
             [add_int32]
             FieldType=Int
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=123
 
             [add_int64]
             FieldType=Int64
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=123
             """
@@ -1719,13 +1719,13 @@ class TestConfigReader(TestCase):
 
             [add_single]
             FieldType=Float
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=1.23
 
             [add_double]
             FieldType=Double
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=1.23
             """
@@ -1761,7 +1761,7 @@ class TestConfigReader(TestCase):
 
             [add_string]
             FieldType=ExoString
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=abc
             """
@@ -1794,7 +1794,7 @@ class TestConfigReader(TestCase):
 
             [add_vector3]
             FieldType=Position
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=1|2|3
             """
@@ -1827,7 +1827,7 @@ class TestConfigReader(TestCase):
 
             [add_vector4]
             FieldType=Orientation
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=1|2|3|4
             """
@@ -1860,7 +1860,7 @@ class TestConfigReader(TestCase):
 
             [add_resref]
             FieldType=ResRef
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             Value=abc
             """
@@ -1894,7 +1894,7 @@ class TestConfigReader(TestCase):
 
             [add_locstring]
             FieldType=ExoLocString
-            Path=SomeList
+            CustomPath=SomeList
             Label=SomeField
             StrRef=123
             lang0=abc
@@ -1902,7 +1902,7 @@ class TestConfigReader(TestCase):
 
             [add_locstring2]
             FieldType=ExoLocString
-            Path=
+            CustomPath=
             Label=SomeField2
             StrRef=StrRef8
             """
@@ -1952,14 +1952,14 @@ class TestConfigReader(TestCase):
 
             [add_struct]
             FieldType=Struct
-            Path=
+            CustomPath=
             Label=SomeStruct
             TypeId=321
             AddField0=add_insidestruct
 
             [add_insidestruct]
             FieldType=Byte
-            Path=
+            CustomPath=
             Label=InsideStruct
             Value=123
             """
@@ -2003,7 +2003,7 @@ class TestConfigReader(TestCase):
 
             [add_list]
             FieldType=List
-            Path=
+            CustomPath=
             Label=SomeList
             AddField0=add_insidelist
 

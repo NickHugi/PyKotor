@@ -3,7 +3,7 @@ import os
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_root)
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
@@ -17,13 +17,15 @@ from pykotor.tools.misc import is_bif_file, is_nss_file
 class TestInstallation(TestCase):
     def setUp(self) -> None:
         path = os.environ.get("K1_PATH")
-        if path is not None:
-            path = Path(path)
+        if path is not None and os.path.exists(path):
+            path = CustomPath(path)
+        elif os.path.exists("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"):
+            path = CustomPath("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor")
         else:
             raise ValueError("K1_PATH environment variable not set.")
         self.installation = Installation(path)
 
-        if not Path(self.installation.override_path() / "nwscript.nss").exists():
+        if not CustomPath(self.installation.override_path() / "nwscript.nss").exists():
             raise ValueError("Place nwscript.nss in override folder before testing.")
 
     def test_resource(self):

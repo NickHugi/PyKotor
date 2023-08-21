@@ -172,5 +172,9 @@
 "python.analysis.inlayHints.functionReturnTypes": true,
 "python.analysis.inlayHints.pytestParameters": true,
 "python.analysis.inlayHints.variableTypes": true,
-"python.analysis.typeCheckingMode": "basic"
+"python.analysis.typeCheckingMode": "basic",
+"[python]": {
+  "editor.defaultFormatter": "ms-python.black-formatter"
+},
+"python.formatting.provider": "none"
 }

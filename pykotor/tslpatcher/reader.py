@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from typing import TYPE_CHECKING, Literal
 
 from chardet import UniversalDetector
@@ -56,9 +56,9 @@ if TYPE_CHECKING:
 
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, mod_path: Path | str) -> None:
+    def __init__(self, ini: ConfigParser, mod_path: CustomPath | str) -> None:
         self.ini = ini
-        self.mod_path: Path = Path(mod_path)
+        self.mod_path: CustomPath = CustomPath(mod_path)
         self.config: PatcherConfig
 
     @classmethod
@@ -151,7 +151,7 @@ class ConfigReader:
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         append_tlk_edits = None
 
-        def load_tlk(tlk_path: Path) -> TLK:
+        def load_tlk(tlk_path: CustomPath) -> TLK:
             return read_tlk(tlk_path) if tlk_path.exists() else TLK()
 
         range_delims = [":", "-", "to"]
@@ -242,7 +242,7 @@ class ConfigReader:
                     is_replacement=False,
                 )
             elif key.startswith("file"):
-                tlk_modifications_path: Path = self.mod_path / value
+                tlk_modifications_path: CustomPath = self.mod_path / value
                 if value not in self.ini:
                     msg = f"INI header for '{value}' referenced in TLKList key '{key}' not found."
                     raise KeyError(msg)
@@ -480,7 +480,7 @@ class ConfigReader:
         }
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        path = ini_data.get("Path", "")
+        path = ini_data.get("CustomPath", "")
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None

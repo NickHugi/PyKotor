@@ -1,5 +1,5 @@
 import concurrent.futures
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -37,14 +37,14 @@ class InstallFile:
                     f"Adding file {self.filename} in the {destination.filename()} archive...",
                 )
 
-            data = BinaryReader.load_file(Path(source_folder) / self.filename)
+            data = BinaryReader.load_file(CustomPath(source_folder) / self.filename)
             destination.add(resname, restype, data)
 
     def apply_file(
         self,
         log: PatchLogger,
-        source_folder: Path,
-        destination: Path,
+        source_folder: CustomPath,
+        destination: CustomPath,
         local_folder: str,
     ) -> None:
         data = BinaryReader.load_file(source_folder / self.filename)
@@ -82,7 +82,7 @@ class InstallFolder:
         self.foldername: str = foldername
         self.files: list[InstallFile] = files or []
 
-    def apply(self, log: PatchLogger, source_path: Path, destination_path: Path):
+    def apply(self, log: PatchLogger, source_path: CustomPath, destination_path: CustomPath):
         target = destination_path / self.foldername
 
         if is_capsule_file(self.foldername):

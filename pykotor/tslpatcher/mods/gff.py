@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.common.language import LocalizedString
@@ -91,7 +91,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: str | Path | None = None,
+        path: str | CustomPath | None = None,
         modifiers: list[ModifyGFF] | None = None,
         index_to_list_token: int | None = None,
     ):
@@ -99,7 +99,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: Path | None = Path(path) if path else None
+        self.path: CustomPath = CustomPath(path) if path else CustomPath(".")
         self.index_to_list_token: int | None = index_to_list_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -169,7 +169,7 @@ class AddFieldGFF(ModifyGFF):
             add_field.apply(container, memory, logger)
 
     def _navigate_containers(self, container, path):
-        path = Path(path)
+        path = CustomPath(path)
         hierarchy: tuple[str, ...] = path.parts
 
         for step in hierarchy:
@@ -231,7 +231,7 @@ class ModifyFieldGFF(ModifyGFF):
         func_map[field_type]()
 
     def _navigate_containers(self, container, path):
-        path = Path(path)
+        path = CustomPath(path)
         hierarchy = list(path.parents)[::-1][1:]  # Removing the root
         label = path.name
 
@@ -261,7 +261,7 @@ class ModificationsGFF:
         self.filename: str = filename
         self.replace_file: bool = replace_file
         self.destination: str = (
-            destination if destination is not None else str(Path("Override", filename))
+            destination if destination is not None else str(CustomPath("Override", filename))
         )
         self.modifiers: list[AddFieldGFF] = modifiers if modifiers is not None else []
 

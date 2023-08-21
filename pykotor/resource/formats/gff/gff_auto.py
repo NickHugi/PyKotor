@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import (
@@ -35,8 +35,8 @@ def detect_gff(
         The format of the GFF data.
     """
     try:
-        if isinstance(source, str | Path):
-            source = Path(source)
+        if isinstance(source, str | CustomPath):
+            source = CustomPath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
                 file_format = (

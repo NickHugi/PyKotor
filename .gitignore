@@ -16,3 +16,4 @@ pykotorcli.build/*
 *.cpuprofile
 *.prof
 .vscode/PythonImportHelper*.json
+.vscode/launch.json

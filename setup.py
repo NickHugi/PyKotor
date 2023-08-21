@@ -1,8 +1,8 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from setuptools import find_namespace_packages, setup
 
-HERE = Path(__file__).parent
+HERE = CustomPath(__file__).parent
 
 NAME = "PyKotor"
 VERSION = "1.6.2"

@@ -5,7 +5,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import IntEnum
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from typing import NamedTuple, Optional
 
 from pykotor.common.language import Gender, Language, LocalizedString
@@ -75,7 +75,7 @@ class SearchLocation(IntEnum):
 class ItemTuple(NamedTuple):
     resname: str
     name: str
-    filepath: Path
+    filepath: CustomPath
 
 
 class Installation:
@@ -85,8 +85,8 @@ class Installation:
 
     TEXTURES_TYPES = [ResourceType.TPC, ResourceType.TGA, ResourceType.DDS]
 
-    def __init__(self, path: Path):
-        self._path: Path = path
+    def __init__(self, path: CustomPath):
+        self._path: CustomPath = path
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
 
@@ -120,7 +120,7 @@ class Installation:
         self.load_rims()
 
     # region Get Paths
-    def path(self) -> Path:
+    def path(self) -> CustomPath:
         """Returns the path to root folder of the Installation.
 
         Returns
@@ -129,7 +129,7 @@ class Installation:
         """
         return self._path
 
-    def module_path(self) -> Path:
+    def module_path(self) -> CustomPath:
         """Returns the path to modules folder of the Installation. This method maintains the case of the foldername.
 
         Returns
@@ -141,7 +141,7 @@ class Installation:
             "Could not find modules folder in '{}'.",
         )
 
-    def override_path(self) -> Path:
+    def override_path(self) -> CustomPath:
         """Returns the path to override folder of the Installation. This method maintains the case of the foldername.
 
         Returns
@@ -153,7 +153,7 @@ class Installation:
             "Could not find override folder in '{}'.",
         )
 
-    def lips_path(self) -> Path:
+    def lips_path(self) -> CustomPath:
         """Returns the path to lips folder of the Installation. This method maintains the case of the foldername.
 
         Returns
@@ -165,7 +165,7 @@ class Installation:
             "Could not find modules folder in '{}'.",
         )
 
-    def texturepacks_path(self) -> Path:
+    def texturepacks_path(self) -> CustomPath:
         """Returns the path to texturepacks folder of the Installation. This method maintains the case of the foldername.
 
         Returns
@@ -177,7 +177,7 @@ class Installation:
             "Could not find modules folder in '{}'.",
         )
 
-    def rims_path(self) -> Path:
+    def rims_path(self) -> CustomPath:
         """Returns the path to rims folder of the Installation. This method maintains the case of the foldername.
 
         Returns
@@ -189,7 +189,7 @@ class Installation:
             "Could not find rims folder in '{}'.",
         )
 
-    def streammusic_path(self) -> Path:
+    def streammusic_path(self) -> CustomPath:
         """Returns the path to streammusic folder of the Installation. This method maintains the case of the foldername.
 
         Returns
@@ -201,7 +201,7 @@ class Installation:
             "Could not find StreamMusic folder in '{}'.",
         )
 
-    def streamsounds_path(self) -> Path:
+    def streamsounds_path(self) -> CustomPath:
         """Returns the path to streamsounds folder of the Installation. This method maintains the case of the foldername.
 
         Returns
@@ -217,8 +217,8 @@ class Installation:
         self,
         folder_names: tuple[str, ...],
         error_msg: str,
-    ) -> Path:
-        resource_path = Path(self._path)
+    ) -> CustomPath:
+        resource_path = CustomPath(self._path)
         folder_names_lower: set[str] = {name.lower() for name in folder_names}
 
         for folder_path in resource_path.iterdir():
@@ -231,7 +231,7 @@ class Installation:
 
         return resource_path
 
-    def streamvoice_path(self) -> Path:
+    def streamvoice_path(self) -> CustomPath:
         """Returns the path to streamvoice folder of the Installation. This method maintains the case of the foldername.
 
         In the first game, this folder has been named "streamwaves".
@@ -304,7 +304,7 @@ class Installation:
         override_path = self.override_path()
 
         for current_path, _, files in os.walk(override_path):
-            current_path_obj = Path(current_path)
+            current_path_obj = CustomPath(current_path)
             relative_dir = str(current_path_obj.relative_to(override_path))
 
             self._override[relative_dir] = []
@@ -333,7 +333,7 @@ class Installation:
         override_path = self.override_path()
 
         self._override[directory] = []
-        files = os.listdir(str(Path(override_path, directory)))
+        files = os.listdir(str(CustomPath(override_path, directory)))
         for file in files:
             with suppress(Exception):
                 name, ext = file.split(".", 1)
@@ -389,7 +389,7 @@ class Installation:
         for dirpath, _dirnames, filenames in os.walk(streamvoices_path):
             for filename in filenames:
                 with suppress(Exception):
-                    file_path = Path(dirpath) / filename
+                    file_path = CustomPath(dirpath) / filename
                     identifier = ResourceIdentifier.from_path(file_path)
                     resource = FileResource(
                         identifier.resname,
@@ -406,8 +406,8 @@ class Installation:
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = {}
         with suppress(ValueError):
-            rims_path: Path = self.rims_path()
-            file_list: list[Path] = [
+            rims_path: CustomPath = self.rims_path()
+            file_list: list[CustomPath] = [
                 file for file in rims_path.iterdir() if is_rim_file(file.name)
             ]
             for file_path in file_list:
@@ -550,7 +550,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[Path] | None = None,
+        folders: list[CustomPath] | None = None,
     ) -> ResourceResult | None:
         """Returns a resource matching the specified resref and restype. If no resource is found then None is returned
         instead.
@@ -588,7 +588,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[Path] | None = None,
+        folders: list[CustomPath] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found. If
         the resource was not found, the value will be None.
@@ -644,7 +644,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[Path] | None = None,
+        folders: list[CustomPath] | None = None,
     ) -> list[LocationResult]:
         """Returns a list filepaths for where a particular resource matching the given resref and restype are located.
 
@@ -680,7 +680,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[Path] | None = None,
+        folders: list[CustomPath] | None = None,
     ) -> dict[ResourceIdentifier, list[LocationResult]]:
         """Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
         respective resource.
@@ -754,11 +754,11 @@ class Installation:
                         )
                         locations[resource.identifier()].append(location)
 
-        def check_folders(values: list[Path]):
+        def check_folders(values: list[CustomPath]):
             for folder in values:
-                folder = Path(folder)
+                folder = CustomPath(folder)
                 for file in [file for file in folder.iterdir() if file.is_file()]:
-                    filepath = Path(folder, file)
+                    filepath = CustomPath(folder, file)
                     for query in queries:
                         with suppress(Exception):
                             identifier = ResourceIdentifier.from_path(file.name)
@@ -849,7 +849,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[Path | str] | None = None,
+        folders: list[CustomPath | str] | None = None,
     ) -> CaseInsensitiveDict[TPC | None]:
         """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
         texture could not be found then the value is None.
@@ -916,12 +916,12 @@ class Installation:
                         assert resource is not None
                         textures[resname] = read_tpc(resource)
 
-        def check_folders(values: list[Path]):
+        def check_folders(values: list[CustomPath]):
             for folder in values:
-                folder = Path(folder)
+                folder = CustomPath(folder)
                 for file in [file for file in folder.iterdir() if file.is_file()]:
                     identifier = ResourceIdentifier.from_path(file.name)
-                    filepath: Path = Path(folder, file)
+                    filepath: CustomPath = CustomPath(folder, file)
                     for resname in queries:
                         if (
                             identifier.resname == resname
@@ -1061,9 +1061,9 @@ class Installation:
                             capsule.resource(resname, ResourceType.TGA),
                         )
 
-        def check_folders(values: list[str] | list[Path]):
+        def check_folders(values: list[str] | list[CustomPath]):
             for folder in values:
-                filepath: Path = Path(folder)
+                filepath: CustomPath = CustomPath(folder)
                 for file in [file for file in filepath.iterdir() if file.is_file()]:
                     identifier = ResourceIdentifier.from_path(file.name)
                     for resname in resnames:

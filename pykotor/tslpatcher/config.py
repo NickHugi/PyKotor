@@ -1,6 +1,6 @@
 from configparser import ConfigParser
 from enum import IntEnum
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -68,10 +68,10 @@ class PatcherConfig:
         self.patches_nss: list[ModificationsNSS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
-    def load(self, ini_text: str, mod_path: Path | str) -> None:
+    def load(self, ini_text: str, mod_path: CustomPath | str) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
 
-        mod_path: Path = Path(mod_path)
+        mod_path: CustomPath = CustomPath(mod_path)
         ini = ConfigParser(
             delimiters=("="),
             allow_no_value=True,
@@ -108,15 +108,15 @@ class PatcherNamespace:
 class ModInstaller:
     def __init__(
         self,
-        mod_path: Path,
-        game_path: Path,
+        mod_path: CustomPath,
+        game_path: CustomPath,
         ini_file: str,
         logger: PatchLogger | None = None,
     ):
-        self.game_path: Path = game_path
-        self.mod_path: Path = mod_path
+        self.game_path: CustomPath = game_path
+        self.mod_path: CustomPath = mod_path
         self.ini_file: str = ini_file
-        self.output_path: Path = game_path
+        self.output_path: CustomPath = game_path
         self.log: PatchLogger = PatchLogger() if logger is None else logger
 
         self._config: PatcherConfig | None = None
@@ -220,7 +220,7 @@ class ModInstaller:
             )
 
             norm_game_path = installation.path()
-            norm_file_path_rel = Path(patch.destination)
+            norm_file_path_rel = CustomPath(patch.destination)
             norm_file_path = norm_game_path / norm_file_path_rel
             local_path = norm_file_path.relative_to(norm_game_path)
             local_folder = local_path.parent
@@ -247,11 +247,11 @@ class ModInstaller:
             if is_capsule_file(patch.destination):
                 capsule = Capsule(nss_output_filepath)
 
-            nss_input_filepath = Path(self.mod_path, patch.filename)
+            nss_input_filepath = CustomPath(self.mod_path, patch.filename)
             nss = [BinaryReader.load_file(nss_input_filepath).decode(errors="ignore")]
 
             norm_game_path = installation.path()
-            norm_file_path_rel = Path(patch.destination)
+            norm_file_path_rel = CustomPath(patch.destination)
             norm_file_path = norm_game_path / norm_file_path_rel
             local_path = norm_file_path.relative_to(norm_game_path)
             local_folder = local_path.parent
@@ -282,7 +282,7 @@ class ModInstaller:
 
     def write(
         self,
-        destination: Path,
+        destination: CustomPath,
         filename: str,
         data: bytes,
         replace: bool = False,

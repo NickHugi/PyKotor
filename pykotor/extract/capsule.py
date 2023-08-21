@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -16,10 +16,10 @@ class Capsule:
 
     def __init__(
         self,
-        path: Path | str,
+        path: CustomPath | str,
         create_nonexisting: bool = False,
     ):
-        self._path: Path = Path(path)
+        self._path: CustomPath = CustomPath(path)
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)
@@ -164,7 +164,7 @@ class Capsule:
 
     def path(
         self,
-    ) -> Path:
+    ) -> CustomPath:
         return self._path
 
     def filename(

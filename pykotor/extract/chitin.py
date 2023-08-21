@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
@@ -15,9 +15,9 @@ class Chitin:
 
     def __init__(
         self,
-        kotor_path: Path,
+        kotor_path: CustomPath,
     ):
-        self._kotor_path = Path(kotor_path)
+        self._kotor_path = CustomPath(kotor_path)
 
         self._resources: list[FileResource] = []
         self.load()

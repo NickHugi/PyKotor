@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from typing import NamedTuple
 
 from pykotor.common.language import Language
@@ -19,9 +19,9 @@ class TalkTable:
 
     def __init__(
         self,
-        path: Path,
+        path: CustomPath,
     ):
-        self._path: Path = Path(path)
+        self._path: CustomPath = CustomPath(path)
 
     def string(
         self,

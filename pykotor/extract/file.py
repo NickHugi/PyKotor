@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from typing import NamedTuple
 
 from pykotor.resource.type import ResourceType
@@ -20,12 +20,12 @@ class FileResource:
         restype: ResourceType,
         size: int,
         offset: int,
-        filepath: str | Path,
+        filepath: str | CustomPath,
     ):
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: Path = Path(filepath)
+        self._filepath: CustomPath = CustomPath(filepath)
         self._offset: int = offset
 
     def __repr__(
@@ -72,7 +72,7 @@ class FileResource:
 
     def filepath(
         self,
-    ) -> Path:
+    ) -> CustomPath:
         return self._filepath
 
     def offset(
@@ -116,12 +116,12 @@ class FileResource:
 class ResourceResult(NamedTuple):
     resname: str
     restype: ResourceType
-    filepath: Path
+    filepath: CustomPath
     data: bytes | None
 
 
 class LocationResult(NamedTuple):
-    filepath: Path
+    filepath: CustomPath
     offset: int
     size: int
 
@@ -158,9 +158,9 @@ class ResourceIdentifier(NamedTuple):
 
     @staticmethod
     def from_path(
-        file_path: Path | str,
+        file_path: CustomPath | str,
     ) -> ResourceIdentifier:
-        file_path = Path(file_path)
+        file_path = CustomPath(file_path)
         file_name = file_path.name
         resname, restype_ext = file_name.split(".", 1)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

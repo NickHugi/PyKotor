@@ -1,7 +1,7 @@
 import argparse
 import sys
 from enum import IntEnum
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.tslpatcher.config import ModInstaller
 from pykotor.tslpatcher.reader import NamespaceReader
@@ -19,8 +19,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="TSLPatcher CLI written in PyKotor")
 
     # Positional arguments for the old syntax
-    parser.add_argument("--game-dir", type=str, help="Path to game directory")
-    parser.add_argument("--tslpatchdata", type=str, help="Path to tslpatchdata")
+    parser.add_argument("--game-dir", type=str, help="CustomPath to game directory")
+    parser.add_argument("--tslpatchdata", type=str, help="CustomPath to tslpatchdata")
     parser.add_argument(
         "--namespace-option-index",
         type=int,
@@ -54,13 +54,13 @@ def main():
         )
         sys.exit(ExitCode.NUMBER_OF_ARGS)
 
-    game_path: Path = Path(args.game_dir).resolve()  # argument 1
-    tslpatchdata_path: Path = Path(args.tslpatchdata).resolve()  # argument 2
+    game_path: CustomPath = CustomPath(args.game_dir).resolve()  # argument 1
+    tslpatchdata_path: CustomPath = CustomPath(args.tslpatchdata).resolve()  # argument 2
     namespace_index: int | None = None  # argument 3
-    changes_ini_path: Path
+    changes_ini_path: CustomPath
 
     if len(sys.argv) == 3:
-        changes_ini_path = Path(
+        changes_ini_path = CustomPath(
             tslpatchdata_path,
             "tslpatchdata",
             "changes.ini",
@@ -101,14 +101,14 @@ def main():
     sys.exit(ExitCode.SUCCESS)
 
 
-def determine_namespaces(tslpatchdata_path: Path, namespace_index: int) -> Path:
+def determine_namespaces(tslpatchdata_path: CustomPath, namespace_index: int) -> CustomPath:
     try:
         namespace_index = int(sys.argv[3])
     except ValueError:
         print("Invalid namespace_option_index. It should be an integer.")
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
-    namespaces_ini_path: Path = Path(
+    namespaces_ini_path: CustomPath = CustomPath(
         tslpatchdata_path,
         "tslpatchdata",
         "namespaces.ini",
@@ -126,14 +126,14 @@ def determine_namespaces(tslpatchdata_path: Path, namespace_index: int) -> Path:
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
     return (
-        Path(
+        CustomPath(
             tslpatchdata_path,
             "tslpatchdata",
             loaded_namespaces[namespace_index].data_folderpath,
             loaded_namespaces[namespace_index].ini_filename,
         )
         if loaded_namespaces[namespace_index].data_folderpath
-        else Path(
+        else CustomPath(
             tslpatchdata_path,
             "tslpatchdata",
             loaded_namespaces[namespace_index].ini_filename,

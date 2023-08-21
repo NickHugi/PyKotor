@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import (
@@ -48,8 +48,8 @@ def detect_tpc(
         return file_format
 
     try:
-        if isinstance(source, str | Path):
-            source = Path(source)
+        if isinstance(source, str | CustomPath):
+            source = CustomPath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
         elif isinstance(source, bytes | bytearray):

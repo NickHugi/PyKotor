@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf import (
@@ -34,8 +34,8 @@ def detect_ssf(
         The format of the SSF data.
     """
     try:
-        if isinstance(source, str | Path):
-            source = Path(source)
+        if isinstance(source, str | CustomPath):
+            source = CustomPath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = (
                     ResourceType.SSF

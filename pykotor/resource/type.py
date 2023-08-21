@@ -4,21 +4,21 @@ games.
 from __future__ import annotations
 
 from abc import ABC
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 
-SOURCE_TYPES = Union[Path, str, bytes, bytearray, BinaryReader]
-TARGET_TYPES = Union[Path, str, bytearray, BinaryWriter]
+SOURCE_TYPES = Union[CustomPath, str, bytes, bytearray, BinaryReader]
+TARGET_TYPES = Union[CustomPath, str, bytearray, BinaryWriter]
 
 
 class ResourceReader(ABC):
     @overload
     def __init__(
         self,
-        filepath: str | Path,
+        filepath: str | CustomPath,
         offset: int = 0,
         size: int = 0,
     ):
@@ -61,7 +61,7 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
         self,
-        filepath: str | Path,
+        filepath: str | CustomPath,
     ):
         ...
 

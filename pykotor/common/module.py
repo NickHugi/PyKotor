@@ -47,7 +47,7 @@ from pykotor.tools.model import list_lightmaps, list_textures
 if TYPE_CHECKING:
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
-    from pathlib import Path
+    from pykotor.tools.path import CustomPath
 
 T = TypeVar("T")
 SEARCH_ORDER = [
@@ -90,7 +90,7 @@ class Module:
 
     @staticmethod
     def get_root(
-        filepath: Path,
+        filepath: CustomPath,
     ) -> str:
         """Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
         become "danm13".
@@ -259,7 +259,7 @@ class Module:
         for resource in self.resources.values():
             resource.activate()
 
-    def add_locations(self, resname: str, restype: ResourceType, locations: list[Path]):
+    def add_locations(self, resname: str, restype: ResourceType, locations: list[CustomPath]):
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
         filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
@@ -654,9 +654,9 @@ class ModuleResource(Generic[T]):
         self._resname: str = resname
         self._installation = installation
         self._restype: ResourceType = restype
-        self._active: Path | None = None
+        self._active: CustomPath | None = None
         self._resource: Any = None
-        self._locations: list[Path] = []
+        self._locations: list[CustomPath] = []
 
     def resname(self) -> str:
         """Returns the resource name.
@@ -772,7 +772,7 @@ class ModuleResource(Generic[T]):
                 self._resource = conversions[self._restype](data)
         return self._resource
 
-    def add_locations(self, filepaths: list[Path]) -> None:
+    def add_locations(self, filepaths: list[CustomPath]) -> None:
         """Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
         ignored.
 
@@ -788,10 +788,10 @@ class ModuleResource(Generic[T]):
 
     def locations(
         self,
-    ) -> list[Path]:
+    ) -> list[CustomPath]:
         return self._locations
 
-    def activate(self, filepath: Path | None = None) -> None:
+    def activate(self, filepath: CustomPath | None = None) -> None:
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         Raises:
@@ -820,7 +820,7 @@ class ModuleResource(Generic[T]):
         self._resource = None
         self.resource()
 
-    def active(self) -> Path | None:
+    def active(self) -> CustomPath | None:
         """Returns the filepath of the currently active file for the resource.
 
         Returns

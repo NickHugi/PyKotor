@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import io
+import os
 import struct
 from abc import ABC, abstractmethod
-from pathlib import Path
+from pykotor.tools.path import CustomPath, get_case_sensitive_path
 from typing import BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
@@ -74,7 +75,7 @@ class BinaryReader:
     @classmethod
     def from_file(
         cls,
-        path: Path,
+        path: CustomPath,
         offset: int = 0,
         size: int | None = None,
     ) -> BinaryReader:
@@ -82,7 +83,7 @@ class BinaryReader:
 
         Args:
         ----
-            path: Path of the file to open.
+            path: CustomPath of the file to open.
             offset: Number of bytes into the stream to consider as position 0.
             size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
@@ -90,7 +91,9 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream = path.open("rb")
+        if not os.path.exists(path):
+            path = CustomPath(get_case_sensitive_path(str(path)))
+        stream: io.BufferedReader = path.open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -118,12 +121,12 @@ class BinaryReader:
     @classmethod
     def from_auto(
         cls,
-        source: Path | str | bytes | bytearray | BinaryReader | object,
+        source: CustomPath | str | bytes | bytearray | BinaryReader | object,
         offset: int = 0,
         size: int | None = None,
     ):
-        if isinstance(source, Path | str):  # is path
-            source = Path(source)
+        if isinstance(source, CustomPath | str):  # is path
+            source = CustomPath(source)
             reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, bytes | bytearray):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
@@ -137,7 +140,7 @@ class BinaryReader:
 
     @staticmethod
     def load_file(
-        path: str | Path,
+        path: str | CustomPath,
         offset: int = 0,
         size: int = -1,
     ) -> bytes:
@@ -153,7 +156,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        path = Path(path)
+        path = CustomPath(path)
         with path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
@@ -640,13 +643,13 @@ class BinaryWriter(ABC):
     @classmethod
     def to_file(
         cls,
-        path: Path,
+        path: CustomPath,
     ) -> BinaryWriter:
         """Returns a new BinaryWriter with a stream established to the specified path.
 
         Args:
         ----
-            path: Path of the file to open.
+            path: CustomPath of the file to open.
 
         Returns:
         -------
@@ -677,10 +680,10 @@ class BinaryWriter(ABC):
     @classmethod
     def to_auto(
         cls,
-        source: Path | str | bytes | bytearray | BinaryReader | object,
+        source: CustomPath | str | bytes | bytearray | BinaryReader | object,
     ) -> BinaryWriter:
-        if isinstance(source, Path | str):  # is path
-            return BinaryWriter.to_file(Path(source))
+        if isinstance(source, CustomPath | str):  # is path
+            return BinaryWriter.to_file(CustomPath(source))
         if isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)
         if isinstance(source, BinaryWriter):
@@ -690,7 +693,7 @@ class BinaryWriter(ABC):
 
     @staticmethod
     def dump(
-        path: Path,
+        path: CustomPath,
         data: bytes,
     ) -> None:
         """Convenience method used to writes the specified data to the specified file.

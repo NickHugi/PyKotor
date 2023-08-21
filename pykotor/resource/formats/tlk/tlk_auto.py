@@ -1,4 +1,4 @@
-from pathlib import Path
+from pykotor.tools.path import CustomPath
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import (
@@ -48,8 +48,8 @@ def detect_tlk(
             return ResourceType.INVALID
 
     try:
-        if isinstance(source, str | Path):
-            source = Path(source)
+        if isinstance(source, str | CustomPath):
+            source = CustomPath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, bytes | bytearray):

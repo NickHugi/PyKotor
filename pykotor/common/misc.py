@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar
 from pykotor.common.geometry import Vector3
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from pykotor.tools.path import CustomPath
 
 T = TypeVar("T")
 
@@ -76,7 +76,7 @@ class ResRef:
     @classmethod
     def from_path(
         cls,
-        path: Path,
+        path: CustomPath,
     ) -> ResRef:
         """Returns a ResRef from the filename in the specified path.
 
