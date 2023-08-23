@@ -5,11 +5,11 @@ import io
 import os
 import struct
 from abc import ABC, abstractmethod
-from pykotor.tools.path import CustomPath, get_case_sensitive_path
 from typing import BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
+from pykotor.tools.path import CustomPath, get_case_sensitive_path
 
 
 def _endian_char(

@@ -42,7 +42,7 @@ class VISAsciiReader(ResourceReader):
                 self._vis.add_room(when_inside)
             if show not in self._vis.all_rooms():
                 self._vis.add_room(show)
-            self._vis.set_visible(when_inside, show, True)
+            self._vis.set_visible(when_inside, show, visible=True)
 
         return self._vis
 

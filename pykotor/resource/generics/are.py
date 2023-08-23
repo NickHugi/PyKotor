@@ -231,7 +231,7 @@ def construct_are(
 
     root = gff.root
     are.north_axis = ARENorthAxis(
-        root.acquire("Map", GFFStruct()).acquire("NorthAxis", 0)
+        root.acquire("Map", GFFStruct()).acquire("NorthAxis", 0),
     )
     are.map_zoom = root.acquire("Map", GFFStruct()).acquire("MapZoom", 0)
     are.map_res_x = root.acquire("Map", GFFStruct()).acquire("MapResX", 0)

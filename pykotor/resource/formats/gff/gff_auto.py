@@ -1,5 +1,3 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import (
     GFF,
@@ -10,6 +8,7 @@ from pykotor.resource.formats.gff import (
     GFFXMLWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.tools.path import CustomPath
 
 
 def detect_gff(

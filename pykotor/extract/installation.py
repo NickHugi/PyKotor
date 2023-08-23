@@ -5,8 +5,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import IntEnum
-from pykotor.tools.path import CustomPath
-from typing import NamedTuple, Optional
+from typing import ClassVar, NamedTuple, Optional
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -23,8 +22,8 @@ from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
-from pykotor.tools import sound
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
+from pykotor.tools.path import CustomPath
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -83,7 +82,11 @@ class Installation:
     various folders and formats.
     """
 
-    TEXTURES_TYPES = [ResourceType.TPC, ResourceType.TGA, ResourceType.DDS]
+    TEXTURES_TYPES: ClassVar[list[ResourceType]] = [
+        ResourceType.TPC,
+        ResourceType.TGA,
+        ResourceType.DDS,
+    ]
 
     def __init__(self, path: CustomPath):
         self._path: CustomPath = path
@@ -611,27 +614,34 @@ class Installation:
             capsules=capsules,
             folders=folders,
         )
+
         handles: dict[ResourceIdentifier, BinaryReader] = {}
 
         for query in queries:
-            location_list = locations.get(query)
-            location = (
-                location_list[0] if location_list and len(location_list) > 0 else None
-            )
-            if location is None:
-                results[query] = None
-            else:
-                if query not in handles:
-                    handles[query] = BinaryReader.from_file(location.filepath)
-                handles[query].seek(location.offset)
-                data = handles[query].read_bytes(location.size)
-                results[query] = ResourceResult(
-                    query.resname,
-                    query.restype,
-                    location.filepath,
-                    data,
-                )
+            location_list = locations.get(query, [])
 
+            if not location_list:
+                print(f"Resource not found: {query}")
+                results[query] = None
+                continue
+
+            location = location_list[0]
+
+            if query not in handles:
+                handles[query] = BinaryReader.from_file(location.filepath)
+
+            handle = handles[query]
+            handle.seek(location.offset)
+            data = handle.read_bytes(location.size)
+
+            results[query] = ResourceResult(
+                query.resname,
+                query.restype,
+                location.filepath,
+                data,
+            )
+
+        # Close all open handles
         for handle in handles.values():
             handle.close()
 
@@ -967,7 +977,7 @@ class Installation:
         *,
         capsules: list[Capsule] | None = None,
         folders: list[str] | None = None,
-    ) -> bytes | None | None:
+    ) -> bytes | None:
         """Returns the bytes of a sound resource if it can be found, otherwise returns None.
 
         This is a wrapper of the sounds() method provided to make searching for a single resource more convenient.
@@ -1106,17 +1116,14 @@ class Installation:
 
     def string(self, locstring: LocalizedString, default: str = "") -> str:
         """Returns the string for the LocalizedString provided.
-
         This is a wrapper of the strings() method provided to make searching for a single string more convenient.
 
         Args:
         ----
             locstring:
             default:
-
         Returns:
-        -------
-
+        -------.
         """
         batch = self.strings([locstring], default)
         return batch[locstring]

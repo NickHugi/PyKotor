@@ -430,7 +430,7 @@ def dismantle_utc(
         equipment_struct = equipment_list.add(slot.value)
         equipment_struct.set_resref("EquippedRes", item.resref)
         if item.droppable:
-            equipment_struct.set_uint8("Dropable", True)
+            equipment_struct.set_uint8("Dropable", value=True)
 
     item_list = root.set_list("ItemList", GFFList())
     for i, item in enumerate(utc.inventory):
@@ -439,7 +439,7 @@ def dismantle_utc(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_Posy", 0)
         if item.droppable:
-            item_struct.set_uint8("Dropable", True)
+            item_struct.set_uint8("Dropable", value=True)
 
     if game == Game.K2:
         root.set_single("BlindSpot", utc.blindspot)

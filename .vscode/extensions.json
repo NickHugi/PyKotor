@@ -1,5 +1,6 @@
 {
-    "recommendations": [
-        "sourcery.sourcery"
-    ]
+  "recommendations": [
+    "sourcery.sourcery",
+    "JipitiAI.askcodebase"
+  ]
 }

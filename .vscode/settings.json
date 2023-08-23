@@ -54,6 +54,7 @@
     "headtexve",
     "headtexvve",
     "headtexvvve",
+    "Hugi",
     "installlog",
     "isglobal",
     "ITEMPROPERTY",
@@ -165,8 +166,8 @@
     "--ignore=E501,W503,E203"
   ],
   "ruff.args": [
-    "--ignore=D101,D205,PLR5501,PLW2901"
-],
+    "--ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901"
+  ],
 "pythonTestExplorer.testplanEnabled": false,
 "python.analysis.inlayHints.callArgumentNames": false,
 "python.analysis.inlayHints.functionReturnTypes": true,

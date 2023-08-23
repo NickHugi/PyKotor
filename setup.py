@@ -1,6 +1,6 @@
-from pykotor.tools.path import CustomPath
-
 from setuptools import find_namespace_packages, setup
+
+from pykotor.tools.path import CustomPath
 
 HERE = CustomPath(__file__).parent
 

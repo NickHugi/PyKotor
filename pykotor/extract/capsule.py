@@ -1,11 +1,10 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
 from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.path import CustomPath
 
 
 class Capsule:
@@ -69,7 +68,7 @@ class Capsule:
 
         query = ResourceIdentifier(resref, restype)
         resource = next(
-            (resource for resource in self._resources if resource == query), None
+            (resource for resource in self._resources if resource == query), None,
         )
         return None if resource is None else resource.data()
 
@@ -95,7 +94,7 @@ class Capsule:
                     reader.seek(resource.offset())
                     data = reader.read_bytes(resource.size())
                     results[query] = ResourceResult(
-                        query.resname, query.restype, self._path, data
+                        query.resname, query.restype, self._path, data,
                     )
 
         reader.close()
@@ -112,7 +111,7 @@ class Capsule:
 
         query = ResourceIdentifier(resref, restype)
         resource = next(
-            (resource for resource in self._resources if resource == query), None
+            (resource for resource in self._resources if resource == query), None,
         )
         return resource is not None
 
@@ -127,7 +126,7 @@ class Capsule:
 
         query = ResourceIdentifier(resref, restype)
         return next(
-            (resource for resource in self._resources if resource == query), None
+            (resource for resource in self._resources if resource == query), None,
         )
 
     def reload(
@@ -159,7 +158,7 @@ class Capsule:
         )
         container.set(resname, restype, resdata)
         write_rim(container, self._path) if is_rim_file(self._path.name) else write_erf(
-            container, self._path
+            container, self._path,
         )
 
     def path(
@@ -197,7 +196,7 @@ class Capsule:
             res_offset = reader.read_uint32()
             res_size = reader.read_uint32()
             self._resources.append(
-                FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path)
+                FileResource(resrefs[i], restypes[i], res_size, res_offset, self._path),
             )
 
     def _load_rim(
@@ -216,5 +215,5 @@ class Capsule:
             offset = reader.read_uint32()
             size = reader.read_uint32()
             self._resources.append(
-                FileResource(resref, restype, size, offset, self._path)
+                FileResource(resref, restype, size, offset, self._path),
             )

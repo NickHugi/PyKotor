@@ -83,7 +83,7 @@ def set_winreg_path(game: Game, path: str):
     import winreg
 
     key = winreg.CreateKeyEx(
-        winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_SET_VALUE
+        winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_SET_VALUE,
     )
     winreg.SetValueEx(key, r"path", 1, winreg.REG_SZ, path)
 
@@ -95,7 +95,7 @@ def remove_winreg_path(game: Game):
         import winreg
 
         key = winreg.OpenKeyEx(
-            winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_SET_VALUE
+            winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_SET_VALUE,
         )
         return winreg.DeleteValue(key, r"path")
     except FileNotFoundError:

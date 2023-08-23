@@ -339,7 +339,7 @@ def convert_to_k2(
         def node_recursive(
             offset_to_root_offset,
         ):
-            nodes = [offset_to_root_offset]
+            nodes: list[int]
             while nodes:
                 offset_to_node_offset = nodes.pop()
                 reader.seek(offset_to_node_offset)
@@ -540,8 +540,10 @@ def convert_to_k2(
                     node_offset + 44
                 ] = child_offsets_offset  # Node header -> Child node offsets array
 
-                for i in range(child_offsets_count):
-                    nodes.append(child_offsets_offset + i * 4)
+                nodes = [
+                    child_offsets_offset + i * 4 for i in range(child_offsets_count)
+                ]
+                nodes.insert(0, offset_to_root_offset)
 
         reader.seek(88)
         anim_locations_offset = reader.read_uint32()

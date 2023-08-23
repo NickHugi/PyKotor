@@ -67,7 +67,7 @@ class SSFBinaryReader(ResourceReader):
         self._ssf.set(SSFSound.UNLOCK_FAILED, self._reader.read_uint32(max_neg1=True))
         self._ssf.set(SSFSound.UNLOCK_SUCCESS, self._reader.read_uint32(max_neg1=True))
         self._ssf.set(
-            SSFSound.SEPARATED_FROM_PARTY, self._reader.read_uint32(max_neg1=True)
+            SSFSound.SEPARATED_FROM_PARTY, self._reader.read_uint32(max_neg1=True),
         )
         self._ssf.set(SSFSound.REJOINED_PARTY, self._reader.read_uint32(max_neg1=True))
         self._ssf.set(SSFSound.POISONED, self._reader.read_uint32(max_neg1=True))
@@ -119,7 +119,7 @@ class SSFBinaryWriter(ResourceWriter):
         self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_FAILED), max_neg1=True)
         self._writer.write_uint32(self._ssf.get(SSFSound.UNLOCK_SUCCESS), max_neg1=True)
         self._writer.write_uint32(
-            self._ssf.get(SSFSound.SEPARATED_FROM_PARTY), max_neg1=True
+            self._ssf.get(SSFSound.SEPARATED_FROM_PARTY), max_neg1=True,
         )
         self._writer.write_uint32(self._ssf.get(SSFSound.REJOINED_PARTY), max_neg1=True)
         self._writer.write_uint32(self._ssf.get(SSFSound.POISONED), max_neg1=True)

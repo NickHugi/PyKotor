@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import argparse
 import sys
 from enum import IntEnum
-from pykotor.tools.path import CustomPath
 
+from pykotor.tools.path import CustomPath
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.reader import NamespaceReader
 
@@ -55,7 +57,9 @@ def main():
         sys.exit(ExitCode.NUMBER_OF_ARGS)
 
     game_path: CustomPath = CustomPath(args.game_dir).resolve()  # argument 1
-    tslpatchdata_path: CustomPath = CustomPath(args.tslpatchdata).resolve()  # argument 2
+    tslpatchdata_path: CustomPath = CustomPath(
+        args.tslpatchdata,
+    ).resolve()  # argument 2
     namespace_index: int | None = None  # argument 3
     changes_ini_path: CustomPath
 
@@ -82,8 +86,8 @@ def main():
         )
         sys.exit(ExitCode.CHANGES_INI_NOT_FOUND)
 
-    mod_path = changes_ini_path.parent
-    ini_name = changes_ini_path.name
+    mod_path: CustomPath = changes_ini_path.parent
+    ini_name: str = changes_ini_path.name
 
     installer = ModInstaller(mod_path, game_path, ini_name)
 
@@ -92,7 +96,7 @@ def main():
     installer.install()
 
     print("Writing log file 'installlog.txt'...")
-    log_file_path = tslpatchdata_path / "installlog.txt"
+    log_file_path: CustomPath = tslpatchdata_path / "installlog.txt"
     with log_file_path.open("w", encoding="utf-8") as log_file:
         for log in installer.log.all_logs:
             log_file.write(f"{log.message}\n")
@@ -101,7 +105,10 @@ def main():
     sys.exit(ExitCode.SUCCESS)
 
 
-def determine_namespaces(tslpatchdata_path: CustomPath, namespace_index: int) -> CustomPath:
+def determine_namespaces(
+    tslpatchdata_path: CustomPath,
+    namespace_index: int,
+) -> CustomPath:
     try:
         namespace_index = int(sys.argv[3])
     except ValueError:
@@ -120,7 +127,9 @@ def determine_namespaces(tslpatchdata_path: CustomPath, namespace_index: int) ->
         )
         sys.exit(ExitCode.NAMESPACES_INI_NOT_FOUND)
 
-    loaded_namespaces: list[PatcherNamespace] = NamespaceReader.from_filepath(str(namespaces_ini_path))
+    loaded_namespaces: list[PatcherNamespace] = NamespaceReader.from_filepath(
+        str(namespaces_ini_path),
+    )
     if namespace_index >= len(loaded_namespaces):
         print("Namespace index is out of range.")
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)

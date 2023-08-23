@@ -1,9 +1,15 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import EquipmentSlot
-from pykotor.extract.installation import Installation
-from pykotor.resource.formats.twoda import TwoDA
-from pykotor.resource.generics.utc import UTC
 from pykotor.resource.generics.uti import read_uti
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.extract.installation import Installation
+    from pykotor.resource.formats.twoda import TwoDA
+    from pykotor.resource.generics.utc import UTC
 
 
 def get_body_model(
@@ -62,7 +68,6 @@ def get_body_model(
 
             normal_tex_column = f"tex{armor_variation}"
             evil_tex_column = f"tex{armor_variation}evil"
-            print(utc.alignment, evil_tex_column)
             if utc.alignment <= 25 and evil_tex_column in appearance.get_headers():
                 tex_column = evil_tex_column
             else:

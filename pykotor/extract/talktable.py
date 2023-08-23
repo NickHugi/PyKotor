@@ -1,9 +1,9 @@
-from pykotor.tools.path import CustomPath
 from typing import NamedTuple
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
+from pykotor.tools.path import CustomPath
 
 
 class StringResult(NamedTuple):

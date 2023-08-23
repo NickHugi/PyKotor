@@ -1,5 +1,3 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lip import (
     LIP,
@@ -9,6 +7,7 @@ from pykotor.resource.formats.lip import (
 )
 from pykotor.resource.formats.lip.io_lip_xml import LIPXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.tools.path import CustomPath
 
 
 def detect_lip(

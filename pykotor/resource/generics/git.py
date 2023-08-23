@@ -118,27 +118,28 @@ class GIT:
         try:
             if isinstance(instance, GITCreature):
                 return self.creatures.index(instance)
-            elif isinstance(instance, GITPlaceable):
+            if isinstance(instance, GITPlaceable):
                 return self.placeables.index(instance)
-            elif isinstance(instance, GITDoor):
+            if isinstance(instance, GITDoor):
                 return self.doors.index(instance)
-            elif isinstance(instance, GITTrigger):
+            if isinstance(instance, GITTrigger):
                 return self.triggers.index(instance)
-            elif isinstance(instance, GITEncounter):
+            if isinstance(instance, GITEncounter):
                 return self.encounters.index(instance)
-            elif isinstance(instance, GITWaypoint):
+            if isinstance(instance, GITWaypoint):
                 return self.waypoints.index(instance)
-            elif isinstance(instance, GITCamera):
+            if isinstance(instance, GITCamera):
                 return self.cameras.index(instance)
-            elif isinstance(instance, GITSound):
+            if isinstance(instance, GITSound):
                 return self.sounds.index(instance)
-            elif isinstance(instance, GITStore):
+            if isinstance(instance, GITStore):
                 return self.stores.index(instance)
-            else:
-                raise ValueError
-        except ValueError as e:
+
             msg = "Could not find instance in GIT object."
-            raise ValueError(msg) from e
+            raise TypeError(msg)
+        except TypeError:
+            pass
+        return -1
 
     def add(
         self,
@@ -158,41 +159,41 @@ class GIT:
             if instance in self.creatures:
                 ValueError("Creature instance already exists inside the GIT object.")
             return self.creatures.append(instance)
-        elif isinstance(instance, GITPlaceable):
+        if isinstance(instance, GITPlaceable):
             if instance in self.placeables:
                 ValueError("Placeable instance already exists inside the GIT object.")
             return self.placeables.append(instance)
-        elif isinstance(instance, GITDoor):
+        if isinstance(instance, GITDoor):
             if instance in self.doors:
                 ValueError("Door instance already exists inside the GIT object.")
             return self.doors.append(instance)
-        elif isinstance(instance, GITTrigger):
+        if isinstance(instance, GITTrigger):
             if instance in self.triggers:
                 ValueError("Trigger instance already exists inside the GIT object.")
             return self.triggers.append(instance)
-        elif isinstance(instance, GITEncounter):
+        if isinstance(instance, GITEncounter):
             if instance in self.encounters:
                 ValueError("Encounter instance already exists inside the GIT object.")
             return self.encounters.append(instance)
-        elif isinstance(instance, GITWaypoint):
+        if isinstance(instance, GITWaypoint):
             if instance in self.waypoints:
                 ValueError("Waypoint instance already exists inside the GIT object.")
             return self.waypoints.append(instance)
-        elif isinstance(instance, GITCamera):
+        if isinstance(instance, GITCamera):
             if instance in self.cameras:
                 ValueError("Camera instance already exists inside the GIT object.")
             return self.cameras.append(instance)
-        elif isinstance(instance, GITSound):
+        if isinstance(instance, GITSound):
             if instance in self.sounds:
                 ValueError("Sound instance already exists inside the GIT object.")
             return self.sounds.append(instance)
-        elif isinstance(instance, GITStore):
+        if isinstance(instance, GITStore):
             if instance in self.stores:
                 ValueError("Store instance already exists inside the GIT object.")
             return self.stores.append(instance)
-        else:
-            TypeError("Tired to add invalid instance.")
-            return None
+
+        TypeError("Tired to add invalid instance.")
+        return None
 
 
 class GITInstance(ABC):

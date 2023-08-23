@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pykotor.tools.path import CustomPath
 from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
+from pykotor.tools.path import CustomPath
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
@@ -168,13 +168,17 @@ class AddFieldGFF(ModifyGFF):
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
-    def _navigate_containers(self, container, path):
+    def _navigate_containers(
+        self,
+        container: GFFStruct | GFFList | None,
+        path: CustomPath,
+    ) -> GFFList | GFFStruct | None:
         path = CustomPath(path)
         hierarchy: tuple[str, ...] = path.parts
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
-                container = container.acquire(step, None, (GFFStruct, GFFList))
+                container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
             elif isinstance(container, GFFList):
                 container = container.at(int(step))
 
@@ -232,19 +236,28 @@ class ModifyFieldGFF(ModifyGFF):
 
     def _navigate_containers(self, container, path):
         path = CustomPath(path)
-        hierarchy = list(path.parents)[::-1][1:]  # Removing the root
-        label = path.name
+        # str collection of path parts without the final part
+        hierarchy: tuple[str, ...] = path.parts[:-1]
+        label: str = path.name
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
-                container = container.acquire(step.name, None, (GFFStruct, GFFList))
+                container = container.acquire(step, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
-                container = container.at(int(step.name))
+                container = container.at(int(step))
             else:
                 return None
-
-        field_type = container.what_type(label)
+        if container is None:
+            return None
+        assert isinstance(container, GFFStruct)
+        field_type: GFFFieldType = container.what_type(label)
         return container, label, field_type
+
+
+class AddStructToListGFF(ModifyGFF):
+    def __init__(self, path: str, value: GFFStruct) -> None:
+        self.path: str = path
+        self.value: GFFStruct = value
 
 
 # endregion
@@ -255,15 +268,19 @@ class ModificationsGFF:
         self,
         filename: str,
         replace_file: bool,
-        modifiers: list[AddFieldGFF] | None = None,
+        modifiers: list[AddFieldGFF | ModifyFieldGFF] | None = None,
         destination: str | None = None,
     ) -> None:
         self.filename: str = filename
         self.replace_file: bool = replace_file
         self.destination: str = (
-            destination if destination is not None else str(CustomPath("Override", filename))
+            destination
+            if destination is not None
+            else str(CustomPath("Override", filename))
         )
-        self.modifiers: list[AddFieldGFF] = modifiers if modifiers is not None else []
+        self.modifiers: list[AddFieldGFF | ModifyFieldGFF] = (
+            modifiers if modifiers is not None else []
+        )
 
     def apply(
         self,

@@ -49,14 +49,14 @@ class RIMBinaryReader(ResourceReader):
         resoffsets: list[int] = []
         ressizes: list[int] = []
         self._reader.seek(offset_to_keys)
-        for i in range(entry_count):
+        for _ in range(entry_count):
             resrefs.append(self._reader.read_string(16))
             restypes.append(self._reader.read_uint32())
             resids.append(self._reader.read_uint32())
             resoffsets.append(self._reader.read_uint32())
             ressizes.append(self._reader.read_uint32())
 
-        for i in range(entry_count):
+        for _ in range(entry_count):
             self._reader.seek(resoffsets[i])
             resdata = self._reader.read_bytes(ressizes[i])
             self._rim.set(resrefs[i], ResourceType.from_id(restypes[i]), resdata)

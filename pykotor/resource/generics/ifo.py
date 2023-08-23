@@ -194,7 +194,8 @@ def dismantle_ifo(
     root.set_single("Mod_Entry_Dir_Y", entry_direction.y)
 
     root.set_list("Mod_Area_list", GFFList()).add(6).set_resref(
-        "Area_Name", ifo.area_name
+        "Area_Name",
+        ifo.area_name,
     )
 
     if use_deprecated:

@@ -1,5 +1,10 @@
-from pykotor.resource.formats.ssf import SSF, SSFSound
-from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ssf import SSF, SSFSound
+    from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
 
 
 class ModifySSF:

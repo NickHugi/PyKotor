@@ -1,5 +1,3 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.mdl import (
     MDL,
@@ -9,6 +7,7 @@ from pykotor.resource.formats.mdl import (
     MDLBinaryWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.tools.path import CustomPath
 
 
 def detect_mdl(
@@ -106,7 +105,7 @@ def read_mdl(
 
     if file_format == ResourceType.MDL:
         return MDLBinaryReader(
-            source, offset, size, source_ext, offset_ext, size_ext
+            source, offset, size, source_ext, offset_ext, size_ext,
         ).load()
     elif file_format == ResourceType.MDL_ASCII:
         return MDLAsciiReader(source, offset, size).load()

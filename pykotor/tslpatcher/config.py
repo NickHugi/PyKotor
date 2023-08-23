@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from configparser import ConfigParser
 from enum import IntEnum
-from pykotor.tools.path import CustomPath
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -16,13 +17,14 @@ from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
-from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
+from pykotor.tools.path import CustomPath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
 if TYPE_CHECKING:
+    from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
     from pykotor.tslpatcher.mods.install import InstallFolder
     from pykotor.tslpatcher.mods.nss import ModificationsNSS
@@ -164,8 +166,8 @@ class ModInstaller:
             self.log.complete_patch()
 
         # Apply changes to 2DA files
-        for patch in config.patches_2da:
-            resname, restype = ResourceIdentifier.from_path(patch.filename)
+        for twoda_patch in config.patches_2da:
+            resname, restype = ResourceIdentifier.from_path(twoda_patch.filename)
             search = installation.resource(
                 resname,
                 restype,
@@ -173,38 +175,44 @@ class ModInstaller:
                 folders=[self.mod_path],
             )
             twoda: TwoDA = read_2da(search.data)
-            twodas[patch.filename] = twoda
+            twodas[twoda_patch.filename] = twoda
 
-            self.log.add_note(f"Patching '{patch.filename}'")
-            patch.apply(twoda, memory)
-            write_2da(twoda, str(self.output_path / "Override" / patch.filename))
+            self.log.add_note(f"Patching '{twoda_patch.filename}'")
+            twoda_patch.apply(twoda, memory)
+            write_2da(twoda, str(self.output_path / "Override" / twoda_patch.filename))
 
             self.log.complete_patch()
 
         # Apply changes to SSF files
-        for patch in config.patches_ssf:
-            resname, restype = ResourceIdentifier.from_path(patch.filename)
+        for ssf_patch in config.patches_ssf:
+            resname, restype = ResourceIdentifier.from_path(ssf_patch.filename)
             search = installation.resource(
                 resname,
                 restype,
                 [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
                 folders=[self.mod_path],
             )
-            soundset = soundsets[patch.filename] = read_ssf(search.data)
+            if search is None or search.data is None:
+                self.log.add_error(
+                    f"Didn't patch '{ssf_patch.filename}' because search data is `None`."
+                )
+                continue
 
-            self.log.add_note(f"Patching '{patch.filename}'")
-            patch.apply(soundset, memory)
-            write_ssf(soundset, self.output_path / "Override" / patch.filename)
+            soundset = soundsets[ssf_patch.filename] = read_ssf(search.data)
+
+            self.log.add_note(f"Patching '{ssf_patch.filename}'")
+            ssf_patch.apply(soundset, memory)
+            write_ssf(soundset, self.output_path / "Override" / ssf_patch.filename)
 
             self.log.complete_patch()
 
         # Apply changes to GFF files
-        for patch in config.patches_gff:
-            resname, restype = ResourceIdentifier.from_path(patch.filename)
+        for gff_patch in config.patches_gff:
+            resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
 
             capsule = None
-            gff_filepath = self.output_path / patch.destination
-            if is_capsule_file(patch.destination):
+            gff_filepath: CustomPath = self.output_path / gff_patch.destination
+            if is_capsule_file(gff_patch.destination):
                 capsule = Capsule(gff_filepath)
 
             search = installation.resource(
@@ -218,64 +226,75 @@ class ModInstaller:
                 folders=[self.mod_path],
                 capsules=[] if capsule is None else [capsule],
             )
+            if search is None or search.data is None:
+                self.log.add_error(
+                    f"Didn't patch '{gff_patch.filename}' because search data is `None`."
+                )
+                continue
 
             norm_game_path = installation.path()
-            norm_file_path_rel = CustomPath(patch.destination)
+            norm_file_path_rel = CustomPath(gff_patch.destination)
             norm_file_path = norm_game_path / norm_file_path_rel
             local_path = norm_file_path.relative_to(norm_game_path)
-            local_folder = local_path.parent
 
             if capsule is None:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_folder}' folder.",
+                    f"Patching '{gff_patch.filename}' in the '{local_path.parent}' folder.",
                 )
             else:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_path}' archive.",
+                    f"Patching '{gff_patch.filename}' in the '{local_path}' archive.",
                 )
 
-            template = templates[patch.filename] = read_gff(search.data)
-            patch.apply(template, memory, self.log)
-            self.write(gff_filepath, patch.filename, bytes_gff(template), replace=True)
+            template = templates[gff_patch.filename] = read_gff(search.data)
+            assert template is not None
+
+            gff_patch.apply(template, memory, self.log)
+            self.write(
+                gff_filepath,
+                gff_patch.filename,
+                bytes_gff(template),
+                replace=True,
+            )
 
             self.log.complete_patch()
 
         # Apply changes to NSS files
-        for patch in config.patches_nss:
+        for nss_patch in config.patches_nss:
             capsule = None
-            nss_output_filepath = self.output_path / patch.destination
-            if is_capsule_file(patch.destination):
+            nss_output_filepath = self.output_path / nss_patch.destination
+            if is_capsule_file(nss_patch.destination):
                 capsule = Capsule(nss_output_filepath)
 
-            nss_input_filepath = CustomPath(self.mod_path, patch.filename)
+            nss_input_filepath = CustomPath(self.mod_path, nss_patch.filename)
             nss = [BinaryReader.load_file(nss_input_filepath).decode(errors="ignore")]
 
             norm_game_path = installation.path()
-            norm_file_path_rel = CustomPath(patch.destination)
+            norm_file_path_rel = CustomPath(nss_patch.destination)
             norm_file_path = norm_game_path / norm_file_path_rel
             local_path = norm_file_path.relative_to(norm_game_path)
             local_folder = local_path.parent
 
             if capsule is None:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_folder}' folder.",
+                    f"Patching '{nss_patch.filename}' in the '{local_folder}' folder.",
                 )
             else:
                 self.log.add_note(
-                    f"Patching '{patch.filename}' in the '{local_path}' archive.",
+                    f"Patching '{nss_patch.filename}' in the '{local_path}' archive.",
                 )
 
-            self.log.add_note(f"Compiling '{patch.filename}'")
-            patch.apply(nss, memory, self.log)
+            self.log.add_note(f"Compiling '{nss_patch.filename}'")
+            nss_patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
-            file_name, ext = patch.filename.split(".", 1)
+            file_name, ext = nss_patch.filename.split(".", 1)
 
             self.write(
                 nss_output_filepath,
                 f"{file_name}." + ext.lower().replace(".nss", ".ncs"),
                 data,
-                patch.replace_file,
+                nss_patch.replace_file,
             )
 
             self.log.complete_patch()

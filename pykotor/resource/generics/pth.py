@@ -94,9 +94,9 @@ class PTH:
         target: int,
     ) -> None:
         for edge in copy(self._connections):
-            hasSource = edge.source in [source, target]
-            hasTarget = edge.target in [source, target]
-            if hasSource and hasTarget:
+            has_source = edge.source in [source, target]
+            has_target = edge.target in [source, target]
+            if has_source and has_target:
                 self._connections.remove(edge)
 
     def is_connected(

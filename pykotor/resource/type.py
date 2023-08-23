@@ -4,11 +4,11 @@ games.
 from __future__ import annotations
 
 from abc import ABC
-from pykotor.tools.path import CustomPath
 from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.tools.path import CustomPath
 
 SOURCE_TYPES = Union[CustomPath, str, bytes, bytearray, BinaryReader]
 TARGET_TYPES = Union[CustomPath, str, bytearray, BinaryWriter]
@@ -233,12 +233,11 @@ class ResourceType:
         """
         if type(other) is ResourceType:
             return self is other
-        elif type(other) is str:
+        if type(other) is str:
             return self.extension == other
-        elif type(other) is int:
+        if type(other) is int:
             return self.type_id == other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __hash__(
         self,
@@ -299,7 +298,7 @@ def autoclose(func):
             resource = func(self, auto_close)
         except (OSError, ParseError, ValueError, IndexError, StopIteration) as e:
             msg = "Tried to load an unsupported or corrupted file."
-            raise ValueError(msg, e)
+            raise ValueError(msg) from e
         finally:
             if auto_close:
                 self.close()

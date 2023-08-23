@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from enum import IntEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from pykotor.resource.formats.twoda import TwoDA, TwoDARow
-from pykotor.tslpatcher.memory import PatcherMemory
+if TYPE_CHECKING:
+    from pykotor.resource.formats.twoda import TwoDA, TwoDARow
+    from pykotor.tslpatcher.memory import PatcherMemory
 
 
 class CriticalException(Exception):
@@ -117,7 +120,7 @@ class RowValueRowLabel(RowValue):
         ...
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return row.label()
+        return row.label() if row is not None else ""
 
 
 class RowValueRowCell(RowValue):

@@ -1,5 +1,3 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ssf import (
     SSF,
@@ -9,6 +7,7 @@ from pykotor.resource.formats.ssf import (
 )
 from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.tools.path import CustomPath
 
 
 def detect_ssf(

@@ -259,7 +259,9 @@ class Module:
         for resource in self.resources.values():
             resource.activate()
 
-    def add_locations(self, resname: str, restype: ResourceType, locations: list[CustomPath]):
+    def add_locations(
+        self, resname: str, restype: ResourceType, locations: list[CustomPath]
+    ):
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
         filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
@@ -283,7 +285,7 @@ class Module:
         filename = f"{resname}.{restype.extension}"
         return self.resources[filename] if filename in self.resources else None
 
-    def layout(self) -> ModuleResource[LYT]:
+    def layout(self) -> ModuleResource[LYT] | None:
         return next(
             (
                 resource
@@ -296,7 +298,7 @@ class Module:
             None,
         )
 
-    def vis(self) -> ModuleResource[VIS]:
+    def vis(self) -> ModuleResource[VIS] | None:
         return next(
             (
                 resource
@@ -311,7 +313,7 @@ class Module:
 
     def are(
         self,
-    ) -> ModuleResource[ARE]:
+    ) -> ModuleResource[ARE] | None:
         """The function `are` returns a ModuleResource object from a dictionary of resources based on a
         matching resource name and type.
         :return: a ModuleResource object of type ARE.
@@ -330,7 +332,7 @@ class Module:
 
     def git(
         self,
-    ) -> ModuleResource[GIT]:
+    ) -> ModuleResource[GIT] | None:
         """The function `git` returns a `ModuleResource` object of type `GIT` from a dictionary of
         resources based on a given ID.
         :return: The code is returning a resource of type GIT from the self.resources dictionary. The
@@ -350,7 +352,7 @@ class Module:
 
     def pth(
         self,
-    ) -> ModuleResource[PTH]:
+    ) -> ModuleResource[PTH] | None:
         """The function `pth` returns a `ModuleResource` object with a specific resname and restype.
         :return: a ModuleResource object of type PTH.
         """
@@ -368,7 +370,7 @@ class Module:
 
     def info(
         self,
-    ) -> ModuleResource[IFO]:
+    ) -> ModuleResource[IFO] | None:
         """The function returns the resource object with the name "module" and the type ResourceType.IFO.
         :return: a ModuleResource object of type IFO.
         """

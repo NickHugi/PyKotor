@@ -36,6 +36,25 @@
             "fileLocation": ["relative", "${workspaceFolder}"],
             "pattern": {"regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$", "file": 1, "line": 2, "column": 3, "severity": 4, "message": 5}
         }
+    },
+    {
+        "label": "Python: Ruff check entire project",
+        "type": "shell",
+        "command": "ruff check . --ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901",
+        "group": "test",
+        "presentation": { "reveal": "always", "panel": "new" },
+        "problemMatcher": {
+        "owner": "python",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+            "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+        }
+        }
     }
   ]
 }

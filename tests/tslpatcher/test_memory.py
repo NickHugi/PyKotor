@@ -17,7 +17,7 @@ class TestLocalizedStringDelta(TestCase):
         delta = LocalizedStringDelta(FieldValueConstant("2DAMEMORY5"))
 
         memory = PatcherMemory()
-        memory.memory_2da[5] = FieldValue2DAMemory("123")
+        memory.memory_2da[5] = "123"
 
         delta.apply(locstring, memory)
 
@@ -29,7 +29,7 @@ class TestLocalizedStringDelta(TestCase):
         delta = LocalizedStringDelta("StrRef5")
 
         memory = PatcherMemory()
-        memory.memory_str[5] = FieldValueTLKMemory(123)
+        memory.memory_str[5] = 123
 
         delta.apply(locstring, memory)
 

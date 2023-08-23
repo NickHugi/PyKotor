@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import os
 import platform
-from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from pykotor.common.misc import Game
 
+
 class CustomPath(Path):
-    _flavour = PureWindowsPath._flavour if os.name == 'nt' else PurePosixPath._flavour # type: ignore
+    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour # type: ignore
 
     def __new__(cls, *args, **kwargs):
         new_args: list[str] = [str(arg).replace("\\", "/") for arg in args]
@@ -16,7 +17,8 @@ class CustomPath(Path):
 
 def fix_path_formatting(path):
     if path is None:
-        raise ValueError("path cannot be None")
+        msg = "path cannot be None"
+        raise ValueError(msg)
 
     if not path.strip():
         return path
@@ -29,16 +31,16 @@ def fix_path_formatting(path):
     formatted_path: str = re.sub(
         f"(?<!:){re.escape(os.sep)}+",
         os.sep,
-        formatted_path
+        formatted_path,
     )
 
-    formatted_path = formatted_path.rstrip(os.sep)
+    return formatted_path.rstrip(os.sep)
 
-    return formatted_path
 
 def get_case_sensitive_path(path: str) -> str:
     if not path.strip():
-        raise ValueError("'path' cannot be null or whitespace.")
+        msg = "'path' cannot be null or whitespace."
+        raise ValueError(msg)
 
     formatted_path: str = os.path.abspath(path.replace("/", os.path.sep))
     if os.path.exists(formatted_path):
@@ -47,7 +49,7 @@ def get_case_sensitive_path(path: str) -> str:
     parts: list[str] = formatted_path.split(os.path.sep)
     current_path = os.path.splitdrive(formatted_path)[0]
     if current_path and not os.path.isabs(parts[0]):
-        parts = [current_path] + parts
+        parts = [current_path, *parts]
     if parts[0].endswith(":"):
         parts[0] += os.path.sep
 
@@ -66,9 +68,12 @@ def get_case_sensitive_path(path: str) -> str:
 
 def get_matching_characters_count(str1, str2) -> int:
     if not str1 or not str2:
-        raise ValueError("Value cannot be null or empty.")
-    
-    matching_count: int = sum(1 for i in range(min(len(str1), len(str2))) if str1[i] == str2[i])
+        msg = "Value cannot be null or empty."
+        raise ValueError(msg)
+
+    matching_count: int = sum(
+        str1[i] == str2[i] for i in range(min(len(str1), len(str2)))
+    )
     return -1 if matching_count == 0 else matching_count
 
 
@@ -77,7 +82,7 @@ def is_valid_path(path):
         # Check if the path exists and is not empty
         if not os.path.exists(path) or not path.strip():
             return False
-        
+
         # Check if the path is properly formatted
         return os.path.normpath(path) == path
     except:

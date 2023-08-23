@@ -49,17 +49,17 @@ class ERFBinaryReader(ResourceReader):
         restypes = [None] * entry_count
         self._reader.seek(offset_to_keys)
         keys_data = self._reader.read_bytes(
-            24 * entry_count
+            24 * entry_count,
         )  # 16 bytes for resref, 4 for resid, 2 for restype, 2 skipped
 
         for i in range(entry_count):
             resref_data = keys_data[i * 24 : i * 24 + 16].split(b"\0")[0]
             resrefs[i] = resref_data.decode("windows-1252")
             resids[i] = int.from_bytes(
-                keys_data[i * 24 + 16 : i * 24 + 20], byteorder="little"
+                keys_data[i * 24 + 16 : i * 24 + 20], byteorder="little",
             )
             restypes[i] = int.from_bytes(
-                keys_data[i * 24 + 20 : i * 24 + 22], byteorder="little"
+                keys_data[i * 24 + 20 : i * 24 + 22], byteorder="little",
             )
 
         resoffsets = [None] * entry_count
@@ -69,10 +69,10 @@ class ERFBinaryReader(ResourceReader):
 
         for i in range(entry_count):
             resoffsets[i] = int.from_bytes(
-                resources_data[i * 8 : i * 8 + 4], byteorder="little"
+                resources_data[i * 8 : i * 8 + 4], byteorder="little",
             )
             ressizes[i] = int.from_bytes(
-                resources_data[i * 8 + 4 : i * 8 + 8], byteorder="little"
+                resources_data[i * 8 + 4 : i * 8 + 8], byteorder="little",
             )
 
         for i in range(entry_count):

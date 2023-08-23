@@ -1,7 +1,13 @@
-from pykotor.extract.installation import Installation
-from pykotor.resource.formats.twoda import TwoDA
-from pykotor.resource.generics.utp import UTP
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.extract.installation import Installation
+    from pykotor.resource.formats.twoda import TwoDA
+    from pykotor.resource.generics.utp import UTP
 
 
 def get_model(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.resource.formats.vis import VIS, VISAsciiReader, VISAsciiWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 

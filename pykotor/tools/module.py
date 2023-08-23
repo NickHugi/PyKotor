@@ -1,5 +1,3 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
@@ -19,6 +17,7 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
+from pykotor.tools.path import CustomPath
 
 
 def clone_module(

@@ -1,10 +1,9 @@
-from pathlib import Path
 from unittest import TestCase
 
 from pykotor.common.misc import ResRef
 
 from pykotor.common.geometry import Vector3, Vector4
-from pykotor.common.language import LocalizedString, Language, Gender
+from pykotor.common.language import LocalizedString
 from pykotor.resource.formats.gff import GFF, GFFList, GFFFieldType
 from pykotor.resource.formats.ssf import SSF, SSFSound
 from pykotor.resource.formats.tlk import TLK

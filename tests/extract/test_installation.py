@@ -1,17 +1,17 @@
-import sys
 import os
+import sys
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.append(project_root)
-from pykotor.tools.path import CustomPath
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_nss_file
+from pykotor.tools.path import CustomPath
 
 
 class TestInstallation(TestCase):
@@ -19,8 +19,18 @@ class TestInstallation(TestCase):
         path = os.environ.get("K1_PATH")
         if path is not None and os.path.exists(path):
             path = CustomPath(path)
-        elif os.path.exists("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"):
-            path = CustomPath("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor")
+        elif os.path.exists(
+            "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
+        ):
+            path = CustomPath(
+                "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
+            )
+        elif os.path.exists(
+            "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
+        ):
+            path = CustomPath(
+                "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
+            )
         else:
             raise ValueError("K1_PATH environment variable not set.")
         self.installation = Installation(path)
@@ -180,109 +190,119 @@ class TestInstallation(TestCase):
             chitin_resources, [SearchLocation.CHITIN]
         )
         self._assert_from_path_tests(chitin_results, "c_bantha.utc", "x.utc")
-        modules_resources = [
+        modules_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("m01aa.are"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        modules_results = installation.resources(
-            modules_resources, [SearchLocation.MODULES]
-        )
+        modules_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(modules_resources, [SearchLocation.MODULES])
         self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
-        override_resources = [
+        override_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("nwscript.nss"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        override_results = installation.resources(
-            override_resources, [SearchLocation.OVERRIDE]
-        )
+        override_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(override_resources, [SearchLocation.OVERRIDE])
         self._assert_from_path_tests(override_results, "nwscript.nss", "x.tpc")
-        voices_resources = [
+        voices_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("NM17AE04NI04008_.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        voices_results = installation.resources(
-            voices_resources, [SearchLocation.VOICE]
-        )
+        voices_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(voices_resources, [SearchLocation.VOICE])
         self._assert_from_path_tests(voices_results, "NM17AE04NI04008_.wav", "x.mp3")
-        music_resources = [
+        music_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("mus_theme_carth.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        music_results = installation.resources(music_resources, [SearchLocation.MUSIC])
+        music_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(music_resources, [SearchLocation.MUSIC])
         self._assert_from_path_tests(music_results, "mus_theme_carth.wav", "x.mp3")
-        sounds_resources = [
+        sounds_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("P_ZAALBAR_POIS.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        sounds_results = installation.resources(
-            sounds_resources, [SearchLocation.SOUND]
-        )
+        sounds_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(sounds_resources, [SearchLocation.SOUND])
         self._assert_from_path_tests(sounds_results, "P_ZAALBAR_POIS.wav", "x.mp3")
-        lips_resources = [
+        lips_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("n_gendro_coms1.lip"),
             ResourceIdentifier.from_path("x.lip"),
         ]
-        lips_results = installation.resources(lips_resources, [SearchLocation.LIPS])
+        lips_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(lips_resources, [SearchLocation.LIPS])
         self._assert_from_path_tests(lips_results, "n_gendro_coms1.lip", "x.lip")
-        rims_resources = [
+        rims_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("darkjedi.ssf"),
             ResourceIdentifier.from_path("x.ssf"),
         ]
-        rims_results = installation.resources(rims_resources, [SearchLocation.RIMS])
+        rims_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(rims_resources, [SearchLocation.RIMS])
         self._assert_from_path_tests(rims_results, "darkjedi.ssf", "x.ssf")
-        texa_resources = [
+        texa_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texa_results = installation.resources(
-            texa_resources, [SearchLocation.TEXTURES_TPA]
-        )
+        texa_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(texa_resources, [SearchLocation.TEXTURES_TPA])
         self._assert_from_path_tests(texa_results, "blood.tpc", "x.tpc")
-        texb_resources = [
+        texb_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texb_results = installation.resources(
-            texb_resources, [SearchLocation.TEXTURES_TPB]
-        )
+        texb_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(texb_resources, [SearchLocation.TEXTURES_TPB])
         self._assert_from_path_tests(texb_results, "blood.tpc", "x.tpc")
-        texc_resources = [
+        texc_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texc_results = installation.resources(
-            texc_resources, [SearchLocation.TEXTURES_TPC]
-        )
+        texc_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(texc_resources, [SearchLocation.TEXTURES_TPC])
         self._assert_from_path_tests(texc_results, "blood.tpc", "x.tpc")
-        texg_resources = [
+        texg_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("1024x768back.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texg_results = installation.resources(
-            texg_resources, [SearchLocation.TEXTURES_GUI]
-        )
+        texg_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(texg_resources, [SearchLocation.TEXTURES_GUI])
         self._assert_from_path_tests(texg_results, "1024x768back.tpc", "x.tpc")
-        capsules = [Capsule(installation.module_path() / "danm13.rim")]
-        capsules_resources = [
+        capsules: list[Capsule] = [Capsule(installation.module_path() / "danm13.rim")]
+        capsules_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("m13aa.are"),
             ResourceIdentifier.from_path("xyz.ifo"),
         ]
-        capsules_results = installation.resources(
+        capsules_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(
             capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
-        folders = [installation.override_path()]
-        folders_resources = [
+        folders: list[CustomPath] = [installation.override_path()]
+        folders_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("nwscript.nss"),
             ResourceIdentifier.from_path("x.utc"),
         ]
-        folders_results = installation.resources(
+        folders_results: dict[
+            ResourceIdentifier, ResourceResult | None
+        ] = installation.resources(
             folders_resources, [SearchLocation.CUSTOM_FOLDERS], folders=folders
         )
         self._assert_from_path_tests(folders_results, "nwscript.nss", "x.utc")
 
-    def test_location(self):
-        installation = self.installation
+    def test_location(self) -> None:
+        installation: Installation = self.installation
 
         self.assertFalse(installation.location("m13aa", ResourceType.ARE, []))
         self.assertTrue(installation.location("m13aa", ResourceType.ARE))

@@ -1,6 +1,7 @@
-from pykotor.tools.path import CustomPath
-import sys
 import os
+import sys
+
+from pykotor.tools.path import CustomPath
 
 project_root = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
@@ -9,7 +10,7 @@ sys.path.append(project_root)
 import platform
 from unittest import TestCase
 
-from pykotor.resource.formats.erf import ERF, ERFBinaryReader, write_erf, read_erf
+from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = CustomPath("tests/files/test.erf").resolve()
@@ -33,6 +34,7 @@ class TestERF(TestCase):
         self.assertEqual(erf.get("2", ResourceType.TXT), b"def")
         self.assertEqual(erf.get("3", ResourceType.TXT), b"ghi")
 
+    # sourcery skip: no-conditionals-in-tests
     def test_read_raises(self):
         if platform.system() == "Windows":
             self.assertRaises(PermissionError, read_erf, ".")

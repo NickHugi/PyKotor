@@ -91,7 +91,7 @@ class GFFXMLReader(ResourceReader):
             )
             for substring in xml_field:
                 language, gender = LocalizedString.substring_pair(
-                    int(substring.get("language"))
+                    int(substring.get("language")),
                 )
                 locstring.set(language, gender, substring.text)
             gff_struct.set_locstring(label, locstring)
@@ -110,7 +110,7 @@ class GFFXMLReader(ResourceReader):
         elif xml_field.tag == "vector":
             coords = xml_field.findall("double")
             v3 = Vector3(
-                float(coords[0].text), float(coords[1].text), float(coords[2].text)
+                float(coords[0].text), float(coords[1].text), float(coords[2].text),
             )
             gff_struct.set_vector3(label, v3)
         elif xml_field.tag == "struct":
@@ -213,7 +213,7 @@ class GFFXMLWriter(ResourceWriter):
             for language, gender, string in value:
                 subelement = ElementTree.Element("string")
                 subelement.set(
-                    "language", str(LocalizedString.substring_id(language, gender))
+                    "language", str(LocalizedString.substring_id(language, gender)),
                 )
                 subelement.text = string
                 xml_field.append(subelement)

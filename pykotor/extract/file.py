@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from pykotor.tools.path import CustomPath
 from typing import NamedTuple
 
 from pykotor.resource.type import ResourceType
@@ -9,6 +8,7 @@ from pykotor.tools.misc import (
     is_bif_file,
     is_capsule_file,
 )
+from pykotor.tools.path import CustomPath
 
 
 class FileResource:

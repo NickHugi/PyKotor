@@ -17,6 +17,8 @@ class Language(IntEnum):
 
     @staticmethod
     def _missing_(value: IntEnum) -> IntEnum:
+        if value != 2147483647:
+            print(f"Missing language int {value}")
         return Language.ENGLISH
 
 

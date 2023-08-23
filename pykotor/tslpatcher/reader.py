@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
-from pykotor.tools.path import CustomPath
 from typing import TYPE_CHECKING, Literal
 
 from chardet import UniversalDetector
@@ -14,6 +13,7 @@ from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
+from pykotor.tools.path import CustomPath
 from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -86,7 +86,7 @@ class ConfigReader:
         return ConfigReader(ini, path).load(config)
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
-        self.config: PatcherConfig = config
+        self.config = config
 
         self.load_settings()
         print("Parsing file list from [InstallList]")
@@ -376,6 +376,7 @@ class ConfigReader:
             modifications = ModificationsGFF(file, replace)
             self.config.patches_gff.append(modifications)
 
+            modifier: AddFieldGFF | ModifyFieldGFF
             for name, value in modifications_ini.items():
                 lowercase_name = name.lower()
                 if lowercase_name == "!destination":
@@ -658,7 +659,7 @@ class ConfigReader:
             is_store_tlk = modifier.startswith("StrRef")
             is_row_label = modifier in ["RowLabel", "NewRowLabel"]
 
-            row_value: None = None
+            row_value = None
             if value.startswith("2DAMEMORY"):
                 token_id = int(value[9:])
                 row_value = RowValue2DAMemory(token_id)

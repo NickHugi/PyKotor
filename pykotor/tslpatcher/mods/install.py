@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import concurrent.futures
-from pykotor.tools.path import CustomPath
+from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tslpatcher.logger import PatchLogger
+from pykotor.tools.path import CustomPath
+
+if TYPE_CHECKING:
+    from pykotor.tslpatcher.logger import PatchLogger
 
 
 class InstallFile:
@@ -82,7 +87,9 @@ class InstallFolder:
         self.foldername: str = foldername
         self.files: list[InstallFile] = files or []
 
-    def apply(self, log: PatchLogger, source_path: CustomPath, destination_path: CustomPath):
+    def apply(
+        self, log: PatchLogger, source_path: CustomPath, destination_path: CustomPath
+    ):
         target = destination_path / self.foldername
 
         if is_capsule_file(self.foldername):
@@ -95,7 +102,10 @@ class InstallFolder:
                 futures = [
                     executor.submit(
                         lambda file: file.apply_file(
-                            log, source_path, target, self.foldername
+                            log,
+                            source_path,
+                            target,
+                            self.foldername,
                         ),
                         file,
                     )

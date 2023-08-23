@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import Enum
-from pykotor.tools.path import CustomPath
 from typing import NamedTuple
 
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
+from pykotor.tools.path import CustomPath
 
 
 # TODO: 3 conditionals doing the same check why?
@@ -686,7 +686,7 @@ class Expression(ABC):
 
 class Statement(ABC):
     def __init__(self):
-        self.line_num: None | None = None
+        self.line_num: None = None
 
     @abstractmethod
     def compile(

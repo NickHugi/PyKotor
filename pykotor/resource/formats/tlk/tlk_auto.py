@@ -1,5 +1,3 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import (
     TLK,
@@ -10,6 +8,7 @@ from pykotor.resource.formats.tlk import (
 from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader, TLKJSONWriter
 from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.tools.path import CustomPath
 
 
 def detect_tlk(

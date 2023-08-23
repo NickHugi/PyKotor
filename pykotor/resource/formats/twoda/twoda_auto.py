@@ -1,4 +1,4 @@
-from pykotor.tools.path import CustomPath
+from __future__ import annotations
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.twoda import (
@@ -11,6 +11,7 @@ from pykotor.resource.formats.twoda import (
     TwoDAJSONWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.tools.path import CustomPath
 
 
 def detect_2da(
@@ -41,12 +42,11 @@ def detect_2da(
     ):
         if first4 == "2DA ":
             return ResourceType.TwoDA
-        elif "{" in first4:
+        if "{" in first4:
             return ResourceType.TwoDA_JSON
-        elif "," in first4:
+        if "," in first4:
             return ResourceType.TwoDA_CSV
-        else:
-            return ResourceType.INVALID
+        return ResourceType.INVALID
 
     try:
         if isinstance(source, str | CustomPath):
@@ -101,9 +101,9 @@ def read_2da(
 
     if file_format == ResourceType.TwoDA:
         return TwoDABinaryReader(source, offset, size).load()
-    elif file_format == ResourceType.TwoDA_CSV:
+    if file_format == ResourceType.TwoDA_CSV:
         return TwoDACSVReader(source, offset, size).load()
-    elif file_format == ResourceType.TwoDA_JSON:
+    if file_format == ResourceType.TwoDA_JSON:
         return TwoDAJSONReader(source, offset, size).load()
     return None
 

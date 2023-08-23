@@ -1,8 +1,7 @@
-from pykotor.tools.path import CustomPath
-
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CustomPath
 
 
 class Chitin:
@@ -84,7 +83,7 @@ class Chitin:
                     restype = ResourceType.from_id(reader.read_uint32())
                     resref = keys[res_id]
                     resource = FileResource(
-                        resref, restype, size, offset, self._kotor_path / bif
+                        resref, restype, size, offset, self._kotor_path / bif,
                     )
                     self._resources.append(resource)
 
@@ -106,7 +105,7 @@ class Chitin:
         """
         query = ResourceIdentifier(resref, restype)
         resource = next(
-            (resource for resource in self._resources if resource == query), None
+            (resource for resource in self._resources if resource == query), None,
         )
         return None if resource is None else resource.data()
 
@@ -117,6 +116,6 @@ class Chitin:
     ) -> bool:
         query = ResourceIdentifier(resref, restype)
         resource = next(
-            (resource for resource in self._resources if resource == query), None
+            (resource for resource in self._resources if resource == query), None,
         )
         return resource is not None

@@ -1,4 +1,4 @@
-from pykotor.tools.path import CustomPath
+from __future__ import annotations
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import (
@@ -10,6 +10,7 @@ from pykotor.resource.formats.tpc import (
     TPCTGAWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+from pykotor.tools.path import CustomPath
 
 
 def detect_tpc(
