@@ -165,7 +165,7 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("lips",),
-            "Could not find modules folder in '{}'.",
+            "Could not find lips folder in '{}'.",
         )
 
     def texturepacks_path(self) -> CustomPath:
@@ -177,7 +177,7 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("texturepacks",),
-            "Could not find modules folder in '{}'.",
+            "Could not find texturepacks folder in '{}'.",
         )
 
     def rims_path(self) -> CustomPath:
