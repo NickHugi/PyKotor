@@ -1367,7 +1367,7 @@ class BinaryWriterFile(BinaryWriter):
         prefix_length: int = 0,
         string_length: int = -1,
         padding: str = "\0",
-    ) -> None:
+    ) -> None:  # sourcery skip: inline-variable, switch
         """Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
         strings length.
 
@@ -1383,7 +1383,7 @@ class BinaryWriterFile(BinaryWriter):
         if prefix_length == 0:
             pass
         elif prefix_length == 1:
-            if len(value) > 255:
+            if len(value) > 0xFF:
                 msg = "The string length is too large for a prefix length of 1."
                 raise ValueError(msg)
             self.write_uint8(len(value), big=big)
@@ -1840,7 +1840,7 @@ class BinaryWriterBytearray(BinaryWriter):
         prefix_length: int = 0,
         string_length: int = -1,
         padding: str = "\0",
-    ) -> None:
+    ) -> None:  # sourcery skip: inline-variable, switch
         """Writes the specified string to the stream. The string can also be prefixed by an integer specifying the
         strings length.
 

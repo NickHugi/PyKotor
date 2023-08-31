@@ -1,8 +1,6 @@
 from configparser import ConfigParser
-import os
 from pykotor.tools.path import CustomPath
 from unittest import TestCase
-from unittest.mock import patch
 
 from pykotor.common.language import Language, Gender
 
@@ -13,7 +11,6 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.tlk.tlk_auto import write_tlk
-from pykotor.resource.formats.tlk.tlk_data import TLKEntry
 from pykotor.resource.type import ResourceType
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
@@ -288,11 +285,11 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0) # type: ignore
+        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("change_row_0", mod_0.identifier)
 
         # noinspection PyTypeChecker
-        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0) # type: ignore
+        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("change_row_1", mod_0.identifier)
 
     def test_2da_changerow_targets(self):
@@ -1045,7 +1042,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.label_insert["0"]
         self.assertIsInstance(value, RowValueConstant)
@@ -1152,11 +1149,11 @@ class TestConfigReader(TestCase):
 
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, NoTokenUsage)
-        self.assertEqual("123", mod_0.stringref.stored)
+        self.assertEqual("123", mod_0.stringref.stored)  # type: ignore
 
         mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, NoTokenUsage)
-        self.assertEqual("456", mod_1.stringref.stored)
+        self.assertEqual("456", mod_1.stringref.stored)  # type: ignore
 
     def test_ssf_stored_2da(self):
         """Test that the set sound as 2DAMEMORY value is registered correctly."""
@@ -1185,11 +1182,11 @@ class TestConfigReader(TestCase):
 
         mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsage2DA)
-        self.assertEqual(5, mod_0.stringref.token_id)
+        self.assertEqual(5, mod_0.stringref.token_id)  # type: ignore
 
         mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, TokenUsage2DA)
-        self.assertEqual(6, mod_1.stringref.token_id)
+        self.assertEqual(6, mod_1.stringref.token_id)  # type: ignore
 
     def test_ssf_stored_tlk(self):
         """Test that the set sound as StrRef is registered correctly."""

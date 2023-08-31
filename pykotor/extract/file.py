@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import NamedTuple
 
 from pykotor.resource.type import ResourceType
@@ -47,13 +46,12 @@ class FileResource:
                 other._resname.lower() == self._resname.lower()
                 and other._restype == self._restype
             )
-        elif isinstance(other, ResourceIdentifier):
+        if isinstance(other, ResourceIdentifier):
             return (
                 other.resname.lower() == self._resname.lower()
                 and other.restype == self._restype
             )
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def resname(
         self,
@@ -101,7 +99,7 @@ class FileResource:
                 self._size = res.size()
             elif not is_bif_file(self._filepath.name):
                 self._offset = 0
-                self._size = os.path.getsize(self._filepath)
+                self._size = self._filepath.stat().st_size
 
         if not self._filepath.exists():
             self._filepath = CustomPath(get_case_sensitive_path(str(self._filepath)))
