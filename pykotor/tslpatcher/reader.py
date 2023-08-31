@@ -461,7 +461,7 @@ class ConfigReader:
         identifier: str,
         ini_data: dict[str, str],
         inside_list: bool = False,
-    ) -> AddFieldGFF:
+    ) -> AddFieldGFF:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -545,16 +545,15 @@ class ConfigReader:
                 continue
 
             is_list = field_type.return_type() == GFFList
-            if is_list:
-                msg = "Adding structs into GFF lists is not currently supported."
-                raise NotImplementedError(msg)
             modifier = self.add_field_gff(x, dict(self.ini[x].items()), is_list)
             if isinstance(modifier, list):
                 nested_modifiers.extend(modifier)
             else:
                 nested_modifiers.append(modifier)
 
-        if inside_list:
+        if inside_list and field_type == GFFFieldType.Struct:
+            msg = "Adding structs into GFF lists is not currently supported."
+            raise NotImplementedError(msg)
             index_to_token: int | None = None
             struct_list_modifiers: list[AddStructToListGFF] = []
             for key, value in ini_data.items():
@@ -567,7 +566,7 @@ class ConfigReader:
 
                 # Append the new AddStructToListGFF instance to the nested_modifiers list
                 struct_list_modifiers.append(
-                    AddStructToListGFF(int(ini_data["TypeId"]), index_to_token)
+                    AddStructToListGFF(int(ini_data["TypeId"]), index_to_token),
                 )
             assert index_to_token is not None
             return struct_list_modifiers
