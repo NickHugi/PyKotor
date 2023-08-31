@@ -122,15 +122,12 @@ class Vector2:
         self,
         key,
         value,
-    ) -> None | NotImplementedType:
+    ):
         if isinstance(key, int) and (isinstance(value, float | int)):
             if key == 0:
                 self.x = value
-                return None
-            if key == 1:
+            elif key == 1:
                 self.y = value
-                return None
-            return None
         return NotImplemented
 
     @classmethod
@@ -1173,10 +1170,9 @@ class Polygon2:
         self,
         key: int,
         value: Vector2,
-    ) -> None | NotImplementedType:
+    ):
         if isinstance(key, int) and isinstance(value, Vector2):
             self.points[key] = value
-            return None
         return NotImplemented
 
     @classmethod
@@ -1195,7 +1191,8 @@ class Polygon2:
             A Polygon2 object.
         """
         poly2 = Polygon2()
-        poly2.points = [Vector2(point.x, point.y) for point in poly3]
+        for point in poly3:
+            poly2.points.append(Vector2(point.x, point.y))
         return poly2
 
     def inside(
@@ -1250,7 +1247,7 @@ class Polygon2:
 
         n = len(self.points)
         area = 0.0
-        for i in range(n - 1):
+        for i in range(0, n - 1):
             area += (
                 -self.points[i].y * self.points[i + 1].x
                 + self.points[i].x * self.points[i + 1].y
@@ -1322,10 +1319,9 @@ class Polygon3:
         self,
         key: int,
         value: Vector3,
-    ) -> None | NotImplementedType:
+    ):
         if isinstance(key, int) and isinstance(value, Vector3):
             self.points[key] = value
-            return None
         return NotImplemented
 
     @classmethod
@@ -1344,7 +1340,8 @@ class Polygon3:
             A Polygon3 object with the Z-axis of its points set to 0.
         """
         poly3 = Polygon3()
-        poly3.points = [Vector3(point.x, point.y, 0) for point in poly2.points]
+        for point in poly3:
+            poly3.points.append(Vector3(point.x, point.y, point.z))
         return poly3
 
     def append(

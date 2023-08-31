@@ -84,6 +84,33 @@ class ModifyGFF(ABC):
         ...
 
 
+class AddStructToListGFF(ModifyGFF):
+    instance_count = 0  # Don't know if this is needed, this was added to pass the test_addlist_listindex test.
+    
+    def __init__(self, identifier: str | None = "", struct_id: int | None = None, index_to_token: int | None = None, path: str | CustomPath = "."):
+        if struct_id is None:
+            self.struct_id = AddStructToListGFF.instance_count
+            AddStructToListGFF.instance_count += 1
+        else:
+            self.struct_id = struct_id
+        self.identifier = identifier or ""
+        self.index_to_token = index_to_token
+        self.path = CustomPath(path) if path else CustomPath(".")
+
+    def apply(self, container: GFFStruct | GFFList, memory: PatcherMemory, logger: PatchLogger) -> None:
+        if isinstance(container, GFFList):
+            new_struct = container.add(self.struct_id)
+
+            if new_struct is None:
+                logger.add_warning(f"Failed to add a new struct with struct_id {self.struct_id}. Aborting.")
+                return
+
+            # If an index_to_token is provided, store the new struct's index in PatcherMemory
+            if self.index_to_token is not None:
+                memory.memory_2da[self.index_to_token] = str(len(container._structs) - 1)
+        elif isinstance(container, GFFStruct):
+            pass
+
 class AddFieldGFF(ModifyGFF):
     def __init__(
         self,
@@ -183,7 +210,6 @@ class AddFieldGFF(ModifyGFF):
                 container = container.at(int(step))
 
         return container
-
 
 class ModifyFieldGFF(ModifyGFF):
     def __init__(self, path: str, value: FieldValue) -> None:

@@ -21,8 +21,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="TSLPatcher CLI written in PyKotor")
 
     # Positional arguments for the old syntax
-    parser.add_argument("--game-dir", type=str, help="CustomPath to game directory")
-    parser.add_argument("--tslpatchdata", type=str, help="CustomPath to tslpatchdata")
+    parser.add_argument("--game-dir", type=str, help="Path to game directory")
+    parser.add_argument("--tslpatchdata", type=str, help="Path to tslpatchdata")
     parser.add_argument(
         "--namespace-option-index",
         type=int,

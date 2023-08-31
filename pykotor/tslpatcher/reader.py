@@ -18,6 +18,7 @@ from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
     AddFieldGFF,
+    AddStructToListGFF,
     FieldValue,
     FieldValue2DAMemory,
     FieldValueConstant,
@@ -481,10 +482,11 @@ class ConfigReader:
         }
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        path = ini_data.get("CustomPath", "")
+        path = ini_data.get("Path", "")
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None
+        
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
                 stringref = self.field_value_gff(ini_data["StrRef"])
@@ -543,8 +545,29 @@ class ConfigReader:
                 continue
 
             is_list = field_type.return_type() == GFFList
+            if is_list:
+                raise NotImplementedError("Adding structs into lists is not currently supported.")
             modifier = self.add_field_gff(x, dict(self.ini[x].items()), is_list)
-            nested_modifiers.append(modifier)
+            if isinstance(modifier, list):
+                nested_modifiers.extend(modifier)
+            else:
+                nested_modifiers.append(modifier)
+        
+        if inside_list:
+            index_to_token: int | None = None
+            struct_list_modifiers: list[AddStructToListGFF] = []
+            for key, value in ini_data.items():
+                if key.startswith("2DAMEMORY"):
+                    index_to_token = int(key[9:])
+                elif key.startswith("StrRef"):
+                    index_to_token = int(key[6:])
+                else:
+                    continue
+                
+                # Append the new AddStructToListGFF instance to the nested_modifiers list
+                struct_list_modifiers.append(AddStructToListGFF(int(ini_data["TypeId"]), index_to_token))
+            assert index_to_token is not None
+            return struct_list_modifiers
 
         index_in_list_token = None
         for key, memvalue in ini_data.items():

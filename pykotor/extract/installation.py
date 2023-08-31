@@ -823,7 +823,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[str] | None = None,
+        folders: list[CustomPath | str] | None = None,
     ) -> TPC | None:
         """Returns a TPC object loaded from a resource with the specified name. If the specified texture could not be found
         then the method returns None.
@@ -962,7 +962,7 @@ class Installation:
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
             SearchLocation.VOICE: lambda: check_list(self._streamvoices),
             SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
-            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
+            SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders), # type: ignore
         }
 
         for item in order:

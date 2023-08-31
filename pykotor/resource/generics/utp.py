@@ -205,7 +205,7 @@ def construct_utp(
     item_list: GFFList = root.acquire("ItemList", GFFList())
     for item_struct in item_list:
         resref = item_struct.acquire("InventoryRes", ResRef.from_blank())
-        droppable = bool(item_struct.acquire("Droppable", 0))
+        droppable = bool(item_struct.acquire("Dropable", 0))
         utp.inventory.append(InventoryItem(resref, droppable))
 
     utp.description = root.acquire("Description", LocalizedString.from_invalid())
@@ -283,7 +283,7 @@ def dismantle_utp(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_Posy", 0)
         if item.droppable:
-            item_struct.set_uint8("Droppable", True)
+            item_struct.set_uint8("Dropable", True)
 
     root.set_uint8("PaletteID", utp.palette_id)
 

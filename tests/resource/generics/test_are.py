@@ -9,6 +9,7 @@ TEST_FILE = "tests/files/test.are"
 class TestARE(TestCase):
     def test_io(self):
         gff = read_gff(TEST_FILE)
+        assert gff is not None
         are = construct_are(gff)
         self.validate_io(are)
 

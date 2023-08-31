@@ -1,8 +1,5 @@
 import os
-import sys
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-sys.path.append(project_root)
+from pykotor.tools.path import CustomPath
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
@@ -13,6 +10,9 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_nss_file
 from pykotor.tools.path import CustomPath
 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(project_root)
+
 
 class TestInstallation(TestCase):
     def setUp(self) -> None:
@@ -20,16 +20,16 @@ class TestInstallation(TestCase):
         if path is not None and os.path.exists(path):
             path = CustomPath(path)
         elif os.path.exists(
-            "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
-        ):
-            path = CustomPath(
-                "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
-            )
-        elif os.path.exists(
             "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
         ):
             path = CustomPath(
                 "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
+            )
+        elif os.path.exists(
+            "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
+        ):
+            path = CustomPath(
+                "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
             )
         else:
             raise ValueError("K1_PATH environment variable not set.")

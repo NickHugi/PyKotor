@@ -83,7 +83,7 @@ class BinaryReader:
 
         Args:
         ----
-            path: CustomPath of the file to open.
+            path: Path of the file to open.
             offset: Number of bytes into the stream to consider as position 0.
             size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 

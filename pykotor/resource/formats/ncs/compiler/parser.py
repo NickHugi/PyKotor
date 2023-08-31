@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ply import yacc
 from ply.lex import LexToken
 
@@ -62,20 +64,20 @@ class NssParser:
         functions: list[ScriptFunction],
         constants: list[ScriptConstant],
         library: dict[str, bytes],
-        library_lookup: list[str] | None,
+        library_lookup: Optional[list[str]],
         errorlog=yacc.NullLogger(),
     ):
-        self.parser: yacc.LRParser = yacc.yacc(
+        self.parser = yacc.yacc(
             module=self,
             errorlog=errorlog,
             write_tables=False,
-            debug=False,
+            debug=True,
             debuglog=yacc.NullLogger(),
         )
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants
         self.library: dict[str, bytes] = library
-        self.library_lookup: list[str] | None = library_lookup
+        self.library_lookup: Optional[list[str]] = library_lookup
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
@@ -189,8 +191,7 @@ class NssParser:
         """function_definition_param : data_type IDENTIFIER '=' expression."""
         p[0] = FunctionDefinitionParam(p[1], p[2], p[4])
 
-    def p_code_block(self, p: list[CodeBlock]):
-        # sourcery skip: class-extract-method
+    def p_code_block(self, p):
         """code_block : code_block statement
         | statement
         |.
