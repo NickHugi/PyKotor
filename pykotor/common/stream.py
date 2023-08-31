@@ -157,6 +157,8 @@ class BinaryReader:
             The bytes of the file.
         """
         path = CustomPath(path)
+        if not path.exists():
+            path = CustomPath(get_case_sensitive_path(str(path)))
         with path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
@@ -703,7 +705,7 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        with open(str(path), "wb") as file:
+        with path.open("wb") as file:
             file.write(data)
 
     @abstractmethod

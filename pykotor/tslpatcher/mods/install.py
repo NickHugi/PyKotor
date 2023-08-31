@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import threading
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -11,6 +12,9 @@ from pykotor.tools.path import CustomPath
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
+
+
+print_lock = threading.Lock()
 
 
 class InstallFile:
@@ -34,13 +38,15 @@ class InstallFile:
                 self.replace_existing
                 and destination.resource(resname, restype) is not None
             ):
-                log.add_note(
-                    f"Replacing file {self.filename} in the {destination.filename()} archive...",
-                )
+                with print_lock:
+                    log.add_note(
+                        f"Replacing file {self.filename} in the {destination.filename()} archive...",
+                    )
             else:
-                log.add_note(
-                    f"Adding file {self.filename} in the {destination.filename()} archive...",
-                )
+                with print_lock:
+                    log.add_note(
+                        f"Adding file {self.filename} in the {destination.filename()} archive...",
+                    )
 
             data = BinaryReader.load_file(CustomPath(source_folder) / self.filename)
             destination.add(resname, restype, data)
@@ -57,23 +63,27 @@ class InstallFile:
 
         if self.replace_existing or not save_file_to.exists():
             if not destination.exists():
-                log.add_note(f"Folder {destination} did not exist, creating it...")
+                with print_lock:
+                    log.add_note(f"Folder {destination} did not exist, creating it...")
                 destination.mkdir(parents=True)
 
             if self.replace_existing and not save_file_to.exists():
-                log.add_note(
-                    f"Replacing file '{self.filename}' to the '{local_folder}' folder...",
-                )
+                with print_lock:
+                    log.add_note(
+                        f"Replacing file '{self.filename}' to the '{local_folder}' folder...",
+                    )
             else:
-                log.add_note(
-                    f"Copying file '{self.filename}' to the '{local_folder}' folder...",
-                )
+                with print_lock:
+                    log.add_note(
+                        f"Copying file '{self.filename}' to the '{local_folder}' folder...",
+                    )
 
             BinaryWriter.dump(save_file_to, data)
         else:
-            log.add_warning(
-                f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file...",
-            )
+            with print_lock:
+                log.add_warning(
+                    f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file...",
+                )
 
 
 class InstallFolder:
@@ -88,9 +98,12 @@ class InstallFolder:
         self.files: list[InstallFile] = files or []
 
     def apply(
-        self, log: PatchLogger, source_path: CustomPath, destination_path: CustomPath
+        self,
+        log: PatchLogger,
+        source_path: CustomPath,
+        destination_path: CustomPath,
     ):
-        target = destination_path / self.foldername
+        target: CustomPath = destination_path / self.foldername
 
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
@@ -118,4 +131,6 @@ class InstallFolder:
                         future.result()  # Process the result if needed
                     except Exception as thread_exception:
                         # Handle any exceptions that occurred during execution
-                        print(f"Exception occurred: {thread_exception}")
+                        with print_lock:  # Acquire the lock before printing
+                            print("Exception occurred:")
+                            print(thread_exception)

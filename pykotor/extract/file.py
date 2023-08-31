@@ -8,7 +8,7 @@ from pykotor.tools.misc import (
     is_bif_file,
     is_capsule_file,
 )
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CustomPath, get_case_sensitive_path
 
 
 class FileResource:
@@ -103,7 +103,9 @@ class FileResource:
                 self._offset = 0
                 self._size = os.path.getsize(self._filepath)
 
-        with open(self._filepath, "rb") as file:
+        if not self._filepath.exists():
+            self._filepath = CustomPath(get_case_sensitive_path(str(self._filepath)))
+        with self._filepath.open("rb") as file:
             file.seek(self._offset)
             return file.read(self._size)
 
