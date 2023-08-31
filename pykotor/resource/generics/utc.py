@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import EquipmentSlot, Game, InventoryItem, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
@@ -310,13 +312,13 @@ def construct_utc(
     for equipment_struct in equipment_list:
         slot = EquipmentSlot(equipment_struct.struct_id)
         resref = equipment_struct.acquire("EquippedRes", ResRef.from_blank())
-        droppable = bool(equipment_struct.acquire("Dropable", 0))
+        droppable = bool(equipment_struct.acquire("Droppable", 0))
         utc.equipment[slot] = InventoryItem(resref, droppable)
 
     item_list: GFFList = root.acquire("ItemList", GFFList())
     for item_struct in item_list:
         resref = item_struct.acquire("InventoryRes", ResRef.from_blank())
-        droppable = bool(item_struct.acquire("Dropable", 0))
+        droppable = bool(item_struct.acquire("Droppable", 0))
         utc.inventory.append(InventoryItem(resref, droppable))
 
     return utc
@@ -430,7 +432,7 @@ def dismantle_utc(
         equipment_struct = equipment_list.add(slot.value)
         equipment_struct.set_resref("EquippedRes", item.resref)
         if item.droppable:
-            equipment_struct.set_uint8("Dropable", True)
+            equipment_struct.set_uint8("Droppable", True)
 
     item_list = root.set_list("ItemList", GFFList())
     for i, item in enumerate(utc.inventory):
@@ -439,7 +441,7 @@ def dismantle_utc(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_Posy", 0)
         if item.droppable:
-            item_struct.set_uint8("Dropable", True)
+            item_struct.set_uint8("Droppable", True)
 
     if game == Game.K2:
         root.set_single("BlindSpot", utc.blindspot)
@@ -464,7 +466,7 @@ def dismantle_utc(
 def read_utc(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: int | None = None,
+    size: Optional[int] = None,
 ) -> UTC:
     gff = read_gff(source, offset, size)
     return construct_utc(gff)

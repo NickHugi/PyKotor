@@ -344,9 +344,7 @@ KOTOR_CONSTANTS = [
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_AC_BONUS_VS_RACIAL_GROUP", 4),
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_ENHANCEMENT_BONUS", 5),
     ScriptConstant(
-        DataType.INT,
-        "ITEM_PROPERTY_ENHANCEMENT_BONUS_VS_ALIGNMENT_GROUP",
-        6,
+        DataType.INT, "ITEM_PROPERTY_ENHANCEMENT_BONUS_VS_ALIGNMENT_GROUP", 6
     ),
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_ENHANCEMENT_BONUS_VS_RACIAL_GROUP", 7),
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_ATTACK_PENALTY", 8),
@@ -1081,7 +1079,7 @@ KOTOR_CONSTANTS = [
     ScriptConstant(DataType.INT, "ACTION_WAIT", 36),
     ScriptConstant(DataType.INT, "ACTION_SIT", 37),
     ScriptConstant(DataType.INT, "ACTION_FOLLOWLEADER", 38),
-    ScriptConstant(DataType.INT, "ACTION_INVALID", 0xFFFF),
+    ScriptConstant(DataType.INT, "ACTION_INVALID", 65535),
     ScriptConstant(DataType.INT, "ACTION_QUEUEEMPTY", 65534),
     ScriptConstant(DataType.INT, "TRAP_BASE_TYPE_FLASH_STUN_MINOR", 0),
     ScriptConstant(DataType.INT, "TRAP_BASE_TYPE_FLASH_STUN_AVERAGE", 1),
@@ -1846,9 +1844,7 @@ TSL_CONSTANTS = [
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_AC_BONUS_VS_RACIAL_GROUP", 4),
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_ENHANCEMENT_BONUS", 5),
     ScriptConstant(
-        DataType.INT,
-        "ITEM_PROPERTY_ENHANCEMENT_BONUS_VS_ALIGNMENT_GROUP",
-        6,
+        DataType.INT, "ITEM_PROPERTY_ENHANCEMENT_BONUS_VS_ALIGNMENT_GROUP", 6
     ),
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_ENHANCEMENT_BONUS_VS_RACIAL_GROUP", 7),
     ScriptConstant(DataType.INT, "ITEM_PROPERTY_ATTACK_PENALTY", 8),
@@ -2824,7 +2820,7 @@ TSL_CONSTANTS = [
     ScriptConstant(DataType.INT, "ACTION_SIT", 37),
     ScriptConstant(DataType.INT, "ACTION_FOLLOWLEADER", 38),
     ScriptConstant(DataType.INT, "ACTION_FOLLOWOWNER", 43),
-    ScriptConstant(DataType.INT, "ACTION_INVALID", 0xFFFF),
+    ScriptConstant(DataType.INT, "ACTION_INVALID", 65535),
     ScriptConstant(DataType.INT, "ACTION_QUEUEEMPTY", 65534),
     ScriptConstant(DataType.INT, "TRAP_BASE_TYPE_FLASH_STUN_MINOR", 0),
     ScriptConstant(DataType.INT, "TRAP_BASE_TYPE_FLASH_STUN_AVERAGE", 1),

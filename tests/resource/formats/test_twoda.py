@@ -95,4 +95,4 @@ class TestTwoDA(TestCase):
         twoda.add_row("1")
         twoda.add_row("2")
 
-        self.assertEqual("3", twoda.label_max())
+        self.assertEqual(3, twoda.label_max())

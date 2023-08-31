@@ -1,8 +1,7 @@
 import struct
-from collections.abc import Callable
 from copy import copy
 from inspect import signature
-from typing import Any, NamedTuple
+from typing import Any, Callable, NamedTuple, Union
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.script import DataType, ScriptFunction
@@ -50,8 +49,7 @@ class Interpreter:
 
             elif self._cursor.ins_type == NCSInstructionType.ACTION:
                 self.do_action(
-                    self._functions[self._cursor.args[0]],
-                    self._cursor.args[1],
+                    self._functions[self._cursor.args[0]], self._cursor.args[1]
                 )
 
             elif self._cursor.ins_type == NCSInstructionType.MOVSP:
@@ -234,7 +232,7 @@ class Interpreter:
                 self.store_state()
 
             self.stack_snapshots.append(
-                StackSnapshot(self._cursor, self._stack.state()),
+                StackSnapshot(self._cursor, self._stack.state())
             )
 
             # Control flow
@@ -366,14 +364,17 @@ class StackV2:
         copied = self._stack[stacksize - offset : stacksize - offset + size]
         self._stack.extend(copied)
 
-    def add(self, datatype: DataType, value: int | float):
-        if datatype != DataType.INT and (
-            datatype == DataType.INT or datatype != DataType.FLOAT
-        ):
+    def add(self, datatype: DataType, value: Union[int, float]):
+        if datatype == DataType.INT:
+            if not isinstance(value, int):
+                raise ValueError
+            self._stack.extend(struct.pack("i", value))
+        elif datatype == DataType.FLOAT:
+            if not isinstance(value, int):
+                raise ValueError
+            self._stack.extend(struct.pack("i", value))
+        else:
             raise NotImplementedError
-        if not isinstance(value, int):
-            raise ValueError
-        self._stack.extend(struct.pack("i", value))
 
 
 class Stack:
@@ -480,12 +481,12 @@ class Stack:
     def addition_op(self):
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value2.data_type, value2.value + value1.value)
+        self.add(value1.data_type, value2.value + value1.value)
 
     def subtraction_op(self):
         value1 = self._stack.pop()
         value2 = self._stack.pop()
-        self.add(value2.data_type, value2.value - value1.value)
+        self.add(value1.data_type, value2.value - value1.value)
 
     def multiplication_op(self):
         value1 = self._stack.pop()
