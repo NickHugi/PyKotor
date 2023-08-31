@@ -551,9 +551,8 @@ class ConfigReader:
             else:
                 nested_modifiers.append(modifier)
 
-        if inside_list and field_type == GFFFieldType.Struct:
-            msg = "Adding structs into GFF lists is not currently supported."
-            raise NotImplementedError(msg)
+        ### unfinished inside_list ###
+        if False:
             index_to_token: int | None = None
             struct_list_modifiers: list[AddStructToListGFF] = []
             for key, value in ini_data.items():
