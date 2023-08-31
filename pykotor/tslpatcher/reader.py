@@ -544,6 +544,8 @@ class ConfigReader:
                 continue
 
             is_list = field_type.return_type() == GFFList
+            if is_list:
+                raise NotImplementedError("Adding structs into lists is not currently supported.")
             modifier = self.add_field_gff(x, dict(self.ini[x].items()), is_list)
             if isinstance(modifier, list):
                 nested_modifiers.extend(modifier)

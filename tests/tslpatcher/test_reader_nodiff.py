@@ -288,11 +288,11 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0) # type: ignore
         self.assertEqual("change_row_0", mod_0.identifier)
 
         # noinspection PyTypeChecker
-        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0) # type: ignore
         self.assertEqual("change_row_1", mod_0.identifier)
 
     def test_2da_changerow_targets(self):
