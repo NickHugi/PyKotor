@@ -1,4 +1,5 @@
 from __future__ import annotations
+import platform
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -20,7 +21,10 @@ class Capsule:
         path: CustomPath | str,
         create_nonexisting: bool = False,
     ):
-        self._path: CustomPath = CustomPath(get_case_sensitive_path(str(path)))
+        if platform.system() != "Windows":
+            self._path: CustomPath = CustomPath(get_case_sensitive_path(str(path)))
+        else:
+            self._path = CustomPath(path)
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)
@@ -141,7 +145,7 @@ class Capsule:
         self,
     ):
         """Reload the list of resource info linked from the module file."""
-        if not self._path.exists():
+        if platform.system() != "Windows" and not self._path.exists():
             self._path = CustomPath(get_case_sensitive_path(str(self._path)))
             assert self._path.exists()
         with BinaryReader.from_file(self._path) as reader:

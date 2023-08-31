@@ -121,7 +121,7 @@ def get_case_sensitive_path(path: str) -> str:
             and not os.path.exists(current_path)
         ):
             largest_existing_path_parts_index = i
-            case_sensitive_current_path = os.path.join(parts[:i])
+            case_sensitive_current_path = os.path.join(*parts[:i])
     if case_sensitive_current_path is None:
         assert os.path.exists(os.path.join(*parts))
         return os.path.join(*parts)

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import io
 import os
+import platform
 import struct
 from abc import ABC, abstractmethod
 from typing import BinaryIO
@@ -91,7 +92,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        if not os.path.exists(path):
+        if platform.system() != "Windows" and not os.path.exists(path):
             path = CustomPath(get_case_sensitive_path(str(path)))
         stream: io.BufferedReader = path.open("rb")
         return BinaryReader(stream, offset, size)
@@ -157,7 +158,7 @@ class BinaryReader:
             The bytes of the file.
         """
         path = path if isinstance(path, CustomPath) else CustomPath(path)
-        if not path.exists():
+        if platform.system() != "Windows" and not path.exists():
             path = CustomPath(get_case_sensitive_path(str(path)))
         with path.open("rb") as reader:
             reader.seek(offset)
@@ -657,6 +658,8 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
+        if platform.system() != "Windows" and not path.parent.exists():
+            path = CustomPath(get_case_sensitive_path(str(path)))
         stream = path.open("wb")
         return BinaryWriterFile(stream)
 

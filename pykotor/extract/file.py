@@ -1,4 +1,5 @@
 from __future__ import annotations
+import platform
 
 from typing import NamedTuple
 
@@ -101,7 +102,7 @@ class FileResource:
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
 
-        if not self._filepath.exists():
+        if platform.system() != "Windows" and not self._filepath.exists():
             self._filepath = CustomPath(get_case_sensitive_path(str(self._filepath)))
         with self._filepath.open("rb") as file:
             file.seek(self._offset)
