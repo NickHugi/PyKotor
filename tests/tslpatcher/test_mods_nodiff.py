@@ -12,6 +12,7 @@ from pykotor.resource.formats.twoda import TwoDA
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.gff import (
+    AddStructToListGFF,
     ModificationsGFF,
     ModifyFieldGFF,
     AddFieldGFF,
@@ -1241,9 +1242,9 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(AddStructToListGFF("", None, "List"))
         config.apply(gff, memory, PatchLogger())
 
-        self.assertEqual(0, gff_list.at(0).struct_id)
-        self.assertEqual(1, gff_list.at(1).struct_id)
-        self.assertEqual(2, gff_list.at(2).struct_id)
+        self.assertEqual(0, gff_list.at(0).struct_id)  # type: ignore
+        self.assertEqual(1, gff_list.at(1).struct_id)  # type: ignore
+        self.assertEqual(2, gff_list.at(2).struct_id)  # type: ignore
 
     def test_addlist_store_2damemory(self) -> None:
         gff = GFF()
@@ -1256,7 +1257,7 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(
             AddStructToListGFF("", 0, path="List", index_to_token=12)
         )
-        config.apply(gff, memory)
+        config.apply(gff, memory, PatchLogger())
 
         self.assertEqual("1", memory.memory_2da[12])
 

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from enum import Enum
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CustomPath, get_case_sensitive_path
 from typing import NamedTuple
 
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
@@ -636,7 +637,7 @@ class IncludeScript(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
         assert root.library_lookup is not None
         for folder in root.library_lookup:
-            filepath = CustomPath(folder, f"{self.file.value}.nss").resolve_case_insensitive()
+            filepath = CustomPath(get_case_sensitive_path(os.path.join(folder, f"{self.file.value}.nss")))
             if filepath.exists():
                 source = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break

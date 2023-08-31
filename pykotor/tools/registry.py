@@ -8,7 +8,7 @@ def winreg_key(game: Game) -> str:
 
     Attributes
     ----------
-        game: CustomPath for which game.
+        game: Path for which game.
         access: Access permissions for the key (see winreg module).
 
     Raises
@@ -47,7 +47,7 @@ def get_winreg_path(game: Game):
 
     Attributes
     ----------
-        game: CustomPath for which game.
+        game: Path for which game.
 
     Raises
     ------
@@ -70,7 +70,7 @@ def set_winreg_path(game: Game, path: str):
 
     Attributes
     ----------
-        game: CustomPath for which game.
+        game: Path for which game.
         path: New path value for the game.
 
     Raises

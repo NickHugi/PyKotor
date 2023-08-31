@@ -18,6 +18,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
+    AddStructToListGFF,
     ModifyFieldGFF,
     AddFieldGFF,
     LocalizedStringDelta,
@@ -1623,43 +1624,43 @@ class TestConfigReader(TestCase):
 
             [add_uint8]
             FieldType=Byte
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=123
 
             [add_int8]
             FieldType=Char
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=123
 
             [add_uint16]
             FieldType=Word
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=123
 
             [add_int16]
             FieldType=Short
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=123
 
             [add_uint32]
             FieldType=DWORD
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=123
 
             [add_int32]
             FieldType=Int
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=123
 
             [add_int64]
             FieldType=Int64
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=123
             """
@@ -1719,13 +1720,13 @@ class TestConfigReader(TestCase):
 
             [add_single]
             FieldType=Float
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=1.23
 
             [add_double]
             FieldType=Double
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=1.23
             """
@@ -1761,7 +1762,7 @@ class TestConfigReader(TestCase):
 
             [add_string]
             FieldType=ExoString
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=abc
             """
@@ -1794,7 +1795,7 @@ class TestConfigReader(TestCase):
 
             [add_vector3]
             FieldType=Position
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=1|2|3
             """
@@ -1827,7 +1828,7 @@ class TestConfigReader(TestCase):
 
             [add_vector4]
             FieldType=Orientation
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=1|2|3|4
             """
@@ -1860,7 +1861,7 @@ class TestConfigReader(TestCase):
 
             [add_resref]
             FieldType=ResRef
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             Value=abc
             """
@@ -1894,7 +1895,7 @@ class TestConfigReader(TestCase):
 
             [add_locstring]
             FieldType=ExoLocString
-            CustomPath=SomeList
+            Path=SomeList
             Label=SomeField
             StrRef=123
             lang0=abc
@@ -1902,7 +1903,7 @@ class TestConfigReader(TestCase):
 
             [add_locstring2]
             FieldType=ExoLocString
-            CustomPath=
+            Path=
             Label=SomeField2
             StrRef=StrRef8
             """
@@ -1952,14 +1953,14 @@ class TestConfigReader(TestCase):
 
             [add_struct]
             FieldType=Struct
-            CustomPath=
+            Path=
             Label=SomeStruct
             TypeId=321
             AddField0=add_insidestruct
 
             [add_insidestruct]
             FieldType=Byte
-            CustomPath=
+            Path=
             Label=InsideStruct
             Value=123
             """
@@ -2003,7 +2004,7 @@ class TestConfigReader(TestCase):
 
             [add_list]
             FieldType=List
-            CustomPath=
+            Path=
             Label=SomeList
             AddField0=add_insidelist
 
