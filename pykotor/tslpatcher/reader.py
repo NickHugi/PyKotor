@@ -486,7 +486,7 @@ class ConfigReader:
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None
-        
+
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
                 stringref = self.field_value_gff(ini_data["StrRef"])
@@ -546,13 +546,14 @@ class ConfigReader:
 
             is_list = field_type.return_type() == GFFList
             if is_list:
-                raise NotImplementedError("Adding structs into lists is not currently supported.")
+                msg = "Adding structs into GFF lists is not currently supported."
+                raise NotImplementedError(msg)
             modifier = self.add_field_gff(x, dict(self.ini[x].items()), is_list)
             if isinstance(modifier, list):
                 nested_modifiers.extend(modifier)
             else:
                 nested_modifiers.append(modifier)
-        
+
         if inside_list:
             index_to_token: int | None = None
             struct_list_modifiers: list[AddStructToListGFF] = []
@@ -563,9 +564,11 @@ class ConfigReader:
                     index_to_token = int(key[6:])
                 else:
                     continue
-                
+
                 # Append the new AddStructToListGFF instance to the nested_modifiers list
-                struct_list_modifiers.append(AddStructToListGFF(int(ini_data["TypeId"]), index_to_token))
+                struct_list_modifiers.append(
+                    AddStructToListGFF(int(ini_data["TypeId"]), index_to_token)
+                )
             assert index_to_token is not None
             return struct_list_modifiers
 

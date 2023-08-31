@@ -73,7 +73,6 @@ class PatcherConfig:
     def load(self, ini_text: str, mod_path: CustomPath | str) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
 
-        mod_path: CustomPath = CustomPath(mod_path)
         ini = ConfigParser(
             delimiters=("="),
             allow_no_value=True,
@@ -84,7 +83,7 @@ class PatcherConfig:
 
         ini.read_string(ini_text)
 
-        ConfigReader(ini, mod_path).load(self)
+        ConfigReader(ini, CustomPath(mod_path)).load(self)
 
     def patch_count(self) -> int:
         return (
@@ -194,7 +193,7 @@ class ModInstaller:
             )
             if search is None or search.data is None:
                 self.log.add_error(
-                    f"Didn't patch '{ssf_patch.filename}' because search data is `None`."
+                    f"Didn't patch '{ssf_patch.filename}' because search data is `None`.",
                 )
                 continue
 
@@ -228,7 +227,7 @@ class ModInstaller:
             )
             if search is None or search.data is None:
                 self.log.add_error(
-                    f"Didn't patch '{gff_patch.filename}' because search data is `None`."
+                    f"Didn't patch '{gff_patch.filename}' because search data is `None`.",
                 )
                 continue
 
