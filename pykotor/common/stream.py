@@ -156,7 +156,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        path = CustomPath(path)
+        path = path if isinstance(path, CustomPath) else CustomPath(path)
         if not path.exists():
             path = CustomPath(get_case_sensitive_path(str(path)))
         with path.open("rb") as reader:

@@ -47,8 +47,9 @@ def detect_tlk(
             return ResourceType.INVALID
 
     try:
-        if isinstance(source, str | CustomPath):
+        if isinstance(source, str):
             source = CustomPath(source)
+        if isinstance(source, CustomPath):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, bytes | bytearray):

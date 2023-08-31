@@ -221,7 +221,7 @@ class Installation:
         folder_names: tuple[str, ...],
         error_msg: str,
     ) -> CustomPath:
-        resource_path = CustomPath(self._path)
+        resource_path = self._path
         folder_names_lower: set[str] = {name.lower() for name in folder_names}
 
         for folder_path in resource_path.iterdir():

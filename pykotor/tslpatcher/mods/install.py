@@ -65,7 +65,8 @@ class InstallFile:
             if not destination.exists():
                 with print_lock:
                     log.add_note(f"Folder {destination} did not exist, creating it...")
-                destination.mkdir(parents=True)
+                destination.mkdir(parents=True, exist_ok=True)
+
 
             if self.replace_existing and not save_file_to.exists():
                 with print_lock:

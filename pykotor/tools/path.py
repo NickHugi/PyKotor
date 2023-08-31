@@ -1,4 +1,5 @@
 from __future__ import annotations
+from itertools import islice
 
 import os
 import platform
@@ -12,18 +13,39 @@ class CustomPath(Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour # type: ignore
 
     def __new__(cls, *args, **kwargs):
-        new_args: list[str] = [str(arg).replace("\\", "/") for arg in args]
-        return super().__new__(cls, *new_args, **kwargs)
+        # Check if all arguments are already CustomPath instances
+        if all(isinstance(arg, CustomPath) for arg in args):
+            return super(CustomPath, cls).__new__(cls, *args, **kwargs)
+        # Build a path string from args
+        path_str = Path(*args).as_posix()
 
-def fix_path_formatting(path):
+        # Apply fix_path_formatting function
+        fixed_path_str = fix_path_formatting(path_str)
+
+        # Create a new Path object with the fixed path
+        return super(CustomPath, cls).__new__(cls, fixed_path_str)
+    def __truediv__(self, key):
+        if not isinstance(key, CustomPath):
+            key = fix_path_formatting(key)
+        new_path = super(CustomPath, self).__truediv__(key)
+        return CustomPath(new_path)
+    def join(self, *args):
+        # Custom logic for join
+        new_path = self
+        for arg in args:
+            new_path /= arg
+        return CustomPath(new_path)
+
+def fix_path_formatting(path: str | object):
     if path is None:
         msg = "path cannot be None"
         raise ValueError(msg)
-
-    if not path.strip():
+    
+    str_path: str = str(path)
+    if not str_path.strip():
         return path
 
-    formatted_path = path.replace("\\", os.sep).replace("/", os.sep)
+    formatted_path = str_path.replace("\\", os.sep).replace("/", os.sep)
 
     if os.altsep is not None:
         formatted_path = formatted_path.replace(os.altsep, os.sep)
@@ -42,39 +64,98 @@ def get_case_sensitive_path(path: str) -> str:
         msg = "'path' cannot be null or whitespace."
         raise ValueError(msg)
 
-    formatted_path: str = os.path.abspath(path.replace("/", os.path.sep))
+    formatted_path: str = os.path.abspath(fix_path_formatting(path))
     if os.path.exists(formatted_path):
         return formatted_path
+    # Getting the root based on the platform
+    root = os.path.abspath(os.sep)
+    parts = [p for p in formatted_path.split(os.path.sep) if p]
 
-    parts: list[str] = formatted_path.split(os.path.sep)
-    current_path = os.path.splitdrive(formatted_path)[0]
-    if current_path and not os.path.isabs(parts[0]):
-        parts = [current_path, *parts]
-    if parts[0].endswith(":"):
-        parts[0] += os.path.sep
+    # Get root directory
+    root = os.path.abspath(os.sep)
 
+    # Handle Windows drive letters
+    if os.name == 'nt':
+        drive, _ = os.path.splitdrive(formatted_path)
+        if drive:
+            root = drive + os.path.sep
+
+    # Ensure first element is root
+    if parts and not os.path.isabs(parts[0]):
+        parts = [root] + parts
+    else:
+        parts[0] = root
+
+    largest_existing_path_parts_index = -1
     case_sensitive_current_path = None
     i: int = 0
     for i in range(1, len(parts)):
-        current_path: str = os.path.join(os.path.sep.join(parts[:i]), parts[i])
-        if os.name != "nt" and os.path.isdir(os.path.sep.join(parts[:i])):
-            for folder_or_file_info in os.scandir(os.path.sep.join(parts[:i])):
-                if folder_or_file_info.name == parts[i]:
-                    break
-            else:
-                case_sensitive_current_path = os.path.sep.join(parts[:i])
-                break
-    return os.path.join(case_sensitive_current_path or "", os.path.sep.join(parts[i:]))
+        previous_current_path = os.path.join(parts[0], *parts[:i])
+        current_path: str = os.path.join(previous_current_path, parts[i])
+        if (
+            platform.system() != "Windows"
+            and not os.path.isdir(current_path)
+            and os.path.isdir(previous_current_path)
+        ):
+            max_matching_characters = -1
+            closest_match = parts[i]
+            
+            for folder_or_file in os.listdir(previous_current_path):
+                full_path = os.path.join(previous_current_path, folder_or_file)
 
-def get_matching_characters_count(str1, str2) -> int:
-    if not str1 or not str2:
-        msg = "Value cannot be null or empty."
-        raise ValueError(msg)
+                if not os.path.exists(full_path):
+                    continue
+                if os.path.isfile(full_path) and i < len(parts)-1:
+                    continue
+                
+                matching_characters = get_matching_characters_count(folder_or_file, parts[i])
+                
+                if matching_characters > max_matching_characters:
+                    max_matching_characters = matching_characters
+                    closest_match = folder_or_file
+                    is_file = os.path.isfile(full_path)
+                
+            parts[i] = closest_match
+        elif (
+            case_sensitive_current_path is None
+            and not os.path.exists(current_path)
+        ):
+            largest_existing_path_parts_index = i
+            case_sensitive_current_path = os.path.join(parts[:i])
+    if case_sensitive_current_path is None:
+        assert os.path.exists(os.path.join(*parts))
+        return os.path.join(*parts)
 
-    matching_count: int = sum(
-        str1[i] == str2[i] for i in range(min(len(str1), len(str2)))
-    )
-    return -1 if matching_count == 0 else matching_count
+    if largest_existing_path_parts_index > -1:
+        combined_path = os.path.join(
+            case_sensitive_current_path,
+            os.path.join(*parts[largest_existing_path_parts_index:])
+        )
+    else:
+        combined_path = os.path.join(*parts)
+
+    assert os.path.exists(combined_path)
+    return combined_path
+
+
+def get_matching_characters_count(str1, str2):
+    if not str1:
+        raise ValueError("Value cannot be null or empty.")
+    if not str2:
+        raise ValueError("Value cannot be null or empty.")
+
+    matching_count = 0
+    for i in range(min(len(str1), len(str2))):
+        # don't consider a match if any char in the paths are not case-insensitive matches.
+        if str1[i].lower() != str2[i].lower():
+            return -1
+
+        # increment matching count if case-sensitive match at this char index succeeds
+        if str1[i] == str2[i]:
+            matching_count += 1
+
+    return matching_count
+
 
 
 def is_valid_path(path):

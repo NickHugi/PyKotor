@@ -6,7 +6,7 @@ from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CustomPath, get_case_sensitive_path
 
 
 class Capsule:
@@ -20,7 +20,7 @@ class Capsule:
         path: CustomPath | str,
         create_nonexisting: bool = False,
     ):
-        self._path: CustomPath = CustomPath(path)
+        self._path: CustomPath = CustomPath(get_case_sensitive_path(str(path)))
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)
@@ -116,7 +116,7 @@ class Capsule:
             self.reload()
 
         query = ResourceIdentifier(resref, restype)
-        resource = next(
+        resource: FileResource | None = next(
             (resource for resource in self._resources if resource == query),
             None,
         )
@@ -141,6 +141,9 @@ class Capsule:
         self,
     ):
         """Reload the list of resource info linked from the module file."""
+        if not self._path.exists():
+            self._path = CustomPath(get_case_sensitive_path(str(self._path)))
+            assert self._path.exists()
         with BinaryReader.from_file(self._path) as reader:
             file_type = reader.read_string(4)
             reader.read_string(4)

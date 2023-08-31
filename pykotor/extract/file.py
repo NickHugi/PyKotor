@@ -24,7 +24,7 @@ class FileResource:
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: CustomPath = CustomPath(filepath)
+        self._filepath: CustomPath = filepath if isinstance(filepath, CustomPath) else CustomPath(filepath)
         self._offset: int = offset
 
     def __repr__(
