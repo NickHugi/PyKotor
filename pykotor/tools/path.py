@@ -53,10 +53,10 @@ def fix_path_formatting(path: str | object) -> str:
         formatted_path = formatted_path.replace(os.altsep, os.sep)
 
     # For Unix-like paths
-    normalized_path = re.sub(r"/{2,}", "/", path)
+    formatted_path = re.sub(r"/{2,}", "/", formatted_path)
 
     # For Windows paths
-    normalized_path = re.sub(r"\\{2,}", "\\\\", normalized_path)
+    formatted_path = re.sub(r"\\{2,}", "\\\\", formatted_path)
 
     return formatted_path.rstrip(os.sep)
 
