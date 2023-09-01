@@ -1,5 +1,4 @@
 from __future__ import annotations
-from itertools import islice
 
 import os
 import platform
@@ -10,25 +9,27 @@ from pykotor.common.misc import Game
 
 
 class CustomPath(Path):
-    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour # type: ignore
+    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore
 
     def __new__(cls, *args, **kwargs):
         # Check if all arguments are already CustomPath instances
         if all(isinstance(arg, CustomPath) for arg in args):
-            return super(CustomPath, cls).__new__(cls, *args, **kwargs)
+            return super().__new__(cls, *args, **kwargs)
         # Build a path string from args
-        path_str = Path(*args).as_posix()
+        path_str = os.path.join(*args)
 
         # Apply fix_path_formatting function
         fixed_path_str = fix_path_formatting(path_str)
 
         # Create a new Path object with the fixed path
-        return super(CustomPath, cls).__new__(cls, fixed_path_str)
+        return super().__new__(cls, fixed_path_str)
+
     def __truediv__(self, key):
         if not isinstance(key, CustomPath):
             key = fix_path_formatting(key)
-        new_path = super(CustomPath, self).__truediv__(key)
+        new_path = super().__truediv__(key)
         return CustomPath(new_path)
+
     def join(self, *args):
         # Custom logic for join
         new_path = self
@@ -36,25 +37,26 @@ class CustomPath(Path):
             new_path /= arg
         return CustomPath(new_path)
 
-def fix_path_formatting(path: str | object):
+
+def fix_path_formatting(path: str | object) -> str:
     if path is None:
         msg = "path cannot be None"
         raise ValueError(msg)
-    
+
     str_path: str = str(path)
     if not str_path.strip():
-        return path
+        return str_path
 
     formatted_path = str_path.replace("\\", os.sep).replace("/", os.sep)
 
     if os.altsep is not None:
         formatted_path = formatted_path.replace(os.altsep, os.sep)
 
-    formatted_path: str = re.sub(
-        f"(?<!:){re.escape(os.sep)}+",
-        os.sep,
-        formatted_path,
-    )
+    # For Unix-like paths
+    normalized_path = re.sub(r"/{2,}", "/", path)
+
+    # For Windows paths
+    normalized_path = re.sub(r"\\{2,}", "\\\\", normalized_path)
 
     return formatted_path.rstrip(os.sep)
 
@@ -75,14 +77,14 @@ def get_case_sensitive_path(path: str) -> str:
     root = os.path.abspath(os.sep)
 
     # Handle Windows drive letters
-    if os.name == 'nt':
+    if os.name == "nt":
         drive, _ = os.path.splitdrive(formatted_path)
         if drive:
             root = drive + os.path.sep
 
     # Ensure first element is root
     if parts and not os.path.isabs(parts[0]):
-        parts = [root] + parts
+        parts = [root, *parts]
     else:
         parts[0] = root
 
@@ -99,50 +101,50 @@ def get_case_sensitive_path(path: str) -> str:
         ):
             max_matching_characters = -1
             closest_match = parts[i]
-            
+
             for folder_or_file in os.listdir(previous_current_path):
                 full_path = os.path.join(previous_current_path, folder_or_file)
 
                 if not os.path.exists(full_path):
                     continue
-                if os.path.isfile(full_path) and i < len(parts)-1:
+                if os.path.isfile(full_path) and i < len(parts) - 1:
                     continue
-                
-                matching_characters = get_matching_characters_count(folder_or_file, parts[i])
-                
+
+                matching_characters = get_matching_characters_count(
+                    folder_or_file,
+                    parts[i],
+                )
+
                 if matching_characters > max_matching_characters:
                     max_matching_characters = matching_characters
                     closest_match = folder_or_file
-                    is_file = os.path.isfile(full_path)
-                
+                    os.path.isfile(full_path)
+
             parts[i] = closest_match
-        elif (
-            case_sensitive_current_path is None
-            and not os.path.exists(current_path)
-        ):
+        elif case_sensitive_current_path is None and not os.path.exists(current_path):
             largest_existing_path_parts_index = i
             case_sensitive_current_path = os.path.join(*parts[:i])
     if case_sensitive_current_path is None:
-        assert os.path.exists(os.path.join(*parts))
         return os.path.join(*parts)
 
     if largest_existing_path_parts_index > -1:
         combined_path = os.path.join(
             case_sensitive_current_path,
-            os.path.join(*parts[largest_existing_path_parts_index:])
+            os.path.join(*parts[largest_existing_path_parts_index:]),
         )
     else:
         combined_path = os.path.join(*parts)
 
-    assert os.path.exists(combined_path)
     return combined_path
 
 
 def get_matching_characters_count(str1, str2):
     if not str1:
-        raise ValueError("Value cannot be null or empty.")
+        msg = "Value cannot be null or empty."
+        raise ValueError(msg)
     if not str2:
-        raise ValueError("Value cannot be null or empty.")
+        msg = "Value cannot be null or empty."
+        raise ValueError(msg)
 
     matching_count = 0
     for i in range(min(len(str1), len(str2))):
@@ -157,7 +159,6 @@ def get_matching_characters_count(str1, str2):
     return matching_count
 
 
-
 def is_valid_path(path):
     try:
         # Check if the path exists and is not empty
@@ -168,6 +169,7 @@ def is_valid_path(path):
         return os.path.normpath(path) == path
     except:
         return False
+
 
 def resolve_case_insensitive(path: CustomPath):
     # Quick checks for cases where resolving is unnecessary.
@@ -241,7 +243,9 @@ def locate_game_path(game: Game):
                 CustomPath(
                     "~/.local/share/Steam/common/steamapps/Knights of the Old Republic II",
                 ),
-                CustomPath("~/.local/share/Steam/common/Knights of the Old Republic II"),
+                CustomPath(
+                    "~/.local/share/Steam/common/Knights of the Old Republic II",
+                ),
             ],
         },
     }

@@ -158,7 +158,7 @@ class ModInstaller:
             dialog_tlk = read_tlk(installation.path() / "dialog.tlk")
             config.patches_tlk.apply(dialog_tlk, memory)
             write_tlk(dialog_tlk, str(self.output_path / "dialog.tlk"))
-        self.log.complete_patch()
+            self.log.complete_patch()
 
         for folder in config.install_list:
             folder.apply(self.log, self.mod_path, self.output_path)

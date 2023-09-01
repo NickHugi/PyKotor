@@ -13,9 +13,9 @@ from unittest import TestCase
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = CustomPath("tests/files/test.erf").resolve()
+BINARY_TEST_FILE = CustomPath("tests/files/test.erf")
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = CustomPath("tests/files/test_corrupted.gff").resolve()
+CORRUPT_BINARY_TEST_FILE = CustomPath("tests/files/test_corrupted.gff")
 
 
 class TestERF(TestCase):

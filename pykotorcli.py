@@ -56,10 +56,10 @@ def main():
         )
         sys.exit(ExitCode.NUMBER_OF_ARGS)
 
-    game_path: CustomPath = CustomPath(args.game_dir).resolve()  # argument 1
+    game_path: CustomPath = CustomPath(args.game_dir)  # argument 1
     tslpatchdata_path: CustomPath = CustomPath(
         args.tslpatchdata,
-    ).resolve()  # argument 2
+    )  # argument 2
     namespace_index: int | None = None  # argument 3
     changes_ini_path: CustomPath
 
@@ -68,17 +68,17 @@ def main():
             tslpatchdata_path,
             "tslpatchdata",
             "changes.ini",
-        ).resolve()
+        )
     elif len(sys.argv) == 4:
         namespace_index = int(args.namespace_option_index)
         changes_ini_path = determine_namespaces(
             tslpatchdata_path,
             namespace_index,
-        ).resolve()
+        )
     else:
         sys.exit(ExitCode.CHANGES_INI_NOT_FOUND)
 
-    print(f"Using changes.ini path: {changes_ini_path!s}")
+    print(f"Using changes.ini path: {str(changes_ini_path)!s}")
     if not changes_ini_path.exists():
         print(
             "The 'changes.ini' file does not exist"
@@ -119,7 +119,7 @@ def determine_namespaces(
         tslpatchdata_path,
         "tslpatchdata",
         "namespaces.ini",
-    ).resolve()
+    )
     print(f"Using namespaces.ini path: {namespaces_ini_path}")
     if not namespaces_ini_path.exists():
         print(

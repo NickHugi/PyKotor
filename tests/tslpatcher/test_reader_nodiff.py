@@ -84,7 +84,7 @@ class TestConfigReader(TestCase):
                 10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
             }
         )
-        self.mod_path = CustomPath("tmp", "mock_mod_path").resolve()
+        self.mod_path = CustomPath("tmp", "mock_mod_path")
         self.mod_path.mkdir(parents=True, exist_ok=True)
 
         # write it to a real file

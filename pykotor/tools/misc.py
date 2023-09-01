@@ -32,8 +32,7 @@ def is_erf_file(filename: str):
 
 def is_erf_or_mod_file(filename: str):
     """Returns true if the given filename has either an ERF or MOD file extension."""
-    filename = filename.lower()
-    return filename.endswith((".erf", ".mod"))
+    return filename.lower().endswith((".erf", ".mod"))
 
 
 def is_rim_file(filename: str):

@@ -1226,9 +1226,11 @@ class Installation:
 
             if capsule.exists("module", ResourceType.IFO):
                 ifo = read_gff(capsule.resource("module", ResourceType.IFO))
+                assert ifo is not None
                 tag = ifo.root.get_resref("Mod_Entry_Area").get()
             if capsule.exists(tag, ResourceType.ARE):
                 are = read_gff(capsule.resource(tag, ResourceType.ARE))
+                assert are is not None
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
                     name = self._talktable.string(locstring.stringref) or ""
@@ -1301,12 +1303,13 @@ class Installation:
             if capsule.exists("module", ResourceType.IFO):
                 if these_bytes := capsule.resource("module", ResourceType.IFO):
                     ifo = read_gff(these_bytes)
+                    assert ifo is not None
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
 
         return mod_id
 
     # TODO Rename this here and in `module_name` and `module_id`
-    def _replace_module_extensions(self, module_filename):
+    def _replace_module_extensions(self, module_filename: str) -> str:
         result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)

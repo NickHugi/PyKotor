@@ -21,10 +21,9 @@ class Capsule:
         path: CustomPath | str,
         create_nonexisting: bool = False,
     ):
-        if platform.system() != "Windows":
+        self._path = CustomPath(path)
+        if platform.system() != "Windows" and not self._path.exists():
             self._path: CustomPath = CustomPath(get_case_sensitive_path(str(path)))
-        else:
-            self._path = CustomPath(path)
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)
@@ -145,10 +144,11 @@ class Capsule:
         self,
     ):
         """Reload the list of resource info linked from the module file."""
-        if platform.system() != "Windows" and not self._path.exists():
-            self._path = CustomPath(get_case_sensitive_path(str(self._path)))
-            assert self._path.exists()
-        with BinaryReader.from_file(self._path) as reader:
+        path = self._path
+        if platform.system() != "Windows" and not path.exists():
+            path = CustomPath(get_case_sensitive_path(str(path)))
+            assert path.exists()
+        with BinaryReader.from_file(path) as reader:
             file_type = reader.read_string(4)
             reader.read_string(4)
 
@@ -157,7 +157,7 @@ class Capsule:
             elif file_type == "RIM ":
                 self._load_rim(reader)
             else:
-                msg = f"File '{self._path}' was not an ERF/MOD/RIM."
+                msg = f"File '{path}' was not an ERF/MOD/RIM."
                 raise ValueError(msg)
 
     def add(
@@ -172,10 +172,10 @@ class Capsule:
             else read_erf(self._path)
         )
         container.set(resname, restype, resdata)
-        write_rim(container, self._path) if is_rim_file(self._path.name) else write_erf(  # type: ignore
-            container,  # type: ignore
-            self._path,  # type: ignore
-        )
+        if is_rim_file(self._path.name):
+            write_rim(container, self._path) # type: ignore
+        else:
+            write_erf(container, self._path) # type: ignore
 
     def path(
         self,

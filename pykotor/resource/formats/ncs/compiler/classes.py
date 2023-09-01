@@ -608,8 +608,8 @@ class FunctionDefinition(TopLevelObject):
             return False
         if len(self.parameters) != len(prototype.parameters):
             return False
-        for i in range(len(self.parameters)):
-            if self.parameters[i].data_type != prototype.parameters[i].data_type:
+        for i, these_parameters in enumerate(self.parameters):
+            if these_parameters.data_type != prototype.parameters[i].data_type:
                 return False
             # TODO: nwnnsscomp compiles fine when default values do not match
             #       - how to handle? need some kind of warning system maybe.

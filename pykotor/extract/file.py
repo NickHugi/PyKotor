@@ -26,6 +26,9 @@ class FileResource:
         self._restype: ResourceType = restype
         self._size: int = size
         self._filepath: CustomPath = filepath if isinstance(filepath, CustomPath) else CustomPath(filepath)
+        if platform.system() != "Windows" and not self._filepath.exists():
+            self._filepath = CustomPath(get_case_sensitive_path(str(self._filepath)))
+            
         self._offset: int = offset
 
     def __repr__(
@@ -101,9 +104,7 @@ class FileResource:
             elif not is_bif_file(self._filepath.name):
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
-
-        if platform.system() != "Windows" and not self._filepath.exists():
-            self._filepath = CustomPath(get_case_sensitive_path(str(self._filepath)))
+                
         with self._filepath.open("rb") as file:
             file.seek(self._offset)
             return file.read(self._size)
