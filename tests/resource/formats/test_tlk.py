@@ -27,7 +27,7 @@ CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.tlk.json"
 
 class TestTLK(TestCase):
     def test_resize(self):
-        tlk = TLKBinaryReader(BINARY_TEST_FILE).load()
+        tlk: TLK = TLKBinaryReader(BINARY_TEST_FILE).load()
         self.assertEqual(len(tlk), 3)
         tlk.resize(4)
         self.assertEqual(len(tlk), 4)
@@ -41,7 +41,7 @@ class TestTLK(TestCase):
     def test_binary_io(self):
         self.assertEqual(detect_tlk(BINARY_TEST_FILE), ResourceType.TLK)
 
-        tlk = TLKBinaryReader(BINARY_TEST_FILE).load()
+        tlk: TLK = TLKBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(tlk)
 
         data = bytearray()
@@ -52,7 +52,7 @@ class TestTLK(TestCase):
     def test_xml_io(self):
         self.assertEqual(detect_tlk(XML_TEST_FILE), ResourceType.TLK_XML)
 
-        tlk = TLKXMLReader(XML_TEST_FILE).load()
+        tlk: TLK = TLKXMLReader(XML_TEST_FILE).load()
         self.validate_io(tlk)
 
         data = bytearray()
@@ -63,7 +63,7 @@ class TestTLK(TestCase):
     def test_json_io(self):
         self.assertEqual(detect_tlk(JSON_TEST_FILE), ResourceType.TLK_JSON)
 
-        tlk = TLKJSONReader(JSON_TEST_FILE).load()
+        tlk: TLK = TLKJSONReader(JSON_TEST_FILE).load()
         self.validate_io(tlk)
 
         data = bytearray()

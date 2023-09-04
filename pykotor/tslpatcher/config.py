@@ -75,19 +75,6 @@ class PatcherConfig:
     def load(self, ini_text: str, mod_path: CaseAwarePath | str) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
 
-        mod_path = (
-            mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
-        ).resolve()
-        ini_file_bytes = BinaryReader.load_file(mod_path)
-
-        detector = UniversalDetector()
-        detector.feed(ini_file_bytes)
-        detector.close()
-        encoding = detector.result["encoding"]
-        assert encoding is not None
-
-        ini_text = ini_file_bytes.decode(encoding)
-
         ini = ConfigParser(
             delimiters=("="),
             allow_no_value=True,
