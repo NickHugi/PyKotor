@@ -772,7 +772,7 @@ class Installation:
                     filepath = CaseAwarePath(folder, file)
                     for query in queries:
                         with suppress(Exception):
-                            identifier = ResourceIdentifier.from_path(file.name)
+                            identifier = ResourceIdentifier.from_path(file)
                             if query == identifier:
                                 resource = FileResource(
                                     query.resname,

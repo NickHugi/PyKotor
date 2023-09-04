@@ -4,7 +4,11 @@ import os
 import platform
 import re
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
+
 
 from pykotor.common.misc import Game
 
@@ -23,7 +27,10 @@ class CaseAwarePath(Path):
         fixed_path_str = CaseAwarePath._fix_path_formatting(path_str)
 
         # Create a new Path object with the fixed path
-        return super().__new__(cls, fixed_path_str)
+        if os.name == "nt" or os.path.exists(fixed_path_str):
+            return super().__new__(cls, fixed_path_str)
+
+        return super().__new__(cls, fixed_path_str)._get_case_sensitive_path()
 
     def __truediv__(self, key) -> Self:
         """Uses divider operator to combine two paths.
@@ -50,43 +57,6 @@ class CaseAwarePath(Path):
         if not isinstance(key, CaseAwarePath):
             key = CaseAwarePath._fix_path_formatting(str(key))
         return CaseAwarePath(super().__rtruediv__(key))
-
-    def __getattr__(self, name):
-        """Ensures that any parent method that uses our CaseAwarePath is automatically resolved to a case-sensitive path on Unix systems."""
-        # Walk the MRO to find the method in superclass
-        for cls in type(self).mro()[
-            1:
-        ]:  # Skip the first class itself, start with parents
-            if hasattr(cls, name):
-                attr = getattr(cls, name)
-                break
-        else:
-            msg = f"'{type(self).__name__}' object has no attribute '{name}'"
-            raise AttributeError(msg)
-
-        # Check if the attr is a descriptor (data or method descriptor)
-        if hasattr(attr, "__get__"):
-            # Use the descriptor's __get__ method to bind it to the instance
-            resolved_attr = attr.__get__(self, type(self))
-
-            # Check if the resolved attribute is callable (method)
-            if callable(resolved_attr):
-
-                def method_wrapper(*args, **kwargs):
-                    resolved_path = (
-                        self if os.name == "nt" or self.exists() else self.resolve()
-                    )
-                    # Bind the method back to the resolved_path
-                    bound_method = attr.__get__(resolved_path, type(resolved_path))
-                    return bound_method(*args, **kwargs)
-
-                return method_wrapper
-            else:
-                # It's a data descriptor, return the value
-                return resolved_attr
-        else:
-            # It's a regular attribute
-            return attr
 
     def joinpath(self, *args) -> Self:
         new_path = self
@@ -119,7 +89,7 @@ class CaseAwarePath(Path):
             elif not next_path.exists():
                 return base_path.joinpath(*parts[i:])
 
-        return CaseAwarePath(*parts)
+        return super().__new__(type(self), *parts)
 
     def _find_closest_match(self, target, candidates: list[Self]) -> str:
         max_matching_chars = -1
@@ -136,17 +106,10 @@ class CaseAwarePath(Path):
 
     @staticmethod
     def _get_matching_characters_count(str1: str, str2: str) -> int:
-        matching_count = 0
-        for i in range(min(len(str1), len(str2))):
-            # don't consider a match if any char in the paths are not case-insensitive matches.
-            if str1[i].lower() != str2[i].lower():
-                return -1
-
-            # increment matching count if case-sensitive match at this char index succeeds
-            if str1[i] == str2[i]:
-                matching_count += 1
-
-        return matching_count
+        # don't consider a match if any char in the paths are not case-insensitive matches.
+        if str1.lower() != str2.lower():
+            return -1
+        return sum(str1[i] == str2[i] for i in range(min(len(str1), len(str2))))
 
     @staticmethod
     def _fix_path_formatting(str_path: str) -> str:

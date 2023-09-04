@@ -160,7 +160,7 @@ class ResourceIdentifier(NamedTuple):
     def from_path(
         file_path: CaseAwarePath | str,
     ) -> ResourceIdentifier:
-        file_path = CaseAwarePath(file_path)
+        file_path = file_path if isinstance(file_path, CaseAwarePath) else CaseAwarePath(file_path)
         file_name = file_path.name
         resname, restype_ext = file_name.split(".", 1)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

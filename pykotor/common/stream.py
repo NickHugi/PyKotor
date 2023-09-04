@@ -90,7 +90,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        stream: io.BufferedReader = path.open("rb")
+        stream: io.BufferedReader = path.resolve().open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
