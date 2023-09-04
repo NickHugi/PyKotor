@@ -5,7 +5,7 @@ import platform
 import re
 from pathlib import Path, PurePosixPath, PureWindowsPath
 try:
-    from typing import Self
+    from typing import Self # type: ignore
 except ImportError:
     from typing_extensions import Self
 
@@ -26,6 +26,8 @@ class CaseAwarePath(Path):
         # Apply fix_path_formatting function
         fixed_path_str = CaseAwarePath._fix_path_formatting(path_str)
 
+        # todo(th3w1zard1) check if path is rooted and if not return here.
+
         # Create a new Path object with the fixed path
         if os.name == "nt" or os.path.exists(fixed_path_str):
             return super().__new__(cls, fixed_path_str)
@@ -37,26 +39,32 @@ class CaseAwarePath(Path):
 
         Args:
         ----
-            self (undefined):
-            key (undefined):
+            self (CaseAwarePath):
+            key (path-like object):
 
         """
         if not isinstance(key, CaseAwarePath):
             key = CaseAwarePath._fix_path_formatting(str(key))
-        return CaseAwarePath(super().__truediv__(key))
+        new_path = super().__truediv__(key)
+        if os.name != "nt" and not new_path.exists():
+            new_path = new_path._get_case_sensitive_path()
+        return new_path
 
     def __rtruediv__(self, key) -> Self:
         """Uses divider operator to combine two paths.
 
         Args:
         ----
-            self (undefined):
-            key (undefined):
+            self (CaseAwarePath):
+            key (path-like object):
 
         """
         if not isinstance(key, CaseAwarePath):
             key = CaseAwarePath._fix_path_formatting(str(key))
-        return CaseAwarePath(super().__rtruediv__(key))
+        new_path = super().__rtruediv__(key)
+        if os.name != "nt" and not new_path.exists():
+            new_path = new_path._get_case_sensitive_path()
+        return new_path
 
     def joinpath(self, *args) -> Self:
         new_path = self
@@ -65,18 +73,18 @@ class CaseAwarePath(Path):
         return new_path
 
     def resolve(self, strict=False) -> Self:
-        new_path: Self = self
-        if os.name != "nt" and not self.exists():
+        new_path = super(CaseAwarePath, self).resolve(strict)
+        if os.name != "nt" and not new_path.exists():
             new_path = self._get_case_sensitive_path()
-        return super(CaseAwarePath, new_path).resolve(strict)
+        return new_path
 
-    def _get_case_sensitive_path(self) -> Self:
+    def _get_case_sensitive_path(self):
         parts = list(self.parts)
         i = 0
 
         for i in range(1, len(parts)):
-            base_path = CaseAwarePath(*parts[:i])
-            next_path = base_path / parts[i]
+            base_path: CaseAwarePath = super().__new__(type(self), *parts[:i])
+            next_path: CaseAwarePath = base_path / parts[i]
 
             if not next_path.is_dir() and base_path.is_dir():
                 existing_items = [
@@ -87,7 +95,7 @@ class CaseAwarePath(Path):
                 parts[i] = self._find_closest_match(parts[i], existing_items)
 
             elif not next_path.exists():
-                return base_path.joinpath(*parts[i:])
+                return super().joinpath(base_path, *parts[i:])
 
         return super().__new__(type(self), *parts)
 
