@@ -7,7 +7,7 @@ from pykotor.resource.formats.lip import (
 )
 from pykotor.resource.formats.lip.io_lip_xml import LIPXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def detect_lip(
@@ -33,8 +33,8 @@ def detect_lip(
         The format of the LIP data.
     """
     try:
-        if isinstance(source, str | CustomPath):
-            source = CustomPath(source)
+        if isinstance(source, str | CaseAwarePath):
+            source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = (
                     ResourceType.LIP

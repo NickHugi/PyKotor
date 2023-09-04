@@ -8,17 +8,17 @@ from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
-SOURCE_TYPES = Union[CustomPath, str, bytes, bytearray, BinaryReader]
-TARGET_TYPES = Union[CustomPath, str, bytearray, BinaryWriter]
+SOURCE_TYPES = Union[CaseAwarePath, str, bytes, bytearray, BinaryReader]
+TARGET_TYPES = Union[CaseAwarePath, str, bytearray, BinaryWriter]
 
 
 class ResourceReader(ABC):
     @overload
     def __init__(
         self,
-        filepath: str | CustomPath,
+        filepath: CaseAwarePath | str,
         offset: int = 0,
         size: int = 0,
     ):
@@ -42,9 +42,10 @@ class ResourceReader(ABC):
     ):
         ...
 
-    def __init__(
+    # TODO(@NickHugi): fix the 'type: ignore' problem.
+    def __init__(  # type: ignore
         self,
-        source: SOURCE_TYPES,
+        source: Union[str, CaseAwarePath, bytes, bytearray, BinaryReader],
         offset: int = 0,
         size: int = 0,
     ):
@@ -61,7 +62,7 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
         self,
-        filepath: str | CustomPath,
+        filepath: CaseAwarePath,
     ):
         ...
 

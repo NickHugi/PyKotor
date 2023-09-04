@@ -1,5 +1,4 @@
 from __future__ import annotations
-import platform
 
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
@@ -7,7 +6,7 @@ from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
-from pykotor.tools.path import CustomPath, get_case_sensitive_path
+from pykotor.tools.path import CaseAwarePath
 
 
 class Capsule:
@@ -18,12 +17,10 @@ class Capsule:
 
     def __init__(
         self,
-        path: CustomPath | str,
+        path: CaseAwarePath | str,
         create_nonexisting: bool = False,
     ):
-        self._path = CustomPath(path)
-        if platform.system() != "Windows" and not self._path.exists():
-            self._path: CustomPath = CustomPath(get_case_sensitive_path(str(path)))
+        self._path = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)
@@ -145,9 +142,6 @@ class Capsule:
     ):
         """Reload the list of resource info linked from the module file."""
         path = self._path
-        if platform.system() != "Windows" and not path.exists():
-            path = CustomPath(get_case_sensitive_path(str(path)))
-            assert path.exists()
         with BinaryReader.from_file(path) as reader:
             file_type = reader.read_string(4)
             reader.read_string(4)
@@ -173,13 +167,13 @@ class Capsule:
         )
         container.set(resname, restype, resdata)
         if is_rim_file(self._path.name):
-            write_rim(container, self._path) # type: ignore
+            write_rim(container, self._path)  # type: ignore
         else:
-            write_erf(container, self._path) # type: ignore
+            write_erf(container, self._path)  # type: ignore
 
     def path(
         self,
-    ) -> CustomPath:
+    ) -> CaseAwarePath:
         return self._path
 
     def filename(

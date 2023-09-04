@@ -3,7 +3,7 @@ from typing import NamedTuple
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 class StringResult(NamedTuple):
@@ -19,9 +19,9 @@ class TalkTable:
 
     def __init__(
         self,
-        path: CustomPath,
+        path: CaseAwarePath,
     ):
-        self._path: CustomPath = CustomPath(path)
+        self._path: CaseAwarePath = CaseAwarePath(path)
 
     def string(
         self,

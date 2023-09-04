@@ -10,7 +10,7 @@ from pykotor.resource.formats.tpc import (
     TPCTGAWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def detect_tpc(
@@ -49,8 +49,8 @@ def detect_tpc(
         return file_format
 
     try:
-        if isinstance(source, str | CustomPath):
-            source = CustomPath(source)
+        if isinstance(source, str | CaseAwarePath):
+            source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
         elif isinstance(source, bytes | bytearray):

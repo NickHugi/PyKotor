@@ -2,7 +2,7 @@ from pykotor.common.misc import Game
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tlk import read_tlk
 from pykotor.tools.misc import is_mod_file
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def uninstall_all_mods(installation: Installation):
@@ -11,7 +11,7 @@ def uninstall_all_mods(installation: Installation):
     modules_path = installation.module_path()
 
     # Remove any TLK changes
-    dialog_tlk = read_tlk(CustomPath(root_path, "dialog.tlk"))
+    dialog_tlk = read_tlk(CaseAwarePath(root_path, "dialog.tlk"))
     dialog_tlk.entries = (
         dialog_tlk.entries[:49265]
         if installation.game() == Game.K1

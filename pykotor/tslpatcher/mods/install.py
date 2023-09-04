@@ -8,7 +8,7 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
@@ -48,14 +48,14 @@ class InstallFile:
                         f"Adding file {self.filename} in the {destination.filename()} archive...",
                     )
 
-            data = BinaryReader.load_file(CustomPath(source_folder) / self.filename)
+            data = BinaryReader.load_file(CaseAwarePath(source_folder) / self.filename)
             destination.add(resname, restype, data)
 
     def apply_file(
         self,
         log: PatchLogger,
-        source_folder: CustomPath,
-        destination: CustomPath,
+        source_folder: CaseAwarePath,
+        destination: CaseAwarePath,
         local_folder: str,
     ) -> None:
         data = BinaryReader.load_file(source_folder / self.filename)
@@ -101,10 +101,10 @@ class InstallFolder:
     def apply(
         self,
         log: PatchLogger,
-        source_path: CustomPath,
-        destination_path: CustomPath,
+        source_path: CaseAwarePath,
+        destination_path: CaseAwarePath,
     ):
-        target: CustomPath = destination_path / self.foldername
+        target: CaseAwarePath = destination_path / self.foldername
 
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)

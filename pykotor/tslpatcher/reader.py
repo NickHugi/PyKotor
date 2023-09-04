@@ -13,7 +13,7 @@ from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -57,13 +57,16 @@ if TYPE_CHECKING:
 
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, mod_path: CustomPath | str) -> None:
+    def __init__(self, ini: ConfigParser, mod_path: CaseAwarePath | str) -> None:
         self.ini = ini
-        self.mod_path: CustomPath = CustomPath(mod_path)
+        self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
         self.config: PatcherConfig
 
     @classmethod
-    def from_filepath(cls, path: str) -> PatcherConfig:
+    def from_filepath(cls, path: str | CaseAwarePath) -> PatcherConfig:
+        path = (
+            path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+        ).resolve()
         ini_file_bytes = BinaryReader.load_file(path)
 
         detector = UniversalDetector()
@@ -152,19 +155,19 @@ class ConfigReader:
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         append_tlk_edits = None
 
-        def load_tlk(tlk_path: CustomPath) -> TLK:
+        def load_tlk(tlk_path: CaseAwarePath) -> TLK:
             return read_tlk(tlk_path) if tlk_path.exists() else TLK()
 
         range_delims = [":", "-", "to"]
 
-        def extract_range_parts(range_str) -> tuple[int, int | None]:
+        def extract_range_parts(range_str: str) -> tuple[int, int | None]:
             if range_str.lower().startswith("strref") or range_str.lower().startswith(
                 "ignore",
             ):
                 range_str = range_str[6:]
             for delim in range_delims:
                 if delim in range_str:
-                    parts = range_str.split(delim)
+                    parts: list[str] = range_str.split(delim)
                     start = int(parts[0].strip()) if parts[0].strip() else 0
                     end = int(parts[1].strip()) if parts[1].strip() else None
                     return start, end
@@ -243,7 +246,7 @@ class ConfigReader:
                     is_replacement=False,
                 )
             elif key.startswith("file"):
-                tlk_modifications_path: CustomPath = self.mod_path / value
+                tlk_modifications_path: CaseAwarePath = self.mod_path / value
                 if value not in self.ini:
                     msg = f"INI header for '{value}' referenced in TLKList key '{key}' not found."
                     raise KeyError(msg)
@@ -482,7 +485,7 @@ class ConfigReader:
         }
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        path = ini_data.get("Path", "")
+        path = CaseAwarePath(ini_data.get("Path", ""))
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None
@@ -747,6 +750,7 @@ class ConfigReader:
                 row_value = RowValueTLKMemory(token_id)
             else:
                 row_value = RowValueConstant(value)
+            assert row_value is not None
 
             if modifier.startswith("I"):
                 index = int(modifier[1:])

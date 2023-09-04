@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.common.language import Language
@@ -79,7 +79,7 @@ class TestTLK(TestCase):
         self.assertEqual(TLKEntry("qrstuvwxyz", ResRef("")), tlk[2])
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_tlk, ".")
         else:
             self.assertRaises(IsADirectoryError, read_tlk, ".")
@@ -89,7 +89,7 @@ class TestTLK(TestCase):
         self.assertRaises(ValueError, read_tlk, CORRUPT_JSON_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_tlk, TLK(), ".", ResourceType.TLK)
         else:
             self.assertRaises(

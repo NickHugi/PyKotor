@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector3, Vector4
@@ -62,7 +62,7 @@ class TestLYT(TestCase):
         )
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_lyt, ".")
         else:
             self.assertRaises(IsADirectoryError, read_lyt, ".")
@@ -70,7 +70,7 @@ class TestLYT(TestCase):
         self.assertRaises(ValueError, read_lyt, CORRUPT_BINARY_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_lyt, LYT(), ".", ResourceType.LYT)
         else:
             self.assertRaises(

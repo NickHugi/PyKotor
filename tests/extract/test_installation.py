@@ -1,5 +1,5 @@
 import os
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
@@ -8,34 +8,32 @@ from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_nss_file
-from pykotor.tools.path import CustomPath
-
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-sys.path.append(project_root)
 
 
 class TestInstallation(TestCase):
     def setUp(self) -> None:
         path = os.environ.get("K1_PATH")
         if path is not None and os.path.exists(path):
-            path = CustomPath(path)
+            path = CaseAwarePath(path)
         elif os.path.exists(
             "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
         ):
-            path = CustomPath(
+            path = CaseAwarePath(
                 "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
             )
         elif os.path.exists(
             "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
         ):
-            path = CustomPath(
+            path = CaseAwarePath(
                 "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
             )
         else:
             raise ValueError("K1_PATH environment variable not set.")
         self.installation = Installation(path)
 
-        if not CustomPath(self.installation.override_path() / "nwscript.nss").exists():
+        if not CaseAwarePath(
+            self.installation.override_path() / "nwscript.nss"
+        ).exists():
             raise ValueError("Place nwscript.nss in override folder before testing.")
 
     def test_resource(self):
@@ -289,7 +287,7 @@ class TestInstallation(TestCase):
             capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
-        folders: list[CustomPath] = [installation.override_path()]
+        folders: list[CaseAwarePath] = [installation.override_path()]
         folders_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("nwscript.nss"),
             ResourceIdentifier.from_path("x.utc"),

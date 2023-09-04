@@ -4,6 +4,8 @@ from configparser import ConfigParser
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from chardet import UniversalDetector
+
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
@@ -18,7 +20,7 @@ from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
 from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
@@ -70,8 +72,21 @@ class PatcherConfig:
         self.patches_nss: list[ModificationsNSS] = []
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
-    def load(self, ini_text: str, mod_path: CustomPath | str) -> None:
+    def load(self, ini_text: str, mod_path: CaseAwarePath | str) -> None:
         from pykotor.tslpatcher.reader import ConfigReader
+
+        mod_path = (
+            mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
+        ).resolve()
+        ini_file_bytes = BinaryReader.load_file(mod_path)
+
+        detector = UniversalDetector()
+        detector.feed(ini_file_bytes)
+        detector.close()
+        encoding = detector.result["encoding"]
+        assert encoding is not None
+
+        ini_text = ini_file_bytes.decode(encoding)
 
         ini = ConfigParser(
             delimiters=("="),
@@ -80,10 +95,9 @@ class PatcherConfig:
             interpolation=None,
         )
         ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
-
         ini.read_string(ini_text)
 
-        ConfigReader(ini, CustomPath(mod_path)).load(self)
+        ConfigReader(ini, CaseAwarePath(mod_path)).load(self)
 
     def patch_count(self) -> int:
         return (
@@ -109,15 +123,15 @@ class PatcherNamespace:
 class ModInstaller:
     def __init__(
         self,
-        mod_path: CustomPath,
-        game_path: CustomPath,
+        mod_path: CaseAwarePath,
+        game_path: CaseAwarePath,
         ini_file: str,
         logger: PatchLogger | None = None,
     ):
-        self.game_path: CustomPath = game_path
-        self.mod_path: CustomPath = mod_path
+        self.game_path: CaseAwarePath = game_path
+        self.mod_path: CaseAwarePath = mod_path
         self.ini_file: str = ini_file
-        self.output_path: CustomPath = game_path
+        self.output_path: CaseAwarePath = game_path
         self.log: PatchLogger = PatchLogger() if logger is None else logger
 
         self._config: PatcherConfig | None = None
@@ -128,16 +142,14 @@ class ModInstaller:
         """
         if self._config is None:
             ini_file_bytes = BinaryReader.load_file(self.mod_path / self.ini_file)
-            ini_text = None
-            try:
-                ini_text = ini_file_bytes.decode()
-            except UnicodeDecodeError as ex:
-                try:
-                    # If UTF-8 failed, try 'cp1252' (similar to ANSI)
-                    ini_text = ini_file_bytes.decode("cp1252")
-                except UnicodeDecodeError as ex2:
-                    # Raise an exception if all decodings failed
-                    raise ex2 from ex
+
+            detector = UniversalDetector()
+            detector.feed(ini_file_bytes)
+            detector.close()
+            encoding = detector.result["encoding"]
+            assert encoding is not None
+
+            ini_text = ini_file_bytes.decode(encoding)
             self._config = PatcherConfig()
             self._config.load(ini_text, self.mod_path)
 
@@ -173,6 +185,11 @@ class ModInstaller:
                 [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
                 folders=[self.mod_path],
             )
+            if search is None or search.data is None:
+                self.log.add_error(
+                    f"Didn't patch '{twoda_patch.filename}' because search data is `None`.",
+                )
+                continue
             twoda: TwoDA = read_2da(search.data)
             twodas[twoda_patch.filename] = twoda
 
@@ -210,7 +227,7 @@ class ModInstaller:
             resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
 
             capsule = None
-            gff_filepath: CustomPath = self.output_path / gff_patch.destination
+            gff_filepath: CaseAwarePath = self.output_path / gff_patch.destination
             if is_capsule_file(gff_patch.destination):
                 capsule = Capsule(gff_filepath)
 
@@ -232,7 +249,7 @@ class ModInstaller:
                 continue
 
             norm_game_path = installation.path()
-            norm_file_path_rel = CustomPath(gff_patch.destination)
+            norm_file_path_rel = CaseAwarePath(gff_patch.destination)
             norm_file_path = norm_game_path / norm_file_path_rel
             local_path = norm_file_path.relative_to(norm_game_path)
 
@@ -265,11 +282,11 @@ class ModInstaller:
             if is_capsule_file(nss_patch.destination):
                 capsule = Capsule(nss_output_filepath)
 
-            nss_input_filepath = CustomPath(self.mod_path, nss_patch.filename)
+            nss_input_filepath = CaseAwarePath(self.mod_path, nss_patch.filename)
             nss = [BinaryReader.load_file(nss_input_filepath).decode(errors="ignore")]
 
             norm_game_path = installation.path()
-            norm_file_path_rel = CustomPath(nss_patch.destination)
+            norm_file_path_rel = CaseAwarePath(nss_patch.destination)
             norm_file_path = norm_game_path / norm_file_path_rel
             local_path = norm_file_path.relative_to(norm_game_path)
             local_folder = local_path.parent
@@ -300,7 +317,7 @@ class ModInstaller:
 
     def write(
         self,
-        destination: CustomPath,
+        destination: CaseAwarePath,
         filename: str,
         data: bytes,
         replace: bool = False,

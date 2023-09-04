@@ -8,6 +8,7 @@ from pykotor.resource.formats.gff import GFF, GFFList, GFFFieldType
 from pykotor.resource.formats.ssf import SSF, SSFSound
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.twoda import TwoDA
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -1163,7 +1164,7 @@ class TestManipulateGFF(TestCase):
                 "String",
                 GFFFieldType.String,
                 FieldValueConstant("abc"),
-                path="List\\0",
+                path=CaseAwarePath("List\\0"),
             )
         )
         config.apply(gff, memory, PatchLogger())

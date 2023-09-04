@@ -4,7 +4,7 @@ import argparse
 import sys
 from enum import IntEnum
 
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.reader import NamespaceReader
 
@@ -56,19 +56,19 @@ def main():
         )
         sys.exit(ExitCode.NUMBER_OF_ARGS)
 
-    game_path: CustomPath = CustomPath(args.game_dir)  # argument 1
-    tslpatchdata_path: CustomPath = CustomPath(
+    game_path: CaseAwarePath = CaseAwarePath(args.game_dir).resolve()  # argument 1
+    tslpatchdata_path: CaseAwarePath = CaseAwarePath(
         args.tslpatchdata,
-    )  # argument 2
+    ).resolve()  # argument 2
     namespace_index: int | None = None  # argument 3
-    changes_ini_path: CustomPath
+    changes_ini_path: CaseAwarePath
 
     if len(sys.argv) == 3:
-        changes_ini_path = CustomPath(
+        changes_ini_path = CaseAwarePath(
             tslpatchdata_path,
             "tslpatchdata",
             "changes.ini",
-        )
+        ).resolve()
     elif len(sys.argv) == 4:
         namespace_index = int(args.namespace_option_index)
         changes_ini_path = determine_namespaces(
@@ -86,7 +86,7 @@ def main():
         )
         sys.exit(ExitCode.CHANGES_INI_NOT_FOUND)
 
-    mod_path: CustomPath = changes_ini_path.parent
+    mod_path: CaseAwarePath = changes_ini_path.parent
     ini_name: str = changes_ini_path.name
 
     installer = ModInstaller(mod_path, game_path, ini_name)
@@ -96,7 +96,7 @@ def main():
     installer.install()
 
     print("Writing log file 'installlog.txt'...")
-    log_file_path: CustomPath = tslpatchdata_path / "installlog.txt"
+    log_file_path: CaseAwarePath = tslpatchdata_path / "installlog.txt"
     with log_file_path.open("w", encoding="utf-8") as log_file:
         for log in installer.log.all_logs:
             log_file.write(f"{log.message}\n")
@@ -106,16 +106,16 @@ def main():
 
 
 def determine_namespaces(
-    tslpatchdata_path: CustomPath,
+    tslpatchdata_path: CaseAwarePath,
     namespace_index: int,
-) -> CustomPath:
+) -> CaseAwarePath:
     try:
         namespace_index = int(sys.argv[3])
     except ValueError:
         print("Invalid namespace_option_index. It should be an integer.")
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
-    namespaces_ini_path: CustomPath = CustomPath(
+    namespaces_ini_path: CaseAwarePath = CaseAwarePath(
         tslpatchdata_path,
         "tslpatchdata",
         "namespaces.ini",
@@ -135,15 +135,13 @@ def determine_namespaces(
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
     return (
-        CustomPath(
-            tslpatchdata_path,
+        tslpatchdata_path.joinpath(
             "tslpatchdata",
             loaded_namespaces[namespace_index].data_folderpath,
             loaded_namespaces[namespace_index].ini_filename,
         )
         if loaded_namespaces[namespace_index].data_folderpath
-        else CustomPath(
-            tslpatchdata_path,
+        else tslpatchdata_path.joinpath(
             "tslpatchdata",
             loaded_namespaces[namespace_index].ini_filename,
         )

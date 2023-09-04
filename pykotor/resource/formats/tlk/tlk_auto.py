@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import (
     TLK,
@@ -8,7 +10,7 @@ from pykotor.resource.formats.tlk import (
 from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader, TLKJSONWriter
 from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def detect_tlk(
@@ -39,17 +41,16 @@ def detect_tlk(
     ):
         if first4 == "TLK ":
             return ResourceType.TLK
-        elif "{" in first4:
+        if "{" in first4:
             return ResourceType.TLK_JSON
-        elif "<" in first4:
+        if "<" in first4:
             return ResourceType.TLK_XML
-        else:
-            return ResourceType.INVALID
+        return ResourceType.INVALID
 
     try:
         if isinstance(source, str):
-            source = CustomPath(source)
-        if isinstance(source, CustomPath):
+            source = CaseAwarePath(source)
+        if isinstance(source, CaseAwarePath):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, bytes | bytearray):
@@ -101,12 +102,13 @@ def read_tlk(
 
     print("Reading tlk...")
     if file_format == ResourceType.TLK:
-        return TLKBinaryReader(source, offset, size).load()
-    elif file_format == ResourceType.TLK_XML:
+        return TLKBinaryReader(source, offset, size or 0).load()
+    if file_format == ResourceType.TLK_XML:
         return TLKXMLReader(source, offset, size).load()
-    elif file_format == ResourceType.TLK_JSON:
-        return TLKJSONReader(source, offset, size).load()
-    return None
+    if file_format == ResourceType.TLK_JSON:
+        return TLKJSONReader(source, offset, size or 0).load()
+    msg = "Unsupported TLK format specified."
+    raise ValueError(msg)
 
 
 def write_tlk(

@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.resource.formats.ssf import (
@@ -73,8 +73,9 @@ class TestSSF(TestCase):
         self.assertEqual(ssf.get(SSFSound.REJOINED_PARTY), 123049)
         self.assertEqual(ssf.get(SSFSound.POISONED), 123048)
 
+    # sourcery skip: no-conditionals-in-tests
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_ssf, ".")
         else:
             self.assertRaises(IsADirectoryError, read_ssf, ".")
@@ -82,8 +83,9 @@ class TestSSF(TestCase):
         self.assertRaises(ValueError, read_ssf, CORRUPT_BINARY_TEST_FILE)
         self.assertRaises(ValueError, read_ssf, CORRUPT_XML_TEST_FILE)
 
+    # sourcery skip: no-conditionals-in-tests
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_ssf, SSF(), ".", ResourceType.SSF)
         else:
             self.assertRaises(

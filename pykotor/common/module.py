@@ -47,7 +47,7 @@ from pykotor.tools.model import list_lightmaps, list_textures
 if TYPE_CHECKING:
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
-    from pykotor.tools.path import CustomPath
+    from pykotor.tools.path import CaseAwarePath
 
 T = TypeVar("T")
 SEARCH_ORDER = [
@@ -90,7 +90,7 @@ class Module:
 
     @staticmethod
     def get_root(
-        filepath: CustomPath,
+        filepath: CaseAwarePath,
     ) -> str:
         """Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
         become "danm13".
@@ -260,7 +260,10 @@ class Module:
             resource.activate()
 
     def add_locations(
-        self, resname: str, restype: ResourceType, locations: list[CustomPath]
+        self,
+        resname: str,
+        restype: ResourceType,
+        locations: list[CaseAwarePath],
     ):
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
@@ -656,9 +659,9 @@ class ModuleResource(Generic[T]):
         self._resname: str = resname
         self._installation = installation
         self._restype: ResourceType = restype
-        self._active: CustomPath | None = None
+        self._active: CaseAwarePath | None = None
         self._resource: Any = None
-        self._locations: list[CustomPath] = []
+        self._locations: list[CaseAwarePath] = []
 
     def resname(self) -> str:
         """Returns the resource name.
@@ -774,7 +777,7 @@ class ModuleResource(Generic[T]):
                 self._resource = conversions[self._restype](data)
         return self._resource
 
-    def add_locations(self, filepaths: list[CustomPath]) -> None:
+    def add_locations(self, filepaths: list[CaseAwarePath]) -> None:
         """Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
         ignored.
 
@@ -790,10 +793,10 @@ class ModuleResource(Generic[T]):
 
     def locations(
         self,
-    ) -> list[CustomPath]:
+    ) -> list[CaseAwarePath]:
         return self._locations
 
-    def activate(self, filepath: CustomPath | None = None) -> None:
+    def activate(self, filepath: CaseAwarePath | None = None) -> None:
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         Raises:
@@ -822,7 +825,7 @@ class ModuleResource(Generic[T]):
         self._resource = None
         self.resource()
 
-    def active(self) -> CustomPath | None:
+    def active(self) -> CaseAwarePath | None:
         """Returns the filepath of the currently active file for the resource.
 
         Returns

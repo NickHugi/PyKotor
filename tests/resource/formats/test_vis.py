@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.resource.formats.vis import VISAsciiReader, VIS
@@ -39,7 +39,8 @@ class TestVIS(TestCase):
         self.assertFalse(vis.get_visible("room_04", "room_02"))
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        # sourcery skip: no-conditionals-in-tests
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_vis, ".")
         else:
             self.assertRaises(IsADirectoryError, read_vis, ".")
@@ -47,7 +48,8 @@ class TestVIS(TestCase):
         self.assertRaises(ValueError, read_vis, CORRUPT_ASCII_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        # sourcery skip: no-conditionals-in-tests
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_vis, VIS(), ".", ResourceType.VIS)
         else:
             self.assertRaises(

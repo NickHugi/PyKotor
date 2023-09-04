@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
@@ -92,7 +92,7 @@ class AddStructToListGFF(ModifyGFF):
         identifier: str | None = "",
         struct_id: int | None = None,
         index_to_token: int | None = None,
-        path: str | CustomPath = ".",
+        path: str | CaseAwarePath = ".",
     ):
         if struct_id is None:
             self.struct_id = AddStructToListGFF.instance_count
@@ -101,7 +101,7 @@ class AddStructToListGFF(ModifyGFF):
             self.struct_id = struct_id
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
-        self.path = CustomPath(path) if path else CustomPath(".")
+        self.path = CaseAwarePath(path) if path else CaseAwarePath(".")
 
     def apply(
         self,
@@ -124,7 +124,8 @@ class AddStructToListGFF(ModifyGFF):
                     len(container._structs) - 1,
                 )
         elif isinstance(container, GFFStruct):
-            raise NotImplementedError("Adding structs to GFF lists are not supported.")
+            msg = "Adding structs to GFF lists are not supported."
+            raise NotImplementedError(msg)
 
 
 class AddFieldGFF(ModifyGFF):
@@ -134,7 +135,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: str | CustomPath | None = None,
+        path: str | CaseAwarePath | None = None,
         modifiers: list[ModifyGFF] | None = None,
         index_to_list_token: int | None = None,
     ):
@@ -142,7 +143,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: CustomPath = CustomPath(path) if path else CustomPath(".")
+        self.path: CaseAwarePath = CaseAwarePath(path) if path else CaseAwarePath(".")
         self.index_to_list_token: int | None = index_to_list_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -157,7 +158,7 @@ class AddFieldGFF(ModifyGFF):
             container = self._navigate_containers(
                 container,
                 self.path,
-            )
+            )  # type: ignore
         if container is None:
             logger.add_warning(
                 f"Parent field at '{self.path}' does not exist or is not a List or Struct. Unable to add new Field '{self.label}'...",
@@ -214,9 +215,9 @@ class AddFieldGFF(ModifyGFF):
     def _navigate_containers(
         self,
         container: GFFStruct | GFFList | None,
-        path: CustomPath,
+        path: CaseAwarePath,
     ) -> GFFList | GFFStruct | None:
-        path = CustomPath(path)
+        path = CaseAwarePath(path)
         hierarchy: tuple[str, ...] = path.parts
 
         for step in hierarchy:
@@ -278,7 +279,7 @@ class ModifyFieldGFF(ModifyGFF):
         func_map[field_type]()
 
     def _navigate_containers(self, container, path):
-        path = CustomPath(path)
+        path = CaseAwarePath(path)
         # str collection of path parts without the final part
         hierarchy: tuple[str, ...] = path.parts[:-1]
         label: str = path.name
@@ -313,7 +314,7 @@ class ModificationsGFF:
         self.destination: str = (
             destination
             if destination is not None
-            else str(CustomPath("Override", filename))
+            else str(CaseAwarePath("Override", filename))
         )
         self.modifiers: list[AddFieldGFF | ModifyFieldGFF] = (
             modifiers if modifiers is not None else []

@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.resource.formats.lip import (
@@ -52,7 +52,7 @@ class TestLIP(TestCase):
         self.assertAlmostEqual(1.25, lip.get(2).time, 4)
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_lip, ".")
         else:
             self.assertRaises(IsADirectoryError, read_lip, ".")
@@ -61,7 +61,7 @@ class TestLIP(TestCase):
         self.assertRaises(ValueError, read_lip, CORRUPT_XML_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_lip, LIP(), ".", ResourceType.LIP)
         else:
             self.assertRaises(

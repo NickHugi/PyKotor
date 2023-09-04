@@ -1,5 +1,5 @@
 from configparser import ConfigParser
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 from unittest import TestCase
 
 from pykotor.common.language import Language, Gender
@@ -84,18 +84,18 @@ class TestConfigReader(TestCase):
                 10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
             }
         )
-        self.mod_path = CustomPath("tmp", "mock_mod_path")
+        self.mod_path = CaseAwarePath("tmp", "mock_mod_path")
         self.mod_path.mkdir(parents=True, exist_ok=True)
 
         # write it to a real file
         write_tlk(
             self.test_tlk_data,
-            str(CustomPath(self.mod_path) / "tlk_test_file.tlk"),
+            str(CaseAwarePath(self.mod_path) / "tlk_test_file.tlk"),
             ResourceType.TLK,
         )
         write_tlk(
             self.modified_tlk_data,
-            str(CustomPath(self.mod_path) / "tlk_modifications_file.tlk"),
+            str(CaseAwarePath(self.mod_path) / "tlk_modifications_file.tlk"),
             ResourceType.TLK,
         )
 
@@ -142,7 +142,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CustomPath(self.mod_path) / "append.tlk"),
+            str(CaseAwarePath(self.mod_path) / "append.tlk"),
             ResourceType.TLK,
         )
 
@@ -172,7 +172,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CustomPath(self.mod_path) / "append.tlk"),
+            str(CaseAwarePath(self.mod_path) / "append.tlk"),
             ResourceType.TLK,
         )
 
@@ -232,7 +232,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CustomPath(self.mod_path) / "append.tlk"),
+            str(CaseAwarePath(self.mod_path) / "append.tlk"),
             ResourceType.TLK,
         )
 

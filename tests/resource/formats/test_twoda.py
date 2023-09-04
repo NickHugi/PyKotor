@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.resource.formats.twoda import (
@@ -69,7 +69,7 @@ class TestTwoDA(TestCase):
         self.assertEqual("abc", twoda.get_cell(2, "col3"))
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_2da, ".")
         else:
             self.assertRaises(IsADirectoryError, read_2da, ".")
@@ -79,7 +79,7 @@ class TestTwoDA(TestCase):
         self.assertRaises(ValueError, read_2da, CORRUPT_JSON_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(
                 PermissionError, write_2da, TwoDA(), ".", ResourceType.TwoDA
             )

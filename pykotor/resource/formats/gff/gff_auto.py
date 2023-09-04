@@ -8,11 +8,11 @@ from pykotor.resource.formats.gff import (
     GFFXMLWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def detect_gff(
-    source: SOURCE_TYPES | object,
+    source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
     """Returns what format the GFF data is believed to be in. This function performs a basic check and does not guarantee
@@ -34,8 +34,8 @@ def detect_gff(
         The format of the GFF data.
     """
     try:
-        if isinstance(source, str | CustomPath):
-            source = CustomPath(source)
+        if isinstance(source, str | CaseAwarePath):
+            source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
                 file_format = (

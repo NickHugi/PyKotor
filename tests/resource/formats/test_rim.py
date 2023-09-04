@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, write_rim, read_rim
@@ -27,7 +27,7 @@ class TestRIM(TestCase):
         self.assertEqual(rim.get("3", ResourceType.TXT), b"ghi")
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_rim, ".")
         else:
             self.assertRaises(IsADirectoryError, read_rim, ".")
@@ -35,7 +35,7 @@ class TestRIM(TestCase):
         self.assertRaises(ValueError, read_rim, CORRUPT_BINARY_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_rim, RIM(), ".", ResourceType.RIM)
         else:
             self.assertRaises(

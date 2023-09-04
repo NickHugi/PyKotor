@@ -7,7 +7,7 @@ from pykotor.resource.formats.mdl import (
     MDLBinaryWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def detect_mdl(
@@ -33,8 +33,8 @@ def detect_mdl(
         The format of the MDL data.
     """
     try:
-        if isinstance(source, str | CustomPath):
-            source = CustomPath(source)
+        if isinstance(source, str | CaseAwarePath):
+            source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 first4 = reader.read_bytes(4)
                 file_format = (

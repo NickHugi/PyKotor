@@ -1,7 +1,7 @@
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 class Chitin:
@@ -14,9 +14,9 @@ class Chitin:
 
     def __init__(
         self,
-        kotor_path: CustomPath,
+        kotor_path: CaseAwarePath,
     ):
-        self._kotor_path = CustomPath(kotor_path)
+        self._kotor_path = CaseAwarePath(kotor_path)
 
         self._resources: list[FileResource] = []
         self.load()

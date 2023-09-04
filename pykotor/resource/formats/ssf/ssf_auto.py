@@ -7,7 +7,7 @@ from pykotor.resource.formats.ssf import (
 )
 from pykotor.resource.formats.ssf.io_ssf_xml import SSFXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def detect_ssf(
@@ -33,8 +33,8 @@ def detect_ssf(
         The format of the SSF data.
     """
     try:
-        if isinstance(source, str | CustomPath):
-            source = CustomPath(source)
+        if isinstance(source, str | CaseAwarePath):
+            source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = (
                     ResourceType.SSF

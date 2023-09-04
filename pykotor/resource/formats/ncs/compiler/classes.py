@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import os
 from abc import ABC, abstractmethod
 from enum import Enum
-import platform
-from pykotor.tools.path import CustomPath, get_case_sensitive_path
 from typing import NamedTuple
 
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.ncs import NCS, NCSInstruction, NCSInstructionType
-from pykotor.tools.path import CustomPath
+from pykotor.tools.path import CaseAwarePath
 
 
 def get_logical_equality_instruction(
@@ -638,9 +635,7 @@ class IncludeScript(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
         assert root.library_lookup is not None
         for folder in root.library_lookup:
-            filepath = CustomPath(os.path.join(folder, f"{self.file.value}.nss"))
-            if platform.system() != "Windows" and not filepath.exists():
-                filepath = CustomPath(get_case_sensitive_path(os.path.join(folder, f"{self.file.value}.nss")))
+            filepath = CaseAwarePath(folder) / f"{self.file.value}.nss"
             if filepath.exists():
                 source = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break

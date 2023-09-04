@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector4, Vector3
@@ -67,7 +67,7 @@ class TestGFF(TestCase):
         self.assertEqual(gff.root.get_list("list").at(1).struct_id, 2)
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_gff, ".")
         else:
             self.assertRaises(IsADirectoryError, read_gff, ".")
@@ -76,7 +76,7 @@ class TestGFF(TestCase):
         self.assertRaises(ValueError, read_gff, CORRUPT_XML_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_gff, GFF(), ".", ResourceType.GFF)
         else:
             self.assertRaises(

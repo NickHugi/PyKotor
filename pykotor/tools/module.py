@@ -1,4 +1,3 @@
-import platform
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
@@ -18,7 +17,7 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_mod_file
-from pykotor.tools.path import CustomPath, get_case_sensitive_path
+from pykotor.tools.path import CaseAwarePath
 
 
 def clone_module(
@@ -196,7 +195,7 @@ def clone_module(
     write_erf(new_module, str(filepath))
 
 
-def rim_to_mod(filepath: CustomPath) -> None:
+def rim_to_mod(filepath: CaseAwarePath) -> None:
     """Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
@@ -222,20 +221,17 @@ def rim_to_mod(filepath: CustomPath) -> None:
     rim_s_extension: str = lowercase_extension.replace(".mod", "_s.rim")
     rim_extension: str = lowercase_extension.replace(".mod", ".rim")
 
-    filepath_rim_s: CustomPath = (
+    filepath_rim_s: CaseAwarePath = (
         filepath.parent / (base + rim_s_extension)
         if rim_s_extension != lowercase_extension
         else filepath
     )
-    filepath_rim: CustomPath = (
+    filepath_rim: CaseAwarePath = (
         filepath.parent / (base + rim_extension)
         if rim_extension != lowercase_extension
         else filepath
     )
 
-    if platform.system() != "Windows":
-        filepath_rim = filepath_rim if filepath_rim.exists() else CustomPath(get_case_sensitive_path(str(filepath_rim)))
-        filepath_rim_s = filepath_rim_s if filepath_rim_s.exists() else CustomPath(get_case_sensitive_path(str(filepath_rim_s)))
     rim: RIM = read_rim(filepath_rim) if filepath_rim.exists() else RIM()
     rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
 

@@ -1,5 +1,4 @@
 from __future__ import annotations
-import platform
 
 from typing import NamedTuple
 
@@ -8,7 +7,7 @@ from pykotor.tools.misc import (
     is_bif_file,
     is_capsule_file,
 )
-from pykotor.tools.path import CustomPath, get_case_sensitive_path
+from pykotor.tools.path import CaseAwarePath
 
 
 class FileResource:
@@ -20,15 +19,14 @@ class FileResource:
         restype: ResourceType,
         size: int,
         offset: int,
-        filepath: str | CustomPath,
+        filepath: str | CaseAwarePath,
     ):
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: CustomPath = filepath if isinstance(filepath, CustomPath) else CustomPath(filepath)
-        if platform.system() != "Windows" and not self._filepath.exists():
-            self._filepath = CustomPath(get_case_sensitive_path(str(self._filepath)))
-            
+        self._filepath: CaseAwarePath = (
+            filepath if isinstance(filepath, CaseAwarePath) else CaseAwarePath(filepath)
+        )
         self._offset: int = offset
 
     def __repr__(
@@ -74,7 +72,7 @@ class FileResource:
 
     def filepath(
         self,
-    ) -> CustomPath:
+    ) -> CaseAwarePath:
         return self._filepath
 
     def offset(
@@ -104,7 +102,7 @@ class FileResource:
             elif not is_bif_file(self._filepath.name):
                 self._offset = 0
                 self._size = self._filepath.stat().st_size
-                
+
         with self._filepath.open("rb") as file:
             file.seek(self._offset)
             return file.read(self._size)
@@ -118,12 +116,12 @@ class FileResource:
 class ResourceResult(NamedTuple):
     resname: str
     restype: ResourceType
-    filepath: CustomPath
+    filepath: CaseAwarePath
     data: bytes | None
 
 
 class LocationResult(NamedTuple):
-    filepath: CustomPath
+    filepath: CaseAwarePath
     offset: int
     size: int
 
@@ -160,9 +158,9 @@ class ResourceIdentifier(NamedTuple):
 
     @staticmethod
     def from_path(
-        file_path: CustomPath | str,
+        file_path: CaseAwarePath | str,
     ) -> ResourceIdentifier:
-        file_path = CustomPath(file_path)
+        file_path = CaseAwarePath(file_path)
         file_name = file_path.name
         resname, restype_ext = file_name.split(".", 1)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))
