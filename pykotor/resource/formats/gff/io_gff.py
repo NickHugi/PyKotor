@@ -37,9 +37,8 @@ class GFFBinaryReader(ResourceReader):
         self,
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int | None = 0,
+        size: int = 0,
     ):
-        size = size or 0
         super().__init__(source, offset, size)
         self._gff: GFF | None = None
 

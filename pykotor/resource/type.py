@@ -61,7 +61,7 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
         self,
-        filepath: CaseAwarePath,
+        filepath: CaseAwarePath | str,
     ):
         ...
 
@@ -75,13 +75,20 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
         self,
+        data: bytearray
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self,
         reader: BinaryWriter,
     ):
         ...
 
     def __init__(
         self,
-        target: TARGET_TYPES,
+        target: Union[str, CaseAwarePath, bytearray, BinaryReader],
     ):
         self._writer = BinaryWriter.to_auto(target)
 

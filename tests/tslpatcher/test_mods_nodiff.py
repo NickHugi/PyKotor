@@ -1147,7 +1147,7 @@ class TestManipulateGFF(TestCase):
 
         self.assertIsNotNone(gff.root.get_list("List"))
         self.assertIsNotNone(gff.root.get_list("List").at(0))
-        self.assertIsNotNone(gff.root.get_list("List").at(0).get_uint8("SomeInteger"))
+        self.assertIsNotNone(gff.root.get_list("List").at(0).get_uint8("SomeInteger"))  # type: ignore
 
     def test_add_nested(self):
         gff = GFF()

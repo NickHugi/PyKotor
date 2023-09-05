@@ -102,11 +102,11 @@ def read_tlk(
 
     print("Reading tlk...")
     if file_format == ResourceType.TLK:
-        return TLKBinaryReader(source, offset, size or 0).load()
+        return TLKBinaryReader(source, offset, size).load()
     if file_format == ResourceType.TLK_XML:
         return TLKXMLReader(source, offset, size).load()
     if file_format == ResourceType.TLK_JSON:
-        return TLKJSONReader(source, offset, size or 0).load()
+        return TLKJSONReader(source, offset, size).load()
     msg = "Unsupported TLK format specified."
     raise ValueError(msg)
 
