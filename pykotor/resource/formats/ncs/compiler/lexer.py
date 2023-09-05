@@ -1,5 +1,3 @@
-from ply import lex
-
 from pykotor.common.script import DataType
 from pykotor.resource.formats.ncs import NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import (
@@ -13,11 +11,12 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     StringExpression,
     UnaryOperatorMapping,
 )
+from pykotor.resource.formats.ncs.compiler.ply import lex
 
 
 class NssLexer:
-    def __init__(self, errorlog=lex.NullLogger()):
-        self.lexer = lex.lex(module=self, errorlog=errorlog, nowarn=True)
+    def __init__(self, errorlog=None):
+        self.lexer = lex.lex(module=self, errorlog=errorlog)
         self.lexer.begin("INITIAL")
 
     tokens = [

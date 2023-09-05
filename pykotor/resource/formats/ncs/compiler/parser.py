@@ -1,8 +1,5 @@
 from typing import Optional
 
-from ply import yacc
-from ply.lex import LexToken
-
 from pykotor.common.script import ScriptConstant, ScriptFunction
 from pykotor.resource.formats.ncs.compiler.classes import (
     AdditionAssignment,
@@ -56,6 +53,8 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     WhileLoopBlock,
 )
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
+from pykotor.resource.formats.ncs.compiler.ply import yacc
+from pykotor.resource.formats.ncs.compiler.ply.lex import LexToken
 
 
 class NssParser:
@@ -70,9 +69,7 @@ class NssParser:
         self.parser = yacc.yacc(
             module=self,
             errorlog=errorlog,
-            write_tables=False,
-            debug=True,
-            debuglog=yacc.NullLogger(),
+            debugfile="yacc_debug.out",
         )
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants

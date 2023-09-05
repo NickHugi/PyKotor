@@ -26,10 +26,8 @@ class CaseAwarePath(Path):
         # Apply fix_path_formatting function
         fixed_path_str = CaseAwarePath._fix_path_formatting(path_str)
 
-        # todo(th3w1zard1) check if path is rooted and if not return here.
-
         # Create a new Path object with the fixed path
-        if os.name == "nt" or os.path.exists(fixed_path_str):
+        if CaseAwarePath.should_resolve_case(fixed_path_str):
             return super().__new__(cls, fixed_path_str)
 
         return super().__new__(cls, fixed_path_str)._get_case_sensitive_path()
@@ -45,8 +43,9 @@ class CaseAwarePath(Path):
         """
         if not isinstance(key, CaseAwarePath):
             key = CaseAwarePath._fix_path_formatting(str(key))
+
         new_path = super().__truediv__(key)
-        if os.name != "nt" and not new_path.exists():
+        if CaseAwarePath.should_resolve_case(new_path):
             new_path = new_path._get_case_sensitive_path()
         return new_path
 
@@ -61,8 +60,9 @@ class CaseAwarePath(Path):
         """
         if not isinstance(key, CaseAwarePath):
             key = CaseAwarePath._fix_path_formatting(str(key))
+
         new_path = super().__rtruediv__(key)
-        if os.name != "nt" and not new_path.exists():
+        if CaseAwarePath.should_resolve_case(new_path):
             new_path = new_path._get_case_sensitive_path()
         return new_path
 
@@ -74,34 +74,40 @@ class CaseAwarePath(Path):
 
     def resolve(self, strict=False) -> Self:
         new_path = super(CaseAwarePath, self).resolve(strict)
-        if os.name != "nt" and not new_path.exists():
+        if CaseAwarePath.should_resolve_case(new_path):
             new_path = self._get_case_sensitive_path()
         return new_path
 
     def _get_case_sensitive_path(self):
         parts = list(self.parts)
-        i = 0
 
         for i in range(1, len(parts)):
             base_path: CaseAwarePath = super().__new__(type(self), *parts[:i])
             next_path: CaseAwarePath = base_path / parts[i]
-
+            
+            # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.is_dir() and base_path.is_dir():
-                existing_items = [
-                    item
-                    for item in base_path.iterdir()
-                    if (i == len(parts) - 1 or not item.is_file()) and item.exists()
-                ]
-                parts[i] = self._find_closest_match(parts[i], existing_items)
+                def existing_items_gen():
+                    for item in base_path.iterdir():
+                        # Only the final path part can be a file.
+                        if i == (len(parts) - 1) or item.is_dir():
+                            yield item
 
+                parts[i] = self._find_closest_match(parts[i], existing_items_gen())
+
+            # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
+            # parts in their original case.
+            # if the root is not found, i.e. when i is 1 and base_path.exists() returns False, we return the original path here.
             elif not next_path.exists():
                 return super().joinpath(base_path, *parts[i:])
 
+        # return a CaseAwarePath instance without infinitely recursing through the constructor
         return super().__new__(type(self), *parts)
 
-    def _find_closest_match(self, target, candidates: list[Self]) -> str:
+    def _find_closest_match(self, target, candidates) -> str:
         max_matching_chars = -1
         closest_match = target
+
         for candidate in candidates:
             matching_chars = CaseAwarePath._get_matching_characters_count(
                 candidate.name,
@@ -110,6 +116,9 @@ class CaseAwarePath(Path):
             if matching_chars > max_matching_chars:
                 max_matching_chars = matching_chars
                 closest_match = candidate.name
+                if max_matching_chars == len(target):
+                    break
+
         return closest_match
 
     @staticmethod
@@ -136,6 +145,16 @@ class CaseAwarePath(Path):
         formatted_path = re.sub(r"\\{2,}", "\\\\", formatted_path)
 
         return formatted_path.rstrip(os.sep)
+    
+    @staticmethod
+    def should_resolve_case(path) -> bool:
+        if os.name == "nt":
+            return False
+        elif isinstance(path, (CaseAwarePath, Path)):
+            return path.is_absolute() and not path.exists()
+        elif isinstance(path, str):
+            return os.path.isabs(path) and not os.path.exists(path)
+        return False
 
 
 def locate_game_path(game: Game):

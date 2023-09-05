@@ -150,7 +150,9 @@
     "willbonus",
     "Yatch"
   ],
-  "python.testing.pytestArgs": ["tests"],
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
   "python.testing.unittestEnabled": true,
   "python.testing.pytestEnabled": false,
   "python.testing.unittestArgs": [
@@ -158,7 +160,7 @@
     "-s",
     "./tests",
     "-p",
-    "test*.py"
+    "test_*.py"
   ],
   "cmake.configureOnOpen": false,
   "pylint.args": ["--disable=C0301,C0103"],

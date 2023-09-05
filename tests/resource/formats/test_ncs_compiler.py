@@ -1,9 +1,10 @@
-import os
+import sys
 from typing import Dict, Optional
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
+from pykotor.common.scriptlib import KOTOR_LIBRARY
 from pykotor.resource.formats.ncs import NCS, NCSInstructionType
 from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compiler.interpreter import (
@@ -12,21 +13,24 @@ from pykotor.resource.formats.ncs.compiler.interpreter import (
 )
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
+from pykotor.resource.formats.ncs.compiler.ply import lex, yacc
 
 
 class TestNSSCompiler(TestCase):
     def compile(
         self,
         script: str,
-        library: Dict[str, bytes] = None,
+        library: Dict[str, bytes] | None = None,
         library_lookup: Optional[str] = None,
     ) -> NCS:
         nssLexer = NssLexer()
         nssParser = NssParser(
-            library=library,
+            library=library or KOTOR_LIBRARY,
             constants=KOTOR_CONSTANTS,
             functions=KOTOR_FUNCTIONS,
-            library_lookup=library_lookup,
+            library_lookup=list(library_lookup)
+            if isinstance(library_lookup, str)
+            else library_lookup,
         )
 
         parser = nssParser.parser
