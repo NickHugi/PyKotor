@@ -83,7 +83,7 @@ class CaseAwarePath(Path):
 
         for i in range(1, len(parts)):
             base_path: CaseAwarePath = super().__new__(type(self), *parts[:i])
-            next_path: CaseAwarePath = base_path / parts[i]
+            next_path: CaseAwarePath = super().joinpath(base_path, parts[i])
             
             # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.is_dir() and base_path.is_dir():
