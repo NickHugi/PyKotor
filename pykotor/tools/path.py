@@ -28,9 +28,9 @@ class CaseAwarePath(Path):
 
         # Create a new Path object with the fixed path
         if CaseAwarePath.should_resolve_case(fixed_path_str):
-            return super().__new__(cls, fixed_path_str)
+            return super().__new__(cls, fixed_path_str)._get_case_sensitive_path()
 
-        return super().__new__(cls, fixed_path_str)._get_case_sensitive_path()
+        return super().__new__(cls, fixed_path_str)
 
     def __truediv__(self, key) -> Self:
         """Uses divider operator to combine two paths.
