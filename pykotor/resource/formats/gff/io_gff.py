@@ -155,7 +155,7 @@ class GFFBinaryReader(ResourceReader):
             self._load_struct(value, struct_index)
             gff_struct.set_struct(label, value)
         elif field_type is GFFFieldType.List:
-            self._extracted_from__load_field_44(gff_struct, label)
+            self._load_gff_field_list(gff_struct, label)
         elif field_type is GFFFieldType.UInt8:
             gff_struct.set_uint8(label, self._reader.read_uint8())
         elif field_type is GFFFieldType.Int8:
@@ -171,8 +171,7 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Single:
             gff_struct.set_single(label, self._reader.read_single())
 
-    # TODO Rename this here and in `_load_field`
-    def _extracted_from__load_field_44(self, gff_struct, label):
+    def _load_gff_field_list(self, gff_struct, label):
         offset = self._reader.read_uint32()  # relative to list indices
         self._reader.seek(self._list_indices_offset + offset)
         value = GFFList()
@@ -271,21 +270,17 @@ class GFFBinaryWriter(ResourceWriter):
             for label, field_type, value in gff_struct:
                 self._build_field(label, value, field_type)
         elif len(gff_struct) > 1:
-            self._extracted_from__build_struct_21(field_count, gff_struct)
+            self._struct_writer.write_uint32(self._field_indices_writer.size())
+            self._struct_writer.write_uint32(field_count)
 
-    # TODO Rename this here and in `_build_struct`
-    def _extracted_from__build_struct_21(self, field_count, gff_struct):
-        self._struct_writer.write_uint32(self._field_indices_writer.size())
-        self._struct_writer.write_uint32(field_count)
+            self._field_indices_writer.end()
+            pos = self._field_indices_writer.position()
+            self._field_indices_writer.write_bytes(b"\x00\x00\x00\x00" * field_count)
 
-        self._field_indices_writer.end()
-        pos = self._field_indices_writer.position()
-        self._field_indices_writer.write_bytes(b"\x00\x00\x00\x00" * field_count)
-
-        for i, (label, field_type, value) in enumerate(gff_struct):
-            self._field_indices_writer.seek(pos + i * 4)
-            self._field_indices_writer.write_uint32(self._field_count)
-            self._build_field(label, value, field_type)
+            for i, (label, field_type, value) in enumerate(gff_struct):
+                self._field_indices_writer.seek(pos + i * 4)
+                self._field_indices_writer.write_uint32(self._field_count)
+                self._build_field(label, value, field_type)
 
     def _build_list(
         self,

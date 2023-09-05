@@ -19,7 +19,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 def read_ncs(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: int = 0,
+    size: int = None,
 ) -> NCS:
     """Returns an NCS instance from the source.
 

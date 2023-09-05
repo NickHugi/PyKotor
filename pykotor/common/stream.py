@@ -74,7 +74,7 @@ class BinaryReader:
     @classmethod
     def from_file(
         cls,
-        path: CaseAwarePath,
+        path: CaseAwarePath | str,
         offset: int = 0,
         size: int | None = None,
     ) -> BinaryReader:
@@ -90,6 +90,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
+        path = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
         stream: io.BufferedReader = path.resolve().open("rb")
         return BinaryReader(stream, offset, size)
 

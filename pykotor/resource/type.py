@@ -42,8 +42,7 @@ class ResourceReader(ABC):
     ):
         ...
 
-    # TODO(@NickHugi): fix the 'type: ignore' problem.
-    def __init__(  # type: ignore
+    def __init__(
         self,
         source: Union[str, CaseAwarePath, bytes, bytearray, BinaryReader],
         offset: int = 0,
