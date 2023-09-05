@@ -141,8 +141,7 @@ class Capsule:
         self,
     ):
         """Reload the list of resource info linked from the module file."""
-        path = self._path
-        with BinaryReader.from_file(path) as reader:
+        with BinaryReader.from_file(self._path) as reader:
             file_type = reader.read_string(4)
             reader.read_string(4)
 
@@ -151,7 +150,7 @@ class Capsule:
             elif file_type == "RIM ":
                 self._load_rim(reader)
             else:
-                msg = f"File '{path}' was not an ERF/MOD/RIM."
+                msg = f"File '{self._path}' was not an ERF/MOD/RIM."
                 raise ValueError(msg)
 
     def add(

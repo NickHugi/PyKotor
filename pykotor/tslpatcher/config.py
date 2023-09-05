@@ -295,7 +295,7 @@ class ModInstaller:
 
             self.write(
                 nss_output_filepath,
-                f"{file_name}." + ext.lower().replace(".nss", ".ncs"),
+                f"{file_name}." + ext.lower().replace("nss", "ncs"),
                 data,
                 nss_patch.replace_file,
             )
