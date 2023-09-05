@@ -123,9 +123,7 @@ class BinaryReader:
         size: int | None = None,
     ):
         if isinstance(source, CaseAwarePath | str):  # is path
-            source = (
-                source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
-            )
+            source = source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
             reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, bytes | bytearray):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
