@@ -63,9 +63,9 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-5.890, git.encounters[0].geometry[0].x, 2)
         self.assertAlmostEqual(3.072, git.encounters[0].geometry[0].y, 2)
         self.assertAlmostEqual(0.025, git.encounters[0].geometry[0].z, 2)
-        self.assertAlmostEqual(-48.936, git.encounters[0].spawn_points[0].position.x, 2)
-        self.assertAlmostEqual(-29.831, git.encounters[0].spawn_points[0].position.y, 2)
-        self.assertAlmostEqual(1.000, git.encounters[0].spawn_points[0].position.z, 2)
+        self.assertAlmostEqual(-48.936, git.encounters[0].spawn_points[0].x, 2)
+        self.assertAlmostEqual(-29.831, git.encounters[0].spawn_points[0].y, 2)
+        self.assertAlmostEqual(1.000, git.encounters[0].spawn_points[0].z, 2)
         self.assertAlmostEqual(0.196, git.encounters[0].spawn_points[0].orientation, 2)
 
         self.assertEqual("k_trans_abort", git.placeables[0].resref)
