@@ -91,7 +91,7 @@ class BinaryReader:
             A new BinaryReader instance.
         """
         path = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
-        stream: io.BufferedReader = path.resolve().open("rb")
+        stream = path.resolve().open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
