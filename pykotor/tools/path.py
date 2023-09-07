@@ -53,6 +53,9 @@ class CaseAwarePath(Path):
             key = CaseAwarePath._fix_path_formatting(str(key))
         return CaseAwarePath(super().__rtruediv__(key))
 
+    def __add__(self, key) -> CaseAwarePath:
+        return CaseAwarePath(CaseAwarePath._fix_path_formatting(str(self) + str(key)))
+
     def joinpath(self, *args) -> CaseAwarePath:
         new_path = self
         for arg in args:
