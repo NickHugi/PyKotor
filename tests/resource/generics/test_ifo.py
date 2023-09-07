@@ -53,4 +53,4 @@ class TestIFO(TestCase):
         self.assertEqual("spawn", ifo.on_player_respawn)
         self.assertEqual("", ifo.on_player_rest)
         self.assertEqual("", ifo.start_movie)
-        self.assertAlmostEqual(-89.99999, ifo.entry_direction, 4)
+        self.assertAlmostEqual(-1.571, ifo.entry_direction, 3)
