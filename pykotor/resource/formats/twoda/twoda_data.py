@@ -452,9 +452,11 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
+        value = default
         with suppress(ValueError):
             cell = self._data[header]
             return int(cell, 16) if cell.startswith("0x") else int(cell)
+        return value
 
     def get_float(
         self,
