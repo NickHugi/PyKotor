@@ -35,7 +35,7 @@ def detect_ssf(
         The format of the SSF data.
     """
     try:
-        if isinstance(source, str | CaseAwarePath):
+        if isinstance(source, (str, CaseAwarePath)):
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = (
@@ -43,7 +43,7 @@ def detect_ssf(
                     if reader.read_string(4) == "SSF "
                     else ResourceType.SSF_XML
                 )
-        elif isinstance(source, bytes | bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = (
                 ResourceType.SSF
                 if source[:4].decode("ascii", "ignore") == "SSF "

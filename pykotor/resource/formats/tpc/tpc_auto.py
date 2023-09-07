@@ -49,11 +49,11 @@ def detect_tpc(
         return file_format
 
     try:
-        if isinstance(source, str | CaseAwarePath):
+        if isinstance(source, (str, CaseAwarePath)):
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
-        elif isinstance(source, bytes | bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = do_check(source[:100])
         elif isinstance(source, BinaryReader):
             file_format = do_check(source.read_bytes(100))

@@ -36,7 +36,7 @@ def detect_gff(
         The format of the GFF data.
     """
     try:
-        if isinstance(source, str | CaseAwarePath):
+        if isinstance(source, (str, CaseAwarePath)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
                 file_format = (
@@ -44,7 +44,7 @@ def detect_gff(
                     if any(x.value == file_header for x in GFFContent)
                     else ResourceType.GFF_XML
                 )
-        elif isinstance(source, bytes | bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = (
                 ResourceType.GFF
                 if any(

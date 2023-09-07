@@ -35,7 +35,7 @@ def detect_lip(
         The format of the LIP data.
     """
     try:
-        if isinstance(source, str | CaseAwarePath):
+        if isinstance(source, (str, CaseAwarePath)):
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = (
@@ -43,7 +43,7 @@ def detect_lip(
                     if reader.read_string(4) == "LIP "
                     else ResourceType.LIP_XML
                 )
-        elif isinstance(source, bytes | bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = (
                 ResourceType.LIP
                 if source[:4].decode("ascii", "ignore") == "LIP "

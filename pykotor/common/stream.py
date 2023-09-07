@@ -123,10 +123,10 @@ class BinaryReader:
         offset: int = 0,
         size: int | None = None,
     ):
-        if isinstance(source, CaseAwarePath | str):  # is path
+        if isinstance(source, (CaseAwarePath, str)):  # is path
             source = source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
             reader = BinaryReader.from_file(source, offset, size)
-        elif isinstance(source, bytes | bytearray):  # is binary data
+        elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
         elif isinstance(source, BinaryReader):
             reader = BinaryReader(source._stream, source._offset, source._size)
@@ -680,7 +680,7 @@ class BinaryWriter(ABC):
         cls,
         source: CaseAwarePath | str | bytes | bytearray | BinaryReader | object,
     ) -> BinaryWriter:
-        if isinstance(source, CaseAwarePath | str):  # is path
+        if isinstance(source, (CaseAwarePath, str)):  # is path
             source = (
                 source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
             )

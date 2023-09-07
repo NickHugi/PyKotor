@@ -35,7 +35,7 @@ def detect_mdl(
         The format of the MDL data.
     """
     try:
-        if isinstance(source, str | CaseAwarePath):
+        if isinstance(source, (str, CaseAwarePath)):
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 first4 = reader.read_bytes(4)
@@ -44,7 +44,7 @@ def detect_mdl(
                     if first4 == b"\x00\x00\x00\x00"
                     else ResourceType.MDL_ASCII
                 )
-        elif isinstance(source, bytes | bytearray):
+        elif isinstance(source, (bytes, bytearray)):
             file_format = (
                 ResourceType.MDL
                 if source[:4] == b"\x00\x00\x00\x00"
