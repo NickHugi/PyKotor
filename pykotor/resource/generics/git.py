@@ -838,11 +838,10 @@ def construct_git(
             encounter.geometry.append(Vector3(x, y, z))
 
         for spawn_struct in encounter_struct.get_list("SpawnPointList"):
-            x = spawn_struct.acquire("X", 0.0)
-            y = spawn_struct.acquire("Y", 0.0)
-            z = spawn_struct.acquire("Z", 0.0)
             spawn = GITEncounterSpawnPoint()
-            spawn.position = Vector3(x, y, z)
+            spawn.x = spawn_struct.acquire("X", 0.0)
+            spawn.y = spawn_struct.acquire("Y", 0.0)
+            spawn.z = spawn_struct.acquire("Z", 0.0)
             spawn.orientation = spawn_struct.acquire("Orientation", 0.0)
             encounter.spawn_points.append(spawn)
 

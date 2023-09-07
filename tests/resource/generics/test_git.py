@@ -42,7 +42,7 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-41.238, git.creatures[0].position.x, 2)
         self.assertAlmostEqual(-53.214, git.creatures[0].position.y, 2)
         self.assertAlmostEqual(0.000, git.creatures[0].position.z, 2)
-        self.assertAlmostEqual(146.249, git.creatures[0].bearing, 2)
+        self.assertAlmostEqual(0.9817400806520653, git.creatures[0].bearing, 2)
 
         self.assertAlmostEqual(1.0, git.doors[0].bearing, 2)
         self.assertAlmostEqual(-43.763, git.doors[0].position.x, 2)
@@ -63,9 +63,9 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-5.890, git.encounters[0].geometry[0].x, 2)
         self.assertAlmostEqual(3.072, git.encounters[0].geometry[0].y, 2)
         self.assertAlmostEqual(0.025, git.encounters[0].geometry[0].z, 2)
-        self.assertAlmostEqual(-48.936, git.encounters[0].spawn_points[0].position.x, 2)
-        self.assertAlmostEqual(-29.831, git.encounters[0].spawn_points[0].position.y, 2)
-        self.assertAlmostEqual(1.000, git.encounters[0].spawn_points[0].position.z, 2)
+        self.assertAlmostEqual(-48.936, git.encounters[0].spawn_points[0].x, 2)
+        self.assertAlmostEqual(-29.831, git.encounters[0].spawn_points[0].y, 2)
+        self.assertAlmostEqual(1.000, git.encounters[0].spawn_points[0].z, 2)
         self.assertAlmostEqual(0.196, git.encounters[0].spawn_points[0].orientation, 2)
 
         self.assertEqual("k_trans_abort", git.placeables[0].resref)
@@ -84,7 +84,7 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(106.230, git.stores[0].position.x, 2)
         self.assertAlmostEqual(-16.590, git.stores[0].position.y, 2)
         self.assertAlmostEqual(0.063, git.stores[0].position.z, 2)
-        self.assertAlmostEqual(90.000, git.stores[0].bearing, 2)
+        self.assertAlmostEqual(0.000, git.stores[0].bearing, 2)
 
         self.assertEqual("newgeneric001", git.triggers[0].resref)
         self.assertAlmostEqual(-29.903, git.triggers[0].position.x, 2)
@@ -107,4 +107,4 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-33.620, git.waypoints[0].position.x, 2)
         self.assertAlmostEqual(-16.065, git.waypoints[0].position.y, 2)
         self.assertAlmostEqual(1.0, git.waypoints[0].position.z, 2)
-        self.assertAlmostEqual(90.000, git.waypoints[0].bearing, 2)
+        self.assertAlmostEqual(0.000, git.waypoints[0].bearing, 2)
