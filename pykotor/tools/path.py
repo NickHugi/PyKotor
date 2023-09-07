@@ -12,9 +12,6 @@ class CaseAwarePath(Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
     def __new__(cls, *args, **kwargs) -> CaseAwarePath:
-        # Check if all arguments are already CaseAwarePath instances
-        if all(isinstance(arg, CaseAwarePath) for arg in args):
-            return super().__new__(cls, *args, **kwargs)
         # Build a path string from args
         path_str = os.path.join(*args)  # noqa: PTH118
 

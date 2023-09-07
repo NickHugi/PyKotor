@@ -500,6 +500,7 @@ class ConfigReader:
                         continue
                     substring_id = int(substring[4:])
                     language, gender = value.substring_pair(substring_id)
+                    text = text.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
                     value.set(language, gender, text)
                 value = FieldValueConstant(value)
             elif field_type.return_type() == GFFList:
