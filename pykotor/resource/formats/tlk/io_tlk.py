@@ -56,10 +56,10 @@ class TLKBinaryReader(ResourceReader):
 
         if file_version != "V3.0":
             msg = "Invalid file version."
-            raise OSError(msg)
+            raise ValueError(msg)
         if file_type != "TLK ":
             msg = "Invalid file type."
-            raise OSError(msg)
+            raise ValueError(msg)
 
         self._tlk.language = Language(language_id)
         self._tlk.resize(string_count)

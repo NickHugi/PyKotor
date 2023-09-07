@@ -11,7 +11,7 @@ from pykotor.common.misc import Game
 class CaseAwarePath(Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs) -> CaseAwarePath:
         # Check if all arguments are already CaseAwarePath instances
         if all(isinstance(arg, CaseAwarePath) for arg in args):
             return super().__new__(cls, *args, **kwargs)
@@ -38,11 +38,7 @@ class CaseAwarePath(Path):
         """
         if not isinstance(key, CaseAwarePath):
             key = CaseAwarePath._fix_path_formatting(str(key))
-
-        new_path = super().__truediv__(key)
-        if CaseAwarePath.should_resolve_case(new_path):
-            new_path = new_path._get_case_sensitive_path()
-        return new_path
+        return CaseAwarePath(super().__truediv__(key))
 
     def __rtruediv__(self, key) -> CaseAwarePath:
         """Uses divider operator to combine two paths.
@@ -55,11 +51,7 @@ class CaseAwarePath(Path):
         """
         if not isinstance(key, CaseAwarePath):
             key = CaseAwarePath._fix_path_formatting(str(key))
-
-        new_path = super().__rtruediv__(key)
-        if CaseAwarePath.should_resolve_case(new_path):
-            new_path = new_path._get_case_sensitive_path()
-        return new_path
+        return CaseAwarePath(super().__rtruediv__(key))
 
     def joinpath(self, *args) -> CaseAwarePath:
         new_path = self
@@ -78,7 +70,7 @@ class CaseAwarePath(Path):
 
         for i in range(1, len(parts)):
             base_path: CaseAwarePath = super().__new__(type(self), *parts[:i])
-            next_path: CaseAwarePath = super().joinpath(base_path, parts[i])
+            next_path: Path = super().joinpath(base_path, parts[i])
 
             # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.is_dir() and base_path.is_dir():
@@ -88,7 +80,7 @@ class CaseAwarePath(Path):
                         if i == (len(parts) - 1) or item.is_dir():
                             yield item
 
-                parts[i] = self._find_closest_match(parts[i], existing_items_gen())
+                parts[i] = CaseAwarePath._find_closest_match(parts[i], existing_items_gen())
 
             # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
             # parts in their original case.
@@ -99,7 +91,8 @@ class CaseAwarePath(Path):
         # return a CaseAwarePath instance without infinitely recursing through the constructor
         return super().__new__(type(self), *parts)
 
-    def _find_closest_match(self, target, candidates) -> str:
+    @staticmethod
+    def _find_closest_match(target, candidates) -> str:
         max_matching_chars = -1
         closest_match = target
 

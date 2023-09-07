@@ -17,3 +17,5 @@ pykotorcli.build/*
 *.prof
 .vscode/PythonImportHelper*.json
 .vscode/launch.json
+tests/tmp/*
+tests/tslpatcher/tmp/*
