@@ -404,7 +404,7 @@ class Vector3:
         other: int | float,
     ) -> Vector3 | NotImplementedType:
         """Multiplies the components by a scalar integer."""
-        if isinstance(other, int | float):
+        if isinstance(other, (int, float)):
             new = Vector3.from_vector3(self)
             new.x *= other
             new.y *= other
