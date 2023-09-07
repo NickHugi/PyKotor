@@ -65,6 +65,9 @@ class CaseAwarePath(Path):
             new_path = self._get_case_sensitive_path()
         return new_path
 
+    def endswith(self, text: str):
+        return str(self).endswith(text)
+
     def _get_case_sensitive_path(self):
         parts = list(self.parts)
 
