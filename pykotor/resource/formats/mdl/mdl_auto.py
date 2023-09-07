@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.mdl import (
     MDL,

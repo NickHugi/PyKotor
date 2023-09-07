@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.common.geometry import AxisAngle, Vector4
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.mdl import MDL

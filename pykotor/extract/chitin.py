@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType

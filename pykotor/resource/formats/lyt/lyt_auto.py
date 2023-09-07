@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.resource.formats.lyt import LYT, LYTAsciiReader, LYTAsciiWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import (
     KOTOR_CONSTANTS,
