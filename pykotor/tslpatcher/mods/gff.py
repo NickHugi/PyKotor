@@ -90,9 +90,10 @@ class AddStructToListGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str | None = "",
-        struct_id: int | None = None,
+        struct_id = None,
         index_to_token: int | None = None,
         path: str | CaseAwarePath = ".",
+        modifiers: list[AddFieldGFF] | None = None,
     ):
         if struct_id is None:
             self.struct_id = AddStructToListGFF.instance_count
@@ -101,31 +102,38 @@ class AddStructToListGFF(ModifyGFF):
             self.struct_id = struct_id
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
-        self.path = CaseAwarePath(path) if path else CaseAwarePath(".")
+        self.path: CaseAwarePath = CaseAwarePath(path) if path else CaseAwarePath(".")
+
+        self.modifiers: list[AddFieldGFF] = [] if modifiers is None else modifiers
 
     def apply(
         self,
-        container: GFFStruct | GFFList,
+        container: GFFList | GFFStruct,
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
         if isinstance(container, GFFList):
-            new_struct = container.add(self.struct_id)
+            container.add(self.struct_id)
+
+            # If an index_to_token is provided, store the new struct's index in PatcherMemory
+            if self.index_to_token is not None:
+                memory.memory_2da[self.index_to_token] = len(container._structs) -1
+        elif isinstance(container, GFFStruct):
+            value = GFFStruct(self.struct_id)
+            new_struct = container.set_struct(self.identifier, value)
 
             if new_struct is None:
-                logger.add_warning(
-                    f"Failed to add a new struct with struct_id {self.struct_id}. Aborting.",
+                logger.add_error(
+                    f"Failed to add a new struct with struct_id '{self.struct_id}'. Aborting.",
                 )
                 return
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = str(
-                    len(container._structs) - 1,
-                )
-        elif isinstance(container, GFFStruct):
-            msg = "Adding structs to GFF lists are not supported."
-            raise NotImplementedError(msg)
+                memory.memory_2da[self.index_to_token] = str(self.struct_id+1)
+
+        for add_field in self.modifiers:
+            add_field.apply(container, memory, logger)
 
 
 class AddFieldGFF(ModifyGFF):

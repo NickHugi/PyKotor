@@ -4,6 +4,7 @@ from configparser import ConfigParser
 from typing import TYPE_CHECKING, Literal
 
 from chardet import UniversalDetector
+import xarray
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -464,7 +465,7 @@ class ConfigReader:
         identifier: str,
         ini_data: dict[str, str],
         inside_list: bool = False,
-    ) -> AddFieldGFF:  # sourcery skip: extract-method, remove-unreachable-code
+    ):  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -544,44 +545,31 @@ class ConfigReader:
 
         # Get nested fields/struct
         nested_modifiers: list[ModifyGFF] = []
+
         for key, x in ini_data.items():
             if not key.startswith("AddField"):
                 continue
-
-            is_list = field_type.return_type() == GFFList
-            modifier = self.add_field_gff(x, dict(self.ini[x].items()), is_list)
-            if isinstance(modifier, list):
-                nested_modifiers.extend(modifier)
-            else:
-                nested_modifiers.append(modifier)
-
-        ### unfinished inside_list ###
-        if False:
-            index_to_token: int | None = None
-            struct_list_modifiers: list[AddStructToListGFF] = []
-            for key, value in ini_data.items():
-                if key.startswith("2DAMEMORY"):
-                    index_to_token = int(key[9:])
-                elif key.startswith("StrRef"):
-                    index_to_token = int(key[6:])
-                else:
-                    continue
-
-                # Append the new AddStructToListGFF instance to the nested_modifiers list
-                struct_list_modifiers.append(
-                    AddStructToListGFF(int(ini_data["TypeId"]), index_to_token),
-                )
-            assert index_to_token is not None
-            return struct_list_modifiers
+            struct_into_list = field_type.return_type() == GFFList
+            nested_modifier = self.add_field_gff(
+                x,
+                dict(self.ini[x].items()),
+                inside_list=struct_into_list,
+            )
+            nested_modifiers.append(nested_modifier)
 
         index_in_list_token = None
         for key, memvalue in ini_data.items():
             if (
                 key.startswith("2DAMEMORY")
                 and memvalue == "ListIndex"
-                and field_type.return_type() != GFFStruct
             ):
                 index_in_list_token = int(key[9:])
+                break
+
+        # If current field is a struct inside a list:
+        if inside_list and field_type.return_type() == GFFStruct:
+            assert index_in_list_token is not None
+            return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers)
 
         return AddFieldGFF(
             identifier,
