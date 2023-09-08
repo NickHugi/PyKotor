@@ -112,28 +112,44 @@ class AddStructToListGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
+        # If an index_to_token is provided, store the new struct's index in PatcherMemory
+        if self.index_to_token is not None:
+            memory.memory_2da[self.index_to_token] = str(self.struct_id+1)
         if isinstance(container, GFFList):
+            new_struct = GFFStruct(self.struct_id)
             container.add(self.struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = len(container._structs) -1
+                memory.memory_2da[self.index_to_token] = str(len(container._structs) -1)
         elif isinstance(container, GFFStruct):
-            value = GFFStruct(self.struct_id)
-            new_struct = container.set_struct(self.identifier, value)
-
-            if new_struct is None:
-                logger.add_error(
-                    f"Failed to add a new struct with struct_id '{self.struct_id}'. Aborting.",
-                )
-                return
-
-            # If an index_to_token is provided, store the new struct's index in PatcherMemory
-            if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = str(self.struct_id+1)
+            new_struct = GFFStruct(self.struct_id)
+            container.set_struct(self.identifier, new_struct)
 
         for add_field in self.modifiers:
-            add_field.apply(container, memory, logger)
+            add_field.apply(new_struct, memory, logger)
+
+        if new_struct is None:
+            logger.add_error(
+                f"Failed to add a new struct with struct_id '{self.struct_id}'. Aborting.",
+            )
+            return
+
+    def _navigate_containers(
+        self,
+        container: GFFStruct | GFFList | None,
+        path: CaseAwarePath,
+    ) -> GFFList | GFFStruct | None:
+        path = CaseAwarePath(path)
+        hierarchy: tuple[str, ...] = path.parts
+
+        for step in hierarchy:
+            if isinstance(container, GFFStruct):
+                container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
+            elif isinstance(container, GFFList):
+                container = container.at(int(step))
+
+        return container
 
 
 class AddFieldGFF(ModifyGFF):
