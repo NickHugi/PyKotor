@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, List
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
@@ -116,8 +116,7 @@ class AddStructToListGFF(ModifyGFF):
         if self.index_to_token is not None:
             memory.memory_2da[self.index_to_token] = str(self.struct_id+1)
         if isinstance(container, GFFList):
-            new_struct = GFFStruct(self.struct_id)
-            container.add(self.struct_id)
+            new_struct = container.add(self.struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
@@ -167,7 +166,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: CaseAwarePath = CaseAwarePath(path) if path else CaseAwarePath(".")
+        self.path: str = ""
         self.index_to_list_token: int | None = index_to_list_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -178,7 +177,7 @@ class AddFieldGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
-        if self.path is not None:
+        if self.path is not None and self.path != "":
             container = self._navigate_containers(
                 container,
                 self.path,
@@ -228,6 +227,7 @@ class AddFieldGFF(ModifyGFF):
             GFFFieldType.Struct: lambda: set_struct(),  # pylint: disable=unnecessary-lambda
             GFFFieldType.List: lambda: set_list(),  # pylint: disable=unnecessary-lambda
         }
+        x = container
         container = func_map[self.field_type]()
 
         if self.index_to_list_token is not None and isinstance(container, GFFList):
@@ -239,10 +239,9 @@ class AddFieldGFF(ModifyGFF):
     def _navigate_containers(
         self,
         container: GFFStruct | GFFList | None,
-        path: CaseAwarePath,
+        path: str,
     ) -> GFFList | GFFStruct | None:
-        path = CaseAwarePath(path)
-        hierarchy: tuple[str, ...] = path.parts
+        hierarchy: List[str] = [_ for _ in path.split("\\") if _]
 
         for step in hierarchy:
             if isinstance(container, GFFStruct):
