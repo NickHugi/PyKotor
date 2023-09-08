@@ -1164,7 +1164,7 @@ class TestManipulateGFF(TestCase):
                 "String",
                 GFFFieldType.String,
                 FieldValueConstant("abc"),
-                path=CaseAwarePath("List\\0"),
+                path="List\\0",
             )
         )
         config.apply(gff, memory, PatchLogger())
@@ -1237,9 +1237,10 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [])
-        config.modifiers.append(AddStructToListGFF("", None, "List"))
-        config.modifiers.append(AddStructToListGFF("", None, "List"))
-        config.modifiers.append(AddStructToListGFF("", None, "List"))
+        config.modifiers.append(AddStructToListGFF("", None, None, "List"))
+        config.modifiers.append(AddStructToListGFF("", None, None, "List"))
+        config.modifiers.append(AddStructToListGFF("", None, None, "List"))
+
         config.apply(gff, memory, PatchLogger())
 
         self.assertEqual(0, gff_list.at(0).struct_id)  # type: ignore
