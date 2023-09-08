@@ -14,7 +14,7 @@ class TestLocalizedStringDelta(TestCase):
     def test_apply_stringref_2damemory(self):
         locstring = LocalizedString(0)
 
-        delta = LocalizedStringDelta(FieldValueConstant("2DAMEMORY5"))
+        delta = LocalizedStringDelta(FieldValue2DAMemory(5))
 
         memory = PatcherMemory()
         memory.memory_2da[5] = "123"
@@ -26,7 +26,7 @@ class TestLocalizedStringDelta(TestCase):
     def test_apply_stringref_tlkmemory(self):
         locstring = LocalizedString(0)
 
-        delta = LocalizedStringDelta("StrRef5")
+        delta = LocalizedStringDelta(FieldValueTLKMemory(5))
 
         memory = PatcherMemory()
         memory.memory_str[5] = 123
