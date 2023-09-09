@@ -128,11 +128,7 @@ class AddStructToListGFF(ModifyGFF):
         path: str = "",
         modifiers: list[AddFieldGFF] | None = None,
     ):
-        if struct_id is None:
-            self.struct_id = AddStructToListGFF.instance_count
-            AddStructToListGFF.instance_count += 1
-        else:
-            self.struct_id = struct_id
+        self.struct_id = struct_id
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
         self.path: str = path if path else ""
@@ -148,11 +144,9 @@ class AddStructToListGFF(ModifyGFF):
         if self.path:
             container = self._navigate_containers(container, self.path)
 
-        # If an index_to_token is provided, store the new struct's index in PatcherMemory
-        if self.index_to_token is not None:
-            memory.memory_2da[self.index_to_token] = str(self.struct_id+1)
         if isinstance(container, GFFList):
-            new_struct = container.add(self.struct_id)
+            struct_id = self.struct_id if self.struct_id is not None else len(container)
+            new_struct = container.add(struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
@@ -161,14 +155,14 @@ class AddStructToListGFF(ModifyGFF):
             new_struct = GFFStruct(self.struct_id)
             container.set_struct(self.identifier, new_struct)
 
-        for add_field in self.modifiers:
-            add_field.apply(new_struct, memory, logger)
-
         if new_struct is None:
             logger.add_error(
                 f"Failed to add a new struct with struct_id '{self.struct_id}'. Aborting.",
             )
             return
+
+        for add_field in self.modifiers:
+            add_field.apply(new_struct, memory, logger)
 
 
 class AddFieldGFF(ModifyGFF):
