@@ -86,11 +86,10 @@ class ModifyGFF(ABC):
     def _navigate_containers(
         self,
         container: GFFStruct | GFFList | None,
-        path: str,
+        path: CaseAwarePath,
     ) -> GFFList | GFFStruct | None:
-        hierarchy: List[str] = [_ for _ in path.split("\\") if _]
-
-        for step in hierarchy:
+        assert isinstance(path, CaseAwarePath)
+        for step in path.parts:
             if isinstance(container, GFFStruct):
                 container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
             elif isinstance(container, GFFList):
@@ -101,14 +100,14 @@ class ModifyGFF(ABC):
     def _navigate_to_field(
         self,
         container: GFFStruct | GFFList | None,
-        path: str,
+        path: CaseAwarePath,
     ) -> GFFList | GFFStruct | None:
-        hierarchy: List[str] = [_ for _ in path.split("\\") if _]
-        label: str = hierarchy[-1]
+        assert isinstance(path, CaseAwarePath)
+        label: str = path.parts[-1]
 
-        for step in hierarchy[:-1]:
+        for step in path.parent.parts:
             if isinstance(container, GFFStruct):
-                container = container.acquire(step, None, (GFFStruct, GFFList))
+                container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
             elif isinstance(container, GFFList):
                 container = container.at(int(step))
             else:
@@ -118,22 +117,25 @@ class ModifyGFF(ABC):
 
 
 class AddStructToListGFF(ModifyGFF):
-    instance_count = 0  # Don't know if this is needed, this was added to pass the test_addlist_listindex test.
-
     def __init__(
         self,
-        identifier: str | None = "",
-        struct_id: int | None = None,
+        identifier: str | None,
+        struct_id: int,
         index_to_token: int | None = None,
-        path: str = "",
-        modifiers: list[AddFieldGFF] | None = None,
+        path: CaseAwarePath | str | None = None,
+        modifiers: list[ModifyGFF] | None = None,
+        parent_identifier: str | None = None,
     ):
         self.struct_id = struct_id
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
-        self.path: str = path if path else ""
+        self.path: CaseAwarePath | None = CaseAwarePath(path) if isinstance(path, str) else path
+        if self.path:
+            parent_identifier = self.path.parent.name
+        self.parent_identifier = parent_identifier
+        assert self.parent_identifier or self.struct_id
 
-        self.modifiers: list[AddFieldGFF] = [] if modifiers is None else modifiers
+        self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
     def apply(
         self,
@@ -141,19 +143,23 @@ class AddStructToListGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
-        if self.path:
-            container = self._navigate_containers(container, self.path)
-
-        if isinstance(container, GFFList):
+        new_struct: GFFStruct | None = None
+        navigated_container: GFFList | GFFStruct | None = (
+            container
+            if not self.path
+            else self._navigate_containers(container, self.path)
+        )
+        if isinstance(navigated_container, GFFList):
             struct_id = self.struct_id if self.struct_id is not None else len(container)
-            new_struct = container.add(struct_id)
+            new_struct = navigated_container.add(struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = str(len(container._structs) -1)
-        elif isinstance(container, GFFStruct):
-            new_struct = GFFStruct(self.struct_id)
-            container.set_struct(self.identifier, new_struct)
+                memory.memory_2da[self.index_to_token] = str(struct_id)
+        elif isinstance(navigated_container, GFFStruct):
+            struct_id = self.struct_id or len(navigated_container.get_list(self.parent_identifier) ) - 1 # type: ignore
+            new_struct = GFFStruct(struct_id)
+            navigated_container.set_struct(self.identifier, new_struct)
 
         if new_struct is None:
             logger.add_error(
@@ -172,7 +178,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: str | CaseAwarePath | None = None,
+        path: str | CaseAwarePath | None,
         modifiers: list[ModifyGFF] | None = None,
         index_to_list_token: int | None = None,
     ):
@@ -180,7 +186,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: str = path
+        self.path: CaseAwarePath | None = CaseAwarePath(path) if isinstance(path, str) else path
         self.index_to_list_token: int | None = index_to_list_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -196,12 +202,12 @@ class AddFieldGFF(ModifyGFF):
                 container,
                 self.path,
             )  # type: ignore
-        if container is None:
-            logger.add_warning(
-                f"Parent field at '{self.path}' does not exist or is not a List or Struct. Unable to add new Field '{self.label}'...",
-            )
+        container_is_correct_type = isinstance(container, (GFFStruct, GFFList))
+        if not container_is_correct_type:
+            reason: str = "does not exist!" if container is None else "is not an instance of a GFF List/Struct."
+            logger.add_error(f"Unable to add new Field '{self.label}'. Parent field at '{self.path}' {reason}")
             return
-        assert container is not None
+        assert container_is_correct_type
 
         value = self.value.value(memory, self.field_type)
 
@@ -235,13 +241,12 @@ class AddFieldGFF(ModifyGFF):
             GFFFieldType.Double: lambda: container.set_double(self.label, value),
             GFFFieldType.String: lambda: container.set_string(self.label, value),
             GFFFieldType.ResRef: lambda: container.set_resref(self.label, value),
-            GFFFieldType.LocalizedString: lambda: set_locstring(),  # pylint: disable=unnecessary-lambda
+            GFFFieldType.LocalizedString: set_locstring,
             GFFFieldType.Vector3: lambda: container.set_vector3(self.label, value),
             GFFFieldType.Vector4: lambda: container.set_vector4(self.label, value),
-            GFFFieldType.Struct: lambda: set_struct(),  # pylint: disable=unnecessary-lambda
-            GFFFieldType.List: lambda: set_list(),  # pylint: disable=unnecessary-lambda
+            GFFFieldType.Struct: set_struct,
+            GFFFieldType.List: set_list,
         }
-        x = container
         container = func_map[self.field_type]()
 
         if self.index_to_list_token is not None and isinstance(container, GFFList):
@@ -252,8 +257,12 @@ class AddFieldGFF(ModifyGFF):
 
 
 class ModifyFieldGFF(ModifyGFF):
-    def __init__(self, path: str, value: FieldValue) -> None:
-        self.path: str = path
+    def __init__(
+        self,
+        path: str | CaseAwarePath,
+        value: FieldValue
+    ) -> None:
+        self.path: CaseAwarePath = CaseAwarePath(path) if isinstance(path, str) else path
         self.value: FieldValue = value
 
     def apply(
@@ -262,41 +271,44 @@ class ModifyFieldGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
-        path = self.path.split("\\")
-        label = path[-1]
+        
+        label = self.path.name
+        navigated_container: GFFStruct | GFFList | None = self._navigate_containers(container, self.path.parent) or container
 
-        container = self._navigate_containers(container, "\\".join(path[:-1]))
-        if container is None:
-            logger.add_warning(f"Unable to find a field label matching '{self.path}', skipping...")
+        container_is_correct_type = isinstance(container, GFFStruct)
+        if not container_is_correct_type:
+            logger.add_error(f"Unable to find a field label matching '{label}', skipping...")
+            return
+        assert isinstance(navigated_container, GFFStruct)
 
-        field_type = container._fields[label].field_type()
+        field_type = navigated_container._fields[label].field_type()
         value = self.value.value(memory, field_type)
 
         def set_locstring() -> None:
-            assert isinstance(container, GFFStruct)
-            if container.exists(label):
-                original: LocalizedString = container.get_locstring(label)
+            assert isinstance(value, LocalizedStringDelta)
+            if navigated_container.exists(label):
+                original: LocalizedString = navigated_container.get_locstring(label)
                 value.apply(original, memory)
-                container.set_locstring(label, original)
+                navigated_container.set_locstring(label, original)
             else:
-                container.set_locstring(label, value)
+                navigated_container.set_locstring(label, value)
 
         func_map: dict[GFFFieldType, Callable] = {
-            GFFFieldType.Int8: lambda: container.set_int8(label, value),
-            GFFFieldType.UInt8: lambda: container.set_uint8(label, value),
-            GFFFieldType.Int16: lambda: container.set_int16(label, value),
-            GFFFieldType.UInt16: lambda: container.set_uint16(label, value),
-            GFFFieldType.Int32: lambda: container.set_int32(label, value),
-            GFFFieldType.UInt32: lambda: container.set_uint32(label, value),
-            GFFFieldType.Int64: lambda: container.set_int64(label, value),
-            GFFFieldType.UInt64: lambda: container.set_uint64(label, value),
-            GFFFieldType.Single: lambda: container.set_single(label, value),
-            GFFFieldType.Double: lambda: container.set_double(label, value),
-            GFFFieldType.String: lambda: container.set_string(label, value),
-            GFFFieldType.ResRef: lambda: container.set_resref(label, value),
-            GFFFieldType.LocalizedString: lambda: set_locstring(),  # pylint: disable=unnecessary-lambda
-            GFFFieldType.Vector3: lambda: container.set_vector3(label, value),
-            GFFFieldType.Vector4: lambda: container.set_vector4(label, value),
+            GFFFieldType.Int8: lambda: navigated_container.set_int8(label, value),
+            GFFFieldType.UInt8: lambda: navigated_container.set_uint8(label, value),
+            GFFFieldType.Int16: lambda: navigated_container.set_int16(label, value),
+            GFFFieldType.UInt16: lambda: navigated_container.set_uint16(label, value),
+            GFFFieldType.Int32: lambda: navigated_container.set_int32(label, value),
+            GFFFieldType.UInt32: lambda: navigated_container.set_uint32(label, value),
+            GFFFieldType.Int64: lambda: navigated_container.set_int64(label, value),
+            GFFFieldType.UInt64: lambda: navigated_container.set_uint64(label, value),
+            GFFFieldType.Single: lambda: navigated_container.set_single(label, value),
+            GFFFieldType.Double: lambda: navigated_container.set_double(label, value),
+            GFFFieldType.String: lambda: navigated_container.set_string(label, value),
+            GFFFieldType.ResRef: lambda: navigated_container.set_resref(label, value),
+            GFFFieldType.LocalizedString: set_locstring,
+            GFFFieldType.Vector3: lambda: navigated_container.set_vector3(label, value),
+            GFFFieldType.Vector4: lambda: navigated_container.set_vector4(label, value),
         }
         func_map[field_type]()
 
@@ -309,19 +321,19 @@ class ModificationsGFF:
         self,
         filename: str,
         replace_file: bool,
-        modifiers: list[AddFieldGFF | ModifyFieldGFF] | None = None,
-        destination: str | None = None,
+        modifiers: list[ModifyGFF] | None = None,
+        destination: str | CaseAwarePath | None = None,
     ) -> None:
         self.filename: str = filename
         self.replace_file: bool = replace_file
-        self.destination: str = (
-            destination
-            if destination is not None
-            else str(CaseAwarePath("Override", filename))
-        )
-        self.modifiers: list[AddFieldGFF | ModifyFieldGFF | AddStructToListGFF] = (
-            modifiers if modifiers is not None else []
-        )
+        if destination is None:
+            self.destination = CaseAwarePath("Override", filename)
+        elif not isinstance(destination, CaseAwarePath):
+            self.destination = CaseAwarePath(destination)
+        else:
+            self.destination = destination
+
+        self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(
         self,

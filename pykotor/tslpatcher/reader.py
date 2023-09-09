@@ -4,7 +4,6 @@ from configparser import ConfigParser
 from typing import TYPE_CHECKING, Literal
 
 from chardet import UniversalDetector
-import xarray
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -27,7 +26,6 @@ from pykotor.tslpatcher.mods.gff import (
     LocalizedStringDelta,
     ModificationsGFF,
     ModifyFieldGFF,
-    ModifyGFF,
 )
 from pykotor.tslpatcher.mods.install import InstallFile, InstallFolder
 from pykotor.tslpatcher.mods.nss import ModificationsNSS
@@ -55,12 +53,13 @@ from pykotor.tslpatcher.mods.twoda import (
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
+    from pykotor.tslpatcher.mods.gff import ModifyGFF
 
 
 class ConfigReader:
     def __init__(self, ini: ConfigParser, mod_path: CaseAwarePath | str) -> None:
         self.ini = ini
-        self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
+        self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
         self.config: PatcherConfig
 
     @classmethod
@@ -73,6 +72,7 @@ class ConfigReader:
         detector = UniversalDetector()
         detector.feed(ini_file_bytes)
         detector.close()
+        assert detector.result is not None
         encoding = detector.result["encoding"]
         assert encoding is not None
 
@@ -381,11 +381,11 @@ class ConfigReader:
             modifications = ModificationsGFF(file, replace)
             self.config.patches_gff.append(modifications)
 
-            modifier: AddFieldGFF | ModifyFieldGFF
+            modifier: ModifyGFF
             for name, value in modifications_ini.items():
                 lowercase_name = name.lower()
                 if lowercase_name == "!destination":
-                    modifications.destination = value
+                    modifications.destination = CaseAwarePath(value)
                 elif lowercase_name == "!replacefile":
                     modifications.replace_file = bool(int(value))
                 elif lowercase_name in ["!filename", "!saveas"]:
@@ -484,12 +484,15 @@ class ConfigReader:
             "Struct": GFFFieldType.Struct,
             "List": GFFFieldType.List,
         }
+        
+        raw_path = ini_data.get("Path", "").strip()
+        path = CaseAwarePath(raw_path) if raw_path else None
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        path = CaseAwarePath(ini_data.get("Path", ""))
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None
+        struct_id = None
 
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
@@ -522,8 +525,7 @@ class ConfigReader:
             value = FieldValueConstant(int(raw_value))
         elif field_type.return_type() == float:
             # Replace comma with dot for decimal separator to match TSLPatcher syntax.
-            float_val = raw_value.replace(",", ".")
-            value = FieldValueConstant(float(float_val))
+            value = FieldValueConstant(float(raw_value.replace(",", ".")))
         elif field_type.return_type() == str:
             value = FieldValueConstant(
                 raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"),
@@ -531,11 +533,13 @@ class ConfigReader:
         elif field_type.return_type() == ResRef:
             value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == Vector3:
+            # Replace comma with dot for decimal separator to match TSLPatcher syntax.
             components = [
                 float(axis.replace(",", ".")) for axis in raw_value.split("|")
             ]
             value = FieldValueConstant(Vector3(*components))
         elif field_type.return_type() == Vector4:
+            # Replace comma with dot for decimal separator to match TSLPatcher syntax.
             components = [
                 float(axis.replace(",", ".")) for axis in raw_value.split("|")
             ]
@@ -549,11 +553,10 @@ class ConfigReader:
         for key, x in ini_data.items():
             if not key.startswith("AddField"):
                 continue
-            struct_into_list = field_type.return_type() == GFFList
-            nested_modifier = self.add_field_gff(
+            nested_modifier: ModifyGFF = self.add_field_gff(
                 x,
                 dict(self.ini[x].items()),
-                inside_list=struct_into_list,
+                inside_list=field_type.return_type() == GFFList,
             )
             nested_modifiers.append(nested_modifier)
 
@@ -568,7 +571,6 @@ class ConfigReader:
 
         # If current field is a struct inside a list:
         if inside_list and field_type.return_type() == GFFStruct:
-            assert index_in_list_token is not None
             return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers)
 
         return AddFieldGFF(

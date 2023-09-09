@@ -215,7 +215,7 @@ class ModInstaller:
 
             capsule = None
             gff_filepath: CaseAwarePath = self.output_path / gff_patch.destination
-            if is_capsule_file(gff_patch.destination):
+            if is_capsule_file(gff_patch.destination.name):
                 capsule = Capsule(gff_filepath)
 
             search = installation.resource(
