@@ -2029,7 +2029,7 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual(None, str(mod_0.path))
+        self.assertEqual("None", str(mod_0.path))
         self.assertEqual("SomeList", mod_0.label)
 
         mod_1 = mod_0.modifiers.pop(0)
