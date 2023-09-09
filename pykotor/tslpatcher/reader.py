@@ -568,15 +568,15 @@ class ConfigReader:
                     index_in_list_token = int(key[9:])
                 else:
                     nested_modifier = Memory2DAModifierGFF(identifier, int(key[9:]), x, label, current_path, nested_modifiers)
-            if not key.startswith("AddField"):
-                continue
-            nested_ini = dict(self.ini[x].items())
-            nested_modifier: ModifyGFF = self.add_field_gff(
-                x,
-                nested_ini,
-                inside_list=field_type.return_type() == GFFList,
-            )
-            nested_modifiers.append(nested_modifier)
+                    nested_modifiers.append(nested_modifier)
+            if key.startswith("AddField"):
+                nested_ini = dict(self.ini[x].items())
+                nested_modifier: ModifyGFF = self.add_field_gff(
+                    x,
+                    nested_ini,
+                    inside_list=field_type.return_type() == GFFList,
+                )
+                nested_modifiers.append(nested_modifier)
 
         # If current field is a struct inside a list:
         if (inside_list or label == "") and field_type.return_type() == GFFStruct:
