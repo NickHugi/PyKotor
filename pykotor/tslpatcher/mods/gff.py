@@ -124,15 +124,11 @@ class AddStructToListGFF(ModifyGFF):
         index_to_token: int | None = None,
         path: CaseAwarePath | str | None = None,
         modifiers: list[ModifyGFF] | None = None,
-        parent_identifier: str | None = None,
     ):
         self.struct_id = struct_id if struct_id and struct_id != 0 else None
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
         self.path: CaseAwarePath | None = CaseAwarePath(path) if isinstance(path, str) else path
-        if self.path:
-            parent_identifier = self.path.parent.name
-        self.parent_identifier = parent_identifier
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 

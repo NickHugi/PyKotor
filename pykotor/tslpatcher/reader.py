@@ -550,28 +550,26 @@ class ConfigReader:
         # Get nested fields/struct
         nested_modifiers: list[ModifyGFF] = []
 
+        index_in_list_token = None
         for key, x in ini_data.items():
+            if (
+                key.startswith("2DAMEMORY")
+                and x == "ListIndex"
+            ):
+                index_in_list_token = int(key[9:])
             if not key.startswith("AddField"):
                 continue
+            nested_ini = dict(self.ini[x].items())
             nested_modifier: ModifyGFF = self.add_field_gff(
                 x,
-                dict(self.ini[x].items()),
+                nested_ini,
                 inside_list=field_type.return_type() == GFFList,
             )
             nested_modifiers.append(nested_modifier)
 
-        index_in_list_token = None
-        for key, memvalue in ini_data.items():
-            if (
-                key.startswith("2DAMEMORY")
-                and memvalue == "ListIndex"
-            ):
-                index_in_list_token = int(key[9:])
-                break
-
         # If current field is a struct inside a list:
         if inside_list and field_type.return_type() == GFFStruct:
-            return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers, label)
+            return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers)
 
         return AddFieldGFF(
             identifier,
