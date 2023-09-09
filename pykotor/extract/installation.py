@@ -25,6 +25,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
+from pykotor.tslpatcher.mods.twoda import WarningException
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -536,7 +537,11 @@ class Installation:
     # endregion
 
     def game(self) -> Game:
-        return Game(2 if CaseAwarePath(self._path / "swkotor2.exe").exists() else 1)
+        if CaseAwarePath(self._path / "swkotor2.exe").exists():
+            return Game(2)
+        elif CaseAwarePath(self._path / "swkotor.exe").exists():
+            return Game(1)
+        raise ValueError("Could not find the game executable!")
 
     def talktable(self) -> TalkTable:
         """Returns the TalkTable linked to the Installation.
