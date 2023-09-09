@@ -24,6 +24,7 @@ from pykotor.tslpatcher.mods.gff import (
     FieldValueConstant,
     FieldValueTLKMemory,
     LocalizedStringDelta,
+    Memory2DAModifierGFF,
     ModificationsGFF,
     ModifyFieldGFF,
 )
@@ -393,6 +394,9 @@ class ConfigReader:
                 elif lowercase_name.startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     modifications.modifiers.append(modifier)
+                elif lowercase_name.startswith("2damemory"):
+                    modifier = Memory2DAModifierGFF(file, int(lowercase_name[9:]), value)
+                    modifications.modifiers.append(modifier)
                 else:
                     modifier = self.modify_field_gff(name, value)
                     modifications.modifiers.append(modifier)
@@ -465,6 +469,7 @@ class ConfigReader:
         identifier: str,
         ini_data: dict[str, str],
         inside_list: bool = False,
+        current_path: CaseAwarePath | str = ""
     ):  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
@@ -487,12 +492,18 @@ class ConfigReader:
 
         raw_path = ini_data.get("Path", "").strip()
         path = CaseAwarePath(raw_path) if raw_path else None
+        if path is not None and path != "":
+            current_path = CaseAwarePath(path)
+        else:
+            current_path = current_path if isinstance(current_path, CaseAwarePath) else CaseAwarePath(current_path)
+
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None
         struct_id = None
+
 
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
@@ -552,11 +563,11 @@ class ConfigReader:
 
         index_in_list_token = None
         for key, x in ini_data.items():
-            if (
-                key.startswith("2DAMEMORY")
-                and x == "ListIndex"
-            ):
-                index_in_list_token = int(key[9:])
+            if key.startswith("2DAMEMORY"):
+                if x == "ListIndex":
+                    index_in_list_token = int(key[9:])
+                else:
+                    nested_modifier = Memory2DAModifierGFF(identifier, int(key[9:]), x, label, current_path, nested_modifiers)
             if not key.startswith("AddField"):
                 continue
             nested_ini = dict(self.ini[x].items())
@@ -568,7 +579,7 @@ class ConfigReader:
             nested_modifiers.append(nested_modifier)
 
         # If current field is a struct inside a list:
-        if inside_list and field_type.return_type() == GFFStruct:
+        if (inside_list or label == "") and field_type.return_type() == GFFStruct:
             return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers)
 
         return AddFieldGFF(

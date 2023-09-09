@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, List
+from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
+from pykotor.resource.formats.gff.gff_data import _GFFField
 from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
-
-# TODO(NickHugi): 2DAMEMORY# as field path+label, store+save
-
 
 class LocalizedStringDelta(LocalizedString):
     def __init__(self, stringref: FieldValue | None = None) -> None:
@@ -101,7 +99,7 @@ class ModifyGFF(ABC):
         self,
         container: GFFStruct | GFFList | None,
         path: CaseAwarePath,
-    ) -> GFFList | GFFStruct | None:
+    ) -> _GFFField | None:
         assert isinstance(path, CaseAwarePath)
         label: str = path.parts[-1]
 
@@ -245,6 +243,39 @@ class AddFieldGFF(ModifyGFF):
 
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
+
+class Memory2DAModifierGFF(ModifyGFF):
+    def __init__(
+            self,
+            identifier: str,
+            twoda_index: int,
+            value_str: str,
+            label: str | None = None,
+            path: str | CaseAwarePath | None = None,
+            modifiers: list[ModifyGFF] | None = None
+        ):
+        self.identifier = identifier
+        self.twoda_index: int = twoda_index
+        self.value = value_str
+        self.label = label
+        if isinstance(path, CaseAwarePath):
+            self.path = path
+        elif path is not None:
+            self.path = CaseAwarePath(path)
+        else:
+            self.path = path or None
+
+        self.modifiers = modifiers
+    def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
+        if self.value.lower().startswith("2damemory"):
+            memory.memory_2da[self.twoda_index] = memory.memory_2da[int(self.value[9:])]
+        elif self.value.lower() == "!fieldpath":
+            logger.add_error(f"!FieldPath's are not currently supported (2DAMEMORY{self.twoda_index}=!FieldPath)")
+            return
+            memory.memory_2da[self.twoda_index] = str(self.path)
+            return
+        else:
+            memory.memory_2da[self.twoda_index] = self.value
 
 
 class ModifyFieldGFF(ModifyGFF):
