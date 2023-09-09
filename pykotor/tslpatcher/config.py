@@ -23,12 +23,12 @@ from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
+from pykotor.tslpatcher.mods.install import InstallFile, InstallFolder
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.twoda.twoda_data import TwoDA
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
-    from pykotor.tslpatcher.mods.install import InstallFolder
     from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
@@ -159,6 +159,15 @@ class ModInstaller:
             write_tlk(dialog_tlk, str(self.output_path / "dialog.tlk"))
             self.log.complete_patch()
 
+        # Move nwscript.nss to Override if there are any nss patches to do
+        if len(config.patches_nss) > 0:
+            folder_install = InstallFolder("Override")
+            if folder_install not in config.install_list:
+                config.install_list.append(folder_install)
+            file_install = InstallFile("nwscript.nss", True)
+            folder_install.files.append(file_install)
+
+        # Apply changes from [InstallList]
         for folder in config.install_list:
             folder.apply(self.log, self.mod_path, self.output_path)
             self.log.complete_patch()

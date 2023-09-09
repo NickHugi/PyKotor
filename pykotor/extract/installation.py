@@ -536,7 +536,7 @@ class Installation:
     # endregion
 
     def game(self) -> Game:
-        return Game(2 if (self._path / "swkotor2.exe").exists() else 1)
+        return Game(2 if CaseAwarePath(self._path / "swkotor2.exe").exists() else 1)
 
     def talktable(self) -> TalkTable:
         """Returns the TalkTable linked to the Installation.

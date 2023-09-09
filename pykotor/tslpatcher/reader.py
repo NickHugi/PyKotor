@@ -415,7 +415,6 @@ class ConfigReader:
 
             if destination is not None:
                 modifications.destination = destination
-        print("Parsing NSS files done!")
 
     #################
 

@@ -61,17 +61,17 @@ class InstallFile:
         data = BinaryReader.load_file(source_folder / self.filename)
         save_file_to = destination / self.filename
 
-        if self.replace_existing or not save_file_to.exists():
+        replacement: bool = self.replace_existing or not save_file_to.exists()
+        if replacement:
             if not destination.exists():
                 with print_lock:
                     log.add_note(f"Folder {destination} did not exist, creating it...")
                 destination.mkdir(parents=True, exist_ok=True)
 
-
-            if self.replace_existing and not save_file_to.exists():
+            if replacement:
                 with print_lock:
                     log.add_note(
-                        f"Replacing file '{self.filename}' to the '{local_folder}' folder...",
+                        f"Replacing file '{self.filename}' in the '{local_folder}' folder...",
                     )
             else:
                 with print_lock:
