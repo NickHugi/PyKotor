@@ -120,20 +120,19 @@ class AddStructToListGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str | None,
-        struct_id: int,
+        struct_id: int | None = None,
         index_to_token: int | None = None,
         path: CaseAwarePath | str | None = None,
         modifiers: list[ModifyGFF] | None = None,
         parent_identifier: str | None = None,
     ):
-        self.struct_id = struct_id
+        self.struct_id = struct_id if struct_id and struct_id != 0 else None
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
         self.path: CaseAwarePath | None = CaseAwarePath(path) if isinstance(path, str) else path
         if self.path:
             parent_identifier = self.path.parent.name
         self.parent_identifier = parent_identifier
-        assert self.parent_identifier or self.struct_id
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
@@ -150,14 +149,14 @@ class AddStructToListGFF(ModifyGFF):
             else self._navigate_containers(container, self.path)
         )
         if isinstance(navigated_container, GFFList):
-            struct_id = self.struct_id if self.struct_id is not None else len(container)
+            struct_id = self.struct_id if self.struct_id else len(navigated_container)
             new_struct = navigated_container.add(struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
                 memory.memory_2da[self.index_to_token] = str(struct_id)
         elif isinstance(navigated_container, GFFStruct):
-            struct_id = self.struct_id or len(navigated_container.get_list(self.parent_identifier) ) - 1 # type: ignore
+            struct_id = self.struct_id or len(navigated_container.get_list(self.parent_identifier) ) # type: ignore
             new_struct = GFFStruct(struct_id)
             navigated_container.set_struct(self.identifier, new_struct)
 
@@ -178,7 +177,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: str | CaseAwarePath | None,
+        path: str | CaseAwarePath | None = None,
         modifiers: list[ModifyGFF] | None = None,
         index_to_list_token: int | None = None,
     ):
