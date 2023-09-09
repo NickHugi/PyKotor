@@ -1359,7 +1359,7 @@ class TestConfigReader(TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertEqual("ClassList\\0\\Class", mod_0.path)
+        self.assertEqual(str(CaseAwarePath("ClassList\\0\\Class")), str(mod_0.path))
 
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
@@ -1388,7 +1388,7 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeInt", mod_0.path)
+        self.assertEqual("SomeInt", str(mod_0.path))
         self.assertEqual(123, mod_0.value.stored)
 
     def test_gff_modify_type_string(self):
@@ -1418,7 +1418,7 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeString", mod_0.path)
+        self.assertEqual("SomeString", str(mod_0.path))
         self.assertEqual("abc", mod_0.value.stored)
 
     def test_gff_modify_type_vector3(self):
@@ -1448,7 +1448,7 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeVector", mod_0.path)
+        self.assertEqual("SomeVector", str(mod_0.path))
         self.assertEqual(Vector3(1, 2, 3), mod_0.value.stored)
 
     def test_gff_modify_type_vector4(self):
@@ -1478,7 +1478,7 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeVector", mod_0.path)
+        self.assertEqual("SomeVector", str(mod_0.path))
         self.assertEqual(Vector4(1, 2, 3, 4), mod_0.value.stored)
 
     def test_gff_modify_type_locstring(self):
@@ -1530,7 +1530,7 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(result, ModifyFieldGFF)
         self.assertIsInstance(result.value, FieldValueConstant)
         self.assertIsInstance(result.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", result.path)
+        self.assertEqual("LocString", str(result.path))
         return result
 
     def test_gff_modify_2damemory(self):
@@ -1562,7 +1562,7 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_0.path)
+        self.assertEqual("LocString", str(mod_0.path))
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueTLKMemory)
         self.assertEqual(5, mod_0.value.stored.stringref.token_id)
 
@@ -1978,14 +1978,14 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual(".", str(mod_0.path))
+        self.assertEqual(None, mod_0.path)
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertEqual(".", str(mod_1.path))
+        self.assertEqual(None, mod_1.path)
         self.assertEqual("InsideStruct", mod_1.label)
         self.assertEqual(123, mod_1.value.stored)
 

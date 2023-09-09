@@ -155,10 +155,6 @@ class AddStructToListGFF(ModifyGFF):
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
                 memory.memory_2da[self.index_to_token] = str(struct_id)
-        elif isinstance(navigated_container, GFFStruct):
-            struct_id = self.struct_id or len(navigated_container.get_list(self.parent_identifier) ) # type: ignore
-            new_struct = GFFStruct(struct_id)
-            navigated_container.set_struct(self.identifier, new_struct)
 
         if new_struct is None:
             logger.add_error(
