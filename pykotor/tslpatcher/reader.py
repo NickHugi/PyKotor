@@ -484,7 +484,7 @@ class ConfigReader:
             "Struct": GFFFieldType.Struct,
             "List": GFFFieldType.List,
         }
-        
+
         raw_path = ini_data.get("Path", "").strip()
         path = CaseAwarePath(raw_path) if raw_path else None
 
@@ -571,7 +571,7 @@ class ConfigReader:
 
         # If current field is a struct inside a list:
         if inside_list and field_type.return_type() == GFFStruct:
-            return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers)
+            return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers, label)
 
         return AddFieldGFF(
             identifier,
