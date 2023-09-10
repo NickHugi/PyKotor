@@ -289,7 +289,6 @@ class ModifyFieldGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
-        
         label = self.path.name
         navigated_container: GFFStruct | GFFList | None = self._navigate_containers(container, self.path.parent) or container
 

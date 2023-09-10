@@ -354,7 +354,7 @@ class StackV2:
         self._stack: bytearray = bytearray()
         self._base_pointer: int = 0
         self._base_pointer_saved: list[int] = []
-        self._stack_types: List = []
+        self._stack_types: list = []
 
     def state(self) -> bytearray:
         return copy(self._stack)
@@ -384,7 +384,7 @@ class Stack:
         self._bp: int = 0
         self._bp_buffer: list[int] = []
 
-    def state(self) -> List:
+    def state(self) -> list:
         return copy(self._stack)
 
     def add(self, data_type: DataType, value: Any) -> None:
@@ -625,12 +625,12 @@ class StackObject:
 
 class ActionStackValue(NamedTuple):
     block: list[NCSInstruction]
-    stack: List
+    stack: list
 
 
 class ActionSnapshot(NamedTuple):
     function_name: str
-    arg_values: List
+    arg_values: list
     return_value: Any
 
 
