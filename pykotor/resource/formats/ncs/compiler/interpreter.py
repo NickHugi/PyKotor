@@ -3,7 +3,7 @@ from __future__ import annotations
 import struct
 from copy import copy
 from inspect import signature
-from typing import Any, Callable, NamedTuple, Union
+from typing import Any, Callable, NamedTuple
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.script import DataType, ScriptFunction
@@ -354,7 +354,7 @@ class StackV2:
         self._stack: bytearray = bytearray()
         self._base_pointer: int = 0
         self._base_pointer_saved: list[int] = []
-        self._stack_types: list = []
+        self._stack_types: List = []
 
     def state(self) -> bytearray:
         return copy(self._stack)
@@ -369,7 +369,8 @@ class StackV2:
         copied = self._stack[stacksize - offset : stacksize - offset + size]
         self._stack.extend(copied)
 
-    def add(self, datatype: DataType, value: Union[int, float]):
+    # TODO: refactor
+    def add(self, datatype: DataType, value: float | int):  # noqa: PYI041,RUF100
         if datatype == DataType.INT:
             if not isinstance(value, int):
                 raise ValueError
@@ -388,7 +389,7 @@ class Stack:
         self._bp: int = 0
         self._bp_buffer: list[int] = []
 
-    def state(self) -> list:
+    def state(self) -> List:
         return copy(self._stack)
 
     def add(self, data_type: DataType, value: Any) -> None:
@@ -426,8 +427,8 @@ class Stack:
         return self._stack[real_index]
 
     def copy_to_top(self, offset: int, size: int) -> None:
-        new_list = [self.peek(offset) for _i in range(size // 4)]
-        self._stack.extend(new_list)
+        for _i in range(size // 4):
+            self._stack.append(self.peek(offset))
 
     def copy_down(self, offset: int, size: int) -> None:
         if size % 4 != 0:
@@ -451,12 +452,10 @@ class Stack:
 
         # Now copy the elements down the stack
         for i in range(num_elements):
-            # Counting from the end of the list
-            source_index = -1 - i
-
-            # The last target index corresponds to the first source index
-            target_index = target_indices[-1 - i]
-
+            source_index = -1 - i  # Counting from the end of the list
+            target_index = target_indices[
+                -1 - i
+            ]  # The last target index corresponds to the first source index
             self._stack[target_index] = self._stack[source_index]
 
     def pop(self) -> Any:
@@ -626,18 +625,17 @@ class StackObject:
     def __eq__(self, other):
         if isinstance(other, StackObject):
             return self.value == other.value
-        else:
-            return self.value == other
+        return self.value == other
 
 
 class ActionStackValue(NamedTuple):
     block: list[NCSInstruction]
-    stack: list
+    stack: List
 
 
 class ActionSnapshot(NamedTuple):
     function_name: str
-    arg_values: list
+    arg_values: List
     return_value: Any
 
 
