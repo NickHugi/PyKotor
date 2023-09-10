@@ -16959,7 +16959,7 @@ TSL_FUNCTIONS = [
     ScriptFunction(
         DataType.VOID,
         "DisableHealthRegen",
-        [ScriptParam(DataType.INT, "nFlag", False)],
+        [ScriptParam(DataType.INT, "nFlag", "FALSE")],
         "// 858\r\n// RWT-OEI 09/06/04\r\n// This function turns off the innate health regeneration that all party\r\n// members have. The health regen will *stay* off until it is turned back\r\n// on by passing FALSE to this function.\r\nvoid DisableHealthRegen(int nFlag  =  FALSE);",
         "// 858\r\n// RWT-OEI 09/06/04\r\n// This function turns off the innate health regeneration that all party\r\n// members have. The health regen will *stay* off until it is turned back\r\n// on by passing FALSE to this function.\r\nvoid DisableHealthRegen(int nFlag  =  FALSE);",
     ),
@@ -16976,7 +16976,7 @@ TSL_FUNCTIONS = [
     ScriptFunction(
         DataType.VOID,
         "SetDisableTransit",
-        [ScriptParam(DataType.INT, "nFlag", False)],
+        [ScriptParam(DataType.INT, "nFlag", "FALSE")],
         "// 860\r\n// RWT-OEI 09/09/04\r\n// This will disable or enable area transit\r\nvoid SetDisableTransit(int nFlag  =  FALSE);",
         "// 860\r\n// RWT-OEI 09/09/04\r\n// This will disable or enable area transit\r\nvoid SetDisableTransit(int nFlag  =  FALSE);",
     ),
@@ -16984,8 +16984,8 @@ TSL_FUNCTIONS = [
         DataType.VOID,
         "SetInputClass",
         [ScriptParam(DataType.INT, "nClass", None)],
-        "// 861\r\n// RWT-OEI 09/09/04\r\n// This will set the specific input class.\r\n// The valid options are:\r\n// 0 - Normal PC control\r\n// 1 - Mini game control\r\n// 2 - GUI control\r\n// 3 - Dialog Control\r\n// 4 - Freelook control\r\nvoid SetInputClass(int nClass);",
-        "// 861\r\n// RWT-OEI 09/09/04\r\n// This will set the specific input class.\r\n// The valid options are:\r\n// 0 - Normal PC control\r\n// 1 - Mini game control\r\n// 2 - GUI control\r\n// 3 - Dialog Control\r\n// 4 - Freelook control\r\nvoid SetInputClass(int nClass);",
+        "// 861\r\n//RWT-OEI 09/09/04\r\n// This will set the specific input class.\r\n// The valid options are:\r\n// 0 - Normal PC control\r\n// 1 - Mini game control\r\n// 2 - GUI control\r\n// 3 - Dialog Control\r\n// 4 - Freelook control\r\nvoid SetInputClass(int nClass);",
+        "// 861\r\n//RWT-OEI 09/09/04\r\n// This will set the specific input class.\r\n// The valid options are:\r\n// 0 - Normal PC control\r\n// 1 - Mini game control\r\n// 2 - GUI control\r\n// 3 - Dialog Control\r\n// 4 - Freelook control\r\nvoid SetInputClass(int nClass);",
     ),
     ScriptFunction(
         DataType.VOID,
