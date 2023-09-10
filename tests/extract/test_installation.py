@@ -31,11 +31,6 @@ class TestInstallation(TestCase):
             raise ValueError("K1_PATH environment variable not set.")
         self.installation = Installation(path)
 
-        if not CaseAwarePath(
-            self.installation.override_path() / "nwscript.nss"
-        ).exists():
-            raise ValueError("Place nwscript.nss in override folder before testing.")
-
     def test_resource(self):
         installation = self.installation
 

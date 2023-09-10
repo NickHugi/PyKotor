@@ -267,7 +267,8 @@ class Memory2DAModifierGFF(ModifyGFF):
             twoda_memory_field = memory.memory_2da[twoda_memory_field_index]
             memory.memory_2da[self.twoda_index] = twoda_memory_field
         elif self.value.lower() == "!fieldpath":
-            memory.memory_2da[self.twoda_index] = container
+            logger.add_error(f"!FieldPath is not currently implemented! Ignoring modifier '2DAMEMORY{self.twoda_index}=!FieldPath' in '[{self.identifier}]'")
+            # memory.memory_2da[self.twoda_index] = container  #noqa: ERA001
             return
         else:
             memory.memory_2da[self.twoda_index] = self.value
