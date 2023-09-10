@@ -19,6 +19,7 @@ from pykotor.extract.file import (
     ResourceResult,
 )
 from pykotor.extract.talktable import TalkTable
+from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
