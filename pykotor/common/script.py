@@ -18,10 +18,10 @@ class ScriptConstant:
         if self.datatype == DataType.INT and not isinstance(value, int):
             msg = "Script constant value argument does not match given datatype."
             raise ValueError(msg)
-        elif self.datatype == DataType.FLOAT and not isinstance(value, float):
+        if self.datatype == DataType.FLOAT and not isinstance(value, float):
             msg = "Script constant value argument does not match given datatype."
             raise ValueError(msg)
-        elif self.datatype == DataType.STRING and not isinstance(value, str):
+        if self.datatype == DataType.STRING and not isinstance(value, str):
             msg = "Script constant value argument does not match given datatype."
             raise ValueError(msg)
 
@@ -57,8 +57,7 @@ class ScriptParam:
     ):
         if self.default is not None:
             return f"{self.datatype} {self.name} = {self.default}"
-        else:
-            return f"{self.datatype} {self.name}"
+        return f"{self.datatype} {self.name}"
 
 
 class ScriptFunction:
@@ -110,9 +109,8 @@ class DataType(Enum):
     def size(self) -> int:
         if self == DataType.VOID:
             return 0
-        elif self == DataType.VECTOR:
+        if self == DataType.VECTOR:
             return 12
-        elif self == DataType.STRUCT:
+        if self == DataType.STRUCT:
             raise ValueError  # TODO
-        else:
-            return 4
+        return 4
