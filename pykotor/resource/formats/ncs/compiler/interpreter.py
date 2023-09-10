@@ -371,16 +371,11 @@ class StackV2:
 
     # TODO: refactor
     def add(self, datatype: DataType, value: float | int):  # noqa: PYI041,RUF100
-        if datatype == DataType.INT:
-            if not isinstance(value, int):
-                raise ValueError
-            self._stack.extend(struct.pack("i", value))
-        elif datatype == DataType.FLOAT:
-            if not isinstance(value, int):
-                raise ValueError
-            self._stack.extend(struct.pack("i", value))
-        else:
+        if datatype not in [DataType.INT, DataType.FLOAT]:
             raise NotImplementedError
+        if not isinstance(value, int):
+            raise ValueError
+        self._stack.extend(struct.pack("i", value))
 
 
 class Stack:
