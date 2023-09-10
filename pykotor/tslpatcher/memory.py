@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import GFFList, GFFStruct
 
 
 class PatcherMemory:
     def __init__(self):
-        self.memory_2da: dict[int, str] = {}
+        self.memory_2da: dict[int, str | GFFList | GFFStruct] = {}
         self.memory_str: dict[int, int] = {}  # StrRef# (token) -> dialog.tlk index
 
 
@@ -28,7 +32,9 @@ class TokenUsage2DA(TokenUsage):
         self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory) -> str:
-        return memory.memory_2da[self.token_id]
+        memory_stored_str = memory.memory_2da[self.token_id]
+        assert isinstance(memory_stored_str, str)
+        return memory_stored_str
 
 
 class TokenUsageTLK(TokenUsage):

@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "sourcery.sourcery",
-    "JipitiAI.askcodebase"
+    "jipitiai.askcodebase",
+    "arturock.gitstash"
   ]
 }

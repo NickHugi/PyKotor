@@ -286,7 +286,7 @@ class GFFStruct:
         self,
         label: str,
         default: T,
-        object_type: U = None,
+        object_type: U | None = None,
     ) -> T | U:
         """Gets the value from the specified field. If the field does not exist or the value type does not match the
         specified type then the default is returned instead.

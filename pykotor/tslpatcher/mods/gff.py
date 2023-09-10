@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING, Any, Callable
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.resource.formats.gff.gff_data import _GFFField
 from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
+    from pykotor.resource.formats.gff.gff_data import _GFFField
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
@@ -138,12 +138,12 @@ class AddStructToListGFF(ModifyGFF):
     ) -> None:
         new_struct: GFFStruct | None = None
         navigated_container: GFFList | GFFStruct | None = (
-            container
-            if not self.path
-            else self._navigate_containers(container, self.path)
+            self._navigate_containers(container, self.path)
+            if self.path
+            else container
         )
         if isinstance(navigated_container, GFFList):
-            struct_id = self.struct_id if self.struct_id else len(navigated_container)
+            struct_id = self.struct_id or len(navigated_container)
             new_struct = navigated_container.add(struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
@@ -191,9 +191,9 @@ class AddFieldGFF(ModifyGFF):
                 container,
                 self.path,
             )  # type: ignore
-        container_is_correct_type = isinstance(container, (GFFStruct, GFFList))
+        container_is_correct_type = isinstance(container, GFFStruct)
         if not container_is_correct_type:
-            reason: str = "does not exist!" if container is None else "is not an instance of a GFF List/Struct."
+            reason: str = "does not exist!" if container is None else "is not an instance of a GFFStruct."
             logger.add_error(f"Unable to add new Field '{self.label}'. Parent field at '{self.path}' {reason}")
             return
         assert container_is_correct_type
@@ -203,7 +203,6 @@ class AddFieldGFF(ModifyGFF):
         def set_locstring() -> None:
             original = LocalizedString(0)
             value.apply(original, memory)
-            assert isinstance(container, GFFStruct)
             container.set_locstring(self.label, original)
 
         def set_struct() -> GFFStruct | None:
@@ -214,7 +213,6 @@ class AddFieldGFF(ModifyGFF):
             return None
 
         def set_list() -> GFFList:
-            assert isinstance(container, GFFStruct)
             return container.set_list(self.label, value)
 
         func_map: dict[GFFFieldType, Any] = {
@@ -238,9 +236,6 @@ class AddFieldGFF(ModifyGFF):
         }
         container = func_map[self.field_type]()
 
-        if self.index_to_list_token is not None and isinstance(container, GFFList):
-            memory.memory_2da[self.index_to_list_token] = str(len(container) - 1)
-
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
@@ -263,16 +258,16 @@ class Memory2DAModifierGFF(ModifyGFF):
         elif path is not None:
             self.path = CaseAwarePath(path)
         else:
-            self.path = path or None
+            self.path = None
 
         self.modifiers = modifiers
     def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
         if self.value.lower().startswith("2damemory"):
-            memory.memory_2da[self.twoda_index] = memory.memory_2da[int(self.value[9:])]
+            twoda_memory_field_index = int(self.value[9:])
+            twoda_memory_field = memory.memory_2da[twoda_memory_field_index]
+            memory.memory_2da[self.twoda_index] = twoda_memory_field
         elif self.value.lower() == "!fieldpath":
-            logger.add_error(f"!FieldPath's are not currently supported (2DAMEMORY{self.twoda_index}=!FieldPath)")
-            return
-            memory.memory_2da[self.twoda_index] = str(self.path)
+            memory.memory_2da[self.twoda_index] = container
             return
         else:
             memory.memory_2da[self.twoda_index] = self.value

@@ -60,7 +60,9 @@ if TYPE_CHECKING:
 class ConfigReader:
     def __init__(self, ini: ConfigParser, mod_path: CaseAwarePath | str) -> None:
         self.ini = ini
-        self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
+        self.mod_path: CaseAwarePath = (
+            mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
+        )
         self.config: PatcherConfig
 
     @classmethod
@@ -395,7 +397,9 @@ class ConfigReader:
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     modifications.modifiers.append(modifier)
                 elif lowercase_name.startswith("2damemory"):
-                    modifier = Memory2DAModifierGFF(file, int(lowercase_name[9:]), value)
+                    modifier = Memory2DAModifierGFF(
+                        file, int(lowercase_name[9:]), value
+                    )
                     modifications.modifiers.append(modifier)
                 else:
                     modifier = self.modify_field_gff(name, value)
@@ -468,7 +472,6 @@ class ConfigReader:
         identifier: str,
         ini_data: dict[str, str],
         inside_list: bool = False,
-        current_path: CaseAwarePath | str = ""
     ):  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
@@ -491,18 +494,12 @@ class ConfigReader:
 
         raw_path = ini_data.get("Path", "").strip()
         path = CaseAwarePath(raw_path) if raw_path else None
-        if path is not None and path != "":
-            current_path = CaseAwarePath(path)
-        else:
-            current_path = current_path if isinstance(current_path, CaseAwarePath) else CaseAwarePath(current_path)
-
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None
         struct_id = None
-
 
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
@@ -566,7 +563,9 @@ class ConfigReader:
                 if x == "ListIndex":
                     index_in_list_token = int(key[9:])
                 else:
-                    nested_modifier = Memory2DAModifierGFF(identifier, int(key[9:]), x, label, current_path, nested_modifiers)
+                    nested_modifier = Memory2DAModifierGFF(
+                        identifier, int(key[9:]), x, label, path, nested_modifiers
+                    )
                     nested_modifiers.append(nested_modifier)
             if key.startswith("AddField"):
                 nested_ini = dict(self.ini[x].items())
@@ -579,7 +578,9 @@ class ConfigReader:
 
         # If current field is a struct inside a list:
         if (inside_list or label == "") and field_type.return_type() == GFFStruct:
-            return AddStructToListGFF(label, struct_id, index_in_list_token, path, nested_modifiers)
+            return AddStructToListGFF(
+                label, struct_id, index_in_list_token, path, nested_modifiers
+            )
 
         return AddFieldGFF(
             identifier,

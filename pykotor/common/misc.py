@@ -436,6 +436,7 @@ class EquipmentSlot(Enum):
     RIGHT_HAND_2 = 2**18
     LEFT_HAND_2 = 2**19
 
+
 class CaseInsensitiveDict(Generic[T]):
     def __init__(
         self,

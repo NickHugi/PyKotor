@@ -70,7 +70,7 @@ class NssParser:
                                 errorlog=errorlog,
                                 write_tables=False,
                                 debug=False,
-                                debuglog=yacc.NullLogger()
+                                debuglog=yacc.NullLogger(),
                                 )
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants
