@@ -31,6 +31,8 @@ class Interpreter:
             index = self._ncs.instructions.index(self._cursor)
             jump_value = None
 
+            # print(str(index).ljust(3), str(self._cursor).ljust(40)[:40], str(self._stack.state()).ljust(30), f"BP={self._stack.base_pointer()//4}") #noqa: ERA001
+
             if self._cursor.ins_type == NCSInstructionType.CONSTS:
                 self._stack.add(DataType.STRING, self._cursor.args[0])
 
@@ -449,10 +451,12 @@ class Stack:
 
         # Now copy the elements down the stack
         for i in range(num_elements):
-            source_index = -1 - i  # Counting from the end of the list
-            target_index = target_indices[
-                -1 - i
-            ]  # The last target index corresponds to the first source index
+            # Counting from the end of the list
+            source_index = -1 - i
+
+            # The last target index corresponds to the first source index
+            target_index = target_indices[-1 - i]
+
             self._stack[target_index] = self._stack[source_index]
 
     def pop(self) -> Any:
