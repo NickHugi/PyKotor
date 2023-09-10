@@ -1313,13 +1313,12 @@ class Installation:
 
         return mod_id
 
-    # TODO Rename this here and in `module_name` and `module_id`
     def _replace_module_extensions(self, module_filename: str) -> str:
         result = re.sub(r"\.mod$", "", module_filename, flags=re.IGNORECASE)
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
-        result = result[: -len("_s")] if result.endswith("_s") else result
-        return result[: -len("_dlg")] if result.endswith("_dlg") else result
+        result = result[:-2] if result.endswith("_s") else result
+        return result[:-4] if result.endswith("_dlg") else result
 
     def module_ids(self) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the ID of the module. The ID is taken from the
@@ -1335,7 +1334,7 @@ class Installation:
         """Uninstalls all mods from the game.
 
         What this method really does is delete all the contents of the override folder and delete all .MOD files from
-        the modules folder.
+        the modules folder. Unfortunately there's no realistic way to reset dialog.tlk. (perhaps we should assert its file hash is vanilla?)
         """
         for file in self.module_path().iterdir():
             filepath = self.module_path() / file
