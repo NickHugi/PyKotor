@@ -1,19 +1,40 @@
-def is_int(string: str):
+import hashlib
+
+from pykotor.tools.path import CaseAwarePath
+
+
+def generate_filehash_sha1(filepath: str | CaseAwarePath) -> str:
+    sha1_hash = hashlib.sha1()
+    with open(filepath, "rb") as f:
+        while (data := f.read(65536)):  # read in 64k chunks
+            sha1_hash.update(data)
+    return sha1_hash.hexdigest()
+
+
+def is_int(string: str, strict=True):
     try:
-        _ = int(string)
+        return int(string) and True
     except ValueError:
-        return False
-    else:
-        return True
+        if not strict or not isinstance(string, str):
+            return False
+        # If conversion to int fails in strict mode, check for valid float forms 
+        # where numbers after the decimal point are 0.
+        parts = string.split(".")
+        if len(parts) == 2 and all(ch.isdigit() for ch in parts[1]) and int(parts[1]) == 0:
+            try:
+                _ = float(string)
+                return True
+            except ValueError:
+                return False
 
 
-def is_float(string: str):
+def is_float(string: str, strict=True):
     try:
         _ = float(string)
     except ValueError:
         return False
     else:
-        return True
+        return "." in string if strict else True
 
 
 def is_nss_file(filename: str):

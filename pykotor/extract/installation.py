@@ -258,18 +258,13 @@ class Installation:
         chitin = Chitin(self._path)
         self._chitin = list(chitin)
 
-    def load_modules(
-        self,
-    ) -> None:
+    def load_modules(self) -> None:
         """Reloads the list of modules files in the modules folder linked to the Installation."""
-        modules_path = self.module_path()
         self._modules = {}
-        module_files = [
-            file for file in modules_path.iterdir() if is_capsule_file(file.name)
-        ]
-        for module in module_files:
-            with suppress(Exception):
-                self._modules[module.name] = list(Capsule(self.module_path() / module))
+        for module in self.module_path().iterdir():
+            if is_capsule_file(module.name):
+                with suppress(Exception):
+                    self._modules[module.name] = list(Capsule(module))
 
     def reload_module(self, module: str) -> None:
         """Reloads the list of resources in specified module in the modules folder linked to the Installation.
