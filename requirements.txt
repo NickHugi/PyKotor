@@ -1,2 +1,2 @@
 ply==3.11
-chardet==3.7
+chardet
