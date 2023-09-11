@@ -261,7 +261,7 @@ class CodeRoot:
         if not library_lookup:
             pass
         elif isinstance(library_lookup, list):
-            for i, library_path in enumerate(library_lookup):
+            for library_path in library_lookup:
                 if isinstance(library_path, CaseAwarePath):
                     self.library_lookup.append(library_path)
                 elif library_path:
