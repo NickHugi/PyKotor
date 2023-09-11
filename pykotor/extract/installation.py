@@ -1327,19 +1327,3 @@ class Installation:
             A dictionary mapping module filename to in-game module id.
         """
         return {module: self.module_id(module) for module in self.modules_list()}
-
-    def uninstall_mods(self) -> None:
-        """Uninstalls all mods from the game.
-
-        What this method really does is delete all the contents of the override folder and delete all .MOD files from
-        the modules folder. Unfortunately there's no realistic way to reset dialog.tlk. (perhaps we should assert its file hash is vanilla?)
-        """
-        for file in self.module_path().iterdir():
-            filepath = self.module_path() / file
-            if is_mod_file(filepath.name) and filepath.exists():
-                filepath.unlink()
-
-        for file in self.override_path().iterdir():
-            filepath = self.override_path() / file
-            if filepath.exists():
-                filepath.unlink()
