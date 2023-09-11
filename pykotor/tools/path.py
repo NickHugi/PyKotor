@@ -85,7 +85,7 @@ class CaseAwarePath(Path):
                 )
 
                 # if multiple are found, we get the one that most closely matches our case
-                # A closest match is defined by the item that most closely matches the case-sensitivity.
+                # A closest match is defined by the item that has the most case-sensitive positional matches
                 # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
                 parts[i] = CaseAwarePath._find_closest_match(
                     parts[i],
