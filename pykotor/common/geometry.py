@@ -1294,7 +1294,7 @@ class Polygon2:
 
         n = len(self.points)
         area = 0.0
-        for i in range(0, n - 1):
+        for i in range(n - 1):
             area += -self.points[i].y * self.points[i + 1].x + self.points[i].x * self.points[i + 1].y
         area += -self.points[n - 1].y * self.points[0].x + self.points[n - 1].x * self.points[0].y
         return 0.5 * math.fabs(area)
