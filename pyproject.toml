@@ -31,35 +31,9 @@ exclude = '''
 '''
 
 [tool.flake8]
+extend-ignore = ["D203", "E203", "E251", "E266", "E302", "E305", "E401", "E402", "E501", "F401", "F403", "W503"]
+exclude = [".git", "__pycache__", "dist"]
 max-line-length = 130
-extend-ignore = [
-    "ANN",
-    "ANN101",  # Missing type annotation for {name} in method
-    "ANN401",  # Dynamically typed expressions (typing.Any) are disallowed in {name}
-    "D401",    # First line of docstring should be in imperative mood
-    "E501",    # line too long
-    "FBT001",  # Boolean positional arg in function definition
-    "FBT002",  # Boolean default value in function definition
-    "FIX004",  # Line contains HACK, consider resolving the issue
-    "PD901",   # df is a bad variable name. Be kinder to your future self.
-    "PLR0913", # Too many arguments to function call (N > 5)
-    "PLR2004", # Magic value used in comparison, consider replacing X with a constant variable
-    "SLF001",  # Private member accessed
-    "D101",
-    "D102",
-    "D103",
-    "D107",
-    "D205",
-    "D400",
-    "D403",
-    "D415",
-    "D417",
-    "D205",
-    "D212",
-    "D200",
-    "PLR5501",
-    "PLW2901"
-]
 max-complexity = 25
 
 [tool.isort]
