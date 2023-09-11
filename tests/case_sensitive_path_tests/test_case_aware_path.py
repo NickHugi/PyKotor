@@ -59,7 +59,7 @@ class TestCaseAwarePath(unittest.TestCase):
     @patch.object(Path, "exists", autospec=True)
     def test_should_resolve_case(self, mock_exists):
         if os.name == "nt":
-            self.assertFalse(self.path.should_resolve_case("C:\\path\\to\\dir"))
+            self.assertFalse(CaseAwarePath.should_resolve_case("C:\\path\\to\\dir"))
             self.assertFalse(
                 CaseAwarePath.should_resolve_case(CaseAwarePath("C:\\path\\to\\dir"))
             )
