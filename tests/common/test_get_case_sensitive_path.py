@@ -1,5 +1,5 @@
 import os
-from pathlib import Path, PureWindowsPath, PurePosixPath
+from pathlib import PureWindowsPath, PurePosixPath
 import unittest
 from unittest.mock import patch
 
@@ -45,7 +45,7 @@ class TestCaseAwarePath(unittest.TestCase):
         result = path._get_case_sensitive_path(path)
         expected_result = "/path/to/dir"
 
-        self.assertEqual(str(result), expected_result)
+        self.assertEqual(str(result).replace("\\", "/"), expected_result)
 
         # Let's also test for a directory which has multiple similar named items.
         MockedPath._forced_parts = ("/", "path", "to", "directory")
@@ -58,14 +58,14 @@ class TestCaseAwarePath(unittest.TestCase):
         path = MockedPath("/path/to/DiReCtOrY")
         result = path._get_case_sensitive_path(path)
         expected_result = "/path/to/direCtory"
-        self.assertEqual(str(result), expected_result)
+        self.assertEqual(str(result).replace("\\", "/"), expected_result)
 
         path = MockedPath("/path/to/DIRECTOrY")
         result = path._get_case_sensitive_path(path)
         expected_result = "/path/to/DIRECTORY"
-        self.assertEqual(str(result), expected_result)
+        self.assertEqual(str(result).replace("\\", "/"), expected_result)
 
         path = MockedPath("/path/to/DIRECTOrY1")
         result = path._get_case_sensitive_path(path)
         expected_result = "/path/to/directory1"
-        self.assertEqual(str(result), expected_result)
+        self.assertEqual(str(result).replace("\\", "/"), expected_result)

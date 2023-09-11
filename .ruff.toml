@@ -40,6 +40,7 @@ ignore = [
 [per-file-ignores]
 "tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
+"__init__.py" = ["I001", "F401"]
 
 [flake8-pytest-style]
 fixture-parentheses = false

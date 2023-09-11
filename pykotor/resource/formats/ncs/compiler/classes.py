@@ -249,7 +249,7 @@ class CodeRoot:
         self,
         constants: list[ScriptConstant],
         functions: list[ScriptFunction],
-        library_lookup: list[str] | None,
+        library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None,
         library: dict[str, bytes],
     ):
         self.objects: list[TopLevelObject] = []
@@ -257,9 +257,19 @@ class CodeRoot:
         self.library: dict[str, bytes] = library
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants
-        self.library_lookup: list[str] | None = (
-            library_lookup if library_lookup is not None else []
-        )
+        self.library_lookup: list[CaseAwarePath] = []
+        if not library_lookup:
+            pass
+        elif isinstance(library_lookup, list):
+            for i, library_path in enumerate(library_lookup):
+                if isinstance(library_path, CaseAwarePath):
+                    self.library_lookup.append(library_path)
+                elif library_path:
+                    self.library_lookup.append(CaseAwarePath(library_path))
+        elif isinstance(library_lookup, CaseAwarePath):
+            self.library_lookup = [library_lookup]
+        else:
+            self.library_lookup = [CaseAwarePath(library_lookup)]
 
         self.function_map: dict[str, FunctionReference] = {}
         self._global_scope: list[ScopedValue] = []
@@ -635,7 +645,7 @@ class IncludeScript(TopLevelObject):
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
         assert root.library_lookup is not None
         for folder in root.library_lookup:
-            filepath = CaseAwarePath(folder) / f"{self.file.value}.nss"
+            filepath = folder / f"{self.file.value}.nss"
             if filepath.exists():
                 source = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break

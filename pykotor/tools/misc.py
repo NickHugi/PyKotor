@@ -12,6 +12,14 @@ def generate_filehash_sha1(filepath: str | CaseAwarePath) -> str:
 
 
 def is_int(string: str):
+    """
+    Can be cast to an_int without raising an error
+
+    Args:
+    ----
+        string (str):
+
+    """
     try:
         _ = int(string)
     except ValueError:
@@ -21,6 +29,14 @@ def is_int(string: str):
 
 
 def is_float(string: str):
+    """
+    Can be cast to a float without raising an error.
+
+    Args:
+    ----
+        string (str):
+
+    """
     try:
         _ = float(string)
     except ValueError:

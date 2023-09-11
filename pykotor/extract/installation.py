@@ -79,7 +79,8 @@ class ItemTuple(NamedTuple):
 
 
 class Installation:
-    """Installation provides a centralized location for loading resources stored in the game through its
+    """
+    Installation provides a centralized location for loading resources stored in the game through its
     various folders and formats.
     """
 
@@ -125,7 +126,8 @@ class Installation:
 
     # region Get Paths
     def path(self) -> CaseAwarePath:
-        """Returns the path to root folder of the Installation.
+        """
+        Returns the path to root folder of the Installation.
 
         Returns
         -------
@@ -134,7 +136,8 @@ class Installation:
         return self._path
 
     def module_path(self) -> CaseAwarePath:
-        """Returns the path to modules folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to modules folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -146,7 +149,8 @@ class Installation:
         )
 
     def override_path(self) -> CaseAwarePath:
-        """Returns the path to override folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to override folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -155,11 +159,12 @@ class Installation:
         return self._find_resource_folderpath(
             ("Override",),
             "Could not find override folder in '{}'.",
-            optional=True
+            optional=True,
         )
 
     def lips_path(self) -> CaseAwarePath:
-        """Returns the path to lips folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to lips folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -171,7 +176,8 @@ class Installation:
         )
 
     def texturepacks_path(self) -> CaseAwarePath:
-        """Returns the path to texturepacks folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to texturepacks folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -183,7 +189,8 @@ class Installation:
         )
 
     def rims_path(self) -> CaseAwarePath:
-        """Returns the path to rims folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to rims folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -195,7 +202,8 @@ class Installation:
         )
 
     def streammusic_path(self) -> CaseAwarePath:
-        """Returns the path to streammusic folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to streammusic folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -207,7 +215,8 @@ class Installation:
         )
 
     def streamsounds_path(self) -> CaseAwarePath:
-        """Returns the path to streamsounds folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to streamsounds folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -222,7 +231,7 @@ class Installation:
         self,
         folder_names: tuple[str, ...],
         error_msg: str,
-        optional: bool = False
+        optional: bool = False,
     ) -> CaseAwarePath:
         resource_path = self._path
         folder_names_lower: set[str] = {name.lower() for name in folder_names}
@@ -231,15 +240,16 @@ class Installation:
             if folder_path.is_dir() and folder_path.name.lower() in folder_names_lower:
                 resource_path = folder_path
                 break
-        if optional:
-            return CaseAwarePath(resource_path) / folder_names[0]
         if resource_path == self._path:
+            if optional:
+                return CaseAwarePath(resource_path) / folder_names[0]
             raise ValueError(error_msg.format(self._path))
 
         return resource_path
 
     def streamvoice_path(self) -> CaseAwarePath:
-        """Returns the path to streamvoice folder of the Installation. This method maintains the case of the foldername.
+        """
+        Returns the path to streamvoice folder of the Installation. This method maintains the case of the foldername.
 
         In the first game, this folder has been named "streamwaves".
 
@@ -270,7 +280,8 @@ class Installation:
                     self._modules[module.name] = list(Capsule(module))
 
     def reload_module(self, module: str) -> None:
-        """Reloads the list of resources in specified module in the modules folder linked to the Installation.
+        """
+        Reloads the list of resources in specified module in the modules folder linked to the Installation.
 
         Args:
         ----
@@ -294,9 +305,7 @@ class Installation:
         """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
         self._texturepacks = {}
         texturepacks_path = self.texturepacks_path()
-        texturepacks_files = [
-            file for file in texturepacks_path.iterdir() if is_erf_file(file.name)
-        ]
+        texturepacks_files = [file for file in texturepacks_path.iterdir() if is_erf_file(file.name)]
         for module in texturepacks_files:
             self._texturepacks[module.name] = list(Capsule(texturepacks_path / module))
 
@@ -326,7 +335,8 @@ class Installation:
                     self._override[relative_dir].append(resource)
 
     def reload_override(self, directory: str) -> None:
-        """Reloads the list of resources in subdirectory of the override folder linked to the Installation.
+        """
+        Reloads the list of resources in subdirectory of the override folder linked to the Installation.
 
         Args:
         ----
@@ -409,9 +419,7 @@ class Installation:
         self._rims = {}
         with suppress(ValueError):
             rims_path: CaseAwarePath = self.rims_path()
-            file_list: list[CaseAwarePath] = [
-                file for file in rims_path.iterdir() if is_rim_file(file.name)
-            ]
+            file_list: list[CaseAwarePath] = [file for file in rims_path.iterdir() if is_rim_file(file.name)]
             for file_path in file_list:
                 self._rims[file_path.name] = list(Capsule(rims_path / file_path))
 
@@ -419,7 +427,8 @@ class Installation:
 
     # region Get FileResources
     def chitin_resources(self) -> list[FileResource]:
-        """Returns the list of FileResources stored in the Chitin linked to the Installation.
+        """
+        Returns the list of FileResources stored in the Chitin linked to the Installation.
 
         Returns
         -------
@@ -428,7 +437,8 @@ class Installation:
         return self._chitin[:]
 
     def modules_list(self) -> list[str]:
-        """Returns the list of module filenames located in the modules folder
+        """
+        Returns the list of module filenames located in the modules folder
         linked to the Installation.
 
         Module filenames are cached and require to be refreshed after a file
@@ -441,7 +451,8 @@ class Installation:
         return list(self._modules.keys())
 
     def module_resources(self, filename: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file
+        """
+        Returns a list of FileResources stored in the specified module file
         located in the modules folder linked to the Installation.
 
         Module resources are cached and require a reload after the contents
@@ -454,7 +465,8 @@ class Installation:
         return self._modules[filename][:]
 
     def lips_list(self) -> list[str]:
-        """Returns the list of module filenames located in the lips folder
+        """
+        Returns the list of module filenames located in the lips folder
         linked to the Installation.
 
         Module filenames are cached and require to be refreshed after a file
@@ -467,7 +479,8 @@ class Installation:
         return list(self._lips.keys())
 
     def lip_resources(self, filename: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file
+        """
+        Returns a list of FileResources stored in the specified module file
         located in the lips folder linked to the
         Installation.
 
@@ -481,7 +494,8 @@ class Installation:
         return self._lips[filename][:]
 
     def texturepacks_list(self) -> list[str]:
-        """Returns the list of texture-pack filenames located in the texturepacks
+        """
+        Returns the list of texture-pack filenames located in the texturepacks
         folder linked to the Installation.
 
         Returns
@@ -491,7 +505,8 @@ class Installation:
         return list(self._texturepacks.keys())
 
     def texturepack_resources(self, filename: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified module file
+        """
+        Returns a list of FileResources stored in the specified module file
         located in the texturepacks folder linked to
         the Installation.
 
@@ -505,7 +520,8 @@ class Installation:
         return self._texturepacks[filename][:]
 
     def override_list(self) -> list[str]:
-        """Returns the list of subdirectories located in override folder
+        """
+        Returns the list of subdirectories located in override folder
         linked to the Installation.
 
         Subdirectories are cached and require to be refreshed after a folder
@@ -518,7 +534,8 @@ class Installation:
         return list(self._override.keys())
 
     def override_resources(self, directory: str) -> list[FileResource]:
-        """Returns a list of FileResources stored in the specified subdirectory
+        """
+        Returns a list of FileResources stored in the specified subdirectory
         located in the override folder linked to
         the Installation.
 
@@ -542,7 +559,8 @@ class Installation:
         raise ValueError(msg)
 
     def talktable(self) -> TalkTable:
-        """Returns the TalkTable linked to the Installation.
+        """
+        Returns the TalkTable linked to the Installation.
 
         Returns
         -------
@@ -559,7 +577,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[CaseAwarePath] | None = None,
     ) -> ResourceResult | None:
-        """Returns a resource matching the specified resref and restype. If no resource is found then None is returned
+        """
+        Returns a resource matching the specified resref and restype. If no resource is found then None is returned
         instead.
 
         The default search order is (descending priority): 1. Folders in the folders parameter, 2. Override folders,
@@ -597,7 +616,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[CaseAwarePath] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
-        """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found. If
+        """
+        Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found. If
         the resource was not found, the value will be None.
 
         Args:
@@ -660,7 +680,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[CaseAwarePath] | None = None,
     ) -> list[LocationResult]:
-        """Returns a list filepaths for where a particular resource matching the given resref and restype are located.
+        """
+        Returns a list filepaths for where a particular resource matching the given resref and restype are located.
 
         This is a wrapper of the locations() method provided to make searching for a single resource more contvenient.
 
@@ -696,7 +717,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[CaseAwarePath] | None = None,
     ) -> dict[ResourceIdentifier, list[LocationResult]]:
-        """Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
+        """
+        Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
         respective resource.
 
         Args:
@@ -829,7 +851,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[CaseAwarePath | str] | None = None,
     ) -> TPC | None:
-        """Returns a TPC object loaded from a resource with the specified name. If the specified texture could not be found
+        """
+        Returns a TPC object loaded from a resource with the specified name. If the specified texture could not be found
         then the method returns None.
 
         This is a wrapper of the textures() method provided to make searching for a single texture more convenient.
@@ -865,7 +888,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[CaseAwarePath | str] | None = None,
     ) -> CaseInsensitiveDict[TPC | None]:
-        """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
+        """
+        Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
         texture could not be found then the value is None.
 
         Args:
@@ -900,19 +924,13 @@ class Installation:
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
                 for resource in resources:
-                    if (
-                        resource.resname() in copy(queries)
-                        and resource.restype() in texture_types
-                    ):
+                    if resource.resname() in copy(queries) and resource.restype() in texture_types:
                         queries.remove(resource.resname())
                         textures[resource.resname()] = read_tpc(resource.data())
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if (
-                    resource.resname() in copy(queries)
-                    and resource.restype() in texture_types
-                ):
+                if resource.resname() in copy(queries) and resource.restype() in texture_types:
                     queries.remove(resource.resname())
                     textures[resource.resname()] = read_tpc(resource.data())
 
@@ -937,10 +955,7 @@ class Installation:
                     identifier = ResourceIdentifier.from_path(file.name)
                     filepath: CaseAwarePath = CaseAwarePath(folder, file)
                     for resname in queries:
-                        if (
-                            identifier.resname == resname
-                            and identifier.restype in texture_types
-                        ):
+                        if identifier.resname == resname and identifier.restype in texture_types:
                             data = BinaryReader.load_file(filepath)
                             textures[resname] = read_tpc(data)
 
@@ -982,7 +997,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[str] | None = None,
     ) -> bytes | None:
-        """Returns the bytes of a sound resource if it can be found, otherwise returns None.
+        """
+        Returns the bytes of a sound resource if it can be found, otherwise returns None.
 
         This is a wrapper of the sounds() method provided to make searching for a single resource more convenient.
 
@@ -1008,7 +1024,8 @@ class Installation:
         capsules: list[Capsule] | None = None,
         folders: list[str] | None = None,
     ) -> CaseInsensitiveDict[bytes | None]:
-        """Returns a dictionary mapping the items provided in the queries argument to a bytes object if the respective
+        """
+        Returns a dictionary mapping the items provided in the queries argument to a bytes object if the respective
         sound resource could be found. If the sound could not be found the value will return None.
 
         Args:
@@ -1033,9 +1050,7 @@ class Installation:
             SearchLocation.CHITIN,
         ]
 
-        sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict[
-            Optional[bytes]
-        ]()
+        sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict[Optional[bytes]]()
         texture_types = [ResourceType.WAV, ResourceType.MP3]
         resnames = [resname.lower() for resname in resnames]
 
@@ -1045,19 +1060,13 @@ class Installation:
         def check_dict(values: dict[str, list[FileResource]]):
             for resources in values.values():
                 for resource in resources:
-                    if (
-                        resource.resname() in copy(resnames)
-                        and resource.restype() in texture_types
-                    ):
+                    if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                         resnames.remove(resource.resname())
                         sounds[resource.resname()] = fix_audio(resource.data())
 
         def check_list(values: list[FileResource]):
             for resource in values:
-                if (
-                    resource.resname() in copy(resnames)
-                    and resource.restype() in texture_types
-                ):
+                if resource.resname() in copy(resnames) and resource.restype() in texture_types:
                     resnames.remove(resource.resname())
                     sounds[resource.resname()] = fix_audio(resource.data())
 
@@ -1080,10 +1089,7 @@ class Installation:
                 for file in [file for file in filepath.iterdir() if file.is_file()]:
                     identifier = ResourceIdentifier.from_path(file.name)
                     for resname in resnames:
-                        if (
-                            identifier.resname == resname
-                            and identifier.restype in texture_types
-                        ):
+                        if identifier.resname == resname and identifier.restype in texture_types:
                             data = BinaryReader.load_file(file)
                             sounds[resname] = fix_audio(data)
 
@@ -1118,7 +1124,8 @@ class Installation:
         return sounds
 
     def string(self, locstring: LocalizedString, default: str = "") -> str:
-        """Returns the string for the LocalizedString provided.
+        """
+        Returns the string for the LocalizedString provided.
         This is a wrapper of the strings() method provided to make searching for a single string more convenient.
 
         Args:
@@ -1136,7 +1143,8 @@ class Installation:
         queries: list[LocalizedString],
         default: str = "",
     ) -> dict[LocalizedString, str]:
-        """Returns a dictionary mapping the items provided in the queries argument to a string.
+        """
+        Returns a dictionary mapping the items provided in the queries argument to a string.
 
         As the method iterates through each LocalizedString it will first check if the TalkTable linked to the
         Installation has the stringref. If not it will try fallback on whatever substring exists in the LocalizedString
@@ -1168,7 +1176,8 @@ class Installation:
         return results
 
     def module_name(self, module_filename: str, use_hardcoded: bool = True) -> str:
-        """Returns the name of the area for a module from the installations module list. The name is taken from the
+        """
+        Returns the name of the area for a module from the installations module list. The name is taken from the
         LocalizedString "Name" in the relevant module file's ARE resource.
 
         Args:
@@ -1244,7 +1253,8 @@ class Installation:
         return name
 
     def module_names(self) -> dict[str, str]:
-        """Returns a dictionary mapping module filename to the name of the area. The name is taken from the LocalizedString
+        """
+        Returns a dictionary mapping module filename to the name of the area. The name is taken from the LocalizedString
         "Name" in the relevant module file's ARE resource.
 
         Returns
@@ -1254,7 +1264,8 @@ class Installation:
         return {module: self.module_name(module) for module in self.modules_list()}
 
     def module_id(self, module_filename: str, use_hardcoded: bool = True) -> str:
-        """Returns the ID of the area for a module from the installations module list. The ID is taken from the
+        """
+        Returns the ID of the area for a module from the installations module list. The ID is taken from the
         ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
 
         Args:
@@ -1319,7 +1330,8 @@ class Installation:
         return result[:-4] if result.endswith("_dlg") else result
 
     def module_ids(self) -> dict[str, str]:
-        """Returns a dictionary mapping module filename to the ID of the module. The ID is taken from the
+        """
+        Returns a dictionary mapping module filename to the ID of the module. The ID is taken from the
         ResRef field "Mod_Entry_Area" in the relevant module file's IFO resource.
 
         Returns
