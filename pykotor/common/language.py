@@ -47,9 +47,8 @@ class LocalizedString:
     def __iter__(self):
         """Iterates through the list of substrings. Yields a tuple containing [language, gender, text]."""
         for substring_id, text in self._substrings.items():
-            for value in LocalizedString.substring_pair(substring_id):
-                yield value
-            yield text
+            language, gender = LocalizedString.substring_pair(substring_id)
+            yield language, gender, text
 
 
     def __len__(self):

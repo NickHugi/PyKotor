@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 
 from pykotor.tools.path import CaseAwarePath
