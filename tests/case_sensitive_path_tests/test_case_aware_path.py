@@ -64,11 +64,9 @@ class TestCaseAwarePath(unittest.TestCase):
                 CaseAwarePath.should_resolve_case(CaseAwarePath("C:\\path\\to\\dir"))
             )
         else:
-            mock_exists.side_effect = lambda x: x != Path("/path/to/dir")
+            mock_exists.side_effect = lambda x: str(x) != "/path/to/dir"
             self.assertTrue(CaseAwarePath.should_resolve_case("/path/to/dir"))
-            self.assertTrue(
-                CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir"))
-            )
+            self.assertTrue(CaseAwarePath.should_resolve_case(CaseAwarePath("/path/to/dir")))
             self.assertFalse(CaseAwarePath.should_resolve_case("path/to/dir"))
 
 

@@ -27,6 +27,9 @@ class CaseAwarePath(Path):
             return cls._get_case_sensitive_path(returned_path)
         return returned_path
 
+    def __fspath__(self):
+        return str(self)
+
     def __truediv__(self, key) -> CaseAwarePath:
         """Uses divider operator to combine two paths.
         Args:
