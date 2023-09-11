@@ -155,6 +155,7 @@ class Installation:
         return self._find_resource_folderpath(
             ("Override",),
             "Could not find override folder in '{}'.",
+            optional=True
         )
 
     def lips_path(self) -> CaseAwarePath:
@@ -221,6 +222,7 @@ class Installation:
         self,
         folder_names: tuple[str, ...],
         error_msg: str,
+        optional: bool = False
     ) -> CaseAwarePath:
         resource_path = self._path
         folder_names_lower: set[str] = {name.lower() for name in folder_names}
@@ -229,7 +231,8 @@ class Installation:
             if folder_path.is_dir() and folder_path.name.lower() in folder_names_lower:
                 resource_path = folder_path
                 break
-
+        if optional:
+            return CaseAwarePath(resource_path) / folder_names[0]
         if resource_path == self._path:
             raise ValueError(error_msg.format(self._path))
 

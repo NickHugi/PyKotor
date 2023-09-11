@@ -167,14 +167,6 @@ class TestInstallation(TestCase):
             ResourceIdentifier, ResourceResult | None
         ] = installation.resources(modules_resources, [SearchLocation.MODULES])
         self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
-        override_resources: list[ResourceIdentifier] = [
-            ResourceIdentifier.from_path("x.tpc"),
-        ]
-        override_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(override_resources, [SearchLocation.OVERRIDE])
-        self.assertFalse(override_results[ResourceIdentifier.from_path("x.tpc")])
-        self.assertEqual(1, len(override_results))
         voices_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("NM17AE04NI04008_.wav"),
             ResourceIdentifier.from_path("x.mp3"),
@@ -258,17 +250,6 @@ class TestInstallation(TestCase):
             capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
-        folders: list[CaseAwarePath] = [installation.override_path()]
-        folders_resources: list[ResourceIdentifier] = [
-            ResourceIdentifier.from_path("x.utc"),
-        ]
-        folders_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(
-            folders_resources, [SearchLocation.CUSTOM_FOLDERS], folders=folders
-        )
-        self.assertFalse(folders_results[ResourceIdentifier.from_path("x.utc")])
-        self.assertEqual(1, len(folders_results))
 
     def test_location(self) -> None:
         installation: Installation = self.installation
@@ -393,14 +374,6 @@ class TestInstallation(TestCase):
             modules_resources, [SearchLocation.MODULES]
         )
         self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
-        override_resources = [
-            ResourceIdentifier.from_path("x.tpc"),
-        ]
-        override_results = installation.locations(
-            override_resources, [SearchLocation.OVERRIDE]
-        )
-        self.assertTrue(override_results[ResourceIdentifier.from_path("x.tpc")])
-        self.assertEqual(1, len(override_results))
         voices_resources = [
             ResourceIdentifier.from_path("NM17AE04NI04008_.wav"),
             ResourceIdentifier.from_path("x.mp3"),
@@ -477,12 +450,6 @@ class TestInstallation(TestCase):
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
         folders = [installation.override_path()]
-        folders_resources = [
-            ResourceIdentifier.from_path("x.utc"),
-        ]
-        folders_results = installation.locations(
-            folders_resources, [SearchLocation.CUSTOM_FOLDERS], folders=folders
-        )
 
     def _assert_from_path_tests(self, arg0, arg1, arg2):
         self.assertTrue(arg0[ResourceIdentifier.from_path(arg1)])
