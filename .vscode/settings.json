@@ -160,7 +160,7 @@
     "-s",
     "./tests",
     "-p",
-    "test_*.py"
+    "*test*.py"
   ],
   "cmake.configureOnOpen": false,
   "pylint.args": ["--disable=C0301,C0103"],
