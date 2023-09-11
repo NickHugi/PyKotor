@@ -27,4 +27,4 @@ jobs:
 
     - name: Run unittest on files in pykotor/tests
       run: |
-        python -m unittest discover -s pykotor/tests -p 'test_*.py' --continue-on-error: true
+        python -m unittest discover -s pykotor/tests -p 'test_*.py'
