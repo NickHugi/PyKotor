@@ -11,30 +11,22 @@ def generate_filehash_sha1(filepath: str | CaseAwarePath) -> str:
     return sha1_hash.hexdigest()
 
 
-def is_int(string: str, strict=True):
+def is_int(string: str):
     try:
-        return int(string) and True
+        _ = int(string)
     except ValueError:
-        if not strict or not isinstance(string, str):
-            return False
-        # If conversion to int fails in strict mode, check for valid float forms 
-        # where numbers after the decimal point are 0.
-        parts = string.split(".")
-        if len(parts) == 2 and all(ch.isdigit() for ch in parts[1]) and int(parts[1]) == 0:
-            try:
-                _ = float(string)
-                return True
-            except ValueError:
-                return False
+        return False
+    else:
+        return True
 
 
-def is_float(string: str, strict=True):
+def is_float(string: str):
     try:
         _ = float(string)
     except ValueError:
         return False
     else:
-        return "." in string if strict else True
+        return True
 
 
 def is_nss_file(filename: str):

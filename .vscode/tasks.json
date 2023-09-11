@@ -38,6 +38,13 @@
         }
     },
     {
+        "label": "Build PyKotorCLI binary with PyInstaller",
+        "type": "shell",
+        "command": "pyinstaller --console --onefile --clean pykotorcli.py",
+        "group": "build",
+        "presentation": {"reveal": "always", "panel": "new"},
+    },
+    {
         "label": "Python: Ruff check entire project",
         "type": "shell",
         "command": "ruff check . --ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901",

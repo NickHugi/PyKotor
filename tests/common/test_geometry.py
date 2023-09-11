@@ -1,3 +1,4 @@
+import math
 from unittest import TestCase
 
 from pykotor.common.geometry import Polygon2, Vector2, Vector3, Vector4, Face
@@ -93,10 +94,13 @@ class TestVector4(TestCase):
         self.assertEqual(vec4.w, 5.6)
 
     def test_from_euler(self):
+        # Converting degrees to radians
+        rad_90 = math.radians(90)
+
         q1 = Vector4.from_euler(0, 0, 0)
-        q2 = Vector4.from_euler(90, 0, 0)
-        q3 = Vector4.from_euler(0, 90, 0)
-        q4 = Vector4.from_euler(0, 0, 90)
+        q2 = Vector4.from_euler(rad_90, 0, 0)
+        q3 = Vector4.from_euler(0, rad_90, 0)
+        q4 = Vector4.from_euler(0, 0, rad_90)
 
         self.assertAlmostEqual(0.0, q1.x, 1)
         self.assertAlmostEqual(0.0, q1.y, 1)
@@ -117,6 +121,7 @@ class TestVector4(TestCase):
         self.assertAlmostEqual(0.0, q4.y, 1)
         self.assertAlmostEqual(0.7, q4.z, 1)
         self.assertAlmostEqual(0.7, q4.w, 1)
+
 
 
 class TestFace(TestCase):
