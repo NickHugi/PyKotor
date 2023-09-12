@@ -5,7 +5,7 @@ from pykotor.tools.path import CaseAwarePath
 HERE = CaseAwarePath(__file__).parent
 
 NAME = "PyKotor"
-VERSION = "1.6.2"
+VERSION = "1.7.0"
 AUTHOR = "Nicholas Hugi"
 DESCRIPTION = "Read, modify and write files used by KotOR's game engine."
 PACKAGES = find_namespace_packages(exclude=["tests", "docs"])
