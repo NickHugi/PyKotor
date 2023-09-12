@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from chardet import UniversalDetector
 
@@ -263,7 +263,7 @@ class ConfigReader:
                     is_replacement=True,
                 )
             elif "\\" in key or "/" in key:
-                delimiter: Literal["\\", "/"] = "\\" if "\\" in key else "/"
+                delimiter = "\\" if "\\" in key else "/"
                 token_id_str, property_name = key.split(delimiter)
                 token_id = int(token_id_str)
 

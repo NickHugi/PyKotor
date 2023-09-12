@@ -58,7 +58,8 @@ class TPCTGAReader(ResourceReader):
         self._reader.skip(id_length)
 
         y_flipped = bool(image_descriptor & 0b00100000)
-        if interleaving_id := (image_descriptor & 0b11000000) >> 6:
+        interleaving_id = (image_descriptor & 0b11000000) >> 6
+        if interleaving_id:
             ValueError("The image data must not be interleaved.")
 
         if datatype_code == _DataTypes.UNCOMPRESSED_RGB:

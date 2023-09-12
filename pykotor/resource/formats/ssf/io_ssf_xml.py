@@ -12,6 +12,7 @@ from pykotor.resource.type import (
     ResourceWriter,
     autoclose,
 )
+from pykotor.tools.indent_xml import indent
 
 
 class SSFXMLReader(ResourceReader):
@@ -69,5 +70,5 @@ class SSFXMLWriter(ResourceWriter):
                 },
             )
 
-        ElementTree.indent(self.xml_root)
+        indent(self.xml_root)
         self._writer.write_bytes(ElementTree.tostring(self.xml_root))

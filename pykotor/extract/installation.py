@@ -1315,7 +1315,8 @@ class Installation:
             capsule = Capsule(self.module_path() / module)
 
             if capsule.exists("module", ResourceType.IFO):
-                if these_bytes := capsule.resource("module", ResourceType.IFO):
+                these_bytes = capsule.resource("module", ResourceType.IFO)
+                if these_bytes:
                     ifo = read_gff(these_bytes)
                     assert ifo is not None
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()

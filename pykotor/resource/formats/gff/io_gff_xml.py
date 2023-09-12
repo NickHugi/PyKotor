@@ -16,6 +16,7 @@ from pykotor.resource.type import (
     ResourceWriter,
     autoclose,
 )
+from pykotor.tools.indent_xml import indent
 
 
 class GFFXMLReader(ResourceReader):
@@ -147,7 +148,7 @@ class GFFXMLWriter(ResourceWriter):
         self.xml_root.append(xml_struct)
         self._build_struct(self.gff.root, xml_struct)
 
-        ElementTree.indent(self.xml_root)
+        indent(self.xml_root)
         self._writer.write_bytes(ElementTree.tostring(self.xml_root))
 
     def _build_struct(

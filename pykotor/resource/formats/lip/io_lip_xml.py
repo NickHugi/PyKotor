@@ -11,6 +11,7 @@ from pykotor.resource.type import (
     ResourceWriter,
     autoclose,
 )
+from pykotor.tools.indent_xml import indent
 
 
 class LIPXMLReader(ResourceReader):
@@ -72,5 +73,5 @@ class LIPXMLWriter(ResourceWriter):
                 shape=str(keyframe.shape.value),
             )
 
-        ElementTree.indent(self._xml_root)
+        indent(self._xml_root)
         self._writer.write_bytes(ElementTree.tostring(self._xml_root))

@@ -499,7 +499,8 @@ class NssParser:
         identifier = p[1]
         args: list[Expression] = p[3]
 
-        if engine_function := next((x for x in self.functions if x.name == identifier), None):
+        engine_function = next((x for x in self.functions if x.name == identifier), None)
+        if engine_function:
             routine_id = self.functions.index(engine_function)
             data_type = engine_function.returntype
             p[0] = EngineCallExpression(engine_function, routine_id, data_type, args)

@@ -13,6 +13,7 @@ from pykotor.resource.type import (
     ResourceWriter,
     autoclose,
 )
+from pykotor.tools.indent_xml import indent
 
 
 class TLKXMLReader(ResourceReader):
@@ -75,5 +76,5 @@ class TLKXMLWriter(ResourceWriter):
                 element.set("sound", entry.voiceover.get())
             self._xml.append(element)
 
-        ElementTree.indent(self._xml)
+        indent(self._xml)
         self._writer.write_bytes(ElementTree.tostring(self._xml))

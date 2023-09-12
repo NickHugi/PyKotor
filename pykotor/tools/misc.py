@@ -5,11 +5,14 @@ import hashlib
 from pykotor.tools.path import CaseAwarePath
 
 
-def generate_filehash_sha1(filepath: str | CaseAwarePath) -> str:
-    sha1_hash = hashlib.sha1()
-    with open(filepath, "rb") as f:
-        while (data := f.read(65536)):  # read in 64k chunks
+def generate_filehash_sha256(filepath: str | CaseAwarePath) -> str:
+    sha1_hash = hashlib.sha256()
+    filepath = filepath if isinstance(filepath, CaseAwarePath) else CaseAwarePath(filepath)
+    with filepath.open("rb") as f:
+        data = f.read(65536)
+        while data:  # read in 64k chunks
             sha1_hash.update(data)
+            data = f.read(65536)
     return sha1_hash.hexdigest()
 
 

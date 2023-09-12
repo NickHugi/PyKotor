@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from unittest import TestCase
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 

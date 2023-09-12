@@ -28,7 +28,8 @@ class ERFType(Enum):
 
 
 class ERF:
-    """Represents the data of a ERF file.
+    """
+    Represents the data of a ERF file.
 
     Attributes
     ----------
@@ -67,15 +68,13 @@ class ERF:
         """Returns a resource at the specified index or with the specified resref."""
         if isinstance(item, int):
             return self._resources[item]
-        elif isinstance(item, str):
-            if key := next(
-                (key for key in self._resource_dict if key[0] == item.casefold()),
-                None,
-            ):
+        if isinstance(item, str):
+            key = next((key for key in self._resource_dict if key[0] == item.casefold()), None)
+            if key:
                 return self._resource_dict[key]
             raise KeyError
-        else:
-            return NotImplemented
+
+        return NotImplemented
 
     def set(
         self,
@@ -83,7 +82,8 @@ class ERF:
         restype: ResourceType,
         data: bytes,
     ) -> None:
-        """The `set` function updates or adds a resource in a dictionary based on the given resource reference,
+        """
+        The `set` function updates or adds a resource in a dictionary based on the given resource reference,
         resource type, and data.
 
         Args:
@@ -106,7 +106,8 @@ class ERF:
             resource.data = data
 
     def get(self, resref: str, restype: ResourceType) -> bytes | None:
-        """Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
+        """
+        Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
 
         Args:
         ----
@@ -125,7 +126,8 @@ class ERF:
         resref: str,
         restype: ResourceType,
     ) -> None:
-        """Removes the resource with the given resref/restype pair if it exists.
+        """
+        Removes the resource with the given resref/restype pair if it exists.
 
         Args:
         ----
@@ -133,13 +135,15 @@ class ERF:
             restype: The resource type.
         """
         key = (resref.casefold(), restype)
-        if resource := self._resource_dict.pop(key, None):
+        resource = self._resource_dict.pop(key, None)
+        if resource:
             self._resources.remove(resource)
 
     def to_rim(
         self,
     ):
-        """Returns a RIM with the same resources.
+        """
+        Returns a RIM with the same resources.
 
         Returns
         -------
