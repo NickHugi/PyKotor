@@ -292,9 +292,7 @@ class CodeRoot:
             for obj in self.objects
             if isinstance(
                 obj,
-                GlobalVariableDeclaration
-                | GlobalVariableInitialization
-                | StructDefinition,
+                (GlobalVariableDeclaration, GlobalVariableInitialization, StructDefinition),
             )
         ]
         others = [
