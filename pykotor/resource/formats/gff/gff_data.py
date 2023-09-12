@@ -11,7 +11,6 @@ from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
-    from types import NotImplementedType
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -243,7 +242,7 @@ class GFFStruct:
     def __getitem__(
         self,
         item: str,
-    ) -> Any | NotImplementedType:
+    ) -> Any | object:
         """Returns the value of the specified field."""
         return self._fields[item].value() if isinstance(item, str) else NotImplemented
 
@@ -1031,7 +1030,7 @@ class GFFList:
     def __getitem__(
         self,
         item: int,
-    ) -> GFFStruct | NotImplementedType:
+    ) -> GFFStruct | object:
         """Returns the struct at the specified index."""
         return self._structs[item] if isinstance(item, int) else NotImplemented
 

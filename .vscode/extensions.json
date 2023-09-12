@@ -2,6 +2,10 @@
   "recommendations": [
     "sourcery.sourcery",
     "jipitiai.askcodebase",
-    "arturock.gitstash"
+    "arturock.gitstash",
+    "ms-python.mypy-type-checker",
+    "ms-python.vscode-pylance",
+    "ms-python.python",
+    "charliermarsh.ruff"
   ]
 }
