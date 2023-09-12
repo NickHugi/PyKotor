@@ -179,7 +179,6 @@
 "[python]": {
   "editor.defaultFormatter": "ms-python.python"
 },
-"python.formatting.provider": "none",
 "files.eol": "\r\n",
 "python.analysis.extraPaths": [
   "./pykotor/common"
