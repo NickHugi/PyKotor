@@ -553,7 +553,7 @@ class Installation:
     def game(self) -> Game:
         if CaseAwarePath(self._path / "swkotor2.exe").exists():
             return Game(2)
-        elif CaseAwarePath(self._path / "swkotor.exe").exists():
+        if CaseAwarePath(self._path / "swkotor.exe").exists():
             return Game(1)
         msg = "Could not find the game executable!"
         raise ValueError(msg)
