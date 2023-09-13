@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFStruct
 
 
@@ -7,7 +9,9 @@ class DiffGFF:
         self.new: GFF = new
 
     def is_same(
-        self, old_struct: GFFStruct = None, new_struct: GFFStruct = None,
+        self,
+        old_struct: GFFStruct | None = None,
+        new_struct: GFFStruct | None = None,
     ) -> bool:
         old_struct = self.old.root if old_struct is None else old_struct
         new_struct = self.new.root if new_struct is None else new_struct
@@ -38,7 +42,7 @@ class DiffGFF:
                     if not self.is_same(old_child, new_child):
                         return False
             elif new_value != old_value:
-                print("Value has changed:", label, new_value, old_value)
+                print("Value has changed:", label, new_value, "-->", old_value)
                 return False
 
         return True
