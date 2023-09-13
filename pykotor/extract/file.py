@@ -24,9 +24,7 @@ class FileResource:
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: CaseAwarePath = (
-            filepath if isinstance(filepath, CaseAwarePath) else CaseAwarePath(filepath)
-        )
+        self._filepath: CaseAwarePath = filepath if isinstance(filepath, CaseAwarePath) else CaseAwarePath(filepath)
         self._offset: int = offset
 
     def __repr__(
@@ -44,15 +42,9 @@ class FileResource:
         other: FileResource | ResourceIdentifier | object,
     ):
         if isinstance(other, FileResource):
-            return (
-                other._resname.lower() == self._resname.lower()
-                and other._restype == self._restype
-            )
+            return other._resname.lower() == self._resname.lower() and other._restype == self._restype
         if isinstance(other, ResourceIdentifier):
-            return (
-                other.resname.lower() == self._resname.lower()
-                and other.restype == self._restype
-            )
+            return other.resname.lower() == self._resname.lower() and other.restype == self._restype
         return NotImplemented
 
     def resname(
@@ -85,7 +77,8 @@ class FileResource:
         *,
         reload: bool = False,
     ) -> bytes:
-        """Opens the file the resource is located at and returns the bytes data of the resource.
+        """
+        Opens the file the resource is located at and returns the bytes data of the resource.
 
         Returns
         -------
@@ -150,10 +143,7 @@ class ResourceIdentifier(NamedTuple):
         other: ResourceIdentifier | object,
     ):
         if isinstance(other, ResourceIdentifier):
-            return (
-                self.resname.lower() == other.resname.lower()
-                and self.restype == other.restype
-            )
+            return self.resname.lower() == other.resname.lower() and self.restype == other.restype
         return NotImplemented
 
     @staticmethod

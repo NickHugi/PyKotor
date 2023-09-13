@@ -15,18 +15,10 @@ class TestInstallation(TestCase):
         path = os.environ.get("K1_PATH")
         if path is not None and os.path.exists(path):
             path = CaseAwarePath(path)
-        elif os.path.exists(
-            "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
-        ):
-            path = CaseAwarePath(
-                "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
-            )
-        elif os.path.exists(
-            "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
-        ):
-            path = CaseAwarePath(
-                "/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"
-            )
+        elif os.path.exists("C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"):
+            path = CaseAwarePath("C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
+        elif os.path.exists("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"):
+            path = CaseAwarePath("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor")
         else:
             raise ValueError("K1_PATH environment variable not set.")
         self.installation = Installation(path)
@@ -37,99 +29,29 @@ class TestInstallation(TestCase):
         self.assertIsNone(installation.resource("c_bantha", ResourceType.UTC, []))
         self.assertIsNotNone(installation.resource("c_bantha", ResourceType.UTC))
 
-        self.assertIsNotNone(
-            installation.resource("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN])
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.UTC, [SearchLocation.CHITIN])
-        )
-        self.assertIsNotNone(
-            installation.resource("m13aa", ResourceType.ARE, [SearchLocation.MODULES])
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.ARE, [SearchLocation.MODULES])
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE])
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE]
-            )
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.WAV, [SearchLocation.VOICE])
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND]
-            )
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.WAV, [SearchLocation.SOUND])
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC]
-            )
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.WAV, [SearchLocation.MUSIC])
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS]
-            )
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.LIP, [SearchLocation.LIPS])
-        )
-        self.assertIsNotNone(
-            installation.resource("darkjedi", ResourceType.SSF, [SearchLocation.RIMS])
-        )
-        self.assertIsNone(
-            installation.resource("xxx", ResourceType.SSF, [SearchLocation.RIMS])
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]
-            )
-        )
-        self.assertIsNone(
-            installation.resource(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]
-            )
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]
-            )
-        )
-        self.assertIsNone(
-            installation.resource(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]
-            )
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]
-            )
-        )
-        self.assertIsNone(
-            installation.resource(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]
-            )
-        )
-        self.assertIsNotNone(
-            installation.resource(
-                "PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]
-            )
-        )
-        self.assertIsNone(
-            installation.resource(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]
-            )
-        )
+        self.assertIsNotNone(installation.resource("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.UTC, [SearchLocation.CHITIN]))
+        self.assertIsNotNone(installation.resource("m13aa", ResourceType.ARE, [SearchLocation.MODULES]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.ARE, [SearchLocation.MODULES]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE]))
+        self.assertIsNotNone(installation.resource("NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.WAV, [SearchLocation.VOICE]))
+        self.assertIsNotNone(installation.resource("P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.WAV, [SearchLocation.SOUND]))
+        self.assertIsNotNone(installation.resource("mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.WAV, [SearchLocation.MUSIC]))
+        self.assertIsNotNone(installation.resource("n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.LIP, [SearchLocation.LIPS]))
+        self.assertIsNotNone(installation.resource("darkjedi", ResourceType.SSF, [SearchLocation.RIMS]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.SSF, [SearchLocation.RIMS]))
+        self.assertIsNotNone(installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
+        self.assertIsNotNone(installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
+        self.assertIsNotNone(installation.resource("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
+        self.assertIsNotNone(installation.resource("PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
+        self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
 
         self.assertIsNotNone(
             installation.resource(
@@ -155,98 +77,94 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("c_bantha.utc"),
             ResourceIdentifier.from_path("x.utc"),
         ]
-        chitin_results = installation.resources(
-            chitin_resources, [SearchLocation.CHITIN]
-        )
+        chitin_results = installation.resources(chitin_resources, [SearchLocation.CHITIN])
         self._assert_from_path_tests(chitin_results, "c_bantha.utc", "x.utc")
         modules_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("m01aa.are"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        modules_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(modules_resources, [SearchLocation.MODULES])
+        modules_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            modules_resources, [SearchLocation.MODULES]
+        )
         self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
         voices_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("NM17AE04NI04008_.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        voices_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(voices_resources, [SearchLocation.VOICE])
+        voices_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            voices_resources, [SearchLocation.VOICE]
+        )
         self._assert_from_path_tests(voices_results, "NM17AE04NI04008_.wav", "x.mp3")
         music_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("mus_theme_carth.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        music_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(music_resources, [SearchLocation.MUSIC])
+        music_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            music_resources, [SearchLocation.MUSIC]
+        )
         self._assert_from_path_tests(music_results, "mus_theme_carth.wav", "x.mp3")
         sounds_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("P_ZAALBAR_POIS.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        sounds_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(sounds_resources, [SearchLocation.SOUND])
+        sounds_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            sounds_resources, [SearchLocation.SOUND]
+        )
         self._assert_from_path_tests(sounds_results, "P_ZAALBAR_POIS.wav", "x.mp3")
         lips_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("n_gendro_coms1.lip"),
             ResourceIdentifier.from_path("x.lip"),
         ]
-        lips_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(lips_resources, [SearchLocation.LIPS])
+        lips_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            lips_resources, [SearchLocation.LIPS]
+        )
         self._assert_from_path_tests(lips_results, "n_gendro_coms1.lip", "x.lip")
         rims_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("darkjedi.ssf"),
             ResourceIdentifier.from_path("x.ssf"),
         ]
-        rims_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(rims_resources, [SearchLocation.RIMS])
+        rims_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            rims_resources, [SearchLocation.RIMS]
+        )
         self._assert_from_path_tests(rims_results, "darkjedi.ssf", "x.ssf")
         texa_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texa_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(texa_resources, [SearchLocation.TEXTURES_TPA])
+        texa_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            texa_resources, [SearchLocation.TEXTURES_TPA]
+        )
         self._assert_from_path_tests(texa_results, "blood.tpc", "x.tpc")
         texb_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texb_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(texb_resources, [SearchLocation.TEXTURES_TPB])
+        texb_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            texb_resources, [SearchLocation.TEXTURES_TPB]
+        )
         self._assert_from_path_tests(texb_results, "blood.tpc", "x.tpc")
         texc_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texc_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(texc_resources, [SearchLocation.TEXTURES_TPC])
+        texc_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            texc_resources, [SearchLocation.TEXTURES_TPC]
+        )
         self._assert_from_path_tests(texc_results, "blood.tpc", "x.tpc")
         texg_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("1024x768back.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texg_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(texg_resources, [SearchLocation.TEXTURES_GUI])
+        texg_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
+            texg_resources, [SearchLocation.TEXTURES_GUI]
+        )
         self._assert_from_path_tests(texg_results, "1024x768back.tpc", "x.tpc")
         capsules: list[Capsule] = [Capsule(installation.module_path() / "danm13.rim")]
         capsules_resources: list[ResourceIdentifier] = [
             ResourceIdentifier.from_path("m13aa.are"),
             ResourceIdentifier.from_path("xyz.ifo"),
         ]
-        capsules_results: dict[
-            ResourceIdentifier, ResourceResult | None
-        ] = installation.resources(
+        capsules_results: dict[ResourceIdentifier, ResourceResult | None] = installation.resources(
             capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
         )
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
@@ -257,103 +175,31 @@ class TestInstallation(TestCase):
         self.assertFalse(installation.location("m13aa", ResourceType.ARE, []))
         self.assertTrue(installation.location("m13aa", ResourceType.ARE))
 
-        self.assertTrue(
-            installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES])
-        )
+        self.assertTrue(installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES]))
 
-        self.assertTrue(
-            installation.location("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN])
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.UTC, [SearchLocation.CHITIN])
-        )
-        self.assertTrue(
-            installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES])
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.ARE, [SearchLocation.MODULES])
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE])
-        )
-        self.assertTrue(
-            installation.location(
-                "NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE]
-            )
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.WAV, [SearchLocation.VOICE])
-        )
-        self.assertTrue(
-            installation.location(
-                "P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND]
-            )
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.WAV, [SearchLocation.SOUND])
-        )
-        self.assertTrue(
-            installation.location(
-                "mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC]
-            )
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.WAV, [SearchLocation.MUSIC])
-        )
-        self.assertTrue(
-            installation.location(
-                "n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS]
-            )
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.LIP, [SearchLocation.LIPS])
-        )
-        self.assertTrue(
-            installation.location("darkjedi", ResourceType.SSF, [SearchLocation.RIMS])
-        )
-        self.assertFalse(
-            installation.location("xxx", ResourceType.SSF, [SearchLocation.RIMS])
-        )
-        self.assertTrue(
-            installation.location(
-                "blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]
-            )
-        )
-        self.assertFalse(
-            installation.location(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]
-            )
-        )
-        self.assertTrue(
-            installation.location(
-                "blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]
-            )
-        )
-        self.assertFalse(
-            installation.location(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]
-            )
-        )
-        self.assertTrue(
-            installation.location(
-                "blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]
-            )
-        )
-        self.assertFalse(
-            installation.location(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]
-            )
-        )
-        self.assertTrue(
-            installation.location(
-                "PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]
-            )
-        )
-        self.assertFalse(
-            installation.location(
-                "xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]
-            )
-        )
+        self.assertTrue(installation.location("c_bantha", ResourceType.UTC, [SearchLocation.CHITIN]))
+        self.assertFalse(installation.location("xxx", ResourceType.UTC, [SearchLocation.CHITIN]))
+        self.assertTrue(installation.location("m13aa", ResourceType.ARE, [SearchLocation.MODULES]))
+        self.assertFalse(installation.location("xxx", ResourceType.ARE, [SearchLocation.MODULES]))
+        self.assertFalse(installation.location("xxx", ResourceType.NSS, [SearchLocation.OVERRIDE]))
+        self.assertTrue(installation.location("NM03ABCITI06004_", ResourceType.WAV, [SearchLocation.VOICE]))
+        self.assertFalse(installation.location("xxx", ResourceType.WAV, [SearchLocation.VOICE]))
+        self.assertTrue(installation.location("P_hk47_POIS", ResourceType.WAV, [SearchLocation.SOUND]))
+        self.assertFalse(installation.location("xxx", ResourceType.WAV, [SearchLocation.SOUND]))
+        self.assertTrue(installation.location("mus_theme_carth", ResourceType.WAV, [SearchLocation.MUSIC]))
+        self.assertFalse(installation.location("xxx", ResourceType.WAV, [SearchLocation.MUSIC]))
+        self.assertTrue(installation.location("n_gendro_coms1", ResourceType.LIP, [SearchLocation.LIPS]))
+        self.assertFalse(installation.location("xxx", ResourceType.LIP, [SearchLocation.LIPS]))
+        self.assertTrue(installation.location("darkjedi", ResourceType.SSF, [SearchLocation.RIMS]))
+        self.assertFalse(installation.location("xxx", ResourceType.SSF, [SearchLocation.RIMS]))
+        self.assertTrue(installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
+        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPA]))
+        self.assertTrue(installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
+        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPB]))
+        self.assertTrue(installation.location("blood", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
+        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_TPC]))
+        self.assertTrue(installation.location("PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
+        self.assertFalse(installation.location("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
 
     def test_locations(self):
         installation = self.installation
@@ -362,25 +208,19 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("c_bantha.utc"),
             ResourceIdentifier.from_path("x.utc"),
         ]
-        chitin_results = installation.locations(
-            chitin_resources, [SearchLocation.CHITIN]
-        )
+        chitin_results = installation.locations(chitin_resources, [SearchLocation.CHITIN])
         self._assert_from_path_tests(chitin_results, "c_bantha.utc", "x.utc")
         modules_resources = [
             ResourceIdentifier.from_path("m01aa.are"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        modules_results = installation.locations(
-            modules_resources, [SearchLocation.MODULES]
-        )
+        modules_results = installation.locations(modules_resources, [SearchLocation.MODULES])
         self._assert_from_path_tests(modules_results, "m01aa.are", "x.tpc")
         voices_resources = [
             ResourceIdentifier.from_path("NM17AE04NI04008_.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        voices_results = installation.locations(
-            voices_resources, [SearchLocation.VOICE]
-        )
+        voices_results = installation.locations(voices_resources, [SearchLocation.VOICE])
         self._assert_from_path_tests(voices_results, "NM17AE04NI04008_.wav", "x.mp3")
         music_resources = [
             ResourceIdentifier.from_path("mus_theme_carth.wav"),
@@ -392,9 +232,7 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("P_ZAALBAR_POIS.wav"),
             ResourceIdentifier.from_path("x.mp3"),
         ]
-        sounds_results = installation.locations(
-            sounds_resources, [SearchLocation.SOUND]
-        )
+        sounds_results = installation.locations(sounds_resources, [SearchLocation.SOUND])
         self._assert_from_path_tests(sounds_results, "P_ZAALBAR_POIS.wav", "x.mp3")
         lips_resources = [
             ResourceIdentifier.from_path("n_gendro_coms1.lip"),
@@ -412,42 +250,32 @@ class TestInstallation(TestCase):
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texa_results = installation.locations(
-            texa_resources, [SearchLocation.TEXTURES_TPA]
-        )
+        texa_results = installation.locations(texa_resources, [SearchLocation.TEXTURES_TPA])
         self._assert_from_path_tests(texa_results, "blood.tpc", "x.tpc")
         texb_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texb_results = installation.locations(
-            texb_resources, [SearchLocation.TEXTURES_TPB]
-        )
+        texb_results = installation.locations(texb_resources, [SearchLocation.TEXTURES_TPB])
         self._assert_from_path_tests(texb_results, "blood.tpc", "x.tpc")
         texc_resources = [
             ResourceIdentifier.from_path("blood.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texc_results = installation.locations(
-            texc_resources, [SearchLocation.TEXTURES_TPC]
-        )
+        texc_results = installation.locations(texc_resources, [SearchLocation.TEXTURES_TPC])
         self._assert_from_path_tests(texc_results, "blood.tpc", "x.tpc")
         texg_resources = [
             ResourceIdentifier.from_path("1024x768back.tpc"),
             ResourceIdentifier.from_path("x.tpc"),
         ]
-        texg_results = installation.locations(
-            texg_resources, [SearchLocation.TEXTURES_GUI]
-        )
+        texg_results = installation.locations(texg_resources, [SearchLocation.TEXTURES_GUI])
         self._assert_from_path_tests(texg_results, "1024x768back.tpc", "x.tpc")
         capsules = [Capsule(installation.module_path() / "danm13.rim")]
         capsules_resources = [
             ResourceIdentifier.from_path("m13aa.are"),
             ResourceIdentifier.from_path("xyz.ifo"),
         ]
-        capsules_results = installation.locations(
-            capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules
-        )
+        capsules_results = installation.locations(capsules_resources, [SearchLocation.CUSTOM_MODULES], capsules=capsules)
         self._assert_from_path_tests(capsules_results, "m13aa.are", "xyz.ifo")
         folders = [installation.override_path()]
 
@@ -459,29 +287,19 @@ class TestInstallation(TestCase):
     def test_texture(self):
         installation = self.installation
 
-        self.assertIsNotNone(
-            installation.texture("m03ae_03a_lm4", [SearchLocation.CHITIN])
-        )
+        self.assertIsNotNone(installation.texture("m03ae_03a_lm4", [SearchLocation.CHITIN]))
         self.assertIsNone(installation.texture("x", [SearchLocation.CHITIN]))
 
-        self.assertIsNotNone(
-            installation.texture("LEH_FLOOR01", [SearchLocation.TEXTURES_TPA])
-        )
+        self.assertIsNotNone(installation.texture("LEH_FLOOR01", [SearchLocation.TEXTURES_TPA]))
         self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_TPA]))
 
-        self.assertIsNotNone(
-            installation.texture("LEH_Floor01", [SearchLocation.TEXTURES_TPB])
-        )
+        self.assertIsNotNone(installation.texture("LEH_Floor01", [SearchLocation.TEXTURES_TPB]))
         self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_TPB]))
 
-        self.assertIsNotNone(
-            installation.texture("leh_floor01", [SearchLocation.TEXTURES_TPC])
-        )
+        self.assertIsNotNone(installation.texture("leh_floor01", [SearchLocation.TEXTURES_TPC]))
         self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_TPC]))
 
-        self.assertIsNotNone(
-            installation.texture("bluearrow", [SearchLocation.TEXTURES_GUI])
-        )
+        self.assertIsNotNone(installation.texture("bluearrow", [SearchLocation.TEXTURES_GUI]))
         self.assertIsNone(installation.texture("x", [SearchLocation.TEXTURES_GUI]))
 
     def test_textures(self):
@@ -552,9 +370,7 @@ class TestInstallation(TestCase):
         locstring2 = LocalizedString.from_english("Some text.")
         locstring3 = LocalizedString(2)
 
-        self.assertEqual(
-            "default text", installation.string(locstring1, "default text")
-        )
+        self.assertEqual("default text", installation.string(locstring1, "default text"))
         self.assertEqual("Some text.", installation.string(locstring2, "default text"))
         self.assertEqual(
             "ERROR: FATAL COMPILER ERROR",
@@ -568,9 +384,7 @@ class TestInstallation(TestCase):
         locstring2 = LocalizedString.from_english("Some text.")
         locstring3 = LocalizedString(2)
 
-        results = installation.strings(
-            [locstring1, locstring2, locstring3], "default text"
-        )
+        results = installation.strings([locstring1, locstring2, locstring3], "default text")
         self.assertEqual("default text", results[locstring1])
         self.assertEqual("Some text.", results[locstring2])
         self.assertEqual("ERROR: FATAL COMPILER ERROR", results[locstring3])

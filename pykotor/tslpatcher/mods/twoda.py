@@ -92,7 +92,9 @@ class RowValueTLKMemory(RowValue):
 
 
 class RowValueHigh(RowValue):
-    """Attributes
+    """
+    Attributes
+    ----------
     column: Column to get the max integer from. If None it takes it from the Row Label.
     """
 
@@ -100,11 +102,7 @@ class RowValueHigh(RowValue):
         self.column: str | None = column
 
     def value(self, memory: PatcherMemory, twoda: TwoDA, row: TwoDARow | None) -> str:
-        return (
-            str(twoda.column_max(self.column))
-            if self.column is not None
-            else str(twoda.label_max())
-        )
+        return str(twoda.column_max(self.column)) if self.column is not None else str(twoda.label_max())
 
 
 class RowValueRowIndex(RowValue):
@@ -146,9 +144,7 @@ class Modify2DA(ABC):
         twoda: TwoDA,
         row: TwoDARow,
     ) -> dict[str, str]:
-        return {
-            column: value.value(memory, twoda, row) for column, value in cells.items()
-        }
+        return {column: value.value(memory, twoda, row) for column, value in cells.items()}
 
     def _split_modifiers(
         self,
@@ -156,7 +152,8 @@ class Modify2DA(ABC):
         memory: PatcherMemory,
         twoda: TwoDA,
     ) -> tuple[dict[str, str], dict[int, str], str | None, str | None]:
-        """This will split the modifiers dictionary into a tuple containing three values: The dictionary mapping column
+        """
+        This will split the modifiers dictionary into a tuple containing three values: The dictionary mapping column
         headers to new values, the 2DA memory values if not available, and the row label or None.
         """
         new_values: dict[str, str] = {}
@@ -207,7 +204,8 @@ class Modify2DA(ABC):
 
 
 class ChangeRow2DA(Modify2DA):
-    """Changes an existing row.
+    """
+    Changes an existing row.
 
     Target row can either be the Row Index, Row Label, or value under the "label" column where applicable.
 
@@ -251,7 +249,8 @@ class ChangeRow2DA(Modify2DA):
 
 
 class AddRow2DA(Modify2DA):
-    """Adds a new row.
+    """
+    Adds a new row.
 
     Attributes
     ----------
@@ -269,9 +268,7 @@ class AddRow2DA(Modify2DA):
     ):
         super().__init__()
         self.identifier: str = identifier
-        self.exclusive_column: str | None = (
-            exclusive_column if exclusive_column != "" else None
-        )
+        self.exclusive_column: str | None = exclusive_column if exclusive_column != "" else None
         self.row_label: str | None = row_label
         self.cells: dict[str, RowValue] = cells
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da
@@ -299,9 +296,7 @@ class AddRow2DA(Modify2DA):
                     target_row = row
 
         if target_row is None:
-            row_label = (
-                str(twoda.get_height()) if self.row_label is None else self.row_label
-            )
+            row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
             index = twoda.add_row(row_label, {})
             self._row = target_row = twoda.get_row(index)
             target_row.update_values(
@@ -319,7 +314,8 @@ class AddRow2DA(Modify2DA):
 
 
 class CopyRow2DA(Modify2DA):
-    """Copies the the row if the exclusive_column value doesn't already exist. If it does, then it simply modifies the
+    """
+    Copies the the row if the exclusive_column value doesn't already exist. If it does, then it simply modifies the
     existing line.
 
     Attributes
@@ -343,9 +339,7 @@ class CopyRow2DA(Modify2DA):
         super().__init__()
         self.identifier: str = identifier
         self.target: Target = target
-        self.exclusive_column: str | None = (
-            exclusive_column if exclusive_column != "" else None
-        )
+        self.exclusive_column: str | None = exclusive_column if exclusive_column != "" else None
         self.row_label: str | None = row_label
         self.cells: dict[str, RowValue] = cells
         self.store_2da: dict[int, RowValue] = {} if store_2da is None else store_2da
@@ -356,9 +350,7 @@ class CopyRow2DA(Modify2DA):
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
         source_row = self.target.search(twoda)
         target_row = None
-        row_label = (
-            str(twoda.get_height()) if self.row_label is None else self.row_label
-        )
+        row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
 
         if source_row is None:
             raise WarningException
@@ -399,7 +391,8 @@ class CopyRow2DA(Modify2DA):
 
 
 class AddColumn2DA(Modify2DA):
-    """Adds a column. The new cells are either given a default value or can be given a value based on what the row index
+    """
+    Adds a column. The new cells are either given a default value or can be given a value based on what the row index
     or row label is.
 
     Attributes

@@ -212,7 +212,7 @@ VOID_TYPE            : 109
 WHILE_CONTROL        : 26 27
 [                    : 126
 ]                    : 126
-error                : 
+error                :
 {                    : 9 17 26 27 28 29 56 58 61 127
 }                    : 9 17 26 27 28 29 56 58 61 127
 
@@ -14211,9 +14211,9 @@ state 253
     CASE_CONTROL    reduce using rule 28 (for_loop -> FOR_CONTROL ( expression ; expression ; expression ) { code_block } .)
     DEFAULT_CONTROL reduce using rule 28 (for_loop -> FOR_CONTROL ( expression ; expression ; expression ) { code_block } .)
 
-WARNING: 
+WARNING:
 WARNING: Conflicts:
-WARNING: 
+WARNING:
 WARNING: shift/reduce conflict for . in state 35 resolved as shift
 WARNING: shift/reduce conflict for . in state 95 resolved as shift
 WARNING: shift/reduce conflict for ; in state 102 resolved as shift

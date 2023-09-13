@@ -7,7 +7,8 @@ from pykotor.tools.path import CaseAwarePath
 
 
 class Chitin:
-    """Chitin object is used for loading the list of resources stored in the chitin.key/.bif files used by the game.
+    """
+    Chitin object is used for loading the list of resources stored in the chitin.key/.bif files used by the game.
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
     Chitin.resource() method.
 
@@ -85,7 +86,11 @@ class Chitin:
                     restype = ResourceType.from_id(reader.read_uint32())
                     resref = keys[res_id]
                     resource = FileResource(
-                        resref, restype, size, offset, self._kotor_path / bif,
+                        resref,
+                        restype,
+                        size,
+                        offset,
+                        self._kotor_path / bif,
                     )
                     self._resources.append(resource)
 
@@ -94,7 +99,8 @@ class Chitin:
         resref: str,
         restype: ResourceType,
     ) -> bytes | None:
-        """Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
+        """
+        Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
         Args:
         ----
@@ -107,7 +113,8 @@ class Chitin:
         """
         query = ResourceIdentifier(resref, restype)
         resource = next(
-            (resource for resource in self._resources if resource == query), None,
+            (resource for resource in self._resources if resource == query),
+            None,
         )
         return None if resource is None else resource.data()
 
@@ -118,6 +125,7 @@ class Chitin:
     ) -> bool:
         query = ResourceIdentifier(resref, restype)
         resource = next(
-            (resource for resource in self._resources if resource == query), None,
+            (resource for resource in self._resources if resource == query),
+            None,
         )
         return resource is not None

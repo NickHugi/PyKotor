@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import struct
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
@@ -126,10 +127,8 @@ class BinaryReader:
         offset: int = 0,
         size: int | None = None,
     ):
-        if isinstance(source, (CaseAwarePath, str)):  # is path
-            source = (
-                source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
-            )
+        if isinstance(source, (CaseAwarePath, Path, str)):  # is path
+            source = source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
             reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
@@ -714,9 +713,7 @@ class BinaryWriter(ABC):
         source: CaseAwarePath | str | bytes | bytearray | BinaryReader | object,
     ) -> BinaryWriter:
         if isinstance(source, (CaseAwarePath, str)):  # is path
-            source = (
-                source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
-            )
+            source = source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
             return BinaryWriter.to_file(source)
         if isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)

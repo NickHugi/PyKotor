@@ -8,7 +8,8 @@ from pykotor.resource.type import ResourceType
 
 
 class MDL:
-    """Represents a MDL/MDX file.
+    """
+    Represents a MDL/MDX file.
 
     Attributes
     ----------
@@ -94,11 +95,7 @@ class MDL:
         return {
             node.mesh.texture_1
             for node in self.all_nodes()
-            if (
-                node.mesh
-                and node.mesh.texture_1 != "NULL"
-                and node.mesh.texture_1 != ""
-            )
+            if (node.mesh and node.mesh.texture_1 != "NULL" and node.mesh.texture_1 != "")
         }
 
     def all_lightmaps(
@@ -107,11 +104,7 @@ class MDL:
         return {
             node.mesh.texture_2
             for node in self.all_nodes()
-            if (
-                node.mesh
-                and node.mesh.texture_2 != "NULL"
-                and node.mesh.texture_2 != ""
-            )
+            if (node.mesh and node.mesh.texture_2 != "NULL" and node.mesh.texture_2 != "")
         }
 
 
@@ -165,7 +158,8 @@ class MDLNodeFlags(IntEnum):
 
 
 class MDLNode:
-    """A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or
+    """
+    A node in the MDL tree that can store additional nodes or some extra data related to the model such as geometry or
     lighting.
 
     Attributes
@@ -223,7 +217,8 @@ class MDLNode:
 
 
 class MDLLight:
-    """Light data that can be attached to a node.
+    """
+    Light data that can be attached to a node.
 
     Attributes
     ----------
@@ -254,7 +249,8 @@ class MDLLight:
 
 
 class MDLEmitter:
-    """Emitter data that can be attached to a node.
+    """
+    Emitter data that can be attached to a node.
 
     Attributes
     ----------
@@ -304,7 +300,8 @@ class MDLEmitter:
 
 
 class MDLReference:
-    """Reference data that can be attached to a node.
+    """
+    Reference data that can be attached to a node.
 
     Attributes
     ----------
@@ -473,7 +470,8 @@ class MDLControllerType(IntEnum):
 
 
 class MDLController:
-    """A controller is an object that gets attached to the node and influences some sort of change that is either static
+    """
+    A controller is an object that gets attached to the node and influences some sort of change that is either static
     or animated.
     """
 
@@ -501,11 +499,7 @@ class MDLControllerRow:
     def __str__(
         self,
     ):
-        return (
-            f"{self.time} {self.data}".replace(",", "")
-            .replace("[", "")
-            .replace("]", "")
-        )
+        return f"{self.time} {self.data}".replace(",", "").replace("[", "").replace("]", "")
 
 
 # endregion

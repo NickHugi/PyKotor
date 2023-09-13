@@ -193,10 +193,7 @@ class BWMBinaryWriter(ResourceWriter):
         for face in walkable:
             adjancencies = self._wok.adjacencies(face)
             indexes = [
-                faces.index(adjacency.face) * 3 + adjacency.edge
-                if adjacency is not None
-                else -1
-                for adjacency in adjancencies
+                faces.index(adjacency.face) * 3 + adjacency.edge if adjacency is not None else -1 for adjacency in adjancencies
             ]
             adjacency_data += struct.pack("iii", *indexes)
 

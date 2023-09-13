@@ -19,7 +19,8 @@ def get_body_model(
     appearance: TwoDA | None = None,
     baseitems: TwoDA | None = None,
 ) -> tuple[str, str | None]:
-    """Returns the model and texture names for the given creature.
+    """
+    Returns the model and texture names for the given creature.
 
     The value for the texture may be None and the default texture provided by the model should be used instead.
 
@@ -49,22 +50,16 @@ def get_body_model(
         body_model = appearance.get_row(utc.appearance_id).get_string("modela")
 
         if utc.alignment <= 25:
-            override_texture = (
-                appearance.get_row(utc.appearance_id).get_string("texaevil") + "01"
-            )
+            override_texture = appearance.get_row(utc.appearance_id).get_string("texaevil") + "01"
         else:
-            override_texture = (
-                appearance.get_row(utc.appearance_id).get_string("texa") + "01"
-            )
+            override_texture = appearance.get_row(utc.appearance_id).get_string("texa") + "01"
 
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
             armor_uti = read_uti(
                 installation.resource(armor_resref, ResourceType.UTI).data,
             )
-            armor_variation = (
-                baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
-            )
+            armor_variation = baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
 
             normal_tex_column = f"tex{armor_variation}"
             evil_tex_column = f"tex{armor_variation}evil"
@@ -77,7 +72,9 @@ def get_body_model(
             body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
             override_texture = appearance.get_row(utc.appearance_id).get_string(
                 tex_column,
-            ) + str(armor_uti.texture_variation).rjust(2, "0")
+            ) + str(
+                armor_uti.texture_variation,
+            ).rjust(2, "0")
 
     if body_model == "":
         body_model = appearance.get_row(utc.appearance_id).get_string("race")
@@ -92,7 +89,8 @@ def get_weapon_models(
     appearance: TwoDA | None = None,
     baseitems: TwoDA | None = None,
 ) -> tuple[str | None, str | None]:
-    """Returns a tuple containing the right-hand weapon model and the left-hand weapon model (in that order).
+    """
+    Returns a tuple containing the right-hand weapon model and the left-hand weapon model (in that order).
 
     If no weapon is equipped in a particular hand the value will return None.
 
@@ -118,16 +116,8 @@ def get_weapon_models(
     rhand_model = None
     lhand_model = None
 
-    rhand_resref = (
-        utc.equipment[EquipmentSlot.RIGHT_HAND].resref.get()
-        if EquipmentSlot.RIGHT_HAND in utc.equipment
-        else None
-    )
-    lhand_resref = (
-        utc.equipment[EquipmentSlot.LEFT_HAND].resref.get()
-        if EquipmentSlot.LEFT_HAND in utc.equipment
-        else None
-    )
+    rhand_resref = utc.equipment[EquipmentSlot.RIGHT_HAND].resref.get() if EquipmentSlot.RIGHT_HAND in utc.equipment else None
+    lhand_resref = utc.equipment[EquipmentSlot.LEFT_HAND].resref.get() if EquipmentSlot.LEFT_HAND in utc.equipment else None
 
     if rhand_resref is not None:
         rhand_model = _extracted_from_get_weapon_models_37(
@@ -165,7 +155,8 @@ def get_head_model(
     appearance: TwoDA | None = None,
     heads: TwoDA | None = None,
 ) -> tuple[str | None, str | None]:
-    """Returns the model and texture names for the head used by a creature.
+    """
+    Returns the model and texture names for the head used by a creature.
 
     The value for the texture may be None and the default texture provided by the model should be used instead.
 
@@ -213,7 +204,8 @@ def get_mask_model(
     utc: UTC,
     installation: Installation,
 ) -> str | None:
-    """Returns the model for the mask a creature is wearing.
+    """
+    Returns the model for the mask a creature is wearing.
 
     The value for the texture will return None if the creature does not have a mask equipped.
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import (
     TLK,
@@ -17,7 +19,8 @@ def detect_tlk(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the TLK data is believed to be in. This function performs a basic check and does not guarantee
+    """
+    Returns what format the TLK data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -48,7 +51,7 @@ def detect_tlk(
         return ResourceType.INVALID
 
     try:
-        if isinstance(source, str):
+        if isinstance(source, (str, Path)):
             source = CaseAwarePath(source)
         if isinstance(source, CaseAwarePath):
             with BinaryReader.from_file(source, offset) as reader:
@@ -73,7 +76,8 @@ def read_tlk(
     offset: int = 0,
     size: int | None = None,
 ) -> TLK:
-    """Returns an TLK instance from the source. The file format (TLK, TLK_XML or TLK_JSON) is automatically determined
+    """
+    Returns an TLK instance from the source. The file format (TLK, TLK_XML or TLK_JSON) is automatically determined
     before parsing the data.
 
     Args:
@@ -116,7 +120,8 @@ def write_tlk(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TLK,
 ) -> None:
-    """Writes the TLK data to the target location with the specified format (TLK, TLK_XML or TLK_JSON).
+    """
+    Writes the TLK data to the target location with the specified format (TLK, TLK_XML or TLK_JSON).
 
     Args:
     ----
@@ -146,7 +151,8 @@ def bytes_tlk(
     tlk: TLK,
     file_format: ResourceType = ResourceType.TLK,
 ) -> bytes:
-    """Returns the TLK data in the specified format (TLK or TLK_XML or TLK_JSON) as a bytes object.
+    """
+    Returns the TLK data in the specified format (TLK or TLK_XML or TLK_JSON) as a bytes object.
 
     This is a convenience method that wraps the write_tlk() method.
 

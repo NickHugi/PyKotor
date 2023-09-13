@@ -38,9 +38,7 @@ class LTRBinaryReader(ResourceReader):
 
         letter_count = self._reader.read_uint8()
         if letter_count != 28:
-            msg = (
-                "LTR files that do not handle exactly 28 characters are not supported."
-            )
+            msg = "LTR files that do not handle exactly 28 characters are not supported."
             raise TypeError(msg)
 
         self._ltr._singles._start = [self._reader.read_single() for i in range(28)]
@@ -48,25 +46,15 @@ class LTRBinaryReader(ResourceReader):
         self._ltr._singles._end = [self._reader.read_single() for i in range(28)]
 
         for i in range(28):
-            self._ltr._doubles[i]._start = [
-                self._reader.read_single() for j in range(28)
-            ]
-            self._ltr._doubles[i]._middle = [
-                self._reader.read_single() for j in range(28)
-            ]
+            self._ltr._doubles[i]._start = [self._reader.read_single() for j in range(28)]
+            self._ltr._doubles[i]._middle = [self._reader.read_single() for j in range(28)]
             self._ltr._doubles[i]._end = [self._reader.read_single() for j in range(28)]
 
         for i in range(28):
             for j in range(28):
-                self._ltr._triples[i][j]._start = [
-                    self._reader.read_single() for k in range(28)
-                ]
-                self._ltr._triples[i][j]._middle = [
-                    self._reader.read_single() for k in range(28)
-                ]
-                self._ltr._triples[i][j]._end = [
-                    self._reader.read_single() for k in range(28)
-                ]
+                self._ltr._triples[i][j]._start = [self._reader.read_single() for k in range(28)]
+                self._ltr._triples[i][j]._middle = [self._reader.read_single() for k in range(28)]
+                self._ltr._triples[i][j]._end = [self._reader.read_single() for k in range(28)]
 
         if auto_close:
             self._reader.close()
@@ -95,30 +83,15 @@ class LTRBinaryWriter(ResourceWriter):
         [self._writer.write_single(chance) for chance in self._ltr._singles._end]
 
         for i in range(28):
-            [
-                self._writer.write_single(chance)
-                for chance in self._ltr._doubles[i]._start
-            ]
-            [
-                self._writer.write_single(chance)
-                for chance in self._ltr._doubles[i]._middle
-            ]
+            [self._writer.write_single(chance) for chance in self._ltr._doubles[i]._start]
+            [self._writer.write_single(chance) for chance in self._ltr._doubles[i]._middle]
             [self._writer.write_single(chance) for chance in self._ltr._doubles[i]._end]
 
         for i in range(28):
             for j in range(28):
-                [
-                    self._writer.write_single(chance)
-                    for chance in self._ltr._triples[i][j]._start
-                ]
-                [
-                    self._writer.write_single(chance)
-                    for chance in self._ltr._triples[i][j]._middle
-                ]
-                [
-                    self._writer.write_single(chance)
-                    for chance in self._ltr._triples[i][j]._end
-                ]
+                [self._writer.write_single(chance) for chance in self._ltr._triples[i][j]._start]
+                [self._writer.write_single(chance) for chance in self._ltr._triples[i][j]._middle]
+                [self._writer.write_single(chance) for chance in self._ltr._triples[i][j]._end]
 
         if auto_close:
             self._writer.close()

@@ -8,7 +8,8 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTD:
-    """Stores door data.
+    """
+    Stores door data.
 
     Attributes
     ----------

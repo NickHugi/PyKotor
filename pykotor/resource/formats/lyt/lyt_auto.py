@@ -9,7 +9,8 @@ def read_lyt(
     offset: int = 0,
     size: int | None = None,
 ) -> LYT:
-    """Returns an LYT instance from the source. The file format (LYT only) is automatically determined before parsing
+    """
+    Returns an LYT instance from the source. The file format (LYT only) is automatically determined before parsing
     the data.
 
     Args:
@@ -37,7 +38,8 @@ def write_lyt(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LYT,
 ) -> None:
-    """Writes the LYT data to the target location with the specified format (LYT only).
+    """
+    Writes the LYT data to the target location with the specified format (LYT only).
 
     Args:
     ----
@@ -62,7 +64,8 @@ def bytes_lyt(
     lyt: LYT,
     file_format: ResourceType = ResourceType.LYT,
 ) -> bytes:
-    """Returns the LYT data in the specified format (LYT only) as a bytes object.
+    """
+    Returns the LYT data in the specified format (LYT only) as a bytes object.
 
     This is a convenience method that wraps the write_lyt() method.
 

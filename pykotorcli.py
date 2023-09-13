@@ -81,8 +81,7 @@ def main():
     print(f"Using changes.ini path: {str(changes_ini_path)!s}")
     if not changes_ini_path.exists():
         print(
-            "The 'changes.ini' file does not exist"
-            " anywhere in the tslpatchdata provided.",
+            "The 'changes.ini' file does not exist anywhere in the tslpatchdata provided.",
         )
         sys.exit(ExitCode.CHANGES_INI_NOT_FOUND)
 

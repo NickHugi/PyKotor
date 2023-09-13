@@ -31,7 +31,8 @@ class TLK:
         self,
         item,
     ):
-        """Returns an entry for the specified stringref.
+        """
+        Returns an entry for the specified stringref.
 
         Args:
         ----
@@ -53,7 +54,8 @@ class TLK:
         self,
         stringref: int,
     ) -> TLKEntry | None:
-        """Returns an entry for the specified stringref if it exists, otherwise returns None.
+        """
+        Returns an entry for the specified stringref if it exists, otherwise returns None.
 
         Args:
         ----
@@ -75,7 +77,8 @@ class TLK:
         return len(self.entries) - 1
 
     def replace(self, stringref: int, text: str, sound_resref: str = "") -> None:
-        """Replaces an entry at the specified stringref with the provided text and sound resref.
+        """
+        Replaces an entry at the specified stringref with the provided text and sound resref.
 
         Args:
         ----
@@ -93,7 +96,8 @@ class TLK:
         self,
         size: int,
     ) -> None:
-        """Resizes the number of entries to the specified size.
+        """
+        Resizes the number of entries to the specified size.
 
         Args:
         ----

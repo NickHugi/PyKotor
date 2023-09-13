@@ -14,7 +14,8 @@ class StringResult(NamedTuple):
 
 
 class TalkTable:
-    """Talktables are for read-only loading of stringrefs stored in a dialog.tlk file. Files are only opened when accessing
+    """
+    Talktables are for read-only loading of stringrefs stored in a dialog.tlk file. Files are only opened when accessing
     a stored string, this means that strings are always up to date at the time of access as opposed to TLK objects which
     may be out of date with its source file.
     """
@@ -29,7 +30,8 @@ class TalkTable:
         self,
         stringref: int,
     ) -> str:
-        """Access a string from the tlk file.
+        """
+        Access a string from the tlk file.
 
         Args:
         ----
@@ -60,7 +62,8 @@ class TalkTable:
         self,
         stringref: int,
     ) -> ResRef:
-        """Access the sound ResRef from the tlk file.
+        """
+        Access the sound ResRef from the tlk file.
 
         Args:
         ----
@@ -109,7 +112,8 @@ class TalkTable:
         self,
         stringrefs: list[int],
     ) -> dict[int, StringResult]:
-        """Loads a list of strings and sound ResRefs from the specified list. This is all performed using a single file
+        """
+        Loads a list of strings and sound ResRefs from the specified list. This is all performed using a single file
         handle and should be used if loading multiple strings from the tlk file.
 
         Args:
@@ -155,7 +159,8 @@ class TalkTable:
     def size(
         self,
     ) -> int:
-        """Returns the number of entries in the talk table.
+        """
+        Returns the number of entries in the talk table.
 
         Returns
         -------
@@ -170,7 +175,8 @@ class TalkTable:
     def language(
         self,
     ) -> Language:
-        """Returns the matching Language of the TLK file.
+        """
+        Returns the matching Language of the TLK file.
 
         Returns
         -------

@@ -92,7 +92,5 @@ class TestTLK(TestCase):
         if os.name == "nt":
             self.assertRaises(PermissionError, write_tlk, TLK(), ".", ResourceType.TLK)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_tlk, TLK(), ".", ResourceType.TLK
-            )
+            self.assertRaises(IsADirectoryError, write_tlk, TLK(), ".", ResourceType.TLK)
         self.assertRaises(ValueError, write_tlk, TLK(), ".", ResourceType.INVALID)

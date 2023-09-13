@@ -123,7 +123,6 @@ class TestVector4(TestCase):
         self.assertAlmostEqual(0.7, q4.w, 1)
 
 
-
 class TestFace(TestCase):
     def test_determine_z(self):
         v1 = Vector3(0.0, 0.0, 0.0)

@@ -13,7 +13,7 @@ class CaseAwarePath(Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
     def __new__(cls, *args, **kwargs):
-        if not all(isinstance(arg, CaseAwarePath) for arg in args): # don't even assume __fspath__ objects are valid.
+        if not all(isinstance(arg, CaseAwarePath) for arg in args):  # don't even assume __fspath__ objects are valid.
             args = list(args)
             for i, arg in enumerate(args):
                 if isinstance(arg, str) or hasattr(arg, "__fspath__"):
@@ -31,7 +31,9 @@ class CaseAwarePath(Path):
         return str(self)
 
     def __truediv__(self, key) -> CaseAwarePath:
-        """Uses divider operator to combine two paths.
+        """
+        Uses divider operator to combine two paths.
+
         Args:
         ----
             self (CaseAwarePath):
@@ -40,7 +42,9 @@ class CaseAwarePath(Path):
         return CaseAwarePath(self, key)
 
     def __rtruediv__(self, key) -> CaseAwarePath:
-        """Uses divider operator to combine two paths.
+        """
+        Uses divider operator to combine two paths.
+
         Args:
         ----
             self (CaseAwarePath):
@@ -78,11 +82,7 @@ class CaseAwarePath(Path):
                     with contextlib.suppress(PermissionError, IOError):
                         yield from path.iterdir()
 
-                base_path_items_generator = (
-                    item
-                    for item in safe_iterdir(base_path)
-                    if (i == len(parts) - 1) or item.is_dir()
-                )
+                base_path_items_generator = (item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir())
 
                 # if multiple are found, we get the one that most closely matches our case
                 # A closest match is defined by the item that has the most case-sensitive positional matches
@@ -109,7 +109,7 @@ class CaseAwarePath(Path):
             matching_chars = CaseAwarePath._get_matching_characters_count(
                 candidate.name,
                 target,
-        )
+            )
             if matching_chars > max_matching_chars:
                 max_matching_chars = matching_chars
                 closest_match = candidate.name
@@ -123,11 +123,7 @@ class CaseAwarePath(Path):
         Returns the number of case sensitive characters that match in each position of the two strings.
         if str1 and str2 are NOT case-insensitive matches, this method will return -1
         """
-        return (
-            sum(a == b for a, b in zip(str1, str2))
-            if str1.lower() == str2.lower()
-            else -1
-        )
+        return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
 
     @staticmethod
     def _fix_path_formatting(str_path: str) -> str:

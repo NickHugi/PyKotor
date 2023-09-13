@@ -9,7 +9,8 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class IFO:
-    """Stores module information.
+    """
+    Stores module information.
 
     Attributes
     ----------
@@ -148,11 +149,7 @@ def construct_ifo(
     dir_y = root.acquire("Mod_Entry_Dir_Y", 0.0)
     ifo.entry_direction = Vector2(dir_x, dir_y).angle()
 
-    ifo.area_name = (
-        root.acquire("Mod_Area_list", GFFList())
-        .at(0)
-        .acquire("Area_Name", ResRef.from_blank())
-    )
+    ifo.area_name = root.acquire("Mod_Area_list", GFFList()).at(0).acquire("Area_Name", ResRef.from_blank())
 
     return ifo
 

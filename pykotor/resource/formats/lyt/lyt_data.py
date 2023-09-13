@@ -24,7 +24,8 @@ class LYT:
 
 
 class LYTRoom:
-    """An area model.
+    """
+    An area model.
 
     Attributes
     ----------
@@ -53,7 +54,8 @@ class LYTRoom:
 
 
 class LYTTrack:
-    """A swoop track booster.
+    """
+    A swoop track booster.
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
@@ -79,7 +81,8 @@ class LYTTrack:
 
 
 class LYTObstacle:
-    """A swoop track obstacle.
+    """
+    A swoop track obstacle.
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
@@ -105,7 +108,8 @@ class LYTObstacle:
 
 
 class LYTDoorHook:
-    """A door hook.
+    """
+    A door hook.
 
     This is just exists for modelers to assist module designers.
 

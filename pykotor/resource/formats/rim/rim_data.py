@@ -50,7 +50,8 @@ class RIM:
             return NotImplemented
 
     def __add__(self, other: RIM) -> RIM:
-        """Combines the resources of two RIM instances into a new RIM instance.
+        """
+        Combines the resources of two RIM instances into a new RIM instance.
 
         Args:
         ----
@@ -77,7 +78,8 @@ class RIM:
         restype: ResourceType,
         data: bytes,
     ) -> None:
-        """Sets the data of the resource with the specified resref/restype pair. If it does not exists, a resource is
+        """
+        Sets the data of the resource with the specified resref/restype pair. If it does not exists, a resource is
         appended to the resource list.
 
         Args:
@@ -87,11 +89,7 @@ class RIM:
             data: The new resource data.
         """
         resource = next(
-            (
-                resource
-                for resource in self._resources
-                if resource.resref == resref and resource.restype == restype
-            ),
+            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
             None,
         )
         if resource is None:
@@ -106,7 +104,8 @@ class RIM:
         resref: str,
         restype: ResourceType,
     ) -> bytes | None:
-        """Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
+        """
+        Returns the data of the resource with the specified resref/restype pair if it exists, otherwise returns None.
 
         Args:
         ----
@@ -118,11 +117,7 @@ class RIM:
             The bytes data of the resource or None.
         """
         resource = next(
-            (
-                resource
-                for resource in self._resources
-                if resource.resref == resref and resource.restype == restype
-            ),
+            (resource for resource in self._resources if resource.resref == resref and resource.restype == restype),
             None,
         )
         return None if resource is None else resource.data
@@ -132,23 +127,21 @@ class RIM:
         resref: str,
         restype: ResourceType,
     ) -> None:
-        """Removes the resource with the given resref/restype pair if it exists.
+        """
+        Removes the resource with the given resref/restype pair if it exists.
 
         Args:
         ----
             resref: The resref.
             restype: The resource type.
         """
-        self._resources = [
-            res
-            for res in self._resources
-            if res.resref != resref and res.restype != restype
-        ]
+        self._resources = [res for res in self._resources if res.resref != resref and res.restype != restype]
 
     def to_erf(
         self,
     ):
-        """Returns a ERF with the same resources.
+        """
+        Returns a ERF with the same resources.
 
         Returns
         -------

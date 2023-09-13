@@ -18,7 +18,8 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class DLG:
-    """Stores dialog data.
+    """
+    Stores dialog data.
 
     Attributes
     ----------
@@ -118,7 +119,8 @@ class DLG:
     def all_entries(
         self,
     ) -> list[DLGEntry]:
-        """Returns a flat list of all entries in the dialog.
+        """
+        Returns a flat list of all entries in the dialog.
 
         Returns
         -------
@@ -150,7 +152,8 @@ class DLG:
     def all_replies(
         self,
     ) -> list[DLGReply]:
-        """Returns a flat list of all replies in the dialog.
+        """
+        Returns a flat list of all replies in the dialog.
 
         Returns
         -------
@@ -165,11 +168,7 @@ class DLG:
     ) -> list[DLGReply]:
         replies = []
 
-        links = (
-            [_ for link in self.starters for _ in link.node.links]
-            if links is None
-            else links
-        )
+        links = [_ for link in self.starters for _ in link.node.links] if links is None else links
         seen_replies = [] if seen_replies is None else seen_replies
 
         for link in links:
@@ -196,7 +195,8 @@ class DLGConversationType(IntEnum):
 
 
 class DLGNode:
-    """Represents a node in the dialog tree.
+    """
+    Represents a node in the dialog tree.
 
     Attributes
     ----------
@@ -347,7 +347,8 @@ class DLGAnimation:
 
 
 class DLGLink:
-    """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
+    """
+    Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
     Attributes
     ----------
@@ -405,7 +406,9 @@ class DLGLink:
 
 
 class DLGStunt:
-    """Attributes
+    """
+    Attributes
+    ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.
     """
@@ -428,11 +431,7 @@ def construct_dlg(
         node.listener = gff_struct.acquire("Listener", "")
         node.vo_resref = gff_struct.acquire("VO_ResRef", ResRef.from_blank())
         node.script1 = gff_struct.acquire("Script", ResRef.from_blank())
-        node.delay = (
-            -1
-            if gff_struct.acquire("Delay", 0) == 0xFFFFFFFF
-            else gff_struct.acquire("Delay", 0)
-        )
+        node.delay = -1 if gff_struct.acquire("Delay", 0) == 0xFFFFFFFF else gff_struct.acquire("Delay", 0)
         node.comment = gff_struct.acquire("Comment", "")
         node.sound = gff_struct.acquire("Sound", ResRef.from_blank())
         node.quest = gff_struct.acquire("Quest", "")

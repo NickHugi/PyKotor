@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
+
 class LocalizedStringDelta(LocalizedString):
     def __init__(self, stringref: FieldValue | None = None) -> None:
         super().__init__(0)
@@ -138,9 +139,7 @@ class AddStructToListGFF(ModifyGFF):
     ) -> None:
         new_struct: GFFStruct | None = None
         navigated_container: GFFList | GFFStruct | None = (
-            self._navigate_containers(container, self.path)
-            if self.path
-            else container
+            self._navigate_containers(container, self.path) if self.path else container
         )
         if isinstance(navigated_container, GFFList):
             struct_id = self.struct_id or len(navigated_container)
@@ -239,16 +238,17 @@ class AddFieldGFF(ModifyGFF):
         for add_field in self.modifiers:
             add_field.apply(container, memory, logger)
 
+
 class Memory2DAModifierGFF(ModifyGFF):
     def __init__(
-            self,
-            identifier: str,
-            twoda_index: int,
-            value_str: str,
-            label: str | None = None,
-            path: str | CaseAwarePath | None = None,
-            modifiers: list[ModifyGFF] | None = None
-        ):
+        self,
+        identifier: str,
+        twoda_index: int,
+        value_str: str,
+        label: str | None = None,
+        path: str | CaseAwarePath | None = None,
+        modifiers: list[ModifyGFF] | None = None,
+    ):
         self.identifier = identifier
         self.twoda_index: int = twoda_index
         self.value = value_str
@@ -261,13 +261,16 @@ class Memory2DAModifierGFF(ModifyGFF):
             self.path = None
 
         self.modifiers = modifiers
+
     def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
         if self.value.lower().startswith("2damemory"):
             twoda_memory_field_index = int(self.value[9:])
             twoda_memory_field = memory.memory_2da[twoda_memory_field_index]
             memory.memory_2da[self.twoda_index] = twoda_memory_field
         elif self.value.lower() == "!fieldpath":
-            logger.add_error(f"!FieldPath is not currently implemented! Ignoring modifier '2DAMEMORY{self.twoda_index}=!FieldPath' in '[{self.identifier}]'")
+            logger.add_error(
+                f"!FieldPath is not currently implemented! Ignoring modifier '2DAMEMORY{self.twoda_index}=!FieldPath' in '[{self.identifier}]'",
+            )
             # memory.memory_2da[self.twoda_index] = container  #noqa: ERA001
             return
         else:
@@ -278,7 +281,7 @@ class ModifyFieldGFF(ModifyGFF):
     def __init__(
         self,
         path: str | CaseAwarePath,
-        value: FieldValue
+        value: FieldValue,
     ) -> None:
         self.path: CaseAwarePath = CaseAwarePath(path) if isinstance(path, str) else path
         self.value: FieldValue = value

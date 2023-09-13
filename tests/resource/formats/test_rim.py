@@ -38,7 +38,5 @@ class TestRIM(TestCase):
         if os.name == "nt":
             self.assertRaises(PermissionError, write_rim, RIM(), ".", ResourceType.RIM)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_rim, RIM(), ".", ResourceType.RIM
-            )
+            self.assertRaises(IsADirectoryError, write_rim, RIM(), ".", ResourceType.RIM)
         self.assertRaises(ValueError, write_rim, RIM(), ".", ResourceType.INVALID)

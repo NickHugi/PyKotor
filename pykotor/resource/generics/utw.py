@@ -8,7 +8,8 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTW:
-    """Stores waypoint data.
+    """
+    Stores waypoint data.
 
     resref: "TemplateResRef" field.
     tag: "Tag" field.

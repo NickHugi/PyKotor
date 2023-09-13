@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.resource.formats.ltr.io_ltr import LTRBinaryReader, LTRBinaryWriter
-from pykotor.resource.formats.ltr.ltr_data import LTR
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ltr.ltr_data import LTR
 
 
 def read_ltr(
@@ -10,7 +14,8 @@ def read_ltr(
     offset: int = 0,
     size: int | None = None,
 ) -> LTR:
-    """Returns an LTR instance from the source.
+    """
+    Returns an LTR instance from the source.
 
     Args:
     ----
@@ -38,7 +43,8 @@ def write_ltr(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LTR,
 ) -> None:
-    """Writes the LTR data to the target location with the specified format (LTR only).
+    """
+    Writes the LTR data to the target location with the specified format (LTR only).
 
     Args:
     ----
@@ -61,7 +67,8 @@ def bytes_ltr(
     ltr: LTR,
     file_format: ResourceType = ResourceType.LTR,
 ) -> bytes:
-    """Returns the LTR data in the specified format (LTR only) as a bytes object.
+    """
+    Returns the LTR data in the specified format (LTR only) as a bytes object.
 
     This is a convenience method that wraps the write_ltr() method.
 

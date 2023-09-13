@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -12,24 +11,25 @@ from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 
 def singlequote_byte_string_to_triplequote_byte_string(single_line_str: str) -> str:
     # Convert escaped characters into actual characters
-    content = single_line_str.replace("\\\\", "\\")
-    return content
+    return single_line_str.replace("\\\\", "\\")
+
 
 def triplequote_byte_string_to_singlequote_byte_string(readable_str: str) -> str:
     # Convert actual characters back to their escaped versions
-    content = readable_str.replace("\\", "\\\\")
-    return content
+    return readable_str.replace("\\", "\\\\")
+
 
 def bytes_to_singlequote_byte_string(input_bytes: bytes) -> str:
-    content = input_bytes.decode("utf-8", errors="ignore")
-    return content
+    return input_bytes.decode("utf-8", errors="ignore")
+
 
 def bytes_to_triplequote_byte_string(input_bytes: bytes) -> str:
-    content = input_bytes.decode("unicode_escape", errors="ignore")
-    return content
+    return input_bytes.decode("unicode_escape", errors="ignore")
+
 
 def triplequote_byte_string_to_bytes(readable_str: str) -> bytes:
     return bytes(readable_str, "utf-8", errors="ignore")
+
 
 def singlequote_byte_string_to_bytes(readable_str: str) -> bytes:
     return bytes(readable_str, "unicode_escape", errors="ignore")
@@ -54,14 +54,14 @@ def highlight_difference(
             end = min(min_length, i + 50 + 1)
 
             # Represent special characters in a readable manner
-            original_char =  repr(original_string[i] )  # Using repr to represent special characters
+            original_char = repr(original_string[i])  # Using repr to represent special characters
             converted_char = repr(converted_string[i])
-            reverted_char =  repr(reverted_string[i] )
+            reverted_char = repr(reverted_string[i])
 
             # Extract excerpts and place arrows around differing character
-            original_excerpt =  repr(f"{original_string[start:i]}>>>{original_char  }<<<{original_string[ i + 1:end]}")[1:-1]
+            original_excerpt = repr(f"{original_string[start:i]}>>>{original_char  }<<<{original_string[ i + 1:end]}")[1:-1]
             converted_excerpt = repr(f"{converted_string[start:i]}>>>{converted_char}<<<{converted_string[i + 1:end]}")[1:-1]
-            reverted_excerpt =  repr(f"{reverted_string[start:i]}>>>{reverted_char  }<<<{reverted_string[ i + 1:end]}")[1:-1]
+            reverted_excerpt = repr(f"{reverted_string[start:i]}>>>{reverted_char  }<<<{reverted_string[ i + 1:end]}")[1:-1]
 
             # Represent special characters in a readable manner
             original_char = repr(
@@ -145,7 +145,9 @@ def write_dictionary_to_py_file(
         for key in dictionary:
             original_binary_data: bytes = dictionary[key]
             original_literal_binary_string: str = bytes_to_singlequote_byte_string(original_binary_data)
-            converted_literal_binary_string: str = singlequote_byte_string_to_triplequote_byte_string(original_literal_binary_string)
+            converted_literal_binary_string: str = singlequote_byte_string_to_triplequote_byte_string(
+                original_literal_binary_string,
+            )
             converted_binary_data: bytes = triplequote_byte_string_to_bytes(converted_literal_binary_string)
             reverted_literal_binary_string: str = bytes_to_triplequote_byte_string(converted_binary_data)
             reverted_binary_data: bytes = singlequote_byte_string_to_bytes(reverted_literal_binary_string)

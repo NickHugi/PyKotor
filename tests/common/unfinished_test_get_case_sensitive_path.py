@@ -37,9 +37,7 @@ class TestCaseAwarePath(unittest.TestCase):
 
         # Simulate directory listing for "/path/"
         dir_items = [MockedPath("/path/to")]
-        mock_iterdir.side_effect = (
-            lambda x: iter(dir_items) if x == MockedPath("/path") else iter([])
-        )
+        mock_iterdir.side_effect = lambda x: iter(dir_items) if x == MockedPath("/path") else iter([])
 
         path = MockedPath("/path/to/DiR")
         result = path._get_case_sensitive_path(path)

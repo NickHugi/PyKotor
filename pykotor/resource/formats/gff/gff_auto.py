@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import (
     GFF,
@@ -17,7 +19,8 @@ def detect_gff(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the GFF data is believed to be in. This function performs a basic check and does not guarantee
+    """
+    Returns what format the GFF data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -36,31 +39,19 @@ def detect_gff(
         The format of the GFF data.
     """
     try:
-        if isinstance(source, (str, CaseAwarePath)):
+        if isinstance(source, (str, CaseAwarePath, Path)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
-                file_format = (
-                    ResourceType.GFF
-                    if any(x.value == file_header for x in GFFContent)
-                    else ResourceType.GFF_XML
-                )
+                file_format = ResourceType.GFF if any(x.value == file_header for x in GFFContent) else ResourceType.GFF_XML
         elif isinstance(source, (bytes, bytearray)):
             file_format = (
                 ResourceType.GFF
-                if any(
-                    x
-                    for x in GFFContent
-                    if x.value == source[:4].decode("ascii", "ignore")
-                )
+                if any(x for x in GFFContent if x.value == source[:4].decode("ascii", "ignore"))
                 else ResourceType.GFF_XML
             )
         elif isinstance(source, BinaryReader):
             file_header = source.read_string(4)
-            file_format = (
-                ResourceType.GFF
-                if any(x.value == file_header for x in GFFContent)
-                else ResourceType.GFF_XML
-            )
+            file_format = ResourceType.GFF if any(x.value == file_header for x in GFFContent) else ResourceType.GFF_XML
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID
@@ -77,7 +68,8 @@ def read_gff(
     offset: int = 0,
     size: int | None = None,
 ) -> GFF | None:
-    """Returns an GFF instance from the source. The file format (GFF or GFF_XML) is automatically determined before parsing
+    """
+    Returns an GFF instance from the source. The file format (GFF or GFF_XML) is automatically determined before parsing
     the data.
 
     Args:
@@ -115,7 +107,8 @@ def write_gff(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.GFF,
 ) -> None:
-    """Writes the GFF data to the target location with the specified format (GFF or GFF_XML).
+    """
+    Writes the GFF data to the target location with the specified format (GFF or GFF_XML).
 
     Args:
     ----
@@ -142,7 +135,8 @@ def bytes_gff(
     gff: GFF,
     file_format: ResourceType = ResourceType.GFF,
 ) -> bytes:
-    """Returns the GFF data in the specified format (GFF or GFF_XML) as a bytes object.
+    """
+    Returns the GFF data in the specified format (GFF or GFF_XML) as a bytes object.
 
     This is a convenience method that wraps the write_gff() method.
 

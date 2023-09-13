@@ -3,9 +3,7 @@ import sys
 
 from pykotor.tools.path import CaseAwarePath
 
-project_root = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "..")
-)
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.append(project_root)
 from unittest import TestCase
 
@@ -46,7 +44,5 @@ class TestERF(TestCase):
         if os.name == "nt":
             self.assertRaises(PermissionError, write_erf, ERF(), ".", ResourceType.ERF)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_erf, ERF(), ".", ResourceType.ERF
-            )
+            self.assertRaises(IsADirectoryError, write_erf, ERF(), ".", ResourceType.ERF)
         self.assertRaises(ValueError, write_erf, ERF(), ".", ResourceType.INVALID)

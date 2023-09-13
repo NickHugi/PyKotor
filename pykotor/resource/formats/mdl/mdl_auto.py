@@ -16,7 +16,8 @@ def detect_mdl(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the MDL data is believed to be in. This function performs a basic check and does not guarantee
+    """
+    Returns what format the MDL data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -39,24 +40,12 @@ def detect_mdl(
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 first4 = reader.read_bytes(4)
-                file_format = (
-                    ResourceType.MDL
-                    if first4 == b"\x00\x00\x00\x00"
-                    else ResourceType.MDL_ASCII
-                )
+                file_format = ResourceType.MDL if first4 == b"\x00\x00\x00\x00" else ResourceType.MDL_ASCII
         elif isinstance(source, (bytes, bytearray)):
-            file_format = (
-                ResourceType.MDL
-                if source[:4] == b"\x00\x00\x00\x00"
-                else ResourceType.MDL_ASCII
-            )
+            file_format = ResourceType.MDL if source[:4] == b"\x00\x00\x00\x00" else ResourceType.MDL_ASCII
         elif isinstance(source, BinaryReader):
             first4 = source.read_bytes(4)
-            file_format = (
-                ResourceType.MDL
-                if first4 == b"\x00\x00\x00\x00"
-                else ResourceType.MDL_ASCII
-            )
+            file_format = ResourceType.MDL if first4 == b"\x00\x00\x00\x00" else ResourceType.MDL_ASCII
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID
@@ -76,7 +65,8 @@ def read_mdl(
     offset_ext: int = 0,
     size_ext: int = 0,
 ) -> MDL:
-    """Returns an MDL instance from the source. The file format (MDL or MDL_ASCII) is automatically determined before
+    """
+    Returns an MDL instance from the source. The file format (MDL or MDL_ASCII) is automatically determined before
     parsing the data.
 
     Args:
@@ -107,7 +97,12 @@ def read_mdl(
 
     if file_format == ResourceType.MDL:
         return MDLBinaryReader(
-            source, offset, size, source_ext, offset_ext, size_ext,
+            source,
+            offset,
+            size,
+            source_ext,
+            offset_ext,
+            size_ext,
         ).load()
     elif file_format == ResourceType.MDL_ASCII:
         return MDLAsciiReader(source, offset, size).load()
@@ -120,7 +115,8 @@ def write_mdl(
     file_format: ResourceType = ResourceType.MDL,
     target_ext: TARGET_TYPES | None = None,
 ) -> None:
-    """Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).
+    """
+    Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).
 
     Args:
     ----

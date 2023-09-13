@@ -56,10 +56,12 @@ class ERFBinaryReader(ResourceReader):
             resref_data = keys_data[i * 24 : i * 24 + 16].split(b"\0")[0]
             resrefs[i] = resref_data.decode("windows-1252")
             resids[i] = int.from_bytes(
-                keys_data[i * 24 + 16 : i * 24 + 20], byteorder="little",
+                keys_data[i * 24 + 16 : i * 24 + 20],
+                byteorder="little",
             )
             restypes[i] = int.from_bytes(
-                keys_data[i * 24 + 20 : i * 24 + 22], byteorder="little",
+                keys_data[i * 24 + 20 : i * 24 + 22],
+                byteorder="little",
             )
 
         resoffsets = [None] * entry_count
@@ -69,10 +71,12 @@ class ERFBinaryReader(ResourceReader):
 
         for i in range(entry_count):
             resoffsets[i] = int.from_bytes(
-                resources_data[i * 8 : i * 8 + 4], byteorder="little",
+                resources_data[i * 8 : i * 8 + 4],
+                byteorder="little",
             )
             ressizes[i] = int.from_bytes(
-                resources_data[i * 8 + 4 : i * 8 + 8], byteorder="little",
+                resources_data[i * 8 + 4 : i * 8 + 8],
+                byteorder="little",
             )
 
         for i in range(entry_count):
@@ -103,9 +107,7 @@ class ERFBinaryWriter(ResourceWriter):
     ) -> None:
         entry_count = len(self.erf)
         offset_to_keys = ERFBinaryWriter.FILE_HEADER_SIZE
-        offset_to_resources = (
-            offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
-        )
+        offset_to_resources = offset_to_keys + ERFBinaryWriter.KEY_ELEMENT_SIZE * entry_count
 
         self._writer.write_string(self.erf.erf_type.value)
         self._writer.write_string("V1.0")
@@ -125,9 +127,7 @@ class ERFBinaryWriter(ResourceWriter):
             self._writer.write_uint32(resid)
             self._writer.write_uint16(resource.restype.type_id)
             self._writer.write_uint16(0)
-        data_offset = (
-            offset_to_resources + ERFBinaryWriter.RESOURCE_ELEMENT_SIZE * entry_count
-        )
+        data_offset = offset_to_resources + ERFBinaryWriter.RESOURCE_ELEMENT_SIZE * entry_count
         for resource in self.erf:
             self._writer.write_uint32(data_offset)
             self._writer.write_uint32(len(resource.data))

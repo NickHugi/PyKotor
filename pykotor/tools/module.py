@@ -196,7 +196,8 @@ def clone_module(
 
 
 def rim_to_mod(filepath: CaseAwarePath) -> None:
-    """Creates a MOD file at the given filepath and copies the resources from the corresponding
+    """
+    Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
     Raises:
@@ -222,15 +223,9 @@ def rim_to_mod(filepath: CaseAwarePath) -> None:
     rim_extension: str = lowercase_extension.replace(".mod", ".rim")
 
     filepath_rim_s: CaseAwarePath = (
-        filepath.parent / (base + rim_s_extension)
-        if rim_s_extension != lowercase_extension
-        else filepath
+        filepath.parent / (base + rim_s_extension) if rim_s_extension != lowercase_extension else filepath
     )
-    filepath_rim: CaseAwarePath = (
-        filepath.parent / (base + rim_extension)
-        if rim_extension != lowercase_extension
-        else filepath
-    )
+    filepath_rim: CaseAwarePath = filepath.parent / (base + rim_extension) if rim_extension != lowercase_extension else filepath
 
     rim: RIM = read_rim(filepath_rim) if filepath_rim.exists() else RIM()
     rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()

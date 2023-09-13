@@ -76,7 +76,7 @@ class NCSBinaryReader(ResourceReader):
             NCSInstructionType.CPTOPBP,
         ]:
             instruction.args.extend(
-                [self._reader.read_int32(big=True), self._reader.read_uint16(big=True)]
+                [self._reader.read_int32(big=True), self._reader.read_uint16(big=True)],
             )
 
         elif instruction.ins_type in [NCSInstructionType.CONSTI]:
@@ -94,7 +94,7 @@ class NCSBinaryReader(ResourceReader):
 
         elif instruction.ins_type in [NCSInstructionType.ACTION]:
             instruction.args.extend(
-                [self._reader.read_uint16(big=True), self._reader.read_uint8(big=True)]
+                [self._reader.read_uint16(big=True), self._reader.read_uint8(big=True)],
             )
 
         elif instruction.ins_type in [NCSInstructionType.MOVSP]:
@@ -115,7 +115,7 @@ class NCSBinaryReader(ResourceReader):
                     self._reader.read_uint16(big=True),
                     self._reader.read_int16(big=True),
                     self._reader.read_uint16(big=True),
-                ]
+                ],
             )
 
         elif instruction.ins_type in [
@@ -128,7 +128,7 @@ class NCSBinaryReader(ResourceReader):
 
         elif instruction.ins_type in [NCSInstructionType.STORE_STATE]:
             instruction.args.extend(
-                [self._reader.read_uint32(big=True), self._reader.read_uint32(big=True)]
+                [self._reader.read_uint32(big=True), self._reader.read_uint32(big=True)],
             )
 
         elif instruction.ins_type in [

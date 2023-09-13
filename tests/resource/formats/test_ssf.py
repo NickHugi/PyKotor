@@ -88,7 +88,5 @@ class TestSSF(TestCase):
         if os.name == "nt":
             self.assertRaises(PermissionError, write_ssf, SSF(), ".", ResourceType.SSF)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_ssf, SSF(), ".", ResourceType.SSF
-            )
+            self.assertRaises(IsADirectoryError, write_ssf, SSF(), ".", ResourceType.SSF)
         self.assertRaises(ValueError, write_ssf, SSF(), ".", ResourceType.INVALID)

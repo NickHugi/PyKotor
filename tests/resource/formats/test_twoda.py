@@ -80,13 +80,9 @@ class TestTwoDA(TestCase):
 
     def test_write_raises(self):
         if os.name == "nt":
-            self.assertRaises(
-                PermissionError, write_2da, TwoDA(), ".", ResourceType.TwoDA
-            )
+            self.assertRaises(PermissionError, write_2da, TwoDA(), ".", ResourceType.TwoDA)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_2da, TwoDA(), ".", ResourceType.TwoDA
-            )
+            self.assertRaises(IsADirectoryError, write_2da, TwoDA(), ".", ResourceType.TwoDA)
         self.assertRaises(ValueError, write_2da, TwoDA(), ".", ResourceType.INVALID)
 
     def test_row_max(self):

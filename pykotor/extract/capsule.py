@@ -10,7 +10,8 @@ from pykotor.tools.path import CaseAwarePath
 
 
 class Capsule:
-    """Chitin object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
+    """
+    Chitin object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
     Capsule.resource() method.
     """
@@ -53,7 +54,8 @@ class Capsule:
         restype: ResourceType,
         reload: bool = False,
     ) -> bytes | None:
-        """Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
+        """
+        Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
         Args:
         ----
@@ -159,11 +161,7 @@ class Capsule:
         restype: ResourceType,
         resdata: bytes,
     ):
-        container = (
-            read_rim(self._path)
-            if is_rim_file(self._path.name)
-            else read_erf(self._path)
-        )
+        container = read_rim(self._path) if is_rim_file(self._path.name) else read_erf(self._path)
         container.set(resname, restype, resdata)
         if is_rim_file(self._path.name):
             write_rim(container, self._path)  # type: ignore

@@ -122,10 +122,7 @@ class TestConfigReader(TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
-            for mod in self.config.patches_tlk.modifiers
-        }
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
         self.maxDiff = None
         self.assertDictEqual(
             modifiers_dict,
@@ -152,10 +149,7 @@ class TestConfigReader(TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
-            for mod in self.config.patches_tlk.modifiers
-        }
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
@@ -182,10 +176,7 @@ class TestConfigReader(TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
-            for mod in self.config.patches_tlk.modifiers
-        }
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
@@ -207,10 +198,7 @@ class TestConfigReader(TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 5)
-        modifiers_dict = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
-            for mod in self.config.patches_tlk.modifiers
-        }
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
@@ -242,10 +230,7 @@ class TestConfigReader(TestCase):
         self.config_reader.load(self.config)
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
-        modifiers_dict = {
-            mod.token_id: {"text": mod.text, "voiceover": mod.sound}
-            for mod in self.config.patches_tlk.modifiers
-        }
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
         self.assertDictEqual(
             modifiers_dict,
             {
@@ -1520,9 +1505,7 @@ class TestConfigReader(TestCase):
         self.assertEqual(1, len(mod_1.value.stored))
 
         mod_2 = self._assert_types_and_path(config)
-        self.assertEqual(
-            "world", mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE)
-        )
+        self.assertEqual("world", mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE))
         self.assertIsNone(mod_2.value.stored.stringref)
         self.assertEqual(1, len(mod_2.value.stored))
 
@@ -1929,9 +1912,7 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
         self.assertEqual(123, mod_0.value.stored.stringref.stored)
         self.assertEqual("abc", mod_0.value.stored.get(Language.ENGLISH, Gender.MALE))
-        self.assertEqual(
-            "lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE)
-        )
+        self.assertEqual("lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE))
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)

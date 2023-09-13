@@ -73,9 +73,7 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-33.268, git.placeables[0].position.x, 2)
         self.assertAlmostEqual(-15.299, git.placeables[0].position.y, 2)
         self.assertAlmostEqual(9.536, git.placeables[0].position.z, 2)
-        self.assertEqual(
-            Color.from_bgr_integer(10197915), git.placeables[0].tweak_color
-        )
+        self.assertEqual(Color.from_bgr_integer(10197915), git.placeables[0].tweak_color)
 
         self.assertEqual("computerpanne001", git.sounds[0].resref)
         self.assertAlmostEqual(-78.538, git.sounds[0].position.x, 2)

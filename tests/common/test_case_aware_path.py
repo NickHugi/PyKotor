@@ -45,24 +45,16 @@ class TestCaseAwarePath(unittest.TestCase):
 
     def test_fix_path_formatting(self):
         if os.name == "nt":
-            self.assertEqual(
-                CaseAwarePath._fix_path_formatting("C:/path//to/dir/"), "C:\\path\\to\\dir"
-            )
-            self.assertEqual(
-                CaseAwarePath._fix_path_formatting("/path//to/dir/"), "path\\to\\dir"
-            )
+            self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/"), "C:\\path\\to\\dir")
+            self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/"), "path\\to\\dir")
         else:
-            self.assertEqual(
-                CaseAwarePath._fix_path_formatting("/path//to/dir/"), "/path/to/dir"
-            )
+            self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/"), "/path/to/dir")
 
     @patch.object(Path, "exists", autospec=True)
     def test_should_resolve_case(self, mock_exists):
         if os.name == "nt":
             self.assertFalse(CaseAwarePath.should_resolve_case("C:\\path\\to\\dir"))
-            self.assertFalse(
-                CaseAwarePath.should_resolve_case(CaseAwarePath("C:\\path\\to\\dir"))
-            )
+            self.assertFalse(CaseAwarePath.should_resolve_case(CaseAwarePath("C:\\path\\to\\dir")))
         else:
             mock_exists.side_effect = lambda x: str(x) != "/path/to/dir"
             self.assertTrue(CaseAwarePath.should_resolve_case("/path/to/dir"))

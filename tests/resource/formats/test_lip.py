@@ -64,7 +64,5 @@ class TestLIP(TestCase):
         if os.name == "nt":
             self.assertRaises(PermissionError, write_lip, LIP(), ".", ResourceType.LIP)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_lip, LIP(), ".", ResourceType.LIP
-            )
+            self.assertRaises(IsADirectoryError, write_lip, LIP(), ".", ResourceType.LIP)
         self.assertRaises(ValueError, write_lip, LIP(), ".", ResourceType.INVALID)

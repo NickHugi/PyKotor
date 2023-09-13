@@ -191,7 +191,8 @@ class _GFFField:
     def field_type(
         self,
     ) -> GFFFieldType:
-        """Returns the field type.
+        """
+        Returns the field type.
 
         Returns
         -------
@@ -202,7 +203,8 @@ class _GFFField:
     def value(
         self,
     ) -> Any:
-        """Returns the value.
+        """
+        Returns the value.
 
         Returns
         -------
@@ -212,7 +214,8 @@ class _GFFField:
 
 
 class GFFStruct:
-    """Stores a collection of GFFFields.
+    """
+    Stores a collection of GFFFields.
 
     Attributes
     ----------
@@ -250,7 +253,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> None:
-        """Removes the field with the specified label.
+        """
+        Removes the field with the specified label.
 
         Args:
         ----
@@ -263,7 +267,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> bool:
-        """Returns the type of the field with the specified label.
+        """
+        Returns the type of the field with the specified label.
 
         Args:
         ----
@@ -287,7 +292,8 @@ class GFFStruct:
         default: T,
         object_type: U | None = None,
     ) -> T | U:
-        """Gets the value from the specified field. If the field does not exist or the value type does not match the
+        """
+        Gets the value from the specified field. If the field does not exist or the value type does not match the
         specified type then the default is returned instead.
 
         Args:
@@ -318,7 +324,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -332,7 +339,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -346,7 +354,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -360,7 +369,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -374,7 +384,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -388,7 +399,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -402,7 +414,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -416,7 +429,8 @@ class GFFStruct:
         label: str,
         value: int,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -430,7 +444,8 @@ class GFFStruct:
         label: str,
         value: float,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -444,7 +459,8 @@ class GFFStruct:
         label: str,
         value: float,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -458,7 +474,8 @@ class GFFStruct:
         label: str,
         value: ResRef,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -472,7 +489,8 @@ class GFFStruct:
         label: str,
         value: str,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -486,7 +504,8 @@ class GFFStruct:
         label: str,
         value: LocalizedString,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -500,7 +519,8 @@ class GFFStruct:
         label: str,
         value: bytes,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -514,7 +534,8 @@ class GFFStruct:
         label: str,
         value: Vector3,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -528,7 +549,8 @@ class GFFStruct:
         label: str,
         value: Vector4,
     ) -> None:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -542,7 +564,8 @@ class GFFStruct:
         label: str,
         value: GFFStruct,
     ) -> GFFStruct:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -561,7 +584,8 @@ class GFFStruct:
         label: str,
         value: GFFList,
     ) -> GFFList:
-        """Sets the value and field type of the field with the specified label.
+        """
+        Sets the value and field type of the field with the specified label.
 
         Args:
         ----
@@ -579,7 +603,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -602,7 +627,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -626,7 +652,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -650,7 +677,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -674,7 +702,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -698,7 +727,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -722,7 +752,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -746,7 +777,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> int:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -770,7 +802,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> float:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -794,7 +827,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> float:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -818,7 +852,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> ResRef:
-        """Returns a copy of the value from the field with the specified label.
+        """
+        Returns a copy of the value from the field with the specified label.
 
         Args:
         ----
@@ -842,7 +877,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> str:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -866,7 +902,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> LocalizedString:
-        """Returns a copy of the value from the field with the specified label.
+        """
+        Returns a copy of the value from the field with the specified label.
 
         Args:
         ----
@@ -890,7 +927,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> Vector3:
-        """Returns a copy of the value from the field with the specified label.
+        """
+        Returns a copy of the value from the field with the specified label.
 
         Args:
         ----
@@ -914,7 +952,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> Vector4:
-        """Returns a copy of the value from the field with the specified label.
+        """
+        Returns a copy of the value from the field with the specified label.
 
         Args:
         ----
@@ -938,7 +977,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> bytes:
-        """Returns the value of the field with the specified label.
+        """
+        Returns the value of the field with the specified label.
 
         Args:
         ----
@@ -962,7 +1002,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> GFFStruct:
-        """Returns a copy of the value from the field with the specified label.
+        """
+        Returns a copy of the value from the field with the specified label.
 
         Args:
         ----
@@ -986,7 +1027,8 @@ class GFFStruct:
         self,
         label: str,
     ) -> GFFList:
-        """Returns a copy of the value from the field with the specified label.
+        """
+        Returns a copy of the value from the field with the specified label.
 
         Args:
         ----
@@ -1038,7 +1080,8 @@ class GFFList:
         self,
         struct_id: int,
     ) -> GFFStruct:
-        """Adds a new struct into the list.
+        """
+        Adds a new struct into the list.
 
         Args:
         ----
@@ -1052,7 +1095,8 @@ class GFFList:
         self,
         index: int,
     ) -> GFFStruct | None:
-        """Returns the struct at the index if it exists, otherwise returns None.
+        """
+        Returns the struct at the index if it exists, otherwise returns None.
 
         Args:
         ----
@@ -1068,7 +1112,8 @@ class GFFList:
         self,
         index: int,
     ) -> None:
-        """Removes the struct at the specified index.
+        """
+        Removes the struct at the specified index.
 
         Args:
         ----

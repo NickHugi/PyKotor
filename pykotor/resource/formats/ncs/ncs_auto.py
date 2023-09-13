@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Optional
+
 from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import (
     KOTOR_CONSTANTS,
@@ -11,19 +13,22 @@ from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 from pykotor.resource.formats.ncs import NCS, NCSBinaryReader, NCSBinaryWriter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
 from pykotor.resource.formats.ncs.optimizers import (
     RemoveNopOptimizer,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
+if TYPE_CHECKING:
+    from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
+
 
 def read_ncs(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: int = None,
+    size: Optional[int] = None,
 ) -> NCS:
-    """Returns an NCS instance from the source.
+    """
+    Returns an NCS instance from the source.
 
     Args:
     ----
@@ -47,7 +52,8 @@ def write_ncs(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.NCS,
 ) -> None:
-    """Writes the NCS data to the target location with the specified format (NCS only).
+    """
+    Writes the NCS data to the target location with the specified format (NCS only).
 
     Args:
     ----
@@ -70,7 +76,8 @@ def bytes_ncs(
     ncs: NCS,
     file_format: ResourceType = ResourceType.NCS,
 ) -> bytes:
-    """Returns the NCS data in the specified format (NCS only) as a bytes object.
+    """
+    Returns the NCS data in the specified format (NCS only) as a bytes object.
 
     This is a convenience method that wraps the write_ncs() method.
 
@@ -98,7 +105,8 @@ def compile_nss(
     optimizers: list[NCSOptimizer] | None = None,
     library_lookup: list[str] | None = None,
 ) -> NCS:
-    """Returns NCS object compiled from input source string.
+    """
+    Returns NCS object compiled from input source string.
 
     Attributes
     ----------
@@ -119,11 +127,7 @@ def compile_nss(
     block = nss_parser.parser.parse(source, tracking=True)
     block.compile(ncs)
 
-    optimizers = (
-        [RemoveNopOptimizer()]
-        if optimizers is None
-        else [RemoveNopOptimizer(), *optimizers]
-    )
+    optimizers = [RemoveNopOptimizer()] if optimizers is None else [RemoveNopOptimizer(), *optimizers]
     for optimizer in optimizers:
         optimizer.reset()
     ncs.optimize(optimizers)

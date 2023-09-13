@@ -378,9 +378,7 @@ class _Node:
             self.skin.read_extra(reader)
 
         reader.seek(self.header.offset_to_children)
-        self.children_offsets = [
-            reader.read_uint32() for i in range(self.header.children_count)
-        ]
+        self.children_offsets = [reader.read_uint32() for i in range(self.header.children_count)]
         return self
 
     def write(
@@ -425,9 +423,7 @@ class _Node:
     ) -> int:
         size = _Node.SIZE
         if self.trimesh:
-            size += (
-                _TrimeshHeader.K1_SIZE if game == Game.K1 else _TrimeshHeader.K2_SIZE
-            )
+            size += _TrimeshHeader.K1_SIZE if game == Game.K1 else _TrimeshHeader.K2_SIZE
         return size
 
     def indices_counts_offset(
@@ -653,9 +649,7 @@ class _TrimeshHeader:
         self.offset_to_counters: int = 0
         self.counters_count: int = 0
         self.counters_count2: int = 0
-        self.unknown1: bytes = (
-            b"\xFF\xFF\xFF\xFF" + b"\xFF\xFF\xFF\xFF" + b"\x00\x00\x00\x00"
-        )
+        self.unknown1: bytes = b"\xFF\xFF\xFF\xFF" + b"\xFF\xFF\xFF\xFF" + b"\x00\x00\x00\x00"
         self.saber_unknowns: bytes = b"\x00" * 8
         self.unknown2: int = 0
         self.uv_direction: Vector2 = Vector2.from_null()
@@ -1251,11 +1245,7 @@ class MDLBinaryReader:
         self._mdl: MDL | None = None
         self._reader = BinaryReader.from_auto(source, offset)
 
-        self._reader_ext = (
-            None
-            if source_ext is None
-            else BinaryReader.from_auto(source_ext, offset_ext)
-        )
+        self._reader_ext = None if source_ext is None else BinaryReader.from_auto(source_ext, offset_ext)
 
         # first 12 bytes do not count in offsets used within the file
         self._reader.set_offset(self._reader.offset() + 12)
@@ -1279,9 +1269,7 @@ class MDLBinaryReader:
         self._mdl.root = self._load_node(model_header.geometry.root_node_offset)
 
         self._reader.seek(model_header.offset_to_animations)
-        animation_offsets = [
-            self._reader.read_uint32() for _i in range(model_header.animation_count)
-        ]
+        animation_offsets = [self._reader.read_uint32() for _i in range(model_header.animation_count)]
         for animation_offset in animation_offsets:
             anim = self._load_anim(animation_offset)
             self._mdl.anims.append(anim)
@@ -1298,9 +1286,7 @@ class MDLBinaryReader:
         model_header,
     ):
         self._reader.seek(model_header.offset_to_name_offsets)
-        name_offsets = [
-            self._reader.read_uint32() for _i in range(model_header.name_offsets_count)
-        ]
+        name_offsets = [self._reader.read_uint32() for _i in range(model_header.name_offsets_count)]
         for offset in name_offsets:
             self._reader.seek(offset)
             name = self._reader.read_terminated_string("\0")
@@ -1339,33 +1325,19 @@ class MDLBinaryReader:
 
             node.mesh.vertex_positions = bin_node.trimesh.vertices
 
-            if (
-                bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.NORMAL
-                and self._reader_ext
-            ):
+            if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.NORMAL and self._reader_ext:
                 node.mesh.vertex_normals = []
-            if (
-                bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE1
-                and self._reader_ext
-            ):
+            if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE1 and self._reader_ext:
                 node.mesh.vertex_uv1 = []
-            if (
-                bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE2
-                and self._reader_ext
-            ):
+            if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE2 and self._reader_ext:
                 node.mesh.vertex_uv2 = []
 
             mdx_offset = bin_node.trimesh.mdx_data_offset
             mdx_block_size = bin_node.trimesh.mdx_data_size
             for i in range(len(bin_node.trimesh.vertices)):
-                if (
-                    bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.NORMAL
-                    and self._reader_ext
-                ):
+                if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.NORMAL and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_normal_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_normal_offset,
                     )
                     x, y, z = (
                         self._reader_ext.read_single(),
@@ -1373,28 +1345,18 @@ class MDLBinaryReader:
                         self._reader_ext.read_single(),
                     )
                     node.mesh.vertex_normals.append(Vector3(x, y, z))
-                if (
-                    bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE1
-                    and self._reader_ext
-                ):
+                if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE1 and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_texture1_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_texture1_offset,
                     )
                     u, v = (
                         self._reader_ext.read_single(),
                         self._reader_ext.read_single(),
                     )
                     node.mesh.vertex_uv1.append(Vector2(u, v))
-                if (
-                    bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE2
-                    and self._reader_ext
-                ):
+                if bin_node.trimesh.mdx_data_bitmap & _MDXDataFlags.TEXTURE2 and self._reader_ext:
                     self._reader_ext.seek(
-                        mdx_offset
-                        + i * mdx_block_size
-                        + bin_node.trimesh.mdx_texture2_offset,
+                        mdx_offset + i * mdx_block_size + bin_node.trimesh.mdx_texture2_offset,
                     )
                     u, v = (
                         self._reader_ext.read_single(),
@@ -1427,10 +1389,7 @@ class MDLBinaryReader:
                     vertex_bone = MDLBoneVertex()
                     node.skin.vertex_bones.append(vertex_bone)
 
-                    mdx_offset = (
-                        bin_node.trimesh.mdx_data_offset
-                        + i * bin_node.trimesh.mdx_data_size
-                    )
+                    mdx_offset = bin_node.trimesh.mdx_data_offset + i * bin_node.trimesh.mdx_data_size
                     self._reader_ext.seek(
                         mdx_offset + bin_node.skin.offset_to_mdx_bones,
                     )
@@ -1440,10 +1399,7 @@ class MDLBinaryReader:
                     t4 = self._reader_ext.read_single()
                     vertex_bone.vertex_indices = (t1, t2, t3, t4)
 
-                    mdx_offset = (
-                        bin_node.trimesh.mdx_data_offset
-                        + i * bin_node.trimesh.mdx_data_size
-                    )
+                    mdx_offset = bin_node.trimesh.mdx_data_offset + i * bin_node.trimesh.mdx_data_size
                     self._reader_ext.seek(
                         mdx_offset + bin_node.skin.offset_to_mdx_weights,
                     )
@@ -1516,10 +1472,7 @@ class MDLBinaryReader:
 
         # Orientation data stored in controllers is sometimes compressed into 4 bytes. We need to check for that and
         # uncompress the quaternion if that is the case.
-        if (
-            bin_controller.type_id == MDLControllerType.ORIENTATION
-            and bin_controller.column_count == 2
-        ):
+        if bin_controller.type_id == MDLControllerType.ORIENTATION and bin_controller.column_count == 2:
             data = []
             for _i in range(bin_controller.row_count):
                 compressed = self._reader.read_uint32()
@@ -1529,16 +1482,11 @@ class MDLBinaryReader:
                 )
         else:
             self._reader.seek(data_offset + bin_controller.data_offset * 4)
-            data = [
-                [self._reader.read_single() for j in range(column_count)]
-                for i in range(row_count)
-            ]
+            data = [[self._reader.read_single() for j in range(column_count)] for i in range(row_count)]
 
         controller = MDLController()
         controller.controller_type = bin_controller.type_id
-        controller.rows = [
-            MDLControllerRow(time_keys[i], data[i]) for i in range(row_count)
-        ]
+        controller.rows = [MDLControllerRow(time_keys[i], data[i]) for i in range(row_count)]
         return controller
 
 
@@ -1672,16 +1620,12 @@ class MDLBinaryWriter:
             bin_node.trimesh.vertices = mdl_node.mesh.vertex_positions
 
             bin_node.trimesh.indices_counts = [len(mdl_node.mesh.faces) * 3]
-            bin_node.trimesh.indices_counts_count = (
-                bin_node.trimesh.indices_counts_count2
-            ) = 1
+            bin_node.trimesh.indices_counts_count = bin_node.trimesh.indices_counts_count2 = 1
 
             bin_node.trimesh.indices_offsets = [
                 0,
             ]  # Placeholder to be updated with offsets - do not remove line
-            bin_node.trimesh.indices_offsets_count = (
-                bin_node.trimesh.indices_offsets_count2
-            ) = 1
+            bin_node.trimesh.indices_offsets_count = bin_node.trimesh.indices_offsets_count2 = 1
 
             bin_node.trimesh.inverted_counters = [0]
             bin_node.trimesh.counters_count = bin_node.trimesh.counters_count2 = 1
@@ -1726,9 +1670,7 @@ class MDLBinaryWriter:
         bin_node.header.controller_count = bin_node.header.controller_count2 = len(
             mdl_node.controllers,
         )
-        bin_node.header.controller_data_length = (
-            bin_node.header.controller_data_length2
-        ) = len(bin_node.w_controller_data)
+        bin_node.header.controller_data_length = bin_node.header.controller_data_length2 = len(bin_node.w_controller_data)
 
     def _update_anim(
         self,
@@ -1736,19 +1678,11 @@ class MDLBinaryWriter:
         mdl_anim: MDLAnimation,
     ):
         if self.game == Game.K1:
-            bin_anim.header.geometry.function_pointer0 = (
-                _GeometryHeader.K1_ANIM_FUNCTION_POINTER0
-            )
-            bin_anim.header.geometry.function_pointer1 = (
-                _GeometryHeader.K1_ANIM_FUNCTION_POINTER1
-            )
+            bin_anim.header.geometry.function_pointer0 = _GeometryHeader.K1_ANIM_FUNCTION_POINTER0
+            bin_anim.header.geometry.function_pointer1 = _GeometryHeader.K1_ANIM_FUNCTION_POINTER1
         else:
-            bin_anim.header.geometry.function_pointer0 = (
-                _GeometryHeader.K2_ANIM_FUNCTION_POINTER0
-            )
-            bin_anim.header.geometry.function_pointer1 = (
-                _GeometryHeader.K2_ANIM_FUNCTION_POINTER1
-            )
+            bin_anim.header.geometry.function_pointer0 = _GeometryHeader.K2_ANIM_FUNCTION_POINTER0
+            bin_anim.header.geometry.function_pointer1 = _GeometryHeader.K2_ANIM_FUNCTION_POINTER1
 
         bin_anim.header.geometry.geometry_type = 5
         bin_anim.header.geometry.model_name = mdl_anim.name
@@ -1864,12 +1798,8 @@ class MDLBinaryWriter:
         self,
     ):
         for i, bin_anim in enumerate(self._bin_anims):
-            bin_anim.header.offset_to_events = (
-                self._anim_offsets[i] + bin_anim.events_offset()
-            )
-            bin_anim.header.geometry.root_node_offset = (
-                self._anim_offsets[i] + bin_anim.nodes_offset()
-            )
+            bin_anim.header.offset_to_events = self._anim_offsets[i] + bin_anim.events_offset()
+            bin_anim.header.geometry.root_node_offset = self._anim_offsets[i] + bin_anim.nodes_offset()
 
             node_offsets = []
             node_offset = self._anim_offsets[i] + bin_anim.nodes_offset()
@@ -1897,28 +1827,16 @@ class MDLBinaryWriter:
             offset = bin_offsets[child_index]
             bin_node.children_offsets.append(offset)
 
-        bin_node.header.offset_to_children = (
-            node_offset + bin_node.children_offsets_offset(self.game)
-        )
-        bin_node.header.offset_to_controllers = (
-            node_offset + bin_node.controllers_offset(self.game)
-        )
-        bin_node.header.offset_to_controller_data = (
-            node_offset + bin_node.controller_data_offset(self.game)
-        )
+        bin_node.header.offset_to_children = node_offset + bin_node.children_offsets_offset(self.game)
+        bin_node.header.offset_to_controllers = node_offset + bin_node.controllers_offset(self.game)
+        bin_node.header.offset_to_controller_data = node_offset + bin_node.controller_data_offset(self.game)
         bin_node.header.offset_to_root = 0
         bin_node.header.offset_to_parent = self._node_offsets[0] if index != 0 else 0
 
         if bin_node.trimesh:
-            bin_node.trimesh.offset_to_counters = (
-                node_offset + bin_node.inverted_counters_offset(self.game)
-            )
-            bin_node.trimesh.offset_to_indices_counts = (
-                node_offset + bin_node.indices_counts_offset(self.game)
-            )
-            bin_node.trimesh.offset_to_indices_offset = (
-                node_offset + bin_node.indices_offsets_offset(self.game)
-            )
+            bin_node.trimesh.offset_to_counters = node_offset + bin_node.inverted_counters_offset(self.game)
+            bin_node.trimesh.offset_to_indices_counts = node_offset + bin_node.indices_counts_offset(self.game)
+            bin_node.trimesh.offset_to_indices_offset = node_offset + bin_node.indices_offsets_offset(self.game)
             bin_node.trimesh.indices_offsets = [
                 node_offset + bin_node.indices_offset(self.game),
             ]
@@ -1964,11 +1882,7 @@ class MDLBinaryWriter:
 
         bin_children = []
         for child_name_id in child_name_ids:
-            bin_children.extend(
-                binnode
-                for binnode in all_nodes
-                if binnode.header.name_id == child_name_id
-            )
+            bin_children.extend(binnode for binnode in all_nodes if binnode.header.name_id == child_name_id)
         return bin_children
 
     def _node_type(
@@ -1987,20 +1901,14 @@ class MDLBinaryWriter:
             if bin_node.trimesh:
                 self._update_mdx(bin_node, self._mdl_nodes[i])
 
-        self._file_header.geometry.function_pointer0 = (
-            _GeometryHeader.K1_FUNCTION_POINTER0
-        )
-        self._file_header.geometry.function_pointer1 = (
-            _GeometryHeader.K1_FUNCTION_POINTER1
-        )
+        self._file_header.geometry.function_pointer0 = _GeometryHeader.K1_FUNCTION_POINTER0
+        self._file_header.geometry.function_pointer1 = _GeometryHeader.K1_FUNCTION_POINTER1
         self._file_header.geometry.model_name = self._mdl.name
         self._file_header.geometry.node_count = len(
             self._mdl_nodes,
         )  # TODO: need to include supermodel in count
         self._file_header.geometry.geometry_type = 2
-        self._file_header.offset_to_super_root = (
-            self._file_header.geometry.root_node_offset
-        )
+        self._file_header.offset_to_super_root = self._file_header.geometry.root_node_offset
         self._file_header.mdx_size = self._writer_ext.size()
 
         # TODO self._file_header.model_type = 0
@@ -2015,9 +1923,7 @@ class MDLBinaryWriter:
         self._file_header.supermodel = self._mdl.supermodel
         # TODO self._file_header.mdx_size
         # TODO self._file_header.mdx_offset
-        self._file_header.name_offsets_count = (
-            self._file_header.name_offsets_count2
-        ) = len(self._names)
+        self._file_header.name_offsets_count = self._file_header.name_offsets_count2 = len(self._names)
 
         self._file_header.write(self._writer)
 

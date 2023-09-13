@@ -16,7 +16,8 @@ def detect_lip(
     source: SOURCE_TYPES | object,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the LIP data is believed to be in. This function performs a basic check and does not guarantee
+    """
+    Returns what format the LIP data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -38,23 +39,11 @@ def detect_lip(
         if isinstance(source, (str, CaseAwarePath)):
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
-                file_format = (
-                    ResourceType.LIP
-                    if reader.read_string(4) == "LIP "
-                    else ResourceType.LIP_XML
-                )
+                file_format = ResourceType.LIP if reader.read_string(4) == "LIP " else ResourceType.LIP_XML
         elif isinstance(source, (bytes, bytearray)):
-            file_format = (
-                ResourceType.LIP
-                if source[:4].decode("ascii", "ignore") == "LIP "
-                else ResourceType.LIP_XML
-            )
+            file_format = ResourceType.LIP if source[:4].decode("ascii", "ignore") == "LIP " else ResourceType.LIP_XML
         elif isinstance(source, BinaryReader):
-            file_format = (
-                ResourceType.LIP
-                if source.read_string(4) == "LIP "
-                else ResourceType.LIP_XML
-            )
+            file_format = ResourceType.LIP if source.read_string(4) == "LIP " else ResourceType.LIP_XML
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID
@@ -71,7 +60,8 @@ def read_lip(
     offset: int = 0,
     size: int | None = None,
 ) -> LIP:
-    """Returns an LIP instance from the source. The file format (LIP or LIP_XML) is automatically determined before parsing
+    """
+    Returns an LIP instance from the source. The file format (LIP or LIP_XML) is automatically determined before parsing
     the data.
 
     Args:
@@ -109,7 +99,8 @@ def write_lip(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.LIP,
 ) -> None:
-    """Writes the LIP data to the target location with the specified format (LIP or LIP_XML).
+    """
+    Writes the LIP data to the target location with the specified format (LIP or LIP_XML).
 
     Args:
     ----
@@ -136,7 +127,8 @@ def bytes_lip(
     lip: LIP,
     file_format: ResourceType = ResourceType.LIP,
 ) -> bytes:
-    """Returns the LIP data in the specified format (LIP or LIP_XML) as a bytes object.
+    """
+    Returns the LIP data in the specified format (LIP or LIP_XML) as a bytes object.
 
     This is a convenience method that wraps the write_lip() method.
 

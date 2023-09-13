@@ -9,7 +9,8 @@ def read_vis(
     offset: int = 0,
     size: int | None = None,
 ) -> VIS:
-    """Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
+    """
+    Returns an VIS instance from the source. The file format (VIS only) is automatically determined before parsing
     the data.
 
     Args:
@@ -37,7 +38,8 @@ def write_vis(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.VIS,
 ) -> None:
-    """Writes the VIS data to the target location with the specified format (VIS only).
+    """
+    Writes the VIS data to the target location with the specified format (VIS only).
 
     Args:
     ----
@@ -62,7 +64,8 @@ def bytes_vis(
     vis: VIS,
     file_format: ResourceType = ResourceType.VIS,
 ) -> bytes:
-    """Returns the VIS data in the specified format (VIS only) as a bytes object.
+    """
+    Returns the VIS data in the specified format (VIS only) as a bytes object.
 
     This is a convenience method that wraps the write_vis() method.
 

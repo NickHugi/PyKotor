@@ -33,15 +33,9 @@ class TestLYT(TestCase):
         self.assertEqual(lyt.rooms[0], LYTRoom("M17mg_01a", Vector3(100.0, 100.0, 0.0)))
         self.assertEqual(lyt.rooms[1], LYTRoom("M17mg_01b", Vector3(100.0, 100.0, 0.0)))
         self.assertEqual(lyt.tracks[0], LYTTrack("M17mg_MGT01", Vector3(0.0, 0.0, 0.0)))
-        self.assertEqual(
-            lyt.tracks[1], LYTTrack("M17mg_MGT02", Vector3(112.047, 209.04, 0.0))
-        )
-        self.assertEqual(
-            lyt.obstacles[0], LYTObstacle("M17mg_MGO01", Vector3(103.309, 3691.61, 0.0))
-        )
-        self.assertEqual(
-            lyt.obstacles[1], LYTObstacle("M17mg_MGO02", Vector3(118.969, 3688.0, 0.0))
-        )
+        self.assertEqual(lyt.tracks[1], LYTTrack("M17mg_MGT02", Vector3(112.047, 209.04, 0.0)))
+        self.assertEqual(lyt.obstacles[0], LYTObstacle("M17mg_MGO01", Vector3(103.309, 3691.61, 0.0)))
+        self.assertEqual(lyt.obstacles[1], LYTObstacle("M17mg_MGO02", Vector3(118.969, 3688.0, 0.0)))
         self.assertEqual(
             lyt.doorhooks[0],
             LYTDoorHook(
@@ -73,7 +67,5 @@ class TestLYT(TestCase):
         if os.name == "nt":
             self.assertRaises(PermissionError, write_lyt, LYT(), ".", ResourceType.LYT)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_lyt, LYT(), ".", ResourceType.LYT
-            )
+            self.assertRaises(IsADirectoryError, write_lyt, LYT(), ".", ResourceType.LYT)
         self.assertRaises(ValueError, write_lyt, LYT(), ".", ResourceType.INVALID)

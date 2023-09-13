@@ -8,7 +8,8 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTM:
-    """Stores merchant data.
+    """
+    Stores merchant data.
 
     Attributes
     ----------

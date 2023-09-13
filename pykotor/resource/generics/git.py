@@ -54,7 +54,8 @@ class GIT:
     def instances(
         self,
     ) -> list[GITInstance]:
-        """Returns a list of all instances stored inside the GIT, regardless of the type.
+        """
+        Returns a list of all instances stored inside the GIT, regardless of the type.
 
         Returns
         -------
@@ -101,7 +102,8 @@ class GIT:
         self,
         instance: GITInstance,
     ) -> int:
-        """Finds the index of an instance in the particular list it belongs to inside the GIT object.
+        """
+        Finds the index of an instance in the particular list it belongs to inside the GIT object.
 
         Args:
         ----
@@ -145,7 +147,8 @@ class GIT:
         self,
         instance: GITInstance,
     ) -> None:
-        """Adds instance to the relevant list in the GIT.
+        """
+        Adds instance to the relevant list in the GIT.
 
         Args:
         ----
@@ -844,11 +847,7 @@ def construct_git(
         door.position.y = door_struct.acquire("Y", 0.0)
         door.position.z = door_struct.acquire("Z", 0.0)
         tweak_enabled = door_struct.acquire("UseTweakColor", 0)
-        door.tweak_color = (
-            Color.from_bgr_integer(door_struct.acquire("TweakColor", 0))
-            if tweak_enabled
-            else None
-        )
+        door.tweak_color = Color.from_bgr_integer(door_struct.acquire("TweakColor", 0)) if tweak_enabled else None
 
     for encounter_struct in gff.root.get_list("Encounter List"):
         x = encounter_struct.acquire("XPosition", 0.0)
@@ -892,9 +891,7 @@ def construct_git(
 
         tweak_enabled = placeable_struct.acquire("UseTweakColor", 0)
         tweak_int = placeable_struct.acquire("TweakColor", 0)
-        placeable.tweak_color = (
-            Color.from_bgr_integer(tweak_int) if tweak_enabled else None
-        )
+        placeable.tweak_color = Color.from_bgr_integer(tweak_int) if tweak_enabled else None
 
     for sound_struct in gff.root.get_list("SoundList"):
         sound = GITSound()
@@ -1038,9 +1035,7 @@ def dismantle_git(
         door_struct.set_single("Y", door.position.y)
         door_struct.set_single("Z", door.position.z)
         if game is Game.K2:
-            tweak_color = (
-                door.tweak_color.bgr_integer() if door.tweak_color is not None else 0
-            )
+            tweak_color = door.tweak_color.bgr_integer() if door.tweak_color is not None else 0
             door_struct.set_uint32("TweakColor", tweak_color)
             door_struct.set_uint8("UseTweakColor", 0 if door.tweak_color is None else 1)
 
@@ -1076,11 +1071,7 @@ def dismantle_git(
         placeable_struct.set_single("Y", placeable.position.y)
         placeable_struct.set_single("Z", placeable.position.z)
         if game is Game.K2:
-            tweak_color = (
-                placeable.tweak_color.bgr_integer()
-                if placeable.tweak_color is not None
-                else 0
-            )
+            tweak_color = placeable.tweak_color.bgr_integer() if placeable.tweak_color is not None else 0
             placeable_struct.set_uint32("TweakColor", tweak_color)
             placeable_struct.set_uint8(
                 "UseTweakColor",
@@ -1150,9 +1141,7 @@ def dismantle_git(
         waypoint_struct.set_uint8("HasMapNote", waypoint.has_map_note)
         waypoint_struct.set_locstring(
             "MapNote",
-            LocalizedString.from_invalid()
-            if waypoint.map_note is None
-            else waypoint.map_note,
+            LocalizedString.from_invalid() if waypoint.map_note is None else waypoint.map_note,
         )
 
     return gff

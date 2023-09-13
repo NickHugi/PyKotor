@@ -60,16 +60,12 @@ if TYPE_CHECKING:
 class ConfigReader:
     def __init__(self, ini: ConfigParser, mod_path: CaseAwarePath | str) -> None:
         self.ini = ini
-        self.mod_path: CaseAwarePath = (
-            mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
-        )
+        self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
         self.config: PatcherConfig
 
     @classmethod
     def from_filepath(cls, path: str | CaseAwarePath) -> PatcherConfig:
-        path = (
-            path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
-        ).resolve()
+        path = (path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)).resolve()
         ini_file_bytes = BinaryReader.load_file(path)
 
         detector = UniversalDetector()
@@ -202,11 +198,7 @@ class ConfigReader:
                 modifications_ini_keys,
                 modifications_ini_values,
             ):
-                change_indices = (
-                    parse_range(str(mod_key), len(tlk_data))
-                    if not isinstance(mod_key, range)
-                    else mod_key
-                )
+                change_indices = parse_range(str(mod_key), len(tlk_data)) if not isinstance(mod_key, range) else mod_key
                 value_range = (
                     parse_range(str(mod_value), len(tlk_data))
                     if not isinstance(mod_value, range) and mod_value != ""
@@ -398,7 +390,9 @@ class ConfigReader:
                     modifications.modifiers.append(modifier)
                 elif lowercase_name.startswith("2damemory"):
                     modifier = Memory2DAModifierGFF(
-                        file, int(lowercase_name[9:]), value
+                        file,
+                        int(lowercase_name[9:]),
+                        value,
                     )
                     modifications.modifiers.append(modifier)
                 else:
@@ -541,15 +535,11 @@ class ConfigReader:
             value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == Vector3:
             # Replace comma with dot for decimal separator to match TSLPatcher syntax.
-            components = [
-                float(axis.replace(",", ".")) for axis in raw_value.split("|")
-            ]
+            components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector3(*components))
         elif field_type.return_type() == Vector4:
             # Replace comma with dot for decimal separator to match TSLPatcher syntax.
-            components = [
-                float(axis.replace(",", ".")) for axis in raw_value.split("|")
-            ]
+            components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector4(*components))
         else:
             raise ValueError(field_type)
@@ -564,7 +554,12 @@ class ConfigReader:
                     index_in_list_token = int(key[9:])
                 else:
                     nested_modifier = Memory2DAModifierGFF(
-                        identifier, int(key[9:]), x, label, path, nested_modifiers
+                        identifier,
+                        int(key[9:]),
+                        x,
+                        label,
+                        path,
+                        nested_modifiers,
                     )
                     nested_modifiers.append(nested_modifier)
             if key.startswith("AddField"):
@@ -579,7 +574,11 @@ class ConfigReader:
         # If current field is a struct inside a list:
         if (inside_list or label == "") and field_type.return_type() == GFFStruct:
             return AddStructToListGFF(
-                label, struct_id, index_in_list_token, path, nested_modifiers
+                label,
+                struct_id,
+                index_in_list_token,
+                path,
+                nested_modifiers,
             )
 
         return AddFieldGFF(
@@ -694,11 +693,7 @@ class ConfigReader:
                 token_id = int(value[6:])
                 row_value = RowValueTLKMemory(token_id)
             elif value == "high()":
-                row_value = (
-                    RowValueHigh(None)
-                    if modifier == "RowLabel"
-                    else RowValueHigh(value)
-                )
+                row_value = RowValueHigh(None) if modifier == "RowLabel" else RowValueHigh(value)
             elif value == "RowIndex":
                 row_value = RowValueRowIndex()
             elif value == "RowLabel":

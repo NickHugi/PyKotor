@@ -4,9 +4,7 @@ class PatchLogger:
         self.warnings: list[PatchLog] = []
         self.errors: list[PatchLog] = []
         self.verbose_logs: list[PatchLog] = []
-        self.all_logs: list[
-            PatchLog
-        ] = []  # used so logging is done in order of operations
+        self.all_logs: list[PatchLog] = []  # used so logging is done in order of operations
 
         self.patches_completed: int = 0
 

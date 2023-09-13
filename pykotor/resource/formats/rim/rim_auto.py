@@ -9,7 +9,8 @@ def read_rim(
     offset: int = 0,
     size: int | None = None,
 ) -> RIM:
-    """Returns an RIM instance from the source. The file format (RIM only) is automatically determined before parsing
+    """
+    Returns an RIM instance from the source. The file format (RIM only) is automatically determined before parsing
     the data.
 
     Args:
@@ -37,7 +38,8 @@ def write_rim(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.RIM,
 ) -> None:
-    """Writes the RIM data to the target location with the specified format (RIM only).
+    """
+    Writes the RIM data to the target location with the specified format (RIM only).
 
     Args:
     ----
@@ -62,7 +64,8 @@ def bytes_rim(
     rim: RIM,
     file_format: ResourceType = ResourceType.RIM,
 ) -> bytes:
-    """Returns the RIM data in the specified format (RIM only) as a bytes object.
+    """
+    Returns the RIM data in the specified format (RIM only) as a bytes object.
 
     This is a convenience method that wraps the write_rim() method.
 

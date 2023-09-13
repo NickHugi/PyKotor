@@ -69,11 +69,7 @@ class Module:
 
         self._capsules = [custom_capsule] if custom_capsule is not None else []
         self._capsules.extend(
-            [
-                Capsule(installation.module_path() / module)
-                for module in installation.module_names()
-                if root in module.lower()
-            ],
+            [Capsule(installation.module_path() / module) for module in installation.module_names() if root in module.lower()],
         )
 
         for capsule in self._capsules:
@@ -92,7 +88,8 @@ class Module:
     def get_root(
         filepath: CaseAwarePath,
     ) -> str:
-        """Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
+        """
+        Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
         become "danm13".
 
         Args:
@@ -119,7 +116,8 @@ class Module:
         return root_a + root_b
 
     def capsules(self) -> list[Capsule]:
-        """Returns a copy of the capsules used by the module.
+        """
+        Returns a copy of the capsules used by the module.
 
         Returns
         -------
@@ -160,38 +158,14 @@ class Module:
             git = self.git().resource()
             assert git is not None
             look_for.extend(
-                [
-                    ResourceIdentifier(creature.resref.get(), ResourceType.UTC)
-                    for creature in git.creatures
-                ]
-                + [
-                    ResourceIdentifier(placeable.resref.get(), ResourceType.UTP)
-                    for placeable in git.placeables
-                ]
-                + [
-                    ResourceIdentifier(door.resref.get(), ResourceType.UTD)
-                    for door in git.doors
-                ]
-                + [
-                    ResourceIdentifier(sound.resref.get(), ResourceType.UTS)
-                    for sound in git.sounds
-                ]
-                + [
-                    ResourceIdentifier(waypoint.resref.get(), ResourceType.UTW)
-                    for waypoint in git.waypoints
-                ]
-                + [
-                    ResourceIdentifier(encounter.resref.get(), ResourceType.UTE)
-                    for encounter in git.encounters
-                ]
-                + [
-                    ResourceIdentifier(trigger.resref.get(), ResourceType.UTT)
-                    for trigger in git.triggers
-                ]
-                + [
-                    ResourceIdentifier(store.resref.get(), ResourceType.UTM)
-                    for store in git.stores
-                ],
+                [ResourceIdentifier(creature.resref.get(), ResourceType.UTC) for creature in git.creatures]
+                + [ResourceIdentifier(placeable.resref.get(), ResourceType.UTP) for placeable in git.placeables]
+                + [ResourceIdentifier(door.resref.get(), ResourceType.UTD) for door in git.doors]
+                + [ResourceIdentifier(sound.resref.get(), ResourceType.UTS) for sound in git.sounds]
+                + [ResourceIdentifier(waypoint.resref.get(), ResourceType.UTW) for waypoint in git.waypoints]
+                + [ResourceIdentifier(encounter.resref.get(), ResourceType.UTE) for encounter in git.encounters]
+                + [ResourceIdentifier(trigger.resref.get(), ResourceType.UTT) for trigger in git.triggers]
+                + [ResourceIdentifier(store.resref.get(), ResourceType.UTM) for store in git.stores],
             )
         self.git().activate(original)
 
@@ -293,10 +267,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (
-                    resource.resname().lower() == self._id
-                    and resource.restype() == ResourceType.LYT
-                )
+                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.LYT)
             ),
             None,
         )
@@ -306,10 +277,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (
-                    resource.resname().lower() == self._id
-                    and resource.restype() == ResourceType.VIS
-                )
+                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.VIS)
             ),
             None,
         )
@@ -317,7 +285,8 @@ class Module:
     def are(
         self,
     ) -> ModuleResource[ARE] | None:
-        """The function `are` returns a ModuleResource object from a dictionary of resources based on a
+        """
+        The function `are` returns a ModuleResource object from a dictionary of resources based on a
         matching resource name and type.
         :return: a ModuleResource object of type ARE.
         """
@@ -325,10 +294,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (
-                    resource.resname().lower() == self._id
-                    and resource.restype() == ResourceType.ARE
-                )
+                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.ARE)
             ),
             None,
         )
@@ -336,7 +302,8 @@ class Module:
     def git(
         self,
     ) -> ModuleResource[GIT] | None:
-        """The function `git` returns a `ModuleResource` object of type `GIT` from a dictionary of
+        """
+        The function `git` returns a `ModuleResource` object of type `GIT` from a dictionary of
         resources based on a given ID.
         :return: The code is returning a resource of type GIT from the self.resources dictionary. The
         resource is identified by its filename and is matched based on its resname and restype.
@@ -345,10 +312,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if (
-                    resource.resname().lower() == self._id
-                    and resource.restype() == ResourceType.GIT
-                )
+                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.GIT)
             ),
             None,
         )
@@ -356,17 +320,15 @@ class Module:
     def pth(
         self,
     ) -> ModuleResource[PTH] | None:
-        """The function `pth` returns a `ModuleResource` object with a specific resname and restype.
+        """
+        The function `pth` returns a `ModuleResource` object with a specific resname and restype.
         :return: a ModuleResource object of type PTH.
         """
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if (
-                    resource.resname().lower() == self._id
-                    and resource.restype() == ResourceType.PTH
-                )
+                if (resource.resname().lower() == self._id and resource.restype() == ResourceType.PTH)
             ),
             None,
         )
@@ -374,17 +336,15 @@ class Module:
     def info(
         self,
     ) -> ModuleResource[IFO] | None:
-        """The function returns the resource object with the name "module" and the type ResourceType.IFO.
+        """
+        The function returns the resource object with the name "module" and the type ResourceType.IFO.
         :return: a ModuleResource object of type IFO.
         """
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if (
-                    resource.resname().lower() == "module"
-                    and resource.restype() == ResourceType.IFO
-                )
+                if (resource.resname().lower() == "module" and resource.restype() == ResourceType.IFO)
             ),
             None,
         )
@@ -397,8 +357,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTC
+                if resname == resource.resname() and resource.restype() == ResourceType.UTC
             ),
             None,
         )
@@ -406,11 +365,7 @@ class Module:
     def creatures(
         self,
     ) -> list[ModuleResource[UTC]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTC
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTC]
 
     def placeable(
         self,
@@ -420,8 +375,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTP
+                if resname == resource.resname() and resource.restype() == ResourceType.UTP
             ),
             None,
         )
@@ -429,11 +383,7 @@ class Module:
     def placeables(
         self,
     ) -> list[ModuleResource[UTP]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTP
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTP]
 
     def door(
         self,
@@ -443,8 +393,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTD
+                if resname == resource.resname() and resource.restype() == ResourceType.UTD
             ),
             None,
         )
@@ -452,11 +401,7 @@ class Module:
     def doors(
         self,
     ) -> list[ModuleResource[UTD]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTD
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
 
     def item(
         self,
@@ -466,8 +411,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTI
+                if resname == resource.resname() and resource.restype() == ResourceType.UTI
             ),
             None,
         )
@@ -475,11 +419,7 @@ class Module:
     def items(
         self,
     ) -> list[ModuleResource[UTI]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTD
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
 
     def encounter(
         self,
@@ -489,8 +429,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTE
+                if resname == resource.resname() and resource.restype() == ResourceType.UTE
             ),
             None,
         )
@@ -498,19 +437,14 @@ class Module:
     def encounters(
         self,
     ) -> list[ModuleResource[UTE]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTE
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTE]
 
     def store(self, resname: str) -> ModuleResource[UTM] | None:
         return next(
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTM
+                if resname == resource.resname() and resource.restype() == ResourceType.UTM
             ),
             None,
         )
@@ -518,11 +452,7 @@ class Module:
     def stores(
         self,
     ) -> list[ModuleResource[UTM]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTM
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTM]
 
     def trigger(
         self,
@@ -532,8 +462,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTT
+                if resname == resource.resname() and resource.restype() == ResourceType.UTT
             ),
             None,
         )
@@ -541,11 +470,7 @@ class Module:
     def triggers(
         self,
     ) -> list[ModuleResource[UTT]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTT
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTT]
 
     def waypoint(
         self,
@@ -555,8 +480,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTW
+                if resname == resource.resname() and resource.restype() == ResourceType.UTW
             ),
             None,
         )
@@ -564,11 +488,7 @@ class Module:
     def waypoints(
         self,
     ) -> list[ModuleResource[UTW]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTW
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTW]
 
     def model(
         self,
@@ -578,8 +498,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.MDL
+                if resname == resource.resname() and resource.restype() == ResourceType.MDL
             ),
             None,
         )
@@ -592,8 +511,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.MDX
+                if resname == resource.resname() and resource.restype() == ResourceType.MDX
             ),
             None,
         )
@@ -601,11 +519,7 @@ class Module:
     def models(
         self,
     ) -> list[ModuleResource[MDL]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.MDL
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDL]
 
     def texture(
         self,
@@ -615,8 +529,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname.lower() == resource.resname().lower()
-                and resource.restype() in [ResourceType.TPC, ResourceType.TGA]
+                if resname.lower() == resource.resname().lower() and resource.restype() in [ResourceType.TPC, ResourceType.TGA]
             ),
             None,
         )
@@ -624,11 +537,7 @@ class Module:
     def textures(
         self,
     ) -> list[ModuleResource[MDL]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() in [ResourceType.TPC, ResourceType.TGA]
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() in [ResourceType.TPC, ResourceType.TGA]]
 
     def sound(
         self,
@@ -638,8 +547,7 @@ class Module:
             (
                 resource
                 for resource in self.resources.values()
-                if resname == resource.resname()
-                and resource.restype() == ResourceType.UTS
+                if resname == resource.resname() and resource.restype() == ResourceType.UTS
             ),
             None,
         )
@@ -647,11 +555,7 @@ class Module:
     def sounds(
         self,
     ) -> list[ModuleResource[UTS]]:
-        return [
-            resource
-            for resource in self.resources.values()
-            if resource.restype() == ResourceType.UTS
-        ]
+        return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTS]
 
 
 class ModuleResource(Generic[T]):
@@ -664,7 +568,8 @@ class ModuleResource(Generic[T]):
         self._locations: list[CaseAwarePath] = []
 
     def resname(self) -> str:
-        """Returns the resource name.
+        """
+        Returns the resource name.
 
         Returns
         -------
@@ -673,7 +578,8 @@ class ModuleResource(Generic[T]):
         return self._resname
 
     def restype(self) -> ResourceType:
-        """Returns the type of resource stored.
+        """
+        Returns the type of resource stored.
 
         Returns
         -------
@@ -705,7 +611,8 @@ class ModuleResource(Generic[T]):
         return None
 
     def data(self) -> bytes:
-        """Opens the file at the active location and returns the data.
+        """
+        Opens the file at the active location and returns the data.
 
         Raises
         ------
@@ -730,7 +637,8 @@ class ModuleResource(Generic[T]):
         return BinaryReader.load_file(self._active)
 
     def resource(self) -> T | None:
-        """Returns the cached resource object. If no object has been cached, then it will load the object.
+        """
+        Returns the cached resource object. If no object has been cached, then it will load the object.
 
         Returns
         -------
@@ -778,7 +686,8 @@ class ModuleResource(Generic[T]):
         return self._resource
 
     def add_locations(self, filepaths: list[CaseAwarePath]) -> None:
-        """Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
+        """
+        Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
         ignored.
 
         Args:
@@ -797,7 +706,8 @@ class ModuleResource(Generic[T]):
         return self._locations
 
     def activate(self, filepath: CaseAwarePath | None = None) -> None:
-        """Sets the active file to the specified path. Calling this method will reset the loaded resource.
+        """
+        Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         Raises:
         ------
@@ -826,7 +736,8 @@ class ModuleResource(Generic[T]):
         self.resource()
 
     def active(self) -> CaseAwarePath | None:
-        """Returns the filepath of the currently active file for the resource.
+        """
+        Returns the filepath of the currently active file for the resource.
 
         Returns
         -------
@@ -870,9 +781,7 @@ class ModuleResource(Generic[T]):
 
         if is_erf_or_mod_file(self._active.name):
             erf = read_erf(self._active)
-            erf.erf_type = (
-                ERFType.ERF if is_erf_file(self._active.name) else ERFType.MOD
-            )
+            erf.erf_type = ERFType.ERF if is_erf_file(self._active.name) else ERFType.MOD
             erf.set(
                 self._resname,
                 self._restype,

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+
 class Vector2:
     """
     Represents a 2 dimensional vector.
@@ -1135,12 +1136,12 @@ class Face:
     ) -> float:
         return -1.0 * (self.normal().dot(self.v1))
 
-    def centre( #TODO: fix return type
+    def centre(  # TODO: fix return type
         self,
     ) -> Vector3:
         return (self.v1 + self.v2 + self.v3) / 3
 
-    def average( #TODO: fix return type
+    def average(  # TODO: fix return type
         self,
     ) -> Vector3:
         """

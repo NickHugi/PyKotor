@@ -124,7 +124,8 @@ class ModInstaller:
         self._config: PatcherConfig | None = None
 
     def config(self) -> PatcherConfig:
-        """Returns the PatcherConfig object associated with the mod installer. The object is created when the method is
+        """
+        Returns the PatcherConfig object associated with the mod installer. The object is created when the method is
         first called then cached for future calls.
         """
         if self._config is None:
@@ -321,11 +322,7 @@ class ModInstaller:
         resname, restype = ResourceIdentifier.from_path(filename)
         file_extension = destination.suffix
         if is_rim_file(destination.name):
-            rim = (
-                read_rim(BinaryReader.load_file(destination))
-                if destination.exists()
-                else RIM()
-            )
+            rim = read_rim(BinaryReader.load_file(destination)) if destination.exists() else RIM()
             if not rim.get(resname, restype) or replace:
                 rim.set(resname, restype, data)
                 write_rim(rim, destination)

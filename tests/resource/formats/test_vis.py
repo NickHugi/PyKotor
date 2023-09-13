@@ -52,7 +52,5 @@ class TestVIS(TestCase):
         if os.name == "nt":
             self.assertRaises(PermissionError, write_vis, VIS(), ".", ResourceType.VIS)
         else:
-            self.assertRaises(
-                IsADirectoryError, write_vis, VIS(), ".", ResourceType.VIS
-            )
+            self.assertRaises(IsADirectoryError, write_vis, VIS(), ".", ResourceType.VIS)
         self.assertRaises(ValueError, write_vis, VIS(), ".", ResourceType.INVALID)

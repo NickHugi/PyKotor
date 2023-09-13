@@ -30,7 +30,8 @@ class Gender(IntEnum):
 
 
 class LocalizedString:
-    """Localized strings are a way of the game handling strings that need to be catered to a specific language or gender.
+    """
+    Localized strings are a way of the game handling strings that need to be catered to a specific language or gender.
 
     This is achieved through either referencing a entry in the 'dialog.tlk' or by directly providing strings for each
     language.
@@ -50,13 +51,13 @@ class LocalizedString:
             language, gender = LocalizedString.substring_pair(substring_id)
             yield language, gender, text
 
-
     def __len__(self):
         """Returns the number of substrings."""
         return len(self._substrings)
 
     def __str__(self):
-        """If the stringref is valid, it will return it as a string. Otherwise it will return one of the substrings,
+        """
+        If the stringref is valid, it will return it as a string. Otherwise it will return one of the substrings,
         prioritizing the english substring if it exists. If no substring exists and the stringref is invalid, "-1" is
         returned.
         """
@@ -84,7 +85,8 @@ class LocalizedString:
 
     @staticmethod
     def from_english(text: str) -> LocalizedString:
-        """Returns a new localizedstring object with a english substring.
+        """
+        Returns a new localizedstring object with a english substring.
 
         Args:
         ----
@@ -100,7 +102,8 @@ class LocalizedString:
 
     @staticmethod
     def substring_id(language: Language, gender: Gender) -> int:
-        """Returns the ID for the language gender pair.
+        """
+        Returns the ID for the language gender pair.
 
         Args:
         ----
@@ -115,7 +118,8 @@ class LocalizedString:
 
     @staticmethod
     def substring_pair(substring_id: int) -> tuple[Language, Gender]:
-        """Returns the language gender pair from a substring ID.
+        """
+        Returns the language gender pair from a substring ID.
 
         Args:
         ----
@@ -130,7 +134,8 @@ class LocalizedString:
         return language, gender
 
     def set(self, language: Language, gender: Gender, string: str) -> None:
-        """Sets the text of the substring with the corresponding language/gender pair. The substring is created if it does
+        """
+        Sets the text of the substring with the corresponding language/gender pair. The substring is created if it does
         not exist.
 
         Args:
@@ -143,7 +148,8 @@ class LocalizedString:
         self._substrings[substring_id] = string
 
     def get(self, language: Language, gender: Gender) -> str | None:
-        """Gets the substring text with the corresponding language/gender pair.
+        """
+        Gets the substring text with the corresponding language/gender pair.
 
         Args:
         ----
@@ -155,12 +161,11 @@ class LocalizedString:
             The text of the substring if a matching pair is found, otherwise returns None.
         """
         substring_id = LocalizedString.substring_id(language, gender)
-        return (
-            self._substrings[substring_id] if substring_id in self._substrings else None
-        )
+        return self._substrings[substring_id] if substring_id in self._substrings else None
 
     def remove(self, language: Language, gender: Gender) -> None:
-        """Removes the existing substring with the respective language/gender pair if it exists. No error is thrown if it
+        """
+        Removes the existing substring with the respective language/gender pair if it exists. No error is thrown if it
         does not find a corresponding pair.
 
         Args:
@@ -172,7 +177,8 @@ class LocalizedString:
         self._substrings.pop(substring_id)
 
     def exists(self, language: Language, gender: Gender) -> bool:
-        """Returns whether or not a substring exists with the respective language/gender pair.
+        """
+        Returns whether or not a substring exists with the respective language/gender pair.
 
         Args:
         ----

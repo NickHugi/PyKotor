@@ -65,19 +65,20 @@ if TYPE_CHECKING:
 
 class NssParser:
     def __init__(
-            self,
-            functions: list[ScriptFunction],
-            constants: list[ScriptConstant],
-            library: dict[str, bytes],
-            library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None,
-            errorlog=yacc.NullLogger(),
+        self,
+        functions: list[ScriptFunction],
+        constants: list[ScriptConstant],
+        library: dict[str, bytes],
+        library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None,
+        errorlog=yacc.NullLogger(),
     ):
-        self.parser = yacc.yacc(module=self,
-                                errorlog=errorlog,
-                                write_tables=False,
-                                debug=False,
-                                debuglog=yacc.NullLogger(),
-                                )
+        self.parser = yacc.yacc(
+            module=self,
+            errorlog=errorlog,
+            write_tables=False,
+            debug=False,
+            debuglog=yacc.NullLogger(),
+        )
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants
         self.library: dict[str, bytes] = library
@@ -114,7 +115,7 @@ class NssParser:
     )
 
     def p_error(self, p: LexToken):
-        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'" # type: ignore
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"  # type: ignore
         raise CompileException(msg)
 
     def p_code_root(self, p):
@@ -126,8 +127,9 @@ class NssParser:
             p[1].objects.append(p[2])
             p[0] = p[1]
         else:
-            p[0] = CodeRoot(constants=self.constants, functions=self.functions, library_lookup=self.library_lookup,
-                            library=self.library)
+            p[0] = CodeRoot(
+                constants=self.constants, functions=self.functions, library_lookup=self.library_lookup, library=self.library
+            )
 
     def p_code_root_object(self, p):
         """
@@ -653,4 +655,5 @@ class NssParser:
             p[0] = p[1]
         else:
             p[0] = []
+
     # endregion

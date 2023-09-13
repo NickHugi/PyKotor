@@ -41,11 +41,7 @@ class TLKXMLReader(ResourceReader):
         for string in xml:
             index = int(string.get("id"))
             self._tlk.entries[index].text = string.text
-            self._tlk.entries[index].voiceover = (
-                ResRef(string.get("sound"))
-                if string.get("sound")
-                else ResRef.from_blank()
-            )
+            self._tlk.entries[index].voiceover = ResRef(string.get("sound")) if string.get("sound") else ResRef.from_blank()
 
         return self._tlk
 

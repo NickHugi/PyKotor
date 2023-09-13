@@ -16,7 +16,8 @@ def detect_ssf(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """Returns what format the SSF data is believed to be in. This function performs a basic check and does not guarantee
+    """
+    Returns what format the SSF data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -38,23 +39,11 @@ def detect_ssf(
         if isinstance(source, (str, CaseAwarePath)):
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
-                file_format = (
-                    ResourceType.SSF
-                    if reader.read_string(4) == "SSF "
-                    else ResourceType.SSF_XML
-                )
+                file_format = ResourceType.SSF if reader.read_string(4) == "SSF " else ResourceType.SSF_XML
         elif isinstance(source, (bytes, bytearray)):
-            file_format = (
-                ResourceType.SSF
-                if source[:4].decode("ascii", "ignore") == "SSF "
-                else ResourceType.SSF_XML
-            )
+            file_format = ResourceType.SSF if source[:4].decode("ascii", "ignore") == "SSF " else ResourceType.SSF_XML
         elif isinstance(source, BinaryReader):
-            file_format = (
-                ResourceType.SSF
-                if source.read_string(4) == "SSF "
-                else ResourceType.SSF_XML
-            )
+            file_format = ResourceType.SSF if source.read_string(4) == "SSF " else ResourceType.SSF_XML
             source.skip(-4)
         else:
             file_format = ResourceType.INVALID
@@ -71,7 +60,8 @@ def read_ssf(
     offset: int = 0,
     size: int | None = None,
 ) -> SSF:
-    """Returns an SSF instance from the source. The file format (SSF or SSF_XML) is automatically determined before parsing
+    """
+    Returns an SSF instance from the source. The file format (SSF or SSF_XML) is automatically determined before parsing
     the data.
 
     Args:
@@ -109,7 +99,8 @@ def write_ssf(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.SSF,
 ) -> None:
-    """Writes the SSF data to the target location with the specified format (SSF or SSF_XML).
+    """
+    Writes the SSF data to the target location with the specified format (SSF or SSF_XML).
 
     Args:
     ----
@@ -136,7 +127,8 @@ def bytes_ssf(
     ssf: SSF,
     file_format: ResourceType = ResourceType.SSF,
 ) -> bytes:
-    """Returns the SSF data in the specified format (SSF or SSF_XML) as a bytes object.
+    """
+    Returns the SSF data in the specified format (SSF or SSF_XML) as a bytes object.
 
     This is a convenience method that wraps the write_ssf() method.
 

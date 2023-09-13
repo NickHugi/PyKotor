@@ -19,15 +19,9 @@ class TestBWM(TestCase):
     def validate_io(self, wok: BWM):
         self.assertEqual(114, len(wok.vertices()))
         self.assertEqual(195, len(wok.faces))
-        self.assertTrue(
-            wok.faces[1].v1.distance(Vector3(12.6670, 23.8963, -1.2749)) < 1e6
-        )
-        self.assertTrue(
-            wok.faces[1].v2.distance(Vector3(12.4444, 28.6584, -1.2750)) < 1e6
-        )
-        self.assertTrue(
-            wok.faces[1].v3.distance(Vector3(11.3294, 18.5879, -1.2750)) < 1e6
-        )
+        self.assertTrue(wok.faces[1].v1.distance(Vector3(12.6670, 23.8963, -1.2749)) < 1e6)
+        self.assertTrue(wok.faces[1].v2.distance(Vector3(12.4444, 28.6584, -1.2750)) < 1e6)
+        self.assertTrue(wok.faces[1].v3.distance(Vector3(11.3294, 18.5879, -1.2750)) < 1e6)
 
         face2_adj = wok.adjacencies(wok.faces[2])
         self.assertIsNone(face2_adj[0])
@@ -49,7 +43,5 @@ class TestBWM(TestCase):
 
         # The following tests may fail if the algorithms used to build the aabb tree or edges change. They may, however,
         # still work ingame.
-        self.assertEqual(
-            [59, 66, 73], [edges.index(edge) + 1 for edge in edges if edge.final]
-        )
+        self.assertEqual([59, 66, 73], [edges.index(edge) + 1 for edge in edges if edge.final])
         self.assertEqual(389, len(wok.aabbs()))

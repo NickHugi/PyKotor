@@ -51,21 +51,11 @@ class PTH:
     ) -> None:
         self._points.pop(index)
 
-        self._connections = [
-            x for x in self._connections if x.source != index and x.target != index
-        ]
+        self._connections = [x for x in self._connections if x.source != index and x.target != index]
 
         for connection in self._connections:
-            connection.source = (
-                connection.source - 1
-                if connection.source > index
-                else connection.source
-            )
-            connection.target = (
-                connection.target - 1
-                if connection.target > index
-                else connection.target
-            )
+            connection.source = connection.source - 1 if connection.source > index else connection.source
+            connection.target = connection.target - 1 if connection.target > index else connection.target
 
     def get(
         self,
@@ -110,21 +100,13 @@ class PTH:
         self,
         source: int,
     ) -> list[PTHEdge]:
-        return [
-            connection
-            for connection in self._connections
-            if connection.source == source
-        ]
+        return [connection for connection in self._connections if connection.source == source]
 
     def incoming(
         self,
         target: int,
     ) -> list[PTHEdge]:
-        return [
-            connection
-            for connection in self._connections
-            if connection.target == target
-        ]
+        return [connection for connection in self._connections if connection.target == target]
 
 
 class PTHEdge:

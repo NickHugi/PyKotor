@@ -8,7 +8,8 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTP:
-    """Stores placeable data.
+    """
+    Stores placeable data.
 
     Attributes
     ----------

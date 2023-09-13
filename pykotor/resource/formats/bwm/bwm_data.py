@@ -43,7 +43,8 @@ class BWM:
     def vertices(
         self,
     ) -> list[Vector3]:
-        """Returns a list of vectors stored in the faces of the walkmesh.
+        """
+        Returns a list of vectors stored in the faces of the walkmesh.
 
         Returns
         -------
@@ -108,9 +109,7 @@ class BWM:
         # Change axis in case points are coplanar with the split plane
         change_axis = True
         for face in faces:
-            change_axis = (
-                change_axis and face.centre()[split_axis] == bbcentre[split_axis]
-            )
+            change_axis = change_axis and face.centre()[split_axis] == bbcentre[split_axis]
         if change_axis:
             split_axis = 0 if split_axis == 2 else split_axis + 1
 
@@ -165,11 +164,7 @@ class BWM:
                 next_edge = j
                 while next_face != -1:
                     adj_edge = adjacencies[next_face][next_edge]
-                    adj_edge_index = (
-                        self.faces.index(adj_edge.face) * 3 + adj_edge.edge
-                        if adj_edge is not None
-                        else -1
-                    )
+                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
                     if adj_edge is None:
                         edge_index = 3 * next_face + next_edge
                         if edge_index not in visited:
@@ -275,7 +270,8 @@ class BWM:
         x: float,
         y: float,
     ) -> BWMFace | None:
-        """Returns the face at the given 2D coordinates if there si one otherwise returns None.
+        """
+        Returns the face at the given 2D coordinates if there si one otherwise returns None.
 
         Args:
         ----
@@ -306,7 +302,8 @@ class BWM:
         y: float,
         z: float,
     ) -> None:
-        """Shifts the position of the walkmesh.
+        """
+        Shifts the position of the walkmesh.
 
         Args:
         ----
@@ -323,7 +320,8 @@ class BWM:
         self,
         degrees: float,
     ) -> None:
-        """Rotates the walkmesh around the Z-axis counter-clockwise.
+        """
+        Rotates the walkmesh around the Z-axis counter-clockwise.
 
         Args:
         ----
@@ -356,7 +354,8 @@ class BWM:
         x: bool,
         y: bool,
     ) -> None:
-        """Flips the walkmesh around the specified axes.
+        """
+        Flips the walkmesh around the specified axes.
 
         Args:
         ----
@@ -425,7 +424,8 @@ class BWMNodeAABB:
 
 
 class BWMAdjacency:
-    """Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
+    """
+    Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
 
     Attributes
     ----------
@@ -443,7 +443,8 @@ class BWMAdjacency:
 
 
 class BWMEdge:
-    """Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
+    """
+    Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
 
     Attributes
     ----------

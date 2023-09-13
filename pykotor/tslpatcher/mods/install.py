@@ -34,10 +34,7 @@ class InstallFile:
         resname, restype = self._identifier()
 
         if self.replace_existing or destination.resource(resname, restype) is None:
-            if (
-                self.replace_existing
-                and destination.resource(resname, restype) is not None
-            ):
+            if self.replace_existing and destination.resource(resname, restype) is not None:
                 with print_lock:
                     log.add_note(
                         f"Replacing file {self.filename} in the {destination.filename()} archive...",

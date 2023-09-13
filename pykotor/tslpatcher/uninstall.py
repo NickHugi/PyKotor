@@ -7,10 +7,11 @@ from pykotor.tools.path import CaseAwarePath
 
 
 def uninstall_all_mods(installation: Installation):
-    """Uninstalls all mods from the game.
+    """
+    Uninstalls all mods from the game.
 
     What this method really does is delete all the contents of the override folder and delete all .MOD files from
-    the modules folder. Then it removes all appended TLK entries using 
+    the modules folder. Then it removes all appended TLK entries using
     the hardcoded number of entries depending on the game. There are 49,265 TLK entries in KOTOR 1, and 136,329 in TSL.
     """
     root_path = installation.path()
@@ -20,11 +21,7 @@ def uninstall_all_mods(installation: Installation):
     # Remove any TLK changes
     dialog_tlk_path = CaseAwarePath(root_path, "dialog.tlk")
     dialog_tlk = read_tlk(dialog_tlk_path)
-    dialog_tlk.entries = (
-        dialog_tlk.entries[:49265]
-        if installation.game() == Game.K1
-        else dialog_tlk.entries[:136329]
-    )
+    dialog_tlk.entries = dialog_tlk.entries[:49265] if installation.game() == Game.K1 else dialog_tlk.entries[:136329]
     # TODO(th3w1zard1): With the new ReplaceTLK syntax, the above TLK reinstall isn't possible anymore.
     # Here, we should write the dialog.tlk and then check it's sha1 hash compared to vanilla.
     # We could keep the vanilla TLK entries in a tlkdefs.py file, similar to our nwscript.nss defs in scriptdefs.py.

@@ -22,7 +22,8 @@ class TPCConvertResult(NamedTuple):
 
 
 class TPC:
-    """Represents a TPC file.
+    """
+    Represents a TPC file.
 
     Attributes
     ----------
@@ -45,7 +46,8 @@ class TPC:
     def mipmap_count(
         self,
     ) -> int:
-        """Returns the number of mipmaps.
+        """
+        Returns the number of mipmaps.
 
         Returns
         -------
@@ -56,7 +58,8 @@ class TPC:
     def format(
         self,
     ) -> TPCTextureFormat:
-        """Returns the format of the stored texture.
+        """
+        Returns the format of the stored texture.
 
         Returns
         -------
@@ -67,7 +70,8 @@ class TPC:
     def dimensions(
         self,
     ) -> tuple[int, int]:
-        """Returns the width and height of the largest mipmap.
+        """
+        Returns the width and height of the largest mipmap.
 
         Returns
         -------
@@ -79,7 +83,8 @@ class TPC:
         self,
         mipmap: int = 0,
     ) -> TPCGetResult:
-        """Returns a tuple containing the width, height, texture format, and data of the specified mipmap.
+        """
+        Returns a tuple containing the width, height, texture format, and data of the specified mipmap.
 
         Args:
         ----
@@ -97,7 +102,8 @@ class TPC:
         convert_format: TPCTextureFormat,
         mipmap: int = 0,
     ) -> TPCConvertResult:
-        """Returns a tuple containing the width, height and data of the specified mipmap where the data returned is in
+        """
+        Returns a tuple containing the width, height and data of the specified mipmap where the data returned is in
         the texture format specified.
 
         Args:
@@ -153,7 +159,8 @@ class TPC:
         data: bytes,
         texture_format: TPCTextureFormat,
     ) -> None:
-        """Sets the texture data but only for a single mipmap.
+        """
+        Sets the texture data but only for a single mipmap.
 
         Args:
         ----
@@ -171,7 +178,8 @@ class TPC:
         mipmaps: list[bytes],
         texture_format: TPCTextureFormat,
     ) -> None:
-        """Sets the new texture data.
+        """
+        Sets the new texture data.
 
         Args:
         ----
@@ -197,7 +205,8 @@ class TPC:
         self,
         mipmap: int,
     ) -> tuple[int, int]:
-        """Returns the size of the specified mipmap.
+        """
+        Returns the size of the specified mipmap.
 
         Args:
         ----
@@ -562,14 +571,7 @@ class TPC:
     def _integer48(
         bytes48: bytes,
     ) -> int:
-        return (
-            bytes48[0]
-            + (bytes48[1] << 8)
-            + (bytes48[2] << 16)
-            + (bytes48[3] << 24)
-            + (bytes48[4] << 32)
-            + (bytes48[5] << 40)
-        )
+        return bytes48[0] + (bytes48[1] << 8) + (bytes48[2] << 16) + (bytes48[3] << 24) + (bytes48[4] << 32) + (bytes48[5] << 40)
 
 
 class TPCTextureFormat(IntEnum):

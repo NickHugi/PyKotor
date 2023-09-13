@@ -19,17 +19,15 @@ class LTR:
         self,
     ):
         self._singles: LTRBlock = LTRBlock(LTR.NUM_CHARACTERS)
-        self._doubles: list[LTRBlock] = [
-            LTRBlock(LTR.NUM_CHARACTERS) for i in range(LTR.NUM_CHARACTERS)
-        ]
+        self._doubles: list[LTRBlock] = [LTRBlock(LTR.NUM_CHARACTERS) for i in range(LTR.NUM_CHARACTERS)]
         self._triples: list[list[LTRBlock]] = [
-            [LTRBlock(LTR.NUM_CHARACTERS) for i in range(LTR.NUM_CHARACTERS)]
-            for j in range(LTR.NUM_CHARACTERS)
+            [LTRBlock(LTR.NUM_CHARACTERS) for i in range(LTR.NUM_CHARACTERS)] for j in range(LTR.NUM_CHARACTERS)
         ]
 
     @staticmethod
     def _chance() -> float:
-        """Returns a randomly generated float between 0.0 and 1.0 inclusive.
+        """
+        Returns a randomly generated float between 0.0 and 1.0 inclusive.
 
         Returns
         -------
@@ -41,7 +39,8 @@ class LTR:
         self,
         seed: int | None = None,
     ) -> str | None:
-        """Returns a randomly generated name based on the LTR instance data.
+        """
+        Returns a randomly generated name based on the LTR instance data.
 
         This method was ported from the C code that can be found on GitHub:
         https://github.com/mtijanic/nwn-misc/blob/master/nwnltr.c
@@ -161,9 +160,7 @@ class LTR:
         char: str,
         chance: float,
     ):
-        self._triples[LTR.CHARACTER_SET.index(previous2)][
-            LTR.CHARACTER_SET.index(previous1)
-        ].set_start(char, chance)
+        self._triples[LTR.CHARACTER_SET.index(previous2)][LTR.CHARACTER_SET.index(previous1)].set_start(char, chance)
 
     def set_triples_middle(
         self,
@@ -172,9 +169,7 @@ class LTR:
         char: str,
         chance: float,
     ):
-        self._triples[LTR.CHARACTER_SET.index(previous2)][
-            LTR.CHARACTER_SET.index(previous1)
-        ].set_middle(char, chance)
+        self._triples[LTR.CHARACTER_SET.index(previous2)][LTR.CHARACTER_SET.index(previous1)].set_middle(char, chance)
 
     def set_triples_end(
         self,
@@ -183,13 +178,12 @@ class LTR:
         char: str,
         chance: float,
     ):
-        self._triples[LTR.CHARACTER_SET.index(previous2)][
-            LTR.CHARACTER_SET.index(previous1)
-        ].set_end(char, chance)
+        self._triples[LTR.CHARACTER_SET.index(previous2)][LTR.CHARACTER_SET.index(previous1)].set_end(char, chance)
 
 
 class LTRBlock:
-    """Stores three lists where each list index is mapped to a character and the value is a float representing the chance
+    """
+    Stores three lists where each list index is mapped to a character and the value is a float representing the chance
     of the character occuring.
     """
 
@@ -206,7 +200,8 @@ class LTRBlock:
         char: str,
         chance: float,
     ) -> None:
-        """Sets the chance of a specified character at the start of the block.
+        """
+        Sets the chance of a specified character at the start of the block.
 
         Args:
         ----
@@ -236,7 +231,8 @@ class LTRBlock:
         char: str,
         chance: float,
     ) -> None:
-        """Sets the chance of a specified character at the middle of the block.
+        """
+        Sets the chance of a specified character at the middle of the block.
 
         Args:
         ----
@@ -266,7 +262,8 @@ class LTRBlock:
         char: str,
         chance: float,
     ) -> None:
-        """Sets the chance of a specified character at the end of the block.
+        """
+        Sets the chance of a specified character at the end of the block.
 
         Args:
         ----
@@ -295,7 +292,8 @@ class LTRBlock:
         self,
         char: str,
     ) -> float:
-        """Returns the chance of a specified character at the start of the block.
+        """
+        Returns the chance of a specified character at the start of the block.
 
         Args:
         ----
@@ -325,7 +323,8 @@ class LTRBlock:
         self,
         char: str,
     ) -> float:
-        """Returns the chance of a specified character at the middle of the block.
+        """
+        Returns the chance of a specified character at the middle of the block.
 
         Args:
         ----
@@ -355,7 +354,8 @@ class LTRBlock:
         self,
         char: str,
     ) -> float:
-        """Returns the chance of a specified character at the end of the block.
+        """
+        Returns the chance of a specified character at the end of the block.
 
         Args:
         ----
