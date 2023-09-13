@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import TYPE_CHECKING
 
-from pykotor.common.script import ScriptConstant, ScriptFunction
+from ply import yacc
+
 from pykotor.resource.formats.ncs.compiler.classes import (
     AdditionAssignment,
     Assignment,
@@ -55,8 +56,11 @@ from pykotor.resource.formats.ncs.compiler.classes import (
     WhileLoopBlock,
 )
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
-from pykotor.resource.formats.ncs.compiler.ply import yacc
-from pykotor.resource.formats.ncs.compiler.ply.lex import LexToken
+from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    from pykotor.common.script import ScriptConstant, ScriptFunction
+    from ply.lex import LexToken
 
 
 class NssParser:
@@ -65,8 +69,8 @@ class NssParser:
             functions: list[ScriptFunction],
             constants: list[ScriptConstant],
             library: dict[str, bytes],
-            library_lookup: Optional[list[str]],
-            errorlog=yacc.NullLogger()
+            library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None,
+            errorlog=yacc.NullLogger(),
     ):
         self.parser = yacc.yacc(module=self,
                                 errorlog=errorlog,
@@ -77,28 +81,41 @@ class NssParser:
         self.functions: list[ScriptFunction] = functions
         self.constants: list[ScriptConstant] = constants
         self.library: dict[str, bytes] = library
-        self.library_lookup: Optional[list[str]] = library_lookup
+        self.library_lookup: list[CaseAwarePath] = []
+        if not library_lookup:
+            pass
+        elif isinstance(library_lookup, list):
+            for library_path in library_lookup:
+                if isinstance(library_path, CaseAwarePath):
+                    self.library_lookup.append(library_path)
+                elif library_path:
+                    self.library_lookup.append(CaseAwarePath(library_path))
+        elif isinstance(library_lookup, CaseAwarePath):
+            self.library_lookup = [library_lookup]
+        else:
+            self.library_lookup = [CaseAwarePath(library_lookup)]
 
     tokens = NssLexer.tokens
     literals = NssLexer.literals
 
     precedence = (
-        ('left', 'OR'),
-        ('left', 'AND'),
-        ('left', 'BITWISE_OR'),
-        ('left', 'BITWISE_XOR'),
-        ('left', 'BITWISE_AND'),
-        ('left', 'EQUALS', 'NOT_EQUALS'),
-        ('left', 'GREATER_THAN', 'LESS_THAN', 'GREATER_THAN_OR_EQUALS', 'LESS_THAN_OR_EQUALS'),
-        ('left', 'BITWISE_LEFT', 'BITWISE_RIGHT'),
-        ('left', 'ADD', 'MINUS'),
-        ('left', 'MULTIPLY', 'DIVIDE', 'MOD'),
-        ('right', 'BITWISE_NOT', 'NOT'),
-        ('left', 'INCREMENT', 'DECREMENT'),
+        ("left", "OR"),
+        ("left", "AND"),
+        ("left", "BITWISE_OR"),
+        ("left", "BITWISE_XOR"),
+        ("left", "BITWISE_AND"),
+        ("left", "EQUALS", "NOT_EQUALS"),
+        ("left", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUALS", "LESS_THAN_OR_EQUALS"),
+        ("left", "BITWISE_LEFT", "BITWISE_RIGHT"),
+        ("left", "ADD", "MINUS"),
+        ("left", "MULTIPLY", "DIVIDE", "MOD"),
+        ("right", "BITWISE_NOT", "NOT"),
+        ("left", "INCREMENT", "DECREMENT"),
     )
 
     def p_error(self, p: LexToken):
-        raise CompileException(f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'")
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'" # type: ignore
+        raise CompileException(msg)
 
     def p_code_root(self, p):
         """
@@ -261,7 +278,6 @@ class NssParser:
             p[0] = EmptyStatement()
         else:
             p[0] = p[1]
-        #p[0].linenum = p.lineno(1)
 
     def p_nop_statement(self, p):
         """
@@ -353,7 +369,6 @@ class NssParser:
         """
         p[0] = ConditionalBlock(p[1], p[2], p[3])
         # IF_CONTROL '(' expression ')' '{' code_block '}'
-        # p[0] = ConditionalBlock(p[3], p[6])
 
     def p_if_statement(self, p):
         """
@@ -374,10 +389,7 @@ class NssParser:
         else_statement : ELSE_CONTROL '{' code_block '}'
                        |
         """
-        if len(p) == 1:
-            p[0] = None
-        else:
-            p[0] = p[3]
+        p[0] = None if len(p) == 1 else p[3]
 
     def p_else_statement_single(self, p):
         """
@@ -468,10 +480,7 @@ class NssParser:
                    | assignment
                    | constant_expression
         """
-        if isinstance(p[1], Identifier):
-            p[0] = IdentifierExpression(p[1])
-        else:
-            p[0] = p[1]
+        p[0] = IdentifierExpression(p[1]) if isinstance(p[1], Identifier) else p[1]
 
     def p_constant_expression(self, p):
         """

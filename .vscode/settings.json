@@ -177,10 +177,11 @@
 "python.analysis.inlayHints.variableTypes": true,
 "python.analysis.typeCheckingMode": "basic",
 "[python]": {
-  "editor.defaultFormatter": "ms-python.python"
+  "editor.defaultFormatter": "ms-python.black-formatter"
 },
 "files.eol": "\r\n",
 "python.analysis.extraPaths": [
   "./pykotor/common"
-]
+],
+"python.formatting.provider": "none"
 }

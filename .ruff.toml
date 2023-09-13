@@ -41,6 +41,7 @@ ignore = [
 "tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
 "__init__.py" = ["I001", "F401"]
+"pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 
 [flake8-pytest-style]
 fixture-parentheses = false
