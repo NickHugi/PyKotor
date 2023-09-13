@@ -7,10 +7,6 @@ from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.tlk import DiffTLK
 from pykotor.tslpatcher.diff.twoda import Diff2DA
 
-gff_types = [x.value.lower().strip() for x in GFFContent]
-tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_tslpatcher"
-pykotor_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_pykotor"
-
 
 def relative_path_from_to(src, dst):
     src_parts = list(src.parts)
@@ -33,6 +29,43 @@ def visual_length(s, tab_length=8):
     for part in parts[:-1]:  # all parts except the last one
         vis_length += tab_length - (len(part) % tab_length)
     return vis_length
+
+
+gff_types = [x.value.lower().strip() for x in GFFContent]
+tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_tslpatcher"
+pykotor_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_pykotor"
+
+pykotor_file = CaseAwarePath(pykotor_path) / "dialog.tlk"
+tslpatcher_file = CaseAwarePath(tslpatcher_path) / "dialog.tlk"
+
+if not pykotor_file.exists():
+    message = "Missing PyKotor dialog.tlk"
+    print(message)
+    print(len(message) * "-")
+if not tslpatcher_file.exists():
+    message = "Missing TSLPatcher dialog.tlk"
+    print(message)
+    print(len(message) * "-")
+pykotor_tlk = read_tlk(pykotor_file)
+tslpatcher_tlk = read_tlk(tslpatcher_file)
+if not pykotor_tlk and tslpatcher_tlk:
+    message = "PyKotor TLK resource missing in memory"
+    print(message)
+    print(len(message) * "-")
+elif pykotor_tlk and not tslpatcher_tlk:
+    message = "TSLPatcher TLK resource missing in memory"
+    print(message)
+    print(len(message) * "-")
+elif not pykotor_tlk and not tslpatcher_tlk:
+    message = "Both TLK resources missing in memory."
+    print(message)
+    print(len(message) * "-")
+else:
+    diff = DiffTLK(tslpatcher_tlk, pykotor_tlk)
+    if not diff.is_same():
+        message = "^ dialog.tlk is different ^"
+        print(message)
+        print("-" * len(message))
 
 
 def override():
@@ -59,12 +92,12 @@ def override():
         pykotor_file_rel = relative_path_from_to(tslpatcher_file, pykotor_file)
 
         if not pykotor_file.exists():
-            message = "Missing file:", pykotor_file_rel
+            message = f"Missing file:\t{pykotor_file_rel}"
             print(message)
             print(visual_length(message) * "-")
             continue
         if not tslpatcher_file.exists():
-            message = "Missing file:", tslpatcher_file_rel
+            message = f"Missing file:\t{tslpatcher_file_rel}"
             print(message)
             print(visual_length(message) * "-")
             continue
@@ -75,19 +108,19 @@ def override():
             pykotor_gff: GFF = read_gff(pykotor_file)
             tslpatcher_gff: GFF = read_gff(tslpatcher_file)
             if not pykotor_gff and tslpatcher_gff:
-                message = f"pykotor {ext} resource missing in memory:", pykotor_file_rel
+                message = f"PyKotor {ext.upper()} resource missing in memory:", pykotor_file_rel
                 print(message)
                 print(visual_length(message) * "-")
             elif pykotor_gff and not tslpatcher_gff:
-                message = f"tslpatcher {ext} resource missing in memory:", tslpatcher_file_rel
+                message = f"TSLPatcher {ext.upper()} resource missing in memory:", tslpatcher_file_rel
                 print(message)
                 print(visual_length(message) * "-")
             elif not pykotor_gff and not tslpatcher_gff:
-                message = f"{ext} resource missing for both in memory."
+                message = f"Both {ext.upper()} resources missing for both in memory."
                 print(message)
                 print(len(message) * "-")
             else:
-                diff = DiffGFF(pykotor_gff, tslpatcher_gff)
+                diff = DiffGFF(tslpatcher_gff, pykotor_gff)
                 if not diff.is_same():
                     message = f"^ {pykotor_file.name} is different ^"
                     print(message)
@@ -97,43 +130,21 @@ def override():
             pykotor_2da = read_2da(pykotor_file)
             tslpatcher_2da = read_2da(tslpatcher_file)
             if not pykotor_2da and tslpatcher_2da:
-                message = "pykotor 2da resource missing in memory:", pykotor_file_rel
+                message = "PyKotor 2DA resource missing in memory:", pykotor_file_rel
                 print(message)
                 print(visual_length(message) * "-")
             elif pykotor_2da and not tslpatcher_2da:
-                message = "tslpatcher 2da resource missing in memory:", tslpatcher_file_rel
+                message = "TSLPatcher 2DA resource missing in memory:", tslpatcher_file_rel
                 print(message)
                 print(visual_length(message) * "-")
             elif not pykotor_2da and not tslpatcher_2da:
-                message = "both 2da resources missing in memory."
+                message = "Both 2DA resources missing in memory."
                 print(message)
                 print(len(message) * "-")
             else:
-                diff = Diff2DA(pykotor_2da, tslpatcher_2da)
+                diff = Diff2DA(tslpatcher_2da, pykotor_2da)
                 if not diff.is_same():
-                    message = f"^ {pykotor_file.name}: 2da is different ^"
-                    print(message)
-                    print("-" * len(message))
-
-        elif ext == "tlk":
-            pykotor_tlk = read_tlk(pykotor_file)
-            tslpatcher_tlk = read_tlk(tslpatcher_file)
-            if not pykotor_tlk and tslpatcher_tlk:
-                message = f"pykotor {ext} resource missing in memory:", pykotor_file_rel
-                print(message)
-                print(visual_length(message) * "-")
-            elif pykotor_tlk and not tslpatcher_tlk:
-                message = f"tslpatcher {ext} resource missing in memory:", tslpatcher_file_rel
-                print(message)
-                print(visual_length(message) * "-")
-            elif not pykotor_tlk and not tslpatcher_tlk:
-                message = "both tlk resources missing in memory."
-                print(message)
-                print(len(message) * "-")
-            else:
-                diff = DiffTLK(pykotor_tlk, tslpatcher_tlk)
-                if not diff.is_same():
-                    message = f"^ {pykotor_file.name} is different ^"
+                    message = f"^ {pykotor_file.name}: 2DA is different ^"
                     print(message)
                     print("-" * len(message))
 
@@ -165,12 +176,12 @@ def modules():
             continue
 
         if not pykotor_file.exists():
-            message = "Missing pykotor file:", pykotor_file_rel
+            message = "Missing PyKotor file:", pykotor_file_rel
             print(message)
             print(visual_length(message) * "-")
             continue
         if not tslpatcher_file.exists():
-            message = "Missing tslpatcher file:", tslpatcher_file_rel
+            message = "Missing TSLPatcher file:", tslpatcher_file_rel
             print(message)
             print(visual_length(message) * "-")
             continue
@@ -186,14 +197,12 @@ def modules():
         missing_in_tslpatcher = pykotor_resources.keys() - tslpatcher_resources.keys()
 
         for resref in missing_in_pykotor:
-            message = f"pykotor resource missing\t{pykotor_file_rel}\t{resref}\t{tslpatcher_resources[resref].restype.extension}"
+            message = f"PyKotor resource missing\t{pykotor_file_rel}\t{resref}\t{tslpatcher_resources[resref].restype.extension.upper()}"
             print(message)
             print(visual_length(message) * "-")
 
         for resref in missing_in_tslpatcher:
-            message = (
-                f"tslpatcher resource missing\t{tslpatcher_file_rel}\t{resref}\t{pykotor_resources[resref].restype.extension}"
-            )
+            message = f"TSLPatcher resource missing\t{tslpatcher_file_rel}\t{resref}\t{pykotor_resources[resref].restype.extension.upper()}"
             print(message)
             print(visual_length(message) * "-")
 
@@ -209,11 +218,11 @@ def modules():
 
                 diff = DiffGFF(tslpatcher_gff, pykotor_gff)
                 if not diff.is_same():
-                    message = f"^ {filename}\t{resref}\t{tsl_res.restype.extension} ^"
+                    message = f"    in {filename}\t{resref}\t{tsl_res.restype.extension.upper()}"
                     print(message)
                     print("-" * visual_length(message))
 
 
 print()
-modules()
 override()
+modules()

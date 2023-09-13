@@ -18,31 +18,37 @@ class DiffGFF:
 
         for label, ftype, old_value in old_struct:
             if not new_struct.exists(label):
-                print("Missing a field:", label)
+                print("Missing a field:", f"'{label}'")
                 return False
 
             if new_struct.what_type(label) != ftype:
-                print("Field type has changed:", label)
+                print("Field type has changed:", f"'{label}'")
                 return False
 
             new_value = new_struct.value(label)
             if ftype == GFFFieldType.Struct:
                 if old_value.struct_id != new_value.struct_id:
-                    print("Struct ID has changed:", label)
+                    print("Struct ID has changed:", f"'{label}'")
                     return False
 
                 if not self.is_same(old_value, new_value):
                     return False
             elif ftype == GFFFieldType.List:
                 if len(old_value) != len(new_value):
-                    print("List counts have changed:", label)
+                    print("List counts have changed:", f"'{label}'")
                     return False
                 for i, old_child in enumerate(old_value):
                     new_child = new_value.at(i)
                     if not self.is_same(old_child, new_child):
                         return False
             elif new_value != old_value:
-                print("Value has changed:", label, new_value, "-->", old_value)
+                print(
+                    "Value has changed:",
+                    label,
+                    f"'{old_value}'",
+                    "-->",
+                    f"'{new_value}'",
+                )
                 return False
 
         return True
