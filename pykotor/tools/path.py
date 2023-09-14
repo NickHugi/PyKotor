@@ -78,7 +78,7 @@ class CaseAwarePath(Path):
             # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.is_dir() and base_path.is_dir():
                 # iterate ignoring permission/read issues from the directory.
-                def safe_iterdir(path):
+                def safe_iterdir(path: Path):
                     with contextlib.suppress(PermissionError, IOError):
                         yield from path.iterdir()
 

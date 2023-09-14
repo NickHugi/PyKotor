@@ -21,7 +21,7 @@ def relative_path_from_to(src, dst):
     return CaseAwarePath(*rel_parts)
 
 
-def visual_length(s, tab_length=8):
+def visual_length(s: str, tab_length=8):
     # Split the string at tabs, sum the lengths of the substrings,
     # and add the necessary spaces to account for the tab stops.
     parts = s.split("\t")
@@ -32,7 +32,7 @@ def visual_length(s, tab_length=8):
 
 
 gff_types = [x.value.lower().strip() for x in GFFContent]
-tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_tslpatcher"
+tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
 pykotor_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_pykotor"
 
 pykotor_file = CaseAwarePath(pykotor_path) / "dialog.tlk"
@@ -61,11 +61,7 @@ elif not pykotor_tlk and not tslpatcher_tlk:
     print(message)
     print(len(message) * "-")
 else:
-    diff = DiffTLK(tslpatcher_tlk, pykotor_tlk)
-    if not diff.is_same():
-        message = "^ dialog.tlk is different ^"
-        print(message)
-        print("-" * len(message))
+    diff = DiffTLK(tslpatcher_tlk, pykotor_tlk).is_same()
 
 
 def override():

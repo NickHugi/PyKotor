@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFStruct
+from itertools import zip_longest
+
+from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
 
 
 class DiffGFF:
@@ -16,39 +18,85 @@ class DiffGFF:
         old_struct = self.old.root if old_struct is None else old_struct
         new_struct = self.new.root if new_struct is None else new_struct
 
-        for label, ftype, old_value in old_struct:
-            if not new_struct.exists(label):
-                print("Missing a field:", f"'{label}'")
-                return False
+        is_same_result = True
+        for (old_label, old_ftype, old_value), (new_label, new_ftype, new_value) in zip_longest(
+            old_struct,
+            new_struct,
+            fillvalue=(None, None, None),
+        ):
+            # Check if a field is missing in either struct
+            if old_label is None or old_value is None:
+                if old_value is None:
+                    print(f"Extra value for label: '{new_label}': '{new_value}'")
+                if old_label is None:
+                    print(f"Extra field for label: '{new_label}'")
+                is_same_result = False
+                continue
+            if new_label is None or new_value is None:
+                if new_value is None:
+                    print(f"Missing value in label '{old_label}': '{old_value}'")
+                if new_label is None:
+                    print(f"Missing field in field: '{old_label}'")
+                is_same_result = False
+                continue
 
-            if new_struct.what_type(label) != ftype:
-                print("Field type has changed:", f"'{label}'")
-                return False
+            # Check if field types have changed
+            if old_ftype != new_ftype:
+                print(f"Field type has changed for '{old_label}'")
+                is_same_result = False
+                continue
 
-            new_value = new_struct.value(label)
-            if ftype == GFFFieldType.Struct:
+            # Compare values depending on their types
+            if old_ftype == GFFFieldType.Struct:
                 if old_value.struct_id != new_value.struct_id:
-                    print("Struct ID has changed:", f"'{label}'")
-                    return False
+                    print(f"Struct ID has changed for '{old_label}'")
+                    is_same_result = False
 
                 if not self.is_same(old_value, new_value):
-                    return False
-            elif ftype == GFFFieldType.List:
-                if len(old_value) != len(new_value):
-                    print("List counts have changed:", f"'{label}'")
-                    return False
-                for i, old_child in enumerate(old_value):
-                    new_child = new_value.at(i)
-                    if not self.is_same(old_child, new_child):
-                        return False
-            elif new_value != old_value:
-                print(
-                    "Value has changed:",
-                    label,
-                    f"'{old_value}'",
-                    "-->",
-                    f"'{new_value}'",
-                )
-                return False
+                    is_same_result = False
+                    continue
 
-        return True
+            elif old_ftype == GFFFieldType.List:
+                if not self._output_diff_from_two_lists(old_value, new_value, old_label):
+                    is_same_result = False
+                    continue
+
+            elif old_value != new_value:
+                print(f"Value has changed for '{old_label}': '{old_value}' --> '{new_value}'")
+                is_same_result = False
+                continue
+
+        return is_same_result
+
+    def _output_diff_from_two_lists(self, old_gff_list: GFFList, new_gff_list: GFFList, label: str) -> bool:
+        is_same_result = True
+
+        if len(old_gff_list) != len(new_gff_list):
+            print(f"List counts have changed for field: '{label}'")
+            print(f"Old list length: {len(old_gff_list)}")
+            print(f"New list length: {len(new_gff_list)}")
+            is_same_result = False
+
+        for i, (old_child, new_child) in enumerate(zip_longest(old_gff_list, new_gff_list, fillvalue=None)):
+            if old_child is None:
+                print(f"Extra item in new list at index {i} for field: '{label}'")
+                is_same_result = False
+                continue
+
+            if new_child is None:
+                print(f"Missing item in new list at index {i} for field: '{label}'")
+                is_same_result = False
+                continue
+
+            if isinstance(old_child, GFFStruct) and isinstance(new_child, GFFStruct):
+                if not self.is_same(old_child, new_child):
+                    is_same_result = False
+            elif isinstance(old_child, GFFList) and isinstance(new_child, GFFList):
+                nested_label = f"{label}[{i}]"
+                if not self._output_diff_from_two_lists(old_child, new_child, nested_label):
+                    is_same_result = False
+            elif old_child != new_child:
+                print(f"Value difference at index {i} for field: '{label}': Old: '{old_child}', New: '{new_child}'")
+                is_same_result = False
+
+        return is_same_result
