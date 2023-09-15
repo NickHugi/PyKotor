@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 class PatcherMemory:
     def __init__(self):
-        self.memory_2da: dict[int, str | GFFList | GFFStruct] = {}
+        self.memory_2da: dict[int, str] = {}
         self.memory_str: dict[int, int] = {}  # StrRef# (token) -> dialog.tlk index
 
 

@@ -12,17 +12,27 @@ from pykotor.common.misc import Game
 class CaseAwarePath(Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-    def __new__(cls, *args, **kwargs):
-        if not all(isinstance(arg, CaseAwarePath) for arg in args):  # don't even assume __fspath__ objects are valid.
-            args = list(args)
-            for i, arg in enumerate(args):
-                if isinstance(arg, str) or hasattr(arg, "__fspath__"):
-                    args[i] = Path(cls._fix_path_formatting(str(arg)))
-                else:
-                    msg = f"argument '{arg}' in CaseAwarePath constructor must be a path-like object, got {type(arg)}"
-                    raise TypeError(msg)
-
-        returned_path = super().__new__(cls, *args, **kwargs)
+    def __new__(cls, *args: str | os.PathLike | tuple[str | os.PathLike | None, ...] | None, **kwargs) -> CaseAwarePath | None:
+        # provide easy support for converting optional paths by returning None here.
+        if len(args) == 1:
+            if args[0] is None:
+                return None
+            # if the only arg passed is already a CaseAwarePath, don't do heavy lifting trying to re-parse it.
+            if isinstance(args[0], CaseAwarePath):
+                return args[0]  # type: ignore  # noqa: PGH003
+        args_list: list[Path] = []
+        for i, arg in enumerate(args):
+            if isinstance(arg, CaseAwarePath):
+                args_list.append(Path(str(arg)))
+                continue
+            path_str = str(arg) if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
+            if path_str is not None:
+                args_list.append(Path(cls._fix_path_formatting(path_str)))
+            else:
+                msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
+                raise TypeError(msg)
+        new_args = args_list or args
+        returned_path = super().__new__(cls, *new_args, **kwargs)  # type: ignore  # noqa: PGH003
         if cls.should_resolve_case(returned_path):
             return cls._get_case_sensitive_path(returned_path)
         return returned_path

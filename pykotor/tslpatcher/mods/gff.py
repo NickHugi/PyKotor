@@ -87,7 +87,7 @@ class ModifyGFF(ABC):
         container: GFFStruct | GFFList | None,
         path: CaseAwarePath,
     ) -> GFFList | GFFStruct | None:
-        assert isinstance(path, CaseAwarePath)
+        path = CaseAwarePath(path) if isinstance(path, str) else path
         for step in path.parts:
             if isinstance(container, GFFStruct):
                 container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
@@ -99,9 +99,9 @@ class ModifyGFF(ABC):
     def _navigate_to_field(
         self,
         container: GFFStruct | GFFList | None,
-        path: CaseAwarePath,
+        path: CaseAwarePath | str,
     ) -> _GFFField | None:
-        assert isinstance(path, CaseAwarePath)
+        path = CaseAwarePath(path) if isinstance(path, str) else path
         label: str = path.parts[-1]
 
         for step in path.parent.parts:
@@ -138,12 +138,12 @@ class AddStructToListGFF(ModifyGFF):
         logger: PatchLogger,
     ) -> None:
         new_struct: GFFStruct | None = None
-        navigated_container: GFFList | GFFStruct | None = (
+        parent_gff_struct: GFFList | GFFStruct | None = (
             self._navigate_containers(container, self.path) if self.path else container
         )
-        if isinstance(navigated_container, GFFList):
-            struct_id = self.struct_id or len(navigated_container)
-            new_struct = navigated_container.add(struct_id)
+        if isinstance(parent_gff_struct, GFFList):
+            struct_id = self.struct_id or len(parent_gff_struct)
+            new_struct = parent_gff_struct.add(struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
@@ -293,42 +293,42 @@ class ModifyFieldGFF(ModifyGFF):
         logger: PatchLogger,
     ) -> None:
         label = self.path.name
-        navigated_container: GFFStruct | GFFList | None = self._navigate_containers(container, self.path.parent) or container
+        parent_gff_struct: GFFStruct | GFFList | None = self._navigate_containers(container, self.path.parent) or container
 
         container_is_correct_type = isinstance(container, GFFStruct)
         if not container_is_correct_type:
             logger.add_error(f"Unable to find a field label matching '{label}', skipping...")
             return
-        assert isinstance(navigated_container, GFFStruct)
+        assert isinstance(parent_gff_struct, GFFStruct)
 
-        field_type = navigated_container._fields[label].field_type()
+        field_type = parent_gff_struct._fields[label].field_type()
         value = self.value.value(memory, field_type)
 
         def set_locstring() -> None:
             assert isinstance(value, LocalizedStringDelta)
-            if navigated_container.exists(label):
-                original: LocalizedString = navigated_container.get_locstring(label)
+            if parent_gff_struct.exists(label):
+                original: LocalizedString = parent_gff_struct.get_locstring(label)
                 value.apply(original, memory)
-                navigated_container.set_locstring(label, original)
+                parent_gff_struct.set_locstring(label, original)
             else:
-                navigated_container.set_locstring(label, value)
+                parent_gff_struct.set_locstring(label, value)
 
         func_map: dict[GFFFieldType, Callable] = {
-            GFFFieldType.Int8: lambda: navigated_container.set_int8(label, value),
-            GFFFieldType.UInt8: lambda: navigated_container.set_uint8(label, value),
-            GFFFieldType.Int16: lambda: navigated_container.set_int16(label, value),
-            GFFFieldType.UInt16: lambda: navigated_container.set_uint16(label, value),
-            GFFFieldType.Int32: lambda: navigated_container.set_int32(label, value),
-            GFFFieldType.UInt32: lambda: navigated_container.set_uint32(label, value),
-            GFFFieldType.Int64: lambda: navigated_container.set_int64(label, value),
-            GFFFieldType.UInt64: lambda: navigated_container.set_uint64(label, value),
-            GFFFieldType.Single: lambda: navigated_container.set_single(label, value),
-            GFFFieldType.Double: lambda: navigated_container.set_double(label, value),
-            GFFFieldType.String: lambda: navigated_container.set_string(label, value),
-            GFFFieldType.ResRef: lambda: navigated_container.set_resref(label, value),
+            GFFFieldType.Int8: lambda: parent_gff_struct.set_int8(label, value),
+            GFFFieldType.UInt8: lambda: parent_gff_struct.set_uint8(label, value),
+            GFFFieldType.Int16: lambda: parent_gff_struct.set_int16(label, value),
+            GFFFieldType.UInt16: lambda: parent_gff_struct.set_uint16(label, value),
+            GFFFieldType.Int32: lambda: parent_gff_struct.set_int32(label, value),
+            GFFFieldType.UInt32: lambda: parent_gff_struct.set_uint32(label, value),
+            GFFFieldType.Int64: lambda: parent_gff_struct.set_int64(label, value),
+            GFFFieldType.UInt64: lambda: parent_gff_struct.set_uint64(label, value),
+            GFFFieldType.Single: lambda: parent_gff_struct.set_single(label, value),
+            GFFFieldType.Double: lambda: parent_gff_struct.set_double(label, value),
+            GFFFieldType.String: lambda: parent_gff_struct.set_string(label, value),
+            GFFFieldType.ResRef: lambda: parent_gff_struct.set_resref(label, value),
             GFFFieldType.LocalizedString: set_locstring,
-            GFFFieldType.Vector3: lambda: navigated_container.set_vector3(label, value),
-            GFFFieldType.Vector4: lambda: navigated_container.set_vector4(label, value),
+            GFFFieldType.Vector3: lambda: parent_gff_struct.set_vector3(label, value),
+            GFFFieldType.Vector4: lambda: parent_gff_struct.set_vector4(label, value),
         }
         func_map[field_type]()
 
