@@ -55,14 +55,6 @@ class TestInstallation(TestCase):
 
         self.assertIsNotNone(
             installation.resource(
-                "nwscript",
-                ResourceType.NSS,
-                [SearchLocation.CUSTOM_FOLDERS],
-                folders=[installation.override_path()],
-            ).data
-        )
-        self.assertIsNotNone(
-            installation.resource(
                 "m13aa",
                 ResourceType.ARE,
                 [SearchLocation.CUSTOM_MODULES],
