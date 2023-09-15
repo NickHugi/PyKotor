@@ -36,17 +36,17 @@ class InstallFile:
         if self.replace_existing or destination.resource(resname, restype) is None:
             if self.replace_existing and destination.resource(resname, restype) is not None:
                 with print_lock:
-                    log.add_note(
-                        f"Replacing file {self.filename} in the {destination.filename()} archive...",
-                    )
+                    log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
             else:
                 with print_lock:
-                    log.add_note(
-                        f"Adding file {self.filename} in the {destination.filename()} archive...",
-                    )
+                    log.add_note(f"Adding file '{self.filename}' to the '{destination.filename()}' archive...")
 
             data = BinaryReader.load_file(CaseAwarePath(source_folder) / self.filename)
             destination.add(resname, restype, data)
+        else:
+            log.add_warning(
+                f"A file named '{self.filename}' already exists in the '{destination.filename()}' archive. Skipping file...",
+            )
 
     def apply_file(
         self,
@@ -58,30 +58,25 @@ class InstallFile:
         data = BinaryReader.load_file(source_folder / self.filename)
         save_file_to = destination / self.filename
 
-        replacement: bool = self.replace_existing or not save_file_to.exists()
-        if replacement:
-            if not destination.exists():
+        file_exists: bool = save_file_to.exists()
+        if self.replace_existing or not file_exists:
+            # reduce io work from destination.exists() by first using our file exists check.
+            if not file_exists and not destination.exists():
                 with print_lock:
                     log.add_note(f"Folder {destination} did not exist, creating it...")
+                # might exist at this point due to multithreading.
                 destination.mkdir(parents=True, exist_ok=True)
 
-            if replacement:
-                with print_lock:
-                    log.add_note(
-                        f"Replacing file '{self.filename}' in the '{local_folder}' folder...",
-                    )
-            else:
-                with print_lock:
-                    log.add_note(
-                        f"Copying file '{self.filename}' to the '{local_folder}' folder...",
-                    )
+            with print_lock:
+                if file_exists:
+                    log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
+                else:
+                    log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
 
             BinaryWriter.dump(save_file_to, data)
         else:
             with print_lock:
-                log.add_warning(
-                    f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file...",
-                )
+                log.add_warning(f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file...")
 
 
 class InstallFolder:
@@ -130,5 +125,4 @@ class InstallFolder:
                     except Exception as thread_exception:
                         # Handle any exceptions that occurred during execution
                         with print_lock:  # Acquire the lock before printing
-                            print("Exception occurred:")
-                            print(thread_exception)
+                            log.add_error(f"Exception occurred: {thread_exception}")

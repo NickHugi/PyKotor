@@ -18,7 +18,7 @@ def generate_filehash_sha256(filepath: str | CaseAwarePath) -> str:
 
 def is_int(string: str):
     """
-    Can be cast to an_int without raising an error
+    Can be cast to an int without raising an error
 
     Args:
     ----
