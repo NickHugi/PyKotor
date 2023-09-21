@@ -33,12 +33,13 @@ class CaseAwarePath(Path):
 
     def __new__(cls, *args: OPTIONAL_PATH_TYPES, **kwargs) -> CaseAwarePath | None:
         if len(args) == 1:
+            arg0 = args[0]
             # provide easy support for converting optional paths by returning None here.
-            if args[0] is None:
+            if arg0 is None:
                 return None
             # if the only arg passed is already a CaseAwarePath, don't do heavy lifting trying to re-parse it.
-            if isinstance(args[0], CaseAwarePath):
-                return args[0]  # type: ignore  # noqa: PGH003
+            if isinstance(arg0, CaseAwarePath):
+                return arg0  # type: ignore  # noqa: PGH003
         args_list: list[Path] = []
         for i, arg in enumerate(args):
             if isinstance(arg, CaseAwarePath):
