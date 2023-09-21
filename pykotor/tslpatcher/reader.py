@@ -94,19 +94,20 @@ class ConfigReader:
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
 
+        print("Loading [Settings] from ini...")
         self.load_settings()
-        print("Parsing file list from [InstallList]")
-        self.load_filelist()
-        print("Parsing stringrefs from [TLKList]")
+        print("Loading [TLKList] patches from ini...")
         self.load_tlk_list()
-        print("Parsing 2da from [2DAList]")
+        print("Loading [InstallList] patches from ini...")
+        self.load_filelist()
+        print("Loading [2DAList] patches from ini...")
         self.load_2da()
-        print("Parsing SSF from [SSFList]")
-        self.load_ssf()
-        print("Parsing GFF from [GFFList]")
+        print("Loading [GFFList] patches from ini...")
         self.load_gff()
-        print("Parsing NSS from [NSSList]")
+        print("Loading [CompileList] patches from ini...")
         self.load_nss()
+        print("Loading [SSFList] patches from ini...")
+        self.load_ssf()
 
         return self.config
 

@@ -161,7 +161,7 @@ class ModInstaller:
         backup_dir.mkdir(parents=True, exist_ok=True)
         self.log.add_note(f"Using backup directory: '{backup_dir}'")
 
-        # Apply changes to dialog.tlk
+        self.log.add_note("Applying patches from [TLKList]...")
         if len(config.patches_tlk.modifiers) > 0:  # skip if no patches need to be made (faster)
             dialog_tlk_path = installation.path() / "dialog.tlk"  # sourcery skip: extract-method
             dialog_tlk = read_tlk(dialog_tlk_path)
@@ -179,12 +179,12 @@ class ModInstaller:
         #    file_install = InstallFile("nwscript.nss", replace_existing=True)  # noqa: ERA001
         #    folder_install.files.append(file_install)  # noqa: ERA001
 
-        # Apply changes from [InstallList]
+        self.log.add_note("Applying patches from [InstallList]...")
         for folder in config.install_list:
             folder.apply(self.log, self.mod_path, self.output_path, backup_dir)
             self.log.complete_patch()
 
-        # Apply changes to 2DA files
+        self.log.add_note("Applying patches from [2DAList]...")
         for twoda_patch in config.patches_2da:
             resname, restype = ResourceIdentifier.from_path(twoda_patch.filename)
             twoda_output_folder: CaseAwarePath = self.output_path / "Override"
@@ -209,32 +209,7 @@ class ModInstaller:
 
             self.log.complete_patch()
 
-        # Apply changes to SSF files
-        for ssf_patch in config.patches_ssf:
-            resname, restype = ResourceIdentifier.from_path(ssf_patch.filename)
-            ssf_output_folder: CaseAwarePath = self.output_path / "Override"
-            search = installation.resource(
-                resname,
-                restype,
-                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
-                folders=[self.mod_path],
-            )
-            if search is None or search.data is None:
-                self.log.add_error(
-                    f"Didn't patch '{ssf_patch.filename}' because search data is `None`.",
-                )
-                continue
-
-            soundset = soundsets[ssf_patch.filename] = read_ssf(search.data)
-
-            self.log.add_note(f"Patching '{ssf_patch.filename}'")
-            create_backup(self.log, ssf_output_folder / ssf_patch.filename, backup_dir / ssf_patch.filename)
-            ssf_patch.apply(soundset, memory)
-            write_ssf(soundset, ssf_output_folder / ssf_patch.filename)
-
-            self.log.complete_patch()
-
-        # Apply changes to GFF files
+        self.log.add_note("Applying patches from [GFFList]...")
         for gff_patch in config.patches_gff:
             resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
 
@@ -269,6 +244,7 @@ class ModInstaller:
                 self.log.add_note(
                     f"Patching '{gff_patch.filename}' in the '{local_path.parent}' folder.",
                 )
+                create_backup(self.log, gff_output_folder / gff_patch.filename, backup_dir / gff_patch.filename)
             else:
                 self.log.add_note(
                     f"Patching '{gff_patch.filename}' in the '{local_path}' archive.",
@@ -280,7 +256,8 @@ class ModInstaller:
                     self.log.add_warning(
                         "The above warning most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
-            create_backup(self.log, gff_output_folder / gff_patch.filename, backup_dir / gff_patch.filename)
+                else:
+                    create_backup(self.log, gff_output_folder, backup_dir / gff_output_folder.name)
 
             template = templates[gff_patch.filename] = read_gff(search.data)
             assert template is not None
@@ -295,7 +272,7 @@ class ModInstaller:
 
             self.log.complete_patch()
 
-        # Apply changes to NSS files
+        self.log.add_note("Applying patches from [CompileList]...")
         for nss_patch in config.patches_nss:
             capsule = None
             nss_output_folder = self.output_path / nss_patch.destination
@@ -315,11 +292,20 @@ class ModInstaller:
                 self.log.add_note(
                     f"Patching '{nss_patch.filename}' in the '{local_folder}' folder.",
                 )
+                create_backup(self.log, nss_output_folder / nss_patch.filename, backup_dir / nss_patch.filename)
             else:
                 self.log.add_note(
                     f"Patching '{nss_patch.filename}' in the '{local_path}' archive.",
                 )
-            create_backup(self.log, nss_output_folder / nss_patch.filename, backup_dir / nss_patch.filename)
+                if not capsule._path.exists():
+                    self.log.add_warning(
+                        f"The capsule '{local_path}' did not exist when patching GFF '{nss_patch.filename}'! Please note that TSLPatcher would have errored in this scenario.",
+                    )
+                    self.log.add_warning(
+                        "The above warning most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
+                    )
+                else:
+                    create_backup(self.log, nss_output_folder, backup_dir / nss_output_folder.name)
 
             self.log.add_note(f"Compiling '{nss_patch.filename}'")
             nss_patch.apply(nss, memory, self.log)
@@ -333,6 +319,31 @@ class ModInstaller:
                 data,
                 nss_patch.replace_file,
             )
+
+            self.log.complete_patch()
+
+        self.log.add_note("Applying patches from [SSFList]...")
+        for ssf_patch in config.patches_ssf:
+            resname, restype = ResourceIdentifier.from_path(ssf_patch.filename)
+            ssf_output_folder: CaseAwarePath = self.output_path / "Override"
+            search = installation.resource(
+                resname,
+                restype,
+                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
+                folders=[self.mod_path],
+            )
+            if search is None or search.data is None:
+                self.log.add_error(
+                    f"Didn't patch '{ssf_patch.filename}' because search data is `None`.",
+                )
+                continue
+
+            soundset = soundsets[ssf_patch.filename] = read_ssf(search.data)
+
+            self.log.add_note(f"Patching '{ssf_patch.filename}'")
+            create_backup(self.log, ssf_output_folder / ssf_patch.filename, backup_dir / ssf_patch.filename)
+            ssf_patch.apply(soundset, memory)
+            write_ssf(soundset, ssf_output_folder / ssf_patch.filename)
 
             self.log.complete_patch()
 
