@@ -200,7 +200,7 @@ class ConfigReader:
                 modifications_ini_keys,
                 modifications_ini_values,
             ):
-                change_indices = parse_range(str(mod_key), len(tlk_data)) if not isinstance(mod_key, range) else mod_key
+                change_indices = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key), len(tlk_data))
                 value_range = (
                     parse_range(str(mod_value), len(tlk_data))
                     if not isinstance(mod_value, range) and mod_value != ""
@@ -769,7 +769,7 @@ class NamespaceReader:
         self.namespaces: list[PatcherNamespace] = []
 
     @classmethod
-    def from_filepath(cls, path: str) -> list[PatcherNamespace]:
+    def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
         ini_file_bytes = BinaryReader.load_file(path)
 
         detector = UniversalDetector()

@@ -42,7 +42,7 @@ class CaseAwarePath(Path):
         args_list: list[Path] = []
         for i, arg in enumerate(args):
             if isinstance(arg, CaseAwarePath):
-                args_list.append(Path(str(arg)))
+                args_list.append(arg)
                 continue
             path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
             if path_str is not None:

@@ -192,7 +192,7 @@ def clone_module(
     new_module.set(identifier, ResourceType.LYT, lyt_data)
 
     filepath = installation.module_path() / f"{identifier}.mod"
-    write_erf(new_module, str(filepath))
+    write_erf(new_module, filepath)
 
 
 def rim_to_mod(filepath: CaseAwarePath) -> None:
@@ -234,4 +234,4 @@ def rim_to_mod(filepath: CaseAwarePath) -> None:
     for res in rim + rim_s:
         mod.set(res.resref.get(), res.restype, res.data)
 
-    write_erf(mod, str(filepath), ResourceType.ERF)
+    write_erf(mod, filepath, ResourceType.ERF)

@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.absolute().parent.parent))
 
-from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
+from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY  # noqa: E402
 
 
 def singlequote_byte_string_to_triplequote_byte_string(single_line_str: str) -> str:
@@ -45,8 +45,6 @@ def highlight_difference(
     Compare two binary strings and highlight the first difference.
     """
     min_length = min(len(original_string), len(reverted_string))
-    return_bool = True
-
     for i in range(min_length):
         if original_string[i] != reverted_string[i]:
             # Extract 10 characters before and after the mismatch
@@ -92,7 +90,7 @@ def highlight_difference(
         print()
         return False
 
-    return return_bool
+    return True
 
 
 def test_before_write_file(
@@ -102,7 +100,6 @@ def test_before_write_file(
     converted_string: str,
     converted_bytes: bytes,
     reverted_string: str,
-    reverted_bytes: bytes,
 ) -> bool:
     return_bool = character_positional_check_result = highlight_difference(
         key,
@@ -150,7 +147,7 @@ def write_dictionary_to_py_file(
             )
             converted_binary_data: bytes = triplequote_byte_string_to_bytes(converted_literal_binary_string)
             reverted_literal_binary_string: str = bytes_to_triplequote_byte_string(converted_binary_data)
-            reverted_binary_data: bytes = singlequote_byte_string_to_bytes(reverted_literal_binary_string)
+            # reverted_binary_data: bytes = singlequote_byte_string_to_bytes(reverted_literal_binary_string)  # noqa: ERA001
             if test_before_write_file(
                 key,
                 original_literal_binary_string,
@@ -158,7 +155,6 @@ def write_dictionary_to_py_file(
                 converted_literal_binary_string,
                 converted_binary_data,
                 reverted_literal_binary_string,
-                reverted_binary_data,
             ):
                 file.write(f"    '{key}': b'''{converted_literal_binary_string}''',{os.linesep}")
             else:

@@ -3,8 +3,6 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from pykotor.tools.path import CaseAwarePath
-
 if TYPE_CHECKING:
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
@@ -13,7 +11,7 @@ if TYPE_CHECKING:
 class ModificationsNSS:
     def __init__(self, filename: str, replace_file: bool):
         self.filename: str = filename
-        self.destination: str = str(CaseAwarePath("Override", filename))
+        self.destination: str = f"Override/{filename}"
         self.replace_file: bool = replace_file
 
     def apply(self, nss: list[str], memory: PatcherMemory, logger: PatchLogger) -> None:
@@ -23,14 +21,14 @@ class ModificationsNSS:
         while match:
             token_id = int(source[match.start() + 10 : match.end() - 1])
             value_str: str = memory.memory_2da[token_id]
-            source = source[0 : match.start()] + value_str + source[match.end() : len(source)]
+            source = source[: match.start()] + value_str + source[match.end() :]
             match = re.search(r"#2DAMEMORY\d+#", source)
 
         match = re.search(r"#StrRef\d+#", source)
         while match:
             token_id = int(source[match.start() + 7 : match.end() - 1])
             value: int = memory.memory_str[token_id]
-            source = source[0 : match.start()] + str(value) + source[match.end() : len(source)]
+            source = source[: match.start()] + str(value) + source[match.end() :]
             match = re.search(r"#StrRef\d+#", source)
 
         nss[0] = source

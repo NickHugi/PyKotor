@@ -168,7 +168,7 @@ class ModInstaller:
             self.log.add_note("Patching dialog.tlk...")
             create_backup(self.log, dialog_tlk_path, backup_dir / "dialog.tlk")
             config.patches_tlk.apply(dialog_tlk, memory)
-            write_tlk(dialog_tlk, str(self.output_path / "dialog.tlk"))
+            write_tlk(dialog_tlk, self.output_path / "dialog.tlk")
             self.log.complete_patch()
 
         # Move nwscript.nss to Override if there are any nss patches to do
@@ -205,7 +205,7 @@ class ModInstaller:
             self.log.add_note(f"Patching '{twoda_patch.filename}'")
             create_backup(self.log, twoda_output_folder / twoda_patch.filename, backup_dir / twoda_patch.filename)
             twoda_patch.apply(twoda, memory)
-            write_2da(twoda, str(twoda_output_folder / twoda_patch.filename))
+            write_2da(twoda, twoda_output_folder / twoda_patch.filename)
 
             self.log.complete_patch()
 
@@ -344,7 +344,6 @@ class ModInstaller:
         replace: bool = False,
     ) -> None:
         resname, restype = ResourceIdentifier.from_path(filename)
-        file_extension = destination.suffix
         if is_rim_file(destination.name):
             rim = read_rim(BinaryReader.load_file(destination)) if destination.exists() else RIM()
             if not rim.get(resname, restype) or replace:
@@ -354,10 +353,10 @@ class ModInstaller:
             erf = (
                 read_erf(BinaryReader.load_file(destination))
                 if destination.exists()
-                else ERF(ERFType.from_extension(file_extension))
+                else ERF(ERFType.from_extension(destination.name))
             )
             if not erf.get(resname, restype) or replace:
                 erf.set(resname, restype, data)
-                write_erf(erf, str(destination))
+                write_erf(erf, destination)
         elif not destination.exists() or replace:
             BinaryWriter.dump(destination, data)

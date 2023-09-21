@@ -126,9 +126,7 @@ def determine_namespaces(
         )
         sys.exit(ExitCode.NAMESPACES_INI_NOT_FOUND)
 
-    loaded_namespaces: list[PatcherNamespace] = NamespaceReader.from_filepath(
-        str(namespaces_ini_path),
-    )
+    loaded_namespaces: list[PatcherNamespace] = NamespaceReader.from_filepath(namespaces_ini_path)
     if namespace_index >= len(loaded_namespaces):
         print("Namespace index is out of range.")
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
