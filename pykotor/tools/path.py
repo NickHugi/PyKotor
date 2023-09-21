@@ -14,16 +14,17 @@ PATH_TYPES = Union[
     os.PathLike,
     list[str],
     list[os.PathLike],
-    list[str | os.PathLike],
+    list[Union[str, os.PathLike]],
     tuple[str, ...],
     tuple[os.PathLike, ...],
-    tuple[str | os.PathLike, ...],
+    tuple[Union[str, os.PathLike], ...],
 ]
 OPTIONAL_PATH_TYPES = Union[
     PATH_TYPES,
     None,
     list[Union[str, os.PathLike, None]],
-    tuple[Union[str, os.PathLike, None], ...] | tuple[None, ...],
+    tuple[Union[str, os.PathLike, None], ...],
+    tuple[None, ...],
 ]
 
 
