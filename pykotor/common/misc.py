@@ -6,6 +6,7 @@ from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from pykotor.common.geometry import Vector3
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     import os
@@ -81,7 +82,7 @@ class ResRef:
         -------
             A new ResRef instance.
         """
-        return cls(str(file_path).rsplit(".", 1)[0])
+        return cls(CaseAwarePath(file_path).name)
 
     def set_data(
         self,

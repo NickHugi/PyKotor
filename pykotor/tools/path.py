@@ -5,9 +5,10 @@ import os
 import platform
 import re
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import List, Tuple, Union
+from typing import TYPE_CHECKING, List, Tuple, Union
 
-from pykotor.common.misc import Game
+if TYPE_CHECKING:
+    from pykotor.common.misc import Game
 
 PATH_TYPES = Union[
     str,
@@ -196,6 +197,8 @@ class CaseAwarePath(Path):
 
 
 def locate_game_path(game: Game) -> CaseAwarePath | None:
+    from pykotor.common.misc import Game
+
     locations = {
         "Windows": {
             Game.K1: [
