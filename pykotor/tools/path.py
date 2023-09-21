@@ -5,26 +5,26 @@ import os
 import platform
 import re
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Union
+from typing import List, Tuple, Union
 
 from pykotor.common.misc import Game
 
 PATH_TYPES = Union[
     str,
     os.PathLike,
-    list[str],
-    list[os.PathLike],
-    list[Union[str, os.PathLike]],
-    tuple[str, ...],
-    tuple[os.PathLike, ...],
-    tuple[Union[str, os.PathLike], ...],
+    List[str],
+    List[os.PathLike],
+    List[Union[str, os.PathLike]],
+    Tuple[str, ...],
+    Tuple[os.PathLike, ...],
+    Tuple[Union[str, os.PathLike], ...],
 ]
 OPTIONAL_PATH_TYPES = Union[
     PATH_TYPES,
     None,
-    list[Union[str, os.PathLike, None]],
-    tuple[Union[str, os.PathLike, None], ...],
-    tuple[None, ...],
+    List[Union[str, os.PathLike, None]],
+    Tuple[Union[str, os.PathLike, None], ...],
+    Tuple[None, ...],
 ]
 
 
