@@ -23,9 +23,10 @@ def uninstall_all_mods(installation: Installation):
     dialog_tlk_path = CaseAwarePath(root_path, "dialog.tlk")
     dialog_tlk = read_tlk(dialog_tlk_path)
     dialog_tlk.entries = dialog_tlk.entries[:49265] if installation.game() == Game.K1 else dialog_tlk.entries[:136329]
-    # TODO(th3w1zard1): With the new ReplaceTLK syntax, the above TLK reinstall isn't possible anymore.
+    # TODO: With the new ReplaceTLK syntax, the above TLK reinstall isn't possible anymore.
     # Here, we should write the dialog.tlk and then check it's sha1 hash compared to vanilla.
     # We could keep the vanilla TLK entries in a tlkdefs.py file, similar to our nwscript.nss defs in scriptdefs.py.
+    # EDIT: Actually this implementation wouldn't work for K2 anyway as it currently isn't determining if Aspyr patch/TSLRCM is installed.
     write_tlk(dialog_tlk, dialog_tlk_path)
 
     # Remove all override files
