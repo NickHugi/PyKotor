@@ -5,16 +5,34 @@ import os
 import platform
 import re
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from typing import Union
 
 from pykotor.common.misc import Game
+
+PATH_TYPES = Union[
+    str,
+    os.PathLike,
+    list[str],
+    list[os.PathLike],
+    list[str | os.PathLike],
+    tuple[str, ...],
+    tuple[os.PathLike, ...],
+    tuple[str | os.PathLike, ...],
+]
+OPTIONAL_PATH_TYPES = Union[
+    PATH_TYPES,
+    None,
+    list[Union[str, os.PathLike, None]],
+    tuple[Union[str, os.PathLike, None], ...] | tuple[None, ...],
+]
 
 
 class CaseAwarePath(Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-    def __new__(cls, *args: str | os.PathLike | tuple[str | os.PathLike | None, ...] | None, **kwargs) -> CaseAwarePath | None:
-        # provide easy support for converting optional paths by returning None here.
+    def __new__(cls, *args: OPTIONAL_PATH_TYPES, **kwargs) -> CaseAwarePath | None:
         if len(args) == 1:
+            # provide easy support for converting optional paths by returning None here.
             if args[0] is None:
                 return None
             # if the only arg passed is already a CaseAwarePath, don't do heavy lifting trying to re-parse it.
@@ -25,7 +43,7 @@ class CaseAwarePath(Path):
             if isinstance(arg, CaseAwarePath):
                 args_list.append(Path(str(arg)))
                 continue
-            path_str = str(arg) if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
+            path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
             if path_str is not None:
                 args_list.append(Path(cls._fix_path_formatting(path_str)))
             else:
@@ -40,7 +58,7 @@ class CaseAwarePath(Path):
     def __fspath__(self):
         return str(self)
 
-    def __truediv__(self, key) -> CaseAwarePath:
+    def __truediv__(self, key: PATH_TYPES) -> CaseAwarePath:
         """
         Uses divider operator to combine two paths.
 
@@ -51,7 +69,7 @@ class CaseAwarePath(Path):
         """
         return CaseAwarePath(self, key)
 
-    def __rtruediv__(self, key) -> CaseAwarePath:
+    def __rtruediv__(self, key: PATH_TYPES) -> CaseAwarePath:
         """
         Uses divider operator to combine two paths.
 
@@ -62,7 +80,7 @@ class CaseAwarePath(Path):
         """
         return CaseAwarePath(key, self)
 
-    def joinpath(self, *args) -> CaseAwarePath:
+    def joinpath(self, *args: PATH_TYPES) -> CaseAwarePath:
         new_path = self
         for arg in args:
             new_path /= arg

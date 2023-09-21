@@ -325,7 +325,7 @@ class ModInstaller:
             nss_patch.apply(nss, memory, self.log)
 
             data = bytes_ncs(compile_nss(nss[0], installation.game()))
-            file_name, ext = nss_patch.filename.split(".", 1)
+            file_name, ext = nss_patch.filename.rsplit(".", 1)
 
             self.write(
                 nss_output_folder,

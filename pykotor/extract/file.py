@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import (
@@ -8,6 +8,9 @@ from pykotor.tools.misc import (
     is_capsule_file,
 )
 from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    import os
 
 
 class FileResource:
@@ -19,7 +22,7 @@ class FileResource:
         restype: ResourceType,
         size: int,
         offset: int,
-        filepath: str | CaseAwarePath,
+        filepath: CaseAwarePath,
     ):
         self._resname: str = resname
         self._restype: ResourceType = restype
@@ -148,9 +151,8 @@ class ResourceIdentifier(NamedTuple):
 
     @staticmethod
     def from_path(
-        file_path: CaseAwarePath | str,
+        file_path: os.PathLike | str,
     ) -> ResourceIdentifier:
-        file_path = CaseAwarePath(file_path).resolve()
-        file_name = file_path.name
-        resname, restype_ext = file_name.split(".", 1)
+        formatted_file_path = CaseAwarePath(file_path)
+        resname, restype_ext = formatted_file_path.stem, formatted_file_path.suffix[1:]
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

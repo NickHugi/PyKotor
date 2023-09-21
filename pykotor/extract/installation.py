@@ -320,17 +320,17 @@ class Installation:
 
             self._override[relative_dir] = []
 
-            for file in files:
-                full_file_path = current_path_obj / file
+            for filename in files:
+                full_file_path = current_path_obj / filename
                 with suppress(Exception):
-                    name, ext = file.rsplit(".", 1)
+                    name, ext = filename.rsplit(".", 1)
                     size = full_file_path.stat().st_size
                     resource = FileResource(
                         name,
                         ResourceType.from_extension(ext),
                         size,
                         0,
-                        str(full_file_path),
+                        full_file_path,
                     )
                     self._override[relative_dir].append(resource)
 
@@ -343,28 +343,27 @@ class Installation:
             directory: The subdirectory in the override folder.
         """
         override_path = self.override_path()
+        override_subfolder_path = override_path / directory
 
         self._override[directory] = []
-        files = os.listdir(str(CaseAwarePath(override_path, directory)))
-        for file in files:
+        for file in override_subfolder_path.iterdir():
             with suppress(Exception):
-                name, ext = file.split(".", 1)
-                size = (override_path / directory / file).stat().st_size
+                size = file.stat().st_size
                 resource = FileResource(
-                    name,
-                    ResourceType.from_extension(ext),
+                    file.name,
+                    ResourceType.from_extension(file.suffix[1:]),
                     size,
                     0,
-                    (override_path / directory / file),
+                    file,
                 )
                 self._override[directory].append(resource)
 
     def load_streammusic(self) -> None:
         self._streammusic = []
         streammusic_path = self.streammusic_path()
-        for filename in list(streammusic_path.iterdir()):
+        for file in streammusic_path.iterdir():
             with suppress(Exception):
-                file_path = streammusic_path / filename
+                file_path = streammusic_path / file
                 identifier = ResourceIdentifier.from_path(file_path)
                 resource = FileResource(
                     identifier.resname,
@@ -380,9 +379,9 @@ class Installation:
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
         self._streamsounds = []
         streamsounds_path = self.streamsounds_path()
-        for filename in streamsounds_path.iterdir():
+        for file in streamsounds_path.iterdir():
             with suppress(Exception):
-                file_path = streamsounds_path / filename
+                file_path = streamsounds_path / file
                 identifier = ResourceIdentifier.from_path(file_path)
                 resource = FileResource(
                     identifier.resname,
@@ -793,8 +792,9 @@ class Installation:
         def check_folders(values: list[CaseAwarePath]):
             for folder in values:
                 folder = CaseAwarePath(folder)
-                for file in [file for file in folder.iterdir() if file.is_file()]:
-                    filepath = CaseAwarePath(folder, file)
+                for file in folder.iterdir():
+                    if not file.is_file():
+                        continue
                     for query in queries:
                         with suppress(Exception):
                             identifier = ResourceIdentifier.from_path(file)
@@ -802,9 +802,9 @@ class Installation:
                                 resource = FileResource(
                                     query.resname,
                                     query.restype,
-                                    filepath.stat().st_size,
+                                    file.stat().st_size,
                                     0,
-                                    filepath,
+                                    file,
                                 )
                                 location = LocationResult(
                                     resource.filepath(),
