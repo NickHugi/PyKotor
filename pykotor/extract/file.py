@@ -154,5 +154,5 @@ class ResourceIdentifier(NamedTuple):
         file_path: os.PathLike | str,
     ) -> ResourceIdentifier:
         file_path = CaseAwarePath(file_path)
-        resname, restype_ext = file_path.name, file_path.suffix[1:]
+        resname, restype_ext = file_path.stem, file_path.suffix[1:]
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

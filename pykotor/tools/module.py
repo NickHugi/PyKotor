@@ -219,8 +219,8 @@ def rim_to_mod(filepath: CaseAwarePath) -> None:
     old_extension: str = filepath.suffix
     lowercase_extension: str = old_extension.lower()
 
-    rim_s_extension: str = lowercase_extension.replace(".mod", "_s.rim")
-    rim_extension: str = lowercase_extension.replace(".mod", ".rim")
+    rim_s_extension: str = "_s.rim".join(lowercase_extension.rsplit(".mod", 1))
+    rim_extension: str = ".rim".join(lowercase_extension.rsplit(".mod", 1))
 
     filepath_rim_s: CaseAwarePath = (
         filepath.parent / (base + rim_s_extension) if rim_s_extension != lowercase_extension else filepath
