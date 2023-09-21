@@ -149,7 +149,7 @@ class RIM:
 
         erf = ERF()
         for resource in self._resources:
-            erf.set_resource(resource.resref.get(), resource.restype, resource.data)
+            erf.set_data(resource.resref.get(), resource.restype, resource.data)
         return erf
 
 

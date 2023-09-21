@@ -13,7 +13,7 @@ class ModifySSF:
         self.stringref: TokenUsage = stringref
 
     def apply(self, ssf: SSF, memory: PatcherMemory) -> None:
-        ssf.set_stringref(self.sound, int(self.stringref.value(memory)))
+        ssf.set_data(self.sound, int(self.stringref.value(memory)))
 
 
 class ModificationsSSF:

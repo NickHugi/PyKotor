@@ -169,9 +169,9 @@ class TPC:
             data: The new texture data.
             texture_format: The texture format.
         """
-        self.set_texture_data(width, height, [data], texture_format)
+        self.set_data(width, height, [data], texture_format)
 
-    def set_texture_data(
+    def set_data(
         self,
         width: int,
         height: int,

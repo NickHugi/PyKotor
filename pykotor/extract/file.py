@@ -153,6 +153,5 @@ class ResourceIdentifier(NamedTuple):
     def from_path(
         file_path: os.PathLike | str,
     ) -> ResourceIdentifier:
-        file_name, ext = str(file_path).rsplit(".", 1)
-        resname, restype_ext = file_name, ext
+        resname, restype_ext = str(file_path).rsplit(".", 1)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

@@ -27,7 +27,7 @@ class ResRef:
         text: str,
     ):
         self._value = ""
-        self.set_resref(text)
+        self.set_data(text)
 
     def __len__(
         self,
@@ -83,7 +83,7 @@ class ResRef:
         """
         return cls(str(file_path).rsplit(".", 1)[0])
 
-    def set_resref(
+    def set_data(
         self,
         text: str,
         truncate: bool = True,

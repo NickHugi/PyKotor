@@ -176,6 +176,7 @@ class Capsule:
             write_rim(container, self._path)
         else:
             container = read_erf(self._path)
+            container.set_data(resname, restype, resdata)
             write_erf(container, self._path)
 
     def path(

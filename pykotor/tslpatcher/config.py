@@ -418,7 +418,7 @@ class ModInstaller:
                 else ERF(ERFType.from_extension(destination.name))
             )
             if not erf.get(resname, restype) or replace:
-                erf.set_resource(resname, restype, data)
+                erf.set_data(resname, restype, data)
                 write_erf(erf, destination)
         elif not destination.exists() or replace:
             BinaryWriter.dump(destination, data)

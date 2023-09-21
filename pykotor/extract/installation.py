@@ -109,21 +109,21 @@ class Installation:
 
         self.log.add_note("Load modules...")
         self.load_modules()
-        print("Load override...")
+        self.log.add_note("Load override...")
         self.load_override()
-        print("Load lips...")
+        self.log.add_note("Load lips...")
         self.load_lips()
-        print("Load textures...")
+        self.log.add_note("Load textures...")
         self.load_textures()
-        print("Load chitin...")
+        self.log.add_note("Load chitin...")
         self.load_chitin()
-        print("Load streammusic...")
+        self.log.add_note("Load streammusic...")
         self.load_streammusic()
-        print("Load streamsounds...")
+        self.log.add_note("Load streamsounds...")
         self.load_streamsounds()
-        print("Load streamvoices...")
+        self.log.add_note("Load streamvoices...")
         self.load_streamvoices()
-        print("Load rims...")
+        self.log.add_note("Load rims...")
         self.load_rims()
 
     # region Get Paths
@@ -646,7 +646,7 @@ class Installation:
             location_list = locations.get(query, [])
 
             if not location_list:
-                print(f"Resource not found: {query}")
+                self.log.add_error(f"Resource not found: {query}")
                 results[query] = None
                 continue
 

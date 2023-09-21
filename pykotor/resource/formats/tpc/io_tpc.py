@@ -87,7 +87,7 @@ class TPCBinaryReader(ResourceReader):
         txi = self._reader.read_string(file_size - self._reader.position())
 
         self._tpc.txi = txi
-        self._tpc.set_texture_data(width, height, mipmaps, tpc_format)
+        self._tpc.set_data(width, height, mipmaps, tpc_format)
 
         return self._tpc
 

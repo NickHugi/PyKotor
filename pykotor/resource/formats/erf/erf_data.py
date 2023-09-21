@@ -76,7 +76,7 @@ class ERF:
 
         return NotImplemented
 
-    def set_resource(
+    def set_data(
         self,
         resref: str,
         restype: ResourceType,
