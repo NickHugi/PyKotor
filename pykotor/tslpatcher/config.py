@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
+from datetime import datetime, timezone
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
@@ -23,7 +24,7 @@ from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
-from pykotor.tslpatcher.mods.install import InstallFile, InstallFolder
+from pykotor.tslpatcher.mods.install import InstallFolder, create_backup
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
 if TYPE_CHECKING:
@@ -153,29 +154,40 @@ class ModInstaller:
         soundsets = {}
         templates = {}
 
+        # Create a timestamped backup directory
+        tz_aware_datetime = datetime.now(tz=timezone.utc)
+        timestamp = tz_aware_datetime.strftime("%Y.%m.%d_%H.%M.%S")
+        backup_dir = self.mod_path.parent / "backup" / timestamp
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        self.log.add_note(f"Using backup directory: '{backup_dir}'")
+
         # Apply changes to dialog.tlk
-        if len(config.patches_tlk.modifiers) > 0:
-            dialog_tlk = read_tlk(installation.path() / "dialog.tlk")
+        if len(config.patches_tlk.modifiers) > 0:  # skip if no patches need to be made (faster)
+            dialog_tlk_path = installation.path() / "dialog.tlk"  # sourcery skip: extract-method
+            dialog_tlk = read_tlk(dialog_tlk_path)
+            self.log.add_note("Patching dialog.tlk...")
+            create_backup(self.log, dialog_tlk_path, backup_dir / "dialog.tlk")
             config.patches_tlk.apply(dialog_tlk, memory)
             write_tlk(dialog_tlk, str(self.output_path / "dialog.tlk"))
             self.log.complete_patch()
 
         # Move nwscript.nss to Override if there are any nss patches to do
-        if len(config.patches_nss) > 0:
-            folder_install = InstallFolder("Override")
-            if folder_install not in config.install_list:
-                config.install_list.append(folder_install)
-            file_install = InstallFile("nwscript.nss", True)
-            folder_install.files.append(file_install)
+        # if len(config.patches_nss) > 0:
+        #    folder_install = InstallFolder("Override")  # noqa: ERA001
+        #    if folder_install not in config.install_list:
+        #        config.install_list.append(folder_install)  # noqa: ERA001
+        #    file_install = InstallFile("nwscript.nss", replace_existing=True)  # noqa: ERA001
+        #    folder_install.files.append(file_install)  # noqa: ERA001
 
         # Apply changes from [InstallList]
         for folder in config.install_list:
-            folder.apply(self.log, self.mod_path, self.output_path)
+            folder.apply(self.log, self.mod_path, self.output_path, backup_dir)
             self.log.complete_patch()
 
         # Apply changes to 2DA files
         for twoda_patch in config.patches_2da:
             resname, restype = ResourceIdentifier.from_path(twoda_patch.filename)
+            twoda_output_folder: CaseAwarePath = self.output_path / "Override"
             search = installation.resource(
                 resname,
                 restype,
@@ -191,14 +203,16 @@ class ModInstaller:
             twodas[twoda_patch.filename] = twoda
 
             self.log.add_note(f"Patching '{twoda_patch.filename}'")
+            create_backup(self.log, twoda_output_folder / twoda_patch.filename, backup_dir / twoda_patch.filename)
             twoda_patch.apply(twoda, memory)
-            write_2da(twoda, str(self.output_path / "Override" / twoda_patch.filename))
+            write_2da(twoda, str(twoda_output_folder / twoda_patch.filename))
 
             self.log.complete_patch()
 
         # Apply changes to SSF files
         for ssf_patch in config.patches_ssf:
             resname, restype = ResourceIdentifier.from_path(ssf_patch.filename)
+            ssf_output_folder: CaseAwarePath = self.output_path / "Override"
             search = installation.resource(
                 resname,
                 restype,
@@ -214,8 +228,9 @@ class ModInstaller:
             soundset = soundsets[ssf_patch.filename] = read_ssf(search.data)
 
             self.log.add_note(f"Patching '{ssf_patch.filename}'")
+            create_backup(self.log, ssf_output_folder / ssf_patch.filename, backup_dir / ssf_patch.filename)
             ssf_patch.apply(soundset, memory)
-            write_ssf(soundset, self.output_path / "Override" / ssf_patch.filename)
+            write_ssf(soundset, ssf_output_folder / ssf_patch.filename)
 
             self.log.complete_patch()
 
@@ -224,9 +239,9 @@ class ModInstaller:
             resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
 
             capsule = None
-            gff_filepath: CaseAwarePath = self.output_path / gff_patch.destination
+            gff_output_folder: CaseAwarePath = self.output_path / gff_patch.destination
             if is_capsule_file(gff_patch.destination.name):
-                capsule = Capsule(gff_filepath)
+                capsule = Capsule(gff_output_folder)
 
             search = installation.resource(
                 resname,
@@ -258,13 +273,21 @@ class ModInstaller:
                 self.log.add_note(
                     f"Patching '{gff_patch.filename}' in the '{local_path}' archive.",
                 )
+                if not capsule._path.exists():
+                    self.log.add_warning(
+                        f"The capsule '{local_path}' did not exist when patching GFF '{gff_patch.filename}'! Please note that TSLPatcher would have errored in this scenario.",
+                    )
+                    self.log.add_warning(
+                        "The above warning most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
+                    )
+            create_backup(self.log, gff_output_folder / gff_patch.filename, backup_dir / gff_patch.filename)
 
             template = templates[gff_patch.filename] = read_gff(search.data)
             assert template is not None
 
             gff_patch.apply(template, memory, self.log)
             self.write(
-                gff_filepath,
+                gff_output_folder,
                 gff_patch.filename,
                 bytes_gff(template),
                 replace=True,
@@ -275,11 +298,11 @@ class ModInstaller:
         # Apply changes to NSS files
         for nss_patch in config.patches_nss:
             capsule = None
-            nss_output_filepath = self.output_path / nss_patch.destination
+            nss_output_folder = self.output_path / nss_patch.destination
             if is_capsule_file(nss_patch.destination):
-                capsule = Capsule(nss_output_filepath)
+                capsule = Capsule(nss_output_folder)
 
-            nss_input_filepath = CaseAwarePath(self.mod_path, nss_patch.filename)
+            nss_input_filepath = self.mod_path / nss_patch.filename
             nss = [BinaryReader.load_file(nss_input_filepath).decode(errors="ignore")]
 
             norm_game_path = installation.path()
@@ -296,6 +319,7 @@ class ModInstaller:
                 self.log.add_note(
                     f"Patching '{nss_patch.filename}' in the '{local_path}' archive.",
                 )
+            create_backup(self.log, nss_output_folder / nss_patch.filename, backup_dir / nss_patch.filename)
 
             self.log.add_note(f"Compiling '{nss_patch.filename}'")
             nss_patch.apply(nss, memory, self.log)
@@ -304,7 +328,7 @@ class ModInstaller:
             file_name, ext = nss_patch.filename.split(".", 1)
 
             self.write(
-                nss_output_filepath,
+                nss_output_folder,
                 f"{file_name}." + ext.lower().replace("nss", "ncs"),
                 data,
                 nss_patch.replace_file,

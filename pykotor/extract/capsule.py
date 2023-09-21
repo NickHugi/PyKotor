@@ -21,7 +21,7 @@ class Capsule:
         path: CaseAwarePath | str,
         create_nonexisting: bool = False,
     ):
-        self._path = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+        self._path = CaseAwarePath(path).resolve()
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)
@@ -85,6 +85,11 @@ class Capsule:
         if reload:
             self.reload()
 
+        # nothing to search if capsule doesn't exist on disk (from_file will error if not existing)
+        if not self._path.exists():
+            print(f"Cannot query '{queries}'. Reason: Capsule doesn't exist on disk: '{self._path}'")
+            return {}
+
         results = {}
         reader = BinaryReader.from_file(self._path)
 
@@ -143,6 +148,10 @@ class Capsule:
         self,
     ):
         """Reload the list of resource info linked from the module file."""
+        # nothing to reload if capsule doesn't exist on disk (from_file will error if not existing)
+        if not self._path.exists():
+            print(f"Cannot reload '{self._path}'. Reason: Capsule doesn't exist on disk.")
+            return
         with BinaryReader.from_file(self._path) as reader:
             file_type = reader.read_string(4)
             reader.read_string(4)

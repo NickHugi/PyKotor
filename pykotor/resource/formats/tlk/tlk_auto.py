@@ -97,20 +97,18 @@ def read_tlk(
     -------
         An TLK instance.
     """
-    print("Detect tlk...")
     file_format = detect_tlk(source, offset)
 
     if file_format is ResourceType.INVALID:
         msg = "Failed to determine the format of the GFF file."
         raise ValueError(msg)
 
-    print("Reading tlk...")
     if file_format == ResourceType.TLK:
-        return TLKBinaryReader(source, offset, size).load()
+        return TLKBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.TLK_XML:
-        return TLKXMLReader(source, offset, size).load()
+        return TLKXMLReader(source, offset, size or 0).load()
     if file_format == ResourceType.TLK_JSON:
-        return TLKJSONReader(source, offset, size).load()
+        return TLKJSONReader(source, offset, size or 0).load()
     msg = "Unsupported TLK format specified."
     raise ValueError(msg)
 

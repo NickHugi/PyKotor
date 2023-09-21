@@ -24,7 +24,7 @@ class FileResource:
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: CaseAwarePath = filepath if isinstance(filepath, CaseAwarePath) else CaseAwarePath(filepath)
+        self._filepath: CaseAwarePath = CaseAwarePath(filepath)
         self._offset: int = offset
 
     def __repr__(
@@ -150,7 +150,7 @@ class ResourceIdentifier(NamedTuple):
     def from_path(
         file_path: CaseAwarePath | str,
     ) -> ResourceIdentifier:
-        file_path = file_path if isinstance(file_path, CaseAwarePath) else CaseAwarePath(file_path)
+        file_path = CaseAwarePath(file_path).resolve()
         file_name = file_path.name
         resname, restype_ext = file_name.split(".", 1)
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

@@ -37,7 +37,6 @@ def detect_mdl(
     """
     try:
         if isinstance(source, (str, CaseAwarePath)):
-            source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 first4 = reader.read_bytes(4)
                 file_format = ResourceType.MDL if first4 == b"\x00\x00\x00\x00" else ResourceType.MDL_ASCII
@@ -60,7 +59,7 @@ def detect_mdl(
 def read_mdl(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: int = 0,
+    size: int | None = None,
     source_ext: SOURCE_TYPES | None = None,
     offset_ext: int = 0,
     size_ext: int = 0,
@@ -99,13 +98,13 @@ def read_mdl(
         return MDLBinaryReader(
             source,
             offset,
-            size,
+            size or 0,
             source_ext,
             offset_ext,
             size_ext,
         ).load()
-    elif file_format == ResourceType.MDL_ASCII:
-        return MDLAsciiReader(source, offset, size).load()
+    if file_format == ResourceType.MDL_ASCII:
+        return MDLAsciiReader(source, offset, size or 0).load()
     return None
 
 

@@ -19,7 +19,7 @@ from pykotor.tools.path import CaseAwarePath
 def detect_2da(
     source: SOURCE_TYPES | object,
     offset: int = 0,
-) -> ResourceType:
+) -> ResourceType:  # sourcery skip: assign-if-exp, reintroduce-else
     """
     Returns what format the TwoDA data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
@@ -53,7 +53,6 @@ def detect_2da(
 
     try:
         if isinstance(source, (str, Path, CaseAwarePath)):
-            source = source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):
@@ -104,12 +103,13 @@ def read_2da(
         raise ValueError(msg)
 
     if file_format == ResourceType.TwoDA:
-        return TwoDABinaryReader(source, offset, size).load()
+        return TwoDABinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.TwoDA_CSV:
-        return TwoDACSVReader(source, offset, size).load()
+        return TwoDACSVReader(source, offset, size or 0).load()
     if file_format == ResourceType.TwoDA_JSON:
-        return TwoDAJSONReader(source, offset, size).load()
-    return None
+        return TwoDAJSONReader(source, offset, size or 0).load()
+    msg = "detect_2da failed unexpectedly"
+    raise ValueError(msg)
 
 
 def write_2da(

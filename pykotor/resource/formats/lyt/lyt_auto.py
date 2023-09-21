@@ -30,7 +30,7 @@ def read_lyt(
     -------
         An LYT instance.
     """
-    return LYTAsciiReader(source, offset, size).load()
+    return LYTAsciiReader(source, offset, size or 0).load()
 
 
 def write_lyt(

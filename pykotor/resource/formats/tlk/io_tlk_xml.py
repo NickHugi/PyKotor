@@ -21,7 +21,7 @@ class TLKXMLReader(ResourceReader):
         self,
         source: SOURCE_TYPES,
         offset: int = 0,
-        size: int | None = None,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
         self._tlk: TLK | None = None

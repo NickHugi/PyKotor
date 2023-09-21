@@ -53,19 +53,21 @@ from pykotor.tslpatcher.mods.twoda import (
 )
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.resource.formats.tlk.tlk_data import TLKEntry
     from pykotor.tslpatcher.mods.gff import ModifyGFF
 
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, mod_path: CaseAwarePath | str) -> None:
+    def __init__(self, ini: ConfigParser, mod_path: os.PathLike | str) -> None:
         self.ini = ini
-        self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
+        self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
         self.config: PatcherConfig
 
     @classmethod
-    def from_filepath(cls, path: str | CaseAwarePath) -> PatcherConfig:
-        path = (path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)).resolve()
+    def from_filepath(cls, path: os.PathLike | str) -> PatcherConfig:
+        path = CaseAwarePath(path).resolve()
         ini_file_bytes = BinaryReader.load_file(path)
 
         detector = UniversalDetector()

@@ -30,7 +30,7 @@ def read_rim(
     -------
         An RIM instance.
     """
-    return RIMBinaryReader(source, offset, size).load()
+    return RIMBinaryReader(source, offset, size or 0).load()
 
 
 def write_rim(

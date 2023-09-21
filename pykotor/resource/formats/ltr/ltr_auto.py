@@ -32,7 +32,7 @@ def read_ltr(
         An LTR instance.
     """
     try:
-        return LTRBinaryReader(source, offset, size).load()
+        return LTRBinaryReader(source, offset, size or 0).load()
     except (OSError, ValueError) as e:
         msg = "Tried to load an unsupported or corrupted LTR file."
         raise ValueError(msg) from e

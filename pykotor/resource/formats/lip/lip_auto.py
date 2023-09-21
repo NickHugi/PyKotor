@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.lip import (
     LIP,
@@ -36,7 +38,7 @@ def detect_lip(
         The format of the LIP data.
     """
     try:
-        if isinstance(source, (str, CaseAwarePath)):
+        if isinstance(source, (str, os.PathLike)):
             source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = ResourceType.LIP if reader.read_string(4) == "LIP " else ResourceType.LIP_XML
@@ -88,9 +90,9 @@ def read_lip(
         raise ValueError(msg)
 
     if file_format == ResourceType.LIP:
-        return LIPBinaryReader(source, offset, size).load()
-    elif file_format == ResourceType.LIP_XML:
-        return LIPXMLReader(source, offset, size).load()
+        return LIPBinaryReader(source, offset, size or 0).load()
+    if file_format == ResourceType.LIP_XML:
+        return LIPXMLReader(source, offset, size or 0).load()
     return None
 
 

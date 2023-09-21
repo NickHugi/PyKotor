@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, ERFBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
@@ -5,7 +7,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 def read_erf(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: int = 0,
+    size: int | None = None,
 ) -> ERF:
     """
     Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
@@ -28,7 +30,7 @@ def read_erf(
     -------
         An ERF instance.
     """
-    return ERFBinaryReader(source, offset, size).load()
+    return ERFBinaryReader(source, offset, size or 0).load()
 
 
 def write_erf(

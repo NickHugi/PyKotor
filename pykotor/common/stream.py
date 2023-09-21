@@ -2,14 +2,17 @@
 from __future__ import annotations
 
 import io
+import os
 import struct
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import BinaryIO
+from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
 
 
 def _endian_char(
@@ -76,7 +79,7 @@ class BinaryReader:
     @classmethod
     def from_file(
         cls,
-        path: CaseAwarePath | str,
+        path: os.PathLike | str,
         offset: int = 0,
         size: int | None = None,
     ) -> BinaryReader:
@@ -85,7 +88,7 @@ class BinaryReader:
 
         Args:
         ----
-            path: Path of the file to open.
+            path: str or pathlike object of the file to open.
             offset: Number of bytes into the stream to consider as position 0.
             size: Number of bytes to allowed to read from the stream. If not specified, uses the whole stream.
 
@@ -93,8 +96,8 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        path = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
-        stream = path.resolve().open("rb")
+        resolved_path = CaseAwarePath(path).resolve()
+        stream = resolved_path.open("rb")
         return BinaryReader(stream, offset, size)
 
     @classmethod
@@ -123,12 +126,11 @@ class BinaryReader:
     @classmethod
     def from_auto(
         cls,
-        source: CaseAwarePath | str | bytes | bytearray | BinaryReader | object,
+        source: SOURCE_TYPES | object,
         offset: int = 0,
         size: int | None = None,
     ):
-        if isinstance(source, (CaseAwarePath, Path, str)):  # is path
-            source = source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
+        if isinstance(source, (os.PathLike, str)):  # is path
             reader = BinaryReader.from_file(source, offset, size)
         elif isinstance(source, (bytes, bytearray)):  # is binary data
             reader = BinaryReader.from_bytes(source, offset, size)
@@ -142,7 +144,7 @@ class BinaryReader:
 
     @staticmethod
     def load_file(
-        path: str | CaseAwarePath,
+        path: os.PathLike | str,
         offset: int = 0,
         size: int = -1,
     ) -> bytes:
@@ -151,7 +153,7 @@ class BinaryReader:
 
         Args:
         ----
-            path: The path of the file. Must be a path-like object.
+            path: The str or path-like path of the file.
             offset: The offset into the file.
             size: The amount of bytes to load, if size equals -1 loads the whole file.
 
@@ -159,7 +161,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        path = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+        path = CaseAwarePath(path).resolve()
         with path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
@@ -671,20 +673,21 @@ class BinaryWriter(ABC):
     @classmethod
     def to_file(
         cls,
-        path: CaseAwarePath,
+        path: os.PathLike | str,
     ) -> BinaryWriter:
         """
         Returns a new BinaryWriter with a stream established to the specified path.
 
         Args:
         ----
-            path: CaseAwarePath of the file to open.
+            path: str or PathLike object of the file to open.
 
         Returns:
         -------
             A new BinaryWriter instance.
         """
-        stream = path.open("wb")
+        resolved_path = CaseAwarePath(path).resolve()
+        stream = resolved_path.open("wb")
         return BinaryWriterFile(stream)
 
     @classmethod
@@ -710,10 +713,9 @@ class BinaryWriter(ABC):
     @classmethod
     def to_auto(
         cls,
-        source: CaseAwarePath | str | bytes | bytearray | BinaryReader | object,
+        source: TARGET_TYPES | object,
     ) -> BinaryWriter:
-        if isinstance(source, (CaseAwarePath, str)):  # is path
-            source = source if isinstance(source, CaseAwarePath) else CaseAwarePath(source)
+        if isinstance(source, (os.PathLike, str)):  # is path
             return BinaryWriter.to_file(source)
         if isinstance(source, bytearray):  # is binary data
             return BinaryWriter.to_bytearray(source)
@@ -724,7 +726,7 @@ class BinaryWriter(ABC):
 
     @staticmethod
     def dump(
-        path: CaseAwarePath,
+        path: os.PathLike | str,
         data: bytes,
     ) -> None:
         """
@@ -735,7 +737,8 @@ class BinaryWriter(ABC):
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        with path.open("wb") as file:
+        resolved_path = CaseAwarePath(path).resolve()
+        with resolved_path.open("wb") as file:
             file.write(data)
 
     @abstractmethod

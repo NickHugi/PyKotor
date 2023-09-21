@@ -32,7 +32,7 @@ class ERFBinaryReader(ResourceReader):
             msg = f"Not a valid ERF file: '{file_type}'"
             raise ValueError(msg)
 
-        self._erf = ERF(erf_type_map.get(file_type))
+        self._erf = ERF(erf_type_map.get(file_type))  # type: ignore  # noqa: PGH003
 
         if file_version != "V1.0":
             msg = f"ERF version '{file_version}' is unsupported."

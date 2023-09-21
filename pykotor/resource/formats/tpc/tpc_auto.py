@@ -102,9 +102,9 @@ def read_tpc(
         raise ValueError(msg)
 
     if file_format == ResourceType.TPC:
-        return TPCBinaryReader(source, offset, size).load()
-    elif file_format == ResourceType.TGA:
-        return TPCTGAReader(source, offset, size).load()
+        return TPCBinaryReader(source, offset, size or 0).load()
+    if file_format == ResourceType.TGA:
+        return TPCTGAReader(source, offset, size or 0).load()
     return None
 
 

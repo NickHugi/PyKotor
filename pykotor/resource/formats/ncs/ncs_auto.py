@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from pykotor.common.misc import Game
 from pykotor.common.scriptdefs import (
@@ -20,12 +20,13 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ncs.ncs_data import NCSOptimizer
+    from pykotor.tools.path import CaseAwarePath
 
 
 def read_ncs(
     source: SOURCE_TYPES,
     offset: int = 0,
-    size: Optional[int] = None,
+    size: int | None = None,
 ) -> NCS:
     """
     Returns an NCS instance from the source.
@@ -44,7 +45,7 @@ def read_ncs(
     -------
         An NCS instance.
     """
-    return NCSBinaryReader(source, offset, size).load()
+    return NCSBinaryReader(source, offset, size or 0).load()
 
 
 def write_ncs(
@@ -103,7 +104,7 @@ def compile_nss(
     source: str,
     game: Game,
     optimizers: list[NCSOptimizer] | None = None,
-    library_lookup: list[str] | None = None,
+    library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None = None,
 ) -> NCS:
     """
     Returns NCS object compiled from input source string.
@@ -116,9 +117,9 @@ def compile_nss(
     """
     NssLexer()
     nss_parser = NssParser(
-        library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
         functions=KOTOR_FUNCTIONS if game == Game.K1 else TSL_FUNCTIONS,
         constants=KOTOR_CONSTANTS if game == Game.K1 else TSL_CONSTANTS,
+        library=KOTOR_LIBRARY if game == Game.K1 else TSL_LIBRARY,
         library_lookup=library_lookup,
     )
 

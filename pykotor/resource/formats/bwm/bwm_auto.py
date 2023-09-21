@@ -29,7 +29,7 @@ def read_bwm(
     -------
         An WOK instance.
     """
-    return BWMBinaryReader(source, offset, size).load()
+    return BWMBinaryReader(source, offset, size or 0).load()
 
 
 def write_bwm(

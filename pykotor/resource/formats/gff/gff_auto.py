@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+import os
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import (
@@ -12,7 +12,6 @@ from pykotor.resource.formats.gff import (
     GFFXMLWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CaseAwarePath
 
 
 def detect_gff(
@@ -39,7 +38,7 @@ def detect_gff(
         The format of the GFF data.
     """
     try:
-        if isinstance(source, (str, CaseAwarePath, Path)):
+        if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_header = reader.read_string(4)
                 file_format = ResourceType.GFF if any(x.value == file_header for x in GFFContent) else ResourceType.GFF_XML
@@ -96,9 +95,9 @@ def read_gff(
         raise ValueError(msg)
 
     if file_format == ResourceType.GFF:
-        return GFFBinaryReader(source, offset, size).load()
+        return GFFBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.GFF_XML:
-        return GFFXMLReader(source, offset, size).load()
+        return GFFXMLReader(source, offset, size or 0).load()
     return None
 
 

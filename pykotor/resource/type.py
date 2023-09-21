@@ -4,22 +4,22 @@ games.
 """
 from __future__ import annotations
 
+import os
 from abc import ABC
 from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.tools.path import CaseAwarePath
 
-SOURCE_TYPES = Union[CaseAwarePath, str, bytes, bytearray, BinaryReader]
-TARGET_TYPES = Union[CaseAwarePath, str, bytearray, BinaryWriter]
+SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, BinaryReader]
+TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
 class ResourceReader(ABC):
     @overload
     def __init__(
         self,
-        filepath: CaseAwarePath | str,
+        filepath: os.PathLike | str,
         offset: int = 0,
         size: int = 0,
     ):
@@ -45,7 +45,7 @@ class ResourceReader(ABC):
 
     def __init__(
         self,
-        source: Union[str, CaseAwarePath, bytes, bytearray, BinaryReader],
+        source: SOURCE_TYPES,
         offset: int = 0,
         size: int = 0,
     ):
@@ -62,7 +62,7 @@ class ResourceWriter(ABC):
     @overload
     def __init__(
         self,
-        filepath: CaseAwarePath | str,
+        filepath: os.PathLike | str,
     ):
         ...
 
@@ -89,7 +89,7 @@ class ResourceWriter(ABC):
 
     def __init__(
         self,
-        target: Union[str, CaseAwarePath, bytearray, BinaryReader],
+        target: TARGET_TYPES,
     ):
         self._writer = BinaryWriter.to_auto(target)
 
@@ -235,7 +235,7 @@ class ResourceType:
     def __eq__(
         self,
         other: ResourceType | str | int,
-    ):
+    ):  # sourcery skip: assign-if-exp, reintroduce-else
         """
         Two ResourceTypes are equal if they are the same.
         A ResourceType and a str are equal if the extension is equal to the string.
