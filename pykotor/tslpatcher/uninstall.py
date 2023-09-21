@@ -6,6 +6,7 @@ from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
 
 
+# TODO: the aspyr patch contains some required files in the override folder, hardcode them and ignore those here.
 def uninstall_all_mods(installation: Installation):
     """
     Uninstalls all mods from the game.
