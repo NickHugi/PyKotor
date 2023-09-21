@@ -165,8 +165,8 @@ class ModInstaller:
         if len(config.patches_tlk.modifiers) > 0:  # skip if no patches need to be made (faster)
             dialog_tlk_path = installation.path() / "dialog.tlk"  # sourcery skip: extract-method
             dialog_tlk = read_tlk(dialog_tlk_path)
-            self.log.add_note("Patching dialog.tlk...")
             create_backup(self.log, dialog_tlk_path, backup_dir / "dialog.tlk")
+            self.log.add_note("Patching dialog.tlk...")
             config.patches_tlk.apply(dialog_tlk, memory)
             write_tlk(dialog_tlk, self.output_path / "dialog.tlk")
             self.log.complete_patch()
@@ -202,8 +202,8 @@ class ModInstaller:
             twoda: TwoDA = read_2da(search.data)
             twodas[twoda_patch.filename] = twoda
 
-            self.log.add_note(f"Patching '{twoda_patch.filename}'")
             create_backup(self.log, twoda_output_folder / twoda_patch.filename, backup_dir / twoda_patch.filename)
+            self.log.add_note(f"Patching '{twoda_patch.filename}'")
             twoda_patch.apply(twoda, memory)
             write_2da(twoda, twoda_output_folder / twoda_patch.filename)
 
@@ -241,11 +241,12 @@ class ModInstaller:
             local_path = norm_file_path.relative_to(norm_game_path)
 
             if capsule is None:
+                create_backup(self.log, gff_output_folder / gff_patch.filename, backup_dir / gff_patch.filename)
                 self.log.add_note(
                     f"Patching '{gff_patch.filename}' in the '{local_path.parent}' folder.",
                 )
-                create_backup(self.log, gff_output_folder / gff_patch.filename, backup_dir / gff_patch.filename)
             else:
+                create_backup(self.log, gff_output_folder, backup_dir / gff_output_folder.name)
                 self.log.add_note(
                     f"Patching '{gff_patch.filename}' in the '{local_path}' archive.",
                 )
@@ -256,8 +257,6 @@ class ModInstaller:
                     self.log.add_warning(
                         "The above warning most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
-                else:
-                    create_backup(self.log, gff_output_folder, backup_dir / gff_output_folder.name)
 
             template = templates[gff_patch.filename] = read_gff(search.data)
             assert template is not None
@@ -289,11 +288,12 @@ class ModInstaller:
             local_folder = local_path.parent
 
             if capsule is None:
+                create_backup(self.log, nss_output_folder / nss_patch.filename, backup_dir / nss_patch.filename)
                 self.log.add_note(
                     f"Patching '{nss_patch.filename}' in the '{local_folder}' folder.",
                 )
-                create_backup(self.log, nss_output_folder / nss_patch.filename, backup_dir / nss_patch.filename)
             else:
+                create_backup(self.log, nss_output_folder, backup_dir / nss_output_folder.name)
                 self.log.add_note(
                     f"Patching '{nss_patch.filename}' in the '{local_path}' archive.",
                 )
@@ -304,8 +304,6 @@ class ModInstaller:
                     self.log.add_warning(
                         "The above warning most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
-                else:
-                    create_backup(self.log, nss_output_folder, backup_dir / nss_output_folder.name)
 
             self.log.add_note(f"Compiling '{nss_patch.filename}'")
             nss_patch.apply(nss, memory, self.log)
@@ -340,8 +338,8 @@ class ModInstaller:
 
             soundset = soundsets[ssf_patch.filename] = read_ssf(search.data)
 
-            self.log.add_note(f"Patching '{ssf_patch.filename}'")
             create_backup(self.log, ssf_output_folder / ssf_patch.filename, backup_dir / ssf_patch.filename)
+            self.log.add_note(f"Patching '{ssf_patch.filename}'")
             ssf_patch.apply(soundset, memory)
             write_ssf(soundset, ssf_output_folder / ssf_patch.filename)
 
