@@ -35,7 +35,7 @@ class CaseAwarePath(Path):
         if len(args) == 1:
             arg0 = args[0]
             # provide easy support for converting optional paths by returning None here.
-            if arg0 is None:
+            if not arg0:
                 return None
             # if the only arg passed is already a CaseAwarePath, don't do heavy lifting trying to re-parse it.
             if isinstance(arg0, CaseAwarePath):

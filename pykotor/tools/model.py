@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import struct
 from copy import deepcopy
 from typing import NamedTuple
@@ -323,7 +325,7 @@ def convert_to_k2(
         def node_recursive(
             offset_to_root_offset,
         ):
-            nodes: list[int]
+            nodes = [offset_to_root_offset]
             while nodes:
                 offset_to_node_offset = nodes.pop()
                 reader.seek(offset_to_node_offset)

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class PatchLogger:
     def __init__(self):
         self.notes: list[PatchLog] = []

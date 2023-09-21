@@ -131,7 +131,7 @@ class TPCTGAReader(ResourceReader):
             msg = "The image data must be RGB and not color-mapped."
             raise ValueError(msg)
 
-        self._tpc.set(width, height, [bytes(data)], TPCTextureFormat.RGBA)
+        self._tpc.set_texture_data(width, height, [bytes(data)], TPCTextureFormat.RGBA)
 
         return self._tpc
 

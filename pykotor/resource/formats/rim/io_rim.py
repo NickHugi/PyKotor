@@ -59,7 +59,7 @@ class RIMBinaryReader(ResourceReader):
         for i in range(entry_count):
             self._reader.seek(resoffsets[i])
             resdata = self._reader.read_bytes(ressizes[i])
-            self._rim.set(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
+            self._rim.set_data(resrefs[i], ResourceType.from_id(restypes[i]), resdata)
 
         return self._rim
 

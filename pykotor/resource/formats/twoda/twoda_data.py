@@ -395,8 +395,7 @@ class TwoDARow:
     def __eq__(self, other: TwoDARow | object):
         if isinstance(other, TwoDARow):
             return (self._row_label == other._row_label) and (self._data == other._data)
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def label(
         self,

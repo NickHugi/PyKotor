@@ -133,7 +133,6 @@ def write_tlk(
         PermissionError: If the file could not be written to the specified destination.
         ValueError: If the specified format was unsupported.
     """
-    print("Writing tlk...")
     if file_format == ResourceType.TLK:
         TLKBinaryWriter(tlk, target).write()
     elif file_format == ResourceType.TLK_XML:

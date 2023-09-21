@@ -170,12 +170,13 @@ class Capsule:
         restype: ResourceType,
         resdata: bytes,
     ):
-        container = read_rim(self._path) if is_rim_file(self._path.name) else read_erf(self._path)
-        container.set(resname, restype, resdata)
         if is_rim_file(self._path.name):
-            write_rim(container, self._path)  # type: ignore
+            container = read_rim(self._path)
+            container.set_data(resname, restype, resdata)
+            write_rim(container, self._path)
         else:
-            write_erf(container, self._path)  # type: ignore
+            container = read_erf(self._path)
+            write_erf(container, self._path)
 
     def path(
         self,

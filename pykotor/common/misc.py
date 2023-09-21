@@ -1,4 +1,5 @@
 """This module holds various unrelated classes."""
+
 from __future__ import annotations
 
 from enum import Enum, IntEnum
@@ -7,7 +8,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar
 from pykotor.common.geometry import Vector3
 
 if TYPE_CHECKING:
-    from pykotor.tools.path import CaseAwarePath
+    import os
 
 T = TypeVar("T")
 
@@ -26,7 +27,7 @@ class ResRef:
         text: str,
     ):
         self._value = ""
-        self.set(text)
+        self.set_resref(text)
 
     def __len__(
         self,
@@ -67,7 +68,7 @@ class ResRef:
     @classmethod
     def from_path(
         cls,
-        path: CaseAwarePath,
+        file_path: os.PathLike | str,
     ) -> ResRef:
         """
         Returns a ResRef from the filename in the specified path.
@@ -80,9 +81,9 @@ class ResRef:
         -------
             A new ResRef instance.
         """
-        return cls(path.stem)
+        return cls(str(file_path).rsplit(".", 1)[0])
 
-    def set(
+    def set_resref(
         self,
         text: str,
         truncate: bool = True,
@@ -103,10 +104,10 @@ class ResRef:
             if truncate:
                 text = text[:16]
             else:
-                msg = "ResRef cannot exceed 16 characters."
+                msg = "ResRef cannot exceed 16 characters."  # sourcery skip: inline-variable
                 raise ResRef.ExceedsMaxLengthError(msg)
         if len(text) != len(text.encode()):
-            msg = "ResRef must be in ASCII characters."
+            msg = "ResRef must be in ASCII characters."  # sourcery skip: inline-variable
             raise ResRef.InvalidEncodingError(msg)
 
         self._value = text
@@ -363,11 +364,10 @@ class WrappedInt:
         if isinstance(other, WrappedInt):
             self._value += other.get()
             return None
-        elif isinstance(other, int):
+        if isinstance(other, int):
             self._value += other
             return None
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __eq__(
         self,

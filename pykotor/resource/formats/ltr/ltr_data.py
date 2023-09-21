@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import random
+import secrets
 import string
 
 from pykotor.resource.type import ResourceType
@@ -19,9 +20,9 @@ class LTR:
         self,
     ):
         self._singles: LTRBlock = LTRBlock(LTR.NUM_CHARACTERS)
-        self._doubles: list[LTRBlock] = [LTRBlock(LTR.NUM_CHARACTERS) for i in range(LTR.NUM_CHARACTERS)]
+        self._doubles: list[LTRBlock] = [LTRBlock(LTR.NUM_CHARACTERS) for _ in range(LTR.NUM_CHARACTERS)]
         self._triples: list[list[LTRBlock]] = [
-            [LTRBlock(LTR.NUM_CHARACTERS) for i in range(LTR.NUM_CHARACTERS)] for j in range(LTR.NUM_CHARACTERS)
+            [LTRBlock(LTR.NUM_CHARACTERS) for _ in range(LTR.NUM_CHARACTERS)] for _ in range(LTR.NUM_CHARACTERS)
         ]
 
     @staticmethod
@@ -33,7 +34,7 @@ class LTR:
         -------
             A float between 0.0 and 1.0 inclusive.
         """
-        return random.uniform(0.0, 1.0)
+        return secrets.randbelow(1001) / 1000
 
     def generate(
         self,
@@ -88,7 +89,7 @@ class LTR:
             while True:
                 prob = LTR._chance()
 
-                if (random.randrange(0, 12) % 12) <= len(name):
+                if (secrets.randbelow(12) % 12) <= len(name):
                     for char in LTR.CHARACTER_SET:
                         index1 = LTR.CHARACTER_SET.index(name[-2])
                         index2 = LTR.CHARACTER_SET.index(name[-1])

@@ -76,7 +76,7 @@ class ERF:
 
         return NotImplemented
 
-    def set(
+    def set_resource(
         self,
         resref: str,
         restype: ResourceType,
@@ -153,7 +153,7 @@ class ERF:
 
         rim = RIM()
         for resource in self._resources:
-            rim.set(resource.resref.get(), resource.restype, resource.data)
+            rim.set_data(resource.resref.get(), resource.restype, resource.data)
         return rim
 
 

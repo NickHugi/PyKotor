@@ -11,6 +11,8 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
 
@@ -20,12 +22,30 @@ print_lock = threading.Lock()
 
 def create_backup(
     log: PatchLogger,
-    destination_file_path: CaseAwarePath,
-    backup_file_path: CaseAwarePath,
+    destination_filepath: CaseAwarePath,
+    backup_folderpath: CaseAwarePath,
+    processed_files: set,
+    subdirectory_path: os.PathLike | str | None = None,
 ):
-    if destination_file_path.exists() and not backup_file_path.exists():
-        log.add_note(f"Backing up '{destination_file_path}'...")
-        shutil.copy(destination_file_path, backup_file_path)
+    destination_file_str = str(destination_filepath).lower()
+    if subdirectory_path:
+        backup_filepath = backup_folderpath / subdirectory_path / destination_filepath.name
+    else:
+        backup_filepath = backup_folderpath / destination_filepath.name
+
+    if destination_file_str not in processed_files and destination_filepath.exists():
+        # Check if the backup path exists and generate a new one if necessary
+        i = 2
+        filestem = backup_filepath.stem
+        while backup_filepath.exists():
+            backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
+            i += 1
+
+        log.add_note(f"Backing up '{destination_file_str}'...")
+        shutil.copy(destination_filepath, backup_filepath)
+
+    # Add the lowercased path string to the processed_files set
+    processed_files.add(destination_file_str)
 
 
 class InstallFile:
@@ -42,11 +62,12 @@ class InstallFile:
         source_folder: CaseAwarePath,
         destination: Capsule,
         backup_dir: CaseAwarePath,
+        processed_files: set,
     ) -> None:
         resname, restype = self._identifier()
 
         if self.replace_existing or destination.resource(resname, restype) is None:
-            create_backup(log, destination.path(), backup_dir / destination.filename())
+            create_backup(log, destination.path(), backup_dir / destination.filename(), processed_files)
             if self.replace_existing and destination.resource(resname, restype) is not None:
                 with print_lock:
                     log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
@@ -68,6 +89,7 @@ class InstallFile:
         destination: CaseAwarePath,
         local_folder: str,
         backup_dir: CaseAwarePath,
+        processed_files: set,
     ) -> None:
         data = BinaryReader.load_file(source_folder / self.filename)
         save_file_to = destination / self.filename
@@ -84,9 +106,10 @@ class InstallFile:
             with print_lock:
                 if file_exists:
                     log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
-                    create_backup(log, save_file_to, backup_dir / self.filename)
+                    create_backup(log, save_file_to, backup_dir / self.filename, processed_files)
                 else:
                     log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
+                    processed_files.add(str(save_file_to).lower())
 
             BinaryWriter.dump(save_file_to, data)
         else:
@@ -111,13 +134,14 @@ class InstallFolder:
         source_path: CaseAwarePath,
         destination_path: CaseAwarePath,
         backup_dir: CaseAwarePath,
+        processed_files: set,
     ):
         target: CaseAwarePath = destination_path / self.foldername
 
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
             for file in self.files:
-                file.apply_encapsulated(log, source_path, destination, backup_dir)
+                file.apply_encapsulated(log, source_path, destination, backup_dir, processed_files)
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # Submit each task individually using executor.submit
@@ -129,6 +153,7 @@ class InstallFolder:
                             target,
                             self.foldername,
                             backup_dir,
+                            processed_files,
                         ),
                         file,
                     )

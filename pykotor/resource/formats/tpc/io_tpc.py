@@ -17,13 +17,13 @@ def _get_size(
 ) -> int:
     if tpc_format is TPCTextureFormat.Greyscale:
         return width * height * 1
-    elif tpc_format is TPCTextureFormat.RGB:
+    if tpc_format is TPCTextureFormat.RGB:
         return width * height * 3
-    elif tpc_format is TPCTextureFormat.RGBA:
+    if tpc_format is TPCTextureFormat.RGBA:
         return width * height * 4
-    elif tpc_format is TPCTextureFormat.DXT1:
+    if tpc_format is TPCTextureFormat.DXT1:
         return max(8, ((width + 3) // 4) * ((height + 3) // 4) * 8)
-    elif tpc_format is TPCTextureFormat.DXT5:
+    if tpc_format is TPCTextureFormat.DXT5:
         return max(16, ((width + 3) // 4) * ((height + 3) // 4) * 16)
     return None
 
@@ -87,7 +87,7 @@ class TPCBinaryReader(ResourceReader):
         txi = self._reader.read_string(file_size - self._reader.position())
 
         self._tpc.txi = txi
-        self._tpc.set(width, height, mipmaps, tpc_format)
+        self._tpc.set_texture_data(width, height, mipmaps, tpc_format)
 
         return self._tpc
 

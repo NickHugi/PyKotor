@@ -40,20 +40,20 @@ def clone_module(
     ifo = old_module.info().resource()
     assert ifo is not None
     old_identifier = ifo.identifier.get()
-    ifo.identifier.set(identifier)
+    ifo.identifier.set_resref(identifier)
     ifo.mod_name = LocalizedString.from_english(identifier.upper())
     ifo.tag = identifier.upper()
-    ifo.area_name.set(identifier)
+    ifo.area_name.set_resref(identifier)
     ifo_data = bytearray()
     write_gff(dismantle_ifo(ifo), ifo_data)
-    new_module.set("module", ResourceType.IFO, ifo_data)
+    new_module.set_resource("module", ResourceType.IFO, ifo_data)
 
     are = old_module.are().resource()
     assert are is not None
     are.name = LocalizedString.from_english(name)
     are_data = bytearray()
     write_gff(dismantle_are(are), are_data)
-    new_module.set(identifier, ResourceType.ARE, are_data)
+    new_module.set_resource(identifier, ResourceType.ARE, are_data)
 
     lyt = old_module.layout().resource()
     vis = old_module.vis().resource()
@@ -67,7 +67,7 @@ def clone_module(
         assert pth is not None
         pth_data = bytearray()
         write_gff(dismantle_pth(pth), pth_data)
-        new_module.set(identifier, ResourceType.PTH, pth_data)
+        new_module.set_resource(identifier, ResourceType.PTH, pth_data)
 
     git.creatures = []
     git.encounters = []
@@ -80,14 +80,14 @@ def clone_module(
         for i, door in enumerate(git.doors):
             old_resname = door.resref.get()
             new_resname = f"{identifier}_dor{i}"
-            door.resref.set(new_resname)
+            door.resref.set_resref(new_resname)
             door.tag = new_resname
 
             utd = old_module.door(old_resname).resource()
             assert utd is not None
             data = bytearray()
             write_gff(dismantle_utd(utd), data)
-            new_module.set(new_resname, ResourceType.UTD, data)
+            new_module.set_resource(new_resname, ResourceType.UTD, data)
     else:
         git.doors = []
 
@@ -95,14 +95,14 @@ def clone_module(
         for i, placeable in enumerate(git.placeables):
             old_resname = placeable.resref.get()
             new_resname = f"{identifier}_plc{i}"
-            placeable.resref.set(new_resname)
+            placeable.resref.set_resref(new_resname)
             placeable.tag = new_resname
 
             utp = old_module.placeable(old_resname).resource()
             assert utp is not None
             data = bytearray()
             write_gff(dismantle_utp(utp), data)
-            new_module.set(new_resname, ResourceType.UTP, data)
+            new_module.set_resource(new_resname, ResourceType.UTP, data)
     else:
         git.placeables = []
 
@@ -110,20 +110,20 @@ def clone_module(
         for i, sound in enumerate(git.sounds):
             old_resname = sound.resref.get()
             new_resname = f"{identifier}_snd{i}"
-            sound.resref.set(new_resname)
+            sound.resref.set_resref(new_resname)
             sound.tag = new_resname
 
             uts = old_module.sound(old_resname).resource()
             assert uts is not None
             data = bytearray()
             write_gff(dismantle_uts(uts), data)
-            new_module.set(new_resname, ResourceType.UTS, data)
+            new_module.set_resource(new_resname, ResourceType.UTS, data)
     else:
         git.sounds = []
 
     git_data = bytearray()
     write_gff(dismantle_git(git), git_data)
-    new_module.set(identifier, ResourceType.GIT, git_data)
+    new_module.set_resource(identifier, ResourceType.GIT, git_data)
 
     new_lightmaps = {}
     new_textures = {}
@@ -150,11 +150,11 @@ def clone_module(
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set_texture_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
-                    new_module.set(new_texture_name, ResourceType.TGA, tga_data)
+                    new_module.set_resource(new_texture_name, ResourceType.TGA, tga_data)
             mdl_data = model.change_textures(mdl_data, new_textures)
 
         if copy_lightmaps:
@@ -171,25 +171,25 @@ def clone_module(
                     rgba = tpc.convert(TPCTextureFormat.RGBA)
 
                     tga = TPC()
-                    tga.set(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
+                    tga.set_texture_data(rgba.width, rgba.height, [rgba.data], TPCTextureFormat.RGBA)
 
                     tga_data = bytearray()
                     write_tpc(tga, tga_data, ResourceType.TGA)
-                    new_module.set(new_lightmap_name, ResourceType.TGA, tga_data)
+                    new_module.set_resource(new_lightmap_name, ResourceType.TGA, tga_data)
             mdl_data = model.change_lightmaps(mdl_data, new_lightmaps)
 
         mdl_data = model.rename(mdl_data, new_model_name)
-        new_module.set(new_model_name, ResourceType.MDL, mdl_data)
-        new_module.set(new_model_name, ResourceType.MDX, mdx_data)
-        new_module.set(new_model_name, ResourceType.WOK, wok_data)
+        new_module.set_resource(new_model_name, ResourceType.MDL, mdl_data)
+        new_module.set_resource(new_model_name, ResourceType.MDX, mdx_data)
+        new_module.set_resource(new_model_name, ResourceType.WOK, wok_data)
 
     vis_data = bytearray()
     write_vis(vis, vis_data)
-    new_module.set(identifier, ResourceType.VIS, vis_data)
+    new_module.set_resource(identifier, ResourceType.VIS, vis_data)
 
     lyt_data = bytearray()
     write_lyt(lyt, lyt_data)
-    new_module.set(identifier, ResourceType.LYT, lyt_data)
+    new_module.set_resource(identifier, ResourceType.LYT, lyt_data)
 
     filepath = installation.module_path() / f"{identifier}.mod"
     write_erf(new_module, filepath)
@@ -232,6 +232,6 @@ def rim_to_mod(filepath: CaseAwarePath) -> None:
 
     mod = ERF(ERFType.MOD)
     for res in rim + rim_s:
-        mod.set(res.resref.get(), res.restype, res.data)
+        mod.set_resource(res.resref.get(), res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.ERF)

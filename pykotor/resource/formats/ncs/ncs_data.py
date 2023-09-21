@@ -401,5 +401,5 @@ class NCSOptimizer(ABC):
 
 class NCSCompiler(ABC):
     @abstractmethod
-    def compile(self, source_filepath: str, output_filepath: str, game: Game) -> None:
+    def compile_script(self, source_filepath: str, output_filepath: str, game: Game) -> None:
         ...

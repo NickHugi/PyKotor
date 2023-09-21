@@ -47,7 +47,7 @@
     {
         "label": "Python: Ruff check entire project",
         "type": "shell",
-        "command": "ruff check . --ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901",
+        "command": "python -m ruff check . --ignore=D101,D102,D103,D107,D205,D417,D205,PLR5501,PLW2901",
         "group": "test",
         "presentation": { "reveal": "always", "panel": "new" },
         "problemMatcher": {

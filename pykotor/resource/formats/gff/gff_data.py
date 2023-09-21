@@ -72,18 +72,7 @@ class GFFFieldType(IntEnum):
 
     def return_type(
         self,
-    ) -> (
-        type[int]
-        | type[str]
-        | type[ResRef]
-        | type[Vector3]
-        | type[Vector4]
-        | type[LocalizedString]
-        | type[GFFStruct]
-        | type[GFFList]
-        | type[bytes]
-        | type[float]
-    ):
+    ) -> type[int | str | ResRef | Vector3 | Vector4 | LocalizedString | GFFStruct | GFFList | bytes | float]:
         if self in [
             GFFFieldType.UInt8,
             GFFFieldType.UInt16,

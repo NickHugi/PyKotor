@@ -25,6 +25,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
+from pykotor.tslpatcher.logger import PatchLogger
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -90,8 +91,9 @@ class Installation:
         ResourceType.DDS,
     ]
 
-    def __init__(self, path: CaseAwarePath):
+    def __init__(self, path: CaseAwarePath, logger: PatchLogger | None = None):
         self._path: CaseAwarePath = path
+        self.log = logger or PatchLogger()
 
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
 
@@ -105,7 +107,7 @@ class Installation:
         self._streamvoices: list[FileResource] = []
         self._rims: dict[str, list[FileResource]] = {}
 
-        print("Load modules...")
+        self.log.add_note("Load modules...")
         self.load_modules()
         print("Load override...")
         self.load_override()

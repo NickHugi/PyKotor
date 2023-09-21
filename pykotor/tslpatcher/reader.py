@@ -3,7 +3,10 @@ from __future__ import annotations
 from configparser import ConfigParser
 from typing import TYPE_CHECKING
 
-from chardet import UniversalDetector
+try:
+    import chardet
+except ImportError:
+    chardet = None
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -15,6 +18,7 @@ from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
+from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
     AddFieldGFF,
@@ -49,7 +53,6 @@ from pykotor.tslpatcher.mods.twoda import (
     RowValueTLKMemory,
     Target,
     TargetType,
-    WarningException,
 )
 
 if TYPE_CHECKING:
@@ -60,24 +63,15 @@ if TYPE_CHECKING:
 
 
 class ConfigReader:
-    def __init__(self, ini: ConfigParser, mod_path: os.PathLike | str) -> None:
+    def __init__(self, ini: ConfigParser, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
         self.ini = ini
         self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
         self.config: PatcherConfig
+        self.log = logger or PatchLogger()
 
     @classmethod
-    def from_filepath(cls, path: os.PathLike | str) -> PatcherConfig:
-        path = CaseAwarePath(path).resolve()
-        ini_file_bytes = BinaryReader.load_file(path)
-
-        detector = UniversalDetector()
-        detector.feed(ini_file_bytes)
-        detector.close()
-        assert detector.result is not None
-        encoding = detector.result["encoding"]
-        assert encoding is not None
-
-        ini_text = ini_file_bytes.decode(encoding)
+    def from_filepath(cls, file_path: os.PathLike | str, logger: PatchLogger | None = None) -> PatcherConfig:
+        resolved_file_path = CaseAwarePath(file_path).resolve()
 
         ini = ConfigParser(
             delimiters=("="),
@@ -85,28 +79,43 @@ class ConfigReader:
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
-        ini.read_string(ini_text)
+        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+
+        ini_file_bytes = BinaryReader.load_file(resolved_file_path)
+        if chardet:
+            encoding = chardet.detect(ini_file_bytes, should_rename_legacy=True)["encoding"]
+            assert encoding is not None
+            ini.read_string(ini_file_bytes.decode(encoding))
+        else:
+            ini_data: str | None = None
+            try:
+                ini_data = ini_file_bytes.decode()
+            except UnicodeDecodeError:
+                try:
+                    ini_data = ini_file_bytes.decode("cp1252")
+                except UnicodeDecodeError:
+                    ini_data = ini_file_bytes.decode(errors="replace")
+            ini.read_string(ini_data)
 
         config = PatcherConfig()
-        return ConfigReader(ini, path).load(config)
+        return ConfigReader(ini, resolved_file_path, logger).load(config)
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
 
-        print("Loading [Settings] from ini...")
+        self.log.add_note("Loading [Settings] from ini...")
         self.load_settings()
-        print("Loading [TLKList] patches from ini...")
+        self.log.add_note("Loading [TLKList] patches from ini...")
         self.load_tlk_list()
-        print("Loading [InstallList] patches from ini...")
+        self.log.add_note("Loading [InstallList] patches from ini...")
         self.load_filelist()
-        print("Loading [2DAList] patches from ini...")
+        self.log.add_note("Loading [2DAList] patches from ini...")
         self.load_2da()
-        print("Loading [GFFList] patches from ini...")
+        self.log.add_note("Loading [GFFList] patches from ini...")
         self.load_gff()
-        print("Loading [CompileList] patches from ini...")
+        self.log.add_note("Loading [CompileList] patches from ini...")
         self.load_nss()
-        print("Loading [SSFList] patches from ini...")
+        self.log.add_note("Loading [SSFList] patches from ini...")
         self.load_ssf()
 
         return self.config
@@ -128,8 +137,7 @@ class ConfigReader:
             try:
                 self.config.game_number = int(lookup_game_number)
             except ValueError:
-                # Handle invalid integer conversion here if needed
-                print(f"Invalid game number: '{lookup_game_number}'")
+                self.log.add_error(f"Invalid game number: '{lookup_game_number}' Could not determine the kotor game!")
         else:
             self.config.game_number = None
         self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
@@ -181,9 +189,9 @@ class ConfigReader:
             if end is None:
                 return range(int(range_str), int(range_str) + 1)
             if end < start:
-                msg = f"start of range {start} must be less than end of range {end}"
-                raise ValueError(msg)
-            return range(start, end + 1)
+                self.log.add_error(f"start of range {start} must be less than end of range {end}. Skipping...")
+                return range(0)  # empty range
+            return range(start, min(max_value, end) + 1)
 
         tlk_list_ignored_indices: set[int] = set()
 
@@ -247,8 +255,8 @@ class ConfigReader:
             elif key.startswith("file"):
                 tlk_modifications_path: CaseAwarePath = self.mod_path / value
                 if value not in self.ini:
-                    msg = f"INI header for '{value}' referenced in TLKList key '{key}' not found."
-                    raise KeyError(msg)
+                    self.log.add_error(f"INI header for '{value}' referenced in TLKList key '{key}' not found. Skipping...")
+                    continue
                 tlk_ini_edits = dict(self.ini[value].items())
                 modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
                 process_tlk_entries(
@@ -273,8 +281,10 @@ class ConfigReader:
                 elif property_name == "sound":
                     modifier_dict[token_id]["voiceover"] = ResRef(value)
                 else:
-                    msg = f"Invalid TLKList syntax for key '{key}' value '{value}'"
-                    raise KeyError(msg)
+                    self.log.add_error(
+                        f"Invalid TLKList syntax for key '{key}' value '{value}', expected 'sound' or 'text'. Skipping...",
+                    )
+                    continue
 
                 text = modifier_dict[token_id].get("text")
                 voiceover = modifier_dict[token_id].get("voiceover")
@@ -285,8 +295,7 @@ class ConfigReader:
                     modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
                     self.config.patches_tlk.modifiers.append(modifier)
             else:
-                msg = f"Invalid key in TLKList: '{key}'"
-                raise KeyError(msg)
+                self.log.add_error(f"Invalid syntax in TLKList: '{key}={value}'. Skipping...")
 
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:
@@ -301,11 +310,13 @@ class ConfigReader:
             self.config.patches_2da.append(modifications)
 
             for key, modification_id in modification_ids.items():
-                manipulation: Modify2DA = self.discern_2da(
+                manipulation: Modify2DA | None = self.discern_2da(
                     key,
                     modification_id,
                     dict(self.ini[modification_id].items()),
                 )
+                if not manipulation:  # an error occured
+                    continue
                 modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
@@ -379,7 +390,7 @@ class ConfigReader:
             modifications = ModificationsGFF(file, replace)
             self.config.patches_gff.append(modifications)
 
-            modifier: ModifyGFF
+            modifier: ModifyGFF | None = None
             for name, value in modifications_ini.items():
                 lowercase_name = name.lower()
                 if lowercase_name == "!destination":
@@ -390,7 +401,8 @@ class ConfigReader:
                     modifications.filename = value
                 elif lowercase_name.startswith("addfield"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
-                    modifications.modifiers.append(modifier)
+                    if modifier:  # if None, then an error occurred
+                        modifications.modifiers.append(modifier)
                 elif lowercase_name.startswith("2damemory"):
                     modifier = Memory2DAModifierGFF(
                         file,
@@ -469,7 +481,7 @@ class ConfigReader:
         identifier: str,
         ini_data: dict[str, str],
         inside_list: bool = False,
-    ):  # sourcery skip: extract-method, remove-unreachable-code
+    ) -> AddStructToListGFF | AddFieldGFF | None:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -517,7 +529,10 @@ class ConfigReader:
                 struct_id = int(ini_data["TypeId"])
                 value = FieldValueConstant(GFFStruct(struct_id))
             else:
-                raise ValueError(field_type)
+                self.log.add_error(
+                    f"Could not find valid field return type matching '{field_type.return_type()}' in this context.",
+                )
+                return None
         elif raw_value.startswith("2DAMEMORY"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
@@ -545,7 +560,10 @@ class ConfigReader:
             components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector4(*components))
         else:
-            raise ValueError(field_type)
+            self.log.add_error(
+                f"Could not handle field_type '{field_type}' for GFFList identifier '{identifier}' value '{value}'. Skipping...",
+            )
+            return None
 
         # Get nested fields/struct
         nested_modifiers: list[ModifyGFF] = []
@@ -567,12 +585,13 @@ class ConfigReader:
                     nested_modifiers.append(nested_modifier)
             if key.startswith("AddField"):
                 nested_ini = dict(self.ini[x].items())
-                nested_modifier: ModifyGFF = self.add_field_gff(
+                nested_modifier: ModifyGFF | None = self.add_field_gff(
                     x,
                     nested_ini,
                     inside_list=field_type.return_type() == GFFList,
                 )
-                nested_modifiers.append(nested_modifier)
+                if nested_modifier:  # if none, an error occured.
+                    nested_modifiers.append(nested_modifier)
 
         # If current field is a struct inside a list:
         if (inside_list or label == "") and field_type.return_type() == GFFStruct:
@@ -600,10 +619,12 @@ class ConfigReader:
         key: str,
         identifier: str,
         modifiers: dict[str, str],
-    ) -> Modify2DA:
+    ) -> Modify2DA | None:
         modification = None
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
+            if not target:
+                return None
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
             modification = ChangeRow2DA(identifier, target, cells, store_2da, store_tlk)
         elif key.startswith("AddRow"):
@@ -620,6 +641,8 @@ class ConfigReader:
             )
         elif key.startswith("CopyRow"):
             target = self.target_2da(identifier, modifiers)
+            if not target:
+                return None
             exclusive_column = self.exclusive_column_2da(modifiers)
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
@@ -649,11 +672,14 @@ class ConfigReader:
                 store_2da,
             )
         else:
-            raise WarningException
+            self.log.add_error(
+                f"Could not parse key '{key}', expecting one of ['ChangeRow', 'AddColumn', 'AddRow', 'CopyRow']. Skipping...",
+            )
 
         return modification
 
-    def target_2da(self, identifier: str, modifiers: dict[str, str]) -> Target:
+    def target_2da(self, identifier: str, modifiers: dict[str, str]) -> Target | None:
+        target: Target | None = None
         if "RowIndex" in modifiers:
             target = Target(TargetType.ROW_INDEX, int(modifiers["RowIndex"]))
             modifiers.pop("RowIndex")
@@ -664,8 +690,7 @@ class ConfigReader:
             target = Target(TargetType.LABEL_COLUMN, modifiers["LabelIndex"])
             modifiers.pop("LabelIndex")
         else:
-            msg = f"No line set to be modified for '{identifier}'."
-            raise WarningException(msg)
+            self.log.add_warning(f"No line set to be modified for '{identifier}'.")
 
         return target
 
@@ -739,7 +764,7 @@ class ConfigReader:
             is_store_2da = value.startswith("2DAMEMORY")
             is_store_tlk = value.startswith("StrRef")
 
-            row_value: None = None
+            row_value: RowValue | None = None
             if is_store_2da:
                 token_id = int(value[9:])
                 row_value = RowValue2DAMemory(token_id)
@@ -771,34 +796,38 @@ class NamespaceReader:
 
     @classmethod
     def from_filepath(cls, path: os.PathLike | str) -> list[PatcherNamespace]:
-        ini_file_bytes = BinaryReader.load_file(path)
-
-        detector = UniversalDetector()
-        detector.feed(ini_file_bytes)
-        detector.close()
-        encoding = detector.result["encoding"]
-        assert encoding is not None
-
-        ini_text = ini_file_bytes.decode(encoding)
-
         ini = ConfigParser(
             delimiters=("="),
             allow_no_value=True,
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = str  # type: ignore[reportGeneralTypeIssues]  # use case sensitive keys
-        ini.read_string(ini_text)
+        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+
+        ini_file_bytes = BinaryReader.load_file(path)
+        if chardet:
+            encoding = chardet.detect(ini_file_bytes, should_rename_legacy=True)["encoding"]
+            assert encoding is not None
+            ini.read_string(ini_file_bytes.decode(encoding))
+        else:
+            ini_data: str | None = None
+            try:
+                ini_data = ini_file_bytes.decode()
+            except UnicodeDecodeError:
+                try:
+                    ini_data = ini_file_bytes.decode("cp1252")
+                except UnicodeDecodeError:
+                    ini_data = ini_file_bytes.decode(errors="replace")
+            ini.read_string(ini_data)
+
         return NamespaceReader(ini).load()
 
     def load(self) -> list[PatcherNamespace]:
-        namespace_ids = dict(self.ini["Namespaces"].items()).values()
         self.ini = {key.lower(): value for key, value in self.ini.items()}
         namespaces: list[PatcherNamespace] = []
 
-        for namespace_id in namespace_ids:
+        for namespace_id in self.ini["Namespaces"].values():
             namespace = PatcherNamespace()
-            namespace_id = namespace_id.lower()
             namespace.namespace_id = namespace_id
             namespace.ini_filename = self.ini[namespace_id]["IniName"]
             namespace.info_filename = self.ini[namespace_id]["InfoName"]

@@ -20,6 +20,7 @@ class TPCBMPWriter(ResourceWriter):
         auto_close: bool = True,
     ) -> None:
         width, height, data = self._tpc.convert(TPCTextureFormat.RGB, 0)
+        assert data is not None
         file_size = 14 + 40 + (width * height * 3)
 
         # Header
@@ -43,7 +44,7 @@ class TPCBMPWriter(ResourceWriter):
 
         pixel_reader = BinaryReader.from_bytes(data)
         temp_pixels = []
-        for i in range(len(data) // 3):
+        for _i in range(len(data) // 3):
             r = pixel_reader.read_uint8()
             g = pixel_reader.read_uint8()
             b = pixel_reader.read_uint8()

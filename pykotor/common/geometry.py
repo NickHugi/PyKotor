@@ -412,7 +412,7 @@ class Vector3:
 
     def __mul__(
         self,
-        other: int | float,
+        other: float,
     ) -> Vector3 | object:
         """Multiplies the components by a scalar integer."""
         if isinstance(other, (int, float)):
@@ -534,7 +534,7 @@ class Vector3:
         """
         return Vector3(0.0, 0.0, 0.0)
 
-    def set(
+    def set_vector_coords(
         self,
         x: float,
         y: float,
@@ -932,7 +932,7 @@ class Vector4:
             self.w /= magnitude
         return self
 
-    def set(
+    def set_vector_coords(
         self,
         x: float,
         y: float,
@@ -1381,8 +1381,8 @@ class Polygon3:
             A Polygon3 object with the Z-axis of its points set to 0.
         """
         poly3 = Polygon3()
-        for point in poly3:
-            poly3.points.append(Vector3(point.x, point.y, point.z))
+        for point in poly2.points:
+            poly3.points.append(Vector3(point.x, point.y, 0))
         return poly3
 
     def append(

@@ -11,7 +11,7 @@ from pykotor.resource.type import ResourceType
 class TPCGetResult(NamedTuple):
     width: int
     height: int
-    format: TPCTextureFormat
+    texture_format: TPCTextureFormat
     data: bytes | None
 
 
@@ -169,9 +169,9 @@ class TPC:
             data: The new texture data.
             texture_format: The texture format.
         """
-        self.set(width, height, [data], texture_format)
+        self.set_texture_data(width, height, [data], texture_format)
 
-    def set(
+    def set_texture_data(
         self,
         width: int,
         height: int,

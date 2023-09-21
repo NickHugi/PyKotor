@@ -782,7 +782,7 @@ class ModuleResource(Generic[T]):
         if is_erf_or_mod_file(self._active.name):
             erf = read_erf(self._active)
             erf.erf_type = ERFType.ERF if is_erf_file(self._active.name) else ERFType.MOD
-            erf.set(
+            erf.set_resource(
                 self._resname,
                 self._restype,
                 conversions[self._restype](self.resource()),
@@ -790,7 +790,7 @@ class ModuleResource(Generic[T]):
             write_erf(erf, self._active)
         elif is_rim_file(self._active.name):
             rim = read_rim(self._active)
-            rim.set(
+            rim.set_data(
                 self._resname,
                 self._restype,
                 conversions[self._restype](self.resource()),

@@ -39,7 +39,7 @@ class SSFXMLReader(ResourceReader):
             with suppress(ValueError):
                 sound = SSFSound(int(child.attrib["id"]))
                 stringref = int(child.attrib["strref"])
-                self._ssf.set(sound, stringref)
+                self._ssf.set_stringref(sound, stringref)
 
         return self._ssf
 

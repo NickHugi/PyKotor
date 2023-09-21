@@ -37,17 +37,15 @@ class RIM:
         """Returns a resource at the specified index or with the specified resref."""
         if isinstance(item, int):
             return self._resources[item]
-        elif isinstance(item, str):
+        if isinstance(item, str):
             resource = next(
                 [resource for resource in self._resources if resource.resref == item],
                 None,
             )
             if resource is None:
                 raise KeyError
-            else:
-                return resource
-        else:
-            return NotImplemented
+            return resource
+        return NotImplemented
 
     def __add__(self, other: RIM) -> RIM:
         """
@@ -66,13 +64,13 @@ class RIM:
 
         combined_rim = RIM()
         for resource in self:
-            combined_rim.set(resource.resref.get(), resource.restype, resource.data)
+            combined_rim.set_data(resource.resref.get(), resource.restype, resource.data)
         for resource in other:
-            combined_rim.set(resource.resref.get(), resource.restype, resource.data)
+            combined_rim.set_data(resource.resref.get(), resource.restype, resource.data)
 
         return combined_rim
 
-    def set(
+    def set_data(
         self,
         resref: str,
         restype: ResourceType,
@@ -151,7 +149,7 @@ class RIM:
 
         erf = ERF()
         for resource in self._resources:
-            erf.set(resource.resref.get(), resource.restype, resource.data)
+            erf.set_resource(resource.resref.get(), resource.restype, resource.data)
         return erf
 
 

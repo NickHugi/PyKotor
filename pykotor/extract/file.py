@@ -153,6 +153,6 @@ class ResourceIdentifier(NamedTuple):
     def from_path(
         file_path: os.PathLike | str,
     ) -> ResourceIdentifier:
-        formatted_file_path = CaseAwarePath(file_path)
-        resname, restype_ext = formatted_file_path.stem, formatted_file_path.suffix[1:]
+        file_name, ext = str(file_path).rsplit(".", 1)
+        resname, restype_ext = file_name, ext
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

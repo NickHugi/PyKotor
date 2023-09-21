@@ -1,6 +1,11 @@
-from pykotor.common.misc import ResRef
-from pykotor.resource.formats.tlk import TLK
-from pykotor.tslpatcher.memory import PatcherMemory
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pykotor.common.misc import ResRef
+    from pykotor.resource.formats.tlk import TLK
+    from pykotor.tslpatcher.memory import PatcherMemory
 
 
 class ModificationsTLK:

@@ -33,7 +33,7 @@ class SSF:
         for i in range(28):
             self._sounds[i] = -1
 
-    def set(
+    def set_stringref(
         self,
         sound: SSFSound,
         stringref: int,
