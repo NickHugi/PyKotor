@@ -8,6 +8,7 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
@@ -202,6 +203,26 @@ class _GFFField:
         return self._value
 
 
+class RootAwareDict(dict):
+    def __init__(self, parent_struct: GFFStruct, *args, **kwargs):
+        self.parent_struct: GFFStruct = parent_struct
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        field, field_value = value.field_type(), value.value()
+
+        # If the field value is a GFFStruct, set its root
+        if field == GFFFieldType.Struct and isinstance(field_value, GFFStruct):
+            field_value.root = self.parent_struct.root
+
+        # If the field value is a GFFList, set the root of each contained GFFStruct
+        elif field == GFFFieldType.List and isinstance(field_value, GFFList):
+            for child_struct in field_value:
+                child_struct.root = self.parent_struct.root
+
+        super().__setitem__(key, value)
+
+
 class GFFStruct:
     """
     Stores a collection of GFFFields.
@@ -214,9 +235,11 @@ class GFFStruct:
     def __init__(
         self,
         struct_id: int = 0,
+        root: GFFStruct | None = None,
     ):
         self.struct_id: int = struct_id
-        self._fields: dict[str, _GFFField] = {}
+        self.root: GFFStruct = root or self
+        self._fields: RootAwareDict = RootAwareDict(parent_struct=self)
 
     def __len__(
         self,
@@ -237,6 +260,17 @@ class GFFStruct:
     ) -> Any | object:
         """Returns the value of the specified field."""
         return self._fields[item].value() if isinstance(item, str) else NotImplemented
+
+    def get_path(self) -> str:
+        path = CaseAwarePath(str(self.struct_id))
+        current = self
+        while current != current.root:
+            for label, field in current.root._fields.items():
+                if field.value() == current:
+                    path = label / path
+                    current = field.parent_struct
+                    break
+        return str(path)
 
     def remove(
         self,

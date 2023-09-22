@@ -44,11 +44,12 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath._get_matching_characters_count("test", "teat"), -1)
 
     def test_fix_path_formatting(self):
-        if os.name == "nt":
-            self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/"), "C:\\path\\to\\dir")
-            self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/"), "path\\to\\dir")
-        else:
-            self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", "\\"), "C:\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("C:/path//to/dir/", "/"), "C:/path/to/dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", "\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("\\path//to/dir/", "/"), "/path/to/dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", "\\"), "\\path\\to\\dir")
+        self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", "/"), "/path/to/dir")
 
     @patch.object(Path, "exists", autospec=True)
     def test_should_resolve_case(self, mock_exists):

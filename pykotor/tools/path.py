@@ -4,196 +4,263 @@ import contextlib
 import os
 import platform
 import re
-from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import TYPE_CHECKING, List, Tuple, Union
+from abc import ABC, abstractmethod
+from pathlib import (
+    Path,
+    PosixPath,
+    PurePath,
+    PurePosixPath,
+    PureWindowsPath,
+    WindowsPath,
+)
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from unittest.mock import patch
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
 
-PATH_TYPES = Union[
-    str,
-    os.PathLike,
-    List[str],
-    List[os.PathLike],
-    List[Union[str, os.PathLike]],
-    Tuple[str, ...],
-    Tuple[os.PathLike, ...],
-    Tuple[Union[str, os.PathLike], ...],
-]
-OPTIONAL_PATH_TYPES = Union[
-    PATH_TYPES,
-    None,
-    List[Union[str, os.PathLike, None]],
-    Tuple[Union[str, os.PathLike, None], ...],
-    Tuple[None, ...],
-]
+PathElem = Union[str, os.PathLike]
+PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
 
-class CaseAwarePath(Path):
+class BasePath(ABC):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-    def __new__(cls, *args: OPTIONAL_PATH_TYPES, **kwargs) -> CaseAwarePath | None:
-        if len(args) == 1:
-            arg0 = args[0]
-            # provide easy support for converting optional paths by returning None here.
-            if not arg0:
-                return None
-            # if the only arg passed is already a CaseAwarePath, don't do heavy lifting trying to re-parse it.
-            if isinstance(arg0, CaseAwarePath):
-                return arg0  # type: ignore  # noqa: PGH003
-        args_list: list[Path] = []
+    @classmethod
+    @abstractmethod
+    def _get_delimiter(cls) -> str:
+        pass
+
+    def __new__(cls, *args, **kwargs):
+        args_list: list[PurePosixPath] = []
         for i, arg in enumerate(args):
-            if isinstance(arg, CaseAwarePath):
-                args_list.append(arg)
-                continue
             path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
             if path_str is not None:
-                args_list.append(Path(cls._fix_path_formatting(path_str)))
+                formatted_path_str = CaseAwarePath._fix_path_formatting(path_str, cls._get_delimiter())
+                super_object = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore[pylance general]
+                args_list.append(super_object)
             else:
                 msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
                 raise TypeError(msg)
-        new_args = args_list or args
-        returned_path = super().__new__(cls, *new_args, **kwargs)  # type: ignore  # noqa: PGH003
-        if cls.should_resolve_case(returned_path):
-            return cls._get_case_sensitive_path(returned_path)
-        return returned_path
+        super_object = super().__new__(cls, *args_list, **kwargs)
+        super_object._str = CaseAwarePath._fix_path_formatting(super_object.__str__())  # type: ignore[pylance general]
+        return super_object
+
+    def __str__(self):
+        return CaseAwarePath._fix_path_formatting(super().__str__(), self._get_delimiter())
 
     def __fspath__(self):
         return str(self)
 
-    def __truediv__(self, key: PATH_TYPES) -> CaseAwarePath:
-        """
-        Uses divider operator to combine two paths.
 
-        Args:
-        ----
-            self (CaseAwarePath):
-            key (path-like object):
-        """
-        return CaseAwarePath(self, key)
+class PurePath(BasePath, PurePath):
+    @classmethod
+    def _get_delimiter(cls):
+        return "\\" if os.name == "nt" else "/"
 
-    def __rtruediv__(self, key: PATH_TYPES) -> CaseAwarePath:
-        """
-        Uses divider operator to combine two paths.
 
-        Args:
-        ----
-            self (CaseAwarePath):
-            key (path-like object):
-        """
-        return CaseAwarePath(key, self)
+with patch("pathlib.PurePath", PurePath):
 
-    def joinpath(self, *args: PATH_TYPES) -> CaseAwarePath:
-        new_path = self
-        for arg in args:
-            new_path /= arg
-        return new_path
+    class PurePosixPath(BasePath, PurePosixPath):
+        @classmethod
+        def _get_delimiter(cls):
+            return "/"
 
-    def resolve(self, strict=False) -> CaseAwarePath:
-        new_path = super().resolve(strict)
-        if CaseAwarePath.should_resolve_case(new_path):
-            new_path = CaseAwarePath._get_case_sensitive_path(new_path)
-        return new_path
+    class PureWindowsPath(BasePath, PureWindowsPath):
+        @classmethod
+        def _get_delimiter(cls):
+            return "\\"
 
-    def endswith(self, text: str) -> bool:
-        return str(self).endswith(text)
+    with patch("pathlib.PureWindowsPath", PureWindowsPath), patch("pathlib.PurePosixPath", PurePosixPath):
 
-    @staticmethod
-    def _get_case_sensitive_path(path: Path | CaseAwarePath) -> CaseAwarePath:
-        parts = list(path.parts)
+        class Path(BasePath, Path):
+            @classmethod
+            def _get_delimiter(cls):
+                return PurePath._get_delimiter()
 
-        for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
-            base_path: Path = Path(*parts[:i])
-            next_path: Path = Path(*parts[: i + 1])
+        with patch("pathlib.Path", Path):
 
-            # Find the first non-existent case-sensitive file/folder in hierarchy
-            if not next_path.is_dir() and base_path.is_dir():
-                # iterate ignoring permission/read issues from the directory.
-                def safe_iterdir(path: Path):
-                    with contextlib.suppress(PermissionError, IOError):
-                        yield from path.iterdir()
+            class PosixPath(BasePath, PosixPath):
+                @classmethod
+                def _get_delimiter(cls):
+                    return PurePosixPath._get_delimiter()
 
-                base_path_items_generator = (item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir())
+            class WindowsPath(BasePath, WindowsPath):
+                @classmethod
+                def _get_delimiter(cls):
+                    return PureWindowsPath._get_delimiter()
 
-                # if multiple are found, we get the one that most closely matches our case
-                # A closest match is defined by the item that has the most case-sensitive positional matches
-                # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
-                parts[i] = CaseAwarePath._find_closest_match(
-                    parts[i],
-                    base_path_items_generator,
-                )
+            with patch("pathlib.WindowsPath", WindowsPath), patch("pathlib.PosixPath", PosixPath):
 
-            # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
-            # parts in their original case.
-            # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
-            elif not next_path.exists():
-                return super().__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
+                class CaseAwarePath(Path):
+                    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-        # return a CaseAwarePath instance without infinitely recursing through the constructor
-        return super().__new__(CaseAwarePath, *parts)
+                    def __new__(cls, *args: PATH_TYPES, **kwargs) -> CaseAwarePath:
+                        if len(args) == 1:
+                            arg0 = args[0]
+                            # if the only arg passed is already a CaseAwarePath, don't do heavy lifting trying to re-parse it.
+                            if isinstance(arg0, CaseAwarePath):
+                                return arg0  # type: ignore  # noqa: PGH003
+                        args_list = []
+                        for i, arg in enumerate(args):
+                            if isinstance(arg, CaseAwarePath):
+                                args_list.append(arg)
+                                continue
+                            path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
+                            if path_str is not None:
+                                formatted_path_str = CaseAwarePath._fix_path_formatting(path_str)
+                                super_object = super().__new__(cls, formatted_path_str, **kwargs)
+                                args_list.append(super_object)
+                            else:
+                                msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
+                                raise TypeError(msg)
+                        new_args = args_list or args
+                        returned_path = super().__new__(cls, *new_args, **kwargs)  # type: ignore  # noqa: PGH003
+                        if cls.should_resolve_case(returned_path):
+                            return cls._get_case_sensitive_path(returned_path)
+                        return returned_path
 
-    @staticmethod
-    def _find_closest_match(target, candidates) -> str:
-        max_matching_chars = -1
-        closest_match = target
-        for candidate in candidates:
-            matching_chars = CaseAwarePath._get_matching_characters_count(
-                candidate.name,
-                target,
-            )
-            if matching_chars > max_matching_chars:
-                max_matching_chars = matching_chars
-                closest_match = candidate.name
-                if max_matching_chars == len(target):
-                    break
-        return closest_match
+                    def __fspath__(self):
+                        return str(self)
 
-    @staticmethod
-    def _get_matching_characters_count(str1: str, str2: str) -> int:
-        """
-        Returns the number of case sensitive characters that match in each position of the two strings.
-        if str1 and str2 are NOT case-insensitive matches, this method will return -1
-        """
-        return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
+                    def __truediv__(self, key: PATH_TYPES) -> CaseAwarePath:
+                        """
+                        Uses divider operator to combine two paths.
 
-    @staticmethod
-    def _fix_path_formatting(str_path: str) -> str:
-        if not str_path.strip():
-            return str_path
+                        Args:
+                        ----
+                            self (CaseAwarePath):
+                            key (path-like object):
+                        """
+                        return self.__class__.__new__(self.__class__, self, key)
 
-        formatted_path: str = str_path
+                    def __rtruediv__(self, key: PATH_TYPES) -> CaseAwarePath:
+                        """
+                        Uses divider operator to combine two paths.
 
-        # Fix mixed slashes
-        if os.altsep is not None:
-            formatted_path = formatted_path.replace(os.altsep, os.sep)
+                        Args:
+                        ----
+                            self (CaseAwarePath):
+                            key (path-like object):
+                        """
+                        return self.__class__.__new__(self.__class__, key, self)
 
-        # For Windows paths
-        if os.name == "nt":
-            # Fix mixed slashes, replacing all forwardslashes with backslashes
-            formatted_path = formatted_path.replace("/", "\\")
-            # Replace multiple backslash's with a single backslash
-            formatted_path = re.sub(r"\\{2,}", "\\\\", formatted_path)
-            # Strip the leading backslash if one exists
-            formatted_path = formatted_path.lstrip("\\")
-        # For Unix-like paths
-        else:
-            # Fix mixed slashes, replacing all backslashes with forwardslashes
-            formatted_path = formatted_path.replace("\\", "/")
-            # Replace multiple forwardslash's with a single forwardslash
-            formatted_path = re.sub(r"/{2,}", "/", formatted_path)
+                    def joinpath(self, *args: PATH_TYPES) -> CaseAwarePath:
+                        new_path = self
+                        for arg in args:
+                            new_path /= arg
+                        return new_path
 
-        return formatted_path.rstrip(os.sep)
+                    def resolve(self, strict=False) -> CaseAwarePath:
+                        new_path = super().resolve(strict)
+                        if CaseAwarePath.should_resolve_case(new_path):
+                            new_path = CaseAwarePath._get_case_sensitive_path(new_path)
+                        return new_path
 
-    @staticmethod
-    def should_resolve_case(path) -> bool:
-        if os.name == "nt":
-            return False
-        if isinstance(path, (CaseAwarePath, Path)):
-            return path.is_absolute() and not path.exists()
-        if isinstance(path, str):
-            path_obj = Path(path)
-            return path_obj.is_absolute() and not path_obj.exists()
-        return False
+                    def endswith(self, text: str) -> bool:
+                        return str(self).endswith(text)
+
+                    @staticmethod
+                    def _get_case_sensitive_path(path: Path | CaseAwarePath) -> CaseAwarePath:
+                        parts = list(path.parts)
+
+                        for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
+                            base_path: Path = Path(*parts[:i])
+                            next_path: Path = Path(*parts[: i + 1])
+
+                            # Find the first non-existent case-sensitive file/folder in hierarchy
+                            if not next_path.is_dir() and base_path.is_dir():
+                                # iterate ignoring permission/read issues from the directory.
+                                def safe_iterdir(path: Path):
+                                    with contextlib.suppress(PermissionError, IOError):
+                                        yield from path.iterdir()
+
+                                base_path_items_generator = (
+                                    item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir()
+                                )
+
+                                # if multiple are found, we get the one that most closely matches our case
+                                # A closest match is defined by the item that has the most case-sensitive positional matches
+                                # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
+                                parts[i] = CaseAwarePath._find_closest_match(
+                                    parts[i],
+                                    base_path_items_generator,
+                                )
+
+                            # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
+                            # parts in their original case.
+                            # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
+                            elif not next_path.exists():
+                                return super().__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
+
+                        # return a CaseAwarePath instance without infinitely recursing through the constructor
+                        return super().__new__(CaseAwarePath, *parts)
+
+                    @staticmethod
+                    def _find_closest_match(target, candidates) -> str:
+                        max_matching_chars = -1
+                        closest_match = target
+                        for candidate in candidates:
+                            matching_chars = CaseAwarePath._get_matching_characters_count(
+                                candidate.name,
+                                target,
+                            )
+                            if matching_chars > max_matching_chars:
+                                max_matching_chars = matching_chars
+                                closest_match = candidate.name
+                                if max_matching_chars == len(target):
+                                    break
+                        return closest_match
+
+                    @staticmethod
+                    def _get_matching_characters_count(str1: str, str2: str) -> int:
+                        """
+                        Returns the number of case sensitive characters that match in each position of the two strings.
+                        if str1 and str2 are NOT case-insensitive matches, this method will return -1
+                        """
+                        return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
+
+                    @staticmethod
+                    def _fix_path_formatting(str_path: str, slash=os.sep) -> str:
+                        if slash not in ("\\", "/"):
+                            msg = f"Invalid slash str: '{slash}'"
+                            raise ValueError(msg)
+                        if not str_path.strip():
+                            return str_path
+
+                        formatted_path: str = str_path
+
+                        # Fix mixed slashes
+                        if os.altsep is not None:
+                            formatted_path = formatted_path.replace(os.altsep, os.sep)
+
+                        # For Windows paths
+                        if slash == "\\":
+                            # Fix mixed slashes, replacing all forwardslashes with backslashes
+                            formatted_path = formatted_path.replace("/", "\\")
+                            # Replace 3 or more leading slashes with two backslashes
+                            formatted_path = re.sub(r"^\\{3,}", r"\\\\", formatted_path)
+                            # Replace repeating non-leading slashes with a single backslash
+                            formatted_path = re.sub(r"(?<!^)\\+", r"\\", formatted_path)
+                        # For Unix-like paths
+                        elif slash == "/":
+                            # Fix mixed slashes, replacing all backslashes with forwardslashes
+                            formatted_path = formatted_path.replace("\\", "/")
+                            # Replace multiple forwardslash's with a single forwardslash
+                            formatted_path = re.sub(r"/{2,}", "/", formatted_path)
+
+                        return formatted_path.rstrip(slash)
+
+                    @staticmethod
+                    def should_resolve_case(path) -> bool:
+                        if os.name == "nt":
+                            return False
+                        if isinstance(path, (CaseAwarePath, Path)):
+                            return path.is_absolute() and not path.exists()
+                        if isinstance(path, str):
+                            path_obj = Path(path)
+                            return path_obj.is_absolute() and not path_obj.exists()
+                        return False
 
 
 def locate_game_path(game: Game) -> CaseAwarePath | None:
