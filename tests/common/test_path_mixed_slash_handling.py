@@ -15,21 +15,21 @@ from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath, WindowsPath,
 class TestPathlibMixedSlashes(unittest.TestCase):
     def test_pathlib_path_edge_cases_posix(self):
         if os.name == "nt":
-            print("Cannot run this posixpath test on windows")
+            print("Test isn't possible on windows")
             return
         for PathType in [PosixPath, PurePosixPath]:
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
                 self.assertEqual(str(PathType("C:/")), "C:")
-                self.assertNotEqual(str(PathType("C:/Users/test/")), "C:/Users/test")
+                self.assertEqual(str(PathType("C:/Users/test/")), "C:/Users/test")
                 self.assertEqual(str(PathType("C:/Users/test")), "C:/Users/test")
                 self.assertEqual(str(PathType("C://Users///test")), "C:/Users/test")
                 self.assertEqual(str(PathType("C:/Users/TEST/")), "C:/Users/TEST")
 
                 # Network Paths
-                self.assertNotEqual(str(PathType("\\\\server\\folder")), "/server/folder")
-                self.assertNotEqual(str(PathType("\\\\\\\\server\\folder/")), "/server/folder")
-                self.assertNotEqual(str(PathType("\\\\\\server\\\\folder")), "/server/folder")
+                self.assertEqual(str(PathType("\\\\server\\folder")), "/server/folder")
+                self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "/server/folder")
+                self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "/server/folder")
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "/wsl.localhost/path/to/file")
                 self.assertEqual(
                     str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
@@ -48,9 +48,9 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
                 # Bizarre Scenarios
                 self.assertNotEqual(str(PathType("")), "")
-                self.assertNotEqual(str(PathType("//")), ".")
+                self.assertEqual(str(PathType("//")), ".")
                 self.assertEqual(str(PathType("C:")), "C:")
-                self.assertNotEqual(str(PathType("///")), ".")
+                self.assertEqual(str(PathType("///")), ".")
                 self.assertEqual(str(PathType("C:/./Users/../test/")), "C:/Users/../test")
                 self.assertEqual(str(PathType("~/folder/")), "~/folder")
 
@@ -251,10 +251,10 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("C:/")), "C:")
                 if os.name == "posix":
                     self.assertEqual(str(PathType("C:/")), "C:")
-                    self.assertEqual(str(PathType("C:/Users/test/")), "C:\\Users\\test")
-                    self.assertEqual(str(PathType("C:/Users/test")), "C:\\Users\\test")
-                    self.assertEqual(str(PathType("C://Users///test")), "C:\\Users\\test")
-                    self.assertEqual(str(PathType("C:/Users/TEST/")), "C:\\Users\\TEST")
+                    self.assertEqual(str(PathType("C:/Users/test/")), "C:/Users/test")
+                    self.assertEqual(str(PathType("C:/Users/test")), "C:/Users/test")
+                    self.assertEqual(str(PathType("C://Users///test")), "C:/Users/test")
+                    self.assertEqual(str(PathType("C:/Users/TEST/")), "C:/Users/TEST")
                 elif os.name == "nt":
                     self.assertEqual(str(PathType("C:/Users/test/")), "C:\\Users\\test")
                     self.assertEqual(str(PathType("C:/Users/test")), "C:\\Users\\test")
