@@ -5,6 +5,7 @@ import os
 import platform
 import re
 from abc import ABC, abstractmethod
+from functools import wraps
 from pathlib import (
     Path,
     PosixPath,
@@ -64,7 +65,7 @@ class BasePath(ABC):
             self (CaseAwarePath):
             key (path-like object):
         """
-        return self.__class__.__new__(self.__class__, self, key)
+        return self.__new__(type(self), self, key)
 
     def __rtruediv__(self, key: PATH_TYPES):
         """
@@ -75,7 +76,7 @@ class BasePath(ABC):
             self (CaseAwarePath):
             key (path-like object):
         """
-        return self.__class__.__new__(self.__class__, key, self)
+        return self.__new__(type(self), key, self)
 
     def joinpath(self, *args: PATH_TYPES):
         new_path = self
@@ -150,14 +151,45 @@ with patch("pathlib.PureWindowsPath", PureWindowsPath), patch("pathlib.PurePosix
     class WindowsPath(Path, PureWindowsPath, WindowsPath):
         _flavour = PureWindowsPath._flavour
 
-    class CaseAwarePath(Path):
-        _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
+    class CaseAwareMethod:
+        def __init__(self, func):
+            self.func = func
 
-        def __new__(cls, *args, **kwargs):
-            super_object = super().__new__(cls, *args, **kwargs)
-            if CaseAwarePath.should_resolve_case(super_object):
-                return CaseAwarePath._get_case_sensitive_path(super_object)
-            return super_object
+        def __get__(self, instance, owner):
+            if instance is None:
+                return self
+
+            @wraps(self.func)
+            def wrapper(*args, **kwargs):
+                # Check if any arg is an instance of os.PathLike
+                if not any(isinstance(arg, os.PathLike) for arg in args):
+                    return self.func(instance, *args, **kwargs)
+                args_list = [*args]
+                for i, arg in enumerate(args_list):
+                    if isinstance(arg, os.PathLike) and CaseAwarePath.should_resolve_case(arg):
+                        args_list[i] = CaseAwarePath._get_case_sensitive_path(arg)
+                if CaseAwarePath.should_resolve_case(instance):
+                    return self.func(CaseAwarePath._get_case_sensitive_path(instance), *args, **kwargs)
+                return self.func(instance, *args, **kwargs)
+
+            return wrapper
+
+    class CaseAwareMeta(type):
+        def __new__(cls, name, bases, class_dict):
+            for key, value in list(class_dict.items()):
+                # More selective wrapping: only wrap functions, not all callables
+                if isinstance(value, (staticmethod, classmethod)):
+                    # Don't wrap static or class methods
+                    continue
+                if callable(value) and type(value) is not type:
+                    class_dict[key] = CaseAwareMethod(value)
+            return super().__new__(cls, name, bases, class_dict)
+
+    class CombinedMeta(CaseAwareMeta, type(Path)):
+        pass
+
+    class CaseAwarePath(Path, metaclass=CombinedMeta):
+        _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
         def resolve(self, strict=False):
             new_path = super().resolve(strict)
@@ -166,7 +198,8 @@ with patch("pathlib.PureWindowsPath", PureWindowsPath), patch("pathlib.PurePosix
             return new_path
 
         @staticmethod
-        def _get_case_sensitive_path(path: Path | CaseAwarePath) -> CaseAwarePath:
+        def _get_case_sensitive_path(path: os.PathLike) -> CaseAwarePath:
+            path = path if isinstance(path, (Path, CaseAwarePath)) else Path(path)
             parts = list(path.parts)
 
             for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
