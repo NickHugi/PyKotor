@@ -67,7 +67,7 @@ class InstallFile:
         resname, restype = self._identifier()
 
         if self.replace_existing or destination.resource(resname, restype) is None:
-            create_backup(log, destination.path(), backup_dir / destination.filename(), processed_files)
+            create_backup(log, destination.path(), backup_dir, processed_files)
             if self.replace_existing and destination.resource(resname, restype) is not None:
                 with print_lock:
                     log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
@@ -106,7 +106,7 @@ class InstallFile:
             with print_lock:
                 if file_exists:
                     log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
-                    create_backup(log, save_file_to, backup_dir / self.filename, processed_files)
+                    create_backup(log, save_file_to, backup_dir, processed_files)
                 else:
                     log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
                     processed_files.add(str(save_file_to).lower())

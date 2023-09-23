@@ -251,9 +251,9 @@ class CaseAwarePath(Path):
 
     def __str__(self):
         return (
-            super(self.__class__, self.__class__._get_case_sensitive_path(self)).__str__()
-            if not OriginalPath(self).exists()
-            else super().__str__()
+            super().__str__()
+            if OriginalPath(self).exists()
+            else super(self.__class__, self.__class__._get_case_sensitive_path(self)).__str__()
         )
 
     @staticmethod
