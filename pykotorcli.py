@@ -74,8 +74,8 @@ def parse_args():
         if len(legacy_positional_args) == 3:
             args.namespace_option_index = legacy_positional_args[2]
 
-    tslpatchdata_path: CaseAwarePath | None = CaseAwarePath(args.tslpatchdata)
-    changes_ini_path: CaseAwarePath | None = CaseAwarePath(args.changes_ini)
+    tslpatchdata_path: CaseAwarePath | None = CaseAwarePath(args.tslpatchdata) if args.tslpatchdata else None
+    changes_ini_path: CaseAwarePath | None = CaseAwarePath(args.changes_ini) if args.changes_ini else None
     game_dir: CaseAwarePath | None = CaseAwarePath(args.game_dir)
 
     if changes_ini_path and not changes_ini_path.suffix:
