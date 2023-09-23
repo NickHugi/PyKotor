@@ -111,16 +111,17 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     self.assertEqual(str(PathType("C:/")), "C:\\")
 
                 # Network Paths
-                self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder")
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
                 self.assertEqual(
                     str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
                     "\\\\wsl.localhost\\path\\to\\file with space",
                 )
                 if os.name == "posix":
+                    self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder")
                     self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
                     self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\\\server\\\\folder")
                 elif os.name == "nt":
+                    self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder\\")
                     self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\server\\folder")
                     self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\server\\folder")
 
@@ -136,9 +137,10 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
-                self.assertEqual(
-                    str(PathType("//")), "//".replace("/", os.sep)
-                )  # double forward slashes on linux, single on windows
+                if os.name == "posix":
+                    self.assertEqual(str(PathType("//")), "//".replace("/", os.sep))
+                else:
+                    self.assertEqual(str(PathType("//")), "\\")
                 self.assertEqual(str(PathType("C:")), "C:")
                 self.assertEqual(str(PathType("///")), "/".replace("/", os.sep))
                 self.assertEqual(str(PathType("C:/./Users/../test/")), "C:/Users/../test".replace("/", os.sep))
