@@ -244,7 +244,7 @@ class Installation:
                 break
         if resource_path == self._path:
             if optional:
-                return CaseAwarePath(resource_path) / folder_names[0]
+                return CaseAwarePath(resource_path, folder_names[0])
             raise ValueError(error_msg.format(self._path))
 
         return resource_path
@@ -402,7 +402,7 @@ class Installation:
         for dirpath, _dirnames, filenames in os.walk(streamvoices_path):
             for filename in filenames:
                 with suppress(Exception):
-                    file_path = CaseAwarePath(dirpath) / filename
+                    file_path = CaseAwarePath(dirpath, filename)
                     identifier = ResourceIdentifier.from_path(file_path)
                     resource = FileResource(
                         identifier.resname,

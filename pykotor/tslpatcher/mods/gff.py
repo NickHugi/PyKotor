@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, PureWindowsPath
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import _GFFField
@@ -85,9 +85,9 @@ class ModifyGFF(ABC):
     def _navigate_containers(
         self,
         container: GFFStruct | GFFList | None,
-        path: CaseAwarePath,
+        path: PureWindowsPath,
     ) -> GFFList | GFFStruct | None:
-        path = CaseAwarePath(path) if isinstance(path, str) else path
+        path = PureWindowsPath(path)
         for step in path.parts:
             if isinstance(container, GFFStruct):
                 container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
@@ -99,9 +99,9 @@ class ModifyGFF(ABC):
     def _navigate_to_field(
         self,
         container: GFFStruct | GFFList | None,
-        path: CaseAwarePath | str,
+        path: PureWindowsPath | str,
     ) -> _GFFField | None:
-        path = CaseAwarePath(path) if isinstance(path, str) else path
+        path = PureWindowsPath(path)
         label: str = path.parts[-1]
 
         for step in path.parent.parts:
@@ -121,13 +121,13 @@ class AddStructToListGFF(ModifyGFF):
         identifier: str | None,
         struct_id: int | None = None,
         index_to_token: int | None = None,
-        path: CaseAwarePath | str | None = None,
+        path: PureWindowsPath | str | None = None,
         modifiers: list[ModifyGFF] | None = None,
     ):
         self.struct_id = struct_id if struct_id and struct_id != 0 else None
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
-        self.path: CaseAwarePath | None = CaseAwarePath(path) if isinstance(path, str) else path
+        self.path: PureWindowsPath | None = PureWindowsPath(path) if path else None
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
@@ -166,7 +166,7 @@ class AddFieldGFF(ModifyGFF):
         label: str,
         field_type: GFFFieldType,
         value: FieldValue,
-        path: str | CaseAwarePath | None = None,
+        path: PureWindowsPath | str | None = None,
         modifiers: list[ModifyGFF] | None = None,
         index_to_list_token: int | None = None,
     ):
@@ -174,7 +174,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: CaseAwarePath | None = CaseAwarePath(path) if isinstance(path, str) else path
+        self.path: PureWindowsPath | None = PureWindowsPath(path) if path else None
         self.index_to_list_token: int | None = index_to_list_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -246,19 +246,14 @@ class Memory2DAModifierGFF(ModifyGFF):
         twoda_index: int,
         value_str: str,
         label: str | None = None,
-        path: str | CaseAwarePath | None = None,
+        path: str | PureWindowsPath | None = None,
         modifiers: list[ModifyGFF] | None = None,
     ):
         self.identifier = identifier
         self.twoda_index: int = twoda_index
         self.value = value_str
         self.label = label
-        if isinstance(path, CaseAwarePath):
-            self.path = path
-        elif path is not None:
-            self.path = CaseAwarePath(path)
-        else:
-            self.path = None
+        self.path = PureWindowsPath(path) if path else None
 
         self.modifiers = modifiers
 
@@ -280,10 +275,10 @@ class Memory2DAModifierGFF(ModifyGFF):
 class ModifyFieldGFF(ModifyGFF):
     def __init__(
         self,
-        path: str | CaseAwarePath,
+        path: PureWindowsPath | str,
         value: FieldValue,
     ) -> None:
-        self.path: CaseAwarePath = CaseAwarePath(path) if isinstance(path, str) else path
+        self.path: PureWindowsPath = PureWindowsPath(path)
         self.value: FieldValue = value
 
     def apply(

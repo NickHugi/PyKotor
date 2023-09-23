@@ -166,8 +166,8 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        path = CaseAwarePath(path).resolve()
-        with path.open("rb") as reader:
+        resolved_path = CaseAwarePath(path).resolve()
+        with resolved_path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
 

@@ -7,7 +7,6 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import is_bif_file, is_nss_file
 
 
 class TestInstallation(TestCase):

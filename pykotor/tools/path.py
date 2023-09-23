@@ -6,11 +6,13 @@ import platform
 import re
 from pathlib import (
     Path,
-    PosixPath,
-    PurePath,
-    PurePosixPath,
-    PureWindowsPath,
-    WindowsPath,
+    PosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
+    PurePath,  # type: ignore[pylance_reportGeneralTypeIssues]
+    PurePosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
+    PureWindowsPath,  # type: ignore[pylance_reportGeneralTypeIssues]
+    WindowsPath,  # type: ignore[pylance_reportGeneralTypeIssues]
+    _PosixFlavour,  # type: ignore[pylance_reportGeneralTypeIssues]
+    _WindowsFlavour,  # type: ignore[pylance_reportGeneralTypeIssues]
 )
 from typing import TYPE_CHECKING, List, Tuple, Union
 
@@ -20,6 +22,7 @@ if TYPE_CHECKING:
 PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
+
 def is_class_or_subclass_but_not_instance(cls, target_cls):
     if cls is target_cls:
         return True
@@ -27,11 +30,13 @@ def is_class_or_subclass_but_not_instance(cls, target_cls):
         return False
     return any(is_class_or_subclass_but_not_instance(base, target_cls) for base in cls.__bases__)
 
+
 def is_instance_or_subinstance(instance, target_cls):
     if hasattr(instance, "__bases__"):  # instance is a class
         return False  # if instance is a class type, always return False
     # instance is not a class
     return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
+
 
 def simple_wrapper(fn_name, wrapped_class_type):
     def wrapped(self, *args, **kwargs):
@@ -48,7 +53,7 @@ def simple_wrapper(fn_name, wrapped_class_type):
             return arg
 
         # Parse `self` if it meets the condition
-        actual_self = parse_arg(self)
+        actual_self: CaseAwarePath | type = parse_arg(self)
 
         # Handle positional arguments
         args = tuple(parse_arg(arg) for arg in args)
@@ -59,7 +64,6 @@ def simple_wrapper(fn_name, wrapped_class_type):
         # TODO: when orig_fn doesn't exist, the AttributeException should be raised by
         # the prior stack instead of here, as that's what would normally happen.
         return orig_fn(actual_self, *args, **kwargs)
-
 
     return wrapped
 
@@ -84,20 +88,17 @@ def create_case_insensitive_pathlib_class(cls):
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
-class BasePath():
-    @classmethod
-    def _get_delimiter(cls) -> str:
-        return cls._flavour.sep
 
-    def __new__(cls, *args, **kwargs):
+class BasePath:
+    def __new__(cls, *args: PATH_TYPES, **kwargs):
         # if the only arg passed is already a cls, don't do heavy lifting trying to re-parse it.
         if len(args) == 1:
             arg0 = args[0]
             if isinstance(arg0, cls):
                 return arg0  # type: ignore  # noqa: PGH003
 
-        args = list(args)
-        for i, arg in enumerate(args):
+        args_list = list(args)
+        for i, arg in enumerate(args_list):
             if isinstance(arg, cls):
                 continue
             path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
@@ -105,10 +106,10 @@ class BasePath():
                 msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
                 raise TypeError(msg)
 
-            formatted_path_str = cls._fix_path_formatting(path_str)
+            formatted_path_str = cls._fix_path_formatting(path_str, cls._flavour.sep)
             super_object = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore[pylance general]
-            args[i] = super_object
-        return super().__new__(cls, *args, **kwargs)  # type: ignore  # noqa: PGH003
+            args_list[i] = super_object
+        return super().__new__(cls, *args_list, **kwargs)  # type: ignore  # noqa: PGH003
 
     def __str__(self):
         return self.__class__._fix_path_formatting(super().__str__(), self._flavour.sep)
@@ -116,9 +117,10 @@ class BasePath():
     def __fspath__(self):
         return str(self)
 
-    def __truediv__(self, key: PATH_TYPES):
+    def __truediv__(self, key: PathElem):
         """
-        Uses divider operator to combine two paths.
+        Appends a path part with the divider operator '/'.
+        This method is called when the left side is self.
 
         Args:
         ----
@@ -127,9 +129,34 @@ class BasePath():
         """
         return type(self).__new__(type(self), self, key)
 
-    def __rtruediv__(self, key: PATH_TYPES):
+    def __rtruediv__(self, key: PathElem):
         """
-        Uses divider operator to combine two paths.
+        Appends a path part with the divider operator '/'.
+        This method is called when the right side is self.
+
+        Args:
+        ----
+            self (CaseAwarePath):
+            key (path-like object):
+        """
+        return type(self).__new__(type(self), key, self)
+
+    def __add__(self, key: PathElem):
+        """
+        Appends a path part with the addition operator '+'.
+        This method is called when the left side is self.
+
+        Args:
+        ----
+            self (CaseAwarePath):
+            key (path-like object):
+        """
+        return type(self).__new__(type(self), self, key)
+
+    def __radd__(self, key: PathElem):
+        """
+        Appends a path part with the addition operator '+'.
+        This method is called when the right side is self.
 
         Args:
         ----
@@ -139,6 +166,14 @@ class BasePath():
         return type(self).__new__(type(self), key, self)
 
     def joinpath(self, *args: PATH_TYPES):
+        """
+        Appends one or more path-like objects and/or relative paths to self.
+
+        Args:
+        ----
+            self (CaseAwarePath):
+            key (path-like object):
+        """
         return type(self).__new__(type(self), self, *args)
 
     def endswith(self, text: str) -> bool:
@@ -153,10 +188,6 @@ class BasePath():
             return str_path
 
         formatted_path: str = str_path
-
-        # Fix mixed slashes
-        if os.altsep is not None:
-            formatted_path = formatted_path.replace(os.altsep, os.sep)
 
         # For Windows paths
         if slash == "\\":
@@ -173,41 +204,36 @@ class BasePath():
             # Replace multiple forwardslash's with a single forwardslash
             formatted_path = re.sub(r"/{2,}", "/", formatted_path)
 
+        # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
 
 
 class PurePath(BasePath, PurePath):
-    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
-
-    @classmethod
-    def _get_delimiter(cls):
-        return "\\" if os.name == "nt" else "/"
+    _flavour = _WindowsFlavour() if os.name == "nt" else _PosixFlavour()  # type: ignore pylint: disable-all
 
 
 class PurePosixPath(BasePath, PurePosixPath):
-    @classmethod
-    def _get_delimiter(cls):
-        return "/"
+    pass
 
 
 class PureWindowsPath(BasePath, PureWindowsPath):
-    @classmethod
-    def _get_delimiter(cls):
-        return "\\"
-
-class Path(BasePath, Path):
-    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
     pass
 
+
+class Path(BasePath, Path):
+    _flavour = _WindowsFlavour() if os.name == "nt" else _PosixFlavour()  # type: ignore pylint: disable-all
+    pass
+
+
 class PosixPath(BasePath, PosixPath):
-    _flavour = PurePosixPath._flavour  # type: ignore pylint: disable-all
+    pass
+
 
 class WindowsPath(BasePath, WindowsPath):
-    _flavour = PureWindowsPath._flavour
+    pass
+
 
 class CaseAwarePath(Path):
-    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
-
     def resolve(self, strict=False):
         new_path = super().resolve(strict)
         if CaseAwarePath.should_resolve_case(new_path):
@@ -227,7 +253,7 @@ class CaseAwarePath(Path):
 
         for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
             base_path: Path = Path(*parts[:i])
-            next_path: Path = Path(*parts[:i+1])
+            next_path: Path = Path(*parts[: i + 1])
 
             # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.is_dir() and base_path.is_dir():
@@ -236,9 +262,7 @@ class CaseAwarePath(Path):
                     with contextlib.suppress(PermissionError, IOError):
                         yield from curpath.iterdir()
 
-                base_path_items_generator = (
-                    item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir()
-                )
+                base_path_items_generator = (item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir())
 
                 # if multiple are found, we get the one that most closely matches our case
                 # A closest match is defined by the item that has the most case-sensitive positional matches
@@ -292,7 +316,13 @@ class CaseAwarePath(Path):
             return path_obj.is_absolute() and not path_obj.exists()
         return False
 
-create_case_insensitive_pathlib_class(CaseAwarePath)
+
+# HACK: fix later
+if os.name == "posix":
+    create_case_insensitive_pathlib_class(CaseAwarePath)
+elif os.name == "nt":
+    CaseAwarePath = Path  # type: ignore[pylance_reportGeneralTypeIssues]
+
 
 def locate_game_path(game: Game) -> CaseAwarePath | None:
     from pykotor.common.misc import Game

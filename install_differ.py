@@ -35,8 +35,8 @@ gff_types = [x.value.lower().strip() for x in GFFContent]
 tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
 pykotor_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_pykotor"
 
-pykotor_file = CaseAwarePath(pykotor_path) / "dialog.tlk"
-tslpatcher_file = CaseAwarePath(tslpatcher_path) / "dialog.tlk"
+pykotor_file = CaseAwarePath(pykotor_path, "dialog.tlk")
+tslpatcher_file = CaseAwarePath(tslpatcher_path, "dialog.tlk")
 
 if not pykotor_file.exists():
     message = "Missing PyKotor dialog.tlk"

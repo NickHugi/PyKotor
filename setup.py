@@ -1,8 +1,8 @@
+from pathlib import Path
+
 from setuptools import find_namespace_packages, setup
 
-from pykotor.tools.path import CaseAwarePath
-
-HERE = CaseAwarePath(__file__).parent
+HERE = Path(__file__).parent
 
 NAME = "PyKotor"
 VERSION = "1.7.0"

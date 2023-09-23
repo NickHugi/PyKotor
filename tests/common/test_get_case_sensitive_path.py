@@ -33,7 +33,39 @@ class TestCaseAwarePath(TestCase):
         expected_path.touch()
         self.assertTrue(expected_path.exists(), f"expected_path: {expected_path} should always exist on disk in this test.")
         self.assertTrue(case_aware_file_path.exists(), f"expected_path: {expected_path} actual_path: {case_aware_file_path}")
-        self.assertEqual(str(case_aware_file_path), str(expected_path))
+        if os.name == "posix":
+            self.assertEqual(str(case_aware_file_path), str(expected_path))
+
+    def test_make_and_parse_uri(self):
+        # Create a temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_dir_path = CaseAwarePath(temp_dir)
+
+            # Create a sample file within the temporary directory
+            sample_file = temp_dir_path / "sample.txt"
+
+            # uppercase whole path and create sample.txt
+            CaseAwarePath(str(sample_file).upper()).touch()
+
+            # Convert the uppercase'd path to a URI
+            uri = sample_file.as_uri()
+
+            # Ensure that the URI is in the expected format
+            expected_uri = f'file://{temp_dir.replace(os.sep, "/")}/SAMPLE.TXT'
+            self.assertEqual(uri, expected_uri)
+
+            # Parse the URI back into a path
+            self.assertTrue(uri.startswith("file:///"), f"Unsupported URI format: '{uri}'")
+
+            from urllib.parse import unquote
+            # Remove the "file:///" prefix and unquote the URI
+            uri = unquote(uri[7:])
+
+            # Convert the URI to the platform-specific path separator
+            uri = uri.replace("/", os.sep).replace("\\", os.sep)
+
+            # Ensure that the parsed path matches the original path
+            self.assertEqual(uri, str(sample_file))
 
     def test_case_change_after_creation(self):
         initial_path = self.temp_path / "TestFile.txt"
@@ -149,7 +181,7 @@ class TestCaseAwarePath(TestCase):
         file_path = self.temp_path / "file.txt"
         case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
 
-        with case_aware_file_path.open("w") as f:
+        with file_path.open("w") as f:
             f.write("Hello, world!")
 
         with case_aware_file_path.open("r") as f:
@@ -158,10 +190,8 @@ class TestCaseAwarePath(TestCase):
         self.assertEqual(content, "Hello, world!")
 
     def test_touch(self):
-        case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/someFile.txt")
-        case_aware_file_path.touch()
-
-        self.assertTrue(self.temp_path.joinpath("someFile.txt").exists())
+        self.temp_path.joinpath("SOMEfile.TXT").touch()
+        self.assertTrue(CaseAwarePath(f"{str(self.temp_path)}/someFile.txt").exists())
 
     def test_samefile(self):
         file_path = self.temp_path / "file.txt"

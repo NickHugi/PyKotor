@@ -1,10 +1,11 @@
 import os
+from abc import ABC
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 
 
-from abc import ABC
 def is_same_type(obj1, obj2):
     return type(obj1) is type(obj2)
+
 
 def is_class_or_subclass_but_not_instance(cls, target_cls):
     if cls is target_cls:
@@ -13,27 +14,25 @@ def is_class_or_subclass_but_not_instance(cls, target_cls):
         return False
     return any(is_class_or_subclass_but_not_instance(base, target_cls) for base in cls.__bases__)
 
+
 def is_instance_or_subinstance(instance, target_cls):
     if hasattr(instance, "__bases__"):  # instance is a class
         return False  # if instance is a class, always return False
-    else:  # instance is not a class
-        return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
-
-
-
-
-
-
+    # instance is not a class
+    return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
 
 
 class TestABC(ABC):
     pass
 
+
 class TestClass(TestABC):
     pass
 
+
 class TestClassChild(TestClass):
     pass
+
 
 test_instance = TestClass()
 test_child_instance = TestClassChild()
@@ -46,6 +45,7 @@ assert is_instance_or_subinstance(test_instance, TestClass)
 assert not is_instance_or_subinstance(TestClass, TestClass)
 assert is_instance_or_subinstance(test_child_instance, TestClass)
 assert not is_instance_or_subinstance(TestClassChild, TestClass)
+
 
 def simple_wrapper(fn_name, wrapped_class_type):
     def wrapped(self, *args, **kwargs):

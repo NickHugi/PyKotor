@@ -43,8 +43,6 @@ from pykotor.tslpatcher.reader import ConfigReader
 
 
 class TestConfigReader(TestCase):
-    def test(self):
-        ...
 
     def setUp(self):
         self.config = PatcherConfig()
@@ -92,12 +90,12 @@ class TestConfigReader(TestCase):
         # write it to a real file
         write_tlk(
             self.test_tlk_data,
-            str(CaseAwarePath(self.mod_path) / "tlk_test_file.tlk"),
+            str(CaseAwarePath(self.mod_path, "tlk_test_file.tlk")),
             ResourceType.TLK,
         )
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path) / "tlk_modifications_file.tlk"),
+            str(CaseAwarePath(self.mod_path, "tlk_modifications_file.tlk")),
             ResourceType.TLK,
         )
 
@@ -141,7 +139,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path) / "append.tlk"),
+            str(CaseAwarePath(self.mod_path, "append.tlk")),
             ResourceType.TLK,
         )
 
@@ -168,7 +166,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path) / "append.tlk"),
+            str(CaseAwarePath(self.mod_path, "append.tlk")),
             ResourceType.TLK,
         )
 
@@ -222,7 +220,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path) / "append.tlk"),
+            str(CaseAwarePath(self.mod_path, "append.tlk")),
             ResourceType.TLK,
         )
 
@@ -1346,7 +1344,7 @@ class TestConfigReader(TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertEqual(str(CaseAwarePath("ClassList\\0\\Class")), str(mod_0.path))
+        self.assertEqual("ClassList\\0\\Class", str(mod_0.path))
 
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
