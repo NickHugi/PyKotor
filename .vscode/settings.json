@@ -154,8 +154,6 @@
   "python.testing.pytestArgs": [
     "tests"
   ],
-  "python.testing.unittestEnabled": true,
-  "python.testing.pytestEnabled": false,
   "python.testing.unittestArgs": [
     "-v",
     "-s",
@@ -174,7 +172,6 @@
 "pythonTestExplorer.testplanEnabled": false,
 "python.analysis.inlayHints.callArgumentNames": false,
 "python.analysis.inlayHints.functionReturnTypes": true,
-"python.analysis.inlayHints.pytestParameters": true,
 "python.analysis.inlayHints.variableTypes": true,
 "python.analysis.typeCheckingMode": "basic",
 "[python]": {
@@ -189,4 +186,6 @@
 },
 "debug.allowBreakpointsEverywhere": true,
 "debugStdLib": true,
+"python.analysis.enablePytestSupport": true,
+"python.testing.pytestEnabled": false,
 }

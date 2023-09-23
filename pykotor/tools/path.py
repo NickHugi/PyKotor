@@ -42,10 +42,6 @@ def simple_wrapper(fn_name, wrapped_class_type):
     def wrapped(self, *args, **kwargs):
         orig_fn = wrapped_class_type._original_methods[fn_name]
 
-        # __init__ can only ever take one argument.
-        if fn_name == "__init__":
-            return orig_fn(self)
-
         def parse_arg(arg):
             if is_instance_or_subinstance(arg, PurePath) and CaseAwarePath.should_resolve_case(arg):
                 return CaseAwarePath._get_case_sensitive_path(arg)
@@ -53,7 +49,7 @@ def simple_wrapper(fn_name, wrapped_class_type):
             return arg
 
         # Parse `self` if it meets the condition
-        actual_self: CaseAwarePath | type = parse_arg(self)
+        actual_self_or_cls: CaseAwarePath | type = parse_arg(self)
 
         # Handle positional arguments
         args = tuple(parse_arg(arg) for arg in args)
@@ -63,22 +59,23 @@ def simple_wrapper(fn_name, wrapped_class_type):
 
         # TODO: when orig_fn doesn't exist, the AttributeException should be raised by
         # the prior stack instead of here, as that's what would normally happen.
-        return orig_fn(actual_self, *args, **kwargs)
+
+        return orig_fn(actual_self_or_cls, *args, **kwargs)
 
     return wrapped
 
 
 def create_case_insensitive_pathlib_class(cls):
-    # Create a dictionary that'l hold the original methods for this class
+    # Create a dictionary that'll hold the original methods for this class
     cls._original_methods = {}
     mro = cls.mro()  # Gets the method resolution order
-    parent_classes = mro[1:]  # Exclude the current class itself
+    parent_classes = mro[1:-1]  # Exclude the current class itself
 
     # Store already wrapped methods to avoid wrapping multiple times
     wrapped_methods = set()
 
     # ignore these methods
-    ignored_methods: set[str] = {"__instancecheck__", "__getattribute__", "__setattribute__", "__str__", "__setattr__"}
+    ignored_methods: set[str] = {"__instancecheck__", "__getattribute__", "__setattribute__", "__str__", "__setattr__", "__init__", "_init"}
 
     for parent in parent_classes:
         for attr_name, attr_value in parent.__dict__.items():
