@@ -1,28 +1,51 @@
 import os
-from abc import ABC
 from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 
 
+from abc import ABC
 def is_same_type(obj1, obj2):
-    return id(obj1) == id(obj2)  # Reverted back to id comparison for class types
+    return type(obj1) is type(obj2)
 
-
-def is_type_or_subtype(obj, target_cls):
-    return is_same_type(obj, target_cls) or check_mro_without_magic(obj, target_cls)
-
-
-def check_mro_without_magic(cls, target_cls):
-    if id(type(cls)) != id(type):  # Replacing isinstance check
-        return False
-    if is_same_type(cls, target_cls):
+def is_class_or_subclass_but_not_instance(cls, target_cls):
+    if cls is target_cls:
         return True
-    return any(check_mro_without_magic(base, target_cls) for base in cls.__bases__)
-
+    if not hasattr(cls, "__bases__"):
+        return False
+    return any(is_class_or_subclass_but_not_instance(base, target_cls) for base in cls.__bases__)
 
 def is_instance_or_subinstance(instance, target_cls):
-    instance_type = type(instance)
-    return is_same_type(instance_type, target_cls) or check_mro_without_magic(instance_type, target_cls)
+    if hasattr(instance, "__bases__"):  # instance is a class
+        return False  # if instance is a class, always return False
+    else:  # instance is not a class
+        return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
 
+
+
+
+
+
+
+
+class TestABC(ABC):
+    pass
+
+class TestClass(TestABC):
+    pass
+
+class TestClassChild(TestClass):
+    pass
+
+test_instance = TestClass()
+test_child_instance = TestClassChild()
+
+assert not is_class_or_subclass_but_not_instance(test_instance, TestClass)
+assert is_class_or_subclass_but_not_instance(TestClass, TestClass)
+assert not is_class_or_subclass_but_not_instance(test_child_instance, TestClass)
+assert is_class_or_subclass_but_not_instance(TestClassChild, TestClass)
+assert is_instance_or_subinstance(test_instance, TestClass)
+assert not is_instance_or_subinstance(TestClass, TestClass)
+assert is_instance_or_subinstance(test_child_instance, TestClass)
+assert not is_instance_or_subinstance(TestClassChild, TestClass)
 
 def simple_wrapper(fn_name, wrapped_class_type):
     def wrapped(self, *args, **kwargs):
@@ -35,7 +58,7 @@ def simple_wrapper(fn_name, wrapped_class_type):
         def parse_arg(arg):
             if is_instance_or_subinstance(arg, PurePath):
                 return wrapped_class_type._original_methods["__new__"](
-                    arg.__class__,
+                    object.__new__(type(arg)),
                     str(arg).lower(),
                 )
             return arg
@@ -64,7 +87,7 @@ def wrap_inherited_methods(cls):
     wrapped_methods = set()
 
     # ignore these methods
-    ignored_methods = ["__instancecheck__", "__getattribute__", "__setattribute__", "__str__"]
+    ignored_methods = ["__instancecheck__", "__getattribute__", "__setattribute__", "__str__", "__setattr__"]
 
     for parent in parent_classes:
         for attr_name, attr_value in parent.__dict__.items():
@@ -95,5 +118,5 @@ wrap_inherited_methods(A)
 
 a = A.cwd()
 b = B.cwd()
-print(a.combine_cwd_with_path_test("CASESENSITIVETEST/test/TEst/"))
-print(b.combine_cwd_with_path_test("CASESENSITIVETEST/test/TEst/"))
+print(a.combine_cwd_with_path_test(B("CASESENSITIVETEST/test/TEst/")))
+print(b.combine_cwd_with_path_test(B("CASESENSITIVETEST/test/TEst/")))
