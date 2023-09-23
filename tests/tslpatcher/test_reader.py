@@ -43,7 +43,6 @@ from pykotor.tslpatcher.reader import ConfigReader
 
 
 class TestConfigReader(TestCase):
-
     def setUp(self):
         self.config = PatcherConfig()
         self.ini = ConfigParser(
@@ -125,9 +124,9 @@ class TestConfigReader(TestCase):
         self.assertDictEqual(
             modifiers_dict,
             {
-                4: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
-                5: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
-                6: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+                0: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                1: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5")},
+                2: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
             },
         )
 
@@ -151,9 +150,9 @@ class TestConfigReader(TestCase):
         self.assertDictEqual(
             modifiers_dict,
             {
-                0: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
-                1: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5")},
-                2: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
+                4: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
+                5: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
+                6: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
             },
         )
 
@@ -178,9 +177,9 @@ class TestConfigReader(TestCase):
         self.assertDictEqual(
             modifiers_dict,
             {
-                2: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
-                5: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
-                6: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+                3: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5")},
+                4: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
             },
         )
 
@@ -232,9 +231,9 @@ class TestConfigReader(TestCase):
         self.assertDictEqual(
             modifiers_dict,
             {
-                2: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
-                5: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
-                6: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+                0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+                3: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5")},
+                4: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
             },
         )
 

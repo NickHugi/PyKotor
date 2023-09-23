@@ -219,9 +219,9 @@ class ConfigReader:
                 for mod_index, token_id in zip(change_indices, value_range):
                     if mod_index in tlk_list_ignored_indices:
                         continue
-                    entry: TLKEntry = tlk_data[mod_index]
+                    entry: TLKEntry = tlk_data[token_id]
                     append_modifier(
-                        token_id,
+                        mod_index,
                         entry.text,
                         entry.voiceover,
                         is_replacement,
