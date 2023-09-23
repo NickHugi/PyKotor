@@ -169,7 +169,7 @@ def install(parsed_args):
 
     print("Writing log file 'installlog.txt'...")
     log_file_path: CaseAwarePath = parsed_args.tslpatchdata_path.parent / "installlog.txt"
-    with log_file_path.open("ax", encoding="utf-8") as log_file:
+    with log_file_path.open("a", encoding="utf-8") as log_file:
         for log in installer.log.all_logs:
             log_file.write(f"{log.message}\n")
 
