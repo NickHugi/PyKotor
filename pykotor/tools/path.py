@@ -4,8 +4,6 @@ import contextlib
 import os
 import platform
 import re
-from abc import ABC, abstractmethod
-from functools import wraps
 from pathlib import (
     Path,
     PosixPath,
@@ -15,7 +13,6 @@ from pathlib import (
     WindowsPath,
 )
 from typing import TYPE_CHECKING, List, Tuple, Union
-from unittest.mock import patch
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -23,35 +20,98 @@ if TYPE_CHECKING:
 PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
+def is_class_or_subclass_but_not_instance(cls, target_cls):
+    if cls is target_cls:
+        return True
+    if not hasattr(cls, "__bases__"):
+        return False
+    return any(is_class_or_subclass_but_not_instance(base, target_cls) for base in cls.__bases__)
 
-class BasePath(ABC):
+def is_instance_or_subinstance(instance, target_cls):
+    if hasattr(instance, "__bases__"):  # instance is a class
+        return False  # if instance is a class type, always return False
+    # instance is not a class
+    return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
+
+def simple_wrapper(fn_name, wrapped_class_type):
+    def wrapped(self, *args, **kwargs):
+        orig_fn = wrapped_class_type._original_methods[fn_name]
+
+        # __init__ can only ever take one argument.
+        if fn_name == "__init__":
+            return orig_fn(self)
+
+        def parse_arg(arg):
+            if is_instance_or_subinstance(arg, PurePath) and CaseAwarePath.should_resolve_case(arg):
+                return CaseAwarePath._get_case_sensitive_path(arg)
+
+            return arg
+
+        # Parse `self` if it meets the condition
+        actual_self = parse_arg(self)
+
+        # Handle positional arguments
+        args = tuple(parse_arg(arg) for arg in args)
+
+        # Handle keyword arguments
+        kwargs = {k: parse_arg(v) for k, v in kwargs.items()}
+
+        # TODO: when orig_fn doesn't exist, the AttributeException should be raised by
+        # the prior stack instead of here, as that's what would normally happen.
+        return orig_fn(actual_self, *args, **kwargs)
+
+
+    return wrapped
+
+
+def create_case_insensitive_pathlib_class(cls):
+    # Create a dictionary that'l hold the original methods for this class
+    cls._original_methods = {}
+    mro = cls.mro()  # Gets the method resolution order
+    parent_classes = mro[1:]  # Exclude the current class itself
+
+    # Store already wrapped methods to avoid wrapping multiple times
+    wrapped_methods = set()
+
+    # ignore these methods
+    ignored_methods: set[str] = {"__instancecheck__", "__getattribute__", "__setattribute__", "__str__", "__setattr__"}
+
+    for parent in parent_classes:
+        for attr_name, attr_value in parent.__dict__.items():
+            # Check if it's a method and hasn't been wrapped before
+            if callable(attr_value) and attr_name not in wrapped_methods and attr_name not in ignored_methods:
+                cls._original_methods[attr_name] = attr_value
+                setattr(cls, attr_name, simple_wrapper(attr_name, cls))
+                wrapped_methods.add(attr_name)
+
+class BasePath():
     @classmethod
-    @abstractmethod
     def _get_delimiter(cls) -> str:
-        pass
+        return cls._flavour.sep
 
     def __new__(cls, *args, **kwargs):
+        # if the only arg passed is already a cls, don't do heavy lifting trying to re-parse it.
         if len(args) == 1:
             arg0 = args[0]
-            # if the only arg passed is already a cls, don't do heavy lifting trying to re-parse it.
             if isinstance(arg0, cls):
                 return arg0  # type: ignore  # noqa: PGH003
-        args_list = [*args]
+
+        args = list(args)
         for i, arg in enumerate(args):
             if isinstance(arg, cls):
                 continue
             path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
-            if path_str is not None:
-                formatted_path_str = cls._fix_path_formatting(path_str)
-                super_object = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore[pylance general]
-                args_list[i] = super_object
-            else:
+            if path_str is None:
                 msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
                 raise TypeError(msg)
-        return super().__new__(cls, *args_list, **kwargs)  # type: ignore  # noqa: PGH003
+
+            formatted_path_str = cls._fix_path_formatting(path_str)
+            super_object = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore[pylance general]
+            args[i] = super_object
+        return super().__new__(cls, *args, **kwargs)  # type: ignore  # noqa: PGH003
 
     def __str__(self):
-        return self.__class__._fix_path_formatting(super().__str__(), self._get_delimiter())
+        return self.__class__._fix_path_formatting(super().__str__(), self._flavour.sep)
 
     def __fspath__(self):
         return str(self)
@@ -65,7 +125,7 @@ class BasePath(ABC):
             self (CaseAwarePath):
             key (path-like object):
         """
-        return self.__new__(type(self), self, key)
+        return type(self).__new__(type(self), self, key)
 
     def __rtruediv__(self, key: PATH_TYPES):
         """
@@ -76,10 +136,10 @@ class BasePath(ABC):
             self (CaseAwarePath):
             key (path-like object):
         """
-        return self.__new__(type(self), key, self)
+        return type(self).__new__(type(self), key, self)
 
     def joinpath(self, *args: PATH_TYPES):
-        return self.__new__(type(self), self, *args)
+        return type(self).__new__(type(self), self, *args)
 
     def endswith(self, text: str) -> bool:
         return str(self).endswith(text)
@@ -113,7 +173,7 @@ class BasePath(ABC):
             # Replace multiple forwardslash's with a single forwardslash
             formatted_path = re.sub(r"/{2,}", "/", formatted_path)
 
-        return formatted_path.rstrip(slash)
+        return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
 
 
 class PurePath(BasePath, PurePath):
@@ -124,75 +184,28 @@ class PurePath(BasePath, PurePath):
         return "\\" if os.name == "nt" else "/"
 
 
-class PurePosixPath(PurePath, PurePosixPath):
+class PurePosixPath(BasePath, PurePosixPath):
     @classmethod
     def _get_delimiter(cls):
         return "/"
 
 
-class PureWindowsPath(PurePath, PureWindowsPath):
+class PureWindowsPath(BasePath, PureWindowsPath):
     @classmethod
     def _get_delimiter(cls):
         return "\\"
 
-class Path(PurePath, Path):
+class Path(BasePath, Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
     pass
 
-class PosixPath(Path, PurePosixPath, PosixPath):
+class PosixPath(BasePath, PosixPath):
     _flavour = PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-class WindowsPath(Path, PureWindowsPath, WindowsPath):
+class WindowsPath(BasePath, WindowsPath):
     _flavour = PureWindowsPath._flavour
 
-class CaseAwareDescriptor:
-    def __init__(self, func):
-        self.func = func
-
-    def __get__(self, instance, owner):
-        print("__get__ called.")
-        print("self's type:", type(self))
-        print("instance's type:", type(instance))
-        print("owner's type:", type(owner))
-        print("self:", self)
-        print("instance:", instance)
-        print("owner:", owner)
-        instance = instance or self
-        if CaseAwarePath.should_resolve_case(instance):
-            instance = CaseAwarePath.get_case_sensitive_path(instance)
-        if CaseAwarePath.should_resolve_case(self):
-            self = CaseAwarePath.get_case_sensitive_path(self)
-
-        @wraps(self.func)
-        def wrapper(*args, **kwargs):
-            # Check if any arg is an instance of os.PathLike
-            if not any(isinstance(arg, os.PathLike) for arg in args):
-                return self.func(instance, *args, **kwargs)
-            args_list = [*args]
-            for i, arg in enumerate(args_list):
-                if isinstance(arg, os.PathLike) and CaseAwarePath.should_resolve_case(arg):
-                    args_list[i] = CaseAwarePath._get_case_sensitive_path(arg)
-            if CaseAwarePath.should_resolve_case(instance):
-                return self.func(CaseAwarePath._get_case_sensitive_path(instance), *args, **kwargs)
-            return self.func(instance, *args, **kwargs)
-
-        return wrapper
-
-class CaseAwareMeta(type):
-    def __new__(cls, name, bases, class_dict):
-        for key, value in list(class_dict.items()):
-            # More selective wrapping: only wrap functions, not all callables
-            if isinstance(value, (staticmethod, classmethod)):
-                # Don't wrap static or class methods
-                continue
-            if callable(value) and type(value) is not type:
-                class_dict[key] = CaseAwareDescriptor(value)
-        return super().__new__(cls, name, bases, class_dict)
-
-class CombinedMeta(CaseAwareMeta, type(BasePath)):
-    pass
-
-class CaseAwarePath(Path, metaclass=CombinedMeta):
+class CaseAwarePath(Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
     def resolve(self, strict=False):
@@ -204,21 +217,24 @@ class CaseAwarePath(Path, metaclass=CombinedMeta):
     def __hash__(self) -> int:
         return hash(Path(str(self).lower()))
 
+    def __str__(self):
+        return super(self.__class__, self.__class__._get_case_sensitive_path(self)).__str__()
+
     @staticmethod
     def _get_case_sensitive_path(path: os.PathLike) -> CaseAwarePath:
-        path = path if isinstance(path, (Path, CaseAwarePath)) else Path(path)
+        path: Path = path if isinstance(path, (Path, CaseAwarePath)) else Path(path)
         parts = list(path.parts)
 
         for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
             base_path: Path = Path(*parts[:i])
-            next_path: Path = Path(*parts[: i + 1])
+            next_path: Path = Path(*parts[:i+1])
 
             # Find the first non-existent case-sensitive file/folder in hierarchy
             if not next_path.is_dir() and base_path.is_dir():
                 # iterate ignoring permission/read issues from the directory.
-                def safe_iterdir(path: Path):
+                def safe_iterdir(curpath: Path):
                     with contextlib.suppress(PermissionError, IOError):
-                        yield from path.iterdir()
+                        yield from curpath.iterdir()
 
                 base_path_items_generator = (
                     item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir()
@@ -269,13 +285,14 @@ class CaseAwarePath(Path, metaclass=CombinedMeta):
     def should_resolve_case(path) -> bool:
         if os.name == "nt":
             return False
-        if isinstance(path, (CaseAwarePath, Path)):
-            return path.is_absolute() and not path.exists()
+        if isinstance(path, Path):
+            return Path.is_absolute(path) and not os.path.exists(str(path))  # noqa: PTH110
         if isinstance(path, str):
             path_obj = Path(path)
             return path_obj.is_absolute() and not path_obj.exists()
         return False
 
+create_case_insensitive_pathlib_class(CaseAwarePath)
 
 def locate_game_path(game: Game) -> CaseAwarePath | None:
     from pykotor.common.misc import Game

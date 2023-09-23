@@ -184,6 +184,9 @@
 "launch": {
   "configurations": [],
   "compounds": [],
-  "justMyCode": false
-}
+  "justMyCode": false,
+  "debugStdLib": true,
+},
+"debug.allowBreakpointsEverywhere": true,
+"debugStdLib": true,
 }
