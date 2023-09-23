@@ -1,14 +1,28 @@
 import os
 from abc import ABC
-from pathlib import Path, PureWindowsPath, PurePosixPath, PurePath
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 
-def derives_from_purepath(obj):
-    cls = obj.__class__
-    while cls:
-        if cls == PurePath:
-            return True
-        cls = cls.__base__
-    return False
+
+def is_same_type(obj1, obj2):
+    return id(obj1) == id(obj2)  # Reverted back to id comparison for class types
+
+
+def is_type_or_subtype(obj, target_cls):
+    return is_same_type(obj, target_cls) or check_mro_without_magic(obj, target_cls)
+
+
+def check_mro_without_magic(cls, target_cls):
+    if id(type(cls)) != id(type):  # Replacing isinstance check
+        return False
+    if is_same_type(cls, target_cls):
+        return True
+    return any(check_mro_without_magic(base, target_cls) for base in cls.__bases__)
+
+
+def is_instance_or_subinstance(instance, target_cls):
+    instance_type = type(instance)
+    return is_same_type(instance_type, target_cls) or check_mro_without_magic(instance_type, target_cls)
+
 
 def simple_wrapper(fn_name, wrapped_class_type):
     def wrapped(self, *args, **kwargs):
@@ -19,9 +33,11 @@ def simple_wrapper(fn_name, wrapped_class_type):
             return orig_fn(self)
 
         def parse_arg(arg):
-            # If it's an instance of the wrapped class, call its original __new__ method
-            if derives_from_purepath(arg):
-                return wrapped_class_type._original_methods["__new__"](arg.__class__, object.__getattribute__(arg, "__fspath__").lower())
+            if is_instance_or_subinstance(arg, PurePath):
+                return wrapped_class_type._original_methods["__new__"](
+                    arg.__class__,
+                    str(arg).lower(),
+                )
             return arg
 
         # Parse `self` if it meets the condition
@@ -33,12 +49,12 @@ def simple_wrapper(fn_name, wrapped_class_type):
         # Handle keyword arguments
         kwargs = {k: parse_arg(v) for k, v in kwargs.items()}
 
-        #print(f"Calling: {fn_name}")
         # TODO: when orig_fn doesn't exist, the AttributeException should be raised by
         # the prior stack instead of here, as that's what would normally happen.
         return orig_fn(actual_self, *args, **kwargs)
 
     return wrapped
+
 
 def wrap_inherited_methods(cls):
     mro = cls.mro()  # Gets the method resolution order
@@ -48,8 +64,8 @@ def wrap_inherited_methods(cls):
     wrapped_methods = set()
 
     # ignore these methods
-    ignored_methods = ["__instancecheck__", "__getattribute__", "__setattribute__"]
-    
+    ignored_methods = ["__instancecheck__", "__getattribute__", "__setattribute__", "__str__"]
+
     for parent in parent_classes:
         for attr_name, attr_value in parent.__dict__.items():
             # Check if it's a method and hasn't been wrapped before
@@ -58,20 +74,26 @@ def wrap_inherited_methods(cls):
                 setattr(cls, attr_name, simple_wrapper(attr_name, cls))
                 wrapped_methods.add(attr_name)
 
+
 class C(ABC):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour
+
     def combine_cwd_with_path_test(self, arg: os.PathLike):
-        return Path().cwd() / arg
+        return self / arg
+
 
 class B(C, Path):
     pass
 
+
 class A(B):
     _original_methods = {}
+
+
 wrap_inherited_methods(A)
 
 
-a = A()
-b = B()
-print(a.combine_cwd_with_path_test(A("CASESENSITIVETEST/test/TEst/")))
-print(b.combine_cwd_with_path_test(A("CASESENSITIVETEST/test/TEst/")))
+a = A.cwd()
+b = B.cwd()
+print(a.combine_cwd_with_path_test("CASESENSITIVETEST/test/TEst/"))
+print(b.combine_cwd_with_path_test("CASESENSITIVETEST/test/TEst/"))
