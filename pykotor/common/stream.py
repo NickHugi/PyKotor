@@ -589,7 +589,7 @@ class BinaryReader:
         self.exceed_check(length)
         string_byte_data = self._stream.read(length)
         if not encoding and chardet:
-            encoding = chardet.detect(string_byte_data, should_rename_legacy=True)["encoding"]
+            encoding = chardet.detect(string_byte_data)["encoding"]
         string = string_byte_data.decode(encoding or "windows-1252", errors="ignore")
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")

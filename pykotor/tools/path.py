@@ -79,10 +79,7 @@ class BasePath(ABC):
         return self.__new__(type(self), key, self)
 
     def joinpath(self, *args: PATH_TYPES):
-        new_path = self
-        for arg in args:
-            new_path /= arg
-        return new_path
+        return self.__new__(type(self), self, *args)
 
     def endswith(self, text: str) -> bool:
         return str(self).endswith(text)
@@ -138,136 +135,146 @@ class PureWindowsPath(PurePath, PureWindowsPath):
     def _get_delimiter(cls):
         return "\\"
 
+class Path(PurePath, Path):
+    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
+    pass
 
-with patch("pathlib.PureWindowsPath", PureWindowsPath), patch("pathlib.PurePosixPath", PurePosixPath):
+class PosixPath(Path, PurePosixPath, PosixPath):
+    _flavour = PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-    class Path(PurePath, Path):
-        _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
-        pass
+class WindowsPath(Path, PureWindowsPath, WindowsPath):
+    _flavour = PureWindowsPath._flavour
 
-    class PosixPath(Path, PurePosixPath, PosixPath):
-        _flavour = PurePosixPath._flavour  # type: ignore pylint: disable-all
+class CaseAwareDescriptor:
+    def __init__(self, func):
+        self.func = func
 
-    class WindowsPath(Path, PureWindowsPath, WindowsPath):
-        _flavour = PureWindowsPath._flavour
+    def __get__(self, instance, owner):
+        print("__get__ called.")
+        print("self's type:", type(self))
+        print("instance's type:", type(instance))
+        print("owner's type:", type(owner))
+        print("self:", self)
+        print("instance:", instance)
+        print("owner:", owner)
+        instance = instance or self
+        if CaseAwarePath.should_resolve_case(instance):
+            instance = CaseAwarePath.get_case_sensitive_path(instance)
+        if CaseAwarePath.should_resolve_case(self):
+            self = CaseAwarePath.get_case_sensitive_path(self)
 
-    class CaseAwareMethod:
-        def __init__(self, func):
-            self.func = func
-
-        def __get__(self, instance, owner):
-            if instance is None:
-                return self
-
-            @wraps(self.func)
-            def wrapper(*args, **kwargs):
-                # Check if any arg is an instance of os.PathLike
-                if not any(isinstance(arg, os.PathLike) for arg in args):
-                    return self.func(instance, *args, **kwargs)
-                args_list = [*args]
-                for i, arg in enumerate(args_list):
-                    if isinstance(arg, os.PathLike) and CaseAwarePath.should_resolve_case(arg):
-                        args_list[i] = CaseAwarePath._get_case_sensitive_path(arg)
-                if CaseAwarePath.should_resolve_case(instance):
-                    return self.func(CaseAwarePath._get_case_sensitive_path(instance), *args, **kwargs)
+        @wraps(self.func)
+        def wrapper(*args, **kwargs):
+            # Check if any arg is an instance of os.PathLike
+            if not any(isinstance(arg, os.PathLike) for arg in args):
                 return self.func(instance, *args, **kwargs)
+            args_list = [*args]
+            for i, arg in enumerate(args_list):
+                if isinstance(arg, os.PathLike) and CaseAwarePath.should_resolve_case(arg):
+                    args_list[i] = CaseAwarePath._get_case_sensitive_path(arg)
+            if CaseAwarePath.should_resolve_case(instance):
+                return self.func(CaseAwarePath._get_case_sensitive_path(instance), *args, **kwargs)
+            return self.func(instance, *args, **kwargs)
 
-            return wrapper
+        return wrapper
 
-    class CaseAwareMeta(type):
-        def __new__(cls, name, bases, class_dict):
-            for key, value in list(class_dict.items()):
-                # More selective wrapping: only wrap functions, not all callables
-                if isinstance(value, (staticmethod, classmethod)):
-                    # Don't wrap static or class methods
-                    continue
-                if callable(value) and type(value) is not type:
-                    class_dict[key] = CaseAwareMethod(value)
-            return super().__new__(cls, name, bases, class_dict)
+class CaseAwareMeta(type):
+    def __new__(cls, name, bases, class_dict):
+        for key, value in list(class_dict.items()):
+            # More selective wrapping: only wrap functions, not all callables
+            if isinstance(value, (staticmethod, classmethod)):
+                # Don't wrap static or class methods
+                continue
+            if callable(value) and type(value) is not type:
+                class_dict[key] = CaseAwareDescriptor(value)
+        return super().__new__(cls, name, bases, class_dict)
 
-    class CombinedMeta(CaseAwareMeta, type(Path)):
-        pass
+class CombinedMeta(CaseAwareMeta, type(BasePath)):
+    pass
 
-    class CaseAwarePath(Path, metaclass=CombinedMeta):
-        _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
+class CaseAwarePath(Path, metaclass=CombinedMeta):
+    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-        def resolve(self, strict=False):
-            new_path = super().resolve(strict)
-            if CaseAwarePath.should_resolve_case(new_path):
-                new_path = CaseAwarePath._get_case_sensitive_path(new_path)
-            return new_path
+    def resolve(self, strict=False):
+        new_path = super().resolve(strict)
+        if CaseAwarePath.should_resolve_case(new_path):
+            new_path = CaseAwarePath._get_case_sensitive_path(new_path)
+        return new_path
 
-        @staticmethod
-        def _get_case_sensitive_path(path: os.PathLike) -> CaseAwarePath:
-            path = path if isinstance(path, (Path, CaseAwarePath)) else Path(path)
-            parts = list(path.parts)
+    def __hash__(self) -> int:
+        return hash(Path(str(self).lower()))
 
-            for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
-                base_path: Path = Path(*parts[:i])
-                next_path: Path = Path(*parts[: i + 1])
+    @staticmethod
+    def _get_case_sensitive_path(path: os.PathLike) -> CaseAwarePath:
+        path = path if isinstance(path, (Path, CaseAwarePath)) else Path(path)
+        parts = list(path.parts)
 
-                # Find the first non-existent case-sensitive file/folder in hierarchy
-                if not next_path.is_dir() and base_path.is_dir():
-                    # iterate ignoring permission/read issues from the directory.
-                    def safe_iterdir(path: Path):
-                        with contextlib.suppress(PermissionError, IOError):
-                            yield from path.iterdir()
+        for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
+            base_path: Path = Path(*parts[:i])
+            next_path: Path = Path(*parts[: i + 1])
 
-                    base_path_items_generator = (
-                        item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir()
-                    )
+            # Find the first non-existent case-sensitive file/folder in hierarchy
+            if not next_path.is_dir() and base_path.is_dir():
+                # iterate ignoring permission/read issues from the directory.
+                def safe_iterdir(path: Path):
+                    with contextlib.suppress(PermissionError, IOError):
+                        yield from path.iterdir()
 
-                    # if multiple are found, we get the one that most closely matches our case
-                    # A closest match is defined by the item that has the most case-sensitive positional matches
-                    # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
-                    parts[i] = CaseAwarePath._find_closest_match(
-                        parts[i],
-                        base_path_items_generator,
-                    )
-
-                # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
-                # parts in their original case.
-                # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
-                elif not next_path.exists():
-                    return super().__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
-
-            # return a CaseAwarePath instance without infinitely recursing through the constructor
-            return super().__new__(CaseAwarePath, *parts)
-
-        @staticmethod
-        def _find_closest_match(target, candidates) -> str:
-            max_matching_chars = -1
-            closest_match = target
-            for candidate in candidates:
-                matching_chars = CaseAwarePath._get_matching_characters_count(
-                    candidate.name,
-                    target,
+                base_path_items_generator = (
+                    item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir()
                 )
-                if matching_chars > max_matching_chars:
-                    max_matching_chars = matching_chars
-                    closest_match = candidate.name
-                    if max_matching_chars == len(target):
-                        break
-            return closest_match
 
-        @staticmethod
-        def _get_matching_characters_count(str1: str, str2: str) -> int:
-            """
-            Returns the number of case sensitive characters that match in each position of the two strings.
-            if str1 and str2 are NOT case-insensitive matches, this method will return -1
-            """
-            return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
+                # if multiple are found, we get the one that most closely matches our case
+                # A closest match is defined by the item that has the most case-sensitive positional matches
+                # If two closest matches are identical (e.g. we're looking for TeST and we find TeSt and TesT), it's random.
+                parts[i] = CaseAwarePath._find_closest_match(
+                    parts[i],
+                    base_path_items_generator,
+                )
 
-        @staticmethod
-        def should_resolve_case(path) -> bool:
-            if os.name == "nt":
-                return False
-            if isinstance(path, (CaseAwarePath, Path)):
-                return path.is_absolute() and not path.exists()
-            if isinstance(path, str):
-                path_obj = Path(path)
-                return path_obj.is_absolute() and not path_obj.exists()
+            # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
+            # parts in their original case.
+            # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
+            elif not next_path.exists():
+                return super().__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
+
+        # return a CaseAwarePath instance without infinitely recursing through the constructor
+        return super().__new__(CaseAwarePath, *parts)
+
+    @staticmethod
+    def _find_closest_match(target, candidates) -> str:
+        max_matching_chars = -1
+        closest_match = target
+        for candidate in candidates:
+            matching_chars = CaseAwarePath._get_matching_characters_count(
+                candidate.name,
+                target,
+            )
+            if matching_chars > max_matching_chars:
+                max_matching_chars = matching_chars
+                closest_match = candidate.name
+                if max_matching_chars == len(target):
+                    break
+        return closest_match
+
+    @staticmethod
+    def _get_matching_characters_count(str1: str, str2: str) -> int:
+        """
+        Returns the number of case sensitive characters that match in each position of the two strings.
+        if str1 and str2 are NOT case-insensitive matches, this method will return -1
+        """
+        return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
+
+    @staticmethod
+    def should_resolve_case(path) -> bool:
+        if os.name == "nt":
             return False
+        if isinstance(path, (CaseAwarePath, Path)):
+            return path.is_absolute() and not path.exists()
+        if isinstance(path, str):
+            path_obj = Path(path)
+            return path_obj.is_absolute() and not path_obj.exists()
+        return False
 
 
 def locate_game_path(game: Game) -> CaseAwarePath | None:

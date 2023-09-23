@@ -1,12 +1,12 @@
 import os
-import unittest
+from unittest import TestCase
 import tempfile
 
 from pathlib import Path
 from pykotor.tools.path import CaseAwarePath
 
 
-class TestCaseAwarePath(unittest.TestCase):
+class TestCaseAwarePath(TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
@@ -17,8 +17,8 @@ class TestCaseAwarePath(unittest.TestCase):
     def test_join_with_nonexistent_path(self):
         non_existent_path = CaseAwarePath("nonExistentDir")
         existent_path = self.temp_path
-        joined_path = non_existent_path.joinpath(existent_path)
-        self.assertFalse(joined_path.exists())
+        joined_path = existent_path.joinpath(non_existent_path)
+        self.assertFalse(joined_path.exists(), f"joined_path is '{joined_path}'")
 
     def test_truediv_equivalent_to_joinpath(self):
         case_aware_path1 = CaseAwarePath("someDir")
@@ -26,9 +26,12 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(case_aware_path1 / case_aware_path2, case_aware_path1.joinpath(case_aware_path2))
 
     def test_rtruediv(self):
-        case_aware_file_path = "soMeDir" / CaseAwarePath("someFile.TXT")
-        expected_path = CaseAwarePath("SOmeDir") / "SOMEFile.txT"
-        self.assertEqual(case_aware_file_path, expected_path)
+        case_aware_file_path = CaseAwarePath(self.temp_dir.name) / "soMeDir" / CaseAwarePath("someFile.TXT")
+        expected_path = self.temp_dir.name / CaseAwarePath("SOmeDir") / "SOMEFile.txT"
+        expected_path.mkdir(exist_ok=True, parents=True)
+        expected_path.touch()
+        self.assertTrue(case_aware_file_path.exists(), f"expected_path: {expected_path} actual_path: {case_aware_file_path}")
+        self.assertEqual(str(case_aware_file_path), str(expected_path))
 
     def test_case_change_after_creation(self):
         initial_path = self.temp_path / "TestFile.txt"
@@ -211,7 +214,3 @@ class TestCaseAwarePath(unittest.TestCase):
 
         self.assertTrue(hardlink_file.exists())
         self.assertTrue(os.path.samefile(str(hardlink_file), str(source_file)))
-
-
-if __name__ == "__main__":
-    unittest.main()

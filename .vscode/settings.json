@@ -1,4 +1,5 @@
 {
+  "justMyCode": false,
   "cSpell.words": [
     "ADDFF",
     "ADDFI",
@@ -180,8 +181,9 @@
   "editor.defaultFormatter": "ms-python.black-formatter"
 },
 "files.eol": "\r\n",
-"python.analysis.extraPaths": [
-  "./pykotor/common"
-],
-"python.formatting.provider": "none"
+"launch": {
+  "configurations": [],
+  "compounds": [],
+  "justMyCode": false
+}
 }
