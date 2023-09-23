@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
+OriginalPath = Path
 
 
 def is_class_or_subclass_but_not_instance(cls, target_cls):
@@ -75,7 +76,15 @@ def create_case_insensitive_pathlib_class(cls):
     wrapped_methods = set()
 
     # ignore these methods
-    ignored_methods: set[str] = {"__instancecheck__", "__getattribute__", "__setattribute__", "__str__", "__setattr__", "__init__", "_init"}
+    ignored_methods: set[str] = {
+        "__instancecheck__",
+        "__getattribute__",
+        "__setattribute__",
+        "__str__",
+        "__setattr__",
+        "__init__",
+        "_init",
+    }
 
     for parent in parent_classes:
         for attr_name, attr_value in parent.__dict__.items():
@@ -241,11 +250,15 @@ class CaseAwarePath(Path):
         return hash(Path(str(self).lower()))
 
     def __str__(self):
-        return super(self.__class__, self.__class__._get_case_sensitive_path(self)).__str__()
+        return (
+            super(self.__class__, self.__class__._get_case_sensitive_path(self)).__str__()
+            if not OriginalPath(self).exists()
+            else super().__str__()
+        )
 
     @staticmethod
     def _get_case_sensitive_path(path: os.PathLike) -> CaseAwarePath:
-        path: Path = path if isinstance(path, (Path, CaseAwarePath)) else Path(path)
+        path: OriginalPath = OriginalPath(path)
         parts = list(path.parts)
 
         for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
@@ -273,10 +286,10 @@ class CaseAwarePath(Path):
             # parts in their original case.
             # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
             elif not next_path.exists():
-                return super().__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
+                return CaseAwarePath.__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
 
         # return a CaseAwarePath instance without infinitely recursing through the constructor
-        return super().__new__(CaseAwarePath, *parts)
+        return CaseAwarePath.__new__(CaseAwarePath, *parts)
 
     @staticmethod
     def _find_closest_match(target, candidates) -> str:
@@ -307,9 +320,10 @@ class CaseAwarePath(Path):
         if os.name == "nt":
             return False
         if isinstance(path, Path):
-            return Path.is_absolute(path) and not os.path.exists(str(path))  # noqa: PTH110
+            path_obj = OriginalPath(path)
+            return path_obj.is_absolute() and not path_obj.exists()
         if isinstance(path, str):
-            path_obj = Path(path)
+            path_obj = OriginalPath(path)
             return path_obj.is_absolute() and not path_obj.exists()
         return False
 
