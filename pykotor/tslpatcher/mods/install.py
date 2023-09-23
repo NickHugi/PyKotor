@@ -29,7 +29,9 @@ def create_backup(
 ):
     destination_file_str = str(destination_filepath).lower()
     if subdirectory_path:
-        backup_filepath = backup_folderpath / subdirectory_path / destination_filepath.name
+        subdirectory_path = backup_folderpath / subdirectory_path
+        subdirectory_path.mkdir(exist_ok=True, parents=True)
+        backup_filepath = subdirectory_path / destination_filepath.name
     else:
         backup_filepath = backup_folderpath / destination_filepath.name
 
