@@ -141,8 +141,17 @@ class TLKBinaryWriter(ResourceWriter):
         sound_resref = entry.voiceover.get()
         text_offset = previous_offset.get()
         text_length = len(entry.text)
+        entry_flags = 0  # Initialize entry_flags as zero
 
-        self._writer.write_uint32(7)  # entry flags
+        # Check for TEXT_PRESENT: As we're writing text, let's assume it's always present
+        entry_flags |= 0x0001
+
+        # Check for SND_PRESENT: If sound_resref is not None, not an empty string, or not False
+        if sound_resref:
+            entry_flags |= 0x0002
+            # entry_flags |= 0x0004  # unused - SNDLENGTH_PRESENT  # noqa: ERA001
+
+        self._writer.write_uint32(entry_flags)
         self._writer.write_string(sound_resref, string_length=16)
         self._writer.write_uint32(0)  # unused - volume variance
         self._writer.write_uint32(0)  # unused - pitch variance
