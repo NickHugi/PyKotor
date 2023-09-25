@@ -253,7 +253,7 @@ class Cube:
             min_point.x, min_point.y, min_point.z,
             max_point.x, min_point.y, min_point.z,
             max_point.x, max_point.y, min_point.z,
-            min_point.x, max_point.y, min_point.z
+            min_point.x, max_point.y, min_point.z,
         ], dtype="float32")
 
         elements = np.array([
