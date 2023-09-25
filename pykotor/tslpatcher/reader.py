@@ -832,10 +832,10 @@ class NamespaceReader:
         return NamespaceReader(ini).load()
 
     def load(self) -> list[PatcherNamespace]:
-        self.ini = {key.lower(): value for key, value in self.ini.items()}
+        namespace_ids = dict(self.ini["Namespaces"].items()).values()
         namespaces: list[PatcherNamespace] = []
 
-        for namespace_id in self.ini["Namespaces"].values():
+        for namespace_id in namespace_ids:
             namespace = PatcherNamespace()
             namespace.namespace_id = namespace_id
             namespace.ini_filename = self.ini[namespace_id]["IniName"]

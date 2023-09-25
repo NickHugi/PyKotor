@@ -129,11 +129,7 @@ class ModInstaller:
             self.changes_ini_path = self.mod_path / self.changes_ini_path.name
             if not self.changes_ini_path.exists():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
-            if self.changes_ini_path.exists():
-                self.log.add_warning(
-                    "The ModInstaller's changes ini argument has had its string filename type deprecated, please update your code to send a full changes ini path.",
-                )
-            else:
+            if not self.changes_ini_path.exists():
                 msg = f"Could not find the changes ini file {self.changes_ini_path} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
