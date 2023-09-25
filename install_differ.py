@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
 from pykotor.resource.formats.tlk import read_tlk
@@ -32,8 +34,8 @@ def visual_length(s: str, tab_length=8):
 
 
 gff_types = [x.value.lower().strip() for x in GFFContent]
-tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"
-pykotor_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor_pykotor"
+tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II"
+pykotor_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - TSLRCM"
 
 pykotor_file = CaseAwarePath(pykotor_path, "dialog.tlk")
 tslpatcher_file = CaseAwarePath(tslpatcher_path, "dialog.tlk")
@@ -101,21 +103,21 @@ def override():
         ext = tslpatcher_file.suffix.lower()[1:]
 
         if ext in gff_types:
-            pykotor_gff: GFF = read_gff(pykotor_file)
-            tslpatcher_gff: GFF = read_gff(tslpatcher_file)
+            pykotor_gff: GFF | None = read_gff(pykotor_file)
+            tslpatcher_gff: GFF | None = read_gff(tslpatcher_file)
             if not pykotor_gff and tslpatcher_gff:
-                message = f"PyKotor {ext.upper()} resource missing in memory:", pykotor_file_rel
+                message = f"PyKotor {ext.upper()} resource missing in memory:\t{pykotor_file_rel}"
                 print(message)
                 print(visual_length(message) * "-")
             elif pykotor_gff and not tslpatcher_gff:
-                message = f"TSLPatcher {ext.upper()} resource missing in memory:", tslpatcher_file_rel
+                message = f"TSLPatcher {ext.upper()} resource missing in memory:\t{tslpatcher_file_rel}"
                 print(message)
                 print(visual_length(message) * "-")
             elif not pykotor_gff and not tslpatcher_gff:
-                message = f"Both {ext.upper()} resources missing for both in memory."
+                message = f"Both {ext.upper()} resources missing for both in memory:\t{pykotor_file_rel}"
                 print(message)
                 print(len(message) * "-")
-            else:
+            elif pykotor_gff and tslpatcher_gff:
                 diff = DiffGFF(tslpatcher_gff, pykotor_gff)
                 if not diff.is_same():
                     message = f"^ {pykotor_file.name} is different ^"
@@ -126,15 +128,15 @@ def override():
             pykotor_2da = read_2da(pykotor_file)
             tslpatcher_2da = read_2da(tslpatcher_file)
             if not pykotor_2da and tslpatcher_2da:
-                message = "PyKotor 2DA resource missing in memory:", pykotor_file_rel
+                message = f"PyKotor 2DA resource missing in memory:\t{pykotor_file_rel}"
                 print(message)
                 print(visual_length(message) * "-")
             elif pykotor_2da and not tslpatcher_2da:
-                message = "TSLPatcher 2DA resource missing in memory:", tslpatcher_file_rel
+                message = f"TSLPatcher 2DA resource missing in memory:\t{tslpatcher_file_rel}"
                 print(message)
                 print(visual_length(message) * "-")
             elif not pykotor_2da and not tslpatcher_2da:
-                message = "Both 2DA resources missing in memory."
+                message = f"Both 2DA resources missing in memory:\t{pykotor_file_rel}"
                 print(message)
                 print(len(message) * "-")
             else:
@@ -172,12 +174,12 @@ def modules():
             continue
 
         if not pykotor_file.exists():
-            message = "Missing PyKotor file:", pykotor_file_rel
+            message = f"Missing PyKotor file:\t{pykotor_file_rel}"
             print(message)
             print(visual_length(message) * "-")
             continue
         if not tslpatcher_file.exists():
-            message = "Missing TSLPatcher file:", tslpatcher_file_rel
+            message = f"Missing TSLPatcher file:\t{tslpatcher_file_rel}"
             print(message)
             print(visual_length(message) * "-")
             continue

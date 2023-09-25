@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
+from itertools import tee
 from typing import TYPE_CHECKING
 
 try:
@@ -172,9 +173,7 @@ class ConfigReader:
         range_delims = [":", "-", "to"]
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
-            if range_str.lower().startswith("strref") or range_str.lower().startswith(
-                "ignore",
-            ):
+            if range_str.lower().startswith("strref") or range_str.lower().startswith("ignore"):
                 range_str = range_str[6:]
             for delim in range_delims:
                 if delim in range_str:
@@ -184,14 +183,14 @@ class ConfigReader:
                     return start, end
             return int(range_str), None
 
-        def parse_range(range_str: str, max_value: int) -> range:
+        def parse_range(range_str: str) -> range:
             start, end = extract_range_parts(range_str)
             if end is None:
-                return range(int(range_str), int(range_str) + 1)
+                return range(int(start), int(start) + 1)
             if end < start:
                 self.log.add_error(f"start of range {start} must be less than end of range {end}. Skipping...")
                 return range(0)  # empty range
-            return range(start, min(max_value, end) + 1)
+            return range(start, end + 1)
 
         tlk_list_ignored_indices: set[int] = set()
 
@@ -209,102 +208,105 @@ class ConfigReader:
                 modifications_ini_keys,
                 modifications_ini_values,
             ):
-                change_indices = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key), len(tlk_data))
-                value_range = (
-                    parse_range(str(mod_value), len(tlk_data))
-                    if not isinstance(mod_value, range) and mod_value != ""
-                    else mod_key
-                )
+                try:
+                    change_indices = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key))
+                    value_range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
 
-                for mod_index, token_id in zip(change_indices, value_range):
-                    if mod_index in tlk_list_ignored_indices:
-                        continue
-                    entry: TLKEntry = tlk_data[token_id]
-                    append_modifier(
-                        mod_index,
-                        entry.text,
-                        entry.voiceover,
-                        is_replacement,
-                    )
+                    change_iter, value_iter = tee(change_indices)
+                    value_iter = iter(value_range)
+
+                    for mod_index in change_iter:
+                        if mod_index in tlk_list_ignored_indices:
+                            continue
+                        token_id = next(value_iter)
+                        entry: TLKEntry = tlk_data[token_id]
+                        append_modifier(
+                            mod_index,
+                            entry.text,
+                            entry.voiceover,
+                            is_replacement,
+                        )
+                except ValueError as e:
+                    self.log.add_error(f"Could not parse {mod_key}={mod_value}: {e}. Skipping...")
 
         for i in tlk_list_edits:
-            if i.lower().startswith("ignore"):
-                # load append.tlk only if it's needed.
-                if append_tlk_edits is None:
-                    append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
-                if len(append_tlk_edits) == 0:
-                    self.log.add_error(f"Could not find append.tlk on disk to perform ignore modifier '{i}'. Skipping...")
-                    continue
-                tlk_list_ignored_indices.update(
-                    parse_range(i[6:], len(append_tlk_edits)),
-                )
+            try:
+                if i.lower().startswith("ignore"):
+                    tlk_list_ignored_indices.update(
+                        parse_range(i[6:]),
+                    )
+            except ValueError as e:
+                self.log.add_error(f"Could not parse ignore index {i}: {e}. Skipping...")
 
         for key, value in tlk_list_edits.items():
-            key: str = key.lower()
-            if key.startswith("ignore"):
-                continue
-            if key.startswith("strref"):
-                # load append.tlk only if it's needed.
-                if append_tlk_edits is None:
-                    append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
-                if len(append_tlk_edits) == 0:
-                    self.log.add_error(f"Could not find append.tlk on disk to perform modifier '{key}={value}'. Skipping...")
+            try:
+                key: str = key.lower()
+                if key.startswith("ignore"):
                     continue
-                strref_range = parse_range(key[6:], len(append_tlk_edits))
-                token_id_range = parse_range(value, len(append_tlk_edits))
-                process_tlk_entries(
-                    append_tlk_edits,
-                    strref_range,
-                    token_id_range,
-                    is_replacement=False,
-                )
-            elif key.startswith("file"):
-                tlk_modifications_path: CaseAwarePath = self.mod_path / value
-                if value not in self.ini:
-                    self.log.add_error(f"INI header for '{value}' referenced in TLKList key '{key}' not found. Skipping...")
-                    continue
-                tlk_ini_edits = dict(self.ini[value].items())
-                modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
-                if len(modifications_tlk_data) == 0:
-                    self.log.add_error("Could not find append.tlk on disk to perform modifier 'key=value'. Skipping...")
-                    continue
-                process_tlk_entries(
-                    modifications_tlk_data,
-                    tlk_ini_edits.keys(),
-                    tlk_ini_edits.values(),
-                    is_replacement=True,
-                )
-            elif "\\" in key or "/" in key:
-                delimiter = "\\" if "\\" in key else "/"
-                token_id_str, property_name = key.split(delimiter)
-                token_id = int(token_id_str)
-
-                if token_id not in modifier_dict:
-                    modifier_dict[token_id] = {
-                        "text": "",
-                        "voiceover": "",
-                    }
-
-                if property_name == "text":
-                    modifier_dict[token_id]["text"] = value
-                elif property_name == "sound":
-                    modifier_dict[token_id]["voiceover"] = ResRef(value)
-                else:
-                    self.log.add_error(
-                        f"Invalid TLKList syntax for key '{key}' value '{value}', expected 'sound' or 'text'. Skipping...",
+                if key.startswith("strref"):
+                    # load append.tlk only if it's needed.
+                    if append_tlk_edits is None:
+                        append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
+                    if len(append_tlk_edits) == 0:
+                        self.log.add_error(f"Could not find append.tlk on disk to perform modifier '{key}={value}'. Skipping...")
+                        continue
+                    strref_range = parse_range(key[6:])
+                    token_id_range = parse_range(value)
+                    process_tlk_entries(
+                        append_tlk_edits,
+                        strref_range,
+                        token_id_range,
+                        is_replacement=False,
                     )
-                    continue
+                elif key.startswith("file"):
+                    tlk_modifications_path: CaseAwarePath = self.mod_path / value
+                    if value not in self.ini:
+                        self.log.add_error(f"INI header for '{value}' referenced in TLKList key '{key}' not found. Skipping...")
+                        continue
+                    tlk_ini_edits = dict(self.ini[value].items())
+                    modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
+                    if len(modifications_tlk_data) == 0:
+                        self.log.add_error(f"Could not find {value}.tlk on disk to perform modifier 'key=value'. Skipping...")
+                        continue
+                    process_tlk_entries(
+                        modifications_tlk_data,
+                        tlk_ini_edits.keys(),
+                        tlk_ini_edits.values(),
+                        is_replacement=True,
+                    )
+                elif "\\" in key or "/" in key:
+                    delimiter = "\\" if "\\" in key else "/"
+                    token_id_str, property_name = key.split(delimiter)
+                    token_id = int(token_id_str)
 
-                text = modifier_dict[token_id].get("text")
-                voiceover = modifier_dict[token_id].get("voiceover")
+                    if token_id not in modifier_dict:
+                        modifier_dict[token_id] = {
+                            "text": "",
+                            "voiceover": "",
+                        }
 
-                # TODO(th3w1zard1): replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
-                # EDIT: looked into the above todo, would require a large restructure of the way TLK is stored.
-                if isinstance(text, str) and isinstance(voiceover, ResRef):
-                    modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
-                    self.config.patches_tlk.modifiers.append(modifier)
-            else:
-                self.log.add_error(f"Invalid syntax in TLKList: '{key}={value}'. Skipping...")
+                    if property_name == "text":
+                        modifier_dict[token_id]["text"] = value
+                    elif property_name == "sound":
+                        modifier_dict[token_id]["voiceover"] = ResRef(value)
+                    else:
+                        self.log.add_error(
+                            f"Invalid TLKList syntax for key '{key}' value '{value}', expected 'sound' or 'text'. Skipping...",
+                        )
+                        continue
+
+                    text = modifier_dict[token_id].get("text")
+                    voiceover = modifier_dict[token_id].get("voiceover")
+
+                    # TODO(th3w1zard1): replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
+                    # EDIT: looked into the above todo, would require a large restructure of the way TLK is stored.
+                    if isinstance(text, str) and isinstance(voiceover, ResRef):
+                        modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
+                        self.config.patches_tlk.modifiers.append(modifier)
+                else:
+                    self.log.add_error(f"Invalid syntax in TLKList: '{key}={value}'. Skipping...")
+            except ValueError as e:
+                self.log.add_error(f"Could not parse {key}={value}: {e}. Skipping...")
 
     def load_2da(self) -> None:
         if "2DAList" not in self.ini:
