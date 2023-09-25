@@ -1,6 +1,6 @@
 ply
 chardet~=4.0
-numpy~=1.22
+numpy~=1.21
 PyGLM~=2.5
 PyOpenGL~=3.1
 setuptools~=57.4
