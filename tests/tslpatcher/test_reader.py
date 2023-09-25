@@ -106,6 +106,9 @@ class TestConfigReader(TestCase):
         # Load the INI file and the TLK file
         self.config_reader = ConfigReader(self.ini, self.mod_path)  # type: ignore
 
+    def cleanUp(self):
+        self.mod_path.unlink()
+
     def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
         tlk = TLK()
         for v in data.values():
