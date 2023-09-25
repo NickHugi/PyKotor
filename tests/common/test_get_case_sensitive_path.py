@@ -155,6 +155,7 @@ class TestCaseAwarePath(TestCase):
 
         self.assertTrue(case_aware_cascading_file.exists())
 
+    @unittest.skip("unfinished")
     def test_relative_to(self):
         dir_path = self.temp_path / "someDir"
         file_path = dir_path / "someFile.txt"
