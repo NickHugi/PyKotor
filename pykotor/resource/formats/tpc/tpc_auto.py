@@ -51,7 +51,6 @@ def detect_tpc(
 
     try:
         if isinstance(source, (str, CaseAwarePath)):
-            source = CaseAwarePath(source)
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = do_check(reader.read_bytes(100))
         elif isinstance(source, (bytes, bytearray)):

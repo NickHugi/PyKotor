@@ -8,7 +8,7 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import PureWindowsPath
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
@@ -262,7 +262,7 @@ class GFFStruct:
         return self._fields[item].value() if isinstance(item, str) else NotImplemented
 
     def get_path(self) -> str:
-        path = CaseAwarePath(str(self.struct_id))
+        path = PureWindowsPath(str(self.struct_id))
         current = self
         while current != current.root:
             for label, field in current.root._fields.items():

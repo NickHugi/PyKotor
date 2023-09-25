@@ -52,7 +52,6 @@ def detect_tlk(
 
     try:
         if isinstance(source, (str, Path)):
-            source = CaseAwarePath(source)
         if isinstance(source, CaseAwarePath):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
