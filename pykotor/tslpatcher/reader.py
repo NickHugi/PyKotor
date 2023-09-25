@@ -232,6 +232,9 @@ class ConfigReader:
                 # load append.tlk only if it's needed.
                 if append_tlk_edits is None:
                     append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
+                if len(append_tlk_edits) == 0:
+                    self.log.add_error(f"Could not find append.tlk on disk to perform ignore modifier '{i}'. Skipping...")
+                    continue
                 tlk_list_ignored_indices.update(
                     parse_range(i[6:], len(append_tlk_edits)),
                 )
@@ -244,6 +247,9 @@ class ConfigReader:
                 # load append.tlk only if it's needed.
                 if append_tlk_edits is None:
                     append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
+                if len(append_tlk_edits) == 0:
+                    self.log.add_error(f"Could not find append.tlk on disk to perform modifier '{key}={value}'. Skipping...")
+                    continue
                 strref_range = parse_range(key[6:], len(append_tlk_edits))
                 token_id_range = parse_range(value, len(append_tlk_edits))
                 process_tlk_entries(
@@ -259,6 +265,9 @@ class ConfigReader:
                     continue
                 tlk_ini_edits = dict(self.ini[value].items())
                 modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
+                if len(modifications_tlk_data) == 0:
+                    self.log.add_error("Could not find append.tlk on disk to perform modifier 'key=value'. Skipping...")
+                    continue
                 process_tlk_entries(
                     modifications_tlk_data,
                     tlk_ini_edits.keys(),

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from configparser import ConfigParser
+import shutil
+import tempfile
 from pykotor.tools.path import CaseAwarePath
 from unittest import TestCase
 
@@ -83,8 +85,11 @@ class TestConfigReader(TestCase):
                 10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
             }
         )
-        self.mod_path = CaseAwarePath("tmp", "mock_mod_path")
-        self.mod_path.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            self.mod_path = CaseAwarePath(tmpdirname) / "tslpatchdata"
+        self.mod_path.mkdir(exist_ok=True, parents=True)
+        shutil.copy(CaseAwarePath("tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
+        shutil.copy(CaseAwarePath("tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
 
         # write it to a real file
         write_tlk(
@@ -156,6 +161,34 @@ class TestConfigReader(TestCase):
             },
         )
 
+    def test_tlk_strref_default_functionality(self):
+        ini_text = """
+            [TLKList]
+            StrRef7=0
+            StrRef8=1
+            StrRef9=2
+        """
+
+        write_tlk(
+            self.modified_tlk_data,
+            str(CaseAwarePath(self.mod_path, "append.tlk")),
+            ResourceType.TLK,
+        )
+
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                7: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
+                8: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
+                9: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+            },
+        )
+
     def test_tlk_strref_ignore_functionality(self):
         ini_text = """
             [TLKList]
@@ -182,6 +215,46 @@ class TestConfigReader(TestCase):
                 4: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6")},
             },
         )
+
+    def test_tlk_complex_changes(self):
+        ini_text = """
+        [TLKList]
+        File0=complex.tlk
+        StrRef0=0
+        StrRef1=1
+        StrRef2=2
+        StrRef3=3
+        StrRef4=4
+        StrRef5=5
+        StrRef6=6
+        StrRef7=7
+        StrRef8=8
+        StrRef9=9
+        StrRef10=10
+        StrRef11=11
+        StrRef12=12
+        StrRef13=13
+
+        [complex.tlk]
+        123716=0
+        123717=1
+        123718=2
+        123720=3
+        123722=4
+        123724=5
+        123726=6
+        123728=7
+        123730=8
+        124112=9
+        125863=10
+        50302=11
+    """
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
+        # self.assertDictEqual
 
     def test_tlk_file_range_functionality(self):
         ini_text = """
