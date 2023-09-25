@@ -214,8 +214,8 @@ class Texture:
         glBindTexture(GL_TEXTURE_2D, gl_id)
 
         pixels = []
-        for i in range(64):
-            for j in range(64):
+        for _i in range(64):
+            for _j in range(64):
                 pixels.extend([r, g, b])
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 64, 64, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels)

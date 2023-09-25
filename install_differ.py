@@ -76,8 +76,8 @@ def override():
     print((max(len(str(tslpatcher_dir)), len(str(pykotor_dir))) + 29) * "-")
 
     # Create sets of filenames for both directories
-    tslpatcher_files = {str(f).lower() for f in tslpatcher_dir.iterdir()}
-    pykotor_files = {str(f).lower() for f in pykotor_dir.iterdir()}
+    tslpatcher_files = {f.name.lower() for f in tslpatcher_dir.iterdir()}
+    pykotor_files = {f.name.lower() for f in pykotor_dir.iterdir()}
 
     # Merge both sets to iterate over unique filenames
     all_files = tslpatcher_files.union(pykotor_files)

@@ -7,7 +7,7 @@ from pykotor.tools.misc import (
     is_bif_file,
     is_capsule_file,
 )
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -153,6 +153,6 @@ class ResourceIdentifier(NamedTuple):
     def from_path(
         file_path: os.PathLike | str,
     ) -> ResourceIdentifier:
-        file_path = CaseAwarePath(file_path)
+        file_path = PurePath(file_path)
         resname, restype_ext = file_path.stem, file_path.suffix[1:]
         return ResourceIdentifier(resname, ResourceType.from_extension(restype_ext))

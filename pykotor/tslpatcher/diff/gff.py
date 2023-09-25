@@ -42,7 +42,7 @@ class DiffGFF:
 
             # Check if field types have changed
             if old_ftype != new_ftype:
-                print(f"Field type has changed for '{old_label}'")
+                print(f"Field type has changed for '{old_label}': {old_ftype}->{new_ftype}")
                 is_same_result = False
                 continue
 

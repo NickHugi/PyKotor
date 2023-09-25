@@ -125,7 +125,7 @@ class Node:
             ancestor = ancestor._parent
         return list(reversed(ancestors))
 
-    def global_position(self) -> vec3:
+    def global_position(self) -> vec3:  # sourcery skip: class-extract-method
         ancestors = [*self.ancestors(), self]
         transform = mat4()
         for ancestor in ancestors:
@@ -354,7 +354,7 @@ class Boundary:
 
         npfaces = []
         count = len(vertices) * 2
-        for i, vertex in enumerate(vertices):
+        for i, _vertex in enumerate(vertices):
             index1 = i*2
             index2 = i*2+2 if i*2+2 < count else 0
             index3 = i*2+1
