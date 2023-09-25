@@ -43,8 +43,7 @@ class BWM:
     def vertices(
         self,
     ) -> list[Vector3]:
-        """
-        Returns a list of vectors stored in the faces of the walkmesh.
+        """Returns a list of vectors stored in the faces of the walkmesh.
 
         Returns
         -------
@@ -265,13 +264,12 @@ class BWM:
             bbmax.z = max(bbmax.z, vertex.z)
         return bbmin, bbmax
 
-    def faceAt(
+    def face_at(
         self,
         x: float,
         y: float,
     ) -> BWMFace | None:
-        """
-        Returns the face at the given 2D coordinates if there si one otherwise returns None.
+        """Returns the face at the given 2D coordinates if there si one otherwise returns None.
 
         Args:
         ----
@@ -302,8 +300,7 @@ class BWM:
         y: float,
         z: float,
     ) -> None:
-        """
-        Shifts the position of the walkmesh.
+        """Shifts the position of the walkmesh.
 
         Args:
         ----
@@ -320,8 +317,7 @@ class BWM:
         self,
         degrees: float,
     ) -> None:
-        """
-        Rotates the walkmesh around the Z-axis counter-clockwise.
+        """Rotates the walkmesh around the Z-axis counter-clockwise.
 
         Args:
         ----
@@ -354,8 +350,7 @@ class BWM:
         x: bool,
         y: bool,
     ) -> None:
-        """
-        Flips the walkmesh around the specified axes.
+        """Flips the walkmesh around the specified axes.
 
         Args:
         ----
@@ -424,8 +419,7 @@ class BWMNodeAABB:
 
 
 class BWMAdjacency:
-    """
-    Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
+    """Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
 
     Attributes
     ----------
@@ -443,8 +437,7 @@ class BWMAdjacency:
 
 
 class BWMEdge:
-    """
-    Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
+    """Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
 
     Attributes
     ----------

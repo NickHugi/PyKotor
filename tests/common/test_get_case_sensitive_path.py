@@ -15,20 +15,20 @@ class TestCaseAwarePath(TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    @unittest.skipIf(os.name=="nt", "Test not available on Windows")
+    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_join_with_nonexistent_path(self):
         non_existent_path = CaseAwarePath("nonExistentDir")
         existent_path = self.temp_path
         joined_path = existent_path.joinpath(non_existent_path)
         self.assertFalse(joined_path.exists(), f"joined_path is '{joined_path}'")
 
-    @unittest.skipIf(os.name=="nt", "Test not available on Windows")
+    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_truediv_equivalent_to_joinpath(self):
         case_aware_path1 = CaseAwarePath("someDir")
         case_aware_path2 = CaseAwarePath("someFile.txt")
         self.assertEqual(case_aware_path1 / case_aware_path2, case_aware_path1.joinpath(case_aware_path2))
 
-    @unittest.skipIf(os.name=="nt", "Test not available on Windows")
+    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_rtruediv(self):
         case_aware_file_path = CaseAwarePath(self.temp_dir.name) / "soMeDir" / CaseAwarePath("someFile.TXT")
         expected_path = self.temp_dir.name / CaseAwarePath("SOmeDir") / "SOMEFile.txT"
@@ -38,7 +38,7 @@ class TestCaseAwarePath(TestCase):
         self.assertTrue(case_aware_file_path.exists(), f"expected_path: {expected_path} actual_path: {case_aware_file_path}")
         self.assertEqual(str(case_aware_file_path), str(expected_path))
 
-    @unittest.skipIf(os.name=="nt", "Test not available on Windows")
+    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_make_and_parse_uri(self):
         # Create a temporary directory
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -71,7 +71,7 @@ class TestCaseAwarePath(TestCase):
             # Ensure that the parsed path matches the original path
             self.assertEqual(path, str(sample_file))
 
-    @unittest.skipIf(os.name=="nt", "Test not available on Windows")
+    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_case_change_after_creation(self):
         initial_path = self.temp_path / "TestFile.txt"
         case_aware_path = CaseAwarePath(f"{str(self.temp_path)}/testfile.TXT")
@@ -174,6 +174,7 @@ class TestCaseAwarePath(TestCase):
             self.assertEqual(str(relative), "someDir/someFile.txt")
         if os.name == "nt":
             self.assertEqual(str(relative).lower(), "somedir\\somefile.txt")
+
     @unittest.skip("unfinished")
     def test_chmod(self):
         file_path = self.temp_path / "file.txt"
@@ -211,7 +212,7 @@ class TestCaseAwarePath(TestCase):
         file_path.touch()
         self.assertTrue(case_aware_file_path.samefile(file_path))
 
-    @unittest.skipIf(os.name=="nt", "method has issues on Windows - todo")
+    @unittest.skipIf(os.name == "nt", "method has issues on Windows - todo")
     def test_replace(self):
         file_path1 = self.temp_path / "file1.txt"
         file_path2 = self.temp_path / "file2.txt"
@@ -228,7 +229,7 @@ class TestCaseAwarePath(TestCase):
         self.assertFalse(file_path1.exists())
         self.assertTrue(file_path2.exists())
 
-    @unittest.skipIf(os.name=="nt", "Test not available on Windows")
+    @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_rename(self):
         original_file = self.temp_path / "original.txt"
         renamed_file = self.temp_path / "renamed.txt"

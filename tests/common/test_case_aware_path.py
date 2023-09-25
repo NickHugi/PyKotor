@@ -27,8 +27,8 @@ class TestCaseAwarePath(unittest.TestCase):
 
     def test_new_invalid_argument(self):
         with self.assertRaises(TypeError):
-            CaseAwarePath(123) # type: ignore[test raise]
-            CaseAwarePath("path", "to", Path("nothing"), 123) # type: ignore[test raise]
+            CaseAwarePath(123)  # type: ignore[test raise]
+            CaseAwarePath("path", "to", Path("nothing"), 123)  # type: ignore[test raise]
 
     def test_endswith(self):
         path = CaseAwarePath("C:\\path\\to\\file.txt")

@@ -18,8 +18,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class DLG:
-    """
-    Stores dialog data.
+    """Stores dialog data.
 
     Attributes
     ----------
@@ -59,7 +58,7 @@ class DLG:
             # Add bare minimum to be openable by DLGEditor
             starter = DLGLink()
             entry = DLGEntry()
-            entry.text.set(Language.ENGLISH, Gender.MALE, "")
+            entry.text.set_data(Language.ENGLISH, Gender.MALE, "")
             starter.node = entry
             self.starters.append(starter)
 
@@ -119,8 +118,7 @@ class DLG:
     def all_entries(
         self,
     ) -> list[DLGEntry]:
-        """
-        Returns a flat list of all entries in the dialog.
+        """Returns a flat list of all entries in the dialog.
 
         Returns
         -------
@@ -152,8 +150,7 @@ class DLG:
     def all_replies(
         self,
     ) -> list[DLGReply]:
-        """
-        Returns a flat list of all replies in the dialog.
+        """Returns a flat list of all replies in the dialog.
 
         Returns
         -------
@@ -195,8 +192,7 @@ class DLGConversationType(IntEnum):
 
 
 class DLGNode:
-    """
-    Represents a node in the dialog tree.
+    """Represents a node in the dialog tree.
 
     Attributes
     ----------
@@ -347,8 +343,7 @@ class DLGAnimation:
 
 
 class DLGLink:
-    """
-    Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
+    """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
     Attributes
     ----------
@@ -406,8 +401,7 @@ class DLGLink:
 
 
 class DLGStunt:
-    """
-    Attributes
+    """Attributes
     ----------
     participant: "Participant" field.
     stunt_model: "StuntModel" field.

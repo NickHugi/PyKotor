@@ -90,7 +90,7 @@ class GFFXMLReader(ResourceReader):
                 language, gender = LocalizedString.substring_pair(
                     int(substring.get("language")),
                 )
-                locstring.set(language, gender, substring.text)
+                locstring.set_data(language, gender, substring.text)
             gff_struct.set_locstring(label, locstring)
         elif xml_field.tag == "data":
             data = base64.b64decode(xml_field.text)

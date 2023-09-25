@@ -59,12 +59,12 @@ class TestLocalizedStringDelta(TestCase):
 
     def test_apply_substring(self):
         locstring = LocalizedString(0)
-        locstring.set(Language.ENGLISH, Gender.MALE, "a")
-        locstring.set(Language.FRENCH, Gender.MALE, "b")
+        locstring.set_data(Language.ENGLISH, Gender.MALE, "a")
+        locstring.set_data(Language.FRENCH, Gender.MALE, "b")
 
         delta = LocalizedStringDelta()
-        delta.set(Language.ENGLISH, Gender.MALE, "1")
-        delta.set(Language.GERMAN, Gender.MALE, "2")
+        delta.set_data(Language.ENGLISH, Gender.MALE, "1")
+        delta.set_data(Language.GERMAN, Gender.MALE, "2")
 
         memory = PatcherMemory()
 

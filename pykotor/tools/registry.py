@@ -5,8 +5,7 @@ from pykotor.common.misc import Game
 
 
 def winreg_key(game: Game) -> str:
-    """
-    Returns what the key path is in the Windows registry for the given game.
+    """Returns what the key path is in the Windows registry for the given game.
 
     Attributes
     ----------
@@ -45,8 +44,7 @@ def winreg_key(game: Game) -> str:
 
 
 def get_winreg_path(game: Game):
-    """
-    Returns the specified path value in the windows registry for the given game.
+    """Returns the specified path value in the windows registry for the given game.
 
     Attributes
     ----------
@@ -69,8 +67,7 @@ def get_winreg_path(game: Game):
 
 
 def set_winreg_path(game: Game, path: str):
-    """
-    Sets the specified path value in the windows registry for the given game.
+    """Sets the specified path value in the windows registry for the given game.
 
     Attributes
     ----------

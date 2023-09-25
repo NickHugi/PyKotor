@@ -41,9 +41,7 @@ def highlight_difference(
     converted_string: str,
     reverted_string: str,
 ) -> bool:
-    """
-    Compare two binary strings and highlight the first difference.
-    """
+    """Compare two binary strings and highlight the first difference."""
     min_length = min(len(original_string), len(reverted_string))
     for i in range(min_length):
         if original_string[i] != reverted_string[i]:

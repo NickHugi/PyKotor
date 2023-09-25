@@ -9,8 +9,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class IFO:
-    """
-    Stores module information.
+    """Stores module information.
 
     Attributes
     ----------

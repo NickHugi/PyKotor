@@ -34,8 +34,7 @@ class TwoDA:
     def get_headers(
         self,
     ) -> list[str]:
-        """
-        Returns a copy of the set of column headers.
+        """Returns a copy of the set of column headers.
 
         Returns
         -------
@@ -47,8 +46,7 @@ class TwoDA:
         self,
         header: str,
     ) -> list[str]:
-        """
-        Returns every cell listed under the specified column header.
+        """Returns every cell listed under the specified column header.
 
         Args:
         ----
@@ -72,8 +70,7 @@ class TwoDA:
         self,
         header: str,
     ) -> None:
-        """
-        Adds a new column with the specified header and populates it with blank cells for each row.
+        """Adds a new column with the specified header and populates it with blank cells for each row.
 
         Args:
         ----
@@ -95,8 +92,7 @@ class TwoDA:
         self,
         header: str,
     ) -> None:
-        """
-        Removes a column from the table with the specified column header. If no such column header exists it is ignored;
+        """Removes a column from the table with the specified column header. If no such column header exists it is ignored;
         no error is thrown.
 
         Args:
@@ -112,8 +108,7 @@ class TwoDA:
     def get_labels(
         self,
     ) -> list[str]:
-        """
-        Returns a copy of the set of row labels.
+        """Returns a copy of the set of row labels.
 
         Returns
         -------
@@ -125,8 +120,7 @@ class TwoDA:
         self,
         row_index: int,
     ) -> str:
-        """
-        Returns the row label for the given row.
+        """Returns the row label for the given row.
 
         Args:
         ----
@@ -143,8 +137,7 @@ class TwoDA:
         row_index: int,
         value: str,
     ) -> None:
-        """
-        Sets the row label at the given index.
+        """Sets the row label at the given index.
 
         Args:
         ----
@@ -157,8 +150,7 @@ class TwoDA:
         self,
         row_index: int,
     ) -> TwoDARow:
-        """
-        Returns a TwoDARow instance which can update and retrieve the values of the cells for the specified row.
+        """Returns a TwoDARow instance which can update and retrieve the values of the cells for the specified row.
 
         Args:
         ----
@@ -191,8 +183,7 @@ class TwoDA:
         row_label: str | None = None,
         cells: dict[str, Any] | None = None,
     ) -> int:
-        """
-        Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
+        """Adds a new row to the end of the table. Headers specified in the cells parameter that do not exist in the table
         itself will be ignored, headers that are not specified in the cells parameter but do exist in the table will
         default to being blank. All cells are converted to strings before being added into the 2DA.
 
@@ -225,8 +216,7 @@ class TwoDA:
         row_label: str | None = None,
         override_cells: dict[str, Any] | None = None,
     ) -> int:
-        """
-        Adds a new row to the end of the table with the same values as the source row.
+        """Adds a new row to the end of the table with the same values as the source row.
 
         Args:
         ----
@@ -258,8 +248,7 @@ class TwoDA:
         row_index: int,
         column: str,
     ) -> str:
-        """
-        Returns the value of the cell at the specified row under the specified column.
+        """Returns the value of the cell at the specified row under the specified column.
 
         Args:
         ----
@@ -283,8 +272,7 @@ class TwoDA:
         column: str,
         value: Any,
     ) -> None:
-        """
-        Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a
+        """Sets the value of a cell at the specified row under the specified column. If the value is none, it will output a
         blank string.
 
         Args:
@@ -304,8 +292,7 @@ class TwoDA:
     def get_height(
         self,
     ) -> int:
-        """
-        Returns the number of rows in the table.
+        """Returns the number of rows in the table.
 
         Returns
         -------
@@ -316,8 +303,7 @@ class TwoDA:
     def get_width(
         self,
     ) -> int:
-        """
-        Returns the number of columns in the table.
+        """Returns the number of columns in the table.
 
         Returns
         -------
@@ -329,8 +315,7 @@ class TwoDA:
         self,
         row_count: int,
     ) -> None:
-        """
-        Sets the number of rows in the table. Use with caution; specifying a height less than the current height will
+        """Sets the number of rows in the table. Use with caution; specifying a height less than the current height will
         result in a loss of data.
 
         Args:
@@ -358,8 +343,7 @@ class TwoDA:
         self,
         header: str,
     ) -> int:
-        """
-        Returns the highest numerical value underneath the specified column.
+        """Returns the highest numerical value underneath the specified column.
 
         Returns
         -------
@@ -400,8 +384,7 @@ class TwoDARow:
     def label(
         self,
     ) -> str:
-        """
-        Returns the row label.
+        """Returns the row label.
 
         Returns
         -------
@@ -420,8 +403,7 @@ class TwoDARow:
         self,
         header: str,
     ) -> str:
-        """
-        Returns the string value for the cell under the specified header.
+        """Returns the string value for the cell under the specified header.
 
         Args:
         ----
@@ -445,8 +427,7 @@ class TwoDARow:
         header: str,
         default: int | None = None,
     ) -> int:
-        """
-        Returns the integer value for the cell under the specified header. If the value of the cell is an invalid
+        """Returns the integer value for the cell under the specified header. If the value of the cell is an invalid
         integer then a default value is used instead.
 
         Args:
@@ -477,8 +458,7 @@ class TwoDARow:
         header: str,
         default: int | None = None,
     ) -> float:
-        """
-        Returns the float value for the cell under the specified header. If the value of the cell is an invalid float
+        """Returns the float value for the cell under the specified header. If the value of the cell is an invalid float
         then a default value is used instead.
 
         Args:
@@ -508,8 +488,7 @@ class TwoDARow:
         enum_type: type[Enum],
         default: Enum | None,
     ) -> Enum | None:
-        """
-        Returns the enum value for the cell under the specified header.
+        """Returns the enum value for the cell under the specified header.
 
         Args:
         ----
@@ -539,8 +518,7 @@ class TwoDARow:
         header: str,
         value: str | None,
     ) -> None:
-        """
-        Sets the value of a cell under the specified header. If the value is none it will default to a empty string.
+        """Sets the value of a cell under the specified header. If the value is none it will default to a empty string.
 
         Args:
         ----
@@ -563,8 +541,7 @@ class TwoDARow:
         header: str,
         value: int | None,
     ) -> None:
-        """
-        Sets the value of a cell under the specified header, converting the integer into a string. If the value is none
+        """Sets the value of a cell under the specified header, converting the integer into a string. If the value is none
         it will default to a empty string.
 
         Args:
@@ -588,8 +565,7 @@ class TwoDARow:
         header: str,
         value: float | None,
     ) -> None:
-        """
-        Sets the value of a cell under the specified header, converting the float into a string. If the value is none
+        """Sets the value of a cell under the specified header, converting the float into a string. If the value is none
         it will default to a empty string.
 
         Args:
@@ -613,8 +589,7 @@ class TwoDARow:
         header: str,
         value: Enum | None,
     ):
-        """
-        Sets the value of a cell under the specified header, converting the enum into a string. If the value is none
+        """Sets the value of a cell under the specified header, converting the enum into a string. If the value is none
         it will default to a empty string.
 
         Args:

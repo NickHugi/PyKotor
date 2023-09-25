@@ -32,8 +32,7 @@ class VIS:
         self,
         model: str,
     ) -> None:
-        """
-        Adds a room. If an room already exists, it is ignored; no error is thrown.
+        """Adds a room. If an room already exists, it is ignored; no error is thrown.
 
         Args:
         ----
@@ -50,8 +49,7 @@ class VIS:
         self,
         model: str,
     ) -> None:
-        """
-        Removes a room. If a room does not exist, it is ignored; no error is thrown.
+        """Removes a room. If a room does not exist, it is ignored; no error is thrown.
 
         Args:
         ----
@@ -92,8 +90,7 @@ class VIS:
         self,
         model: str,
     ) -> bool:
-        """
-        Returns true if the specified room exists.
+        """Returns true if the specified room exists.
 
         Returns
         -------
@@ -108,8 +105,7 @@ class VIS:
         show: str,
         visible: bool,
     ) -> None:
-        """
-        Sets the visibility of a specified room based off when viewing from another specified room.
+        """Sets the visibility of a specified room based off when viewing from another specified room.
 
         Args:
         ----
@@ -134,8 +130,7 @@ class VIS:
         when_inside: str,
         show: str,
     ) -> bool:
-        """
-        Returns true if the observed room is visible from the observing room.
+        """Returns true if the observed room is visible from the observing room.
 
         Args:
         ----
@@ -160,4 +155,4 @@ class VIS:
     ) -> None:
         for when_inside in self._rooms:
             for show in [room for room in self._rooms if room != when_inside]:
-                self.set_visible(when_inside, show, True)
+                self.set_visible(when_inside, show, visible=True)

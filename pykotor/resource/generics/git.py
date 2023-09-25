@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import math
 from abc import ABC, abstractmethod
 from enum import IntEnum
@@ -54,8 +55,7 @@ class GIT:
     def instances(
         self,
     ) -> list[GITInstance]:
-        """
-        Returns a list of all instances stored inside the GIT, regardless of the type.
+        """Returns a list of all instances stored inside the GIT, regardless of the type.
 
         Returns
         -------
@@ -102,8 +102,7 @@ class GIT:
         self,
         instance: GITInstance,
     ) -> int:
-        """
-        Finds the index of an instance in the particular list it belongs to inside the GIT object.
+        """Finds the index of an instance in the particular list it belongs to inside the GIT object.
 
         Args:
         ----
@@ -117,7 +116,7 @@ class GIT:
         -------
             The index into one of the GIT instance lists.
         """
-        try:
+        with contextlib.suppress(TypeError):
             if isinstance(instance, GITCreature):
                 return self.creatures.index(instance)
             if isinstance(instance, GITPlaceable):
@@ -137,18 +136,15 @@ class GIT:
             if isinstance(instance, GITStore):
                 return self.stores.index(instance)
 
-            msg = "Could not find instance in GIT object."
-            raise TypeError(msg)
-        except TypeError:
-            pass
+            # msg = "Could not find instance in GIT object."  # noqa: ERA001
+            # raise TypeError(msg)  # noqa: ERA001
         return -1
 
     def add(
         self,
         instance: GITInstance,
     ) -> None:
-        """
-        Adds instance to the relevant list in the GIT.
+        """Adds instance to the relevant list in the GIT.
 
         Args:
         ----
@@ -239,10 +235,12 @@ class GITInstance(ABC):
     ) -> str:
         ...
 
+    @abstractmethod
     def yaw(
         self,
     ) -> float | None:
         """Returns the yaw rotation (in radians) of the instance if the instance supports it, otherwise returns None."""
+        ...
 
 
 class GITCamera(GITInstance):

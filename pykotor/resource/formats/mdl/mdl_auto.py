@@ -16,8 +16,7 @@ def detect_mdl(
     source: SOURCE_TYPES,
     offset: int = 0,
 ) -> ResourceType:
-    """
-    Returns what format the MDL data is believed to be in. This function performs a basic check and does not guarantee
+    """Returns what format the MDL data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -64,8 +63,7 @@ def read_mdl(
     offset_ext: int = 0,
     size_ext: int = 0,
 ) -> MDL:
-    """
-    Returns an MDL instance from the source. The file format (MDL or MDL_ASCII) is automatically determined before
+    """Returns an MDL instance from the source. The file format (MDL or MDL_ASCII) is automatically determined before
     parsing the data.
 
     Args:
@@ -114,8 +112,7 @@ def write_mdl(
     file_format: ResourceType = ResourceType.MDL,
     target_ext: TARGET_TYPES | None = None,
 ) -> None:
-    """
-    Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).
+    """Writes the MDL data to the target location with the specified format (MDL or MDL_ASCII).
 
     Args:
     ----

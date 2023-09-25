@@ -11,8 +11,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class ARE:
-    """
-    Stores static area data.
+    """Stores static area data.
 
     Attributes
     ----------

@@ -196,8 +196,7 @@ def clone_module(
 
 
 def rim_to_mod(filepath: CaseAwarePath) -> None:
-    """
-    Creates a MOD file at the given filepath and copies the resources from the corresponding
+    """Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
     Raises:

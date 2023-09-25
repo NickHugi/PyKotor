@@ -5,8 +5,7 @@ from pykotor.resource.formats.ncs.ncs_data import NCSInstructionType, NCSOptimiz
 
 
 class RemoveNopOptimizer(NCSOptimizer):
-    """
-    NCS Compiler uses NOP instructions as stubs to simplify the compilation process however as their name suggests
+    """NCS Compiler uses NOP instructions as stubs to simplify the compilation process however as their name suggests
     they do not perform any actual function. This optimizer removes all occurrences of NOP instructions from the
     compiled script.
     """

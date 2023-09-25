@@ -51,7 +51,7 @@ class TwoDABinaryReader(ResourceReader):
         row_count = self._reader.read_uint32()
         column_count = self._twoda.get_width()
         cell_count = row_count * column_count
-        for i in range(row_count):
+        for _i in range(row_count):
             row_header = self._reader.read_terminated_string("\t")
             row_label = row_header
             self._twoda.add_row(row_label)

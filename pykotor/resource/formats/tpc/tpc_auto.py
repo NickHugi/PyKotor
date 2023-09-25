@@ -17,8 +17,7 @@ def detect_tpc(
     source: SOURCE_TYPES | object,
     offset: int = 0,
 ) -> ResourceType:
-    """
-    Returns what format the TPC data is believed to be in. This function performs a basic check and does not guarantee
+    """Returns what format the TPC data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -73,8 +72,7 @@ def read_tpc(
     offset: int = 0,
     size: int | None = None,
 ) -> TPC:
-    """
-    Returns an TPC instance from the source. The file format (TPC or TGA) is automatically determined before
+    """Returns an TPC instance from the source. The file format (TPC or TGA) is automatically determined before
     parsing the data.
 
     Args:
@@ -112,8 +110,7 @@ def write_tpc(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TPC,
 ) -> None:
-    """
-    Writes the TPC data to the target location with the specified format (TPC, TGA or BMP).
+    """Writes the TPC data to the target location with the specified format (TPC, TGA or BMP).
 
     Args:
     ----
@@ -142,8 +139,7 @@ def bytes_tpc(
     tpc: TPC,
     file_format: ResourceType = ResourceType.TPC,
 ) -> bytes:
-    """
-    Returns the TPC data in the specified format (TPC, TGA or BMP) as a bytes object.
+    """Returns the TPC data in the specified format (TPC, TGA or BMP) as a bytes object.
 
     This is a convenience method that wraps the write_tpc() method.
 

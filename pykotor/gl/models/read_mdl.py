@@ -74,8 +74,20 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
         if render and not walkmesh and element_offsets_count > 0:
             mdx.seek(mdx_offset)
             vertex_data = mdx.read_bytes(mdx_block_size * vertex_count)
-            node.mesh = Mesh(scene, node, texture, lightmap, vertex_data, element_data, mdx_block_size, mdx_data_bitflags,
-                             mdx_vertex_offset, mdx_normal_offset, mdx_texture_offset, mdx_lightmap_offset)
+            node.mesh = Mesh(
+                scene,
+                node,
+                texture,
+                lightmap,
+                vertex_data,
+                element_data,
+                mdx_block_size,
+                mdx_data_bitflags,
+                mdx_vertex_offset,
+                mdx_normal_offset,
+                mdx_texture_offset,
+                mdx_lightmap_offset,
+            )
 
     for i in range(child_count):
         mdl.seek(child_offsets + i * 4)
@@ -105,9 +117,7 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
 
 
 def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
-    """
-    Returns a model instance that has meshes with the same textures merged together.
-    """
+    """Returns a model instance that has meshes with the same textures merged together."""
     root = Node(scene, None, "root")
 
     mdl.seek(40)

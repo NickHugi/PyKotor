@@ -80,8 +80,7 @@ class FileResource:
         *,
         reload: bool = False,
     ) -> bytes:
-        """
-        Opens the file the resource is located at and returns the bytes data of the resource.
+        """Opens the file the resource is located at and returns the bytes data of the resource.
 
         Returns
         -------

@@ -38,8 +38,7 @@ class SSF:
         sound: SSFSound,
         stringref: int,
     ) -> None:
-        """
-        Set the stringref for the specified sound.
+        """Set the stringref for the specified sound.
 
         Args:
         ----
@@ -52,8 +51,7 @@ class SSF:
         self,
         sound: SSFSound,
     ) -> int | None:
-        """
-        Returns the stringref for the specified sound.
+        """Returns the stringref for the specified sound.
 
         Args:
         ----

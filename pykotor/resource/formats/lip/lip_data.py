@@ -7,8 +7,7 @@ from pykotor.resource.type import ResourceType
 
 
 class LIP:
-    """
-    Represents the data of a LIP file.
+    """Represents the data of a LIP file.
 
     Attributes
     ----------
@@ -40,8 +39,7 @@ class LIP:
         self,
         item,
     ):
-        """
-        Returns a keyframe from the specified index.
+        """Returns a keyframe from the specified index.
 
         Args:
         ----
@@ -62,8 +60,7 @@ class LIP:
         time: float,
         shape: LIPShape,
     ) -> None:
-        """
-        Adds a new keyframe.
+        """Adds a new keyframe.
 
         Args:
         ----
@@ -76,8 +73,7 @@ class LIP:
         self,
         index: int,
     ) -> LIPKeyFrame | None:
-        """
-        Returns the keyframe at the specified index if it exists, otherwise returns None.
+        """Returns the keyframe at the specified index if it exists, otherwise returns None.
 
         Args:
         ----
@@ -110,8 +106,7 @@ class LIPShape(IntEnum):
 
 
 class LIPKeyFrame:
-    """
-    A keyframe for a lip animation.
+    """A keyframe for a lip animation.
 
     Attributes
     ----------

@@ -20,8 +20,7 @@ def detect_2da(
     source: SOURCE_TYPES | object,
     offset: int = 0,
 ) -> ResourceType:  # sourcery skip: assign-if-exp, reintroduce-else
-    """
-    Returns what format the TwoDA data is believed to be in. This function performs a basic check and does not guarantee
+    """Returns what format the TwoDA data is believed to be in. This function performs a basic check and does not guarantee
     accuracy of the result or integrity of the data.
 
     Args:
@@ -75,8 +74,7 @@ def read_2da(
     offset: int = 0,
     size: int | None = None,
 ) -> TwoDA:
-    """
-    Returns an TwoDA instance from the source. The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically
+    """Returns an TwoDA instance from the source. The file format (TwoDA, TwoDA_CSV, TwoDA_JSON) is automatically
     determined before parsing the data.
 
     Args:
@@ -117,8 +115,7 @@ def write_2da(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TwoDA,
 ) -> None:
-    """
-    Writes the TwoDA data to the target location with the specified format.
+    """Writes the TwoDA data to the target location with the specified format.
 
     Currently, the supported formats are: TwoDA, TwoDA_CSV and TwoDA_JSON.
 
@@ -149,8 +146,7 @@ def bytes_2da(
     twoda: TwoDA,
     file_format: ResourceType = ResourceType.TwoDA,
 ) -> bytes:
-    """
-    Returns the TwoDA data in the specified format (TwoDA, TwoDA_CSV or TwoDA_JSON) as a bytes object.
+    """Returns the TwoDA data in the specified format (TwoDA, TwoDA_CSV or TwoDA_JSON) as a bytes object.
 
     This is a convenience method that wraps the write_2da() method.
 

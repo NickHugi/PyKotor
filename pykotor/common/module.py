@@ -88,8 +88,7 @@ class Module:
     def get_root(
         filepath: CaseAwarePath,
     ) -> str:
-        """
-        Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
+        """Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
         become "danm13".
 
         Args:
@@ -116,8 +115,7 @@ class Module:
         return root_a + root_b
 
     def capsules(self) -> list[Capsule]:
-        """
-        Returns a copy of the capsules used by the module.
+        """Returns a copy of the capsules used by the module.
 
         Returns
         -------
@@ -285,8 +283,7 @@ class Module:
     def are(
         self,
     ) -> ModuleResource[ARE] | None:
-        """
-        The function `are` returns a ModuleResource object from a dictionary of resources based on a
+        """The function `are` returns a ModuleResource object from a dictionary of resources based on a
         matching resource name and type.
         :return: a ModuleResource object of type ARE.
         """
@@ -302,8 +299,7 @@ class Module:
     def git(
         self,
     ) -> ModuleResource[GIT] | None:
-        """
-        The function `git` returns a `ModuleResource` object of type `GIT` from a dictionary of
+        """The function `git` returns a `ModuleResource` object of type `GIT` from a dictionary of
         resources based on a given ID.
         :return: The code is returning a resource of type GIT from the self.resources dictionary. The
         resource is identified by its filename and is matched based on its resname and restype.
@@ -320,8 +316,7 @@ class Module:
     def pth(
         self,
     ) -> ModuleResource[PTH] | None:
-        """
-        The function `pth` returns a `ModuleResource` object with a specific resname and restype.
+        """The function `pth` returns a `ModuleResource` object with a specific resname and restype.
         :return: a ModuleResource object of type PTH.
         """
         return next(
@@ -336,8 +331,7 @@ class Module:
     def info(
         self,
     ) -> ModuleResource[IFO] | None:
-        """
-        The function returns the resource object with the name "module" and the type ResourceType.IFO.
+        """The function returns the resource object with the name "module" and the type ResourceType.IFO.
         :return: a ModuleResource object of type IFO.
         """
         return next(
@@ -568,8 +562,7 @@ class ModuleResource(Generic[T]):
         self._locations: list[CaseAwarePath] = []
 
     def resname(self) -> str:
-        """
-        Returns the resource name.
+        """Returns the resource name.
 
         Returns
         -------
@@ -578,8 +571,7 @@ class ModuleResource(Generic[T]):
         return self._resname
 
     def restype(self) -> ResourceType:
-        """
-        Returns the type of resource stored.
+        """Returns the type of resource stored.
 
         Returns
         -------
@@ -611,8 +603,7 @@ class ModuleResource(Generic[T]):
         return None
 
     def data(self) -> bytes:
-        """
-        Opens the file at the active location and returns the data.
+        """Opens the file at the active location and returns the data.
 
         Raises
         ------
@@ -637,8 +628,7 @@ class ModuleResource(Generic[T]):
         return BinaryReader.load_file(self._active)
 
     def resource(self) -> T | None:
-        """
-        Returns the cached resource object. If no object has been cached, then it will load the object.
+        """Returns the cached resource object. If no object has been cached, then it will load the object.
 
         Returns
         -------
@@ -686,8 +676,7 @@ class ModuleResource(Generic[T]):
         return self._resource
 
     def add_locations(self, filepaths: list[CaseAwarePath]) -> None:
-        """
-        Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
+        """Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
         ignored.
 
         Args:
@@ -706,8 +695,7 @@ class ModuleResource(Generic[T]):
         return self._locations
 
     def activate(self, filepath: CaseAwarePath | None = None) -> None:
-        """
-        Sets the active file to the specified path. Calling this method will reset the loaded resource.
+        """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         Raises:
         ------
@@ -736,8 +724,7 @@ class ModuleResource(Generic[T]):
         self.resource()
 
     def active(self) -> CaseAwarePath | None:
-        """
-        Returns the filepath of the currently active file for the resource.
+        """Returns the filepath of the currently active file for the resource.
 
         Returns
         -------

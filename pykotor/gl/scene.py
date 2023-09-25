@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union
 
 import glm
 from glm import mat4, quat, vec3, vec4
@@ -96,7 +96,7 @@ SEARCH_ORDER = [SearchLocation.CUSTOM_MODULES, SearchLocation.OVERRIDE, SearchLo
 
 
 class Scene:
-    SPECIAL_MODELS = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
+    SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
     def __init__(self, *, installation: Optional[Installation] = None, module: Optional[Module] = None):
         glEnable(GL_TEXTURE_2D)
@@ -123,7 +123,7 @@ class Scene:
         self.plain_shader: Shader = Shader(PLAIN_VSHADER, PLAIN_FSHADER)
         self.shader: Shader = Shader(KOTOR_VSHADER, KOTOR_FSHADER)
 
-        self.jumpToEntryLocation()
+        self.jump_to_entry_location()
 
         self.table_doors = TwoDA()
         self.table_placeables = TwoDA()
@@ -165,16 +165,26 @@ class Scene:
             mask_hook = None
 
             body_model, body_texture = creature.get_body_model(
-                utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems
+                utc,
+                self.installation,
+                appearance=self.table_creatures,
+                baseitems=self.table_baseitems,
             )
             head_model, head_texture = creature.get_head_model(
-                utc, self.installation, appearance=self.table_creatures, heads=self.table_heads
+                utc,
+                self.installation,
+                appearance=self.table_creatures,
+                heads=self.table_heads,
             )
             rhand_model, lhand_model = creature.get_weapon_models(
-                utc, self.installation, appearance=self.table_creatures, baseitems=self.table_baseitems
+                utc,
+                self.installation,
+                appearance=self.table_creatures,
+                baseitems=self.table_baseitems,
             )
             mask_model = creature.get_mask_model(
-                utc, self.installation
+                utc,
+                self.installation,
             )
 
             obj = RenderObject(body_model, data=instance, override_texture=body_texture)
@@ -313,9 +323,11 @@ class Scene:
             if sound not in self.objects:
                 with suppress(Exception):
                     uts = self.module.sound(sound.resref.get()).resource()
-                    genBoundary = lambda boundary=Boundary.from_circle(self, uts.max_distance): boundary
 
-                obj = RenderObject("sound", vec3(), vec3(), data=sound, genBoundary=genBoundary)
+                    def gen_boundary(boundary=Boundary.from_circle(self, uts.max_distance)):
+                        return boundary
+
+                obj = RenderObject("sound", vec3(), vec3(), data=sound, gen_boundary=gen_boundary)
                 self.objects[sound] = obj
 
             self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
@@ -323,8 +335,11 @@ class Scene:
 
         for encounter in self.git.encounters:
             if encounter not in self.objects:
-                genBoundary = lambda boundary=Boundary(self, encounter.geometry.points): boundary
-                obj = RenderObject("encounter", vec3(), vec3(), data=encounter, genBoundary=genBoundary)
+
+                def gen_boundary(boundary=Boundary(self, encounter.geometry.points)):
+                    return boundary
+
+                obj = RenderObject("encounter", vec3(), vec3(), data=encounter, gen_boundary=gen_boundary)
                 self.objects[encounter] = obj
 
             self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
@@ -332,8 +347,11 @@ class Scene:
 
         for trigger in self.git.triggers:
             if trigger not in self.objects:
-                genBoundary = lambda boundary=Boundary(self, trigger.geometry.points): boundary
-                obj = RenderObject("trigger", vec3(), vec3(), data=trigger, genBoundary=genBoundary)
+
+                def gen_boundary(boundary=Boundary(self, trigger.geometry.points)):
+                    return boundary
+
+                obj = RenderObject("trigger", vec3(), vec3(), data=trigger, gen_boundary=gen_boundary)
                 self.objects[trigger] = obj
 
             self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
@@ -344,9 +362,9 @@ class Scene:
                 obj = RenderObject("camera", vec3(), vec3(), data=camera)
                 self.objects[camera] = obj
 
-            self.objects[camera].set_position(camera.position.x, camera.position.y, camera.position.z+camera.height)
+            self.objects[camera].set_position(camera.position.x, camera.position.y, camera.position.z + camera.height)
             euler = glm.eulerAngles(quat(camera.orientation.w, camera.orientation.x, camera.orientation.y, camera.orientation.z))
-            self.objects[camera].set_rotation(euler.y, euler.z-math.pi/2+math.radians(camera.pitch), -euler.x+math.pi/2)
+            self.objects[camera].set_rotation(euler.y, euler.z - math.pi / 2 + math.radians(camera.pitch), -euler.x + math.pi / 2)
 
         # Detect if GIT still exists; if they do not then remove them from the render list
         for obj in copy(self.objects):
@@ -462,7 +480,7 @@ class Scene:
         self.picker_shader.set_matrix4("view", self.camera.view())
         self.picker_shader.set_matrix4("projection", self.camera.projection())
         instances = list(self.objects.values())
-        for i, obj in enumerate(instances):
+        for _i, obj in enumerate(instances):
             int_rgb = instances.index(obj)
             r = int_rgb & 0xFF
             g = (int_rgb >> 8) & 0xFF
@@ -533,8 +551,13 @@ class Scene:
         for obj in group1:
             self._render_object(self.shader, obj, mat4())
 
-        zpos = glReadPixels(x, self.camera.height-y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]
-        cursor = glm.unProject(vec3(x, self.camera.height-y, zpos), self.camera.view(), self.camera.projection(), vec4(0, 0, self.camera.width, self.camera.height))
+        zpos = glReadPixels(x, self.camera.height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT)[0][0]
+        cursor = glm.unProject(
+            vec3(x, self.camera.height - y, zpos),
+            self.camera.view(),
+            self.camera.projection(),
+            vec4(0, 0, self.camera.width, self.camera.height),
+        )
         return Vector3(cursor.x, cursor.y, cursor.z)
 
     def texture(self, name: str) -> Texture:
@@ -545,9 +568,12 @@ class Scene:
                 if self.module is not None:
                     tpc = self.module.texture(name).resource() if self.module.texture(name) is not None else None
                 # Otherwise just search through all relevant game files
-                tpc = self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA,
-                                                       SearchLocation.CHITIN]) if tpc is None else tpc
-            except (ValueError, IOError):
+                tpc = (
+                    self.installation.texture(name, [SearchLocation.OVERRIDE, SearchLocation.TEXTURES_TPA, SearchLocation.CHITIN])
+                    if tpc is None
+                    else tpc
+                )
+            except (OSError, ValueError):
                 # If an error occurs during the loading process, just use a blank image.
                 tpc = TPC()
 
@@ -597,16 +623,19 @@ class Scene:
                     mdl_data = mdl_search.data
                     mdx_data = mdx_search.data
 
-            # model = gl_load_mdl(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
             try:
                 model = gl_load_stitched_model(self, BinaryReader.from_bytes(mdl_data, 12), BinaryReader.from_bytes(mdx_data))
             except Exception:
-                model = gl_load_stitched_model(self, BinaryReader.from_bytes(EMPTY_MDL_DATA, 12), BinaryReader.from_bytes(EMPTY_MDX_DATA))
+                model = gl_load_stitched_model(
+                    self,
+                    BinaryReader.from_bytes(EMPTY_MDL_DATA, 12),
+                    BinaryReader.from_bytes(EMPTY_MDX_DATA),
+                )
 
             self.models[name] = model
         return self.models[name]
 
-    def jumpToEntryLocation(self) -> None:
+    def jump_to_entry_location(self) -> None:
         if self.module is None:
             self.camera.x = 0
             self.camera.y = 0
@@ -619,8 +648,16 @@ class Scene:
 
 
 class RenderObject:
-    def __init__(self, model: str, position: vec3 = None, rotation: vec3 = None, *, data: Any = None,
-                 genBoundary: Callable[[], Boundary] = None, override_texture: Optional[str] = None):
+    def __init__(
+        self,
+        model: str,
+        position: vec3 = None,
+        rotation: vec3 = None,
+        *,
+        data: Any = None,
+        gen_boundary: Optional[Callable[[], Boundary]] = None,
+        override_texture: Optional[str] = None,
+    ):
         self.model: str = model
         self.children: List[RenderObject] = []
         self._transform: mat4 = mat4()
@@ -628,7 +665,7 @@ class RenderObject:
         self._rotation: vec3 = rotation if rotation is not None else vec3()
         self._cube: Optional[Cube] = None
         self._boundary: Optional[Boundary] = None
-        self.genBoundary: Optional[Callable[[], Boundary]] = genBoundary
+        self.genBoundary: Optional[Callable[[], Boundary]] = gen_boundary
         self.data: Any = data
         self.override_texture: Optional[str] = override_texture
 
@@ -680,8 +717,14 @@ class RenderObject:
 
     def radius(self, scene: Scene) -> float:
         cube = self.cube(scene)
-        return max(abs(cube.min_point.x), abs(cube.min_point.y), abs(cube.min_point.z),
-                   abs(cube.max_point.x), abs(cube.max_point.y), abs(cube.max_point.z))
+        return max(
+            abs(cube.min_point.x),
+            abs(cube.min_point.y),
+            abs(cube.min_point.z),
+            abs(cube.max_point.x),
+            abs(cube.max_point.y),
+            abs(cube.max_point.z),
+        )
 
     def _cube_rec(self, scene: Scene, transform: mat4, obj: RenderObject, min_point: vec3, max_point: vec3) -> None:
         obj_min, obj_max = scene.model(obj.model).box()
@@ -725,18 +768,17 @@ class Camera:
         pitch = glm.vec3(1, 0, 0)
 
         x, y, z = self.x, self.y, self.z
-        x += math.cos(self.yaw) * math.cos(self.pitch - math.pi/2) * self.distance
-        y += math.sin(self.yaw) * math.cos(self.pitch - math.pi/2) * self.distance
-        z += math.sin(self.pitch - math.pi/2) * self.distance
+        x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
+        y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
+        z += math.sin(self.pitch - math.pi / 2) * self.distance
 
         camera = mat4() * glm.translate(vec3(x, y, z))
-        camera = glm.rotate(camera, self.yaw + math.pi/2, up)
+        camera = glm.rotate(camera, self.yaw + math.pi / 2, up)
         camera = glm.rotate(camera, math.pi - self.pitch, pitch)
-        view = glm.inverse(camera)
-        return view
+        return glm.inverse(camera)
 
     def projection(self) -> mat4:
-        return glm.perspective(self.fov, self.width/self.height, 0.1, 5000)
+        return glm.perspective(self.fov, self.width / self.height, 0.1, 5000)
 
     def translate(self, translation: vec3) -> None:
         self.x += translation.x
@@ -752,25 +794,24 @@ class Camera:
         elif self.pitch < 0.001:
             self.pitch = 0.001
 
-    def forward(self, ignoreZ: bool = True) -> vec3:
+    def forward(self, ignore_z: bool = True) -> vec3:
         eye_x = math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2)
         eye_y = math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2)
-        eye_z = 0 if ignoreZ else math.sin(self.pitch - math.pi / 2)
+        eye_z = 0 if ignore_z else math.sin(self.pitch - math.pi / 2)
         return glm.normalize(-vec3(eye_x, eye_y, eye_z))
 
-    def sideward(self, ignoreZ: bool = True) -> vec3:
-        return glm.normalize(glm.cross(self.forward(ignoreZ), vec3(0.0, 0.0, 1.0)))
+    def sideward(self, ignore_z: bool = True) -> vec3:
+        return glm.normalize(glm.cross(self.forward(ignore_z), vec3(0.0, 0.0, 1.0)))
 
-    def upward(self, ignoreXY: bool = True) -> vec3:
-        if not ignoreXY:
-            forward = self.forward(False)
-            sideward = self.sideward(False)
-            cross = glm.cross(forward, sideward)
-            return glm.normalize(cross)
-        else:
+    def upward(self, ignore_xy: bool = True) -> vec3:
+        if ignore_xy:
             return glm.normalize(vec3(0, 0, 1))
+        forward = self.forward(ignore_z=False)
+        sideward = self.sideward(ignore_z=False)
+        cross = glm.cross(forward, sideward)
+        return glm.normalize(cross)
 
-    def truePosition(self) -> vec3:
+    def true_position(self) -> vec3:
         x, y, z = self.x, self.y, self.z
         x += math.cos(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance
         y += math.sin(self.yaw) * math.cos(self.pitch - math.pi / 2) * self.distance

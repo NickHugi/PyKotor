@@ -28,8 +28,7 @@ def read_ncs(
     offset: int = 0,
     size: int | None = None,
 ) -> NCS:
-    """
-    Returns an NCS instance from the source.
+    """Returns an NCS instance from the source.
 
     Args:
     ----
@@ -53,8 +52,7 @@ def write_ncs(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.NCS,
 ) -> None:
-    """
-    Writes the NCS data to the target location with the specified format (NCS only).
+    """Writes the NCS data to the target location with the specified format (NCS only).
 
     Args:
     ----
@@ -77,8 +75,7 @@ def bytes_ncs(
     ncs: NCS,
     file_format: ResourceType = ResourceType.NCS,
 ) -> bytes:
-    """
-    Returns the NCS data in the specified format (NCS only) as a bytes object.
+    """Returns the NCS data in the specified format (NCS only) as a bytes object.
 
     This is a convenience method that wraps the write_ncs() method.
 
@@ -106,8 +103,7 @@ def compile_nss(
     optimizers: list[NCSOptimizer] | None = None,
     library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None = None,
 ) -> NCS:
-    """
-    Returns NCS object compiled from input source string.
+    """Returns NCS object compiled from input source string.
 
     Attributes
     ----------

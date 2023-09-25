@@ -8,8 +8,7 @@ from pykotor.tools.path import CaseAwarePath
 
 # TODO: the aspyr patch contains some required files in the override folder, hardcode them and ignore those here.
 def uninstall_all_mods(installation: Installation):
-    """
-    Uninstalls all mods from the game.
+    """Uninstalls all mods from the game.
 
     What this method really does is delete all the contents of the override folder and delete all .MOD files from
     the modules folder. Then it removes all appended TLK entries using

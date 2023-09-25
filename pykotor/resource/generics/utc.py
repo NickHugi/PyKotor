@@ -10,8 +10,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTC:
-    """
-    Stores creature data.
+    """Stores creature data.
 
     Attributes
     ----------

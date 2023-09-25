@@ -23,7 +23,7 @@ class LocalizedStringDelta(LocalizedString):
         if self.stringref is not None:
             locstring.stringref = self.stringref.value(memory, GFFFieldType.UInt32)
         for language, gender, text in self:
-            locstring.set(language, gender, text)
+            locstring.set_data(language, gender, text)
 
 
 # region Value Returners
@@ -189,7 +189,7 @@ class AddFieldGFF(ModifyGFF):
             container = self._navigate_containers(
                 container,
                 self.path,
-            )  # type: ignore
+            )  # type: ignore[container type]
         container_is_correct_type = isinstance(container, GFFStruct)
         if not container_is_correct_type:
             reason: str = "does not exist!" if container is None else "is not an instance of a GFFStruct."

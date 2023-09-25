@@ -8,8 +8,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTE:
-    """
-    Stores encounter data.
+    """Stores encounter data.
 
     Attributes
     ----------
@@ -75,8 +74,7 @@ class UTE:
 
 
 class UTECreature:
-    """
-    Stores data for a creature that can be spawned by an encounter.
+    """Stores data for a creature that can be spawned by an encounter.
 
     Attributes
     ----------

@@ -10,8 +10,7 @@ if TYPE_CHECKING:
 
 
 class Vector2:
-    """
-    Represents a 2 dimensional vector.
+    """Represents a 2 dimensional vector.
 
     Attributes
     ----------
@@ -134,8 +133,7 @@ class Vector2:
         cls,
         other: Vector2,
     ) -> Vector2:
-        """
-        Returns a duplicate of the specified vector.
+        """Returns a duplicate of the specified vector.
 
         Args:
         ----
@@ -152,8 +150,7 @@ class Vector2:
         cls,
         other: Vector3,
     ) -> Vector2:
-        """
-        Returns a Vector2 object from the Vector3 object, discarding the Z-component.
+        """Returns a Vector2 object from the Vector3 object, discarding the Z-component.
 
         Args:
         ----
@@ -170,8 +167,7 @@ class Vector2:
         cls,
         other: Vector4,
     ) -> Vector2:
-        """
-        Returns a Vector2 object from the Vector4 object, discarding the Z-component and W-components.
+        """Returns a Vector2 object from the Vector4 object, discarding the Z-component and W-components.
 
         Args:
         ----
@@ -187,8 +183,7 @@ class Vector2:
     def from_null(
         cls,
     ) -> Vector2:
-        """
-        Returns a new vector with a magnitude of zero.
+        """Returns a new vector with a magnitude of zero.
 
         Returns
         -------
@@ -201,8 +196,7 @@ class Vector2:
         cls,
         angle: float,
     ) -> Vector2:
-        """
-        Returns a unit vector based on the specified angle.
+        """Returns a unit vector based on the specified angle.
 
         Args:
         ----
@@ -216,13 +210,12 @@ class Vector2:
         y = math.sin(angle)
         return Vector2(x, y).normal()
 
-    def set(
+    def set_data(
         self,
         x: float,
         y: float,
     ) -> None:
-        """
-        Sets the components of the vector.
+        """Sets the components of the vector.
 
         Args:
         ----
@@ -247,8 +240,7 @@ class Vector2:
     def magnitude(
         self,
     ) -> float:
-        """
-        Returns the magnitude of the vector.
+        """Returns the magnitude of the vector.
 
         Returns
         -------
@@ -267,8 +259,7 @@ class Vector2:
         self,
         other: Vector2,
     ) -> float:
-        """
-        Returns the dot product between the two specified vectors.
+        """Returns the dot product between the two specified vectors.
 
         Args:
         ----
@@ -286,8 +277,7 @@ class Vector2:
         self,
         other: Vector2,
     ) -> float:
-        """
-        Returns the distance between two vectors.
+        """Returns the distance between two vectors.
 
         Args:
         ----
@@ -305,8 +295,7 @@ class Vector2:
         self,
         container: list,
     ) -> bool:
-        """
-        Checks to see if the same Vector2 object in located in the specified list. This differs from using the 'in'
+        """Checks to see if the same Vector2 object in located in the specified list. This differs from using the 'in'
         keyword as that will return True for Vector2 objects that have simular coordinates.
 
         Args:
@@ -322,8 +311,7 @@ class Vector2:
     def angle(
         self,
     ) -> float:
-        """
-        Returns the angle of the vector.
+        """Returns the angle of the vector.
 
         Returns
         -------
@@ -333,8 +321,7 @@ class Vector2:
 
 
 class Vector3:
-    """
-    Represents a 3 dimensional vector.
+    """Represents a 3 dimensional vector.
 
     Attributes
     ----------
@@ -472,8 +459,7 @@ class Vector3:
         cls,
         other: Vector2,
     ) -> Vector3:
-        """
-        Returns a Vector3 object from the Vector2 object, setting the Z-component to zero.
+        """Returns a Vector3 object from the Vector2 object, setting the Z-component to zero.
 
         Args:
         ----
@@ -490,8 +476,7 @@ class Vector3:
         cls,
         other: Vector3,
     ) -> Vector3:
-        """
-        Returns a duplicate of the specified vector.
+        """Returns a duplicate of the specified vector.
 
         Args:
         ----
@@ -508,8 +493,7 @@ class Vector3:
         cls,
         other: Vector4,
     ) -> Vector3:
-        """
-        Returns a Vector3 object from the Vector4 object, discarding the W-component.
+        """Returns a Vector3 object from the Vector4 object, discarding the W-component.
 
         Args:
         ----
@@ -525,8 +509,7 @@ class Vector3:
     def from_null(
         cls,
     ) -> Vector3:
-        """
-        Returns a new vector with a magnitude of zero.
+        """Returns a new vector with a magnitude of zero.
 
         Returns
         -------
@@ -540,8 +523,7 @@ class Vector3:
         y: float,
         z: float,
     ) -> None:
-        """
-        Sets the components of the vector.
+        """Sets the components of the vector.
 
         Args:
         ----
@@ -570,8 +552,7 @@ class Vector3:
     def magnitude(
         self,
     ) -> float:
-        """
-        Returns the magnitude of the vector.
+        """Returns the magnitude of the vector.
 
         Returns
         -------
@@ -590,8 +571,7 @@ class Vector3:
         self,
         other: Vector3,
     ) -> float:
-        """
-        Returns the dot product between the two specified vectors.
+        """Returns the dot product between the two specified vectors.
 
         Args:
         ----
@@ -610,8 +590,7 @@ class Vector3:
         self,
         other: Vector3,
     ) -> float:
-        """
-        Returns the distance between two vectors.
+        """Returns the distance between two vectors.
 
         Args:
         ----
@@ -630,8 +609,7 @@ class Vector3:
         self,
         container: list,
     ) -> bool:
-        """
-        Checks to see if the same Vector3 object in located in the specified list. This differs from using the 'in'
+        """Checks to see if the same Vector3 object in located in the specified list. This differs from using the 'in'
         keyword as that will return True for Vector3 objects that have similar coordinates.
 
         Args:
@@ -646,8 +624,7 @@ class Vector3:
 
 
 class Vector4:
-    """
-    Represents a 4 dimensional vector.
+    """Represents a 4 dimensional vector.
 
     Attributes
     ----------
@@ -749,8 +726,7 @@ class Vector4:
         cls,
         other: Vector2,
     ) -> Vector4:
-        """
-        Returns a Vector4 object from the Vector2 object, setting the Z-component and W-component to zero.
+        """Returns a Vector4 object from the Vector2 object, setting the Z-component and W-component to zero.
 
         Args:
         ----
@@ -767,8 +743,7 @@ class Vector4:
         cls,
         other: Vector3,
     ) -> Vector4:
-        """
-        Returns a Vector4 object from the Vector3 object, setting the W-component to zero.
+        """Returns a Vector4 object from the Vector3 object, setting the W-component to zero.
 
         Args:
         ----
@@ -785,8 +760,7 @@ class Vector4:
         cls,
         other: Vector4,
     ) -> Vector4:
-        """
-        Returns a duplicate of the specified vector.
+        """Returns a duplicate of the specified vector.
 
         Args:
         ----
@@ -802,8 +776,7 @@ class Vector4:
     def from_null(
         cls,
     ) -> Vector4:
-        """
-        Returns a new vector with a magnitude of zero.
+        """Returns a new vector with a magnitude of zero.
 
         Returns
         -------
@@ -839,8 +812,7 @@ class Vector4:
         y: float,
         z: float,
     ):
-        """
-        Creates a Vector3 object from x/y/z rotations (in radians).
+        """Creates a Vector3 object from x/y/z rotations (in radians).
 
         Args:
         ----
@@ -900,8 +872,7 @@ class Vector4:
     def magnitude(
         self,
     ) -> float:
-        """
-        Returns the magnitude of the vector.
+        """Returns the magnitude of the vector.
 
         Returns
         -------
@@ -912,8 +883,7 @@ class Vector4:
     def normalize(
         self,
     ) -> Vector4:
-        """
-        Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
+        """Normalizes the vector so that the magnitude is equal to one while maintaining the same angle.
 
         Returns
         -------
@@ -939,8 +909,7 @@ class Vector4:
         z: float,
         w: float,
     ) -> None:
-        """
-        Sets the components of the vector.
+        """Sets the components of the vector.
 
         Args:
         ----
@@ -956,8 +925,7 @@ class Vector4:
 
 
 class AxisAngle:
-    """
-    Represents a rotation in 3D space.
+    """Represents a rotation in 3D space.
 
     Attributes
     ----------
@@ -978,8 +946,7 @@ class AxisAngle:
         cls,
         quaternion: Vector4,
     ) -> AxisAngle:
-        """
-        Returns a AxisAngle converted from a Vector4 quaternion.
+        """Returns a AxisAngle converted from a Vector4 quaternion.
 
         Args:
         ----
@@ -1011,8 +978,7 @@ class AxisAngle:
     def from_null(
         cls,
     ) -> AxisAngle:
-        """
-        Returns a AxisAngle that contains no rotation.
+        """Returns a AxisAngle that contains no rotation.
 
         Returns
         -------
@@ -1079,8 +1045,7 @@ class SurfaceMaterial(IntEnum):
 
 
 class Face:
-    """
-    Represents a triangle in 3D space.
+    """Represents a triangle in 3D space.
 
     Attributes
     ----------
@@ -1105,8 +1070,7 @@ class Face:
     def normal(
         self,
     ) -> Vector3:
-        """
-        Returns the normal for the face.
+        """Returns the normal for the face.
 
         Returns
         -------
@@ -1144,8 +1108,7 @@ class Face:
     def average(  # TODO: fix return type
         self,
     ) -> Vector3:
-        """
-        Returns the average point of the face.
+        """Returns the average point of the face.
 
         Returns
         -------
@@ -1158,8 +1121,7 @@ class Face:
         x: float,
         y: float,
     ):
-        """
-        Returns the Z-component determined from the given X and Y components. This method does not check if the point
+        """Returns the Z-component determined from the given X and Y components. This method does not check if the point
         exists within the face, that must be done separately with inside().
 
         Returns
@@ -1224,8 +1186,7 @@ class Polygon2:
         cls,
         poly3: Polygon3,
     ) -> Polygon2:
-        """
-        Converts a Polygon3 object into a Polygon2 object. The Z-axis is removed.
+        """Converts a Polygon3 object into a Polygon2 object. The Z-axis is removed.
 
         Args:
         ----
@@ -1245,8 +1206,7 @@ class Polygon2:
         point: Vector2,
         include_edges: bool = True,
     ) -> bool:
-        """
-        Returns if the specified point is inside the polygon.
+        """Returns if the specified point is inside the polygon.
 
         Args:
         ----
@@ -1369,8 +1329,7 @@ class Polygon3:
         cls,
         poly2: Polygon2,
     ) -> Polygon3:
-        """
-        Converts a Polygon3 object into a Polygon2 object. Points have their Z-axis set to 0.
+        """Converts a Polygon3 object into a Polygon2 object. Points have their Z-axis set to 0.
 
         Args:
         ----

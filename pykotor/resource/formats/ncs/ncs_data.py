@@ -344,8 +344,7 @@ class NCS:
         return [inst for inst in self.instructions if inst.jump is target]
 
     def optimize(self, optimizers: list[NCSOptimizer]) -> None:
-        """
-        The `optimize` function takes a list of optimizers and applies each optimizer to optimize the
+        """The `optimize` function takes a list of optimizers and applies each optimizer to optimize the
         current object.
 
         :param optimizers: A list of NCSOptimizer objects
@@ -355,8 +354,7 @@ class NCS:
             optimizer.optimize(self)
 
     def merge(self, other: NCS) -> None:
-        """
-        The `merge` function takes another `NCS` object and appends its instructions to the instructions of
+        """The `merge` function takes another `NCS` object and appends its instructions to the instructions of
         the current object.
 
         :param other: The parameter "other" is of type NCS, which is likely a custom class or data structure

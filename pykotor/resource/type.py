@@ -1,11 +1,9 @@
-"""
-This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both
+"""This module contains the ResourceType class and initializes the static list of ResourceTypes that can be found in both
 games.
 """
 from __future__ import annotations
 
 import os
-from abc import ABC
 from typing import Union, overload
 from xml.etree.ElementTree import ParseError
 
@@ -15,7 +13,7 @@ SOURCE_TYPES = Union[os.PathLike, str, bytes, bytearray, BinaryReader]
 TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
-class ResourceReader(ABC):
+class ResourceReader:
     @overload
     def __init__(
         self,
@@ -58,7 +56,7 @@ class ResourceReader(ABC):
         self._reader.close()
 
 
-class ResourceWriter(ABC):
+class ResourceWriter:
     @overload
     def __init__(
         self,
@@ -100,8 +98,7 @@ class ResourceWriter(ABC):
 
 
 class ResourceType:
-    """
-    Represents a resource type that is used within either games.
+    """Represents a resource type that is used within either games.
 
     Stored in the class is also several static attributes, each an actual resource type used by the games.
 
@@ -236,8 +233,7 @@ class ResourceType:
         self,
         other: ResourceType | str | int,
     ):  # sourcery skip: assign-if-exp, reintroduce-else
-        """
-        Two ResourceTypes are equal if they are the same.
+        """Two ResourceTypes are equal if they are the same.
         A ResourceType and a str are equal if the extension is equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
@@ -259,8 +255,7 @@ class ResourceType:
         cls,
         type_id: int,
     ) -> ResourceType:
-        """
-        Returns the ResourceType for the specified id.
+        """Returns the ResourceType for the specified id.
 
         Args:
         ----
@@ -281,8 +276,7 @@ class ResourceType:
         cls,
         extension: str,
     ) -> ResourceType:
-        """
-        Returns the ResourceType for the specified extension.
+        """Returns the ResourceType for the specified extension.
 
         Args:
         ----

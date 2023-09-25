@@ -9,8 +9,7 @@ def read_bwm(
     offset: int = 0,
     size: int | None = None,
 ) -> BWM:
-    """
-    Returns an WOK instance from the source.
+    """Returns an WOK instance from the source.
 
     Args:
     ----
@@ -37,8 +36,7 @@ def write_bwm(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.WOK,
 ) -> None:
-    """
-    Writes the WOK data to the target location with the specified format (WOK only).
+    """Writes the WOK data to the target location with the specified format (WOK only).
 
     Args:
     ----
@@ -63,8 +61,7 @@ def bytes_bwm(
     bwm: BWM,
     file_format: ResourceType = ResourceType.WOK,
 ) -> bytes:
-    """
-    Returns the BWM data in the specified format (WOK only) as a bytes object.
+    """Returns the BWM data in the specified format (WOK only) as a bytes object.
 
     This is a convenience method that wraps the write_bwm() method.
 

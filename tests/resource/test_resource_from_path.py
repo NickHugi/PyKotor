@@ -3,6 +3,7 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath, PurePath
 
+
 class TestResourceIdentifier(unittest.TestCase):
     def test_from_path(self):
         test_cases = [

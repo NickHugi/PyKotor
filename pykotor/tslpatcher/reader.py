@@ -298,8 +298,7 @@ class ConfigReader:
                     text = modifier_dict[token_id].get("text")
                     voiceover = modifier_dict[token_id].get("voiceover")
 
-                    # TODO(th3w1zard1): replace modifier_dict with ModifyTLK and allow optional text and voiceover properties.
-                    # EDIT: looked into the above todo, would require a large restructure of the way TLK is stored.
+                    # TODO(th3w1zard1): allow optional voiceover.
                     if isinstance(text, str) and isinstance(voiceover, ResRef):
                         modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
                         self.config.patches_tlk.modifiers.append(modifier)
@@ -481,7 +480,7 @@ class ConfigReader:
             substring_id = int(name[name.index("(lang") + 5 : -1])
             language, gender = LocalizedString.substring_pair(substring_id)
             locstring = LocalizedStringDelta()
-            locstring.set(language, gender, string_value)
+            locstring.set_data(language, gender, string_value)
             value = FieldValueConstant(locstring)
             name = name[: name.index("(lang")]
 
@@ -532,7 +531,7 @@ class ConfigReader:
                     substring_id = int(substring[4:])
                     language, gender = value.substring_pair(substring_id)
                     text = text.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
-                    value.set(language, gender, text)
+                    value.set_data(language, gender, text)
                 value = FieldValueConstant(value)
             elif field_type.return_type() == GFFList:
                 value = FieldValueConstant(GFFList())

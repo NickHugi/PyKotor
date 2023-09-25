@@ -21,8 +21,7 @@ class JRL:
 
 
 class JRLQuest:
-    """
-    Stores data of an individual quest.
+    """Stores data of an individual quest.
 
     Attributes
     ----------
@@ -48,8 +47,7 @@ class JRLQuest:
 
 
 class JRLEntry:
-    """
-    Stores the data for an entry in a quest.
+    """Stores the data for an entry in a quest.
 
     Attributes
     ----------

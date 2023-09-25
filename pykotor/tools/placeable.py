@@ -16,8 +16,7 @@ def get_model(
     *,
     placeables: TwoDA | None = None,
 ) -> str:
-    """
-    Returns the model name for the given placeable.
+    """Returns the model name for the given placeable.
 
     If no value is specified for the placeable parameters then it will be loaded from the given installation.
 

@@ -576,8 +576,7 @@ def transform(
     translation: Vector3,
     rotation: float,
 ) -> bytes:
-    """
-    Performs a translation and then rotation on the target MDL data.
+    """Performs a translation and then rotation on the target MDL data.
 
     Args:
     ----
@@ -670,8 +669,7 @@ def flip(
     flip_x: bool,
     flip_y: bool,
 ) -> MDLMDXTuple:
-    """
-    Returns the given MDL and MDX data with the vertices flipped along the specified axes.
+    """Returns the given MDL and MDX data with the vertices flipped along the specified axes.
 
     Args:
     ----

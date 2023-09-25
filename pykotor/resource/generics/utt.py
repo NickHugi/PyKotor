@@ -8,8 +8,7 @@ from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTT:
-    """
-    Stores trigger data.
+    """Stores trigger data.
 
     Attributes
     ----------

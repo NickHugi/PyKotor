@@ -57,8 +57,7 @@ class ResRef:
     def from_blank(
         cls,
     ) -> ResRef:
-        """
-        Returns a blank ResRef.
+        """Returns a blank ResRef.
 
         Returns
         -------
@@ -71,8 +70,7 @@ class ResRef:
         cls,
         file_path: os.PathLike | str,
     ) -> ResRef:
-        """
-        Returns a ResRef from the filename in the specified path.
+        """Returns a ResRef from the filename in the specified path.
 
         Args:
         ----
@@ -89,8 +87,7 @@ class ResRef:
         text: str,
         truncate: bool = True,
     ) -> None:
-        """
-        Sets the ResRef.
+        """Sets the ResRef.
 
         Args:
         ----
@@ -172,8 +169,7 @@ class Color:
         cls,
         integer: int,
     ) -> Color:
-        """
-        Returns a Color by decoding the specified integer.
+        """Returns a Color by decoding the specified integer.
 
         Args:
         ----
@@ -193,8 +189,7 @@ class Color:
         cls,
         integer: int,
     ) -> Color:
-        """
-        Returns a Color by decoding the specified integer.
+        """Returns a Color by decoding the specified integer.
 
         Args:
         ----
@@ -215,8 +210,7 @@ class Color:
         cls,
         integer: int,
     ) -> Color:
-        """
-        Returns a Color by decoding the specified integer.
+        """Returns a Color by decoding the specified integer.
 
         Args:
         ----
@@ -236,8 +230,7 @@ class Color:
         cls,
         vector3: Vector3,
     ) -> Color:
-        """
-        Returns a Color from the specified vector components.
+        """Returns a Color from the specified vector components.
 
         Args:
         ----
@@ -257,8 +250,7 @@ class Color:
         cls,
         vector3: Vector3,
     ) -> Color:
-        """
-        Returns a Color from the specified vector components.
+        """Returns a Color from the specified vector components.
 
         Args:
         ----
@@ -276,8 +268,7 @@ class Color:
     def rgb_integer(
         self,
     ) -> int:
-        """
-        Returns a RGB integer encoded from the color components.
+        """Returns a RGB integer encoded from the color components.
 
         Returns
         -------
@@ -291,8 +282,7 @@ class Color:
     def rgba_integer(
         self,
     ) -> int:
-        """
-        Returns a RGB integer encoded from the color components.
+        """Returns a RGB integer encoded from the color components.
 
         Returns
         -------
@@ -307,8 +297,7 @@ class Color:
     def bgr_integer(
         self,
     ) -> int:
-        """
-        Returns a BGR integer encoded from the color components.
+        """Returns a BGR integer encoded from the color components.
 
         Returns
         -------
@@ -322,8 +311,7 @@ class Color:
     def rgb_vector3(
         self,
     ) -> Vector3:
-        """
-        Returns a Vector3 representing a color with its components.
+        """Returns a Vector3 representing a color with its components.
 
         Returns
         -------
@@ -334,8 +322,7 @@ class Color:
     def bgr_vector3(
         self,
     ) -> Vector3:
-        """
-        Returns a Vector3 representing a color with its components.
+        """Returns a Vector3 representing a color with its components.
 
         Returns
         -------
@@ -376,10 +363,9 @@ class WrappedInt:
     ):
         if isinstance(other, WrappedInt):
             return self.get() == other.get()
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.get() == other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def set(
         self,

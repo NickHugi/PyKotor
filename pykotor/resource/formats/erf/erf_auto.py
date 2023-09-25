@@ -9,8 +9,7 @@ def read_erf(
     offset: int = 0,
     size: int | None = None,
 ) -> ERF:
-    """
-    Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
+    """Returns an ERF instance from the source. The file format (ERF or MOD) is automatically determined before parsing
     the data.
 
     Args:
@@ -38,8 +37,7 @@ def write_erf(
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.ERF,
 ) -> None:
-    """
-    Writes the ERF data to the target location with the specified format (ERF or MOD).
+    """Writes the ERF data to the target location with the specified format (ERF or MOD).
 
     Args:
     ----
@@ -64,8 +62,7 @@ def bytes_erf(
     erf: ERF,
     file_format: ResourceType = ResourceType.ERF,
 ) -> bytes:
-    """
-    Returns the ERF data in the specified format (ERF or MOD) as a bytes object.
+    """Returns the ERF data in the specified format (ERF or MOD) as a bytes object.
 
     This is a convenience method that wraps the write_erf() method.
 

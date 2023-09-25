@@ -9,11 +9,11 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
-class CriticalException(Exception):
+class CriticalError(Exception):
     ...
 
 
-class WarningException(Exception):
+class WarningError(Exception):
     ...
 
 
@@ -40,9 +40,9 @@ class Target:
             source_row = twoda.find_row(str(self.value))
         elif self.target_type == TargetType.LABEL_COLUMN:
             if "label" not in twoda.get_headers():
-                raise WarningException
+                raise WarningError
             if self.value not in twoda.get_column("label"):
-                raise WarningException
+                raise WarningError
             for row in twoda:
                 if row.get_string("label") == self.value:
                     source_row = row
@@ -92,8 +92,7 @@ class RowValueTLKMemory(RowValue):
 
 
 class RowValueHigh(RowValue):
-    """
-    Attributes
+    """Attributes
     ----------
     column: Column to get the max integer from. If None it takes it from the Row Label.
     """
@@ -134,6 +133,7 @@ class RowValueRowCell(RowValue):
 
 # region Modify 2DA
 class Modify2DA(ABC):
+    @abstractmethod
     def __init__(self):
         ...
 
@@ -152,9 +152,10 @@ class Modify2DA(ABC):
         memory: PatcherMemory,
         twoda: TwoDA,
     ) -> tuple[dict[str, str], dict[int, str], str | None, str | None]:
-        """
-        This will split the modifiers dictionary into a tuple containing three values: The dictionary mapping column
-        headers to new values, the 2DA memory values if not available, and the row label or None.
+        """Split the modifiers dictionary into a tuple containing three values:
+        The dictionary mapping column headers to new values,
+        The 2DA memory values if not available,
+        The row label or None.
         """
         new_values: dict[str, str] = {}
         memory_values: dict[int, str] = {}
@@ -195,6 +196,7 @@ class Modify2DA(ABC):
             value = int(value.replace("2DAMEMORY", ""))
         return value
 
+    @abstractmethod
     def apply(
         self,
         twoda: TwoDA,
@@ -204,8 +206,7 @@ class Modify2DA(ABC):
 
 
 class ChangeRow2DA(Modify2DA):
-    """
-    Changes an existing row.
+    """Changes an existing row.
 
     Target row can either be the Row Index, Row Label, or value under the "label" column where applicable.
 
@@ -236,7 +237,7 @@ class ChangeRow2DA(Modify2DA):
         source_row = self.target.search(twoda)
 
         if source_row is None:
-            raise WarningException
+            raise WarningError
 
         cells = self._unpack(self.cells, memory, twoda, source_row)
         source_row.update_values(cells)
@@ -249,8 +250,7 @@ class ChangeRow2DA(Modify2DA):
 
 
 class AddRow2DA(Modify2DA):
-    """
-    Adds a new row.
+    """Adds a new row.
 
     Attributes
     ----------
@@ -282,7 +282,7 @@ class AddRow2DA(Modify2DA):
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:
                 msg = f"Exclusive column {self.exclusive_column} does not exists"
-                raise WarningException(
+                raise WarningError(
                     msg,
                 )
 
@@ -314,8 +314,7 @@ class AddRow2DA(Modify2DA):
 
 
 class CopyRow2DA(Modify2DA):
-    """
-    Copies the the row if the exclusive_column value doesn't already exist. If it does, then it simply modifies the
+    """Copies the the row if the exclusive_column value doesn't already exist. If it does, then it simply modifies the
     existing line.
 
     Attributes
@@ -353,12 +352,12 @@ class CopyRow2DA(Modify2DA):
         row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
 
         if source_row is None:
-            raise WarningException
+            raise WarningError
 
         if self.exclusive_column is not None:
             if self.exclusive_column not in self.cells:
                 msg = f"Exclusive column {self.exclusive_column} does not exists"
-                raise WarningException(
+                raise WarningError(
                     msg,
                 )
 
@@ -391,8 +390,7 @@ class CopyRow2DA(Modify2DA):
 
 
 class AddColumn2DA(Modify2DA):
-    """
-    Adds a column. The new cells are either given a default value or can be given a value based on what the row index
+    """Adds a column. The new cells are either given a default value or can be given a value based on what the row index
     or row label is.
 
     Attributes
@@ -433,7 +431,7 @@ class AddColumn2DA(Modify2DA):
                 this_row.set_string(self.header, index_str)
             else:
                 msg = f"Could not find row {row_index} in {self.header}"
-                raise WarningException(msg)
+                raise WarningError(msg)
 
         for row_label, value in self.label_insert.items():
             label_str: str = value.value(memory, twoda, None)
@@ -442,7 +440,7 @@ class AddColumn2DA(Modify2DA):
                 this_row.set_string(self.header, label_str)
             else:
                 msg = f"Could not find row {row_label} in {self.header}"
-                raise WarningException(msg)
+                raise WarningError(msg)
 
         for token_id, value in self.store_2da.items():
             # TODO: Exception handling
@@ -453,7 +451,7 @@ class AddColumn2DA(Modify2DA):
                 cell = twoda.find_row(value[1:]).get_string(self.header)
                 memory.memory_2da[token_id] = cell
             else:
-                raise WarningException
+                raise WarningError
 
 
 # endregion

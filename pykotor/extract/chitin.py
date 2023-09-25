@@ -7,8 +7,7 @@ from pykotor.tools.path import CaseAwarePath
 
 
 class Chitin:
-    """
-    Chitin object is used for loading the list of resources stored in the chitin.key/.bif files used by the game.
+    """Chitin object is used for loading the list of resources stored in the chitin.key/.bif files used by the game.
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
     Chitin.resource() method.
 
@@ -99,8 +98,7 @@ class Chitin:
         resref: str,
         restype: ResourceType,
     ) -> bytes | None:
-        """
-        Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
+        """Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
         Args:
         ----

@@ -16,8 +16,7 @@ def get_model(
     *,
     genericdoors: TwoDA | None = None,
 ) -> str:
-    """
-    Returns the model name for the given door.
+    """Returns the model name for the given door.
 
     If no value is specified for the genericdoor parameters then it will be loaded from the given installation.
 
