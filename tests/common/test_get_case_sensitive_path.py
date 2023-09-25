@@ -155,19 +155,23 @@ class TestCaseAwarePath(TestCase):
 
         self.assertTrue(case_aware_cascading_file.exists())
 
-    @unittest.skip("Unfinished")
     def test_relative_to(self):
         dir_path = self.temp_path / "someDir"
         file_path = dir_path / "someFile.txt"
-        case_aware_file_path = CaseAwarePath(f"{str(dir_path)}/SOMEfile.TXT")
+        case_aware_file_path = CaseAwarePath(dir_path, "SOMEfile.TXT")
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.touch()
         relative = case_aware_file_path.relative_to(self.temp_path)
-
-        self.assertEqual(str(relative), "someDir/someFile.txt")
-
-    @unittest.skip("Unfinished")
+        self.assertTrue(
+            case_aware_file_path.exists(),
+            f"{relative} does not exist on disk",
+        )
+        if os.name == "posix":
+            self.assertEqual(str(relative), "someDir/someFile.txt")
+        if os.name == "nt":
+            self.assertEqual(str(relative).lower(), "somedir\\somefile.txt")
+    @unittest.skip("unfinished")
     def test_chmod(self):
         file_path = self.temp_path / "file.txt"
         case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
@@ -175,7 +179,7 @@ class TestCaseAwarePath(TestCase):
         file_path.mkdir(parents=True, exist_ok=True)
         file_path.touch()
         original_permissions = file_path.stat().st_mode
-        case_aware_file_path.chmod(original_permissions | 0o111)  # adding execute permissions
+        case_aware_file_path.chmod(original_permissions | 0o777)
 
         modified_permissions = file_path.stat().st_mode
         self.assertNotEqual(original_permissions, modified_permissions)
@@ -234,7 +238,7 @@ class TestCaseAwarePath(TestCase):
         self.assertFalse(original_file.exists())
         self.assertTrue(renamed_file.exists())
 
-    @unittest.skip("Unfinished")
+    @unittest.skip("unfinished")
     def test_symlink_to(self):
         source_file = self.temp_path / "source.txt"
         link_file = self.temp_path / "link.txt"
@@ -246,7 +250,7 @@ class TestCaseAwarePath(TestCase):
         self.assertTrue(link_file.is_symlink())
         self.assertTrue(link_file.resolve().samefile(source_file))
 
-    @unittest.skip("Unfinished")
+    @unittest.skip("unfinished")
     def test_hardlink_to(self):
         source_file = self.temp_path / "source.txt"
         hardlink_file = self.temp_path / "hardlink.txt"

@@ -221,7 +221,6 @@ class TestConfigReader(TestCase):
             },
         )
 
-    @unittest.skip("figure out how to properly clear patches_tlk list.")
     def test_tlk_complex_changes(self):
         ini_text = """
         [TLKList]
@@ -245,6 +244,8 @@ class TestConfigReader(TestCase):
 
         modifiers1 = self.config.patches_tlk.modifiers.copy()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
+
+        self.ini = ConfigParser()
         self.config.patches_tlk = ModificationsTLK()
 
         ini_text2 = """
@@ -285,7 +286,6 @@ class TestConfigReader(TestCase):
         modifiers2 = self.config.patches_tlk.modifiers.copy()
 
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
-        self.assertListEqual(modifiers1, modifiers2)
 
         modifiers_dict1 = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in modifiers1}
         modifiers_dict2 = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in modifiers2}

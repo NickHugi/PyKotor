@@ -9,6 +9,7 @@ class Diff2DA:
     def is_same(self) -> bool:
         old_columns = set(self.old.get_headers())
         new_columns = set(self.new.get_headers())
+        ret = True
 
         if old_columns != new_columns:
             print("Columns match")
@@ -28,7 +29,7 @@ class Diff2DA:
                 old_value = old_row.get_string(header)
                 new_value = new_row.get_string(header)
                 if old_value != new_value:
-                    print("Cell mismatch:", index, header)
-                    return False
+                    print("Cell mismatch.\tIndex:", index, "Header:", header, "Old value:", old_value, "New value:", old_value)
+                    ret = False
 
-        return True
+        return ret

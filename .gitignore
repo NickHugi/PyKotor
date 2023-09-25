@@ -6,7 +6,6 @@ PyKotor.egg-info
 ignore
 build/*
 *.pyc
-pykotor/gl
 .vscode/launch.json
 debug.log
 pykotorcli.spec
@@ -19,3 +18,4 @@ pykotorcli.build/*
 .vscode/launch.json
 tests/tmp/*
 tests/tslpatcher/tmp/*
+output.prof

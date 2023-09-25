@@ -76,8 +76,8 @@ def override():
     print((max(len(str(tslpatcher_dir)), len(str(pykotor_dir))) + 29) * "-")
 
     # Create sets of filenames for both directories
-    tslpatcher_files = {f.name.lower() for f in tslpatcher_dir.iterdir()}
-    pykotor_files = {f.name.lower() for f in pykotor_dir.iterdir()}
+    tslpatcher_files = {str(f).lower() for f in tslpatcher_dir.iterdir()}
+    pykotor_files = {str(f).lower() for f in pykotor_dir.iterdir()}
 
     # Merge both sets to iterate over unique filenames
     all_files = tslpatcher_files.union(pykotor_files)
@@ -149,8 +149,8 @@ def override():
 
 def modules():
     print("Finding differences in the modules folders...")
-    tslpatcher_dir = CaseAwarePath(tslpatcher_path).joinpath("modules")
-    pykotor_dir = CaseAwarePath(pykotor_path).joinpath("modules")
+    tslpatcher_dir = CaseAwarePath(tslpatcher_path, "modules")
+    pykotor_dir = CaseAwarePath(pykotor_path, "modules")
 
     print("Searching first install dir:", tslpatcher_dir)
     print("Searching second install dir:", pykotor_dir)
@@ -184,8 +184,20 @@ def modules():
             print(visual_length(message) * "-")
             continue
 
-        pykotor_mod = read_erf(pykotor_file)
-        tslpatcher_mod = read_erf(tslpatcher_file)
+        try:
+            pykotor_mod = read_erf(pykotor_file)
+        except ValueError as e:
+            message = f"Could not load {pykotor_file_rel}. Reason: {e}"
+            print(message)
+            print(visual_length(message) * "-")
+            continue
+        try:
+            tslpatcher_mod = read_erf(tslpatcher_file)
+        except ValueError as e:
+            message = f"Could not load {tslpatcher_file_rel}. Reason: {e}"
+            print(message)
+            print(visual_length(message) * "-")
+            continue
 
         tslpatcher_resources = {str(res.resref): res for res in tslpatcher_mod}
         pykotor_resources = {str(res.resref): res for res in pykotor_mod}
@@ -213,12 +225,32 @@ def modules():
             if tsl_res.restype.extension in gff_types:
                 pykotor_gff = read_gff(pyk_res.data)
                 tslpatcher_gff = read_gff(tsl_res.data)
-
-                diff = DiffGFF(tslpatcher_gff, pykotor_gff)
-                if not diff.is_same():
-                    message = f"    in {filename}\t{resref}\t{tsl_res.restype.extension.upper()}"
+                if not pykotor_gff and tslpatcher_gff:
+                    message = f"PyKotor {tsl_res.restype.extension.upper()} resource missing in memory:\t{pykotor_file_rel}"
                     print(message)
-                    print("-" * visual_length(message))
+                    print(visual_length(message) * "-")
+                    continue
+
+                if pykotor_gff and not tslpatcher_gff:
+                    message = f"TSLPatcher {tsl_res.restype.extension.upper()} resource missing in memory:\t{tslpatcher_file_rel}"
+                    print(message)
+                    print(visual_length(message) * "-")
+                    continue
+
+                if not pykotor_gff and not tslpatcher_gff:
+                    message = (
+                        f"Both {tsl_res.restype.extension.upper()} resources missing for both in memory:\t{pykotor_file_rel}"
+                    )
+                    print(message)
+                    print(len(message) * "-")
+                    continue
+
+                if pykotor_gff and tslpatcher_gff:
+                    diff = DiffGFF(tslpatcher_gff, pykotor_gff)
+                    if not diff.is_same():
+                        message = f"\tin {filename}\t{resref}\t{tsl_res.restype.extension.upper()}"
+                        print(message)
+                        print("-" * visual_length(message))
 
 
 print()

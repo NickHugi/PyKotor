@@ -240,7 +240,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
                 self.assertEqual(str(PathType("C:/")), "C:")
-                self.assertEqual(str(PathType("C:/")), "C:")
+                self.assertEqual(str(PathType("C:\\")), "C:")
                 self.assertEqual(str(PathType("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
                 self.assertEqual(str(PathType("C:/Users/test")), "C:/Users/test".replace("/", os.sep))
                 self.assertEqual(str(PathType("C://Users///test")), "C:/Users/test".replace("/", os.sep))

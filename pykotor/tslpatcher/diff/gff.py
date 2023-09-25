@@ -84,7 +84,7 @@ class DiffGFF:
                 continue
 
             if new_child is None:
-                print(f"Missing item in new list at index {i} for field: '{label}'")
+                print(f"Missing {len(old_gff_list) - len(new_gff_list)} items in new gff list, at index {i} for field: '{label}'")
                 is_same_result = False
                 continue
 

@@ -1,2 +1,11 @@
-ply==3.11
-chardet
+ply
+chardet~=4.0
+numpy~=1.22
+PyGLM~=2.5
+PyOpenGL~=3.1
+setuptools~=57.4
+MyPy
+ruff
+pylint
+pyinstaller
+pre-commit
