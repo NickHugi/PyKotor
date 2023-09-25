@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+import os
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tlk import (
@@ -12,7 +12,6 @@ from pykotor.resource.formats.tlk import (
 from pykotor.resource.formats.tlk.io_tlk_json import TLKJSONReader, TLKJSONWriter
 from pykotor.resource.formats.tlk.io_tlk_xml import TLKXMLWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CaseAwarePath
 
 
 def detect_tlk(
@@ -51,8 +50,7 @@ def detect_tlk(
         return ResourceType.INVALID
 
     try:
-        if isinstance(source, (str, Path)):
-        if isinstance(source, CaseAwarePath):
+        if isinstance(source, (os.PathLike, str)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):

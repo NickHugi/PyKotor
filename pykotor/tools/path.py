@@ -124,8 +124,7 @@ class BasePath:
         return str(self)
 
     def __truediv__(self, key: PathElem):
-        """
-        Appends a path part with the divider operator '/'.
+        """Appends a path part with the divider operator '/'.
         This method is called when the left side is self.
 
         Args:
@@ -136,8 +135,7 @@ class BasePath:
         return type(self).__new__(type(self), self, key)
 
     def __rtruediv__(self, key: PathElem):
-        """
-        Appends a path part with the divider operator '/'.
+        """Appends a path part with the divider operator '/'.
         This method is called when the right side is self.
 
         Args:
@@ -148,8 +146,7 @@ class BasePath:
         return type(self).__new__(type(self), key, self)
 
     def __add__(self, key: PathElem):
-        """
-        Appends a path part with the addition operator '+'.
+        """Appends a path part with the addition operator '+'.
         This method is called when the left side is self.
 
         Args:
@@ -160,8 +157,7 @@ class BasePath:
         return type(self).__new__(type(self), self, key)
 
     def __radd__(self, key: PathElem):
-        """
-        Appends a path part with the addition operator '+'.
+        """Appends a path part with the addition operator '+'.
         This method is called when the right side is self.
 
         Args:
@@ -172,8 +168,7 @@ class BasePath:
         return type(self).__new__(type(self), key, self)
 
     def joinpath(self, *args: PATH_TYPES):
-        """
-        Appends one or more path-like objects and/or relative paths to self.
+        """Appends one or more path-like objects and/or relative paths to self.
 
         Args:
         ----
@@ -309,9 +304,8 @@ class CaseAwarePath(Path):
 
     @staticmethod
     def _get_matching_characters_count(str1: str, str2: str) -> int:
-        """
-        Returns the number of case sensitive characters that match in each position of the two strings.
-        if str1 and str2 are NOT case-insensitive matches, this method will return -1
+        """Returns the number of case sensitive characters that match in each position of the two strings.
+        if str1 and str2 are NOT case-insensitive matches, this method will return -1.
         """
         return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
 
