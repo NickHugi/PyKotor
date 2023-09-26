@@ -1,5 +1,0 @@
-[style]
-based_on_style = pep8
-split_before_named_assigns = true
-split_complex_comprehension = true
-split_arguments_when_comma_terminated = true

@@ -6,6 +6,7 @@
     "ms-python.mypy-type-checker",
     "ms-python.vscode-pylance",
     "ms-python.python",
-    "charliermarsh.ruff"
+    "charliermarsh.ruff",
+    "tamasfe.even-better-toml"
   ]
 }

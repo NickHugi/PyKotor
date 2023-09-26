@@ -4,17 +4,20 @@ repos:
     hooks:
       - id: trailing-whitespace
         always_run: true
+        fail_fast: true
       - id: end-of-file-fixer
         always_run: true
+        fail_fast: true
       - id: mixed-line-ending
         args: ["--fix=crlf"]
         always_run: true
-#  - repo: https://github.com/astral-sh/ruff-pre-commit
-#    rev: v0.0.282
-#    hooks:
-#      - id: ruff
-#        args: ["--fix"]
-#        always_run: true
+        fail_fast: true
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.282
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        always_run: true
   - repo: https://github.com/psf/black
     rev: 23.7.0
     hooks:
