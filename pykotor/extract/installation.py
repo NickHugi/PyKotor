@@ -124,6 +124,7 @@ class Installation:
         self.load_streamvoices()
         self.log.add_note("Load rims...")
         self.load_rims()
+        self.log.add_note("Finished loading installation")
 
     # region Get Paths
     def path(self) -> CaseAwarePath:

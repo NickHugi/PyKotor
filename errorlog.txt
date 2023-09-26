@@ -1,0 +1,2018 @@
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\dialogs\asyncloader.py", line 80, in run
+    self.successful.emit(self._task())
+                         ^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\windows\main.py", line 606, in task
+    return HTInstallation(path, name, tsl, self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\data\installation.py", line 61, in __init__
+    super().__init__(path)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\extract\installation.py", line 110, in __init__
+    self.load_modules()
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\extract\installation.py", line 269, in load_modules
+    for module in self.module_path().iterdir():
+                  ^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\extract\installation.py", line 145, in module_path
+    return self._find_resource_folderpath(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\extract\installation.py", line 232, in _find_resource_folderpath
+    for folder_path in resource_path.iterdir():
+  File "C:\Program Files\Python311\Lib\pathlib.py", line 931, in iterdir
+    for name in os.listdir(self):
+                ^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 3] The system cannot find the path specified: 'C:\\Users\\boden\\Desktop\\KotOR1'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\editors\bwm.py", line 107, in onMouseMoved
+    world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 257, in toWorldCoords
+    z = self.getZCoord(x2, y2)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\walkmesh.py", line 298, in getZCoord
+    if over := walkmesh.face_at(x, y):
+               ^^^^^^^^^^^^^^^
+AttributeError: 'BWM' object has no attribute 'face_at'
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 74, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------

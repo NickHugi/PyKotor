@@ -151,9 +151,6 @@
     "willbonus",
     "Yatch"
   ],
-  "python.testing.pytestArgs": [
-    "tests"
-  ],
   "python.testing.unittestArgs": [
     "-v",
     "-s",
@@ -161,16 +158,8 @@
     "-p",
     "*test*.py"
   ],
-  "cmake.configureOnOpen": false,
-  "pylint.args": ["--disable=C0301,C0103"],
-  "flake8.args": [
-    "--ignore=E501,W503,E203"
-  ],
-  "ruff.args": [
-    "--ignore=D101,D102,D103,D107,D212,D200,D205,D400,D403,D415,D417,D205,PLR5501,PLW2901"
-  ],
 "pythonTestExplorer.testplanEnabled": false,
-"python.analysis.inlayHints.callArgumentNames": false,
+"python.analysis.inlayHints.callArgumentNames": "off",
 "python.analysis.inlayHints.functionReturnTypes": true,
 "python.analysis.inlayHints.variableTypes": true,
 "python.analysis.typeCheckingMode": "basic",
@@ -186,6 +175,10 @@
 },
 "debug.allowBreakpointsEverywhere": true,
 "debugStdLib": true,
-"python.analysis.enablePytestSupport": true,
+"python.analysis.enablePytestSupport": false,
 "python.testing.pytestEnabled": false,
+"python.analysis.extraPaths": [
+  "./toolset",
+  ".",
+],
 }

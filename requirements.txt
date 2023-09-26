@@ -10,3 +10,15 @@ ruff
 pylint
 pyinstaller
 pre-commit
+certifi==2021.10.8
+charset-normalizer~=2.0
+idna~=3.3
+PyQt5~=5.15
+PyQt5-Qt5~=5.15
+PyQt5-sip~=12.10
+urllib3~=1.26
+watchdog~=2.1
+Pillow~=9.0
+Markdown~=3.3
+jsmin~=3.0
+requests~=2.27

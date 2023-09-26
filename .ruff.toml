@@ -4,8 +4,6 @@ target-version = "py37"
 
 select = ["ALL"]
 
-# All the ones without a comment were the ones that are currently violated
-# by the codebase. The plan is to fix them all (when sensible) and then enable them.
 ignore = [
     "ANN",
     "ANN101",   # Missing type annotation for {name} in method
@@ -33,6 +31,13 @@ ignore = [
     "D403",     # First word of the first line should be capitalized: {} -> {}
     "D404",     # First word of the docstring should not be "This"
     "D417",     # Missing argument description in the docstring for {definition}: {name}
+    # The following are currently violated by the codebase.
+    # The plan is to fix these (when sensible) and then enable them.
+    # "S605",     # Starting a process with a shell, possible injection detected
+    # "PTH110",   # `os.path.exists()` should be replaced by `Path.exists()`
+    # "PTH204",   # `os.path.getmtime` should be replaced by `Path.stat().st_mtime`
+    # "T201",     # `print` found
+    # "PTH119",   # `os.path.basename()` should be replaced by `Path.name`
 ]
 
 [per-file-ignores]
