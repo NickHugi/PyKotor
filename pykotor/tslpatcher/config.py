@@ -152,19 +152,20 @@ class ModInstaller:
         )
         ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
 
-        if chardet:
-            encoding = chardet.detect(ini_file_bytes, should_rename_legacy=True)["encoding"]
-            assert encoding is not None
+        encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") if chardet else None
+
+        if encoding is not None:
             ini_text = ini_file_bytes.decode(encoding)
         else:
-            ini_text: str | None = None
+            ini_data: str | None = None
             try:
-                ini_text = ini_file_bytes.decode()
+                ini_data = ini_file_bytes.decode()
             except UnicodeDecodeError:
                 try:
-                    ini_text = ini_file_bytes.decode("cp1252")
+                    ini_data = ini_file_bytes.decode("cp1252")
                 except UnicodeDecodeError:
-                    ini_text = ini_file_bytes.decode(errors="replace")
+                    ini_data = ini_file_bytes.decode(errors="replace")
+            ini_text = ini_data
 
         self._config = PatcherConfig()
         self._config.load(ini_text, self.mod_path, self.log)
@@ -354,7 +355,7 @@ class ModInstaller:
             )
 
             nss_bytes = BinaryReader.load_file(self.mod_path / nss_patch.filename)
-            encoding = chardet.detect(nss_bytes, should_rename_legacy=True)["encoding"] if chardet else None
+            encoding = chardet.detect(nss_bytes)["encoding"] if chardet else None
             nss: list[str] = [nss_bytes.decode(encoding=encoding, errors="replace")]  # type: ignore[reportGeneralTypeIssues] already defaults to utf-8
 
             nss_patch.apply(nss, memory, self.log)

@@ -33,9 +33,11 @@ class TXTEditor(Editor):
         try:
             # Try UTF-8 First - KotOR files typically do not use UTF8
             self.ui.textEdit.setPlainText(data.decode("windows-1252"))
-        except:
+        except UnicodeDecodeError:
             # Slower, auto detect encoding
-            encoding = chardet.detect(data)["encoding"]
+            encoding = (chardet.detect(data) or {}).get("encoding")
+            if not encoding:
+                raise
             self.ui.textEdit.setPlainText(data.decode(encoding))
 
     def build(self) -> Tuple[bytes, bytes]:

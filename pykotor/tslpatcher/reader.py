@@ -84,7 +84,7 @@ class ConfigReader:
 
         ini_file_bytes = BinaryReader.load_file(resolved_file_path)
         if chardet:
-            encoding = chardet.detect(ini_file_bytes, should_rename_legacy=True)["encoding"]
+            encoding = chardet.detect(ini_file_bytes)["encoding"]
             assert encoding is not None
             ini.read_string(ini_file_bytes.decode(encoding))
         else:
@@ -815,11 +815,12 @@ class NamespaceReader:
         ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
 
         ini_file_bytes = BinaryReader.load_file(path)
-        if chardet:
-            encoding = chardet.detect(ini_file_bytes, should_rename_legacy=True)["encoding"]
-            assert encoding is not None
+        encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") if chardet else None
+
+        if encoding is not None:
             ini.read_string(ini_file_bytes.decode(encoding))
-        else:
+
+        if encoding is None:
             ini_data: str | None = None
             try:
                 ini_data = ini_file_bytes.decode()

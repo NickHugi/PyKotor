@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
 from pykotor.resource.formats.tlk import read_tlk
@@ -9,6 +11,23 @@ from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.tlk import DiffTLK
 from pykotor.tslpatcher.diff.twoda import Diff2DA
 
+parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
+
+parser.add_argument("--install1", type=str, help="Path to the first K1/TSL install")
+parser.add_argument("--install2", type=str, help="Path to the second K1/TSL install")
+args, unknown = parser.parse_known_args()
+
+if len(unknown) > 1 and not args.install1:
+    args.install1 = unknown[0]
+if len(unknown) > 2 and not args.install2:
+    args.install2 = unknown[1]
+if not args.install1 and not args.install2:
+    parser.print_help()
+    print("Using defaults")
+    #sys.exit()  # noqa: ERA001
+
+tslpatcher_path = args.install1 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II"
+pykotor_path = args.install2 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - TSLRCM"
 
 def relative_path_from_to(src, dst):
     src_parts = list(src.parts)
@@ -34,36 +53,38 @@ def visual_length(s: str, tab_length=8):
 
 
 gff_types = [x.value.lower().strip() for x in GFFContent]
-tslpatcher_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II"
-pykotor_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - TSLRCM"
 
-pykotor_file = CaseAwarePath(pykotor_path, "dialog.tlk")
-tslpatcher_file = CaseAwarePath(tslpatcher_path, "dialog.tlk")
-
-if not pykotor_file.exists():
+pykotor_dialogtlk_file = CaseAwarePath(pykotor_path, "dialog.tlk")
+tslpatcher_dialogtlk_file = CaseAwarePath(tslpatcher_path, "dialog.tlk")
+pykotor_dialogtlk_exists = pykotor_dialogtlk_file.exists()
+tslpatcher_dialogtlk_exists = tslpatcher_dialogtlk_file.exists()
+if not pykotor_dialogtlk_exists:
     message = "Missing PyKotor dialog.tlk"
     print(message)
     print(len(message) * "-")
-if not tslpatcher_file.exists():
+if not tslpatcher_dialogtlk_exists:
     message = "Missing TSLPatcher dialog.tlk"
     print(message)
     print(len(message) * "-")
-pykotor_tlk = read_tlk(pykotor_file)
-tslpatcher_tlk = read_tlk(tslpatcher_file)
-if not pykotor_tlk and tslpatcher_tlk:
-    message = "PyKotor TLK resource missing in memory"
-    print(message)
-    print(len(message) * "-")
-elif pykotor_tlk and not tslpatcher_tlk:
-    message = "TSLPatcher TLK resource missing in memory"
-    print(message)
-    print(len(message) * "-")
-elif not pykotor_tlk and not tslpatcher_tlk:
-    message = "Both TLK resources missing in memory."
-    print(message)
-    print(len(message) * "-")
-else:
-    diff = DiffTLK(tslpatcher_tlk, pykotor_tlk).is_same()
+if pykotor_dialogtlk_exists and tslpatcher_dialogtlk_exists:
+    print(f"Loading TLK '{pykotor_dialogtlk_file}'")
+    pykotor_tlk = read_tlk(pykotor_dialogtlk_file)
+    print(f"Loading TLK '{tslpatcher_dialogtlk_file}'")
+    tslpatcher_tlk = read_tlk(tslpatcher_dialogtlk_file)
+    if not pykotor_tlk and tslpatcher_tlk:
+        message = "PyKotor TLK resource missing in memory"
+        print(message)
+        print(len(message) * "-")
+    elif pykotor_tlk and not tslpatcher_tlk:
+        message = "TSLPatcher TLK resource missing in memory"
+        print(message)
+        print(len(message) * "-")
+    elif not pykotor_tlk and not tslpatcher_tlk:
+        message = "Both TLK resources missing in memory."
+        print(message)
+        print(len(message) * "-")
+    else:
+        diff = DiffTLK(tslpatcher_tlk, pykotor_tlk).is_same()
 
 
 def override():
