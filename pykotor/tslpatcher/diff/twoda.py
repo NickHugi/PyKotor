@@ -21,7 +21,7 @@ class Diff2DA:
                 msg = "Row mismatch"
                 raise ValueError(msg)
             if index >= len(self.new._labels) or index < 0:
-                print(f"New index {index} outside of the TwoDA length: {len(self.new._labels)}")
+                print(f"Old index {index} outside of the new TwoDA length: {len(self.new._labels)}")
                 return False
             new_row = self.new.get_row(index)
 

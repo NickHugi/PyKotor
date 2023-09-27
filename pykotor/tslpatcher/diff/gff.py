@@ -61,7 +61,7 @@ class DiffGFF:
                     is_same_result = False
                     continue
 
-            elif old_value != new_value:
+            elif old_value != new_value and str(old_value) != str(new_value):
                 print(f"Value has changed for '{old_label}': '{old_value}' --> '{new_value}'")
                 is_same_result = False
                 continue
@@ -95,7 +95,7 @@ class DiffGFF:
                 nested_label = f"{label}[{i}]"
                 if not self._output_diff_from_two_lists(old_child, new_child, nested_label):
                     is_same_result = False
-            elif old_child != new_child:
+            elif old_child != new_child and str(old_child) != str(new_child):
                 print(f"Value difference at index {i} for field: '{label}': Old: '{old_child}', New: '{new_child}'")
                 is_same_result = False
 

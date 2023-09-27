@@ -356,7 +356,10 @@ class ModInstaller:
 
             nss_bytes = BinaryReader.load_file(self.mod_path / nss_patch.filename)
             encoding = chardet.detect(nss_bytes)["encoding"] if chardet else None
-            nss: list[str] = [nss_bytes.decode(encoding=encoding, errors="replace")]  # type: ignore[reportGeneralTypeIssues] already defaults to utf-8
+            if encoding:
+                nss: list[str] = [nss_bytes.decode(encoding=encoding, errors="replace")]  # type: ignore[reportGeneralTypeIssues] already defaults to utf-8
+            else:
+                nss: list[str] = [nss_bytes.decode(errors="replace")]
 
             nss_patch.apply(nss, memory, self.log)
 

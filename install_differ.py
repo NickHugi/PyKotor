@@ -27,7 +27,7 @@ if not args.install1 and not args.install2:
     #sys.exit()  # noqa: ERA001
 
 tslpatcher_path = args.install1 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II"
-pykotor_path = args.install2 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - TSLRCM"
+pykotor_path = args.install2 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor"
 
 def relative_path_from_to(src, dst):
     src_parts = list(src.parts)
@@ -84,7 +84,10 @@ if pykotor_dialogtlk_exists and tslpatcher_dialogtlk_exists:
         print(message)
         print(len(message) * "-")
     else:
-        diff = DiffTLK(tslpatcher_tlk, pykotor_tlk).is_same()
+        print("Diffing dialog.tlk files...")
+        same = DiffTLK(tslpatcher_tlk, pykotor_tlk).is_same()
+        print("dialog.tlk files match") if same else print("^ in dialog.tlk")
+        print("--------------------")
 
 
 def override():
@@ -94,7 +97,7 @@ def override():
 
     print("Searching first install dir:", tslpatcher_dir)
     print("Searching second install dir:", pykotor_dir)
-    print((max(len(str(tslpatcher_dir)), len(str(pykotor_dir))) + 29) * "-")
+    print((max(len(str(tslpatcher_dir))+29, len(str(pykotor_dir))+30)) * "-")
 
     # Create sets of filenames for both directories
     tslpatcher_files = {f.name.lower() for f in tslpatcher_dir.iterdir()}
