@@ -2016,3 +2016,23 @@ Traceback (most recent call last):
 OSError: This operation would exceed the streams boundaries.
 
 ----------------------
+Traceback (most recent call last):
+  File "C:\users\boden\Documents\GitHub\PyKotor\toolset\gui\widgets\renderer\model.py", line 76, in paintGL
+    self.scene.models["model"] = gl_load_mdl(self.scene, *self._modelToLoad)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 116, in gl_load_mdl
+    return Model(scene, _load_node(scene, None, mdl, mdx, offset, names))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 95, in _load_node
+    new_node = _load_node(scene, node, mdl, mdx, offset_to_child, names)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\gl\models\read_mdl.py", line 60, in _load_node
+    element_data = mdl.read_bytes(face_count * 2 * 3)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 543, in read_bytes
+    self.exceed_check(length)
+  File "C:\users\boden\Documents\GitHub\PyKotor\pykotor\common\stream.py", line 648, in exceed_check
+    raise OSError(msg)
+OSError: This operation would exceed the streams boundaries.
+
+----------------------
