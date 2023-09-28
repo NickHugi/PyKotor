@@ -1770,3 +1770,1027 @@ GFFStruct sizes have changed at '301nar.mod\arrival.DLG\EntryList\22': '43' --> 
 Extra field found at '301nar.mod\arrival.DLG\EntryList\22\CameraID'. FieldType: '5' Value: '-1'
 	in 301nar.mod	arrival	DLG
 -----------------------------------
+GFFList lengths have changed at '262tel.mod\atriscs3.DLG\EntryList': '17' --> '18'
+
+Extra GFFStruct at '262tel.mod\atriscs3.DLG\EntryList\17' in GFFList
+Contents of new struct:
+Struct ID: 16 Label: Speaker FieldType: 10 Value: ''
+Struct ID: 16 Label: Listener FieldType: 10 Value: 'Sister2Cut'
+Struct ID: 16 Label: AnimList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x0000016836EC3E90>'
+Struct ID: 16 Label: Text FieldType: 12 Value: '136401'
+Struct ID: 16 Label: VO_ResRef FieldType: 11 Value: '262atriscs3015'
+Struct ID: 16 Label: Script FieldType: 11 Value: 'a_global_set'
+Struct ID: 16 Label: Delay FieldType: 4 Value: '4294967295'
+Struct ID: 16 Label: Comment FieldType: 10 Value: ''
+Struct ID: 16 Label: Sound FieldType: 11 Value: ''
+Struct ID: 16 Label: Quest FieldType: 10 Value: ''
+Struct ID: 16 Label: PlotIndex FieldType: 5 Value: '-1'
+Struct ID: 16 Label: PlotXPPercentage FieldType: 8 Value: '1.0'
+Struct ID: 16 Label: WaitFlags FieldType: 4 Value: '0'
+Struct ID: 16 Label: CameraAngle FieldType: 4 Value: '0'
+Struct ID: 16 Label: FadeType FieldType: 0 Value: '0'
+Struct ID: 16 Label: RepliesList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x0000016836EC3CB0>'
+Struct ID: 16 Label: SoundExists FieldType: 0 Value: '1'
+Struct ID: 16 Label: ActionParam1 FieldType: 5 Value: '1'
+Struct ID: 16 Label: ActionParam1b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam2 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam2b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam3 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam3b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam4 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam4b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam5 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam5b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParamStrA FieldType: 10 Value: '000_Atriscs3'
+Struct ID: 16 Label: ActionParamStrB FieldType: 10 Value: ''
+Struct ID: 16 Label: AlienRaceNode FieldType: 5 Value: '0'
+Struct ID: 16 Label: CamVidEffect FieldType: 5 Value: '-1'
+Struct ID: 16 Label: Changed FieldType: 0 Value: '0'
+Struct ID: 16 Label: Emotion FieldType: 5 Value: '4'
+Struct ID: 16 Label: FacialAnim FieldType: 5 Value: '0'
+Struct ID: 16 Label: NodeID FieldType: 5 Value: '0'
+Struct ID: 16 Label: NodeUnskippable FieldType: 5 Value: '0'
+Struct ID: 16 Label: PostProcNode FieldType: 5 Value: '0'
+Struct ID: 16 Label: RecordNoOverri FieldType: 5 Value: '0'
+Struct ID: 16 Label: RecordVO FieldType: 5 Value: '0'
+Struct ID: 16 Label: Script2 FieldType: 11 Value: ''
+Struct ID: 16 Label: VOTextChanged FieldType: 5 Value: '0'
+Struct ID: 16 Label: CameraID FieldType: 5 Value: '-1'
+Struct ID: 16 Label: RecordNoVOOverri FieldType: 5 Value: '0'
+
+Value has changed at '262tel.mod\atriscs3.DLG\EntryList\16\Text': '136401' --> '0'
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\0\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\2\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\3\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\4\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\5\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\6\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\7\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\8\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\9\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\10\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\11\Text': '-1' --> ''
+GFFList lengths have changed at '262tel.mod\atriscs3.DLG\ReplyList\11\EntriesList': '2' --> '3'
+
+Extra GFFStruct at '262tel.mod\atriscs3.DLG\ReplyList\11\EntriesList\2' in GFFList
+Contents of new struct:
+Struct ID: 1 Label: Index FieldType: 4 Value: '16'
+Struct ID: 1 Label: Active FieldType: 11 Value: ''
+Struct ID: 1 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 1 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 1 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 1 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 1 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 1 Label: Not FieldType: 0 Value: '0'
+Struct ID: 1 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 1 Label: Logic FieldType: 5 Value: '0'
+
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\12\Text': '-1' --> ''
+Value has changed at '262tel.mod\atriscs3.DLG\ReplyList\13\Text': '-1' --> ''
+	in 262tel.mod	atriscs3	DLG
+-------------------------------------------
+GFFList lengths have changed at '262tel.mod\atrend1.DLG\ReplyList\2\EntriesList': '2' --> '3'
+
+Extra GFFStruct at '262tel.mod\atrend1.DLG\ReplyList\2\EntriesList\2' in GFFList
+Contents of new struct:
+Struct ID: 1 Label: Index FieldType: 4 Value: '8'
+Struct ID: 1 Label: Active FieldType: 11 Value: ''
+Struct ID: 1 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 1 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Not FieldType: 0 Value: '0'
+Struct ID: 1 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 1 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 1 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 1 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 1 Label: IsChild FieldType: 0 Value: '0'
+
+	in 262tel.mod	atrend1	DLG
+-----------------------------------
+GFFStruct sizes have changed at '262tel.mod\atrend2.DLG\EntryList\0': '42' --> '41'
+
+GFFList lengths have changed at '262tel.mod\atrend2.DLG\EntryList\0\AnimList': '2' --> '0'
+
+Missing GFFStruct at '262tel.mod\atrend2.DLG\EntryList\0\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Atris'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+Missing GFFStruct at '262tel.mod\atrend2.DLG\EntryList\0\AnimList\1' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Handmaiden'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+Missing field at '262tel.mod\atrend2.DLG\EntryList\0\SoundExists'. FieldType: 'None' Value: 'None'
+Value has changed at '262tel.mod\atrend2.DLG\EntryList\0\Script2': 'a_atris_animfix' --> ''
+Value has changed at '262tel.mod\atrend2.DLG\EntryList\0\ActionParam1b': '3' --> '0'
+GFFStruct sizes have changed at '262tel.mod\atrend2.DLG\EntryList\1': '42' --> '41'
+
+GFFList lengths have changed at '262tel.mod\atrend2.DLG\EntryList\1\AnimList': '1' --> '0'
+
+Missing GFFStruct at '262tel.mod\atrend2.DLG\EntryList\1\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Handmaiden'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+Value has changed at '262tel.mod\atrend2.DLG\EntryList\1\Script': 'a_atris_animfix' --> ''
+Value has changed at '262tel.mod\atrend2.DLG\EntryList\1\CameraAngle': '6' --> '0'
+Missing field at '262tel.mod\atrend2.DLG\EntryList\1\CameraID'. FieldType: 'None' Value: 'None'
+Value has changed at '262tel.mod\atrend2.DLG\EntryList\1\ActionParam1': '4' --> '0'
+GFFList lengths have changed at '262tel.mod\atrend2.DLG\ReplyList\3\EntriesList': '2' --> '3'
+
+Extra GFFStruct at '262tel.mod\atrend2.DLG\ReplyList\3\EntriesList\2' in GFFList
+Contents of new struct:
+Struct ID: 1 Label: Index FieldType: 4 Value: '8'
+Struct ID: 1 Label: Active FieldType: 11 Value: ''
+Struct ID: 1 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 1 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Not FieldType: 0 Value: '0'
+Struct ID: 1 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 1 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 1 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 1 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 1 Label: IsChild FieldType: 0 Value: '0'
+
+	in 262tel.mod	atrend2	DLG
+-----------------------------------
+Value has changed at '610dan.mod\jorran.DLG\EditorInfo': 'v2.3.0 Aug 29, 2006 LastEdit: 01-Mar-14 21:00:37' --> 'v2.3.2 Apr 30, 2008 LastEdit: 15-Aug-16 21:50:37'
+	in 610dan.mod	jorran	DLG
+-----------------------------------
+GFFList lengths have changed at '610dan.mod\disc_enc.DLG\EntryList': '123' --> '124'
+
+Extra GFFStruct at '610dan.mod\disc_enc.DLG\EntryList\123' in GFFList
+Contents of new struct:
+Struct ID: 29 Label: Speaker FieldType: 10 Value: 'Atton'
+Struct ID: 29 Label: AnimList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x00000168382EE220>'
+Struct ID: 29 Label: Text FieldType: 12 Value: '111170'
+Struct ID: 29 Label: VO_ResRef FieldType: 11 Value: ''
+Struct ID: 29 Label: Script FieldType: 11 Value: ''
+Struct ID: 29 Label: Script2 FieldType: 11 Value: ''
+Struct ID: 29 Label: ActionParam1 FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam2 FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam3 FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam4 FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam5 FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam1b FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam2b FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam3b FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam4b FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParam5b FieldType: 5 Value: '0'
+Struct ID: 29 Label: ActionParamStrA FieldType: 10 Value: ''
+Struct ID: 29 Label: ActionParamStrB FieldType: 10 Value: ''
+Struct ID: 29 Label: NodeUnskippable FieldType: 5 Value: '0'
+Struct ID: 29 Label: Delay FieldType: 4 Value: '2'
+Struct ID: 29 Label: Comment FieldType: 10 Value: ''
+Struct ID: 29 Label: Sound FieldType: 11 Value: ''
+Struct ID: 29 Label: Quest FieldType: 10 Value: ''
+Struct ID: 29 Label: PlotIndex FieldType: 5 Value: '-1'
+Struct ID: 29 Label: PlotXPPercentage FieldType: 8 Value: '1.0'
+Struct ID: 29 Label: PostProcNode FieldType: 5 Value: '0'
+Struct ID: 29 Label: AlienRaceNode FieldType: 5 Value: '0'
+Struct ID: 29 Label: Emotion FieldType: 5 Value: '4'
+Struct ID: 29 Label: RecordVO FieldType: 5 Value: '0'
+Struct ID: 29 Label: RecordNoVOOverri FieldType: 5 Value: '1'
+Struct ID: 29 Label: FacialAnim FieldType: 5 Value: '0'
+Struct ID: 29 Label: Listener FieldType: 10 Value: ''
+Struct ID: 29 Label: WaitFlags FieldType: 4 Value: '0'
+Struct ID: 29 Label: CameraAngle FieldType: 4 Value: '1'
+Struct ID: 29 Label: CamHeightOffset FieldType: 8 Value: '0.0'
+Struct ID: 29 Label: TarHeightOffset FieldType: 8 Value: '0.0'
+Struct ID: 29 Label: CamVidEffect FieldType: 5 Value: '-1'
+Struct ID: 29 Label: FadeType FieldType: 0 Value: '0'
+Struct ID: 29 Label: NodeID FieldType: 5 Value: '0'
+Struct ID: 29 Label: VOTextChanged FieldType: 0 Value: '1'
+Struct ID: 29 Label: Changed FieldType: 0 Value: '1'
+Struct ID: 29 Label: RepliesList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x00000168382EF210>'
+Struct ID: 29 Label: SoundExists FieldType: 0 Value: '0'
+Struct ID: 29 Label: CameraID FieldType: 5 Value: '-1'
+
+GFFStruct sizes have changed at '610dan.mod\disc_enc.DLG\EntryList\27': '42' --> '44'
+
+Extra field found at '610dan.mod\disc_enc.DLG\EntryList\27\SoundExists'. FieldType: '0' Value: '0'
+Extra field found at '610dan.mod\disc_enc.DLG\EntryList\27\CameraID'. FieldType: '5' Value: '-1'
+GFFStruct sizes have changed at '610dan.mod\disc_enc.DLG\EntryList\29': '42' --> '44'
+
+Extra field found at '610dan.mod\disc_enc.DLG\EntryList\29\SoundExists'. FieldType: '0' Value: '0'
+Extra field found at '610dan.mod\disc_enc.DLG\EntryList\29\CameraID'. FieldType: '5' Value: '-1'
+GFFStruct sizes have changed at '610dan.mod\disc_enc.DLG\EntryList\51': '42' --> '41'
+
+Missing field at '610dan.mod\disc_enc.DLG\EntryList\51\CameraID'. FieldType: 'None' Value: 'None'
+Value has changed at '610dan.mod\disc_enc.DLG\ReplyList\36\EntriesList\1\Active2': '' --> 'c_isfemale'
+Value has changed at '610dan.mod\disc_enc.DLG\ReplyList\37\EntriesList\1\Active2': '' --> 'c_isfemale'
+GFFList lengths have changed at '610dan.mod\disc_enc.DLG\ReplyList\38\EntriesList': '2' --> '3'
+
+Extra GFFStruct at '610dan.mod\disc_enc.DLG\ReplyList\38\EntriesList\2' in GFFList
+Contents of new struct:
+Struct ID: 2 Label: Index FieldType: 4 Value: '122'
+Struct ID: 2 Label: Active FieldType: 11 Value: ''
+Struct ID: 2 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 2 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 2 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 2 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 2 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 2 Label: Not FieldType: 0 Value: '0'
+Struct ID: 2 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 2 Label: Logic FieldType: 5 Value: '0'
+
+Value has changed at '610dan.mod\disc_enc.DLG\ReplyList\38\EntriesList\0\Active2': '' --> 'c_isfemale'
+Value has changed at '610dan.mod\disc_enc.DLG\ReplyList\38\EntriesList\1\Index': '122' --> '123'
+Value has changed at '610dan.mod\disc_enc.DLG\ReplyList\38\EntriesList\1\Active': '' --> 'c_con_attonpm'
+Value has changed at '610dan.mod\disc_enc.DLG\ReplyList\40\EntriesList\1\Active2': '' --> 'c_isfemale'
+Value has changed at '610dan.mod\disc_enc.DLG\ReplyList\61\EntriesList\0\Param1': '1' --> '0'
+	in 610dan.mod	disc_enc	DLG
+-------------------------------------------
+GFFList lengths have changed at '003ebo.mod\kredisc3.DLG\EntryList': '28' --> '29'
+
+Extra GFFStruct at '003ebo.mod\kredisc3.DLG\EntryList\28' in GFFList
+Contents of new struct:
+Struct ID: 27 Label: Speaker FieldType: 10 Value: 'Kreia'
+Struct ID: 27 Label: Listener FieldType: 10 Value: ''
+Struct ID: 27 Label: AnimList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x000001683A1E0BF0>'
+Struct ID: 27 Label: Text FieldType: 12 Value: '136408'
+Struct ID: 27 Label: VO_ResRef FieldType: 11 Value: '003kredisc3023'
+Struct ID: 27 Label: Script FieldType: 11 Value: ''
+Struct ID: 27 Label: Delay FieldType: 4 Value: '4294967295'
+Struct ID: 27 Label: Comment FieldType: 10 Value: ''
+Struct ID: 27 Label: Sound FieldType: 11 Value: ''
+Struct ID: 27 Label: Quest FieldType: 10 Value: ''
+Struct ID: 27 Label: PlotIndex FieldType: 5 Value: '-1'
+Struct ID: 27 Label: PlotXPPercentage FieldType: 8 Value: '1.0'
+Struct ID: 27 Label: WaitFlags FieldType: 4 Value: '0'
+Struct ID: 27 Label: CameraAngle FieldType: 4 Value: '0'
+Struct ID: 27 Label: FadeType FieldType: 0 Value: '0'
+Struct ID: 27 Label: RepliesList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x000001683A1E1190>'
+Struct ID: 27 Label: SoundExists FieldType: 0 Value: '0'
+Struct ID: 27 Label: ActionParam1 FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam1b FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam2 FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam2b FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam3 FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam3b FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam4 FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam4b FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam5 FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParam5b FieldType: 5 Value: '0'
+Struct ID: 27 Label: ActionParamStrA FieldType: 10 Value: ''
+Struct ID: 27 Label: ActionParamStrB FieldType: 10 Value: ''
+Struct ID: 27 Label: AlienRaceNode FieldType: 5 Value: '0'
+Struct ID: 27 Label: CamVidEffect FieldType: 5 Value: '-1'
+Struct ID: 27 Label: Changed FieldType: 0 Value: '0'
+Struct ID: 27 Label: Emotion FieldType: 5 Value: '4'
+Struct ID: 27 Label: FacialAnim FieldType: 5 Value: '0'
+Struct ID: 27 Label: NodeID FieldType: 5 Value: '0'
+Struct ID: 27 Label: NodeUnskippable FieldType: 5 Value: '0'
+Struct ID: 27 Label: PostProcNode FieldType: 5 Value: '0'
+Struct ID: 27 Label: RecordNoOverri FieldType: 5 Value: '0'
+Struct ID: 27 Label: RecordVO FieldType: 5 Value: '0'
+Struct ID: 27 Label: Script2 FieldType: 11 Value: ''
+Struct ID: 27 Label: VOTextChanged FieldType: 5 Value: '0'
+Struct ID: 27 Label: CameraID FieldType: 5 Value: '-1'
+Struct ID: 27 Label: RecordNoVOOverri FieldType: 5 Value: '0'
+
+Value has changed at '003ebo.mod\kredisc3.DLG\EntryList\27\Text': '136408' --> '0'
+GFFList lengths have changed at '003ebo.mod\kredisc3.DLG\ReplyList\21\EntriesList': '2' --> '3'
+
+Extra GFFStruct at '003ebo.mod\kredisc3.DLG\ReplyList\21\EntriesList\2' in GFFList
+Contents of new struct:
+Struct ID: 1 Label: Index FieldType: 4 Value: '27'
+Struct ID: 1 Label: Active FieldType: 11 Value: ''
+Struct ID: 1 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 1 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 1 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 1 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 1 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 1 Label: Not FieldType: 0 Value: '0'
+Struct ID: 1 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 1 Label: Logic FieldType: 5 Value: '0'
+
+	in 003ebo.mod	kredisc3	DLG
+-------------------------------------------
+GFFList lengths have changed at '003ebo.mod\pcdead2.DLG\ReplyList\2\EntriesList': '4' --> '5'
+
+Extra GFFStruct at '003ebo.mod\pcdead2.DLG\ReplyList\2\EntriesList\4' in GFFList
+Contents of new struct:
+Struct ID: 3 Label: Index FieldType: 4 Value: '4'
+Struct ID: 3 Label: Active FieldType: 11 Value: ''
+Struct ID: 3 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 3 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Not FieldType: 0 Value: '0'
+Struct ID: 3 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 3 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 3 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 3 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 3 Label: IsChild FieldType: 0 Value: '0'
+
+	in 003ebo.mod	pcdead2	DLG
+-----------------------------------
+Value has changed at '903mal.mod\903sion.DLG\EditorInfo': 'v2.3.2 Apr 30, 2008 LastEdit: 06-Aug-22 17:55:51' --> 'v2.3.0 Aug 29, 2006 LastEdit: 22-Jul-12 13:45:00'
+GFFStruct sizes have changed at '903mal.mod\903sion.DLG\EntryList\111': '42' --> '41'
+
+Missing field at '903mal.mod\903sion.DLG\EntryList\111\SoundExists'. FieldType: 'None' Value: 'None'
+Value has changed at '903mal.mod\903sion.DLG\EntryList\111\Script2': 'a_sionposfix' --> ''
+	in 903mal.mod	903sion	DLG
+-----------------------------------
+GFFList lengths have changed at '402dxn.mod\kumus.DLG\EntryList': '51' --> '53'
+
+Extra GFFStruct at '402dxn.mod\kumus.DLG\EntryList\51' in GFFList
+Contents of new struct:
+Struct ID: 16 Label: Speaker FieldType: 10 Value: 'Handmaiden'
+Struct ID: 16 Label: AnimList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x00000168359C25E0>'
+Struct ID: 16 Label: Text FieldType: 12 Value: '136402'
+Struct ID: 16 Label: VO_ResRef FieldType: 11 Value: '402kumus046'
+Struct ID: 16 Label: Script FieldType: 11 Value: ''
+Struct ID: 16 Label: Script2 FieldType: 11 Value: ''
+Struct ID: 16 Label: ActionParam1 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam2 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam3 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam4 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam5 FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam1b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam2b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam3b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam4b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParam5b FieldType: 5 Value: '0'
+Struct ID: 16 Label: ActionParamStrA FieldType: 10 Value: ''
+Struct ID: 16 Label: ActionParamStrB FieldType: 10 Value: ''
+Struct ID: 16 Label: NodeUnskippable FieldType: 5 Value: '0'
+Struct ID: 16 Label: Delay FieldType: 4 Value: '4294967295'
+Struct ID: 16 Label: Comment FieldType: 10 Value: ''
+Struct ID: 16 Label: Sound FieldType: 11 Value: ''
+Struct ID: 16 Label: Quest FieldType: 10 Value: ''
+Struct ID: 16 Label: PlotIndex FieldType: 5 Value: '-1'
+Struct ID: 16 Label: PlotXPPercentage FieldType: 8 Value: '1.0'
+Struct ID: 16 Label: PostProcNode FieldType: 5 Value: '0'
+Struct ID: 16 Label: AlienRaceNode FieldType: 5 Value: '0'
+Struct ID: 16 Label: Emotion FieldType: 5 Value: '4'
+Struct ID: 16 Label: RecordVO FieldType: 5 Value: '0'
+Struct ID: 16 Label: RecordNoVOOverri FieldType: 5 Value: '0'
+Struct ID: 16 Label: FacialAnim FieldType: 5 Value: '0'
+Struct ID: 16 Label: Listener FieldType: 10 Value: ''
+Struct ID: 16 Label: WaitFlags FieldType: 4 Value: '0'
+Struct ID: 16 Label: CameraAngle FieldType: 4 Value: '0'
+Struct ID: 16 Label: CamVidEffect FieldType: 5 Value: '-1'
+Struct ID: 16 Label: FadeType FieldType: 0 Value: '0'
+Struct ID: 16 Label: NodeID FieldType: 5 Value: '38'
+Struct ID: 16 Label: VOTextChanged FieldType: 0 Value: '0'
+Struct ID: 16 Label: Changed FieldType: 0 Value: '0'
+Struct ID: 16 Label: RepliesList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x00000168359C2630>'
+Struct ID: 16 Label: SoundExists FieldType: 0 Value: '1'
+Struct ID: 16 Label: CameraID FieldType: 5 Value: '-1'
+
+Extra GFFStruct at '402dxn.mod\kumus.DLG\EntryList\52' in GFFList
+Contents of new struct:
+Struct ID: 14 Label: Speaker FieldType: 10 Value: 'Disciple'
+Struct ID: 14 Label: AnimList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x00000168358ABF30>'
+Struct ID: 14 Label: Text FieldType: 12 Value: '0'
+Struct ID: 14 Label: VO_ResRef FieldType: 11 Value: '402kumus047'
+Struct ID: 14 Label: Script FieldType: 11 Value: ''
+Struct ID: 14 Label: Script2 FieldType: 11 Value: ''
+Struct ID: 14 Label: ActionParam1 FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam2 FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam3 FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam4 FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam5 FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam1b FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam2b FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam3b FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam4b FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParam5b FieldType: 5 Value: '0'
+Struct ID: 14 Label: ActionParamStrA FieldType: 10 Value: ''
+Struct ID: 14 Label: ActionParamStrB FieldType: 10 Value: ''
+Struct ID: 14 Label: NodeUnskippable FieldType: 5 Value: '0'
+Struct ID: 14 Label: Delay FieldType: 4 Value: '4294967295'
+Struct ID: 14 Label: Comment FieldType: 10 Value: ''
+Struct ID: 14 Label: Sound FieldType: 11 Value: ''
+Struct ID: 14 Label: Quest FieldType: 10 Value: ''
+Struct ID: 14 Label: PlotIndex FieldType: 5 Value: '-1'
+Struct ID: 14 Label: PlotXPPercentage FieldType: 8 Value: '1.0'
+Struct ID: 14 Label: PostProcNode FieldType: 5 Value: '0'
+Struct ID: 14 Label: AlienRaceNode FieldType: 5 Value: '0'
+Struct ID: 14 Label: Emotion FieldType: 5 Value: '4'
+Struct ID: 14 Label: RecordVO FieldType: 5 Value: '0'
+Struct ID: 14 Label: RecordNoVOOverri FieldType: 5 Value: '0'
+Struct ID: 14 Label: FacialAnim FieldType: 5 Value: '0'
+Struct ID: 14 Label: Listener FieldType: 10 Value: ''
+Struct ID: 14 Label: WaitFlags FieldType: 4 Value: '0'
+Struct ID: 14 Label: CameraAngle FieldType: 4 Value: '0'
+Struct ID: 14 Label: CamVidEffect FieldType: 5 Value: '-1'
+Struct ID: 14 Label: FadeType FieldType: 0 Value: '0'
+Struct ID: 14 Label: NodeID FieldType: 5 Value: '40'
+Struct ID: 14 Label: VOTextChanged FieldType: 0 Value: '0'
+Struct ID: 14 Label: Changed FieldType: 0 Value: '0'
+Struct ID: 14 Label: RepliesList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x00000168358A9D70>'
+Struct ID: 14 Label: SoundExists FieldType: 0 Value: '1'
+Struct ID: 14 Label: CameraID FieldType: 5 Value: '-1'
+
+Value has changed at '402dxn.mod\kumus.DLG\EntryList\49\Text': '136402' --> '0'
+GFFList lengths have changed at '402dxn.mod\kumus.DLG\ReplyList\9\EntriesList': '6' --> '8'
+
+Extra GFFStruct at '402dxn.mod\kumus.DLG\ReplyList\9\EntriesList\6' in GFFList
+Contents of new struct:
+Struct ID: 4 Label: Index FieldType: 4 Value: '10'
+Struct ID: 4 Label: Active FieldType: 11 Value: 'c_con_baodurpm'
+Struct ID: 4 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 4 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Not FieldType: 0 Value: '0'
+Struct ID: 4 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 4 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 4 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 4 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 4 Label: IsChild FieldType: 0 Value: '0'
+
+Extra GFFStruct at '402dxn.mod\kumus.DLG\ReplyList\9\EntriesList\7' in GFFList
+Contents of new struct:
+Struct ID: 5 Label: Index FieldType: 4 Value: '9'
+Struct ID: 5 Label: Active FieldType: 11 Value: ''
+Struct ID: 5 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 5 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Not FieldType: 0 Value: '0'
+Struct ID: 5 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 5 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 5 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 5 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 5 Label: IsChild FieldType: 0 Value: '0'
+
+	in 402dxn.mod	kumus	DLG
+-----------------------------------
+Could not load '..\..\..\Knights of the Old Republic II - PyKotor\modules\702kor_dlg.erf'. Reason: Tried to load an unsupported or corrupted file.
+--------------------------------------------------------------------------------------------------------------------------------------------------
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList': '55' --> '56'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\EntryList\55' in GFFList
+Contents of new struct:
+Struct ID: 54 Label: Speaker FieldType: 10 Value: 'Disciple'
+Struct ID: 54 Label: Listener FieldType: 10 Value: ''
+Struct ID: 54 Label: AnimList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x0000016838481DC0>'
+Struct ID: 54 Label: Text FieldType: 12 Value: 'Wasted pawn of the Republic...'
+Struct ID: 54 Label: VO_ResRef FieldType: 11 Value: '904904KREIA995'
+Struct ID: 54 Label: Script FieldType: 11 Value: ''
+Struct ID: 54 Label: Delay FieldType: 4 Value: '4294967295'
+Struct ID: 54 Label: Comment FieldType: 10 Value: ''
+Struct ID: 54 Label: Sound FieldType: 11 Value: ''
+Struct ID: 54 Label: Quest FieldType: 10 Value: ''
+Struct ID: 54 Label: PlotIndex FieldType: 5 Value: '-1'
+Struct ID: 54 Label: PlotXPPercentage FieldType: 8 Value: '1.0'
+Struct ID: 54 Label: WaitFlags FieldType: 4 Value: '0'
+Struct ID: 54 Label: CameraAngle FieldType: 4 Value: '1'
+Struct ID: 54 Label: FadeType FieldType: 0 Value: '0'
+Struct ID: 54 Label: RepliesList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x0000016838482360>'
+Struct ID: 54 Label: SoundExists FieldType: 0 Value: '1'
+Struct ID: 54 Label: ActionParam1 FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam1b FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam2 FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam2b FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam3 FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam3b FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam4 FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam4b FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam5 FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParam5b FieldType: 5 Value: '0'
+Struct ID: 54 Label: ActionParamStrA FieldType: 10 Value: 'Disciple'
+Struct ID: 54 Label: ActionParamStrB FieldType: 10 Value: 'Mira'
+Struct ID: 54 Label: AlienRaceNode FieldType: 5 Value: '0'
+Struct ID: 54 Label: CamVidEffect FieldType: 5 Value: '-1'
+Struct ID: 54 Label: Changed FieldType: 0 Value: '0'
+Struct ID: 54 Label: Emotion FieldType: 5 Value: '4'
+Struct ID: 54 Label: FacialAnim FieldType: 5 Value: '0'
+Struct ID: 54 Label: NodeID FieldType: 5 Value: '0'
+Struct ID: 54 Label: NodeUnskippable FieldType: 5 Value: '0'
+Struct ID: 54 Label: PostProcNode FieldType: 5 Value: '0'
+Struct ID: 54 Label: RecordNoOverri FieldType: 5 Value: '0'
+Struct ID: 54 Label: RecordVO FieldType: 5 Value: '0'
+Struct ID: 54 Label: Script2 FieldType: 11 Value: ''
+Struct ID: 54 Label: VOTextChanged FieldType: 5 Value: '0'
+Struct ID: 54 Label: CameraID FieldType: 5 Value: '-1'
+Struct ID: 54 Label: RecordNoVOOverri FieldType: 5 Value: '0'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\25\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\25\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Handmaiden'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\26\AnimList': '2' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\26\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\26\AnimList\1' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Mira'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\27\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\27\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\28\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\28\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\29\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\29\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\30\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\30\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\31\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\31\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\32\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\32\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\33\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\33\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\34\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\34\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\35\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\35\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\38\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\38\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Mira'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10407'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\39\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\39\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Handmaiden'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10408'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\40\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\40\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10030'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\41\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\41\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Atton'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10040'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\47\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\47\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Disciple'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\48\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\48\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'VisasMarr'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10148'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\EntryList\49\AnimList': '1' --> '0'
+
+Missing GFFStruct at '907mal.mod\907krepart.DLG\EntryList\49\AnimList\0' in GFFList
+Contents of old struct:
+Struct ID: 0 Label: Participant FieldType: 10 Value: 'Disciple'
+Struct ID: 0 Label: Animation FieldType: 2 Value: '10408'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\ReplyList': '46' --> '47'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\46' in GFFList
+Contents of new struct:
+Struct ID: 45 Label: Listener FieldType: 10 Value: ''
+Struct ID: 45 Label: AnimList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x000001683855EEF0>'
+Struct ID: 45 Label: Text FieldType: 12 Value: '-1'
+Struct ID: 45 Label: VO_ResRef FieldType: 11 Value: ''
+Struct ID: 45 Label: Script FieldType: 11 Value: ''
+Struct ID: 45 Label: Delay FieldType: 4 Value: '4294967295'
+Struct ID: 45 Label: Comment FieldType: 10 Value: ''
+Struct ID: 45 Label: Sound FieldType: 11 Value: ''
+Struct ID: 45 Label: Quest FieldType: 10 Value: ''
+Struct ID: 45 Label: PlotIndex FieldType: 5 Value: '-1'
+Struct ID: 45 Label: PlotXPPercentage FieldType: 8 Value: '1.0'
+Struct ID: 45 Label: WaitFlags FieldType: 4 Value: '0'
+Struct ID: 45 Label: CameraAngle FieldType: 4 Value: '0'
+Struct ID: 45 Label: FadeType FieldType: 0 Value: '0'
+Struct ID: 45 Label: EntriesList FieldType: 15 Value: '<pykotor.resource.formats.gff.gff_data.GFFList object at 0x000001683855F490>'
+Struct ID: 45 Label: SoundExists FieldType: 0 Value: '0'
+Struct ID: 45 Label: ActionParam1 FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam1b FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam2 FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam2b FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam3 FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam3b FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam4 FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam4b FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam5 FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParam5b FieldType: 5 Value: '0'
+Struct ID: 45 Label: ActionParamStrA FieldType: 10 Value: ''
+Struct ID: 45 Label: ActionParamStrB FieldType: 10 Value: ''
+Struct ID: 45 Label: AlienRaceNode FieldType: 5 Value: '0'
+Struct ID: 45 Label: CamVidEffect FieldType: 5 Value: '-1'
+Struct ID: 45 Label: Changed FieldType: 0 Value: '0'
+Struct ID: 45 Label: Emotion FieldType: 5 Value: '4'
+Struct ID: 45 Label: FacialAnim FieldType: 5 Value: '0'
+Struct ID: 45 Label: NodeID FieldType: 5 Value: '0'
+Struct ID: 45 Label: NodeUnskippable FieldType: 5 Value: '0'
+Struct ID: 45 Label: PostProcNode FieldType: 5 Value: '0'
+Struct ID: 45 Label: RecordNoOverri FieldType: 5 Value: '0'
+Struct ID: 45 Label: RecordVO FieldType: 5 Value: '0'
+Struct ID: 45 Label: Script2 FieldType: 11 Value: ''
+Struct ID: 45 Label: VOTextChanged FieldType: 5 Value: '0'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\ReplyList\6\EntriesList': '2' --> '3'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\6\EntriesList\2' in GFFList
+Contents of new struct:
+Struct ID: 1 Label: Index FieldType: 4 Value: '8'
+Struct ID: 1 Label: Active FieldType: 11 Value: ''
+Struct ID: 1 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 1 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 1 Label: Not FieldType: 0 Value: '0'
+Struct ID: 1 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 1 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 1 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 1 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 1 Label: IsChild FieldType: 0 Value: '0'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\ReplyList\23\EntriesList': '7' --> '12'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\23\EntriesList\7' in GFFList
+Contents of new struct:
+Struct ID: 2 Label: Index FieldType: 4 Value: '31'
+Struct ID: 2 Label: Active FieldType: 11 Value: 'c_npc_avail'
+Struct ID: 2 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 2 Label: Param1 FieldType: 5 Value: '9'
+Struct ID: 2 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Not FieldType: 0 Value: '0'
+Struct ID: 2 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 2 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 2 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 2 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 2 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 2 Label: LinkComment FieldType: 10 Value: ''
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\23\EntriesList\8' in GFFList
+Contents of new struct:
+Struct ID: 3 Label: Index FieldType: 4 Value: '42'
+Struct ID: 3 Label: Active FieldType: 11 Value: 'c_npc_avail'
+Struct ID: 3 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 3 Label: Active2 FieldType: 11 Value: 'c_is_valid'
+Struct ID: 3 Label: Param1 FieldType: 5 Value: '7'
+Struct ID: 3 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 3 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 3 Label: ParamStrB FieldType: 10 Value: 'Mira'
+Struct ID: 3 Label: Not FieldType: 0 Value: '0'
+Struct ID: 3 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 3 Label: Logic FieldType: 5 Value: '0'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\23\EntriesList\9' in GFFList
+Contents of new struct:
+Struct ID: 4 Label: Index FieldType: 4 Value: '50'
+Struct ID: 4 Label: Active FieldType: 11 Value: 'c_npc_avail'
+Struct ID: 4 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 4 Label: Active2 FieldType: 11 Value: 'c_global_lt'
+Struct ID: 4 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param1b FieldType: 5 Value: '4'
+Struct ID: 4 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 4 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 4 Label: ParamStrB FieldType: 10 Value: '003EBO_Disciple_Atton'
+Struct ID: 4 Label: Not FieldType: 0 Value: '0'
+Struct ID: 4 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 4 Label: Logic FieldType: 5 Value: '0'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\23\EntriesList\10' in GFFList
+Contents of new struct:
+Struct ID: 5 Label: Index FieldType: 4 Value: '46'
+Struct ID: 5 Label: Active FieldType: 11 Value: ''
+Struct ID: 5 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 5 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 5 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 5 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 5 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 5 Label: Not FieldType: 0 Value: '0'
+Struct ID: 5 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 5 Label: Logic FieldType: 5 Value: '0'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\23\EntriesList\11' in GFFList
+Contents of new struct:
+Struct ID: 6 Label: Index FieldType: 4 Value: '29'
+Struct ID: 6 Label: Active FieldType: 11 Value: 'c_isfemale'
+Struct ID: 6 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 6 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 6 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 6 Label: Not FieldType: 0 Value: '0'
+Struct ID: 6 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 6 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 6 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 6 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 6 Label: IsChild FieldType: 0 Value: '0'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\ReplyList\26\EntriesList': '5' --> '6'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\26\EntriesList\5' in GFFList
+Contents of new struct:
+Struct ID: 4 Label: Index FieldType: 4 Value: '45'
+Struct ID: 4 Label: Active FieldType: 11 Value: ''
+Struct ID: 4 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 4 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 4 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 4 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 4 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 4 Label: Not FieldType: 0 Value: '0'
+Struct ID: 4 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 4 Label: Logic FieldType: 5 Value: '0'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\ReplyList\35\EntriesList': '6' --> '7'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\35\EntriesList\6' in GFFList
+Contents of new struct:
+Struct ID: 5 Label: Index FieldType: 4 Value: '45'
+Struct ID: 5 Label: Active FieldType: 11 Value: ''
+Struct ID: 5 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 5 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 5 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 5 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 5 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 5 Label: Not FieldType: 0 Value: '0'
+Struct ID: 5 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 5 Label: Logic FieldType: 5 Value: '0'
+
+GFFList lengths have changed at '907mal.mod\907krepart.DLG\ReplyList\42\EntriesList': '6' --> '10'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\42\EntriesList\6' in GFFList
+Contents of new struct:
+Struct ID: 2 Label: Index FieldType: 4 Value: '42'
+Struct ID: 2 Label: Active FieldType: 11 Value: 'c_npc_avail'
+Struct ID: 2 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 2 Label: Active2 FieldType: 11 Value: 'c_is_valid'
+Struct ID: 2 Label: Param1 FieldType: 5 Value: '7'
+Struct ID: 2 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 2 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 2 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 2 Label: ParamStrB FieldType: 10 Value: 'Mira'
+Struct ID: 2 Label: Not FieldType: 0 Value: '0'
+Struct ID: 2 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 2 Label: Logic FieldType: 5 Value: '0'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\42\EntriesList\7' in GFFList
+Contents of new struct:
+Struct ID: 3 Label: Index FieldType: 4 Value: '50'
+Struct ID: 3 Label: Active FieldType: 11 Value: 'c_npc_avail'
+Struct ID: 3 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 3 Label: Active2 FieldType: 11 Value: 'c_global_lt'
+Struct ID: 3 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param1b FieldType: 5 Value: '4'
+Struct ID: 3 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 3 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 3 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 3 Label: ParamStrB FieldType: 10 Value: '003EBO_Disciple_Atton'
+Struct ID: 3 Label: Not FieldType: 0 Value: '0'
+Struct ID: 3 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 3 Label: Logic FieldType: 5 Value: '0'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\42\EntriesList\8' in GFFList
+Contents of new struct:
+Struct ID: 4 Label: Index FieldType: 4 Value: '46'
+Struct ID: 4 Label: Active FieldType: 11 Value: ''
+Struct ID: 4 Label: IsChild FieldType: 0 Value: '0'
+Struct ID: 4 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 4 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 4 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 4 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 4 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 4 Label: Not FieldType: 0 Value: '0'
+Struct ID: 4 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 4 Label: Logic FieldType: 5 Value: '0'
+
+Extra GFFStruct at '907mal.mod\907krepart.DLG\ReplyList\42\EntriesList\9' in GFFList
+Contents of new struct:
+Struct ID: 5 Label: Index FieldType: 4 Value: '27'
+Struct ID: 5 Label: Active FieldType: 11 Value: 'c_ismale'
+Struct ID: 5 Label: Active2 FieldType: 11 Value: ''
+Struct ID: 5 Label: Param1 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5 FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param1b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param2b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param3b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param4b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Param5b FieldType: 5 Value: '0'
+Struct ID: 5 Label: Not FieldType: 0 Value: '0'
+Struct ID: 5 Label: Not2 FieldType: 0 Value: '0'
+Struct ID: 5 Label: Logic FieldType: 5 Value: '0'
+Struct ID: 5 Label: ParamStrA FieldType: 10 Value: ''
+Struct ID: 5 Label: ParamStrB FieldType: 10 Value: ''
+Struct ID: 5 Label: IsChild FieldType: 0 Value: '0'
+
+Value has changed at '907mal.mod\907krepart.DLG\ReplyList\45\Text': '-1' --> ''
+	in 907mal.mod	907krepart	DLG
+-------------------------------------------
+Loading TLK 'C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II - PyKotor\dialog.tlk'
+Loading TLK 'C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\dialog.tlk'
+Diffing dialog.tlk files...
+dialog.tlk files match
+--------------------

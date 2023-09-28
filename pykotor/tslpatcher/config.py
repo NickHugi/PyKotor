@@ -23,7 +23,11 @@ from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.formats.ssf import read_ssf, write_ssf
 from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.resource.formats.twoda import read_2da, write_2da
-from pykotor.tools.misc import is_capsule_file, is_mod_file, is_rim_file
+from pykotor.tools.misc import (
+    is_capsule_file,
+    is_erf_or_mod_file,
+    is_rim_file,
+)
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
@@ -404,7 +408,7 @@ class ModInstaller:
             if not rim.get(resname, restype) or replace:
                 rim.set_data(resname, restype, data)
                 write_rim(rim, destination)
-        elif is_mod_file(destination.name):
+        elif is_erf_or_mod_file(destination.name):
             erf = (
                 read_erf(BinaryReader.load_file(destination))
                 if destination.exists()
