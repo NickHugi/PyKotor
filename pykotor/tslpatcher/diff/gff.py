@@ -22,33 +22,39 @@ class DiffGFF:
         current_path: PureWindowsPath | os.PathLike | str | None = None,
     ) -> bool:
         current_path = PureWindowsPath(current_path or "GFFRoot")
+
+        if len(old_struct or self.old.root) != len(new_struct or self.new.root):
+            self.log(f"GFFStruct sizes have changed at '{current_path}': '{len(old_struct or self.old.root)}' --> '{len(new_struct or self.new.root)}'")
+            self.log()
+            is_same_result = False
+
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label: (ftype, value) for label, ftype, value in (old_struct or self.old.root)}
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label: (ftype, value) for label, ftype, value in (new_struct or self.new.root)}
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(old_struct or self.old.root)}
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(new_struct or self.new.root)}
 
         # Union of labels from both old and new structures
         all_labels = set(old_dict.keys()) | set(new_dict.keys())
 
         is_same_result = True
 
-        for idx, label in enumerate(all_labels):
-            child_path = current_path / str(label or f"nolabel_{idx}")
+        for label in all_labels:
+            child_path = current_path / str(label)
             old_ftype, old_value = old_dict.get(label, (None, None))
             new_ftype, new_value = new_dict.get(label, (None, None))
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
-                self.log(f"Extra field found at '{child_path}'. Field Type: '{new_ftype}' Value: '{new_value}'")
+                self.log(f"Extra field found at '{child_path}'. FieldType: '{new_ftype}' Value: '{new_value}'")
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
-                self.log(f"Missing field at '{child_path}'. Field Type: '{new_ftype}' Value: '{new_value}'")
+                self.log(f"Missing field at '{child_path}'. FieldType: '{new_ftype}' Value: '{new_value}'")
                 is_same_result = False
                 continue
 
             # Check if field types have changed
             if old_ftype != new_ftype:
-                self.log(f"Field type has changed at '{child_path}'. Field Type: '{old_ftype}'-->'{new_ftype}'")
+                self.log(f"Field type has changed at '{child_path}'. FieldType: '{old_ftype}' --> '{new_ftype}'")
                 is_same_result = False
                 continue
 
@@ -56,7 +62,7 @@ class DiffGFF:
             if old_ftype == GFFFieldType.Struct:
                 if old_value.struct_id != new_value.struct_id:
                     self.log(
-                        f"Struct ID has changed at '{child_path}'. Struct ID: '{old_value.struct_id}'-->'{new_value.struct_id}'",
+                        f"Struct ID has changed at '{child_path}': '{old_value.struct_id}' --> '{new_value.struct_id}'",
                     )
                     is_same_result = False
 
@@ -76,57 +82,45 @@ class DiffGFF:
 
         return is_same_result
 
-    @staticmethod
-    def gff_list_to_dict(lst: GFFList) -> dict[int, GFFStruct]:
-        res = {}
-        for idx, item in enumerate(lst):
-            key = item.struct_id if hasattr(item, "struct_id") and item.struct_id not in res else -1 * idx
-            res[key] = item
-        return res
-
     def _output_diff_from_two_lists(self, old_gff_list: GFFList, new_gff_list: GFFList, current_path: PureWindowsPath) -> bool:
         is_same_result = True
 
         if len(old_gff_list) != len(new_gff_list):
-            self.log(f"GFFList lengths have changed at '{current_path}': '{len(old_gff_list)}'-->'{len(new_gff_list)}'")
+            self.log(f"GFFList lengths have changed at '{current_path}': '{len(old_gff_list)}' --> '{len(new_gff_list)}'")
             self.log()
             is_same_result = False
 
 
-        old_set, new_set = map(self.__class__.gff_list_to_dict, [old_gff_list, new_gff_list])
+        old_set, new_set = dict(enumerate(old_gff_list)), dict(enumerate(new_gff_list))
 
         # Detect unique items in both lists
         unique_to_old: set[int] = old_set.keys() - new_set.keys()
         unique_to_new: set[int] = new_set.keys() - old_set.keys()
 
-        for struct_id in unique_to_old:
-            struct = old_set[struct_id]
-            self.log(f"Missing GFFStruct with struct ID '{struct.struct_id}' in GFFList: '{current_path}'")
+        for list_index in unique_to_old:
+            self.log(f"Missing GFFStruct at '{current_path / str(list_index)}' in GFFList")
             self.log("Contents of old struct:")
+            struct = old_set[list_index]
             for label, field_type, field_value in struct:
-                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+                self.log("Struct ID:", struct.struct_id, "Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
             self.log()
             is_same_result = False
 
-        for struct_id in unique_to_new:
-            struct = new_set[struct_id]
-            self.log(f"Extra GFFStruct exists with struct ID '{struct.struct_id}' in GFFList: '{current_path}'")
+        for list_index in unique_to_new:
+            self.log(f"Extra GFFStruct at '{current_path / str(list_index)}' in GFFList")
             self.log("Contents of new struct:")
+            struct = new_set[list_index]
             for label, field_type, field_value in struct:
-                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+                self.log("Struct ID:", struct.struct_id, "Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
             self.log()
             is_same_result = False
 
         # For items present in both lists
         common_items = old_set.keys() & new_set.keys()
-        for struct_id in common_items:
-            old_child = old_set[struct_id]
-            new_child = new_set[struct_id]
-            if struct_id != old_child.struct_id:
-                child_path = current_path / f"{old_child.struct_id}({struct_id})"
-            else:
-                child_path = current_path / f"{old_child.struct_id}"
-            if not self.is_same(old_child, new_child, child_path):
+        for list_index in common_items:
+            old_child: GFFStruct = old_set[list_index]
+            new_child: GFFStruct = new_set[list_index]
+            if not self.is_same(old_child, new_child, current_path / str(list_index)):
                 is_same_result = False
 
         return is_same_result
