@@ -1151,9 +1151,9 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [])
-        config.modifiers.append(AddStructToListGFF("", None, None, "List"))
-        config.modifiers.append(AddStructToListGFF("", None, None, "List"))
-        config.modifiers.append(AddStructToListGFF("", None, None, "List"))
+        config.modifiers.append(AddStructToListGFF("", 0, None, "List"))
+        config.modifiers.append(AddStructToListGFF("", 1, None, "List"))
+        config.modifiers.append(AddStructToListGFF("", 2, None, "List"))
 
         config.apply(gff, memory, PatchLogger())
 
@@ -1169,7 +1169,7 @@ class TestManipulateGFF(TestCase):
 
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddStructToListGFF("", 0, path="List"))
-        config.modifiers.append(AddStructToListGFF("", 0, path="List", index_to_token=12))
+        config.modifiers.append(AddStructToListGFF("", 1, path="List", index_to_token=12))
         config.apply(gff, memory, PatchLogger())
 
         self.assertEqual("1", memory.memory_2da[12])
