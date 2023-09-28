@@ -1296,7 +1296,8 @@ class Installation:
         result = re.sub(r"\.erf$", "", result, flags=re.IGNORECASE)
         result = re.sub(r"\.rim$", "", result, flags=re.IGNORECASE)
         result = result[:-2] if result.endswith("_s") else result
-        return result[:-4] if result.endswith("_dlg") else result
+        result = result[:-4] if result.endswith("_dlg") else result
+        return result  # noqa: RET504
 
     def module_ids(self) -> dict[str, str]:
         """Returns a dictionary mapping module filename to the ID of the module. The ID is taken from the

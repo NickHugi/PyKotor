@@ -71,4 +71,4 @@ class LocalizedStringDialog(QDialog):
         if self.locstring.stringref == -1:
             language = Language(self.ui.languageSelect.currentIndex())
             gender = Gender(int(self.ui.femaleRadio.isChecked()))
-            self.locstring.set(language, gender, self.ui.stringEdit.toPlainText())
+            self.locstring.set_data(language, gender, self.ui.stringEdit.toPlainText())

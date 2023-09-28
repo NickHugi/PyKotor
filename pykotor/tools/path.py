@@ -177,8 +177,8 @@ class BasePath:
         """
         return type(self).__new__(type(self), self, *args)
 
-    def endswith(self, text: str) -> bool:
-        return str(self).endswith(text)
+    def endswith(self, text: str, case_sensitive=False) -> bool:
+        return str(self).endswith(text) if case_sensitive else str(self).lower().endswith(text)
 
     @staticmethod
     def _fix_path_formatting(str_path: str, slash=os.sep) -> str:

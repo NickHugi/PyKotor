@@ -150,12 +150,12 @@ class NSSEditor(Editor):
             if filepath.endswith((".erf", ".mod")):
                 savePath = f"{filepath}/{self._resref}.{self._restype.extension}"
                 erf = read_erf(filepath)
-                erf.set(self._resref, ResourceType.NCS, data)
+                erf.set_data(self._resref, ResourceType.NCS, data)
                 write_erf(erf, filepath)
             elif filepath.endswith(".rim"):
                 savePath = f"{filepath}/{self._resref}.{self._restype.extension}"
                 rim = read_rim(filepath)
-                rim.set(self._resref, ResourceType.NCS, data)
+                rim.set_data(self._resref, ResourceType.NCS, data)
                 write_rim(rim, filepath)
             else:
                 savePath = filepath.replace(".nss", ".ncs")

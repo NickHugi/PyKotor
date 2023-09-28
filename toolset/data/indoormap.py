@@ -142,8 +142,8 @@ class IndoorMap:
                 texRenames[texture] = renamed
                 for kit in usedKits:
                     if texture in kit.textures:
-                        mod.set(renamed, ResourceType.TGA, kit.textures[texture])
-                        mod.set(renamed, ResourceType.TXI, kit.txis[texture])
+                        mod.set_data(renamed, ResourceType.TGA, kit.textures[texture])
+                        mod.set_data(renamed, ResourceType.TXI, kit.txis[texture])
 
         for i, room in enumerate(self.rooms):
             modelname = f"{self.moduleId}_room{i}"
@@ -152,7 +152,7 @@ class IndoorMap:
 
             for filename, data in room.component.kit.always.items():
                 resname, restype = ResourceIdentifier.from_path(filename)
-                mod.set(resname, restype, data)
+                mod.set_data(resname, restype, data)
 
             mdl, mdx = model.flip(room.component.mdl, room.component.mdx, room.flip_x, room.flip_y)
             mdl = model.transform(mdl, Vector3.from_null(), room.rotation)
@@ -164,12 +164,12 @@ class IndoorMap:
                 renamed = f"{self.moduleId}_lm{totalLm}"
                 totalLm += 1
                 lmRenames[lightmap.lower()] = renamed
-                mod.set(renamed, ResourceType.TGA, room.component.kit.lightmaps[lightmap])
-                mod.set(renamed, ResourceType.TXI, room.component.kit.txis[lightmap])
+                mod.set_data(renamed, ResourceType.TGA, room.component.kit.lightmaps[lightmap])
+                mod.set_data(renamed, ResourceType.TXI, room.component.kit.txis[lightmap])
             mdl = model.change_lightmaps(mdl, lmRenames)
 
-            mod.set(modelname, ResourceType.MDL, mdl)
-            mod.set(modelname, ResourceType.MDX, mdx)
+            mod.set_data(modelname, ResourceType.MDL, mdl)
+            mod.set_data(modelname, ResourceType.MDX, mdx)
 
             bwm = deepcopy(room.component.bwm)
             bwm.flip(room.flip_x, room.flip_y)
@@ -185,7 +185,7 @@ class IndoorMap:
                         face.trans2 = actualIndex
                     if face.trans3 == dummyIndex:
                         face.trans3 = actualIndex
-            mod.set(modelname, ResourceType.WOK, bytes_bwm(bwm))
+            mod.set_data(modelname, ResourceType.WOK, bytes_bwm(bwm))
 
         paddingCount = 0
         for i, insert in enumerate(self.doorInsertions()):
@@ -199,7 +199,7 @@ class IndoorMap:
             utd.resref = door.resref
             utd.static = insert.static
             utd.tag = door.resref.get().title().replace("_", "")
-            mod.set(door.resref.get(), ResourceType.UTD, bytes_utd(utd))
+            mod.set_data(door.resref.get(), ResourceType.UTD, bytes_utd(utd))
 
             orientation = Vector4.from_euler(0, 0, math.radians(door.bearing))
             lyt.doorhooks.append(LYTDoorHook(roomNames[insert.room], door.resref.get(), insert.position, orientation))
@@ -233,11 +233,11 @@ class IndoorMap:
                             renamed = f"{self.moduleId}_lm{totalLm}"
                             totalLm += 1
                             lmRenames[lightmap.lower()] = renamed
-                            mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
-                            mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
+                            mod.set_data(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
+                            mod.set_data(renamed, ResourceType.TXI, kit.txis[lightmap])
                         pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
-                        mod.set(paddingName, ResourceType.MDL, pad_mdl)
-                        mod.set(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
+                        mod.set_data(paddingName, ResourceType.MDL, pad_mdl)
+                        mod.set_data(paddingName, ResourceType.MDX, kit.top_padding[doorIndex][paddingKey].mdx)
                         lyt.rooms.append(LYTRoom(paddingName, insert.position))
                         vis.add_room(paddingName)
                 if insert.hook1.door.width != insert.hook2.door.width:
@@ -268,11 +268,11 @@ class IndoorMap:
                             renamed = f"{self.moduleId}_lm{totalLm}"
                             totalLm += 1
                             lmRenames[lightmap.lower()] = renamed
-                            mod.set(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
-                            mod.set(renamed, ResourceType.TXI, kit.txis[lightmap])
+                            mod.set_data(renamed, ResourceType.TGA, kit.lightmaps[lightmap])
+                            mod.set_data(renamed, ResourceType.TXI, kit.txis[lightmap])
                         pad_mdl = model.change_lightmaps(pad_mdl, lmRenames)
-                        mod.set(paddingName, ResourceType.MDL, pad_mdl)
-                        mod.set(paddingName, ResourceType.MDX, kit.side_padding[doorIndex][paddingKey].mdx)
+                        mod.set_data(paddingName, ResourceType.MDL, pad_mdl)
+                        mod.set_data(paddingName, ResourceType.MDX, kit.side_padding[doorIndex][paddingKey].mdx)
                         lyt.rooms.append(LYTRoom(paddingName, insert.position))
                         vis.add_room(paddingName)
 
@@ -282,8 +282,8 @@ class IndoorMap:
                     mdl, mdx = kit.skyboxes[self.skybox]
                     modelName = f"{self.moduleId}_sky"
                     mdl = model.change_textures(mdl, texRenames)
-                    mod.set(modelName, ResourceType.MDL, mdl)
-                    mod.set(modelName, ResourceType.MDX, mdx)
+                    mod.set_data(modelName, ResourceType.MDL, mdl)
+                    mod.set_data(modelName, ResourceType.MDX, mdx)
                     lyt.rooms.append(LYTRoom(modelName, Vector3.from_null()))
                     vis.add_room(modelName)
 
@@ -294,14 +294,14 @@ class IndoorMap:
                 pixel = QColor(minimap.image.pixel(x, y))
                 tpcData.extend([pixel.red(), pixel.green(), pixel.blue(), 255])
         minimapTpc = TPC()
-        minimapTpc.set(512, 256, [tpcData], TPCTextureFormat.RGBA)
-        mod.set(f"lbl_map{self.moduleId}", ResourceType.TGA, bytes_tpc(minimapTpc, ResourceType.TGA))
+        minimapTpc.set_data(512, 256, [tpcData], TPCTextureFormat.RGBA)
+        mod.set_data(f"lbl_map{self.moduleId}", ResourceType.TGA, bytes_tpc(minimapTpc, ResourceType.TGA))
 
         # Add loadscreen
         loadTga = (
             BinaryReader.load_file("./kits/load_k2.tga") if installation.tsl else BinaryReader.load_file("./kits/load_k1.tga")
         )
-        mod.set(f"load_{self.moduleId}", ResourceType.TGA, loadTga)
+        mod.set_data(f"load_{self.moduleId}", ResourceType.TGA, loadTga)
 
         are.tag = self.moduleId
         are.dynamic_light = self.lighting
@@ -319,11 +319,11 @@ class IndoorMap:
         vis.set_all_visible()
         ifo.entry_position = self.warpPoint
 
-        mod.set(self.moduleId, ResourceType.LYT, bytes_lyt(lyt))
-        mod.set(self.moduleId, ResourceType.VIS, bytes_vis(vis))
-        mod.set(self.moduleId, ResourceType.ARE, bytes_are(are))
-        mod.set(self.moduleId, ResourceType.GIT, bytes_git(git))
-        mod.set("module", ResourceType.IFO, bytes_ifo(ifo))
+        mod.set_data(self.moduleId, ResourceType.LYT, bytes_lyt(lyt))
+        mod.set_data(self.moduleId, ResourceType.VIS, bytes_vis(vis))
+        mod.set_data(self.moduleId, ResourceType.ARE, bytes_are(are))
+        mod.set_data(self.moduleId, ResourceType.GIT, bytes_git(git))
+        mod.set_data("module", ResourceType.IFO, bytes_ifo(ifo))
 
         write_erf(mod, outputPath)
 
@@ -363,7 +363,7 @@ class IndoorMap:
             self.name = LocalizedString(data["name"]["stringref"])
             for stringid in [key for key in data["name"] if key.isnumeric()]:
                 language, gender = LocalizedString.substring_pair(int(stringid))
-                self.name.set(language, gender, data["name"][stringid])
+                self.name.set_data(language, gender, data["name"][stringid])
 
             self.lighting.b = data["lighting"][0]
             self.lighting.g = data["lighting"][1]

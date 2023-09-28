@@ -80,7 +80,7 @@ class ModuleEditorControls(ABC):
     def setValue(self, name: str, value: Any) -> Any:
         for variable in self.variables:
             if variable.name() == name:
-                return variable.set(value)
+                return variable.set_data(value)
         return None
 
     def wz(self, x: float, y: float, z: float) -> float:

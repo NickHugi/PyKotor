@@ -5,6 +5,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
+from pykotor.tools.path import CaseAwarePath
 from utils.window import openResourceEditor
 
 from pykotor.common.misc import ResRef
@@ -56,7 +57,7 @@ class ERFEditor(Editor):
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
-        self.ui.refreshButton.setEnabled(True)
+        self.ui.refreshButton.setEnabled(a0=True)
 
         if restype in [ResourceType.ERF, ResourceType.MOD]:
             erf = read_erf(data)
@@ -91,15 +92,15 @@ class ERFEditor(Editor):
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()
-                rim.set(resource.resref.get(), resource.restype, resource.data)
+                rim.set_data(resource.resref.get(), resource.restype, resource.data)
             write_rim(rim, data)
-        if self._restype in [ResourceType.ERF, ResourceType.MOD]:
+        if self._restype in [ResourceType.ERF, ResourceType.MOD]: # sourcery skip: split-or-ifs
             erfType = ERFType.ERF if self._restype == ResourceType.ERF else ERFType.MOD
             erf = ERF(erfType)
             for i in range(self.model.rowCount()):
                 item = self.model.item(i, 0)
                 resource = item.data()
-                erf.set(resource.resref.get(), resource.restype, resource.data)
+                erf.set_data(resource.resref.get(), resource.restype, resource.data)
             write_erf(erf, data)
 
         return data, b""
@@ -109,7 +110,7 @@ class ERFEditor(Editor):
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
-        self.ui.refreshButton.setEnabled(False)
+        self.ui.refreshButton.setEnabled(a0=False)
 
     def save(self) -> None:
         # Must override the method as the superclass method breaks due to filepath always ending in .rim/mod/erf
@@ -117,7 +118,7 @@ class ERFEditor(Editor):
             self.saveAs()
             return
 
-        self.ui.refreshButton.setEnabled(True)
+        self.ui.refreshButton.setEnabled(a0=True)
 
         data = self.build()
         self._revert = data
@@ -133,8 +134,8 @@ class ERFEditor(Editor):
             for index in self.ui.tableView.selectionModel().selectedRows(0):
                 item = self.model.itemFromIndex(index)
                 resource = item.data()
-                filepath = "{}/{}.{}".format(folderpath, resource.resref, resource.restype.extension)
-                with open(filepath, "wb") as file:
+                filepath = CaseAwarePath(f"{folderpath}/{resource.resref}.{resource.restype.extension}")
+                with filepath.open("wb") as file:
                     file.write(resource.data)
 
     def removeSelected(self) -> None:

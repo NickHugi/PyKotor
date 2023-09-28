@@ -380,14 +380,14 @@ class UTCEditor(Editor):
         locstring = self.ui.firstnameEdit.locstring()
         ltr = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
-        locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
+        locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.firstnameEdit.setLocstring(locstring)
 
     def randomizeLastname(self) -> None:
         locstring = self.ui.lastnameEdit.locstring()
         ltr = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
-        locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
+        locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.lastnameEdit.setLocstring(locstring)
 
     def generateTag(self) -> None:

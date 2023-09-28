@@ -389,7 +389,7 @@ class GFFEditor(Editor):
         language, gender = LocalizedString.substring_pair(substringItem.data(_ID_SUBSTRING_ROLE))
         locstringItem = self.ui.treeView.selectedIndexes()[0]
         locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
-        locstring.set(language, gender, text)
+        locstring.set_data(language, gender, text)
 
     def addSubstring(self) -> None:
         language = Language(self.ui.substringLangCombo.currentIndex())
@@ -408,7 +408,7 @@ class GFFEditor(Editor):
 
         locstringItem = self.ui.treeView.selectedIndexes()[0]
         locstring: LocalizedString = locstringItem.data(_VALUE_NODE_ROLE)
-        locstring.set(language, gender, "")
+        locstring.set_data(language, gender, "")
 
     def removeSubstring(self) -> None:
         language = Language(self.ui.substringLangCombo.currentIndex())

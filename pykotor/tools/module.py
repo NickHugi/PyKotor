@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
@@ -16,8 +20,10 @@ from pykotor.resource.generics.utp import dismantle_utp
 from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
-from pykotor.tools.misc import is_mod_file
 from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    import os
 
 
 def clone_module(
@@ -195,7 +201,7 @@ def clone_module(
     write_erf(new_module, filepath)
 
 
-def rim_to_mod(filepath: CaseAwarePath) -> None:
+def rim_to_mod(filepath: os.PathLike | str) -> None:
     """Creates a MOD file at the given filepath and copies the resources from the corresponding
     RIM files.
 
@@ -210,27 +216,22 @@ def rim_to_mod(filepath: CaseAwarePath) -> None:
     ----
         filepath: The filepath of the MOD file you would like to create.
     """
-    if not is_mod_file(filepath.name):
+    resolved_file_path = CaseAwarePath(filepath)
+    if resolved_file_path.suffix.lower() != ".mod":
         msg = "Specified file must end with the .mod extension"
         raise ValueError(msg)
 
-    base: str = filepath.stem
-    old_extension: str = filepath.suffix
-    lowercase_extension: str = old_extension.lower()
+    file_ext_rim = resolved_file_path.suffix.lower().replace(".mod", ".rim")
+    file_ext_rim_s = resolved_file_path.suffix.lower().replace(".mod", "_s.rim")
 
-    rim_s_extension: str = "_s.rim".join(lowercase_extension.rsplit(".mod", 1))
-    rim_extension: str = ".rim".join(lowercase_extension.rsplit(".mod", 1))
+    filepath_rim = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim)
+    filepath_rim_s = resolved_file_path.parent / (resolved_file_path.stem + file_ext_rim_s)
 
-    filepath_rim_s: CaseAwarePath = (
-        filepath.parent / (base + rim_s_extension) if rim_s_extension != lowercase_extension else filepath
-    )
-    filepath_rim: CaseAwarePath = filepath.parent / (base + rim_extension) if rim_extension != lowercase_extension else filepath
-
-    rim: RIM = read_rim(filepath_rim) if filepath_rim.exists() else RIM()
-    rim_s: RIM = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
+    rim = read_rim(filepath_rim)
+    rim_s = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
 
     mod = ERF(ERFType.MOD)
-    for res in rim + rim_s:
-        mod.set_data(res.resref.get(), res.restype, res.data)
+    [mod.set_data(res.resref.get(), res.restype, res.data) for res in rim]
+    [mod.set_data(res.resref.get(), res.restype, res.data) for res in rim_s]
 
     write_erf(mod, filepath, ResourceType.ERF)

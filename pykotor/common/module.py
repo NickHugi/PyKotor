@@ -35,7 +35,6 @@ from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import (
-    case_insensitive_replace,
     is_bif_file,
     is_capsule_file,
     is_erf_file,
@@ -43,11 +42,13 @@ from pykotor.tools.misc import (
     is_rim_file,
 )
 from pykotor.tools.model import list_lightmaps, list_textures
+from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.resource.formats.lyt import LYT
     from pykotor.resource.formats.mdl import MDL
-    from pykotor.tools.path import CaseAwarePath
 
 T = TypeVar("T")
 SEARCH_ORDER = [
@@ -86,7 +87,7 @@ class Module:
 
     @staticmethod
     def get_root(
-        filepath: CaseAwarePath,
+        filepath: os.PathLike | str,
     ) -> str:
         """Returns the root name for a module from the given filepath (or filename). For example "danm13_s.rim" would
         become "danm13".
@@ -99,20 +100,13 @@ class Module:
         -------
             The string for the root name of a module.
         """
-        root = case_insensitive_replace(
-            case_insensitive_replace(
-                case_insensitive_replace(str(filepath), ".rim", ""),
-                ".erf",
-                "",
-            ),
-            ".mod",
-            "",
-        )
-        root_a = root[:5]
-        root_b = root[5:]
-        if "_" in root_b:
-            root_b = root_b[: root_b.index("_")]
-        return root_a + root_b
+        c_file_path = CaseAwarePath(filepath)
+        root = str(c_file_path.parent / (c_file_path.stem + c_file_path.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")))
+        roota = root[:5]
+        rootb = root[5:]
+        if "_" in rootb:
+            rootb = rootb[:rootb.index("_")]
+        return roota + rootb
 
     def capsules(self) -> list[Capsule]:
         """Returns a copy of the capsules used by the module.

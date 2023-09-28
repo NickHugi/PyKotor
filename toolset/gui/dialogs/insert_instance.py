@@ -114,11 +114,11 @@ class InsertInstanceDialog(QDialog):
         if new:
             if self.filepath.endswith(".erf") or self.filepath.endswith(".mod"):
                 erf = read_erf(self.filepath)
-                erf.set(self.resname, self._restype, self.data)
+                erf.set_data(self.resname, self._restype, self.data)
                 write_erf(erf, self.filepath)
             elif self.filepath.endswith(".rim"):
                 rim = read_rim(self.filepath)
-                rim.set(self.resname, self._restype, self.data)
+                rim.set_data(self.resname, self._restype, self.data)
                 write_rim(rim, self.filepath)
             else:
                 self.filepath = "{}/{}.{}".format(self.filepath, self.resname, self._restype.extension)

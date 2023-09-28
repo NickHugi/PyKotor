@@ -1475,3 +1475,12 @@ Loading TLK 'C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Re
 Diffing dialog.tlk files...
 dialog.tlk files match
 --------------------
+Finding differences in the modules folders...
+Searching first install dir: C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\modules
+Searching second install dir: C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\modules
+------------------------------------------------------------------------------------------------------------------
+Loading TLK 'C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\dialog.tlk'
+Loading TLK 'C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II\dialog.tlk'
+Diffing dialog.tlk files...
+dialog.tlk files match
+--------------------
