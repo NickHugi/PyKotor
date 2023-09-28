@@ -57,7 +57,7 @@ class ERFEditor(Editor):
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
-        self.ui.refreshButton.setEnabled(a0=True)
+        self.ui.refreshButton.setEnabled(True)
 
         if restype in [ResourceType.ERF, ResourceType.MOD]:
             erf = read_erf(data)
@@ -110,7 +110,7 @@ class ERFEditor(Editor):
         self.model.clear()
         self.model.setColumnCount(3)
         self.model.setHorizontalHeaderLabels(["ResRef", "Type", "Size"])
-        self.ui.refreshButton.setEnabled(a0=False)
+        self.ui.refreshButton.setEnabled(False)
 
     def save(self) -> None:
         # Must override the method as the superclass method breaks due to filepath always ending in .rim/mod/erf
@@ -118,7 +118,7 @@ class ERFEditor(Editor):
             self.saveAs()
             return
 
-        self.ui.refreshButton.setEnabled(a0=True)
+        self.ui.refreshButton.setEnabled(True)
 
         data = self.build()
         self._revert = data

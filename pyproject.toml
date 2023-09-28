@@ -85,6 +85,7 @@ ignore = [
 "tests/*.py" = ["ALL"]
 ".github/*py" = ["INP001"]
 "__init__.py" = ["I001", "F401"]
+"toolset/*.py" = ["FBT003", "N802", "N803", "N806", "A001"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 
 [tool.ruff.flake8-pytest-style]

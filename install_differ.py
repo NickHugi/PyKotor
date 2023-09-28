@@ -32,7 +32,7 @@ if not args.install1 or not args.install2:
     # sys.exit()  # noqa: ERA001
 
 tslpatcher_path = args.install1 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II"
-pykotor_path = args.install2 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II"
+pykotor_path = args.install2 or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor"
 output_log = CaseAwarePath(args.output_log or "log_install_differ.log")
 
 

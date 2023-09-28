@@ -416,8 +416,8 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         rules += [(r"\b%s\b" % w, 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
         rules += [(r"\b%s\b" % w, 0, self.styles["function"]) for w in functions]
         rules += [(r"\b%s\b" % w, 0, self.styles["constant"]) for w in constants]
-        rules += [(r"%s" % o, 0, self.styles["operator"]) for o in SyntaxHighlighter.OPERATORS]
-        rules += [(r"%s" % o, 0, self.styles["brace"]) for o in SyntaxHighlighter.BRACES]
+        rules += [(f"{o}", 0, self.styles["operator"]) for o in SyntaxHighlighter.OPERATORS]
+        rules += [(f"{o}", 0, self.styles["brace"]) for o in SyntaxHighlighter.BRACES]
 
         rules += [
             (r"\b[+-]?[0-9]+[lL]?\b", 0, self.styles["numbers"]),

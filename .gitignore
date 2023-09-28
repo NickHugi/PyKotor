@@ -18,3 +18,4 @@ tests/tmp/*
 tests/tslpatcher/tmp/*
 output.prof
 *.spec
+errorlog.txt

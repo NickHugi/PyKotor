@@ -535,10 +535,10 @@ class DLGEditor(Editor):
             node: DLGNode = link.node
 
             if isinstance(node, DLGEntry):
-                self.ui.speakerEdit.setEnabled(a0=True)
+                self.ui.speakerEdit.setEnabled(True)
                 self.ui.speakerEdit.setText(node.speaker)
             elif isinstance(node, DLGReply):
-                self.ui.speakerEdit.setEnabled(a0=False)
+                self.ui.speakerEdit.setEnabled(False)
                 self.ui.speakerEdit.setText("")
 
             self.ui.textEdit.setEnabled(not is_copy)

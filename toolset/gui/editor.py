@@ -163,7 +163,7 @@ class Editor(QMainWindow):
             self.refreshWindowTitle()
             for action in self.menuBar().actions()[0].menu().actions():
                 if action.text() == "Revert":
-                    action.setEnabled(a0=True)
+                    action.setEnabled(True)
 
     def save(self) -> None:
         if self._filepath is None:
@@ -267,7 +267,7 @@ class Editor(QMainWindow):
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with (self._filepath.parent / (self._filepath.stem + self._filepath.suffix.replace(".mdl", ".mdx"))).open("wb") as file:
+            with (self._filepath.parent / (self._filepath.stem + self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open("wb") as file:
                 file.write(data_ext)
 
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
@@ -276,19 +276,19 @@ class Editor(QMainWindow):
         filepath, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath != "":
             c_filepath = CaseAwarePath(filepath)
-            encapsulated = filepath.endswith((".erf", ".mod", ".rim"))
+            encapsulated = c_filepath.endswith((".erf", ".mod", ".rim"))
             encapsulated = encapsulated and "Load from module (*.erf *.mod *.rim)" in self._openFilter
             if encapsulated:
-                dialog = LoadFromModuleDialog(Capsule(filepath), self._readSupported)
+                dialog = LoadFromModuleDialog(Capsule(c_filepath), self._readSupported)
                 if dialog.exec_():
-                    self.load(filepath, dialog.resref(), dialog.restype(), dialog.data())
+                    self.load(c_filepath, dialog.resref(), dialog.restype(), dialog.data())
             else:
                 resref, restype_ext = c_filepath.stem, c_filepath.suffix
                 restype = ResourceType.from_extension(restype_ext)
                 with c_filepath.open("rb") as file:
                     data = file.read()
 
-                self.load(filepath, resref, restype, data)
+                self.load(c_filepath, resref, restype, data)
 
     @abstractmethod
     def build(self) -> Tuple[bytes, bytes]:
@@ -301,7 +301,7 @@ class Editor(QMainWindow):
         self._revert = data
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "Revert":
-                action.setEnabled(a0=True)
+                action.setEnabled(True)
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resref, self._restype, data)
 
@@ -313,7 +313,7 @@ class Editor(QMainWindow):
         self._filepath = None
         for action in self.menuBar().actions()[0].menu().actions():
             if action.text() == "Revert":
-                action.setEnabled(a0=False)
+                action.setEnabled(False)
         self.refreshWindowTitle()
         self.newFile.emit()
 
@@ -335,4 +335,4 @@ class Editor(QMainWindow):
             textbox.setStyleSheet(className + " {background-color: #fffded;}")
 
     def filepath(self) -> Optional[str]:
-        return self._filepath
+        return str(self._filepath)

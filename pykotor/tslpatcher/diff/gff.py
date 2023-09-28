@@ -126,13 +126,7 @@ class DiffGFF:
                 child_path = current_path / f"{old_child.struct_id}({struct_id})"
             else:
                 child_path = current_path / f"{old_child.struct_id}"
-
-            if isinstance(old_child, GFFStruct) and isinstance(new_child, GFFStruct):
-                if not self.is_same(old_child, new_child, child_path):
-                    is_same_result = False
-                continue
-            if old_child != new_child:
-                self.log(f"Value difference at GFFList '{child_path}': '{old_child}'-->'{new_child}'")
+            if not self.is_same(old_child, new_child, child_path):
                 is_same_result = False
 
         return is_same_result
