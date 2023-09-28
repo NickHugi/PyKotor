@@ -1,24 +1,30 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
 from pykotor.tools.path import PureWindowsPath
 
+if TYPE_CHECKING:
+    import os
+
 
 class DiffGFF:
-    def __init__(self, old: GFF, new: GFF):
+    def __init__(self, old: GFF, new: GFF, log_func=print):
         self.old: GFF = old
         self.new: GFF = new
+        self.log = log_func
 
     def is_same(
         self,
         old_struct: GFFStruct | None = None,
         new_struct: GFFStruct | None = None,
-        current_path: PureWindowsPath | None = None,
+        current_path: PureWindowsPath | os.PathLike | str | None = None,
     ) -> bool:
         current_path = PureWindowsPath(current_path or "GFFRoot")
         # Create dictionaries for both old and new structures
-        old_dict = {label: (ftype, value) for label, ftype, value in (old_struct or self.old.root)}
-        new_dict = {label: (ftype, value) for label, ftype, value in (new_struct or self.new.root)}
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label: (ftype, value) for label, ftype, value in (old_struct or self.old.root)}
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label: (ftype, value) for label, ftype, value in (new_struct or self.new.root)}
 
         # Union of labels from both old and new structures
         all_labels = set(old_dict.keys()) | set(new_dict.keys())
@@ -26,30 +32,30 @@ class DiffGFF:
         is_same_result = True
 
         for idx, label in enumerate(all_labels):
-            child_path = current_path / str(label if label else (-1 * idx))
+            child_path = current_path / str(label or f"nolabel_{idx}")
             old_ftype, old_value = old_dict.get(label, (None, None))
             new_ftype, new_value = new_dict.get(label, (None, None))
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
-                print(f"Extra field found at '{child_path}'. Field Type: '{new_ftype}' Value: '{new_value}'")
+                self.log(f"Extra field found at '{child_path}'. Field Type: '{new_ftype}' Value: '{new_value}'")
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
-                print(f"Missing field at '{child_path}'. Field Type: '{new_ftype}' Value: '{new_value}'")
+                self.log(f"Missing field at '{child_path}'. Field Type: '{new_ftype}' Value: '{new_value}'")
                 is_same_result = False
                 continue
 
             # Check if field types have changed
             if old_ftype != new_ftype:
-                print(f"Field type has changed at '{child_path}'. Field Type: '{old_ftype}'-->'{new_ftype}'")
+                self.log(f"Field type has changed at '{child_path}'. Field Type: '{old_ftype}'-->'{new_ftype}'")
                 is_same_result = False
                 continue
 
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
                 if old_value.struct_id != new_value.struct_id:
-                    print(
+                    self.log(
                         f"Struct ID has changed at '{child_path}'. Struct ID: '{old_value.struct_id}'-->'{new_value.struct_id}'",
                     )
                     is_same_result = False
@@ -64,32 +70,30 @@ class DiffGFF:
                     continue
 
             elif old_value != new_value and str(old_value) != str(new_value):
-                print(f"Value has changed at '{child_path}': '{old_value}' --> '{new_value}'")
+                self.log(f"Value has changed at '{child_path}': '{old_value}' --> '{new_value}'")
                 is_same_result = False
                 continue
 
         return is_same_result
 
+    @staticmethod
+    def gff_list_to_dict(lst: GFFList) -> dict[int, GFFStruct]:
+        res = {}
+        for idx, item in enumerate(lst):
+            key = item.struct_id if hasattr(item, "struct_id") and item.struct_id not in res else -1 * idx
+            res[key] = item
+        return res
+
     def _output_diff_from_two_lists(self, old_gff_list: GFFList, new_gff_list: GFFList, current_path: PureWindowsPath) -> bool:
         is_same_result = True
 
         if len(old_gff_list) != len(new_gff_list):
-            print(f"GFFList counts have changed at: '{current_path}'")
-            print(f"Old list length: '{len(old_gff_list)}'")
-            print(f"New list length: '{len(new_gff_list)}'")
-            print()
+            self.log(f"GFFList lengths have changed at '{current_path}': '{len(old_gff_list)}'-->'{len(new_gff_list)}'")
+            self.log()
             is_same_result = False
 
-        # Convert lists to sets of hashable representations
-        old_set: dict[int, GFFStruct] = {}
-        for idx, item in enumerate(old_gff_list):
-            key = item.struct_id if isinstance(item, GFFStruct) and item.struct_id not in old_set else -1 * idx
-            old_set[key] = item
 
-        new_set: dict[int, GFFStruct] = {}
-        for idx, item in enumerate(new_gff_list):
-            key = item.struct_id if isinstance(item, GFFStruct) and item.struct_id not in new_set else -1 * idx
-            new_set[key] = item
+        old_set, new_set = map(self.__class__.gff_list_to_dict, [old_gff_list, new_gff_list])
 
         # Detect unique items in both lists
         unique_to_old: set[int] = old_set.keys() - new_set.keys()
@@ -97,20 +101,20 @@ class DiffGFF:
 
         for struct_id in unique_to_old:
             struct = old_set[struct_id]
-            print(f"Missing GFFStruct with struct ID '{struct.struct_id}' in GFFList: '{current_path}'")
-            print("Contents of old struct:")
+            self.log(f"Missing GFFStruct with struct ID '{struct.struct_id}' in GFFList: '{current_path}'")
+            self.log("Contents of old struct:")
             for label, field_type, field_value in struct:
-                print("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
-            print()
+                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+            self.log()
             is_same_result = False
 
         for struct_id in unique_to_new:
             struct = new_set[struct_id]
-            print(f"Extra GFFStruct exists with struct ID '{struct.struct_id}' in GFFList: '{current_path}'")
-            print("Contents of new struct:")
+            self.log(f"Extra GFFStruct exists with struct ID '{struct.struct_id}' in GFFList: '{current_path}'")
+            self.log("Contents of new struct:")
             for label, field_type, field_value in struct:
-                print("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
-            print()
+                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+            self.log()
             is_same_result = False
 
         # For items present in both lists
@@ -128,7 +132,7 @@ class DiffGFF:
                     is_same_result = False
                 continue
             if old_child != new_child:
-                print(f"Value difference at GFFList '{child_path}': '{old_child}'-->'{new_child}'")
+                self.log(f"Value difference at GFFList '{child_path}': '{old_child}'-->'{new_child}'")
                 is_same_result = False
 
         return is_same_result

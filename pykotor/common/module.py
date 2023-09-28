@@ -123,7 +123,7 @@ class Module:
         """
         return copy(self._capsules)
 
-    def reload_resources(self):
+    def reload_resources(self) -> None:
         # Look in module files
         for capsule in self._capsules:
             for resource in capsule:

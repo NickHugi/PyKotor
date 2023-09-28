@@ -404,21 +404,20 @@ class ConfigReader:
 
             modifier: ModifyGFF | None = None
             for name, value in modifications_ini.items():
-                lowercase_name = name.lower()
-                if lowercase_name == "!destination":
+                if name == "!Destination":
                     modifications.destination = CaseAwarePath(value)
-                elif lowercase_name == "!replacefile":
+                elif name == "!ReplaceFile":
                     modifications.replace_file = bool(int(value))
-                elif lowercase_name in ["!filename", "!saveas"]:
+                elif name in ["!Filename", "!SaveAs"]:
                     modifications.filename = value
-                elif lowercase_name.startswith("addfield"):
+                elif name.startswith("AddField"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     if modifier:  # if None, then an error occurred
                         modifications.modifiers.append(modifier)
-                elif lowercase_name.startswith("2damemory"):
+                elif name.startswith("2DAMEMORY"):
                     modifier = Memory2DAModifierGFF(
                         file,
-                        int(lowercase_name[9:]),
+                        int(name[9:]),
                         value,
                     )
                     modifications.modifiers.append(modifier)
@@ -431,10 +430,10 @@ class ConfigReader:
             return
 
         files = dict(self.ini["CompileList"].items())
-        destination = files.pop("!destination", None)
+        destination = files.pop("!Destination", None)
 
         for identifier, file in files.items():
-            replace = identifier.lower().startswith("replace")
+            replace = identifier.startswith("Replace")
             modifications = ModificationsNSS(file, replace)
             self.config.patches_nss.append(modifications)
 
@@ -642,7 +641,7 @@ class ConfigReader:
         modification = None
         if key.startswith("ChangeRow"):
             target = self.target_2da(identifier, modifiers)
-            if not target:
+            if target is None:
                 return None
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
             modification = ChangeRow2DA(identifier, target, cells, store_2da, store_tlk)

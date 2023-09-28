@@ -45,7 +45,7 @@ class Vector2:
     def __eq__(
         self,
         other,
-    ) -> bool | object:
+    ) -> bool:
         """Two Vector2 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -57,7 +57,7 @@ class Vector2:
     def __add__(
         self,
         other,
-    ) -> Vector2 | object:
+    ) -> Vector2:
         """Adds the components of two Vector2 objects."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -70,7 +70,7 @@ class Vector2:
     def __sub__(
         self,
         other,
-    ):
+    ) -> Vector2:
         """Subtracts the components of two Vector2 objects."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -83,7 +83,7 @@ class Vector2:
     def __mul__(
         self,
         other,
-    ) -> Vector2 | object:
+    ) -> Vector2:
         """Multiplies the components by a scalar integer."""
         if not isinstance(other, int):
             return NotImplemented
@@ -96,7 +96,7 @@ class Vector2:
     def __truediv__(
         self,
         other,
-    ) -> Vector2 | object:
+    ) -> Vector2:
         if isinstance(other, int):
             new = Vector2.from_vector2(self)
             new.x /= other
@@ -107,13 +107,13 @@ class Vector2:
     def __getitem__(
         self,
         item,
-    ) -> float | None | object:
+    ) -> float:
         if isinstance(item, int):
             if item == 0:
                 return self.x
             if item == 1:
                 return self.y
-            return None
+            raise KeyError
         return NotImplemented
 
     def __setitem__(
@@ -359,7 +359,7 @@ class Vector3:
     def __eq__(
         self,
         other: Vector3 | object,
-    ) -> object | bool:
+    ) -> bool:
         """Two Vector3 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -372,7 +372,7 @@ class Vector3:
     def __add__(
         self,
         other: Vector3,
-    ) -> object | Vector3:
+    ) -> Vector3:
         """Adds the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -386,7 +386,7 @@ class Vector3:
     def __sub__(
         self,
         other,
-    ) -> object | Vector3:
+    ) -> Vector3:
         """Subtracts the components of two Vector3 objects."""
         if not isinstance(other, Vector3):
             return NotImplemented
@@ -400,7 +400,7 @@ class Vector3:
     def __mul__(
         self,
         other: float,
-    ) -> Vector3 | object:
+    ) -> Vector3:
         """Multiplies the components by a scalar integer."""
         if isinstance(other, (int, float)):
             new = Vector3.from_vector3(self)
@@ -425,7 +425,7 @@ class Vector3:
     def __getitem__(
         self,
         item: int,
-    ) -> float | None | object:
+    ) -> float:
         if isinstance(item, int):
             if item == 0:
                 return self.x
@@ -433,7 +433,7 @@ class Vector3:
                 return self.y
             if item == 2:
                 return self.z
-            return None
+            raise KeyError
         return NotImplemented
 
     def __setitem__(
@@ -665,7 +665,7 @@ class Vector4:
     def __eq__(
         self,
         other,
-    ) -> object | bool:
+    ) -> bool:
         """Two Vector4 components are equal if their components are approximately the same."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -679,7 +679,7 @@ class Vector4:
     def __add__(
         self,
         other,
-    ) -> object | Vector4:
+    ) -> Vector4:
         """Adds the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -694,7 +694,7 @@ class Vector4:
     def __sub__(
         self,
         other,
-    ) -> object | Vector4:
+    ) -> Vector4:
         """Subtracts the components of two Vector4 objects."""
         if not isinstance(other, Vector4):
             return NotImplemented
@@ -1165,7 +1165,7 @@ class Polygon2:
     def __getitem__(
         self,
         item: int | slice,
-    ) -> Vector2 | list[Vector2] | object:
+    ) -> Vector2 | list[Vector2]:
         if isinstance(item, int):
             return self.points[item]
         if isinstance(item, slice):
@@ -1308,7 +1308,7 @@ class Polygon3:
     def __getitem__(
         self,
         item: int,
-    ) -> Vector3 | list[Vector3] | object:
+    ) -> Vector3 | list[Vector3]:
         if isinstance(item, int):
             return self.points[item]
         if isinstance(item, slice):

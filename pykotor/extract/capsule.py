@@ -20,7 +20,7 @@ class Capsule:
         path: CaseAwarePath | str,
         create_nonexisting: bool = False,
     ):
-        self._path = CaseAwarePath(path).resolve()
+        self._path: CaseAwarePath = CaseAwarePath(path).resolve()
         self._resources: list[FileResource] = []
 
         str_path = str(self._path)

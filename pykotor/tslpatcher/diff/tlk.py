@@ -4,13 +4,14 @@ from pykotor.resource.formats.tlk import TLK
 
 
 class DiffTLK:
-    def __init__(self, old: TLK, new: TLK):
+    def __init__(self, old: TLK, new: TLK, log_func=print):
         self.old: TLK = old
         self.new: TLK = new
+        self.log = log_func
 
     def is_same(self) -> bool:
         if len(self.old) != len(self.new):
-            print(f"TLK row count mismatch. Old: {len(self.old)}, New: {len(self.new)}")
+            self.log(f"TLK row count mismatch. Old: {len(self.old)}, New: {len(self.new)}")
 
         mismatch_count, extra_old, extra_new = 0, 0, 0
 
@@ -20,9 +21,9 @@ class DiffTLK:
                 if new_stringref is not None:
                     if old_entry != new_entry:
                         mismatch_count += 1
-                        print(f"Entry mismatch at stringref: {old_stringref}")
-                        print(f"Old Text: {old_entry.text}, Old Voiceover: {old_entry.voiceover}")
-                        print(f"New Text: {new_entry.text}, New Voiceover: {new_entry.voiceover}")
+                        self.log(f"Entry mismatch at stringref: {old_stringref}")
+                        self.log(f"Old Text: {old_entry.text}, Old Voiceover: {old_entry.voiceover}")
+                        self.log(f"New Text: {new_entry.text}, New Voiceover: {new_entry.voiceover}")
                     continue
 
                 extra_old += 1
@@ -34,10 +35,10 @@ class DiffTLK:
 
         # Provide a summary of discrepancies
         if mismatch_count:
-            print(f"{mismatch_count} entries have mismatches.")
+            self.log(f"{mismatch_count} entries have mismatches.")
         if extra_old:
-            print(f"Old TLK has {extra_old} stringrefs that are missing in the new TLK.")
+            self.log(f"Old TLK has {extra_old} stringrefs that are missing in the new TLK.")
         if extra_new:
-            print(f"New TLK has {extra_new} extra stringrefs that are not in the old TLK.")
+            self.log(f"New TLK has {extra_new} extra stringrefs that are not in the old TLK.")
 
         return not (mismatch_count or extra_old or extra_new)

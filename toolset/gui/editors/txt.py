@@ -1,6 +1,9 @@
 from typing import Optional, Tuple
 
-import chardet
+try:
+    import chardet
+except ImportError:
+    chardet = None
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
 from pykotor.extract.installation import Installation
@@ -35,7 +38,7 @@ class TXTEditor(Editor):
             self.ui.textEdit.setPlainText(data.decode("windows-1252"))
         except UnicodeDecodeError:
             # Slower, auto detect encoding
-            encoding = (chardet.detect(data) or {}).get("encoding")
+            encoding = (chardet.detect(data) or {}).get("encoding") if chardet else "utf8"
             if not encoding:
                 raise
             self.ui.textEdit.setPlainText(data.decode(encoding))

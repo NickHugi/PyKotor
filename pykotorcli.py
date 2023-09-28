@@ -17,7 +17,7 @@ class ExitCode(IntEnum):
     CHANGES_INI_NOT_FOUND = 4
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="TSLPatcher CLI written in PyKotor")
 
     # Positional arguments for the old syntax

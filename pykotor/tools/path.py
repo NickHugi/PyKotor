@@ -241,9 +241,6 @@ class CaseAwarePath(Path):
             new_path = CaseAwarePath._get_case_sensitive_path(new_path)
         return new_path
 
-    def __hash__(self) -> int:
-        return hash(Path(str(self).lower()))
-
     def __str__(self):
         return (
             super().__str__()
@@ -253,8 +250,8 @@ class CaseAwarePath(Path):
 
     @staticmethod
     def _get_case_sensitive_path(path: os.PathLike) -> CaseAwarePath:
-        path: OriginalPath = OriginalPath(path)
-        parts = list(path.parts)
+        pathlib_path: OriginalPath = OriginalPath(path)
+        parts = list(pathlib_path.parts)
 
         for i in range(1, len(parts)):  # ignore the root (/, C:\\, etc)
             base_path: Path = Path(*parts[:i])
