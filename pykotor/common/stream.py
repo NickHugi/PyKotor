@@ -7,11 +7,6 @@ import struct
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, BinaryIO
 
-try:
-    import chardet
-except ImportError:
-    chardet = None
-
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.tools.path import CaseAwarePath
@@ -546,7 +541,7 @@ class BinaryReader:
     def read_string(
         self,
         length: int,
-        encoding: str | None = None,
+        encoding: str = "windows-1252",
     ) -> str:
         """Reads a string from the stream with the specified length. Any null bytes and characters proceeding a null byte
         are trimmed from the final value and any unknown characters are ignored.
@@ -554,7 +549,7 @@ class BinaryReader:
         Args:
         ----
             length: Amount of character to read.
-            encoding: Encoding of string to read.  If not specified, will use chardet to automatically detect the encoding (if available). Otherwise defaults to 'windows-1252'
+            encoding: Encoding of string to read.  If not specified, will default to 'windows-1252'
 
         Returns:
         -------
@@ -562,9 +557,7 @@ class BinaryReader:
         """
         self.exceed_check(length)
         string_byte_data = self._stream.read(length)
-        if not encoding and chardet:
-            encoding = chardet.detect(string_byte_data).get("encoding")
-        string = string_byte_data.decode(encoding or "windows-1252", errors="ignore")
+        string = string_byte_data.decode(encoding, errors="ignore")
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")
             string = string.replace("\0", "")

@@ -39,9 +39,13 @@ class TXTEditor(Editor):
         except UnicodeDecodeError:
             # Slower, auto detect encoding
             encoding = (chardet.detect(data) or {}).get("encoding") if chardet else "utf8"
-            if not encoding:
-                raise
-            self.ui.textEdit.setPlainText(data.decode(encoding))
+            try:
+                self.ui.textEdit.setPlainText(data.decode(encoding))
+            except UnicodeDecodeError:
+                try:
+                    self.ui.textEdit.setPlainText(data.decode("cp-1252"))
+                except UnicodeDecodeError:
+                    self.ui.textEdit.setPlainText(data.decode(encoding="windows-1252", errors="replace"))
 
     def build(self) -> Tuple[bytes, bytes]:
         return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode(), b""

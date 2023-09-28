@@ -352,8 +352,8 @@ class ModInstaller:
             )
 
             nss_bytes = BinaryReader.load_file(self.mod_path / nss_patch.filename)
-            encoding = chardet.detect(nss_bytes).get("encoding") if chardet else None
-            nss: list[str] = [nss_bytes.decode(encoding=encoding or "utf8", errors="replace")]
+            encoding: str = (chardet and chardet.detect(nss_bytes) or {}).get("encoding") or "utf8"
+            nss: list[str] = [nss_bytes.decode(encoding=encoding, errors="replace")]
 
             nss_patch.apply(nss, memory, self.log)
 
