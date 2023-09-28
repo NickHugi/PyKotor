@@ -27,7 +27,8 @@ def create_backup(
     processed_files: set,
     subdirectory_path: os.PathLike | str | None = None,
 ):
-    destination_file_str = str(destination_filepath).lower()
+    destination_file_str = str(destination_filepath)
+    destination_file_str_lower = destination_file_str.lower()
     if subdirectory_path:
         subdirectory_path = backup_folderpath / subdirectory_path
         subdirectory_path.mkdir(exist_ok=True, parents=True)
@@ -35,7 +36,7 @@ def create_backup(
     else:
         backup_filepath = backup_folderpath / destination_filepath.name
 
-    if destination_file_str not in processed_files and destination_filepath.exists():
+    if destination_file_str_lower not in processed_files and destination_filepath.exists():
         # Check if the backup path exists and generate a new one if necessary
         i = 2
         filestem = backup_filepath.stem
@@ -47,7 +48,7 @@ def create_backup(
         shutil.copy(destination_filepath, backup_filepath)
 
     # Add the lowercased path string to the processed_files set
-    processed_files.add(destination_file_str)
+    processed_files.add(destination_file_str_lower)
 
 
 class InstallFile:
@@ -108,7 +109,7 @@ class InstallFile:
             with print_lock:
                 if file_exists:
                     log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
-                    create_backup(log, save_file_to, backup_dir, processed_files)
+                    create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
                 else:
                     log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
                     processed_files.add(str(save_file_to).lower())

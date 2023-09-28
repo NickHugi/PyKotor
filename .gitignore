@@ -8,14 +8,13 @@ build/*
 *.pyc
 .vscode/launch.json
 debug.log
-pykotorcli.spec
 pykotorcli.build/*
-.history/*
+.history
 *.heapsnapshot
 *.cpuprofile
 *.prof
 .vscode/PythonImportHelper*.json
-.vscode/launch.json
 tests/tmp/*
 tests/tslpatcher/tmp/*
 output.prof
+*.spec

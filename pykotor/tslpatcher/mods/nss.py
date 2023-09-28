@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class ModificationsNSS:
     def __init__(self, filename: str, replace_file: bool):
         self.filename: str = filename
-        self.destination: str = f"Override/{filename}"
+        self.destination: str = "Override"
         self.replace_file: bool = replace_file
 
     def apply(self, nss: list[str], memory: PatcherMemory, logger: PatchLogger) -> None:

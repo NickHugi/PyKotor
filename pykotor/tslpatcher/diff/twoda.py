@@ -1,4 +1,9 @@
-from pykotor.resource.formats.twoda import TwoDA
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.twoda import TwoDA, TwoDARow
 
 
 class Diff2DA:
@@ -7,29 +12,49 @@ class Diff2DA:
         self.new: TwoDA = new
 
     def is_same(self) -> bool:
-        old_columns = set(self.old.get_headers())
-        new_columns = set(self.new.get_headers())
+        old_headers = set(self.old.get_headers())
+        new_headers = set(self.new.get_headers())
         ret = True
 
-        if old_columns != new_columns:
-            print("Columns match")
+        # Check for column header mismatches
+        missing_headers = old_headers - new_headers
+        extra_headers = new_headers - old_headers
+        if missing_headers:
+            print(f"Missing headers in new TwoDA: {', '.join(missing_headers)}")
+            ret = False
+        if extra_headers:
+            print(f"Extra headers in new TwoDA: {', '.join(extra_headers)}")
+            ret = False
+        if not ret:
             return False
 
-        for old_row in self.old:
-            index = self.old.row_index(old_row)
-            if index is None:
-                msg = "Row mismatch"
-                raise ValueError(msg)
-            if index >= len(self.new._labels) or index < 0:
-                print(f"Old index {index} outside of the new TwoDA length: {len(self.new._labels)}")
-                return False
-            new_row = self.new.get_row(index)
+        # Common headers
+        common_headers: set[str] = old_headers.intersection(new_headers)
 
-            for header in old_columns:
-                old_value = old_row.get_string(header)
-                new_value = new_row.get_string(header)
+        # Check for row mismatches
+        old_indices: set[int | None] = {self.old.row_index(row) for row in self.old}
+        new_indices: set[int | None] = {self.new.row_index(row) for row in self.new}
+        missing_rows: set[int | None] = old_indices - new_indices
+        extra_rows: set[int | None] = new_indices - old_indices
+        if missing_rows:
+            print(f"Missing rows in new TwoDA: {', '.join(map(str, missing_rows))}")
+            ret = False
+        if extra_rows:
+            print(f"Extra rows in new TwoDA: {', '.join(map(str, extra_rows))}")
+            ret = False
+
+        # Check cell values for common rows
+        for index in old_indices.intersection(new_indices):
+            if index is None:
+                print("Row mismatch")
+                return False
+            old_row: TwoDARow = self.old.get_row(index)
+            new_row: TwoDARow = self.new.get_row(index)
+            for header in common_headers:
+                old_value: str = old_row.get_string(header)
+                new_value: str = new_row.get_string(header)
                 if old_value != new_value:
-                    print("Cell mismatch.\tIndex:", index, "Header:", header, "Old value:", old_value, "New value:", old_value)
+                    print(f"Cell mismatch at RowIndex '{index}' Header '{header}': '{old_value}' --> '{new_value}'")
                     ret = False
 
         return ret

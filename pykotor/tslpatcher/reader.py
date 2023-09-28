@@ -83,20 +83,22 @@ class ConfigReader:
         ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
 
         ini_file_bytes = BinaryReader.load_file(resolved_file_path)
+        encoding = "utf8"
         if chardet:
-            encoding = chardet.detect(ini_file_bytes)["encoding"]
-            assert encoding is not None
-            ini.read_string(ini_file_bytes.decode(encoding))
-        else:
-            ini_data: str | None = None
+            encoding = chardet.detect(ini_file_bytes).get("encoding") or encoding
+        ini_data: str | None = None
+        try:
+            ini_data = ini_file_bytes.decode(encoding)
+        except UnicodeDecodeError:
             try:
-                ini_data = ini_file_bytes.decode()
+                ini_data = ini_file_bytes.decode("cp1252")
             except UnicodeDecodeError:
                 try:
-                    ini_data = ini_file_bytes.decode("cp1252")
+                    ini_data = ini_file_bytes.decode("windows-1252")
                 except UnicodeDecodeError:
+                    print(f"Could not determine encoding of '{resolved_file_path.name}'. Attempting to force load...")
                     ini_data = ini_file_bytes.decode(errors="replace")
-            ini.read_string(ini_data)
+        ini.read_string(ini_data)
 
         config = PatcherConfig()
         return ConfigReader(ini, resolved_file_path, logger).load(config)
@@ -530,14 +532,18 @@ class ConfigReader:
                         continue
                     substring_id = int(substring[4:])
                     language, gender = value.substring_pair(substring_id)
-                    text = text.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
-                    value.set_data(language, gender, text)
+                    formatted_text = text.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
+                    value.set_data(language, gender, formatted_text)
                 value = FieldValueConstant(value)
             elif field_type.return_type() == GFFList:
                 value = FieldValueConstant(GFFList())
             elif field_type.return_type() == GFFStruct:
-                struct_id = int(ini_data["TypeId"])
-                value = FieldValueConstant(GFFStruct(struct_id))
+                raw_struct_id = ini_data["TypeId"]
+                if is_int(raw_struct_id):
+                    value = FieldValueConstant(GFFStruct(int(raw_struct_id)))
+                else:
+                    self.log.add_error(f"Invalid struct id: '{raw_struct_id}' in '{identifier}'. Using default of 0")
+                    value = FieldValueConstant(GFFStruct())
             else:
                 self.log.add_error(
                     f"Could not find valid field return type matching '{field_type.return_type()}' in this context.",

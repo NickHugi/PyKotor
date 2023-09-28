@@ -152,20 +152,22 @@ class ModInstaller:
         )
         ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
 
-        encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") if chardet else None
-
-        if encoding is not None:
-            ini_text = ini_file_bytes.decode(encoding)
-        else:
-            ini_data: str | None = None
+        encoding = "utf8"
+        if chardet:
+            encoding = chardet.detect(ini_file_bytes).get("encoding") or encoding
+        ini_data: str | None = None
+        try:
+            ini_data = ini_file_bytes.decode(encoding)
+        except UnicodeDecodeError:
             try:
-                ini_data = ini_file_bytes.decode()
+                ini_data = ini_file_bytes.decode("cp1252")
             except UnicodeDecodeError:
                 try:
-                    ini_data = ini_file_bytes.decode("cp1252")
+                    ini_data = ini_file_bytes.decode("windows-1252")
                 except UnicodeDecodeError:
+                    print(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
                     ini_data = ini_file_bytes.decode(errors="replace")
-            ini_text = ini_data
+        ini_text = ini_data
 
         self._config = PatcherConfig()
         self._config.load(ini_text, self.mod_path, self.log)
@@ -317,8 +319,9 @@ class ModInstaller:
         self.log.add_note("Applying patches from [CompileList]...")
         for nss_patch in config.patches_nss:
             capsule: Capsule | None = None
-            output_container_path = self.game_path / nss_patch.destination
-            rel_output_container_path = output_container_path.relative_to(self.game_path)
+            output_container_path: CaseAwarePath = self.game_path / nss_patch.destination
+            rel_output_container_path: CaseAwarePath = output_container_path.relative_to(self.game_path)
+            ncs_compiled_filename = f"{nss_patch.filename.rsplit('.', 1)[0]}.ncs"
 
             if is_capsule_file(output_container_path.name):
                 capsule = Capsule(output_container_path)
@@ -329,37 +332,28 @@ class ModInstaller:
                     processed_files,
                     rel_output_container_path.parent,
                 )
-                self.log.add_note(
-                    f"Patching '{nss_patch.filename}' in the '{rel_output_container_path}' archive.",
-                )
                 if not output_container_path.exists():
                     self.log.add_warning(
                         f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{nss_patch.filename}'! Please note that TSLPatcher would have errored in this scenario!"
                         " This most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
             else:
+                output_container_path = output_container_path / ncs_compiled_filename
                 create_backup(
                     self.log,
-                    output_container_path / nss_patch.filename,
+                    output_container_path,
                     backup_dir,
                     processed_files,
-                    nss_patch.destination,
-                )
-                self.log.add_note(
-                    f"Patching '{nss_patch.filename}' in the '{rel_output_container_path}' folder.",
+                    rel_output_container_path,
                 )
 
-            ncs_compiled_filename = f"{nss_patch.filename.rsplit('.', 1)[0]}.ncs"
             self.log.add_note(
                 f"Compiling '{nss_patch.filename}' and saving to '{rel_output_container_path / ncs_compiled_filename}'",
             )
 
             nss_bytes = BinaryReader.load_file(self.mod_path / nss_patch.filename)
-            encoding = chardet.detect(nss_bytes)["encoding"] if chardet else None
-            if encoding:
-                nss: list[str] = [nss_bytes.decode(encoding=encoding, errors="replace")]
-            else:
-                nss: list[str] = [nss_bytes.decode(errors="replace")]
+            encoding = chardet.detect(nss_bytes).get("encoding") if chardet else None
+            nss: list[str] = [nss_bytes.decode(encoding=encoding or "utf8", errors="replace")]
 
             nss_patch.apply(nss, memory, self.log)
 

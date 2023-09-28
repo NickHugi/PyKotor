@@ -35,11 +35,6 @@ exclude = '''
 )/
 '''
 
-[tool.flake8]
-exclude = [".git", "__pycache__", "dist"]
-max-line-length = 130
-max-complexity = 25
-
 [tool.isort]
 atomic = true
 profile = "black"

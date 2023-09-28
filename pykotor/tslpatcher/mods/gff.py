@@ -124,7 +124,7 @@ class AddStructToListGFF(ModifyGFF):
         path: PureWindowsPath | str | None = None,
         modifiers: list[ModifyGFF] | None = None,
     ):
-        self.struct_id = struct_id if struct_id and struct_id != 0 else None
+        self.struct_id = struct_id or 0
         self.identifier = identifier or ""
         self.index_to_token = index_to_token
         self.path: PureWindowsPath | None = PureWindowsPath(path) if path else None
@@ -142,12 +142,11 @@ class AddStructToListGFF(ModifyGFF):
             self._navigate_containers(container, self.path) if self.path else container
         )
         if isinstance(parent_gff_struct, GFFList):
-            struct_id = self.struct_id or len(parent_gff_struct)
-            new_struct = parent_gff_struct.add(struct_id)
+            new_struct = parent_gff_struct.add(self.struct_id)
 
             # If an index_to_token is provided, store the new struct's index in PatcherMemory
             if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = str(struct_id)
+                memory.memory_2da[self.index_to_token] = str(self.struct_id)
 
         if new_struct is None:
             logger.add_error(
