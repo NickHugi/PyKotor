@@ -17,7 +17,7 @@ from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, PureWindowsPath
 from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
@@ -514,7 +514,7 @@ class ConfigReader:
         }
 
         raw_path = ini_data.get("Path", "").strip()
-        path = CaseAwarePath(raw_path) if raw_path else None
+        path = PureWindowsPath(raw_path) if raw_path else None
 
         field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
         label = ini_data["Label"]
@@ -540,10 +540,13 @@ class ConfigReader:
             elif field_type.return_type() == GFFStruct:
                 raw_struct_id = ini_data["TypeId"]
                 if is_int(raw_struct_id):
-                    value = FieldValueConstant(GFFStruct(int(raw_struct_id)))
+                    struct_id = int(raw_struct_id)
+                elif not raw_struct_id:
+                    struct_id = 0
                 else:
                     self.log.add_error(f"Invalid struct id: '{raw_struct_id}' in '{identifier}'. Using default of 0")
-                    value = FieldValueConstant(GFFStruct())
+                    struct_id = 0
+                value = FieldValueConstant(GFFStruct(struct_id))
             else:
                 self.log.add_error(
                     f"Could not find valid field return type matching '{field_type.return_type()}' in this context.",
