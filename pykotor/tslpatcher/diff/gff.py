@@ -22,15 +22,21 @@ class DiffGFF:
         current_path: PureWindowsPath | os.PathLike | str | None = None,
     ) -> bool:
         current_path = PureWindowsPath(current_path or "GFFRoot")
+        old_struct = old_struct or self.old.root
+        new_struct = new_struct or self.new.root
 
-        if len(old_struct or self.old.root) != len(new_struct or self.new.root):
-            self.log(f"GFFStruct sizes have changed at '{current_path}': '{len(old_struct or self.old.root)}' --> '{len(new_struct or self.new.root)}'")
+        if len(old_struct) != len(new_struct):
+            self.log(f"GFFStruct sizes have changed at '{current_path}': '{len(old_struct)}' --> '{len(new_struct)}'")
             self.log()
             is_same_result = False
 
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(old_struct or self.old.root)}
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(new_struct or self.new.root)}
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(old_struct)
+        }
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {
+            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(new_struct)
+        }
 
         # Union of labels from both old and new structures
         all_labels = set(old_dict.keys()) | set(new_dict.keys())
@@ -48,7 +54,7 @@ class DiffGFF:
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
-                self.log(f"Missing field at '{child_path}'. FieldType: '{new_ftype}' Value: '{new_value}'")
+                self.log(f"Missing field at '{child_path}'. FieldType: '{old_ftype}' Value: '{old_value}'")
                 is_same_result = False
                 continue
 
@@ -61,9 +67,7 @@ class DiffGFF:
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
                 if old_value.struct_id != new_value.struct_id:
-                    self.log(
-                        f"Struct ID has changed at '{child_path}': '{old_value.struct_id}' --> '{new_value.struct_id}'",
-                    )
+                    self.log(f"Struct ID has changed at '{child_path}': '{old_value.struct_id}' --> '{new_value.struct_id}'")
                     is_same_result = False
 
                 if not self.is_same(old_value, new_value, child_path):
@@ -90,7 +94,6 @@ class DiffGFF:
             self.log()
             is_same_result = False
 
-
         old_set, new_set = dict(enumerate(old_gff_list)), dict(enumerate(new_gff_list))
 
         # Detect unique items in both lists
@@ -98,20 +101,20 @@ class DiffGFF:
         unique_to_new: set[int] = new_set.keys() - old_set.keys()
 
         for list_index in unique_to_old:
-            self.log(f"Missing GFFStruct at '{current_path / str(list_index)}' in GFFList")
-            self.log("Contents of old struct:")
             struct = old_set[list_index]
+            self.log(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
+            self.log("Contents of old struct:")
             for label, field_type, field_value in struct:
-                self.log("Struct ID:", struct.struct_id, "Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
             self.log()
             is_same_result = False
 
         for list_index in unique_to_new:
-            self.log(f"Extra GFFStruct at '{current_path / str(list_index)}' in GFFList")
-            self.log("Contents of new struct:")
             struct = new_set[list_index]
+            self.log(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
+            self.log("Contents of new struct:")
             for label, field_type, field_value in struct:
-                self.log("Struct ID:", struct.struct_id, "Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
             self.log()
             is_same_result = False
 
