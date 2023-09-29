@@ -99,15 +99,15 @@ def find_tlk_diff() -> None:
     tslpatcher_dialogtlk_file = CaseAwarePath(tslpatcher_path, "dialog.tlk")
     pykotor_dialogtlk_exists: bool = pykotor_dialogtlk_file.exists()
     tslpatcher_dialogtlk_exists: bool = tslpatcher_dialogtlk_file.exists()
-    if pykotor_dialogtlk_exists is False:  # sourcery skip: extract-duplicate-method
+    if not pykotor_dialogtlk_exists:  # sourcery skip: extract-duplicate-method
         message = "Missing PyKotor dialog.tlk"
         log_output(message)
         log_output(len(message) * "-")
-    if tslpatcher_dialogtlk_exists is False:
+    if not tslpatcher_dialogtlk_exists:
         message = "Missing TSLPatcher dialog.tlk"
         log_output(message)
         log_output(len(message) * "-")
-    if pykotor_dialogtlk_exists is True and tslpatcher_dialogtlk_exists is True:
+    if pykotor_dialogtlk_exists and tslpatcher_dialogtlk_exists:
         log_output(f"Loading TLK '{pykotor_dialogtlk_file}'")
         pykotor_tlk = read_tlk(pykotor_dialogtlk_file)
         log_output(f"Loading TLK '{tslpatcher_dialogtlk_file}'")
@@ -294,19 +294,19 @@ def modules() -> None:
                 pykotor_gff = read_gff(pyk_res.data)
                 tslpatcher_gff = read_gff(tsl_res.data)
                 if not pykotor_gff and tslpatcher_gff:
-                    message = f"PyKotor {ext.upper()} resource missing in memory:\t'{pykotor_file_rel}'"
+                    message = f"PyKotor {resref}.{ext.upper()} resource missing in memory:\t'{pykotor_file_rel}'"
                     log_output(message)
                     log_output(visual_length(message) * "-")
                     continue
 
                 if pykotor_gff and not tslpatcher_gff:
-                    message = f"TSLPatcher {ext.upper()} resource missing in memory:\t'{tslpatcher_file_rel}'"
+                    message = f"TSLPatcher {resref}.{ext.upper()} resource missing in memory:\t'{tslpatcher_file_rel}'"
                     log_output(message)
                     log_output(visual_length(message) * "-")
                     continue
 
                 if not pykotor_gff and not tslpatcher_gff:
-                    message = f"Both {ext.upper()} resources missing in memory:\t'{pykotor_file_rel}'"
+                    message = f"Both {resref}.{ext.upper()} resources missing in memory:\t'{pykotor_file_rel}'"
                     log_output(message)
                     log_output(len(message) * "-")
                     continue
