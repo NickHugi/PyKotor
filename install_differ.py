@@ -155,14 +155,14 @@ def override() -> None:
         pykotor_file_rel = relative_path_from_to(tslpatcher_file, pykotor_file)
 
         if not pykotor_file.exists():
-            #message = f"Missing file:\t{pykotor_file_rel}"  # noqa: ERA001
-            #log_output(message)  # noqa: ERA001
-            #log_output(visual_length(message) * "-")  # noqa: ERA001
+            message = f"Missing file:\t{pykotor_file_rel}"
+            log_output(message)
+            log_output(visual_length(message) * "-")
             continue
         if not tslpatcher_file.exists():
-            #message = f"Missing file:\t{tslpatcher_file_rel}"  # noqa: ERA001
-            #log_output(message)  # noqa: ERA001
-            #log_output(visual_length(message) * "-")  # noqa: ERA001
+            message = f"Missing file:\t{tslpatcher_file_rel}"
+            log_output(message)
+            log_output(visual_length(message) * "-")
             continue
 
         ext = tslpatcher_file.suffix.lower()[1:]
