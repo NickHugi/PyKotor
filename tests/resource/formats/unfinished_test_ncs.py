@@ -15,7 +15,6 @@ class TestNCS(TestCase):
         self.validate_io(ncs)
 
         user_profile_path = os.environ.get("USERPROFILE")
-        assert user_profile_path is not None
         file_path = os.path.join(user_profile_path, "Documents", "ext", "output.ncs")
 
         write_ncs(ncs, file_path)

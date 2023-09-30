@@ -304,7 +304,6 @@ class DLGEditor(Editor):
             link: DLGLink = item.data(_LINK_ROLE)
             is_copy: bool = item.data(_COPY_ROLE)
             node: DLGNode = link.node
-            assert self._installation
             dialog = LocalizedStringDialog(self, self._installation, node.text)
             if dialog.exec_() and not is_copy:
                 node.text = dialog.locstring
@@ -727,7 +726,6 @@ class DLGEditor(Editor):
             item = self.model.itemFromIndex(index)
             node: DLGNode = item.data(_LINK_ROLE).node
 
-            assert self._installation
             dialog = EditAnimationDialog(self, self._installation)
             if dialog.exec_():
                 node.animations.append(dialog.animation())
@@ -748,7 +746,6 @@ class DLGEditor(Editor):
         if self.ui.animsList.selectedItems():
             animItem = self.ui.animsList.selectedItems()[0]
             anim = animItem.data(QtCore.Qt.UserRole)
-            assert self._installation
             dialog = EditAnimationDialog(self, self._installation, anim)
             if dialog.exec_():
                 anim.animation_id = dialog.animation().animation_id
@@ -764,7 +761,6 @@ class DLGEditor(Editor):
             link: DLGLink = item.data(_LINK_ROLE)
             node: DLGNode = link.node
 
-            assert self._installation
             animations_list = self._installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
             for anim in node.animations:
                 if animations_list.get_height() > anim.animation_id:

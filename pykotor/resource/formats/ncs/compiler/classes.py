@@ -633,7 +633,6 @@ class IncludeScript(TopLevelObject):
         self.library: dict[str, bytes] = library if library is not None else {}
 
     def compile(self, ncs: NCS, root: CodeRoot) -> None:
-        assert root.library_lookup is not None
         for folder in root.library_lookup:
             filepath = folder / f"{self.file.value}.nss"
             if filepath.exists():

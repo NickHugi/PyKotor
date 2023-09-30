@@ -105,7 +105,9 @@ class DiffGFF:
                     continue
 
             elif str(old_value) != str(new_value):
-                self.log(f"Field value has changed at '{child_path}': '{old_value}'-->'{new_value}'")
+                self.log(
+                    f"Field '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}' value has changed at '{child_path}': '{old_value}'-->'{new_value}'"
+                )
                 is_same_result = False
                 continue
 

@@ -5,7 +5,7 @@ import re
 from contextlib import suppress
 from copy import copy
 from enum import IntEnum
-from typing import ClassVar, NamedTuple, Optional
+from typing import TYPE_CHECKING, ClassVar, NamedTuple, Optional
 
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
@@ -26,6 +26,9 @@ from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.gff import GFF
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -915,12 +918,10 @@ class Installation:
                     if capsule.exists(resname, ResourceType.TPC):
                         queries.remove(resname)
                         resource = capsule.resource(resname, ResourceType.TPC)
-                        assert resource is not None
                         textures[resname] = read_tpc(resource)
                     if capsule.exists(resname, ResourceType.TGA):
                         queries.remove(resname)
                         resource = capsule.resource(resname, ResourceType.TGA)
-                        assert resource is not None
                         textures[resname] = read_tpc(resource)
 
         def check_folders(values: list[CaseAwarePath]):
@@ -1207,12 +1208,10 @@ class Installation:
             tag = ""
 
             if capsule.exists("module", ResourceType.IFO):
-                ifo = read_gff(capsule.resource("module", ResourceType.IFO))
-                assert ifo is not None
+                ifo: GFF = read_gff(capsule.resource("module", ResourceType.IFO))
                 tag = ifo.root.get_resref("Mod_Entry_Area").get()
             if capsule.exists(tag, ResourceType.ARE):
-                are = read_gff(capsule.resource(tag, ResourceType.ARE))
-                assert are is not None
+                are: GFF = read_gff(capsule.resource(tag, ResourceType.ARE))
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
                     name = self._talktable.string(locstring.stringref) or ""
@@ -1286,7 +1285,6 @@ class Installation:
                 these_bytes = capsule.resource("module", ResourceType.IFO)
                 if these_bytes:
                     ifo = read_gff(these_bytes)
-                    assert ifo is not None
                     mod_id = ifo.root.get_resref("Mod_Entry_Area").get()
 
         return mod_id

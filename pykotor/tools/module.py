@@ -44,7 +44,6 @@ def clone_module(
     new_module = ERF(ERFType.MOD)
 
     ifo = old_module.info().resource()
-    assert ifo is not None
     old_identifier = ifo.identifier.get()
     ifo.identifier.set_data(identifier)
     ifo.mod_name = LocalizedString.from_english(identifier.upper())
@@ -55,7 +54,6 @@ def clone_module(
     new_module.set_data("module", ResourceType.IFO, ifo_data)
 
     are = old_module.are().resource()
-    assert are is not None
     are.name = LocalizedString.from_english(name)
     are_data = bytearray()
     write_gff(dismantle_are(are), are_data)
@@ -64,13 +62,9 @@ def clone_module(
     lyt = old_module.layout().resource()
     vis = old_module.vis().resource()
     git = old_module.git().resource()
-    assert lyt is not None
-    assert vis is not None
-    assert git is not None
 
     if keep_pathing:
         pth = old_module.pth().resource()
-        assert pth is not None
         pth_data = bytearray()
         write_gff(dismantle_pth(pth), pth_data)
         new_module.set_data(identifier, ResourceType.PTH, pth_data)
@@ -90,7 +84,6 @@ def clone_module(
             door.tag = new_resname
 
             utd = old_module.door(old_resname).resource()
-            assert utd is not None
             data = bytearray()
             write_gff(dismantle_utd(utd), data)
             new_module.set_data(new_resname, ResourceType.UTD, data)
@@ -105,7 +98,6 @@ def clone_module(
             placeable.tag = new_resname
 
             utp = old_module.placeable(old_resname).resource()
-            assert utp is not None
             data = bytearray()
             write_gff(dismantle_utp(utp), data)
             new_module.set_data(new_resname, ResourceType.UTP, data)
@@ -120,7 +112,6 @@ def clone_module(
             sound.tag = new_resname
 
             uts = old_module.sound(old_resname).resource()
-            assert uts is not None
             data = bytearray()
             write_gff(dismantle_uts(uts), data)
             new_module.set_data(new_resname, ResourceType.UTS, data)

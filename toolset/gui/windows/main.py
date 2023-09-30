@@ -181,7 +181,6 @@ class ToolWindow(QMainWindow):
             self.onModuleRefresh()
         else:
             # Reload the resource cache for the module
-            assert self.active
             self.active.reload_module(changed_file)
             # If the current module opened is the file which was updated, then we
             # should refresh the ui.
@@ -192,7 +191,6 @@ class ToolWindow(QMainWindow):
         self.onModuleReload(new_module_file)
 
     def onModuleReload(self, module_file: str) -> None:
-        assert self.active
         resources = self.active.module_resources(module_file)
 
         # Some users may choose to have their RIM files for the same module merged into a single option for the
@@ -213,11 +211,9 @@ class ToolWindow(QMainWindow):
             self.onOverrideReload(changed_dir)
 
     def onOverrideChanged(self, new_directory: str) -> None:
-        assert self.active
         self.ui.overrideWidget.setResources(self.active.override_resources(new_directory))
 
     def onOverrideReload(self, directory) -> None:
-        assert self.active
         self.active.reload_override(directory)
         self.ui.overrideWidget.setResources(self.active.override_resources(directory))
 
@@ -225,7 +221,6 @@ class ToolWindow(QMainWindow):
         self.refreshOverrideList()
 
     def onTexturesChanged(self, new_texture_pack: str) -> None:
-        assert self.active
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(new_texture_pack))
 
     def onExtractResources(self, resources: List[FileResource]) -> None:
@@ -347,7 +342,6 @@ class ToolWindow(QMainWindow):
         self.ui.actionCloneModule.setEnabled(self.active is not None)
 
     def openModuleDesigner(self) -> None:
-        assert self.active
         designer = ModuleDesigner(None, self.active)
         addWindow(designer)
 
@@ -362,17 +356,13 @@ class ToolWindow(QMainWindow):
         """Opens the talktable for the active (currently selected) installation. If there is no active information, show
         a message box instead.
         """
-        assert self.active
         filepath = self.active.path() + "dialog.tlk"
         data = BinaryReader.load_file(filepath)
         openResourceEditor(str(filepath), "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self) -> None:
-        assert self.active
         self.active.reload_override("")
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-        assert res
-        assert res.data
         openResourceEditor(str(res.filepath), "global", ResourceType.JRL, res.data, self.active, self)
 
     def openFileSearchDialog(self) -> None:
@@ -381,11 +371,9 @@ class ToolWindow(QMainWindow):
         """
         search_dialog = FileSearcher(self, self.installations)
         if search_dialog.exec_():
-            assert search_dialog.installation
             results_dialog = FileResults(self, search_dialog.results, search_dialog.installation)
             if results_dialog.exec_() and results_dialog.selection:
                 selection = results_dialog.selection
-                assert self.active
 
                 # Open relevant tab then select resource in the tree
                 if str(self.active.module_path()).lower() == str(selection.filepath()).lower():
@@ -660,7 +648,6 @@ class ToolWindow(QMainWindow):
                     data = bytearray()
                     write_tpc(tpc, data, ResourceType.TGA)
                     filepath = filepath.replace(".tpc", ".tga")
-            assert self.active
             if resource.restype() == ResourceType.MDL and manipulate_mdl:
                 if decompile_mdl:
                     mdx_data = self.active.resource(resource.resname(), ResourceType.MDX).data
@@ -675,7 +662,6 @@ class ToolWindow(QMainWindow):
                         for texture in model.list_textures(data):
                             try:
                                 tpc = self.active.texture(texture)
-                                assert tpc
                                 if extract_txi:
                                     with (folderpath / f"{texture}.txi").open("wb") as file:
                                         file.write(tpc.txi.encode("ascii"))
@@ -726,7 +712,6 @@ class FolderObserver(FileSystemEventHandler):
 
         self.lastModified = datetime.now()
 
-        assert self.window.active
         module_path = self.window.active.module_path()
         override_path = self.window.active.override_path()
         modified_path = CaseAwarePath(event.src_path)

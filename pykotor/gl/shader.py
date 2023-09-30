@@ -184,7 +184,6 @@ class Texture:
     @classmethod
     def from_tpc(cls, tpc: TPC) -> Texture:
         width, height, tpc_format, data = tpc.get(0)
-        assert data is not None
         image_size = len(data)
 
         gl_id = glGenTextures(1)

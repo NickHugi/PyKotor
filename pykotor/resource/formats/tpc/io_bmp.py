@@ -20,7 +20,6 @@ class TPCBMPWriter(ResourceWriter):
         auto_close: bool = True,
     ) -> None:
         width, height, data = self._tpc.convert(TPCTextureFormat.RGB, 0)
-        assert data is not None
         file_size = 14 + 40 + (width * height * 3)
 
         # Header

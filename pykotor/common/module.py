@@ -148,7 +148,6 @@ class Module:
             self.git().activate(location)
             self.git().resource()
             git = self.git().resource()
-            assert git is not None
             look_for.extend(
                 [ResourceIdentifier(creature.resref.get(), ResourceType.UTC) for creature in git.creatures]
                 + [ResourceIdentifier(placeable.resref.get(), ResourceType.UTP) for placeable in git.placeables]
@@ -166,7 +165,6 @@ class Module:
         for location in self.layout().locations():
             self.layout().activate(location)
             layout = self.layout().resource()
-            assert layout is not None
             for room in layout.rooms:
                 look_for.extend(
                     (

@@ -65,7 +65,7 @@ def read_gff(
     source: SOURCE_TYPES,
     offset: int = 0,
     size: int | None = None,
-) -> GFF | None:
+) -> GFF:  # sourcery skip: hoist-statement-from-if, reintroduce-else
     """Returns an GFF instance from the source. The file format (GFF or GFF_XML) is automatically determined before parsing
     the data.
 
@@ -88,15 +88,15 @@ def read_gff(
     """
     file_format = detect_gff(source, offset)
 
-    if file_format is ResourceType.INVALID:
-        msg = "Failed to determine the format of the GFF file."
-        raise ValueError(msg)
-
     if file_format == ResourceType.GFF:
         return GFFBinaryReader(source, offset, size or 0).load()
     if file_format == ResourceType.GFF_XML:
         return GFFXMLReader(source, offset, size or 0).load()
-    return None
+
+    msg = "Failed to determine the format of the GFF file."
+    if file_format is ResourceType.INVALID:
+        raise ValueError(msg)
+    raise ValueError(msg)
 
 
 def write_gff(

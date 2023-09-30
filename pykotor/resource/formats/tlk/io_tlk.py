@@ -78,7 +78,6 @@ class TLKBinaryReader(ResourceReader):
         text_length = self._reader.read_uint32()
         self._reader.read_single()  # unused
 
-        assert self._tlk.entries is not None
         self._tlk.entries[stringref].voiceover = ResRef(sound_resref)
 
         self._text_headers.append(ArrayHead(text_offset, text_length))

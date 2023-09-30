@@ -308,7 +308,6 @@ class ModInstaller:
                     )
 
             template = templates[gff_patch.filename] = read_gff(search.data)
-            assert template is not None
 
             gff_patch.apply(template, memory, self.log)
             self.write(

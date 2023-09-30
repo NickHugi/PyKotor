@@ -789,7 +789,6 @@ class ConfigReader:
                 row_value = RowValueTLKMemory(token_id)
             else:
                 row_value = RowValueConstant(value)
-            assert row_value is not None
 
             if modifier.startswith("I"):
                 index = int(modifier[1:])

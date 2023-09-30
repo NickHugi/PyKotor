@@ -29,7 +29,6 @@ class TokenUsage2DA(TokenUsage):
 
     def value(self, memory: PatcherMemory) -> str:
         memory_stored_str = memory.memory_2da[self.token_id]
-        assert isinstance(memory_stored_str, str)
         return memory_stored_str
 
 
