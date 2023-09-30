@@ -10,7 +10,7 @@ from pykotor.tools.path import CaseAwarePath
 class TestCaseAwarePath(TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.temp_path = Path(self.temp_dir.name)
+        self.temp_path = Path(str(self.temp_dir.name))
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -30,7 +30,7 @@ class TestCaseAwarePath(TestCase):
 
     @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_rtruediv(self):
-        case_aware_file_path = str(self.temp_dir) / CaseAwarePath("soMeDir", "someFile.TXT")
+        case_aware_file_path = str(self.temp_path) / CaseAwarePath("soMeDir", "someFile.TXT")
         expected_path: Path = self.temp_path / "SOmeDir" / "SOMEFile.txT"
         expected_path.mkdir(exist_ok=True, parents=True)
         expected_path.touch()
