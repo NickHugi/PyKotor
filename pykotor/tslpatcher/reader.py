@@ -492,6 +492,7 @@ class ConfigReader:
         identifier: str,
         ini_data: dict[str, str],
         inside_list: bool = False,
+        current_path: PureWindowsPath | None = None,
     ) -> AddStructToListGFF | AddFieldGFF | None:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
@@ -519,7 +520,7 @@ class ConfigReader:
         label = ini_data["Label"]
         raw_value = ini_data.get("Value")
         value = None
-        struct_id = None
+        struct_id = 0
 
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
@@ -540,15 +541,14 @@ class ConfigReader:
                 raw_struct_id = ini_data["TypeId"]
                 if is_int(raw_struct_id):
                     struct_id = int(raw_struct_id)
-                elif not raw_struct_id:
-                    struct_id = 0
-                else:
-                    self.log.add_error(f"Invalid struct id: '{raw_struct_id}' in '{identifier}'. Using default of 0")
-                    struct_id = 0
+                elif raw_struct_id:
+                    self.log.add_error(
+                        f"Invalid struct id: expected int but got '{raw_struct_id}' in '{identifier}'. Using default of 0",
+                    )
                 value = FieldValueConstant(GFFStruct(struct_id))
             else:
                 self.log.add_error(
-                    f"Could not find valid field return type matching '{field_type.return_type()}' in this context.",
+                    f"Could not find valid field return type in '{identifier}' matching '{field_type.return_type()}' in this context",
                 )
                 return None
         elif raw_value.startswith("2DAMEMORY"):
@@ -579,7 +579,7 @@ class ConfigReader:
             value = FieldValueConstant(Vector4(*components))
         else:
             self.log.add_error(
-                f"Could not handle field_type '{field_type}' for GFFList identifier '{identifier}' value '{value}'. Skipping...",
+                f"Could not parse fieldtype '{field_type}' identifier '{identifier}' value '{value}'. Skipping...",
             )
             return None
 
@@ -606,18 +606,17 @@ class ConfigReader:
                 nested_modifier: ModifyGFF | None = self.add_field_gff(
                     x,
                     nested_ini,
-                    inside_list=field_type.return_type() == GFFList,
+                    inside_list=field_type.return_type() is GFFList,
                 )
                 if nested_modifier:  # if none, an error occured.
                     nested_modifiers.append(nested_modifier)
 
-        # If current field is a struct inside a list:
-        if (inside_list or label == "") and field_type.return_type() == GFFStruct:
+        # If current field is a struct inside a list, check inside_list OR no label defined.
+        if (inside_list or not label.strip()) and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
                 label,
                 struct_id,
                 index_in_list_token,
-                path,
                 nested_modifiers,
             )
 
@@ -628,7 +627,6 @@ class ConfigReader:
             value,
             path,
             nested_modifiers,
-            index_in_list_token,
         )
 
     #################

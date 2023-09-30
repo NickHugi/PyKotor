@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import io
+from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
@@ -12,6 +13,9 @@ from pykotor.tools.path import CaseAwarePath, PureWindowsPath
 from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.tlk import DiffTLK
 from pykotor.tslpatcher.diff.twoda import Diff2DA
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.erf.erf_data import ERFResource
 
 parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
 
@@ -51,7 +55,7 @@ def log_output(*args, **kwargs) -> None:
         f.write(msg)
 
     # Print the captured output to console
-    print(*args, **kwargs)
+    print(*args, **kwargs)  # noqa: T201
 
 
 def compute_sha256(file_path: CaseAwarePath) -> str:
@@ -125,7 +129,7 @@ def find_tlk_diff() -> None:
             log_output(message)
             log_output(len(message) * "-")
         else:
-            log_output("Diffing dialog.tlk files...")
+            log_output("Comparing dialog.tlk files...")
             same = DiffTLK(tslpatcher_tlk, pykotor_tlk, log_output).is_same()
             log_output("dialog.tlk files match") if same else log_output("^ in dialog.tlk")
             log_output("--------------------")
@@ -266,8 +270,8 @@ def modules() -> None:
             log_output(visual_length(message) * "-")
             continue
 
-        tslpatcher_resources = {str(res.resref): res for res in tslpatcher_mod}
-        pykotor_resources = {str(res.resref): res for res in pykotor_mod}
+        tslpatcher_resources: dict[str, ERFResource] = {str(res.resref): res for res in tslpatcher_mod}
+        pykotor_resources: dict[str, ERFResource] = {str(res.resref): res for res in pykotor_mod}
 
         # Identifying missing resources
         missing_in_pykotor = tslpatcher_resources.keys() - pykotor_resources.keys()

@@ -8,6 +8,25 @@ from pykotor.tools.path import PureWindowsPath
 if TYPE_CHECKING:
     import os
 
+fieldtype_to_fieldname: dict[GFFFieldType, str] = {
+    GFFFieldType.UInt8: "Byte",
+    GFFFieldType.Int8: "Char",
+    GFFFieldType.UInt16: "Word",
+    GFFFieldType.Int16: "Short",
+    GFFFieldType.UInt32: "DWORD",
+    GFFFieldType.Int32: "Int",
+    GFFFieldType.Int64: "Int64",
+    GFFFieldType.Single: "Float",
+    GFFFieldType.Double: "Double",
+    GFFFieldType.String: "ExoString",
+    GFFFieldType.ResRef: "ResRef",
+    GFFFieldType.LocalizedString: "ExoLocString",
+    GFFFieldType.Vector3: "Position",
+    GFFFieldType.Vector4: "Orientation",
+    GFFFieldType.Struct: "Struct",
+    GFFFieldType.List: "List",
+}
+
 
 class DiffGFF:
     def __init__(self, old: GFF, new: GFF, log_func=print):
@@ -25,8 +44,8 @@ class DiffGFF:
         old_struct = old_struct or self.old.root
         new_struct = new_struct or self.new.root
 
-        if len(old_struct) != len(new_struct):
-            self.log(f"GFFStruct sizes have changed at '{current_path}': '{len(old_struct)}' --> '{len(new_struct)}'")
+        if len(old_struct) != len(new_struct):  # sourcery skip: class-extract-method
+            self.log(f"GFFStruct: number of fields have changed at '{current_path}': '{len(old_struct)}' --> '{len(new_struct)}'")
             self.log()
             is_same_result = False
 
@@ -50,17 +69,23 @@ class DiffGFF:
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
-                self.log(f"Extra field found at '{child_path}'. FieldType: '{new_ftype}' Value: '{new_value}'")
+                self.log(
+                    f"Extra '{fieldtype_to_fieldname.get(new_ftype, 'INVALID FIELDTYPE')}' field found at '{child_path}': '{new_value}'",
+                )
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
-                self.log(f"Missing field at '{child_path}'. FieldType: '{old_ftype}' Value: '{old_value}'")
+                self.log(
+                    f"Missing '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}' field at '{child_path}': '{old_value}'",
+                )
                 is_same_result = False
                 continue
 
             # Check if field types have changed
             if old_ftype != new_ftype:
-                self.log(f"Field type has changed at '{child_path}'. FieldType: '{old_ftype}' --> '{new_ftype}'")
+                self.log(
+                    f"Field type has changed at '{child_path}': '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}' --> '{fieldtype_to_fieldname.get(new_ftype, 'INVALID FIELDTYPE')}'",
+                )
                 is_same_result = False
                 continue
 
@@ -79,8 +104,8 @@ class DiffGFF:
                     is_same_result = False
                     continue
 
-            elif old_value != new_value and str(old_value) != str(new_value):
-                self.log(f"Value has changed at '{child_path}': '{old_value}' --> '{new_value}'")
+            elif hash(old_value) != hash(new_value):
+                self.log(f"Field value has changed at '{child_path}': '{old_value}' --> '{new_value}'")
                 is_same_result = False
                 continue
 
@@ -90,7 +115,7 @@ class DiffGFF:
         is_same_result = True
 
         if len(old_gff_list) != len(new_gff_list):
-            self.log(f"GFFList lengths have changed at '{current_path}': '{len(old_gff_list)}' --> '{len(new_gff_list)}'")
+            self.log(f"GFFList counts have changed at '{current_path}': '{len(old_gff_list)}' --> '{len(new_gff_list)}'")
             self.log()
             is_same_result = False
 
@@ -105,7 +130,7 @@ class DiffGFF:
             self.log(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of old struct:")
             for label, field_type, field_value in struct:
-                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+                self.log(fieldtype_to_fieldname.get(field_type, "FIELDTYPE INVALID"), f"{label}='{field_value}'")
             self.log()
             is_same_result = False
 
@@ -114,7 +139,7 @@ class DiffGFF:
             self.log(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of new struct:")
             for label, field_type, field_value in struct:
-                self.log("Label:", label, "FieldType:", field_type, "Value:", f"'{field_value}'")
+                self.log(fieldtype_to_fieldname.get(field_type, "FIELDTYPE INVALID"), f"{label}='{field_value}'")
             self.log()
             is_same_result = False
 

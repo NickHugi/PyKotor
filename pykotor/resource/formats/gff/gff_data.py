@@ -1033,9 +1033,9 @@ class GFFList:
         ----
             struct_id: The StructID of the new struct.
         """
-        gff_list = GFFStruct(struct_id)
-        self._structs.append(gff_list)
-        return gff_list
+        new_struct = GFFStruct(struct_id)
+        self._structs.append(new_struct)
+        return new_struct
 
     def at(
         self,

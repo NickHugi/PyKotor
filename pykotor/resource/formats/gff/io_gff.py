@@ -84,12 +84,12 @@ class GFFBinaryReader(ResourceReader):
 
         self._labels = []
         self._reader.seek(label_offset)
-        self._labels.extend(self._reader.read_string(16) for i in range(label_count))
-        self._load_struct(self._gff.root, 0)
+        self._labels.extend(self._reader.read_string(16) for _i in range(label_count))
+        self._read_and_build_struct(self._gff.root, 0)
 
         return self._gff
 
-    def _load_struct(
+    def _read_and_build_struct(
         self,
         gff_struct: GFFStruct,
         struct_index: int,
@@ -107,7 +107,7 @@ class GFFBinaryReader(ResourceReader):
             self._load_field(gff_struct, data)
         elif field_count > 1:
             self._reader.seek(self._field_indices_offset + data)
-            indices = [self._reader.read_uint32() for i in range(field_count)]
+            indices: list[int] = [self._reader.read_uint32() for _i in range(field_count)]
             for index in indices:
                 self._load_field(gff_struct, index)
 
@@ -151,10 +151,10 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Struct:
             struct_index = self._reader.read_uint32()
             value = GFFStruct()
-            self._load_struct(value, struct_index)
+            self._read_and_build_struct(value, struct_index)
             gff_struct.set_struct(label, value)
         elif field_type is GFFFieldType.List:
-            self._load_gff_field_list(gff_struct, label)
+            self._read_and_build_list(gff_struct, label)
         elif field_type is GFFFieldType.UInt8:
             gff_struct.set_uint8(label, self._reader.read_uint8())
         elif field_type is GFFFieldType.Int8:
@@ -170,19 +170,16 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Single:
             gff_struct.set_single(label, self._reader.read_single())
 
-    def _load_gff_field_list(self, gff_struct, label):
+    def _read_and_build_list(self, gff_struct, label):
         offset = self._reader.read_uint32()  # relative to list indices
         self._reader.seek(self._list_indices_offset + offset)
         value = GFFList()
         count = self._reader.read_uint32()
-        list_indices = []
-        for _i in range(count):
-            struct_index = self._reader.read_uint32()
-            list_indices.append(struct_index)
+        list_indices: list[int] = [self._reader.read_uint32() for _i in range(count)]
         for struct_index in list_indices:
             value.add(0)
             child = value.at(len(value) - 1)
-            self._load_struct(child, struct_index)
+            self._read_and_build_struct(child, struct_index)
         gff_struct.set_list(label, value)
 
 
