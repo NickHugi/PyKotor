@@ -614,7 +614,7 @@ class ConfigReader:
         # If current field is a struct inside a list, check inside_list OR no label defined.
         if (inside_list or not label.strip()) and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
-                label or raw_path,
+                path,
                 struct_id,
                 index_in_list_token,
                 nested_modifiers,

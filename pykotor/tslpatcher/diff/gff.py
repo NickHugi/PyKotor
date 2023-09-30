@@ -84,7 +84,7 @@ class DiffGFF:
             # Check if field types have changed
             if old_ftype != new_ftype:
                 self.log(
-                    f"Field type has changed at '{child_path}': '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}' --> '{fieldtype_to_fieldname.get(new_ftype, 'INVALID FIELDTYPE')}'",
+                    f"Field type has changed at '{child_path}': '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}'-->'{fieldtype_to_fieldname.get(new_ftype, 'INVALID FIELDTYPE')}'",
                 )
                 is_same_result = False
                 continue
@@ -92,7 +92,7 @@ class DiffGFF:
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
                 if old_value.struct_id != new_value.struct_id:
-                    self.log(f"Struct ID has changed at '{child_path}': '{old_value.struct_id}' --> '{new_value.struct_id}'")
+                    self.log(f"Struct ID has changed at '{child_path}': '{old_value.struct_id}'-->'{new_value.struct_id}'")
                     is_same_result = False
 
                 if not self.is_same(old_value, new_value, child_path):
@@ -105,7 +105,7 @@ class DiffGFF:
                     continue
 
             elif str(old_value) != str(new_value):
-                self.log(f"Field value has changed at '{child_path}': '{old_value}' --> '{new_value}'")
+                self.log(f"Field value has changed at '{child_path}': '{old_value}'-->'{new_value}'")
                 is_same_result = False
                 continue
 

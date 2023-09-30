@@ -118,12 +118,12 @@ class ModifyGFF(ABC):
 class AddStructToListGFF(ModifyGFF):
     def __init__(
         self,
-        label: str,
+        path: PureWindowsPath | str,
         struct_id: int = 0,
         index_to_token: int | None = None,
         modifiers: list[ModifyGFF] | None = None,
     ):
-        self.label: str = label
+        self.path: PureWindowsPath = PureWindowsPath(path)
         self.struct_id = struct_id
         self.index_to_token = index_to_token
 
@@ -136,10 +136,10 @@ class AddStructToListGFF(ModifyGFF):
         logger: PatchLogger,
     ) -> None:
         new_struct: GFFStruct | None = None
-        container = self._navigate_containers(container, self.label)  # type: ignore
+        container = self._navigate_containers(container, self.path)  # type: ignore
         if not isinstance(container, GFFList):
             reason: str = "does not exist!" if container is None else "is not a GFF list!"
-            logger.add_error(f"Unable to add struct! '{self.label}' {reason}")
+            logger.add_error(f"Unable to add struct! '{self.path}' {reason}")
             return
         if isinstance(container, GFFList):
             new_struct = container.add(self.struct_id)
@@ -150,7 +150,7 @@ class AddStructToListGFF(ModifyGFF):
 
         if not isinstance(new_struct, GFFStruct):
             logger.add_error(
-                f"Failed to add a new struct with struct_id '{self.struct_id}' to list '{self.label}'. Skipping...",
+                f"Failed to add a new struct with struct_id '{self.struct_id}' to list '{self.path}'. Skipping...",
             )
             return
 
