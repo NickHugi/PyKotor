@@ -104,7 +104,7 @@ class DiffGFF:
                     is_same_result = False
                     continue
 
-            elif hash(old_value) != hash(new_value):
+            elif str(old_value) != str(new_value):
                 self.log(f"Field value has changed at '{child_path}': '{old_value}' --> '{new_value}'")
                 is_same_result = False
                 continue
