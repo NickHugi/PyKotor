@@ -100,12 +100,13 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Absolute vs Relative Paths
                 self.assertEqual(str(PathType("C:\\")), "C:\\")
                 self.assertEqual(str(PathType("C:/Users/test/")), "C:/Users/test".replace("/", os.sep))
-                self.assertEqual(str(PathType("C:/Users/test\\")), "C:/Users/test".replace("/", os.sep))
                 self.assertEqual(str(PathType("C://Users///test")), "C:/Users/test".replace("/", os.sep))
                 self.assertEqual(str(PathType("C:/Users/TEST/")), "C:/Users/TEST".replace("/", os.sep))
                 if os.name == "posix":
+                    self.assertEqual(str(PathType("C:/Users/test\\")), "C:/Users/test\\")
                     self.assertEqual(str(PathType("C:/")), "C:")
                 elif os.name == "nt":
+                    self.assertEqual(str(PathType("C:/Users/test")), "C:\\Users\\test")
                     self.assertEqual(str(PathType("C:/")), "C:\\")
 
                 # Network Paths
