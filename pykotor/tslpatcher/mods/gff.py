@@ -144,7 +144,7 @@ class AddStructToListGFF(ModifyGFF):
             logger.add_error(f"[{self.identifier}] Unable to add struct! '{self.path}' {reason}")
             return
 
-        if self.struct_id != 0:
+        if 0 < self.struct_id <= len(container._structs):
             container._structs.insert(self.struct_id, GFFStruct(self.struct_id))
             new_struct: GFFStruct | None = container._structs[self.struct_id]
             if self.index_to_token is not None:
