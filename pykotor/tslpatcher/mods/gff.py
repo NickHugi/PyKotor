@@ -126,7 +126,7 @@ class AddStructToListGFF(ModifyGFF):
     ):
         self.identifier = identifier
         self.path: PureWindowsPath | None = PureWindowsPath(path) if path else None
-        self.struct_id: int = struct_id
+        self.struct_id = struct_id
         self.index_to_token = index_to_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -137,22 +137,21 @@ class AddStructToListGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
+        new_struct: GFFStruct | None = None
         container = self._navigate_containers(container, self.path) if self.path else container  # type: ignore[should always be GFFList]
-
         if not isinstance(container, GFFList):
-            reason = "does not exist!" if container is None else "is not a GFF list!"
+            reason: str = "does not exist!" if container is None else "is not a GFF list!"
             logger.add_error(f"[{self.identifier}] Unable to add struct! '{self.path}' {reason}")
             return
-
-        if 0 < self.struct_id <= len(container._structs):
-            container._structs.insert(self.struct_id, GFFStruct(self.struct_id))
-            new_struct: GFFStruct | None = container._structs[self.struct_id]
-            if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = str(self.struct_id)
-        else:
-            new_struct = container.add(self.struct_id)
-            if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = str(len(container) - 1)
+        if isinstance(container, GFFList):
+            if self.struct_id != 0:
+                new_struct = container.at(self.struct_id)
+                if self.index_to_token is not None:
+                    memory.memory_2da[self.index_to_token] = str(self.struct_id)
+            if new_struct is None:
+                new_struct = container.add(self.struct_id)
+                if self.index_to_token is not None:
+                    memory.memory_2da[self.index_to_token] = str(len(container) - 1)
 
         if not isinstance(new_struct, GFFStruct):
             logger.add_error(
