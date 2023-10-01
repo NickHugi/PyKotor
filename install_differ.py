@@ -1,25 +1,21 @@
 from __future__ import annotations
 
 import argparse
+import cProfile
 import hashlib
 import io
 import os
-from typing import TYPE_CHECKING
 
-from pykotor.resource.formats.erf import read_erf
-from pykotor.resource.formats.gff import GFFContent, read_gff
-from pykotor.resource.formats.tlk import read_tlk
+from pykotor.resource.formats.erf import ERFResource, read_erf
+from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
+from pykotor.resource.formats.rim import RIMResource, read_rim
+from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.formats.twoda import read_2da
-from pykotor.tools.misc import is_erf_or_mod_file
-from pykotor.tools.path import CaseAwarePath, PureWindowsPath
+from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
 from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.tlk import DiffTLK
 from pykotor.tslpatcher.diff.twoda import Diff2DA
-
-if TYPE_CHECKING:
-    from pykotor.resource.formats.erf import ERFResource
-    from pykotor.resource.formats.gff import GFF
-    from pykotor.resource.formats.tlk import TLK
 
 
 def log_output(*args, **kwargs) -> None:
@@ -33,7 +29,7 @@ def log_output(*args, **kwargs) -> None:
     msg = buffer.getvalue()
 
     # Write the captured output to the file
-    with args.output_log.open("a") as f:
+    with parser_args.output_log.open("a") as f:
         f.write(msg)
 
     # Print the captured output to console
@@ -209,7 +205,7 @@ def diff_data(
                 return False
         return True
 
-    if args.compare_hashes is True and compute_sha256(data1) != compute_sha256(data2):
+    if parser_args.compare_hashes is True and compute_sha256(data1) != compute_sha256(data2):
         log_output(f"'{where}': SHA256 is different")
         return False
     return True
@@ -235,24 +231,41 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
 
     ext = c_file1_rel.suffix.lower()[1:]
 
-    if is_erf_or_mod_file(c_file1_rel.name):
-        try:
-            file1_capsule = read_erf(file1)
-        except ValueError as e:
-            message = f"Could not load '{c_file1_rel}'. Reason: {e}"
-            log_output(message)
-            log_output(visual_length(message) * "-")
-            return None
-        try:
-            file2_capsule = read_erf(file2)
-        except ValueError as e:
-            message = f"Could not load '{c_file2_rel}'. Reason: {e}"
-            log_output(message)
-            log_output(visual_length(message) * "-")
-            return None
-
-        capsule1_resources: dict[str, ERFResource] = {str(res.resref): res for res in file1_capsule}
-        capsule2_resources: dict[str, ERFResource] = {str(res.resref): res for res in file2_capsule}
+    if is_capsule_file(c_file1_rel.name):
+        if is_erf_or_mod_file(c_file1_rel.name):
+            try:
+                file1_capsule = read_erf(file1)
+            except ValueError as e:
+                message = f"Could not load '{c_file1_rel}'. Reason: {e}"
+                log_output(message)
+                log_output(visual_length(message) * "-")
+                return None
+            try:
+                file2_capsule = read_erf(file2)
+            except ValueError as e:
+                message = f"Could not load '{c_file2_rel}'. Reason: {e}"
+                log_output(message)
+                log_output(visual_length(message) * "-")
+                return None
+        elif is_rim_file(c_file1_rel.name) and parser_args.ignore_rims is False:
+            try:
+                file1_capsule = read_rim(file1)
+            except ValueError as e:
+                message = f"Could not load '{c_file1_rel}'. Reason: {e}"
+                log_output(message)
+                log_output(visual_length(message) * "-")
+                return None
+            try:
+                file2_capsule = read_rim(file2)
+            except ValueError as e:
+                message = f"Could not load '{c_file2_rel}'. Reason: {e}"
+                log_output(message)
+                log_output(visual_length(message) * "-")
+                return None
+        else:
+            return True
+        capsule1_resources: dict[str, ERFResource | RIMResource] = {str(res.resref): res for res in file1_capsule}
+        capsule2_resources: dict[str, ERFResource | RIMResource] = {str(res.resref): res for res in file2_capsule}
 
         # Identifying missing resources
         missing_in_capsule1 = capsule2_resources.keys() - capsule1_resources.keys()
@@ -275,8 +288,8 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         # Checking for differences
         common_resrefs = capsule1_resources.keys() & capsule2_resources.keys()  # Intersection of keys
         for resref in common_resrefs:
-            res1: ERFResource = capsule1_resources[resref]
-            res2: ERFResource = capsule2_resources[resref]
+            res1: ERFResource | RIMResource = capsule1_resources[resref]
+            res2: ERFResource | RIMResource = capsule2_resources[resref]
             ext = res1.restype.extension
             is_same_result = diff_data(res1.data, res2.data, c_file1_rel, c_file2_rel, ext, resref) and is_same_result
         return is_same_result
@@ -350,57 +363,86 @@ parser.add_argument("--path1", type=str, help="Path to the first K1/TSL install,
 parser.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
 parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
 parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource")
+parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is ignored)")
+parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
+parser.add_argument("--use-profiler", type=bool, default=False, help="Use cProfile to profile this differ")
 
-args, unknown = parser.parse_known_args()
+parser_args, unknown = parser.parse_known_args()
 while True:
-    args.path1 = CaseAwarePath(
-        args.path1
+    parser_args.path1 = CaseAwarePath(
+        parser_args.path1
         or (unknown[0] if len(unknown) > 0 else None)
         or input("Path to the first K1/TSL install, file, or directory to diff: ")
         or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
     ).resolve()
-    if args.path1.exists():
+    if parser_args.path1.exists():
         break
     parser.print_help()
-    args.path1 = None
+    parser_args.path1 = None
 while True:
-    args.path2 = CaseAwarePath(
-        args.path2
+    parser_args.path2 = CaseAwarePath(
+        parser_args.path2
         or (unknown[1] if len(unknown) > 1 else None)
         or input("Path to the second K1/TSL install, file, or directory to diff: ")
         or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
     ).resolve()
-    if args.path2.exists():
+    if parser_args.path2.exists():
         break
     parser.print_help()
-    args.path2 = None
+    parser_args.path2 = None
 while True:
-    args.output_log = CaseAwarePath(
-        args.output_log
+    parser_args.output_log = CaseAwarePath(
+        parser_args.output_log
         or (unknown[2] if len(unknown) > 2 else None)
         or input("Filepath of the desired output logfile: ")
         or "log_install_differ.log",
     ).resolve()
-    if args.output_log.exists():
+    if parser_args.output_log.exists():
         break
     parser.print_help()
-    args.output_log = None
-args.compare_hashes = bool(args.compare_hashes)
-log_output()
-log_output(f"Using --path1='{args.path1}'")
-log_output(f"Using --path2='{args.path2}'")
-log_output(f"Using --output-log='{args.output_log}'")
-log_output(f"Using --compare-hashes='{args.compare_hashes!s}'")
+    parser_args.output_log = None
 
-comparison: bool | None = run_differ_from_args(
-    args.path1,
-    args.path2,
-)
-if comparison is not None:
-    log_output(
-        f"'{relative_path_from_to(args.path2, args.path1)}'",
-        " MATCHES " if comparison else " DOES NOT MATCH ",
-        f"'{relative_path_from_to(args.path1, args.path2)}'",
+parser_args.compare_hashes = bool(parser_args.compare_hashes)
+parser_args.ignore_rims = not bool(parser_args.ignore_rims)
+parser_args.ignore_tlk = bool(parser_args.ignore_tlk)
+parser_args.use_profiler = not bool(parser_args.use_profiler)
+
+log_output()
+log_output(f"Using --path1='{parser_args.path1}'")
+log_output(f"Using --path2='{parser_args.path2}'")
+log_output(f"Using --output-log='{parser_args.output_log}'")
+log_output(f"Using --compare-hashes={parser_args.compare_hashes!s}")
+log_output(f"Using --ignore-rims={parser_args.ignore_rims!s}")
+log_output(f"Using --ignore-tlk={parser_args.ignore_tlk!s}")
+log_output(f"Using --use-profiler={parser_args.use_profiler!s}")
+
+profiler = None
+try:
+    if parser_args.use_profiler:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    comparison: bool | None = run_differ_from_args(
+        parser_args.path1,
+        parser_args.path2,
     )
-if comparison is None:
-    log_output("Error during comparison")
+
+    if profiler is not None:
+        profiler.disable()
+        profiler_output_file = Path("profiler_output.pstat").resolve()
+        profiler.dump_stats(str(profiler_output_file))
+        log_output(f"Profiler output saved to: {profiler_output_file}")
+    if comparison is not None:
+        log_output(
+            f"'{relative_path_from_to(parser_args.path2, parser_args.path1)}'",
+            " MATCHES " if comparison else " DOES NOT MATCH ",
+            f"'{relative_path_from_to(parser_args.path1, parser_args.path2)}'",
+        )
+    if comparison is None:
+        log_output("Error during comparison")
+except KeyboardInterrupt:
+    if profiler is not None:
+        profiler.disable()
+        profiler_output_file = Path("profiler_output.pstat").resolve()
+        profiler.dump_stats(str(profiler_output_file))
+        log_output(f"Profiler output saved to: {profiler_output_file}")
