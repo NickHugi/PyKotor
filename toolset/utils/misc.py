@@ -1,4 +1,6 @@
-from typing import List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl
@@ -7,7 +9,15 @@ from PyQt5.QtGui import QDesktopServices, QKeySequence
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.rim import read_rim
-from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    import os
+
+    from pykotor.resource.formats.erf import ERF
+    from pykotor.resource.formats.rim import RIM
+    from pykotor.resource.type import ResourceType
 
 QtKey = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
@@ -26,7 +36,7 @@ def get_nums(string_input: str) -> List[int]:
     """
     string = ""
     nums = []
-    for char in string_input + " ":
+    for char in f"{string_input} ":
         if char.isdigit():
             string += char
         elif string != "":
@@ -58,23 +68,23 @@ def getStringFromKey(key: int) -> str:
     """
     if key == QtCore.Qt.Key.Key_Control:
         return "CTRL"
-    elif key == QtCore.Qt.Key.Key_Alt:
+    if key == QtCore.Qt.Key.Key_Alt:
         return "ALT"
-    elif key == QtCore.Qt.Key.Key_Shift:
+    if key == QtCore.Qt.Key.Key_Shift:
         return "SHIFT"
-    else:
-        return QKeySequence(key).toString()
+    return QKeySequence(key).toString()
 
 
-def getResourceFromFile(filepath: str, resname: str, restype: ResourceType) -> Optional[bytes]:
+def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> Optional[bytes]:
     data = None
+    c_filepath = CaseAwarePath(filepath)
 
-    if filepath.endswith((".erf", ".mod")):
-        erf = read_erf(filepath)
-        data = erf.get(resname, restype)
-    elif filepath.endswith(".rim"):
-        rim = read_rim(filepath)
-        data = rim.get(resname, restype)
+    if is_erf_or_mod_file(c_filepath.name):
+        erf: ERF = read_erf(filepath)
+        data: bytes | None = erf.get(resname, restype)
+    elif is_rim_file(c_filepath.name):
+        rim: RIM = read_rim(filepath)
+        data: bytes | None = rim.get(resname, restype)
     else:
         data = BinaryReader.load_file(filepath)
 

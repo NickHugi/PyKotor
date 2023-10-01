@@ -32,7 +32,7 @@ class TestCaseAwarePath(unittest.TestCase):
 
     def test_endswith(self):
         path = CaseAwarePath("C:\\path\\to\\file.txt")
-        self.assertTrue(path.endswith(".txt"))
+        self.assertTrue(path.endswith(".TXT"))
         self.assertFalse(path.endswith(".doc"))
 
     @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")

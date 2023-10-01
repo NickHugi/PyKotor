@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
@@ -36,7 +36,11 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 from toolset.data.installation import HTInstallation
+
+if TYPE_CHECKING:
+    import os
 
 _RESNAME_ROLE = QtCore.Qt.UserRole + 1
 _FILEPATH_ROLE = QtCore.Qt.UserRole + 2
@@ -230,35 +234,35 @@ class InventoryEditor(QDialog):
     def getItemImage(self, uti: Optional[UTI]) -> QPixmap:
         return self._installation.getItemIconFromUTI(uti)
 
-    def getItem(self, resname: str, filepath: str) -> Tuple[str, str, UTI]:
-        uti = None
-        name = ""
-        if filepath == "":
+    def getItem(self, resname: str, filepath: os.PathLike | str) -> Tuple[os.PathLike, str, UTI]:
+        uti: UTI | None = None
+        name: str = ""
+        c_filepath = CaseAwarePath(filepath)
+        if not c_filepath.exists():
             result = self._installation.resource(resname, ResourceType.UTI)
             if result is not None:
                 uti = read_uti(result.data)
                 filepath = result.filepath
                 name = self._installation.string(uti.name, "[No Name]")
-        elif filepath.endswith((".rim", ".mod", ".erf")):
+        elif c_filepath.endswith((".rim", ".mod", ".erf")):
             uti = read_uti(Capsule(filepath).resource(resname, ResourceType.UTI))
             name = self._installation.string(uti.name, "[No Name]")
-        elif filepath.endswith(".bif"):
+        elif c_filepath.endswith(".bif"):
             uti = read_uti(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data)
             name = self._installation.string(uti.name, "[No Name]")
         else:
             uti = read_uti(BinaryReader.load_file(filepath))
-        return filepath, name, uti
+        return c_filepath, name, uti
 
-    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = "") -> None:
+    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: os.PathLike | str = "", name: str = "") -> None:
         slotPicture = self._slotMap[slot].label
-        slotFrame = self._slotMap[slot].frame
 
         if resname != "":
             filepath, name, uti = self.getItem(resname, filepath)
 
             slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")
             slotPicture.setPixmap(self.getItemImage(uti))
-            slotFrame.setItem(resname, filepath, name, False, False)
+            self._slotMap[slot].frame.setItem(resname, str(filepath), name, False, False)
         else:
             image = self._slotMap[slot].emptyImage.format("droid" if self._droid else "human")
             slotPicture.setToolTip("")

@@ -243,6 +243,9 @@ class CaseAwarePath(Path):
             new_path = CaseAwarePath._get_case_sensitive_path(new_path)
         return new_path
 
+    def __eq__(self, other):
+        return isinstance(other, CaseAwarePath) and str(other).lower() == str(self).lower()
+
     def __str__(self):
         return (
             super().__str__()

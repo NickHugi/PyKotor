@@ -48,6 +48,8 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.git import GITSettings
 
 if TYPE_CHECKING:
+    import os
+
     from PyQt5.QtCore import QPoint
 
     from pykotor.extract.file import ResourceIdentifier
@@ -245,7 +247,7 @@ class GITEditor(Editor):
         self.ui.actionUseTriggerName.triggered.connect(lambda: setattr(self.settings, "triggerLabel", "name"))
         self.ui.actionUseTriggerName.triggered.connect(self.updateVisibility)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         order = [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.MODULES]
@@ -514,12 +516,16 @@ class _InstanceMode(_Mode):
             search = self._installation.location(resname, restype, order)
 
             for result in search:
-                if "/Override/" in result.filepath:
+                lowercase_path_parts = [f.lower() for f in result.filepath.parts]
+                lowercase_path_parents = [str(parent).lower() for parent in result.filepath.parents]
+                if "override" in lowercase_path_parts:
                     filepath = result.filepath
-                elif Module.get_root(self._editor.filepath()) in result.filepath and (
-                    filepath is None or filepath.endswith(".rim")
-                ):
-                    filepath = result.filepath
+                else:
+                    module_root = Module.get_root(self._editor.filepath()).lower()
+
+                    # Check if module root is in path parents or is a .rim
+                    if module_root in lowercase_path_parents and (filepath is None or filepath.endswith(".rim")):
+                        filepath = result.filepath
 
             if filepath:
                 data = getResourceFromFile(filepath, *instance.identifier())

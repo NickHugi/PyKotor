@@ -1,8 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QListWidgetItem, QWidget
 
-from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
@@ -15,8 +18,13 @@ from pykotor.resource.generics.uts import UTS, bytes_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
+from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.widgets.settings.installations import GlobalSettings
+
+if TYPE_CHECKING:
+    from pykotor.common.module import Module
+    from toolset.data.installation import HTInstallation
 
 
 class InsertInstanceDialog(QDialog):
@@ -29,7 +37,7 @@ class InsertInstanceDialog(QDialog):
 
         self.resname: str = ""
         self.data: bytes = b""
-        self.filepath: str = ""
+        self.filepath: CaseAwarePath | None = None
 
         from toolset.uic.dialogs.insert_instance import Ui_Dialog
 
@@ -47,18 +55,18 @@ class InsertInstanceDialog(QDialog):
         self.ui.resourceFilter.textChanged.connect(self.onResourceFilterChanged)
 
     def _setupLocationSelect(self) -> None:
-        self.ui.locationSelect.addItem(self._installation.override_path(), self._installation.override_path())
+        self.ui.locationSelect.addItem(str(self._installation.override_path()), self._installation.override_path())
         for capsule in self._module.capsules():
             if capsule.path().endswith(".rim") and GlobalSettings().disableRIMSaving:
                 continue
-            self.ui.locationSelect.addItem(capsule.path(), capsule.path())
+            self.ui.locationSelect.addItem(str(capsule.path()), capsule.path())
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count() - 1)
 
     def _setupResourceList(self) -> None:
         for resource in self._installation.chitin_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
-                item.setToolTip(resource.filepath())
+                item.setToolTip(str(resource.filepath()))
                 item.setData(QtCore.Qt.UserRole, resource)
                 self.ui.resourceList.addItem(item)
 
@@ -66,7 +74,7 @@ class InsertInstanceDialog(QDialog):
             for resource in [resource for resource in capsule if resource.restype() == self._restype]:
                 if resource.restype() == self._restype:
                     item = QListWidgetItem(resource.resname())
-                    item.setToolTip(resource.filepath())
+                    item.setToolTip(str(resource.filepath()))
                     item.setForeground(QColor(30, 30, 30))
                     item.setData(QtCore.Qt.UserRole, resource)
                     self.ui.resourceList.addItem(item)
@@ -83,15 +91,15 @@ class InsertInstanceDialog(QDialog):
         if self.ui.reuseResourceRadio.isChecked():
             new = False
             self.resname = resource.resname()
-            self.filepath = resource.filepath()
+            self.filepath = CaseAwarePath(resource.filepath())
             self.data = resource.data()
         elif self.ui.copyResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
-            self.filepath = self.ui.locationSelect.currentData()
+            self.filepath = CaseAwarePath(self.ui.locationSelect.currentData())
             self.data = resource.data()
         elif self.ui.createResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
-            self.filepath = self.ui.locationSelect.currentData()
+            self.filepath = CaseAwarePath(self.ui.locationSelect.currentData())
             if self._restype == ResourceType.UTC:
                 self.data = bytes_utc(UTC())
             elif self._restype == ResourceType.UTP:
@@ -111,17 +119,17 @@ class InsertInstanceDialog(QDialog):
             else:
                 self.data = b""
 
-        if new:
-            if self.filepath.endswith(".erf") or self.filepath.endswith(".mod"):
+        if new and self.filepath:
+            if is_erf_or_mod_file(self.filepath.name):
                 erf = read_erf(self.filepath)
                 erf.set_data(self.resname, self._restype, self.data)
                 write_erf(erf, self.filepath)
-            elif self.filepath.endswith(".rim"):
+            elif is_rim_file(self.filepath.name):
                 rim = read_rim(self.filepath)
                 rim.set_data(self.resname, self._restype, self.data)
                 write_rim(rim, self.filepath)
             else:
-                self.filepath = "{}/{}.{}".format(self.filepath, self.resname, self._restype.extension)
+                self.filepath = CaseAwarePath(self.filepath) / f"{self.resname}.{self._restype.extension}"
                 BinaryWriter.dump(self.filepath, self.data)
 
         self._module.add_locations(self.resname, self._restype, [self.filepath])

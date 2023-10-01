@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import tempfile
 import traceback
 from contextlib import suppress
@@ -55,6 +54,8 @@ from toolset.gui.windows.indoor_builder import IndoorMapBuilder
 from toolset.gui.windows.module_designer import ModuleDesigner
 
 if TYPE_CHECKING:
+    import os
+
     from toolset.gui.widgets.main_widgets import ResourceList
 
 
@@ -358,12 +359,12 @@ class ToolWindow(QMainWindow):
         """
         filepath = self.active.path() + "dialog.tlk"
         data = BinaryReader.load_file(filepath)
-        openResourceEditor(str(filepath), "dialog", ResourceType.TLK, data, self.active, self)
+        openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self) -> None:
         self.active.reload_override("")
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
-        openResourceEditor(str(res.filepath), "global", ResourceType.JRL, res.data, self.active, self)
+        openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data, self.active, self)
 
     def openFileSearchDialog(self) -> None:
         """Opens the FileSearcher dialog. If a search is conducted then a FileResults dialog displays the results
@@ -376,13 +377,13 @@ class ToolWindow(QMainWindow):
                 selection = results_dialog.selection
 
                 # Open relevant tab then select resource in the tree
-                if str(self.active.module_path()).lower() == str(selection.filepath()).lower():
+                if self.active.module_path() == selection.filepath():
                     self.ui.resourceTabs.setCurrentIndex(1)
                     self.selectResource(self.ui.modulesWidget, selection)
-                elif str(self.active.override_path()).lower() == str(selection.filepath()).lower():
+                elif self.active.override_path() == selection.filepath():
                     self.ui.resourceTabs.setCurrentIndex(2)
                     self.selectResource(self.ui.overrideWidget, selection)
-                elif str(selection.filepath()).lower().endswith(".bif"):
+                elif selection.filepath().endswith(".bif"):
                     self.selectResource(self.ui.coreWidget, selection)
 
     def openIndoorMapBuilder(self) -> None:
@@ -521,7 +522,7 @@ class ToolWindow(QMainWindow):
             self.ui.coreWidget.setResourceSelection(resource)
         elif tree == self.ui.modulesWidget:
             self.ui.resourceTabs.setCurrentWidget(self.ui.modulesTab)
-            filename = os.path.basename(resource.filepath())
+            filename = resource.filepath().parent.name
             self.changeModule(filename)
             self.ui.modulesWidget.setResourceSelection(resource)
         elif tree == self.ui.overrideWidget:
@@ -529,7 +530,8 @@ class ToolWindow(QMainWindow):
             self.ui.overrideWidget.setResourceSelection(resource)
             subfolder = ""
             for folder in self.active.override_list():
-                if folder in resource.filepath() and len(subfolder) < len(folder):
+                lowercase_path_parts = [f.lower() for f in resource.filepath().parts]
+                if folder.lower() in lowercase_path_parts and len(subfolder) < len(folder):
                     subfolder = folder
             self.changeOverrideFolder(subfolder)
 
@@ -640,14 +642,14 @@ class ToolWindow(QMainWindow):
                 tpc = read_tpc(data)
 
                 if extract_txi:
-                    txi_filename = filename.replace(".tpc", ".txi")
-                    with open(folderpath + txi_filename, "wb") as file:
+                    txi_filename = filename.lower().replace(".tpc", ".txi")
+                    with folderpath.joinpath(txi_filename).open("wb") as file:
                         file.write(tpc.txi.encode("ascii"))
 
                 if decompile_tpc:
                     data = bytearray()
                     write_tpc(tpc, data, ResourceType.TGA)
-                    filepath = filepath.replace(".tpc", ".tga")
+                    filepath = filepath.parent / (filepath.stem + filepath.suffix.lower().replace(".tpc", ".tga"))
             if resource.restype() == ResourceType.MDL and manipulate_mdl:
                 if decompile_mdl:
                     mdx_data = self.active.resource(resource.resname(), ResourceType.MDX).data
@@ -663,11 +665,11 @@ class ToolWindow(QMainWindow):
                             try:
                                 tpc = self.active.texture(texture)
                                 if extract_txi:
-                                    with (folderpath / f"{texture}.txi").open("wb") as file:
+                                    with folderpath.joinpath(f"{texture}.txi").open("wb") as file:
                                         file.write(tpc.txi.encode("ascii"))
                                 file_format = ResourceType.TGA if decompile_tpc else ResourceType.TPC
                                 extension = "tga" if file_format == ResourceType.TGA else "tpc"
-                                write_tpc(tpc, f"{folderpath}{texture}.{extension}", file_format)
+                                write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
                             except Exception:
                                 loader.errors.append(ValueError(f"Could not find or extract tpc: {texture}"))
                     except:
@@ -718,9 +720,9 @@ class FolderObserver(FileSystemEventHandler):
 
         is_dir = modified_path.is_dir()
 
-        if str(module_path).lower() == str(modified_path).lower() and not is_dir:
+        if module_path == modified_path and not is_dir:
             module_file = modified_path.name
             self.window.module_files_updated.emit(module_file, event.event_type)
-        elif str(override_path).lower() == str(modified_path).lower() and not is_dir:
+        elif override_path == modified_path and not is_dir:
             override_dir = modified_path.parent.relative_to(override_path)
             self.window.override_files_update.emit(override_dir, event.event_type)

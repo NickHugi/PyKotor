@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import traceback
 from abc import abstractmethod
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 from PyQt5 import QtCore
@@ -22,6 +23,12 @@ from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
+from pykotor.tools.misc import (
+    is_bif_file,
+    is_capsule_file,
+    is_erf_or_mod_file,
+    is_rim_file,
+)
 from pykotor.tools.path import CaseAwarePath
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
@@ -130,13 +137,13 @@ class Editor(QMainWindow):
             self.setWindowTitle(self._editorTitle)
         elif self.encapsulated():
             self.setWindowTitle(
-                f"{self._filepath.name}/{self._resref}.{self._restype.extension} - {installationName} - {self._editorTitle}"
+                f"{self._filepath.name}/{self._resref}.{self._restype.extension} - {installationName} - {self._editorTitle}",
             )
         else:
             folders = self._filepath.parts
             folder = folders[-2] if len(folders) >= 2 else ""
             self.setWindowTitle(
-                f"{folder}/{self._resref}.{self._restype.extension} - {installationName} - {self._editorTitle}"
+                f"{folder}/{self._resref}.{self._restype.extension} - {installationName} - {self._editorTitle}",
             )
 
     def saveAs(self) -> None:
@@ -156,7 +163,7 @@ class Editor(QMainWindow):
                     self._filepath = CaseAwarePath(filepath)
             else:
                 self._filepath = CaseAwarePath(filepath)
-                self._resref, restype_ext = self._filepath.stem, self._filepath.suffix
+                self._resref, restype_ext = self._filepath.stem, self._filepath.suffix[1:]
                 self._restype = ResourceType.from_extension(restype_ext)
             self.save()
 
@@ -176,16 +183,16 @@ class Editor(QMainWindow):
 
             self.refreshWindowTitle()
 
-            if self._filepath.endswith(".bif"):
+            if is_bif_file(self._filepath.name):
                 self._saveEndsWithBif(data, data_ext)
-            elif self._filepath.endswith(".rim"):
+            elif is_rim_file(self._filepath.name):
                 self._saveEndsWithRim(data, data_ext)
-            elif self._filepath.endswith(".erf") or self._filepath.endswith(".mod"):
+            elif is_erf_or_mod_file(self._filepath.name):
                 self._saveEndsWithErf(data, data_ext)
             else:
                 self._saveEndsWithOther(data, data_ext)
         except Exception as e:
-            with open("errorlog.txt", "a") as file:
+            with Path("errorlog.txt").open("a") as file:
                 lines = traceback.format_exception(type(e), e, e.__traceback__)
                 file.writelines(lines)
                 file.write("\n----------------------\n")
@@ -203,10 +210,7 @@ class Editor(QMainWindow):
                 self._filepath = CaseAwarePath(filepath)
                 self.save()
         elif dialog.option == BifSaveOption.Override:
-            self._filepath = (
-                self._installation.override_path()
-                / f"{self._resref}.{self._restype.extension}"
-            )
+            self._filepath = self._installation.override_path() / f"{self._resref}.{self._restype.extension}"
             self.save()
 
     def _saveEndsWithRim(self, data: bytes, data_ext: bytes):
@@ -220,7 +224,7 @@ class Editor(QMainWindow):
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
-                self._filepath = f"{self._installation.override_path()}{self._resref}.{self._restype.extension}"
+                self._filepath = self._installation.override_path().joinpath(f"{self._resref}.{self._restype.extension}")
                 self.save()
             return
 
@@ -267,7 +271,9 @@ class Editor(QMainWindow):
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with (self._filepath.parent / (self._filepath.stem + self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open("wb") as file:
+            with (self._filepath.parent / (self._filepath.stem + self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open(
+                "wb",
+            ) as file:
                 file.write(data_ext)
 
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
@@ -276,14 +282,14 @@ class Editor(QMainWindow):
         filepath, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath != "":
             c_filepath = CaseAwarePath(filepath)
-            encapsulated = c_filepath.endswith((".erf", ".mod", ".rim"))
+            encapsulated = is_capsule_file(c_filepath.name)
             encapsulated = encapsulated and "Load from module (*.erf *.mod *.rim)" in self._openFilter
             if encapsulated:
                 dialog = LoadFromModuleDialog(Capsule(c_filepath), self._readSupported)
                 if dialog.exec_():
                     self.load(c_filepath, dialog.resref(), dialog.restype(), dialog.data())
             else:
-                resref, restype_ext = c_filepath.stem, c_filepath.suffix
+                resref, restype_ext = c_filepath.stem, c_filepath.suffix[1:]
                 restype = ResourceType.from_extension(restype_ext)
                 with c_filepath.open("rb") as file:
                     data = file.read()

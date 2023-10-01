@@ -1,4 +1,6 @@
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
@@ -8,8 +10,14 @@ from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
+from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    import os
+
+    from toolset.data.installation import HTInstallation
 
 
 class MDLEditor(Editor):
@@ -34,35 +42,40 @@ class MDLEditor(Editor):
     def _setupSignals(self) -> None:
         ...
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
+        c_filepath = CaseAwarePath(filepath)
 
         mdl_data = None
         mdx_data = None
 
         if restype == ResourceType.MDL:
             mdl_data = data
-            if filepath.endswith(".mdl"):
-                mdx_data = BinaryReader.load_file(filepath.replace(".mdl", ".mdx"))
-            elif filepath.endswith((".erf", ".mod")):
+            if c_filepath.endswith(".mdl"):
+                mdx_data = BinaryReader.load_file(
+                    str(c_filepath.parent / (c_filepath.stem + c_filepath.suffix.lower().replace(".mdl", ".mdx"))),
+                )
+            elif is_erf_or_mod_file(c_filepath.name):
                 erf = read_erf(filepath)
                 mdx_data = erf.get(resref, ResourceType.MDX)
-            elif filepath.endswith(".rim"):
+            elif is_rim_file(c_filepath.name):
                 rim = read_rim(filepath)
                 mdx_data = rim.get(resref, ResourceType.MDX)
-            elif filepath.endswith(".bif"):
+            elif is_bif_file(c_filepath.name):
                 mdx_data = self._installation.resource(resref, ResourceType.MDX, [SearchLocation.CHITIN]).data
         elif restype == ResourceType.MDX:
             mdx_data = data
-            if filepath.endswith(".mdx"):
-                mdl_data = BinaryReader.load_file(filepath.replace(".mdl", ".mdx"))
-            elif filepath.endswith((".erf", ".mod")):
+            if c_filepath.endswith(".mdx"):
+                mdl_data = BinaryReader.load_file(
+                    str(c_filepath.parent / (c_filepath.stem + c_filepath.suffix.lower().replace(".mdl", ".mdx"))),
+                )
+            elif is_erf_or_mod_file(c_filepath.name):
                 erf = read_erf(filepath)
                 mdl_data = erf.get(resref, ResourceType.MDX)
-            elif filepath.endswith(".rim"):
+            elif is_rim_file(c_filepath.name):
                 rim = read_rim(filepath)
                 mdl_data = rim.get(resref, ResourceType.MDX)
-            elif filepath.endswith(".bif"):
+            elif is_bif_file(c_filepath.name):
                 mdl_data = self._installation.resource(resref, ResourceType.MDL, [SearchLocation.CHITIN]).data
 
         if mdl_data and mdx_data:

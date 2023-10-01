@@ -1,11 +1,17 @@
-from typing import Optional, Tuple, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
 from toolset.gui.editors.mdl import MDLEditor
 from toolset.gui.widgets.settings.installations import GlobalSettings
+
+if TYPE_CHECKING:
+    import os
+
+    from toolset.data.installation import HTInstallation
 
 windows = []
 
@@ -21,7 +27,7 @@ def addWindow(window: QWidget) -> None:
 
 
 def openResourceEditor(
-    filepath: str,
+    filepath: os.PathLike | str,
     resref: str,
     restype: ResourceType,
     data: bytes,
