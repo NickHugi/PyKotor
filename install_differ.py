@@ -33,7 +33,7 @@ def log_output(*args, **kwargs) -> None:
     msg = buffer.getvalue()
 
     # Write the captured output to the file
-    with output_log.open("a") as f:  # type: ignore[pylance]  # noqa: F821
+    with args.output_log.open("a") as f:
         f.write(msg)
 
     # Print the captured output to console
@@ -209,7 +209,7 @@ def diff_data(
                 return False
         return True
 
-    if compute_sha256(data1) != compute_sha256(data2):
+    if args.compare_hashes is True and compute_sha256(data1) != compute_sha256(data2):
         log_output(f"'{where}': SHA256 is different")
         return False
     return True
@@ -345,65 +345,62 @@ def run_differ_from_args(path1: CaseAwarePath, path2: CaseAwarePath) -> bool | N
     raise ValueError(msg)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
-    parser.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
-    parser.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
-    parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
+parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
+parser.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
+parser.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
+parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
+parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource")
 
-    args, unknown = parser.parse_known_args()
-    while True:
-        args.path1 = CaseAwarePath(
-            args.path1
-            or (unknown[0] if len(unknown) > 0 else None)
-            or input("Path to the first K1/TSL install, file, or directory to diff: ")
-            or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
-        ).resolve()
-        if args.path1.exists():
-            break
-        parser.print_help()
-        args.path1 = None
-    while True:
-        args.path2 = CaseAwarePath(
-            args.path2
-            or (unknown[1] if len(unknown) > 1 else None)
-            or input("Path to the second K1/TSL install, file, or directory to diff: ")
-            or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
-        ).resolve()
-        if args.path2.exists():
-            break
-        parser.print_help()
-        args.path2 = None
-    while True:
-        args.output_log = CaseAwarePath(
-            args.output_log
-            or (unknown[2] if len(unknown) > 2 else None)
-            or input("Filepath of the desired output logfile: ")
-            or "log_install_differ.log",
-        ).resolve()
-        if args.output_log.exists():
-            break
-        parser.print_help()
-        args.output_log = None
+args, unknown = parser.parse_known_args()
+while True:
+    args.path1 = CaseAwarePath(
+        args.path1
+        or (unknown[0] if len(unknown) > 0 else None)
+        or input("Path to the first K1/TSL install, file, or directory to diff: ")
+        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
+    ).resolve()
+    if args.path1.exists():
+        break
+    parser.print_help()
+    args.path1 = None
+while True:
+    args.path2 = CaseAwarePath(
+        args.path2
+        or (unknown[1] if len(unknown) > 1 else None)
+        or input("Path to the second K1/TSL install, file, or directory to diff: ")
+        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
+    ).resolve()
+    if args.path2.exists():
+        break
+    parser.print_help()
+    args.path2 = None
+while True:
+    args.output_log = CaseAwarePath(
+        args.output_log
+        or (unknown[2] if len(unknown) > 2 else None)
+        or input("Filepath of the desired output logfile: ")
+        or "log_install_differ.log",
+    ).resolve()
+    if args.output_log.exists():
+        break
+    parser.print_help()
+    args.output_log = None
+args.compare_hashes = bool(args.compare_hashes)
+log_output()
+log_output(f"Using --path1='{args.path1}'")
+log_output(f"Using --path2='{args.path2}'")
+log_output(f"Using --output-log='{args.output_log}'")
+log_output(f"Using --compare-hashes='{args.compare_hashes!s}'")
 
-    globals()["output_log"] = args.output_log
-    log_output()
-    log_output(f"Using --path1='{args.path1}'")
-    log_output(f"Using --path2='{args.path2}'")
-    log_output(f"Using --output-log='{args.output_log}'")
-
-    comparison: bool | None = run_differ_from_args(
-        args.path1,
-        args.path2,
+comparison: bool | None = run_differ_from_args(
+    args.path1,
+    args.path2,
+)
+if comparison is not None:
+    log_output(
+        f"'{relative_path_from_to(args.path2, args.path1)}'",
+        " MATCHES " if comparison else " DOES NOT MATCH ",
+        f"'{relative_path_from_to(args.path1, args.path2)}'",
     )
-    if comparison is not None:
-        log_output(
-            f"'{relative_path_from_to(args.path2, args.path1)}'",
-            " MATCHES " if comparison else " DOES NOT MATCH ",
-            f"'{relative_path_from_to(args.path1, args.path2)}'",
-        )
-    if comparison is None:
-        log_output("Error during comparison")
-
-
-main()
+if comparison is None:
+    log_output("Error during comparison")

@@ -295,7 +295,7 @@ class ModInstaller:
                     f"Patching '{gff_patch.filename}' in the '{output_container_path.parent}' folder.",
                 )
             else:
-                create_backup(self.log, gff_destination_path, backup_dir, processed_files)
+                create_backup(self.log, gff_destination_path, backup_dir, processed_files, output_container_path.parent)
                 self.log.add_note(
                     f"Patching '{gff_patch.filename}' in the '{output_container_path}' archive.",
                 )

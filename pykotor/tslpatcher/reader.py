@@ -583,8 +583,7 @@ class ConfigReader:
             )
             return None
 
-        # Get nested fields/struct
-        nested_modifiers: list[ModifyGFF] = []
+        modifiers: list[ModifyGFF] = []
 
         index_in_list_token = None
         for key, x in ini_data.items():
@@ -592,15 +591,15 @@ class ConfigReader:
                 if x == "ListIndex":
                     index_in_list_token = int(key[9:])
                 else:
-                    nested_modifier = Memory2DAModifierGFF(
+                    modifier = Memory2DAModifierGFF(
                         identifier,
                         int(key[9:]),
                         x,
                         label,
                         path,
-                        nested_modifiers,
+                        modifiers,
                     )
-                    nested_modifiers.append(nested_modifier)
+                    modifiers.append(modifier)
             if key.startswith("AddField"):
                 nested_ini = dict(self.ini[x].items())
                 nested_modifier: ModifyGFF | None = self.add_field_gff(
@@ -609,15 +608,16 @@ class ConfigReader:
                     inside_list=field_type.return_type() is GFFList,
                 )
                 if nested_modifier:  # if none, an error occured.
-                    nested_modifiers.append(nested_modifier)
+                    modifiers.append(nested_modifier)
 
         # If current field is a struct inside a list, check inside_list OR no label defined.
         if (inside_list or not label.strip()) and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
-                path,
+                identifier,
                 struct_id,
+                path,
                 index_in_list_token,
-                nested_modifiers,
+                modifiers,
             )
 
         return AddFieldGFF(
@@ -626,7 +626,7 @@ class ConfigReader:
             field_type,
             value,
             path,
-            nested_modifiers,
+            modifiers,
         )
 
     #################
