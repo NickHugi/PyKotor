@@ -611,7 +611,7 @@ class ConfigReader:
                     modifiers.append(nested_modifier)
 
         # If current field is a struct inside a list, check inside_list OR no label defined.
-        if (inside_list or not label.strip()) and field_type.return_type() is GFFStruct:
+        if not label.strip() and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
                 identifier,
                 struct_id,

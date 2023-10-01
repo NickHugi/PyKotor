@@ -190,7 +190,7 @@ class BasePath:
         if not str_path.strip():
             return str_path
 
-        formatted_path: str = str_path
+        formatted_path: str = str_path.strip('"')
 
         # For Windows paths
         if slash == "\\":
