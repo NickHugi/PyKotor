@@ -493,7 +493,7 @@ class ConfigReader:
         ini_data: dict[str, str],
         inside_list: bool = False,
         current_path: PureWindowsPath | None = None,
-    ) -> AddStructToListGFF | AddFieldGFF | None:  # sourcery skip: extract-method, remove-unreachable-code
+    ) -> ModifyGFF | None:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -538,8 +538,8 @@ class ConfigReader:
             elif field_type.return_type() == GFFList:
                 value = FieldValueConstant(GFFList())
             elif field_type.return_type() == GFFStruct:
-                raw_struct_id = ini_data["TypeId"]
-                if is_int(raw_struct_id):
+                raw_struct_id = ini_data["TypeId"].strip()
+                if raw_struct_id and is_int(raw_struct_id):
                     struct_id = int(raw_struct_id)
                 elif raw_struct_id:
                     self.log.add_error(
