@@ -144,11 +144,11 @@ class AddStructToListGFF(ModifyGFF):
             logger.add_error(f"[{self.identifier}] Unable to add struct! '{self.path}' {reason}")
             return
         if isinstance(container, GFFList):
-            if self.path and self.path.name in ("EntriesList", "RepliesList") and 0 <= self.struct_id < len(container._structs):
+            if self.path and self.path.name in ("EntriesList", "RepliesList"):
                 new_struct = container._structs[self.struct_id]
                 if self.index_to_token is not None:
                     memory.memory_2da[self.index_to_token] = str(len(container) - 1)
-            if new_struct is None:
+            else:
                 new_struct = container.add(self.struct_id)
                 if self.index_to_token is not None:
                     memory.memory_2da[self.index_to_token] = str(len(container) - 1)
