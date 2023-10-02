@@ -3,6 +3,7 @@ from __future__ import annotations
 import concurrent.futures
 import shutil
 import threading
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -26,13 +27,13 @@ def create_backup(
     backup_folderpath: CaseAwarePath,
     processed_files: set,
     subdirectory_path: os.PathLike | str | None = None,
-):
+):  # sourcery skip: extract-method
     destination_file_str = str(destination_filepath)
     destination_file_str_lower = destination_file_str.lower()
     if subdirectory_path:
-        subdirectory_path = backup_folderpath / subdirectory_path
-        subdirectory_path.mkdir(exist_ok=True, parents=True)
-        backup_filepath = subdirectory_path / destination_filepath.name
+        subdirectory_backup_path = backup_folderpath / subdirectory_path
+        subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
+        backup_filepath = subdirectory_backup_path / destination_filepath.name
     else:
         backup_filepath = backup_folderpath / destination_filepath.name
 
@@ -46,9 +47,84 @@ def create_backup(
 
         log.add_note(f"Backing up '{destination_file_str}'...")
         shutil.copy(destination_filepath, backup_filepath)
+    else:
+        # Write a list of files that should be removed in order to uninstall the mod
+        uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
+        uninstall_folder.mkdir(exist_ok=True)
+
+        # Write the file path to remove these files.txt in uninstall directory
+        with uninstall_folder.joinpath("remove these files.txt").open("a") as f:
+            f.write("\n" + str(destination_filepath))
+
+        # Write the PowerShell script to the uninstall folder
+        subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
+        game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
+        write_powershell_uninstall_script(uninstall_folder, game_folder)
 
     # Add the lowercased path string to the processed_files set
     processed_files.add(destination_file_str_lower)
+
+
+def write_powershell_uninstall_script(uninstall_folder: CaseAwarePath, main_folder: PurePath):
+    with uninstall_folder.joinpath("delete_files.ps1").open("w") as f:
+        f.write(
+            f"""
+$deleteListFile = "{uninstall_folder}\\remove these files.txt"
+
+if (-not (Test-Path $deleteListFile)) {{
+    Write-Host "File list not found."
+    exit
+}}
+
+$filesToDelete = Get-Content $deleteListFile
+$numberOfFiles = $filesToDelete.Count
+
+$validConfirmations = @("y", "yes")
+$confirmation = Read-Host "Really uninstall $numberOfFiles files?"
+if ($confirmation.ToLower() -notin $validConfirmations) {{
+    Write-Host "Operation cancelled."
+    exit
+}}
+
+$deletedCount = 0
+foreach ($file in $filesToDelete) {{
+    if (Test-Path $file) {{
+        Remove-Item $file -Force
+        $deletedCount++
+    }}
+}}
+
+Write-Host "Deleted $deletedCount files."
+
+$confirmation = Read-Host "Would you like to restore your most recent backup?"
+if ($confirmation.ToLower() -notin $validConfirmations) {{
+    Write-Host "Operation cancelled."
+    exit
+}}
+
+$backupParentFolder = "{uninstall_folder.parent}\\backup"
+$mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder -Directory | Sort-Object Name -Descending | Select-Object -First 1
+
+if ($mostRecentBackupFolder) {{
+    $filesInBackup = Get-ChildItem -Path $mostRecentBackupFolder.FullName -File -Recurse
+    foreach ($file in $filesInBackup) {{
+        $relativePath = $file.FullName.Substring($mostRecentBackupFolder.FullName.Length)
+        $destinationPath = Join-Path -Path "{main_folder}" -ChildPath $relativePath
+
+        # Create the directory structure if it doesn't exist
+        $destinationDir = [System.IO.Path]::GetDirectoryName($destinationPath)
+        if (-not (Test-Path $destinationDir)) {{
+            New-Item -Path $destinationDir -ItemType Directory -Force
+        }}
+
+        # Copy the file to the destination
+        Copy-Item -Path $file.FullName -Destination $destinationPath -Force
+        Write-Host "Restoring backup of $file to $destinationPath..."
+    }}
+}}
+Pause
+""",
+        )
 
 
 class InstallFile:
@@ -107,12 +183,11 @@ class InstallFile:
                 destination.mkdir(parents=True, exist_ok=True)
 
             with print_lock:
+                create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
                 if file_exists:
                     log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
-                    create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
                 else:
                     log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
-                    processed_files.add(str(save_file_to).lower())
 
             BinaryWriter.dump(save_file_to, data)
         else:

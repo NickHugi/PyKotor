@@ -197,7 +197,7 @@ class ModInstaller:
 
         processed_files = set()
 
-        self.log.add_note("Applying patches from [TLKList]...")
+        self.log.add_note(f"Applying {len(config.patches_tlk.modifiers)} patches from [TLKList]...")
         if len(config.patches_tlk.modifiers) > 0:  # skip if no patches need to be made (faster)
             dialog_tlk_path = (
                 self.game_path / "dialog.tlk"
@@ -217,12 +217,12 @@ class ModInstaller:
         #    file_install = InstallFile("nwscript.nss", replace_existing=True)  # noqa: ERA001
         #    folder_install.files.append(file_install)  # noqa: ERA001
 
-        self.log.add_note("Applying patches from [InstallList]...")
+        self.log.add_note(f"Applying {len(config.install_list)} patches from [InstallList]...")
         for folder in config.install_list:
             folder.apply(self.log, self.mod_path, self.game_path, backup_dir, processed_files)
             self.log.complete_patch()
 
-        self.log.add_note("Applying patches from [2DAList]...")
+        self.log.add_note(f"Applying {len(config.patches_2da)} patches from [2DAList]...")
         for twoda_patch in config.patches_2da:
             resname, restype = ResourceIdentifier.from_path(twoda_patch.filename)
             twoda_output_folder: CaseAwarePath = self.game_path / "Override"
@@ -253,7 +253,7 @@ class ModInstaller:
 
             self.log.complete_patch()
 
-        self.log.add_note("Applying patches from [GFFList]...")
+        self.log.add_note(f"Applying {len(config.patches_gff)} patches from [GFFList]...")
         for gff_patch in config.patches_gff:
             resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
 
@@ -289,10 +289,10 @@ class ModInstaller:
                     gff_destination_path / gff_patch.filename,
                     backup_dir,
                     processed_files,
-                    output_container_path.parent,
+                    output_container_path,
                 )
                 self.log.add_note(
-                    f"Patching '{gff_patch.filename}' in the '{output_container_path.parent}' folder.",
+                    f"Patching '{gff_patch.filename}' in the '{output_container_path}' folder.",
                 )
             else:
                 create_backup(self.log, gff_destination_path, backup_dir, processed_files, output_container_path.parent)
@@ -319,7 +319,7 @@ class ModInstaller:
 
             self.log.complete_patch()
 
-        self.log.add_note("Applying patches from [CompileList]...")
+        self.log.add_note(f"Applying {len(config.patches_nss)} patches from [CompileList]...")
         for nss_patch in config.patches_nss:
             capsule: Capsule | None = None
             output_container_path: CaseAwarePath = self.game_path / nss_patch.destination
@@ -341,10 +341,9 @@ class ModInstaller:
                         " This most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
             else:
-                output_container_path = output_container_path / ncs_compiled_filename
                 create_backup(
                     self.log,
-                    output_container_path,
+                    output_container_path / ncs_compiled_filename,
                     backup_dir,
                     processed_files,
                     rel_output_container_path,
@@ -416,5 +415,5 @@ class ModInstaller:
             if not erf.get(resname, restype) or replace:
                 erf.set_data(resname, restype, data)
                 write_erf(erf, destination)
-        elif not destination.exists() or replace:
-            BinaryWriter.dump(destination, data)
+        elif not (destination / filename).exists() or replace:
+            BinaryWriter.dump(destination / filename, data)
