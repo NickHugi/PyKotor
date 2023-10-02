@@ -267,8 +267,8 @@ class ModInstaller:
                 restype,
                 [
                     SearchLocation.OVERRIDE,
-                    SearchLocation.CUSTOM_FOLDERS,
                     SearchLocation.CUSTOM_MODULES,
+                    SearchLocation.CUSTOM_FOLDERS,
                 ],
                 folders=[self.mod_path],
                 capsules=[] if capsule is None else [capsule],
