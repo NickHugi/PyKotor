@@ -439,7 +439,7 @@ while True:
         or input("Filepath of the desired output logfile: ")
         or "log_install_differ.log",
     ).resolve()
-    if parser_args.output_log.exists():
+    if parser_args.output_log.parent.exists():
         break
     parser.print_help()
     parser_args.output_log = None
