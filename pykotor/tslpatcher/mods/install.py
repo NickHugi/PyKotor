@@ -145,8 +145,8 @@ class InstallFile:
     ) -> None:
         resname, restype = self._identifier()
 
+        create_backup(log, destination.path(), backup_dir, processed_files, "Modules")
         if self.replace_existing or destination.resource(resname, restype) is None:
-            create_backup(log, destination.path(), backup_dir, processed_files, "Modules")
             if self.replace_existing and destination.resource(resname, restype) is not None:
                 with print_lock:
                     log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
@@ -174,6 +174,8 @@ class InstallFile:
         save_file_to = destination / self.filename
         file_exists: bool = save_file_to.exists()
 
+        with print_lock:
+            create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
         if self.replace_existing or not file_exists:
             # reduce io work from destination.exists() by first using our file exists check.
             if not file_exists and not destination.exists():
@@ -183,7 +185,6 @@ class InstallFile:
                 destination.mkdir(parents=True, exist_ok=True)
 
             with print_lock:
-                create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
                 if file_exists:
                     log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
                 else:
