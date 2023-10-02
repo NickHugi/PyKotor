@@ -338,7 +338,7 @@ class ModificationsGFF:
         self.filename: str = filename
         self.replace_file: bool = replace_file
         if destination is None:
-            self.destination = CaseAwarePath("Override", filename)
+            self.destination = CaseAwarePath("Override")
         elif not isinstance(destination, CaseAwarePath):
             self.destination = CaseAwarePath(destination)
         else:
