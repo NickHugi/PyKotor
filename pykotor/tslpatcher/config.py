@@ -314,7 +314,7 @@ class ModInstaller:
                 gff_destination_path,
                 gff_patch.filename,
                 bytes_gff(template),
-                replace=True,
+                replace=gff_patch.replace_file,
             )
 
             self.log.complete_patch()
