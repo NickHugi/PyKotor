@@ -484,6 +484,8 @@ class ConfigReader:
             locstring.set_data(language, gender, string_value)
             value = FieldValueConstant(locstring)
             name = name[: name.index("(lang")]
+        elif name.startswith("2DAMEMORY"):
+            value = FieldValueConstant()
 
         return ModifyFieldGFF(name, value)
 
@@ -493,7 +495,8 @@ class ConfigReader:
         ini_data: dict[str, str],
         inside_list: bool = False,
         current_path: PureWindowsPath | None = None,
-    ) -> ModifyGFF | None:  # sourcery skip: extract-method, remove-unreachable-code
+        parent_path: PureWindowsPath | None = None,
+    ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -513,14 +516,16 @@ class ConfigReader:
             "List": GFFFieldType.List,
         }
 
-        raw_path = ini_data.get("Path", "").strip()
-        path = PureWindowsPath(raw_path) if raw_path else None
-
-        field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        label = ini_data["Label"]
-        raw_value = ini_data.get("Value")
-        value = None
+        field_type: GFFFieldType = fieldname_to_fieldtype[ini_data["FieldType"]]
+        label: str = ini_data["Label"].strip()
+        raw_path: str = ini_data.get("Path", "").strip()
+        raw_value: str | None = ini_data.get("Value")
+        value: FieldValue | LocalizedStringDelta | None = None
         struct_id = 0
+
+        path: PureWindowsPath = PureWindowsPath(raw_path)
+        path = path if path.name else (current_path or PureWindowsPath(label))
+        parent_path = path.parent
 
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
@@ -546,11 +551,13 @@ class ConfigReader:
                         f"Invalid struct id: expected int but got '{raw_struct_id}' in '{identifier}'. Using default of 0",
                     )
                 value = FieldValueConstant(GFFStruct(struct_id))
+                if parent_path.name:
+                    path /= ">>##INDEXINLIST##<<"
             else:
-                self.log.add_error(
-                    f"Could not find valid field return type in '{identifier}' matching '{field_type.return_type()}' in this context",
+                msg = (
+                    f"Could not find valid field return type in '{identifier}' matching field type '{field_type}' in this context"
                 )
-                return None
+                raise ValueError(msg)
         elif raw_value.startswith("2DAMEMORY"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
@@ -578,10 +585,8 @@ class ConfigReader:
             components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector4(*components))
         else:
-            self.log.add_error(
-                f"Could not parse fieldtype '{field_type}' identifier '{identifier}' value '{value}'. Skipping...",
-            )
-            return None
+            msg = f"Could not parse fieldtype '{field_type}' identifier '{identifier}' value '{value}'."
+            raise ValueError(msg)
 
         modifiers: list[ModifyGFF] = []
 
@@ -590,22 +595,20 @@ class ConfigReader:
             if key.startswith("2DAMEMORY"):
                 if x == "ListIndex":
                     index_in_list_token = int(key[9:])
-                else:
+                elif x == "!FieldPath":
                     modifier = Memory2DAModifierGFF(
                         identifier,
                         int(key[9:]),
-                        x,
-                        label,
                         path,
-                        modifiers,
                     )
-                    modifiers.append(modifier)
+                    modifiers.insert(0, modifier)
             if key.startswith("AddField"):
                 nested_ini = dict(self.ini[x].items())
                 nested_modifier: ModifyGFF | None = self.add_field_gff(
                     x,
                     nested_ini,
                     inside_list=field_type.return_type() is GFFList,
+                    current_path=path,
                 )
                 if nested_modifier:  # if none, an error occured.
                     modifiers.append(nested_modifier)
@@ -615,6 +618,7 @@ class ConfigReader:
             return AddStructToListGFF(
                 identifier,
                 struct_id,
+                value,
                 path,
                 index_in_list_token,
                 modifiers,

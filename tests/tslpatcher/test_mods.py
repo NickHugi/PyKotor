@@ -5,10 +5,11 @@ from pykotor.common.misc import ResRef
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.resource.formats.gff import GFF, GFFList, GFFFieldType
+from pykotor.resource.formats.gff.gff_data import GFFStruct
 from pykotor.resource.formats.ssf import SSF, SSFSound
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.formats.twoda import TwoDA
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import PureWindowsPath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.gff import (
@@ -20,6 +21,7 @@ from pykotor.tslpatcher.mods.gff import (
     FieldValueConstant,
     FieldValue2DAMemory,
     FieldValueTLKMemory,
+    ModifyGFF,
 )
 from pykotor.tslpatcher.memory import (
     PatcherMemory,
@@ -1013,8 +1015,9 @@ class TestManipulateGFF(TestCase):
         gff_struct.set_string("String", "")
 
         memory = PatcherMemory()
+        modifiers: list[ModifyGFF] = [ModifyFieldGFF("List\\0\\String", FieldValueConstant("abc"))]
 
-        config = ModificationsGFF("", False, [ModifyFieldGFF("List\\0\\String", FieldValueConstant("abc"))])
+        config = ModificationsGFF("", False, modifiers)
         config.apply(gff, memory, PatchLogger())
 
         self.assertEqual("abc", gff_struct.get_string("String"))
@@ -1056,12 +1059,14 @@ class TestManipulateGFF(TestCase):
 
         memory = PatcherMemory()
 
-        add_field1 = AddFieldGFF("", "List", GFFFieldType.List, FieldValueConstant(GFFList()))
+        add_field1 = AddFieldGFF("", "List", GFFFieldType.List, FieldValueConstant(GFFList()), PureWindowsPath(""))
 
-        add_field2 = AddStructToListGFF("", 0)
+        add_field2 = AddStructToListGFF("", 0, FieldValueConstant(GFFStruct()), PureWindowsPath("List"))
         add_field1.modifiers.append(add_field2)
 
-        add_field3 = AddFieldGFF("", "SomeInteger", GFFFieldType.UInt8, FieldValueConstant(123))
+        add_field3 = AddFieldGFF(
+            "", "SomeInteger", GFFFieldType.UInt8, FieldValueConstant(123), PureWindowsPath("List\\>>##INDEXINLIST##<<")
+        )
         add_field2.modifiers.append(add_field3)
 
         config = ModificationsGFF("", False, [add_field1])
@@ -1100,8 +1105,8 @@ class TestManipulateGFF(TestCase):
         memory.memory_2da[5] = "123"
 
         config = ModificationsGFF("", False, [])
-        config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValue2DAMemory(5)))
-        config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValue2DAMemory(5)))
+        config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValue2DAMemory(5), PureWindowsPath("")))
+        config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValue2DAMemory(5), PureWindowsPath("")))
         config.apply(gff, memory, PatchLogger())
 
         self.assertEqual("123", gff.root.get_string("String"))
@@ -1114,8 +1119,8 @@ class TestManipulateGFF(TestCase):
         memory.memory_str[5] = 123
 
         config = ModificationsGFF("", False, [])
-        config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValueTLKMemory(5)))
-        config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValueTLKMemory(5)))
+        config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValueTLKMemory(5), PureWindowsPath("")))
+        config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValueTLKMemory(5), PureWindowsPath("")))
         config.apply(gff, memory, PatchLogger())
 
         self.assertEqual("123", gff.root.get_string("String"))
@@ -1127,18 +1132,21 @@ class TestManipulateGFF(TestCase):
 
         memory = PatcherMemory()
         memory.memory_2da[5] = "123"
+        # The above code is defining a list called "modifiers" that contains elements of type "Mod".
+        modifiers: list[ModifyGFF] = [
+            AddFieldGFF(
+                "",
+                "Field1",
+                GFFFieldType.LocalizedString,
+                FieldValueConstant(LocalizedStringDelta(FieldValue2DAMemory(5))),
+                PureWindowsPath(""),
+            )
+        ]
 
         config = ModificationsGFF(
             "",
             False,
-            [
-                AddFieldGFF(
-                    "",
-                    "Field1",
-                    GFFFieldType.LocalizedString,
-                    FieldValueConstant(LocalizedStringDelta(FieldValue2DAMemory(5))),
-                )
-            ],
+            modifiers,
         )
         config.apply(gff, memory, PatchLogger())
 
@@ -1151,9 +1159,9 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [])
-        config.modifiers.append(AddStructToListGFF("", 0, "List", None))
-        config.modifiers.append(AddStructToListGFF("", 1, "List", None))
-        config.modifiers.append(AddStructToListGFF("", 2, "List", None))
+        config.modifiers.append(AddStructToListGFF("", 0, FieldValueConstant(GFFStruct()), "List", None))
+        config.modifiers.append(AddStructToListGFF("", 1, FieldValueConstant(GFFStruct()), "List", None))
+        config.modifiers.append(AddStructToListGFF("", 2, FieldValueConstant(GFFStruct()), "List", None))
 
         config.apply(gff, memory, PatchLogger())
 
@@ -1168,8 +1176,8 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [])
-        config.modifiers.append(AddStructToListGFF("", 0, "List"))
-        config.modifiers.append(AddStructToListGFF("", 1, "List", index_to_token=12))
+        config.modifiers.append(AddStructToListGFF("", 0, FieldValueConstant(GFFStruct()), "List"))
+        config.modifiers.append(AddStructToListGFF("", 1, FieldValueConstant(GFFStruct()), "List", index_to_token=12))
         config.apply(gff, memory, PatchLogger())
 
         self.assertEqual("1", memory.memory_2da[12])

@@ -286,8 +286,12 @@ class TestConfigReader(TestCase):
         modifiers2: list[ModifyTLK] = self.config.patches_tlk.modifiers.copy()
         self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
 
-        modifiers_dict1: dict[int, dict[str, str | ResRef | bool]] = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers1}
-        modifiers_dict2: dict[int, dict[str, str | ResRef | bool]] = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers2}
+        modifiers_dict1: dict[int, dict[str, str | ResRef | bool]] = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers1
+        }
+        modifiers_dict2: dict[int, dict[str, str | ResRef | bool]] = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers2
+        }
         self.assertDictEqual(modifiers_dict1, modifiers_dict2)
 
         for i in range(12):
@@ -303,93 +307,106 @@ class TestConfigReader(TestCase):
             modifiers_dict1,
             {
                 0: {"text": "Yavin", "voiceover": ResRef.from_blank()},
-                1: {'text': 'Climate: Artificially Controled\n'
-                           'Terrain: Space Station\n'
-                           'Docking: Orbital Docking\n'
-                           'Native Species: Unknown',
-                   'voiceover': ResRef.from_blank()},
-                2: {'text': 'Tatooine', 'voiceover': ResRef.from_blank()},
-                3: {'text': 'Climate: Arid\n'
-                           'Terrain: Desert\n'
-                           'Docking: Anchorhead Spaceport\n'
-                           'Native Species: Unknown',
-                   'voiceover': ResRef.from_blank()},
-                4: {'text': 'Manaan', 'voiceover': ResRef.from_blank()},
-                5: {'text': 'Climate: Temperate\n'
-                           'Terrain: Ocean\n'
-                           'Docking: Ahto City Docking Bay\n'
-                           'Native Species: Selkath',
-                   'voiceover': ResRef.from_blank()},
-                6: {'text': 'Kashyyyk', 'voiceover': ResRef.from_blank()},
-                7: {'text': 'Climate: Temperate\n'
-                           'Terrain: Forest\n'
-                           'Docking: Czerka Landing Pad\n'
-                           'Native Species: Wookies',
-                   'voiceover': ResRef.from_blank()},
-                8: {'text': '', 'voiceover': ResRef.from_blank()},
-
-                9: {'text': '', 'voiceover': ResRef.from_blank()},
-
-                10: {'text': 'Sleheyron', 'voiceover': ResRef.from_blank()},
-                11: {'text': 'Climate: Unknown\nTerrain: Cityscape\nDocking: Unknown\nNative Species: Unknown', 'voiceover': ResRef.from_blank()},
-                12: {'text': 'Coruscant', 'voiceover': ResRef.from_blank()},
-                13: {'text': 'Climate: Unknown\nTerrain: Unknown\nDocking: Unknown\nNative Species: Unknown', 'voiceover': ResRef.from_blank()},
-                50302: {'text': "Opo Chano, Czerka's contracted droid technician, can't give "
-                               'you his droid credentials unless you help relieve his 2,500 '
-                               'credit gambling debt to the Exchange. Without them, you '
-                               "can't take B-4D4.",
-                       'voiceover': ResRef.from_blank()},
-               123716: {'text': 'Climate: None\n'
-                                'Terrain: Asteroid\n'
-                                'Docking: Peragus Mining Station\n'
-                                'Native Species: None',
-                        'voiceover': ResRef.from_blank()},
-               123717: {'text': 'Lehon', 'voiceover': ResRef.from_blank()},
-               123718: {'text': 'Climate: Tropical\n'
-                                'Terrain: Islands\n'
-                                'Docking: Beach Landing\n'
-                                'Native Species: Rakata',
-                        'voiceover': ResRef.from_blank()},
-               123720: {'text': 'Climate: Temperate\n'
-                                'Terrain: Decaying urban zones\n'
-                                'Docking: Refugee Landing Pad\n'
-                                'Native Species: None',
-                        'voiceover': ResRef.from_blank()},
-               123722: {'text': 'Climate: Tropical\n'
-                                'Terrain: Jungle\n'
-                                'Docking: Jungle Clearing\n'
-                                'Native Species: None',
-                        'voiceover': ResRef.from_blank()},
-               123724: {'text': 'Climate: Temperate\n'
-                                'Terrain: Forest\n'
-                                'Docking: Iziz Spaceport\n'
-                                'Native Species: None',
-                        'voiceover': ResRef.from_blank()},
-               123726: {'text': 'Climate: Temperate\n'
-                                'Terrain: Grasslands\n'
-                                'Docking: Khoonda Plains Settlement\n'
-                                'Native Species: None',
-                        'voiceover': ResRef.from_blank()},
-               123728: {'text': 'Climate: Tectonic-Generated Storms\n'
-                                'Terrain: Shattered Planetoid\n'
-                                'Docking: No Docking Facilities Present\n'
-                                'Native Species: None',
-                        'voiceover': ResRef.from_blank()},
-               123730: {'text': 'Climate: Arid\n'
-                                'Terrain: Volcanic\n'
-                                'Docking: Dreshae Settlement\n'
-                                'Native Species: Unknown',
-                        'voiceover': ResRef.from_blank()},
-               124112: {'text': 'Climate: Artificially Maintained \n'
-                                'Terrain: Droid Cityscape\n'
-                                'Docking: Landing Arm\n'
-                                'Native Species: Unknown',
-                        'voiceover': ResRef.from_blank()},
-               125863: {'text': 'Climate: Artificially Maintained\n'
-                                'Terrain: Space Station\n'
-                                'Docking: Landing Zone\n'
-                                'Native Species: None',
-                        'voiceover': ResRef.from_blank()}
+                1: {
+                    "text": "Climate: Artificially Controled\n"
+                    "Terrain: Space Station\n"
+                    "Docking: Orbital Docking\n"
+                    "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                2: {"text": "Tatooine", "voiceover": ResRef.from_blank()},
+                3: {
+                    "text": "Climate: Arid\n" "Terrain: Desert\n" "Docking: Anchorhead Spaceport\n" "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                4: {"text": "Manaan", "voiceover": ResRef.from_blank()},
+                5: {
+                    "text": "Climate: Temperate\n"
+                    "Terrain: Ocean\n"
+                    "Docking: Ahto City Docking Bay\n"
+                    "Native Species: Selkath",
+                    "voiceover": ResRef.from_blank(),
+                },
+                6: {"text": "Kashyyyk", "voiceover": ResRef.from_blank()},
+                7: {
+                    "text": "Climate: Temperate\n" "Terrain: Forest\n" "Docking: Czerka Landing Pad\n" "Native Species: Wookies",
+                    "voiceover": ResRef.from_blank(),
+                },
+                8: {"text": "", "voiceover": ResRef.from_blank()},
+                9: {"text": "", "voiceover": ResRef.from_blank()},
+                10: {"text": "Sleheyron", "voiceover": ResRef.from_blank()},
+                11: {
+                    "text": "Climate: Unknown\nTerrain: Cityscape\nDocking: Unknown\nNative Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                12: {"text": "Coruscant", "voiceover": ResRef.from_blank()},
+                13: {
+                    "text": "Climate: Unknown\nTerrain: Unknown\nDocking: Unknown\nNative Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                50302: {
+                    "text": "Opo Chano, Czerka's contracted droid technician, can't give "
+                    "you his droid credentials unless you help relieve his 2,500 "
+                    "credit gambling debt to the Exchange. Without them, you "
+                    "can't take B-4D4.",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123716: {
+                    "text": "Climate: None\n" "Terrain: Asteroid\n" "Docking: Peragus Mining Station\n" "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123717: {"text": "Lehon", "voiceover": ResRef.from_blank()},
+                123718: {
+                    "text": "Climate: Tropical\n" "Terrain: Islands\n" "Docking: Beach Landing\n" "Native Species: Rakata",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123720: {
+                    "text": "Climate: Temperate\n"
+                    "Terrain: Decaying urban zones\n"
+                    "Docking: Refugee Landing Pad\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123722: {
+                    "text": "Climate: Tropical\n" "Terrain: Jungle\n" "Docking: Jungle Clearing\n" "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123724: {
+                    "text": "Climate: Temperate\n" "Terrain: Forest\n" "Docking: Iziz Spaceport\n" "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123726: {
+                    "text": "Climate: Temperate\n"
+                    "Terrain: Grasslands\n"
+                    "Docking: Khoonda Plains Settlement\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123728: {
+                    "text": "Climate: Tectonic-Generated Storms\n"
+                    "Terrain: Shattered Planetoid\n"
+                    "Docking: No Docking Facilities Present\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123730: {
+                    "text": "Climate: Arid\n" "Terrain: Volcanic\n" "Docking: Dreshae Settlement\n" "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                124112: {
+                    "text": "Climate: Artificially Maintained \n"
+                    "Terrain: Droid Cityscape\n"
+                    "Docking: Landing Arm\n"
+                    "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                125863: {
+                    "text": "Climate: Artificially Maintained\n"
+                    "Terrain: Space Station\n"
+                    "Docking: Landing Zone\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
             },
         )
 
@@ -2168,14 +2185,14 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual(None, mod_0.path)
+        self.assertFalse(mod_0.path.name)
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertEqual(None, mod_1.path)
+        self.assertFalse(mod_1.path.name)
         self.assertEqual("InsideStruct", mod_1.label)
         self.assertEqual(123, mod_1.value.stored)
 
@@ -2219,7 +2236,7 @@ class TestConfigReader(TestCase):
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("None", str(mod_0.path))
+        self.assertFalse(mod_0.path.name)
         self.assertEqual("SomeList", mod_0.label)
 
         mod_1 = mod_0.modifiers.pop(0)
