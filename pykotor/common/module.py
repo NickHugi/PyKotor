@@ -752,7 +752,7 @@ class ModuleResource(Generic[T]):
         }
 
         if self._active is None:
-            msg = "No active file selected for resource '{self._resname}.{self._restype.extension}'"
+            msg = f"No active file selected for resource '{self._resname}.{self._restype.extension}'"
             raise ValueError(msg)
         if is_bif_file(self._active.name):
             msg = "Cannot save file to BIF."
