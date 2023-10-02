@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from itertools import zip_longest
 from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.common.language import LocalizedString
@@ -255,6 +256,10 @@ class AddFieldGFF(ModifyGFF):
         func_map[self.field_type]()
 
         for add_field in self.modifiers:
+            newpath = PureWindowsPath("")
+            for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
+                newpath /= resolvedpart or part
+            add_field.path = newpath  # resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though?
             add_field.apply(root_struct, memory, logger)
 
 

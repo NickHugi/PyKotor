@@ -528,7 +528,6 @@ class ConfigReader:
 
         path: PureWindowsPath = PureWindowsPath(raw_path)
         path = path if path.name else (current_path or PureWindowsPath(""))
-        parent_path = path.parent
 
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
@@ -554,8 +553,7 @@ class ConfigReader:
                         f"Invalid struct id: expected int but got '{raw_struct_id}' in '{identifier}'. Using default of 0",
                     )
                 value = FieldValueConstant(GFFStruct(struct_id))
-                if parent_path.name:
-                    path /= ">>##INDEXINLIST##<<"
+                path /= ">>##INDEXINLIST##<<"
             else:
                 msg = (
                     f"Could not find valid field return type in '{identifier}' matching field type '{field_type}' in this context"
