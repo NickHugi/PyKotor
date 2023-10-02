@@ -403,26 +403,26 @@ class ConfigReader:
             self.config.patches_gff.append(modifications)
 
             modifier: ModifyGFF | None = None
-            for name, value in modifications_ini.items():
-                if name == "!Destination":
+            for key, value in modifications_ini.items():
+                if key == "!Destination":
                     modifications.destination = CaseAwarePath(value)
-                elif name == "!ReplaceFile":
+                elif key == "!ReplaceFile":
                     modifications.replace_file = bool(int(value))
-                elif name in ["!Filename", "!SaveAs"]:
+                elif key in ["!Filename", "!SaveAs"]:
                     modifications.filename = value
-                elif name.startswith("AddField"):
+                elif key.startswith("AddField"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     if modifier:  # if None, then an error occurred
                         modifications.modifiers.append(modifier)
-                elif name.startswith("2DAMEMORY"):
+                elif key.startswith("2DAMEMORY"):
                     modifier = Memory2DAModifierGFF(
                         file,
-                        int(name[9:]),
-                        value,
+                        int(key[9:]),
+                        PureWindowsPath(""),
                     )
                     modifications.modifiers.append(modifier)
                 else:
-                    modifier = self.modify_field_gff(name, value)
+                    modifier = self.modify_field_gff(key, value)
                     modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
@@ -451,7 +451,7 @@ class ConfigReader:
             return FieldValueTLKMemory(token_id)
         return FieldValueConstant(int(raw_value))
 
-    def modify_field_gff(self, name: str, string_value: str) -> ModifyFieldGFF:
+    def modify_field_gff(self, key: str, string_value: str) -> ModifyFieldGFF:
         value = None
         if string_value.startswith("2DAMEMORY"):
             token_id = int(string_value[9:])
@@ -474,20 +474,23 @@ class ConfigReader:
                 string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"),
             )
 
-        if "(strref)" in name:
+        if "(strref)" in key:
             value = FieldValueConstant(LocalizedStringDelta(value))
-            name = name[: name.index("(strref)")]
-        elif "(lang" in name:
-            substring_id = int(name[name.index("(lang") + 5 : -1])
+            key = key[: key.index("(strref)")]
+        elif "(lang" in key:
+            substring_id = int(key[key.index("(lang") + 5 : -1])
             language, gender = LocalizedString.substring_pair(substring_id)
             locstring = LocalizedStringDelta()
             locstring.set_data(language, gender, string_value)
             value = FieldValueConstant(locstring)
-            name = name[: name.index("(lang")]
-        elif name.startswith("2DAMEMORY"):
-            value = FieldValueConstant()
+            key = key[: key.index("(lang")]
+        elif key.startswith("2DAMEMORY"):
+            if value != "!FieldPath":
+                msg = "Cannot assign 2DAMEMORY here to anything except a !FieldPath"
+                raise ValueError(msg)
+            value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
-        return ModifyFieldGFF(name, value)
+        return ModifyFieldGFF(PureWindowsPath(key), value)
 
     def add_field_gff(
         self,
@@ -524,7 +527,7 @@ class ConfigReader:
         struct_id = 0
 
         path: PureWindowsPath = PureWindowsPath(raw_path)
-        path = path if path.name else (current_path or PureWindowsPath(label))
+        path = path if path.name else (current_path or PureWindowsPath(""))
         parent_path = path.parent
 
         if raw_value is None:
@@ -608,7 +611,7 @@ class ConfigReader:
                     x,
                     nested_ini,
                     inside_list=field_type.return_type() is GFFList,
-                    current_path=path,
+                    current_path=path / label,
                 )
                 if nested_modifier:  # if none, an error occured.
                     modifiers.append(nested_modifier)
