@@ -20,11 +20,10 @@ class ERFType(Enum):
     def from_extension(filepath: str) -> ERFType:
         if is_erf_file(filepath.lower()):
             return ERFType.ERF
-        elif is_mod_file(filepath.lower()):
+        if is_mod_file(filepath.lower()):
             return ERFType.MOD
-        else:
-            msg = f"Invalid ERF extension in filepath '{filepath}'."
-            raise ValueError(msg)
+        msg = f"Invalid ERF extension in filepath '{filepath}'."
+        raise ValueError(msg)
 
 
 class ERF:

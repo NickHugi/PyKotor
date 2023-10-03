@@ -8,12 +8,14 @@ import os
 
 from pykotor.resource.formats.erf import ERFResource, read_erf
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
+from pykotor.resource.formats.lip import LIP, read_lip
 from pykotor.resource.formats.rim import RIMResource, read_rim
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
 from pykotor.tslpatcher.diff.gff import DiffGFF
+from pykotor.tslpatcher.diff.lip import DiffLIP
 from pykotor.tslpatcher.diff.tlk import DiffTLK
 from pykotor.tslpatcher.diff.twoda import Diff2DA
 
@@ -94,8 +96,8 @@ gff_types = [x.value.lower().strip() for x in GFFContent]
 
 
 def diff_data(
-    data1: bytes | os.PathLike | str,
-    data2: bytes | os.PathLike | str,
+    data1: bytes | CaseAwarePath,
+    data2: bytes | CaseAwarePath,
     file1_rel: CaseAwarePath,
     file2_rel: CaseAwarePath,
     ext: str,
@@ -114,9 +116,9 @@ def diff_data(
         log_output(visual_length(message) * "-")
         return None
     if not data1 and not data2:
-        message = f"No data for either resource: '{where}'"
-        log_output(message)
-        log_output(len(message) * "-")
+        # message = f"No data for either resource: '{where}'"  # noqa: ERA001
+        # log_output(message)  # noqa: ERA001
+        # log_output(len(message) * "-")  # noqa: ERA001
         return True
 
     if not data1 or not data2:
@@ -176,7 +178,7 @@ def diff_data(
                 return False
         return True
 
-    if ext == "tlk":
+    if ext == "tlk" and not parser_args.ignore_tlk:
         log_output(f"Loading TLK '{file1_rel.parent / where}'")
         tlk1: TLK = read_tlk(data1)
         log_output(f"Loading TLK '{file2_rel.parent / where}'")
@@ -200,6 +202,33 @@ def diff_data(
             diff = DiffTLK(tlk1, tlk2, log_output)
             if not diff.is_same():
                 message = f"^ '{where}': TLK is different ^"
+                log_output(message)
+                log_output(len(message) * "-")
+                return False
+        return True
+
+    if ext == "lip" and not parser_args.ignore_lips:
+        lip1: LIP | None = read_lip(data1) if isinstance(data1, bytes) or data1.stat().st_size > 0 else None
+        lip2: LIP | None = read_lip(data2) if isinstance(data2, bytes) or data2.stat().st_size > 0 else None
+        if lip1 and not lip2:
+            message = f"LIP resource missing in memory:\t'{file1_rel.parent / where}'"
+            log_output(message)
+            log_output(len(message) * "-")
+            return None
+        if not lip1 and lip2:
+            message = f"LIP resource missing in memory:\t'{file2_rel.parent / where}'"
+            log_output(message)
+            log_output(len(message) * "-")
+            return None
+        if not lip1 and not lip2:
+            # message = f"Both LIP resources missing in memory:\t'{where}'"  # noqa: ERA001
+            # log_output(message)  # noqa: ERA001
+            # log_output(len(message) * "-")  # noqa: ERA001
+            return None
+        if lip1 and lip2:
+            diff = DiffLIP(lip1, lip2, log_output)
+            if not diff.is_same():
+                message = f"^ '{where}': LIP is different ^"
                 log_output(message)
                 log_output(len(message) * "-")
                 return False
@@ -293,7 +322,7 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
             ext = res1.restype.extension
             is_same_result = diff_data(res1.data, res2.data, c_file1_rel, c_file2_rel, ext, resref) and is_same_result
         return is_same_result
-    return diff_data(file1, file2, c_file1_rel, c_file2_rel, ext)
+    return diff_data(c_file1, c_file2, c_file1_rel, c_file2_rel, ext)
 
 
 def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool | None:
@@ -303,16 +332,17 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     message = f"Finding differences in the '{c_dir1.name}' folders..."
     log_output(message)
     log_output("-" * len(message))
-    # Create sets of filenames for both directories
-    files_path1 = {f.name.lower() for f in c_dir1.iterdir()}
-    files_path2 = {f.name.lower() for f in c_dir2.iterdir()}
 
-    # Merge both sets to iterate over unique filenames
+    # Store relative paths instead of just filenames
+    files_path1 = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.rglob("*") if f.is_file()}
+    files_path2 = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.rglob("*") if f.is_file()}
+
+    # Merge both sets to iterate over unique relative paths
     all_files = files_path1.union(files_path2)
 
     is_same_result = True
-    for filename in all_files:
-        is_same_result = diff_files(c_dir1 / filename, c_dir2 / filename) and is_same_result
+    for rel_path in all_files:
+        is_same_result = diff_files(c_dir1 / rel_path, c_dir2 / rel_path) and is_same_result
 
     return is_same_result
 
@@ -333,7 +363,20 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
     modules_path1: CaseAwarePath = install_path1.joinpath("Modules")
     modules_path2: CaseAwarePath = CaseAwarePath(install_path2, "Modules")
-    return diff_directories(modules_path1, modules_path2) and is_same_result
+    is_same_result = diff_directories(modules_path1, modules_path2) and is_same_result
+
+    streamwaves_path1: CaseAwarePath = (
+        install_path1.joinpath("streamwaves")
+        if install_path1.joinpath("streamwaves").exists()
+        else install_path1.joinpath("streamvoices")
+    )
+    streamwaves_path2: CaseAwarePath = (
+        install_path2.joinpath("streamwaves")
+        if install_path2.joinpath("streamwaves").exists()
+        else install_path2.joinpath("streamvoices")
+    )
+    is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
+    return is_same_result  # noqa: RET504
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
@@ -365,6 +408,7 @@ parser.add_argument("--output-log", type=str, help="Filepath of the desired outp
 parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource")
 parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is ignored)")
 parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
+parser.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
 parser.add_argument("--use-profiler", type=bool, default=False, help="Use cProfile to profile this differ")
 
 parser_args, unknown = parser.parse_known_args()
@@ -373,10 +417,11 @@ while True:
         parser_args.path1
         or (unknown[0] if len(unknown) > 0 else None)
         or input("Path to the first K1/TSL install, file, or directory to diff: ")
-        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
+        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor",
     ).resolve()
     if parser_args.path1.exists():
         break
+    print("Invalid path:", parser_args.path1)
     parser.print_help()
     parser_args.path1 = None
 while True:
@@ -384,10 +429,11 @@ while True:
         parser_args.path2
         or (unknown[1] if len(unknown) > 1 else None)
         or input("Path to the second K1/TSL install, file, or directory to diff: ")
-        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
+        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor - PyKotor",
     ).resolve()
     if parser_args.path2.exists():
         break
+    print("Invalid path:", parser_args.path2)
     parser.print_help()
     parser_args.path2 = None
 while True:
@@ -397,23 +443,26 @@ while True:
         or input("Filepath of the desired output logfile: ")
         or "log_install_differ.log",
     ).resolve()
-    if parser_args.output_log.exists():
+    if parser_args.output_log.parent.exists():
         break
+    print("Invalid path:", parser_args.output_log)
     parser.print_help()
     parser_args.output_log = None
 
-parser_args.compare_hashes = bool(parser_args.compare_hashes)
-parser_args.ignore_rims = not bool(parser_args.ignore_rims)
+parser_args.ignore_rims = bool(parser_args.ignore_rims)
+parser_args.ignore_lips = bool(parser_args.ignore_lips)
 parser_args.ignore_tlk = bool(parser_args.ignore_tlk)
-parser_args.use_profiler = not bool(parser_args.use_profiler)
+parser_args.use_profiler = bool(parser_args.use_profiler)
+parser_args.compare_hashes = not bool(parser_args.compare_hashes)
 
 log_output()
 log_output(f"Using --path1='{parser_args.path1}'")
 log_output(f"Using --path2='{parser_args.path2}'")
 log_output(f"Using --output-log='{parser_args.output_log}'")
-log_output(f"Using --compare-hashes={parser_args.compare_hashes!s}")
 log_output(f"Using --ignore-rims={parser_args.ignore_rims!s}")
 log_output(f"Using --ignore-tlk={parser_args.ignore_tlk!s}")
+log_output(f"Using --ignore-lips={parser_args.ignore_lips!s}")
+log_output(f"Using --compare-hashes={parser_args.compare_hashes!s}")
 log_output(f"Using --use-profiler={parser_args.use_profiler!s}")
 
 profiler = None

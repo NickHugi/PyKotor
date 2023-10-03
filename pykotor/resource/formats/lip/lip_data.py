@@ -38,7 +38,7 @@ class LIP:
     def __getitem__(
         self,
         item,
-    ):
+    ) -> LIPKeyFrame:
         """Returns a keyframe from the specified index.
 
         Args:

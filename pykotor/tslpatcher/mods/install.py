@@ -53,62 +53,116 @@ def create_backup(
         uninstall_folder.mkdir(exist_ok=True)
 
         # Write the file path to remove these files.txt in uninstall directory
-        with uninstall_folder.joinpath("remove these files.txt").open("a") as f:
+        with backup_folderpath.joinpath("remove these files.txt").open("a") as f:
             f.write("\n" + str(destination_filepath))
 
         # Write the PowerShell script to the uninstall folder
         subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
         game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
-        write_powershell_uninstall_script(uninstall_folder, game_folder)
+        write_powershell_uninstall_script(backup_folderpath, uninstall_folder, game_folder)
 
     # Add the lowercased path string to the processed_files set
     processed_files.add(destination_file_str_lower)
 
 
-def write_powershell_uninstall_script(uninstall_folder: CaseAwarePath, main_folder: PurePath):
-    with uninstall_folder.joinpath("delete_files.ps1").open("w") as f:
+def write_powershell_uninstall_script(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: PurePath):
+    with uninstall_folder.joinpath("restore_backup.ps1").open("w") as f:
         f.write(
-            f"""
-$deleteListFile = "{uninstall_folder}\\remove these files.txt"
+            rf"""
+$backupParentFolder = Get-Item -Path "..$([System.IO.Path]::DirectorySeparatorChar)backup"
+$mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder.FullName -Directory | ForEach-Object {{
+    $dirName = $_.Name
+    try {{
+        [datetime]$dt = [datetime]::ParseExact($dirName, "yyyy-MM-dd_HH-mm-ss", $null)
+        Write-Host "Found backup '$dirName'"
+        return [PSCustomObject]@{{
+            Directory = $_.FullName
+            DateTime = $dt
+        }}
+    }} catch {{
+        if ($dirName -and $dirName -ne '' -and -not ($dirName -match "^\s*$")) {{
+            Write-Host "Ignoring directory '$dirName'. $($_.Exception.Message)"
+        }}
+    }}
+}} | Sort-Object DateTime -Descending | Select-Object -ExpandProperty Directory -First 1
+if (-not $mostRecentBackupFolder -and -not (Test-Path $mostRecentBackupFolder -ErrorAction SilentlyContinue)) {{
+    $mostRecentBackupFolder = "{backup_dir}"
+    if (-not (Test-Path $mostRecentBackupFolder -ErrorAction SilentlyContinue)) {{
+        Write-Host "No backups found in '$backupParentFolder.FullName'"
+        exit
+    }}
+    Write-Host "Using hardcoded backup dir: '$mostRecentBackupFolder'"
+}} else {{
+    Write-Host "Selected backup folder '$mostRecentBackupFolder'"
+}}
 
-if (-not (Test-Path $deleteListFile)) {{
+$deleteListFile = $mostRecentBackupFolder + "$([System.IO.Path]::DirectorySeparatorChar)remove these files.txt"
+if (-not (Test-Path $deleteListFile -ErrorAction SilentlyContinue)) {{
     Write-Host "File list not found."
     exit
 }}
 
 $filesToDelete = Get-Content $deleteListFile
-$numberOfFiles = $filesToDelete.Count
+$existingFiles = @()
+foreach ($file in $filesToDelete) {{
+    if ($file) {{ # Check if $file is non-null and non-empty
+        if (Test-Path $file -ErrorAction SilentlyContinue) {{
+            $existingFiles += $file
+        }} else {{
+            #Write-Host "WARNING! $file no longer exists, running this script is not recommended!"
+        }}
+    }}
+}}
+
+$numberOfExistingFiles = $existingFiles.Count
 
 $validConfirmations = @("y", "yes")
-$confirmation = Read-Host "Really uninstall $numberOfFiles files?"
-if ($confirmation.ToLower() -notin $validConfirmations) {{
-    Write-Host "Operation cancelled."
-    exit
+if ($numberOfExistingFiles -gt 0) {{
+    $confirmation = Read-Host "Really uninstall $numberOfExistingFiles files?"
+    if ($confirmation.ToLower() -notin $validConfirmations) {{
+        Write-Host "Operation cancelled."
+        exit
+    }}
 }}
 
 $deletedCount = 0
-foreach ($file in $filesToDelete) {{
-    if (Test-Path $file) {{
+foreach ($file in $existingFiles) {{
+    if ($file -and (Test-Path $file -ErrorAction SilentlyContinue)) {{
         Remove-Item $file -Force
+        Write-Host "Removed $file..."
         $deletedCount++
     }}
 }}
 
-Write-Host "Deleted $deletedCount files."
+if ($deletedCount -ne 0) {{
+    Write-Host "Deleted $deletedCount files."
+}}
 
-$confirmation = Read-Host "Would you like to restore your most recent backup?"
+$allItemsInBackup = Get-ChildItem -Path $mostRecentBackupFolder -Recurse | Where-Object {{ $_.Name -ne 'remove these files.txt' }}
+$fileCount = ($allItemsInBackup | Where-Object {{ -not $_.PSIsContainer }}).Count
+$folderCount = ($allItemsInBackup | Where-Object {{ $_.PSIsContainer }}).Count
+
+# Display relative file paths if file count is less than 6
+if ($fileCount -lt 6) {{
+    $allItemsInBackup |
+    Where-Object {{ -not $_.PSIsContainer }} |
+    ForEach-Object {{
+        $relativePath = $_.FullName -replace [regex]::Escape($mostRecentBackupFolder), ""
+        Write-Host $relativePath.TrimStart("\")
+    }}
+}}
+
+$confirmation = Read-Host "Would you like to restore your most recent backup (containing $fileCount files and $folderCount folders)?"
+
+
 if ($confirmation.ToLower() -notin $validConfirmations) {{
     Write-Host "Operation cancelled."
     exit
 }}
 
-$backupParentFolder = "{uninstall_folder.parent}\\backup"
-$mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder -Directory | Sort-Object Name -Descending | Select-Object -First 1
-
-if ($mostRecentBackupFolder) {{
-    $filesInBackup = Get-ChildItem -Path $mostRecentBackupFolder.FullName -File -Recurse
-    foreach ($file in $filesInBackup) {{
-        $relativePath = $file.FullName.Substring($mostRecentBackupFolder.FullName.Length)
+foreach ($file in $allItemsInBackup) {{
+    try {{
+        $relativePath = $file.FullName.Substring($mostRecentBackupFolder.Length)
         $destinationPath = Join-Path -Path "{main_folder}" -ChildPath $relativePath
 
         # Create the directory structure if it doesn't exist
@@ -119,10 +173,14 @@ if ($mostRecentBackupFolder) {{
 
         # Copy the file to the destination
         Copy-Item -Path $file.FullName -Destination $destinationPath -Force
-        Write-Host "Restoring backup of $file to $destinationPath..."
+        Write-Host "Restoring backup of '$($file.Name)' to '$destinationDir'..."
+    }} catch {{
+        Write-Host "Failed to restore backup of $($file.Name) because of: $($_.Exception.Message)"
     }}
 }}
 Pause
+
+
 """,
         )
 
@@ -145,8 +203,8 @@ class InstallFile:
     ) -> None:
         resname, restype = self._identifier()
 
+        create_backup(log, destination.path(), backup_dir, processed_files, "Modules")
         if self.replace_existing or destination.resource(resname, restype) is None:
-            create_backup(log, destination.path(), backup_dir, processed_files, "Modules")
             if self.replace_existing and destination.resource(resname, restype) is not None:
                 with print_lock:
                     log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
@@ -174,6 +232,8 @@ class InstallFile:
         save_file_to = destination / self.filename
         file_exists: bool = save_file_to.exists()
 
+        with print_lock:
+            create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
         if self.replace_existing or not file_exists:
             # reduce io work from destination.exists() by first using our file exists check.
             if not file_exists and not destination.exists():

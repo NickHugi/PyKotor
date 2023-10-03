@@ -13,6 +13,13 @@ class TestCaseAwarePath(unittest.TestCase):
         except Exception as e:
             self.fail(f"Unexpected exception raised: {e}")
 
+    def test_hashing(self):
+        path1 = CaseAwarePath("test\\path\\to\\nothing")
+        path2 = CaseAwarePath("tesT\\PATH\\to\\noTHinG")
+
+        test_set = {path1, path2}
+        self.assertSetEqual(test_set, {CaseAwarePath("TEST\\path\\to\\nothing")})
+
     def test_valid_name_property(self):
         self.assertTrue((CaseAwarePath("test", "data\\something.test")).name == "something.test")
         self.assertTrue((CaseAwarePath("test") / "data/something.test").name == "something.test")

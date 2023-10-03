@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
 from pykotor.tools.path import PureWindowsPath
@@ -66,17 +66,19 @@ class DiffGFF:
             child_path = current_path / str(label)
             old_ftype, old_value = old_dict.get(label, (None, None))
             new_ftype, new_value = new_dict.get(label, (None, None))
+            old_ftype_name = fieldtype_to_fieldname.get(old_ftype, old_ftype)  # type: ignore[fallback val already defined]
+            new_ftype_name = fieldtype_to_fieldname.get(new_ftype, new_ftype)  # type: ignore[fallback val already defined]
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
                 self.log(
-                    f"Extra '{fieldtype_to_fieldname.get(new_ftype, 'INVALID FIELDTYPE')}' field found at '{child_path}': '{new_value}'",
+                    f"Extra '{new_ftype_name}' field found at '{child_path}': '{new_value}'",
                 )
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
                 self.log(
-                    f"Missing '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}' field at '{child_path}': '{old_value}'",
+                    f"Missing '{old_ftype_name}' field at '{child_path}': '{old_value}'",
                 )
                 is_same_result = False
                 continue
@@ -84,7 +86,7 @@ class DiffGFF:
             # Check if field types have changed
             if old_ftype != new_ftype:
                 self.log(
-                    f"Field type has changed at '{child_path}': '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}'-->'{fieldtype_to_fieldname.get(new_ftype, 'INVALID FIELDTYPE')}'",
+                    f"Field type has changed at '{child_path}': '{old_ftype_name}'-->'{new_ftype_name}'",
                 )
                 is_same_result = False
                 continue
@@ -106,7 +108,7 @@ class DiffGFF:
 
             elif str(old_value) != str(new_value):
                 self.log(
-                    f"Field '{fieldtype_to_fieldname.get(old_ftype, 'INVALID FIELDTYPE')}' value has changed at '{child_path}': '{old_value}'-->'{new_value}'"
+                    f"Field '{old_ftype_name}' value has changed at '{child_path}': '{old_value}'-->'{new_value}'",
                 )
                 is_same_result = False
                 continue
@@ -154,3 +156,69 @@ class DiffGFF:
                 is_same_result = False
 
         return is_same_result
+
+
+class SearchGFF:
+    def __init__(self, gff: GFF):
+        self.gff: GFF = gff
+
+    def search_by_label(
+        self,
+        target_label: str,
+        struct: Optional[GFFStruct] = None,
+        current_path: Optional[Union[PureWindowsPath, os.PathLike, str]] = None,
+    ) -> Optional[str]:
+        """Search the GFF by label and return the full path if found."""
+        current_path = PureWindowsPath(current_path or "GFFRoot")
+        struct = struct or self.gff.root
+
+        for label, ftype, value in struct:
+            if label == target_label:
+                return str(current_path / label)
+
+            child_path = current_path / label
+            if ftype == GFFFieldType.Struct:
+                found_path = self.search_by_label(target_label, value, child_path)
+                if found_path:
+                    return found_path
+            elif ftype == GFFFieldType.List:
+                for idx, child_struct in enumerate(value):
+                    found_path = self.search_by_label(target_label, child_struct, child_path / str(idx))
+                    if found_path:
+                        return found_path
+        return None
+
+    def search_by_path(
+        self,
+        target_path: Union[PureWindowsPath, os.PathLike, str],
+        struct: Optional[GFFStruct] = None,
+        current_path: Optional[Union[PureWindowsPath, os.PathLike, str]] = None,
+    ) -> Optional[Union[str, int, GFFStruct]]:
+        """Search the GFF by path and return the value/struct/number of structs."""
+        current_path = PureWindowsPath(current_path or "GFFRoot")
+        struct = struct or self.gff.root
+        if current_path == target_path:
+            if isinstance(struct, GFFStruct):
+                return struct
+            if isinstance(struct, GFFList):
+                return len(struct)
+
+        for label, ftype, value in struct:
+            child_path = current_path / label
+            if child_path == target_path:
+                if ftype == GFFFieldType.Struct:
+                    return value
+                if ftype == GFFFieldType.List:
+                    return len(value)
+                return value
+
+            if ftype == GFFFieldType.Struct:
+                found_value = self.search_by_path(target_path, value, child_path)
+                if found_value:
+                    return found_value
+            elif ftype == GFFFieldType.List:
+                for idx, child_struct in enumerate(value):
+                    found_value = self.search_by_path(target_path, child_struct, child_path / str(idx))
+                    if found_value:
+                        return found_value
+        return None

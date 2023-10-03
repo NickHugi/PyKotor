@@ -53,7 +53,7 @@ class MDLEditor(Editor):
             mdl_data = data
             if c_filepath.endswith(".mdl"):
                 mdx_data = BinaryReader.load_file(
-                    str(c_filepath.parent / (c_filepath.stem + c_filepath.suffix.lower().replace(".mdl", ".mdx"))),
+                    str(c_filepath.with_suffix(c_filepath.suffix.lower().replace(".mdl", ".mdx"))),
                 )
             elif is_erf_or_mod_file(c_filepath.name):
                 erf = read_erf(filepath)
@@ -67,7 +67,7 @@ class MDLEditor(Editor):
             mdx_data = data
             if c_filepath.endswith(".mdx"):
                 mdl_data = BinaryReader.load_file(
-                    str(c_filepath.parent / (c_filepath.stem + c_filepath.suffix.lower().replace(".mdl", ".mdx"))),
+                    str(c_filepath.with_suffix(c_filepath.suffix.lower().replace(".mdl", ".mdx"))),
                 )
             elif is_erf_or_mod_file(c_filepath.name):
                 erf = read_erf(filepath)

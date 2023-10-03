@@ -649,7 +649,7 @@ class ToolWindow(QMainWindow):
                 if decompile_tpc:
                     data = bytearray()
                     write_tpc(tpc, data, ResourceType.TGA)
-                    filepath = filepath.parent / (filepath.stem + filepath.suffix.lower().replace(".tpc", ".tga"))
+                    filepath = filepath.with_suffix(filepath.suffix.lower().replace(".tpc", ".tga"))
             if resource.restype() == ResourceType.MDL and manipulate_mdl:
                 if decompile_mdl:
                     mdx_data = self.active.resource(resource.resname(), ResourceType.MDX).data

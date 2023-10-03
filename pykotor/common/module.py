@@ -101,11 +101,13 @@ class Module:
             The string for the root name of a module.
         """
         c_file_path = CaseAwarePath(filepath)
-        root = str(c_file_path.parent / (c_file_path.stem + c_file_path.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")))
+        root = str(
+            c_file_path.with_suffix(c_file_path.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", ""))
+        )
         roota = root[:5]
         rootb = root[5:]
         if "_" in rootb:
-            rootb = rootb[:rootb.index("_")]
+            rootb = rootb[: rootb.index("_")]
         return roota + rootb
 
     def capsules(self) -> list[Capsule]:
@@ -752,7 +754,7 @@ class ModuleResource(Generic[T]):
         }
 
         if self._active is None:
-            msg = "No active file selected for resource '{self._resname}.{self._restype.extension}'"
+            msg = f"No active file selected for resource '{self._resname}.{self._restype.extension}'"
             raise ValueError(msg)
         if is_bif_file(self._active.name):
             msg = "Cannot save file to BIF."
