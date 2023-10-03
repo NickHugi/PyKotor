@@ -224,8 +224,9 @@ class ModInstaller:
 
         self.log.add_note(f"Applying {len(config.patches_2da)} patches from [2DAList]...")
         for twoda_patch in config.patches_2da:
+            twoda_output_filepath = self.game_path / "Override" / twoda_patch.filename
             resname, restype = ResourceIdentifier.from_path(twoda_patch.filename)
-            twoda_output_folder: CaseAwarePath = self.game_path / "Override"
+
             search = installation.resource(
                 resname,
                 restype,
@@ -237,31 +238,34 @@ class ModInstaller:
                     f"Didn't patch '{twoda_patch.filename}' because search data is `None`.",
                 )
                 continue
+
             twoda: TwoDA = read_2da(search.data)
             twodas[twoda_patch.filename] = twoda
 
             create_backup(
                 self.log,
-                twoda_output_folder / twoda_patch.filename,
+                twoda_output_filepath,
                 backup_dir,
                 processed_files,
                 subdirectory_path="Override",
             )
             self.log.add_note(f"Patching '{twoda_patch.filename}'")
             twoda_patch.apply(twoda, memory)
-            write_2da(twoda, twoda_output_folder / twoda_patch.filename)
+
+            write_2da(twoda, twoda_output_filepath)
 
             self.log.complete_patch()
 
         self.log.add_note(f"Applying {len(config.patches_gff)} patches from [GFFList]...")
         for gff_patch in config.patches_gff:
-            resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
+            gff_output_container_path = self.game_path / gff_patch.destination
+            rel_output_container_path = gff_output_container_path.relative_to(self.game_path)
 
             capsule = None
-            gff_destination_path: CaseAwarePath = self.game_path / gff_patch.destination
             if is_capsule_file(gff_patch.destination.name):
-                capsule = Capsule(gff_destination_path)
+                capsule = Capsule(gff_output_container_path)
 
+            resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
             search = installation.resource(
                 resname,
                 restype,
@@ -279,39 +283,35 @@ class ModInstaller:
                 )
                 continue
 
-            norm_game_path = self.game_path
-            norm_file_path = norm_game_path / CaseAwarePath(gff_patch.destination)
-            output_container_path = norm_file_path.relative_to(norm_game_path)
-
-            if capsule is None:
-                create_backup(
-                    self.log,
-                    gff_destination_path / gff_patch.filename,
-                    backup_dir,
-                    processed_files,
-                    output_container_path,
-                )
+            if capsule is not None:
+                create_backup(self.log, gff_output_container_path, backup_dir, processed_files, rel_output_container_path.parent)
                 self.log.add_note(
-                    f"Patching '{gff_patch.filename}' in the '{output_container_path}' folder.",
-                )
-            else:
-                create_backup(self.log, gff_destination_path, backup_dir, processed_files, output_container_path.parent)
-                self.log.add_note(
-                    f"Patching '{gff_patch.filename}' in the '{output_container_path}' archive.",
+                    f"Patching '{gff_patch.filename}' in the '{rel_output_container_path}' archive.",
                 )
                 if not capsule._path.exists():
                     self.log.add_warning(
-                        f"The capsule '{output_container_path}' did not exist when patching GFF '{gff_patch.filename}'! Please note that TSLPatcher would have errored in this scenario.",
+                        f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{gff_patch.filename}'. Please note that TSLPatcher would have errored in this scenario!",
                     )
                     self.log.add_warning(
                         "The above warning most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
+            else:
+                create_backup(
+                    self.log,
+                    gff_output_container_path / gff_patch.filename,
+                    backup_dir,
+                    processed_files,
+                    rel_output_container_path,
+                )
+                self.log.add_note(
+                    f"Patching '{gff_patch.filename}' in the '{rel_output_container_path}' folder.",
+                )
 
             template = templates[gff_patch.filename] = read_gff(search.data)
 
             gff_patch.apply(template, memory, self.log)
             self.write(
-                gff_destination_path,
+                gff_output_container_path,
                 gff_patch.filename,
                 bytes_gff(template),
                 replace=True,
@@ -322,28 +322,28 @@ class ModInstaller:
         self.log.add_note(f"Applying {len(config.patches_nss)} patches from [CompileList]...")
         for nss_patch in config.patches_nss:
             capsule: Capsule | None = None
-            output_container_path: CaseAwarePath = self.game_path / nss_patch.destination
-            rel_output_container_path: CaseAwarePath = output_container_path.relative_to(self.game_path)
+            nss_output_container_path: CaseAwarePath = self.game_path / nss_patch.destination
+            rel_output_container_path: CaseAwarePath = nss_output_container_path.relative_to(self.game_path)
             ncs_compiled_filename = f"{nss_patch.filename.rsplit('.', 1)[0]}.ncs"
 
-            if is_capsule_file(output_container_path.name):
-                capsule = Capsule(output_container_path)
+            if is_capsule_file(nss_output_container_path.name):
+                capsule = Capsule(rel_output_container_path)
                 create_backup(
                     self.log,
-                    output_container_path,
+                    rel_output_container_path,
                     backup_dir,
                     processed_files,
                     rel_output_container_path.parent,
                 )
-                if not output_container_path.exists():
+                if not rel_output_container_path.exists():
                     self.log.add_warning(
-                        f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{nss_patch.filename}'! Please note that TSLPatcher would have errored in this scenario!"
+                        f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{nss_patch.filename}'. Please note that TSLPatcher would have errored in this scenario!"
                         " This most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
             else:
                 create_backup(
                     self.log,
-                    output_container_path / ncs_compiled_filename,
+                    rel_output_container_path / ncs_compiled_filename,
                     backup_dir,
                     processed_files,
                     rel_output_container_path,
@@ -360,7 +360,7 @@ class ModInstaller:
             nss_patch.apply(nss, memory, self.log)
 
             self.write(
-                output_container_path,
+                rel_output_container_path,
                 ncs_compiled_filename,
                 bytes_ncs(compile_nss(nss[0], installation.game())),
                 nss_patch.replace_file,
@@ -370,6 +370,8 @@ class ModInstaller:
 
         self.log.add_note("Applying patches from [SSFList]...")
         for ssf_patch in config.patches_ssf:
+            ssf_output_filepath: CaseAwarePath = self.game_path / "Override" / ssf_patch.filename
+
             resname, restype = ResourceIdentifier.from_path(ssf_patch.filename)
             search = installation.resource(
                 resname,
@@ -384,7 +386,6 @@ class ModInstaller:
                 continue
 
             soundset = soundsets[ssf_patch.filename] = read_ssf(search.data)
-            ssf_output_filepath: CaseAwarePath = self.game_path / "Override" / ssf_patch.filename
 
             create_backup(self.log, ssf_output_filepath, backup_dir, processed_files, "Override")
             self.log.add_note(f"Patching '{ssf_patch.filename}' in the 'Override' folder.")
