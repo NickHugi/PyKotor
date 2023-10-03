@@ -408,7 +408,7 @@ class ConfigReader:
                     modifications.destination = CaseAwarePath(value)
                 elif key == "!ReplaceFile":
                     modifications.replace_file = bool(int(value))
-                elif key in ["!Filename", "!SaveAs"]:
+                elif key.lower() in ["!filename", "!saveas"]:
                     modifications.filename = value
                 elif key.startswith("AddField"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
