@@ -13,7 +13,7 @@ def get_ui_files():
 def compile_ui(ignore_timestamp: bool = False):
     for ui_source in get_ui_files():
         directory = ui_source.parent.name
-        filename = ui_source.stem + ui_source.suffix.lower().replace(".ui", ".py")
+        filename = ui_source.with_suffix(ui_source.suffix.lower().replace(".ui", ".py"))
         subdir_ui_target = CaseAwarePath(UI_TARGET_DIR, directory)
         ui_target = subdir_ui_target / filename
 

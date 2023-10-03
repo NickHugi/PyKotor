@@ -271,7 +271,7 @@ class Editor(QMainWindow):
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with (self._filepath.parent / (self._filepath.stem + self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open(
+            with (self._filepath.with_suffix(self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open(
                 "wb",
             ) as file:
                 file.write(data_ext)

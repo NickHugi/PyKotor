@@ -332,16 +332,17 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     message = f"Finding differences in the '{c_dir1.name}' folders..."
     log_output(message)
     log_output("-" * len(message))
-    # Create sets of filenames for both directories
-    files_path1 = {f.name.lower() for f in c_dir1.rglob("*")}
-    files_path2 = {f.name.lower() for f in c_dir2.rglob("*")}
 
-    # Merge both sets to iterate over unique filenames
+    # Store relative paths instead of just filenames
+    files_path1 = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.rglob("*") if f.is_file()}
+    files_path2 = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.rglob("*") if f.is_file()}
+
+    # Merge both sets to iterate over unique relative paths
     all_files = files_path1.union(files_path2)
 
     is_same_result = True
-    for filename in all_files:
-        is_same_result = diff_files(c_dir1 / filename, c_dir2 / filename) and is_same_result
+    for rel_path in all_files:
+        is_same_result = diff_files(c_dir1 / rel_path, c_dir2 / rel_path) and is_same_result
 
     return is_same_result
 
@@ -444,11 +445,11 @@ while True:
     parser.print_help()
     parser_args.output_log = None
 
-parser_args.ignore_rims = not bool(parser_args.ignore_rims)
+parser_args.ignore_rims = bool(parser_args.ignore_rims)
 parser_args.ignore_lips = bool(parser_args.ignore_lips)
 parser_args.ignore_tlk = bool(parser_args.ignore_tlk)
-parser_args.compare_hashes = bool(parser_args.compare_hashes)
 parser_args.use_profiler = bool(parser_args.use_profiler)
+parser_args.compare_hashes = not bool(parser_args.compare_hashes)
 
 log_output()
 log_output(f"Using --path1='{parser_args.path1}'")
