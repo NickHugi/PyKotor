@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from configparser import ConfigParser
 from datetime import datetime, timezone
 from enum import IntEnum
@@ -190,8 +191,14 @@ class ModInstaller:
 
         # Create a timestamped backup directory
         tz_aware_datetime = datetime.now(tz=timezone.utc)
-        timestamp = tz_aware_datetime.strftime("%Y.%m.%d_%H.%M.%S")
-        backup_dir = self.mod_path.parent / "backup" / timestamp
+        timestamp = tz_aware_datetime.strftime("%Y-%m-%d_%H.%M.%S")
+        backup_dir = self.mod_path
+        while not backup_dir.joinpath("tslpatchdata").exists() and backup_dir.parent.name:
+            backup_dir = backup_dir.parent
+        uninstall_dir = backup_dir.joinpath("uninstall")
+        if uninstall_dir.exists():
+            shutil.rmtree(uninstall_dir)
+        backup_dir = backup_dir / "backup" / timestamp
         backup_dir.mkdir(parents=True, exist_ok=True)
         self.log.add_note(f"Using backup directory: '{backup_dir}'")
 

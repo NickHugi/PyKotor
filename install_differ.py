@@ -116,9 +116,9 @@ def diff_data(
         log_output(visual_length(message) * "-")
         return None
     if not data1 and not data2:
-        message = f"No data for either resource: '{where}'"
-        log_output(message)
-        log_output(len(message) * "-")
+        # message = f"No data for either resource: '{where}'"  # noqa: ERA001
+        # log_output(message)  # noqa: ERA001
+        # log_output(len(message) * "-")  # noqa: ERA001
         return True
 
     if not data1 or not data2:
@@ -376,6 +376,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
         else install_path2.joinpath("streamvoices")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
+    return is_same_result  # noqa: RET504
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
@@ -420,6 +421,7 @@ while True:
     ).resolve()
     if parser_args.path1.exists():
         break
+    print("Invalid path:", parser_args.path1)
     parser.print_help()
     parser_args.path1 = None
 while True:
@@ -431,6 +433,7 @@ while True:
     ).resolve()
     if parser_args.path2.exists():
         break
+    print("Invalid path:", parser_args.path2)
     parser.print_help()
     parser_args.path2 = None
 while True:
@@ -442,6 +445,7 @@ while True:
     ).resolve()
     if parser_args.output_log.parent.exists():
         break
+    print("Invalid path:", parser_args.output_log)
     parser.print_help()
     parser_args.output_log = None
 
