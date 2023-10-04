@@ -54,11 +54,11 @@ def create_backup(
         uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
         uninstall_folder.mkdir(exist_ok=True)
 
-        # Write the file path to remove these files.txt in uninstall directory
+        # Write the file path to remove these files.txt in backup directory
         with backup_folderpath.joinpath("remove these files.txt").open("a") as f:
             f.write("\n" + str(destination_filepath))
 
-        # Write the PowerShell script to the uninstall folder
+        # Write the PowerShell uninstall script to the uninstall folder
         subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
         game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
         write_powershell_uninstall_script(backup_folderpath, uninstall_folder, game_folder)
