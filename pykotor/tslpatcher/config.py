@@ -341,15 +341,15 @@ class ModInstaller:
             ncs_compiled_filename = f"{nss_patch.filename.rsplit('.', 1)[0]}.ncs"
 
             if is_capsule_file(nss_output_container_path.name):
-                capsule = Capsule(rel_output_container_path)
+                capsule = Capsule(nss_output_container_path)
                 create_backup(
                     self.log,
-                    rel_output_container_path,
+                    nss_output_container_path,
                     backup_dir,
                     processed_files,
                     rel_output_container_path.parent,
                 )
-                if not rel_output_container_path.exists():
+                if not nss_output_container_path.exists():
                     self.log.add_warning(
                         f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{nss_patch.filename}'. Please note that TSLPatcher would have errored in this scenario!"
                         " This most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
@@ -357,7 +357,7 @@ class ModInstaller:
             else:
                 create_backup(
                     self.log,
-                    rel_output_container_path / ncs_compiled_filename,
+                    nss_output_container_path / ncs_compiled_filename,
                     backup_dir,
                     processed_files,
                     rel_output_container_path,
@@ -374,7 +374,7 @@ class ModInstaller:
             nss_patch.apply(nss, memory, self.log)
 
             self.write(
-                rel_output_container_path,
+                nss_output_container_path,
                 ncs_compiled_filename,
                 bytes_ncs(compile_nss(nss[0], installation.game())),
                 nss_patch.replace_file,
