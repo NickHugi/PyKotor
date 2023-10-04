@@ -273,14 +273,21 @@ class ModInstaller:
                 capsule = Capsule(gff_output_container_path)
 
             resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
+            search_order = [
+                SearchLocation.OVERRIDE,
+                SearchLocation.CUSTOM_MODULES,
+                SearchLocation.CUSTOM_FOLDERS,
+            ]
+            if gff_patch.replace_file:
+                search_order = [
+                    SearchLocation.CUSTOM_FOLDERS,
+                    SearchLocation.OVERRIDE,
+                    SearchLocation.CUSTOM_MODULES,
+                ]
             search = installation.resource(
                 resname,
                 restype,
-                [
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.CUSTOM_MODULES,
-                    SearchLocation.CUSTOM_FOLDERS,
-                ],
+                search_order,
                 folders=[self.mod_path],
                 capsules=[] if capsule is None else [capsule],
             )
