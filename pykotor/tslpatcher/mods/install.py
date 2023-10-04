@@ -30,9 +30,9 @@ def create_backup(
 ):  # sourcery skip: extract-method
     destination_file_str = str(destination_filepath)
     destination_file_str_lower = destination_file_str.lower()
+    subdirectory_backup_path = None
     if subdirectory_path:
         subdirectory_backup_path = backup_folderpath / subdirectory_path
-        subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
         backup_filepath = subdirectory_backup_path / destination_filepath.name
     else:
         backup_filepath = backup_folderpath / destination_filepath.name
@@ -46,6 +46,8 @@ def create_backup(
             i += 1
 
         log.add_note(f"Backing up '{destination_file_str}'...")
+        if subdirectory_backup_path:
+            subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
         shutil.copy(destination_filepath, backup_filepath)
     else:
         # Write a list of files that should be removed in order to uninstall the mod
@@ -66,14 +68,14 @@ def create_backup(
 
 
 def write_powershell_uninstall_script(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: PurePath):
-    with uninstall_folder.joinpath("restore_backup.ps1").open("w") as f:
+    with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
         f.write(
             rf"""
 $backupParentFolder = Get-Item -Path "..$([System.IO.Path]::DirectorySeparatorChar)backup"
 $mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder.FullName -Directory | ForEach-Object {{
     $dirName = $_.Name
     try {{
-        [datetime]$dt = [datetime]::ParseExact($dirName, "yyyy-MM-dd_HH-mm-ss", $null)
+        [datetime]$dt = [datetime]::ParseExact($dirName, "yyyy-MM-dd_HH.mm.ss", $null)
         Write-Host "Found backup '$dirName'"
         return [PSCustomObject]@{{
             Directory = $_.FullName
@@ -109,7 +111,7 @@ foreach ($file in $filesToDelete) {{
         if (Test-Path $file -ErrorAction SilentlyContinue) {{
             $existingFiles += $file
         }} else {{
-            #Write-Host "WARNING! $file no longer exists, running this script is not recommended!"
+            #Write-Host "WARNING! $file no longer exists! Running this script is no longer recommended!"
         }}
     }}
 }}
@@ -150,14 +152,6 @@ if ($fileCount -lt 6) {{
         $relativePath = $_.FullName -replace [regex]::Escape($mostRecentBackupFolder), ""
         Write-Host $relativePath.TrimStart("\")
     }}
-}}
-
-$confirmation = Read-Host "Would you like to restore your most recent backup (containing $fileCount files and $folderCount folders)?"
-
-
-if ($confirmation.ToLower() -notin $validConfirmations) {{
-    Write-Host "Operation cancelled."
-    exit
 }}
 
 foreach ($file in $allItemsInBackup) {{
