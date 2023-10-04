@@ -172,9 +172,10 @@ class AddStructToListGFF(ModifyGFF):
         if self.index_to_token is not None:
             memory.memory_2da[self.index_to_token] = str(len(list_container) - 1)
 
-        for add_field in self.modifiers:
+        add_field: AddFieldGFF | AddStructToListGFF
+        for add_field in self.modifiers:  # type: ignore[ModifyFieldGFF never should be in modifiers]
             # if add_field.path.name == ">>##INDEXINLIST##<<":  # noqa=ERA001 type: ignore[]
-            add_field.path = self.path / str(len(list_container) - 1)  # type: ignore[]
+            add_field.path = self.path / str(len(list_container) - 1)
             add_field.apply(root_struct, memory, logger)
 
 
@@ -255,7 +256,8 @@ class AddFieldGFF(ModifyGFF):
         }
         func_map[self.field_type]()
 
-        for add_field in self.modifiers:
+        add_field: AddFieldGFF | AddStructToListGFF
+        for add_field in self.modifiers:  # type: ignore[ModifyFieldGFF never should be in modifiers]
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part

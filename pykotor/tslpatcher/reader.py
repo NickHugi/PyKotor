@@ -486,7 +486,7 @@ class ConfigReader:
             key = key[: key.index("(lang")]
         elif key.startswith("2DAMEMORY"):
             if value != "!FieldPath":
-                msg = "Cannot assign 2DAMEMORY here to anything except a !FieldPath"
+                msg = f"Cannot assign {value} to 2DAMEMORY here, GFFList only supports !FieldPath"
                 raise ValueError(msg)
             value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
@@ -498,7 +498,6 @@ class ConfigReader:
         ini_data: dict[str, str],
         inside_list: bool = False,
         current_path: PureWindowsPath | None = None,
-        parent_path: PureWindowsPath | None = None,
     ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
