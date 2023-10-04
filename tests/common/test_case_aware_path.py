@@ -18,6 +18,8 @@ class TestCaseAwarePath(unittest.TestCase):
         path2 = CaseAwarePath("tesT\\PATH\\to\\noTHinG")
 
         test_set = {path1, path2}
+        self.assertEqual(path1, path2)
+        self.assertEqual(hash(path1), hash(path2))
         self.assertSetEqual(test_set, {CaseAwarePath("TEST\\path\\to\\nothing")})
 
     def test_valid_name_property(self):

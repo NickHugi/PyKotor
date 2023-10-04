@@ -82,6 +82,8 @@ def create_case_insensitive_pathlib_class(cls):
         "__setattribute__",
         "__str__",
         "__repr__",
+        "_fix_path_formatting",
+        "__eq__",
         "__hash__",
         "__getattr__",
         "__setattr__",
@@ -252,13 +254,13 @@ class CaseAwarePath(Path):
 
     def __hash__(self):
         """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
-        return hash((self.__class__.__name__, super().__str__().lower()))
+        path_hash = hash((self.__class__.__name__, super().__str__().lower()))
+        return path_hash  # noqa: RET504
 
     def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their paths are case-insensitive equivalents."""
-        return isinstance(other, pathlib.PurePath) and self._fix_path_formatting(str(other)).lower() == self._fix_path_formatting(
-            super().__str__().lower(),
-        )
+        is_equal = isinstance(other, pathlib.PurePath) and self._fix_path_formatting(str(other)).lower() == super().__str__().lower()
+        return is_equal  # noqa: RET504
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__str__().lower()})"
