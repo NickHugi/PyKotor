@@ -90,7 +90,7 @@ class ModifyGFF(ABC):
         path = PureWindowsPath(path)
         for step in path.parts:
             if isinstance(container, GFFStruct):
-                container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
+                container = container.acquire(step, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
                 container = container.at(int(step))
 
@@ -106,7 +106,7 @@ class ModifyGFF(ABC):
 
         for step in path.parent.parts:
             if isinstance(container, GFFStruct):
-                container = container.acquire(step, None, (GFFStruct, GFFList))  # type: ignore
+                container = container.acquire(step, None, (GFFStruct, GFFList))
             elif isinstance(container, GFFList):
                 container = container.at(int(step))
             else:
@@ -138,15 +138,14 @@ class AddStructToListGFF(ModifyGFF):
         logger: PatchLogger,
     ) -> None:
         new_struct: GFFStruct | None = None
-        container = self._navigate_containers(container, self.path) if self.path else container  # type: ignore[should always be GFFList]
+        container = self._navigate_containers(container, self.path) if self.path else container  # type: ignore[already checking if GFFList]
         if not isinstance(container, GFFList):
             reason: str = "does not exist!" if container is None else "is not a GFF list!"
             logger.add_error(f"[{self.identifier}] Unable to add struct! '{self.path}' {reason}")
             return
-        if isinstance(container, GFFList):
-            new_struct = container.add(self.struct_id)
-            if self.index_to_token is not None:
-                memory.memory_2da[self.index_to_token] = str(len(container) - 1)
+        new_struct = container.add(self.struct_id)
+        if self.index_to_token is not None:
+            memory.memory_2da[self.index_to_token] = str(len(container) - 1)
 
         if not isinstance(new_struct, GFFStruct):
             logger.add_error(
@@ -189,7 +188,7 @@ class AddFieldGFF(ModifyGFF):
             )  # type: ignore[container type]
         if not isinstance(container, GFFStruct):
             reason: str = "does not exist!" if container is None else "is not an instance of a GFFStruct."
-            logger.add_error(f"Unable to add new Field '{self.label}'. Parent field at '{self.path}' {reason}")
+            logger.add_error(f"Unable to add new Field '{self.label}'. The parent '{self.path}' {reason}")
             return
 
         value = self.value.value(memory, self.field_type)
@@ -284,8 +283,12 @@ class ModifyFieldGFF(ModifyGFF):
         parent_gff_struct = self._navigate_containers(container, self.path.parent) or container
 
         container_is_correct_type = isinstance(parent_gff_struct, GFFStruct)
-        if not container_is_correct_type or not parent_gff_struct._fields.get(label):
-            logger.add_error(f"Unable to find a field label matching '{label}', skipping...")
+        if not container_is_correct_type:
+            reason: str = "does not exist!" if container is None else "is not an instance of a GFFStruct."
+            logger.add_error(f"Unable to add new Field '{label}'. The parent '{self.path}' {reason}")
+            return
+        if not parent_gff_struct._fields.get(label):
+            logger.add_error(f"Unable to find a struct matching '{self.path}', skipping...")
             return
 
         field_type = parent_gff_struct._fields[label].field_type()
