@@ -821,7 +821,7 @@ class NamespaceReader:
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        ini.optionxform = lambda optionstr: optionstr.lower()  # use case sensitive keys
 
         ini_file_bytes = BinaryReader.load_file(path)
         encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") if chardet else None
@@ -842,18 +842,31 @@ class NamespaceReader:
 
         return NamespaceReader(ini).load()
 
-    def load(self) -> list[PatcherNamespace]:
-        namespace_ids = dict(self.ini["Namespaces"].items()).values()
+    def load(self) -> list[PatcherNamespace]:  # Case-insensitive access to section
+        section_key = next((section for section in self.ini.sections() if section.lower() == "namespaces"), None)
+        if section_key is None:
+            msg = "'namespaces' section not found in INI file."
+            raise KeyError(msg)
+        namespace_ids = dict(self.ini[section_key].items()).values()
         namespaces: list[PatcherNamespace] = []
 
         for namespace_id in namespace_ids:
+            # Case-insensitive access to namespace_id
+            namespace_section_key = next(
+                (section for section in self.ini.sections() if section.lower() == namespace_id.lower()),
+                None,
+            )
+            if namespace_section_key is None:
+                msg = f"'{namespace_id}' section not found in INI file."
+                raise KeyError(msg)
+
             namespace = PatcherNamespace()
-            namespace.namespace_id = namespace_id
-            namespace.ini_filename = self.ini[namespace_id]["IniName"]
-            namespace.info_filename = self.ini[namespace_id]["InfoName"]
-            namespace.data_folderpath = self.ini[namespace_id].get("DataPath")
-            namespace.name = self.ini[namespace_id].get("Name")
-            namespace.description = self.ini[namespace_id].get("Description")
+            namespace.namespace_id = namespace_section_key
+            namespace.ini_filename = self.ini[namespace_section_key]["IniName"]
+            namespace.info_filename = self.ini[namespace_section_key]["InfoName"]
+            namespace.data_folderpath = self.ini[namespace_section_key].get("DataPath")
+            namespace.name = self.ini[namespace_section_key].get("Name")
+            namespace.description = self.ini[namespace_section_key].get("Description")
             namespaces.append(namespace)
 
         return namespaces

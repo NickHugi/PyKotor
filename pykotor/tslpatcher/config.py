@@ -159,7 +159,7 @@ class ModInstaller:
 
         encoding = "utf8"
         if chardet:
-            encoding = chardet.detect(ini_file_bytes).get("encoding") or encoding
+            encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") or encoding
         ini_data: str | None = None
         try:
             ini_data = ini_file_bytes.decode(encoding)
@@ -196,10 +196,16 @@ class ModInstaller:
         while not backup_dir.joinpath("tslpatchdata").exists() and backup_dir.parent.name:
             backup_dir = backup_dir.parent
         uninstall_dir = backup_dir.joinpath("uninstall")
-        if uninstall_dir.exists():
-            shutil.rmtree(uninstall_dir)
+        try:
+            if uninstall_dir.exists():
+                shutil.rmtree(uninstall_dir)
+        except PermissionError as e:
+            self.log.add_warning(f"Could not initialize backup folder: {e}")
         backup_dir = backup_dir / "backup" / timestamp
-        backup_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            backup_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError as e:
+            self.log.add_warning(f"Could not create backup folder: {e}")
         self.log.add_note(f"Using backup directory: '{backup_dir}'")
 
         processed_files = set()
@@ -272,15 +278,32 @@ class ModInstaller:
             if is_capsule_file(gff_patch.destination.name):
                 capsule = Capsule(gff_output_container_path)
 
+            # TSLPatcher follows the following behavior:
+            # if !ReplaceFile=0:
+            # 1. Get the resource from the Modules (if we're patching to one).
+            # 2. Get the resource from Override (if we're patching there).
+            # 3. If still not found, get it from tslpatchdata
+            # if !ReplaceFile=1:
+            # 1. Get the resource from tslpatchdata.
+            # 2. If not found, get the resource from the Module we're patching (if we're patching to one).
+            # 3. If still not found, get the resource from Override (if we're patching there)
+            game_resource_location = SearchLocation.OVERRIDE if capsule is None else SearchLocation.CUSTOM_MODULES
+            if gff_patch.replace_file:
+                search_order = [
+                    SearchLocation.CUSTOM_FOLDERS,
+                    game_resource_location,
+                ]
+            else:
+                search_order = [
+                    game_resource_location,
+                    SearchLocation.CUSTOM_FOLDERS,
+                ]
+
             resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
             search = installation.resource(
                 resname,
                 restype,
-                [
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.CUSTOM_MODULES,
-                    SearchLocation.CUSTOM_FOLDERS,
-                ],
+                search_order,
                 folders=[self.mod_path],
                 capsules=[] if capsule is None else [capsule],
             )
@@ -334,15 +357,15 @@ class ModInstaller:
             ncs_compiled_filename = f"{nss_patch.filename.rsplit('.', 1)[0]}.ncs"
 
             if is_capsule_file(nss_output_container_path.name):
-                capsule = Capsule(rel_output_container_path)
+                capsule = Capsule(nss_output_container_path)
                 create_backup(
                     self.log,
-                    rel_output_container_path,
+                    nss_output_container_path,
                     backup_dir,
                     processed_files,
                     rel_output_container_path.parent,
                 )
-                if not rel_output_container_path.exists():
+                if not nss_output_container_path.exists():
                     self.log.add_warning(
                         f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{nss_patch.filename}'. Please note that TSLPatcher would have errored in this scenario!"
                         " This most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
@@ -350,7 +373,7 @@ class ModInstaller:
             else:
                 create_backup(
                     self.log,
-                    rel_output_container_path / ncs_compiled_filename,
+                    nss_output_container_path / ncs_compiled_filename,
                     backup_dir,
                     processed_files,
                     rel_output_container_path,
@@ -367,7 +390,7 @@ class ModInstaller:
             nss_patch.apply(nss, memory, self.log)
 
             self.write(
-                rel_output_container_path,
+                nss_output_container_path,
                 ncs_compiled_filename,
                 bytes_ncs(compile_nss(nss[0], installation.game())),
                 nss_patch.replace_file,
