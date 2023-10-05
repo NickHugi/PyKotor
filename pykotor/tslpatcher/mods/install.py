@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import os
 import shutil
 import threading
 from pathlib import PurePath
@@ -12,8 +13,6 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
 
 if TYPE_CHECKING:
-    import os
-
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
 
@@ -68,9 +67,11 @@ def create_backup(
 
 
 def write_powershell_uninstall_script(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: PurePath):
-    with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
-        f.write(
-            rf"""
+    if os.name == "nt":
+        with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
+            f.write(
+                rf"""
+#!/usr/bin/env pwsh
 $backupParentFolder = Get-Item -Path "..$([System.IO.Path]::DirectorySeparatorChar)backup"
 $mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder.FullName -Directory | ForEach-Object {{
     $dirName = $_.Name
@@ -105,40 +106,21 @@ if (-not (Test-Path $deleteListFile -ErrorAction SilentlyContinue)) {{
 }}
 
 $filesToDelete = Get-Content $deleteListFile
-$existingFiles = @()
+$existingFiles = New-Object System.Collections.Generic.HashSet[string]
 foreach ($file in $filesToDelete) {{
     if ($file) {{ # Check if $file is non-null and non-empty
         if (Test-Path $file -ErrorAction SilentlyContinue) {{
-            $existingFiles += $file
+            # Check if the path is not a directory
+            if (-not (Get-Item $file).PSIsContainer) {{
+                $existingFiles.Add($file) | Out-Null
+            }}
         }} else {{
-            #Write-Host "WARNING! $file no longer exists! Running this script is no longer recommended!"
+            Write-Host "WARNING! $file no longer exists! Running this script is no longer recommended!"
         }}
     }}
 }}
 
 $numberOfExistingFiles = $existingFiles.Count
-
-$validConfirmations = @("y", "yes")
-if ($numberOfExistingFiles -gt 0) {{
-    $confirmation = Read-Host "Really uninstall $numberOfExistingFiles files?"
-    if ($confirmation.ToLower() -notin $validConfirmations) {{
-        Write-Host "Operation cancelled."
-        exit
-    }}
-}}
-
-$deletedCount = 0
-foreach ($file in $existingFiles) {{
-    if ($file -and (Test-Path $file -ErrorAction SilentlyContinue)) {{
-        Remove-Item $file -Force
-        Write-Host "Removed $file..."
-        $deletedCount++
-    }}
-}}
-
-if ($deletedCount -ne 0) {{
-    Write-Host "Deleted $deletedCount files."
-}}
 
 $allItemsInBackup = Get-ChildItem -Path $mostRecentBackupFolder -Recurse | Where-Object {{ $_.Name -ne 'remove these files.txt' }}
 $fileCount = ($allItemsInBackup | Where-Object {{ -not $_.PSIsContainer }}).Count
@@ -152,6 +134,26 @@ if ($fileCount -lt 6) {{
         $relativePath = $_.FullName -replace [regex]::Escape($mostRecentBackupFolder), ""
         Write-Host $relativePath.TrimStart("\")
     }}
+}}
+
+$validConfirmations = @("y", "yes")
+$confirmation = Read-Host "Really uninstall $numberOfExistingFiles files and restore the most recent backup (containing $fileCount files and $folderCount folders)?"
+if ($confirmation.ToLower() -notin $validConfirmations) {{
+    Write-Host "Operation cancelled."
+    exit
+}}
+
+$deletedCount = 0
+foreach ($file in $existingFiles) {{
+    if ($file -and (Test-Path $file -ErrorAction SilentlyContinue)) {{
+        Remove-Item $file -Force
+        Write-Host "Removed $file..."
+        $deletedCount++
+    }}
+}}
+
+if ($deletedCount -ne 0) {{
+    Write-Host "Deleted $deletedCount files."
 }}
 
 foreach ($file in $allItemsInBackup) {{
@@ -174,9 +176,98 @@ foreach ($file in $allItemsInBackup) {{
 }}
 Pause
 
-
 """,
-        )
+            )
+    elif os.name == "posix":
+        with uninstall_folder.joinpath("uninstall.sh").open("w", newline="\n") as f:
+            f.write(
+                rf"""
+#!/bin/bash
+
+backupParentFolder="../backup"
+mostRecentBackupFolder=$(ls -d "$backupParentFolder"/* | while read -r dir; do
+    dirName=$(basename "$dir")
+    if [[ "$dirName" =~ ^[0-9]{{4}}-[0-9]{{2}}-[0-9]{{2}}_[0-9]{{2}}\.[0-9]{{2}}\.[0-9]{{2}}$ ]]; then
+        # Convert the directory name to a sortable format YYYYMMDDHHMMSS and echo both the sortable format and the original directory
+        echo "${{dirName:0:4}}${{dirName:5:2}}${{dirName:8:2}}${{dirName:11:2}}${{dirName:14:2}}${{dirName:17:2}} $dir"
+    else
+        if [[ -n "$dirName" && ! "$dirName" =~ ^[[:space:]]*$ ]]; then
+            echo "Ignoring directory '$dirName'" >&2
+        fi
+    fi
+done | sort -r | awk 'NR==1 {{print $2}}')
+
+
+
+if [[ ! -d "$mostRecentBackupFolder" ]]; then
+    mostRecentBackupFolder="{backup_dir}"
+    if [[ ! -d "$mostRecentBackupFolder" ]]; then
+        echo "No backups found in '$backupParentFolder'"
+        exit 1
+    fi
+    echo "Using hardcoded backup dir: '$mostRecentBackupFolder'"
+else
+    echo "Selected backup folder '$mostRecentBackupFolder'"
+fi
+
+deleteListFile="$mostRecentBackupFolder/remove these files.txt"
+if [[ ! -f "$deleteListFile" ]]; then
+    echo "File list not found."
+    exit 1
+fi
+
+declare -a filesToDelete
+mapfile -t filesToDelete < "$deleteListFile"
+existingFiles=()
+for file in "${{filesToDelete[@]}}"; do
+    if [[ -n "$file" && -f "$file" ]]; then
+        existingFiles+=("$file")
+    else
+        echo "WARNING! $file no longer exists! Running this script is no longer recommended!"
+    fi
+done
+
+fileCount=$(find "$mostRecentBackupFolder" -type f ! -name 'remove these files.txt' | wc -l)
+folderCount=$(find "$mostRecentBackupFolder" -type d | wc -l)
+
+# Display relative file paths if file count is less than 6
+if [[ $fileCount -lt 6 ]]; then
+    find "$mostRecentBackupFolder" -type f ! -name 'remove these files.txt' | sed "s|^$mostRecentBackupFolder/||"
+fi
+
+read -rp "Really uninstall ${{#existingFiles[@]}} files and restore the most recent backup (containing $fileCount files and $folderCount folders)? " confirmation
+if [[ "$confirmation" != "y" && "$confirmation" != "yes" ]]; then
+    echo "Operation cancelled."
+    exit 1
+fi
+
+deletedCount=0
+for file in "${{existingFiles[@]}}"; do
+    if [[ -f "$file" ]]; then
+        rm -f "$file"
+        echo "Removed $file..."
+        ((deletedCount++))
+    fi
+done
+
+if [[ $deletedCount -ne 0 ]]; then
+    echo "Deleted $deletedCount files."
+fi
+
+while IFS= read -r -d $'\0' file; do
+    relativePath=${{file#$mostRecentBackupFolder}}
+    destinationPath="{main_folder}$relativePath"
+    destinationDir=$(dirname "$destinationPath")
+    if [[ ! -d "$destinationDir" ]]; then
+        mkdir -p "$destinationDir"
+    fi
+    cp "$file" "$destinationPath" && echo "Restoring backup of '$(basename $file)' to '$destinationDir'..."
+done < <(find "$mostRecentBackupFolder" -type f ! -name 'remove these files.txt' -print0)
+
+read -rp "Press enter to continue..."
+
+    """,
+            )
 
 
 class InstallFile:
