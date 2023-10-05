@@ -409,7 +409,12 @@ parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any u
 parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is ignored)")
 parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
 parser.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
-parser.add_argument("--use-profiler", type=bool, default=False, help="Use cProfile to profile this differ")
+parser.add_argument(
+    "--use-profiler",
+    type=bool,
+    default=False,
+    help="Use cProfile to find where most of the execution time is taking place in source code.",
+)
 
 parser_args, unknown = parser.parse_known_args()
 while True:
@@ -417,7 +422,7 @@ while True:
         parser_args.path1
         or (unknown[0] if len(unknown) > 0 else None)
         or input("Path to the first K1/TSL install, file, or directory to diff: ")
-        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor",
+        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
     ).resolve()
     if parser_args.path1.exists():
         break
@@ -429,7 +434,7 @@ while True:
         parser_args.path2
         or (unknown[1] if len(unknown) > 1 else None)
         or input("Path to the second K1/TSL install, file, or directory to diff: ")
-        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor - PyKotor",
+        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II - PyKotor",
     ).resolve()
     if parser_args.path2.exists():
         break
