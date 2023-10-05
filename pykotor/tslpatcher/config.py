@@ -278,18 +278,28 @@ class ModInstaller:
             if is_capsule_file(gff_patch.destination.name):
                 capsule = Capsule(gff_output_container_path)
 
-            resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
-            search_order = [
-                SearchLocation.OVERRIDE,
-                SearchLocation.CUSTOM_MODULES,
-                SearchLocation.CUSTOM_FOLDERS,
-            ]
+            # TSLPatcher follows the following behavior:
+            # if !ReplaceFile=0:
+            # 1. Get the resource from the Modules (if we're patching to one).
+            # 2. Get the resource from Override (if we're patching there).
+            # 3. If still not found, get it from tslpatchdata
+            # if !ReplaceFile=1:
+            # 1. Get the resource from tslpatchdata.
+            # 2. If not found, get the resource from the Module we're patching (if we're patching to one).
+            # 3. If still not found, get the resource from Override (if we're patching there)
+            game_resource_location = SearchLocation.OVERRIDE if capsule is None else SearchLocation.CUSTOM_MODULES
             if gff_patch.replace_file:
                 search_order = [
                     SearchLocation.CUSTOM_FOLDERS,
-                    SearchLocation.OVERRIDE,
-                    SearchLocation.CUSTOM_MODULES,
+                    game_resource_location,
                 ]
+            else:
+                search_order = [
+                    game_resource_location,
+                    SearchLocation.CUSTOM_FOLDERS,
+                ]
+
+            resname, restype = ResourceIdentifier.from_path(gff_patch.filename)
             search = installation.resource(
                 resname,
                 restype,
