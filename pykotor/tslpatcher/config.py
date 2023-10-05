@@ -159,7 +159,7 @@ class ModInstaller:
 
         encoding = "utf8"
         if chardet:
-            encoding = chardet.detect(ini_file_bytes).get("encoding") or encoding
+            encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") or encoding
         ini_data: str | None = None
         try:
             ini_data = ini_file_bytes.decode(encoding)
@@ -196,10 +196,16 @@ class ModInstaller:
         while not backup_dir.joinpath("tslpatchdata").exists() and backup_dir.parent.name:
             backup_dir = backup_dir.parent
         uninstall_dir = backup_dir.joinpath("uninstall")
-        if uninstall_dir.exists():
-            shutil.rmtree(uninstall_dir)
+        try:
+            if uninstall_dir.exists():
+                shutil.rmtree(uninstall_dir)
+        except PermissionError as e:
+            self.log.add_warning(f"Could not initialize backup folder: {e}")
         backup_dir = backup_dir / "backup" / timestamp
-        backup_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            backup_dir.mkdir(parents=True, exist_ok=True)
+        except PermissionError as e:
+            self.log.add_warning(f"Could not create backup folder: {e}")
         self.log.add_note(f"Using backup directory: '{backup_dir}'")
 
         processed_files = set()

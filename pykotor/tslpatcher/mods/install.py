@@ -47,7 +47,10 @@ def create_backup(
         log.add_note(f"Backing up '{destination_file_str}'...")
         if subdirectory_backup_path:
             subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
-        shutil.copy(destination_filepath, backup_filepath)
+        try:
+            shutil.copy(destination_filepath, backup_filepath)
+        except PermissionError as e:
+            log.add_warning(f"Failed to create backup of '{destination_file_str}': {e}")
     else:
         # Write a list of files that should be removed in order to uninstall the mod
         uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
