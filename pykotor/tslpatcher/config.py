@@ -117,6 +117,9 @@ class PatcherNamespace:
         self.name: str = ""
         self.description: str = ""
 
+    def __str__(self):
+        return self.name
+
 
 class ModInstaller:
     def __init__(
