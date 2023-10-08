@@ -1,19 +1,25 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tkinter as tk
 from configparser import ConfigParser
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
+from typing import TYPE_CHECKING
 
 # required for below imports to find pykotor
 sys.path.append(".")
 
-from pykotor.tools.path import CaseAwarePath  # noqa: E402
+from pykotor.common.misc import Game  # noqa: E402
+from pykotor.tools.path import CaseAwarePath, locate_game_path  # noqa: E402
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace  # noqa: E402
 from pykotor.tslpatcher.logger import PatchLogger  # noqa: E402
 from pykotor.tslpatcher.reader import NamespaceReader  # noqa: E402
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class App(tk.Tk):
@@ -35,8 +41,10 @@ class App(tk.Tk):
         self.namespaces_combobox = ttk.Combobox(self, state="readonly")
         self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
 
-        self.gamepath_entry = ttk.Entry(self)
-        self.gamepath_entry.place(x=5, y=35, width=310, height=25)
+        self.gamepaths = ttk.Combobox(self, state="readonly")
+        self.gamepaths.place(x=5, y=35, width=310, height=25)
+        self.default_game_paths = locate_game_path()
+        self.gamepaths["values"] = (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K1])
 
         self.description_text = tk.Text(self, state="disabled", wrap="none")
         self.description_text.place(x=5, y=65, width=390, height=400)
@@ -47,6 +55,17 @@ class App(tk.Tk):
         ttk.Progressbar(self).place(x=85, y=470, width=310, height=25)
 
         self.open_mod(CaseAwarePath.cwd())
+
+    def extract_lookup_game_number(self, changes_path: Path):
+        if not changes_path.exists():
+            return None
+        pattern = r"LookupGameNumber=(\d+)"
+        with changes_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                match = re.search(pattern, line)
+                if match:
+                    return int(match[1])
+        return None
 
     def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
         try:
@@ -95,8 +114,7 @@ class App(tk.Tk):
         if not directory.joinpath("chitin.key").exists():
             messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
             return
-        self.gamepath_entry.delete(0, tk.END)
-        self.gamepath_entry.insert(0, str(directory))
+        self.gamepaths["values"] = [str(directory)]
 
     def begin_install(self) -> None:
         try:
@@ -111,7 +129,7 @@ class App(tk.Tk):
         if not self.mod_path:
             messagebox.showinfo("No mod chosen", "Select your mod directory before starting an install")
             return
-        game_path = self.gamepath_entry.get()
+        game_path = self.gamepaths.get()
         if not game_path:
             messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
             return
@@ -158,6 +176,21 @@ class App(tk.Tk):
         self.namespaces_combobox["values"] = namespaces
         self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
         self.namespaces = namespaces
+        namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+        game_number: int | None
+        if namespace_option.data_folderpath:
+            game_number = self.extract_lookup_game_number(CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.data_folderpath, namespace_option.ini_filename))
+        else:
+            game_number = self.extract_lookup_game_number(CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename))
+        if game_number:
+            game = Game(game_number)
+            prechosen_gamepath = self.gamepaths.get()
+            self.gamepaths["values"] = [str(path) for path in self.default_game_paths[game]]
+            if prechosen_gamepath in self.gamepaths["values"]:
+                self.gamepaths.set(prechosen_gamepath)
+            else:
+                self.gamepaths.set("")
+
 
     def write_log(self, message: str) -> None:
         self.description_text.config(state="normal")

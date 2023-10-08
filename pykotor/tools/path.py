@@ -350,7 +350,7 @@ elif os.name == "nt":
     CaseAwarePath = Path  # type: ignore[pylance_reportGeneralTypeIssues]
 
 
-def locate_game_path(game: Game) -> CaseAwarePath | None:
+def locate_game_path():
     from pykotor.common.misc import Game
 
     locations = {
@@ -402,5 +402,4 @@ def locate_game_path(game: Game) -> CaseAwarePath | None:
         },
     }
 
-    potential = locations[platform.system()][game]
-    return next((path for path in potential if path.exists()), None)
+    return locations[platform.system()]
