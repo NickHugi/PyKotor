@@ -173,7 +173,7 @@ class ModInstaller:
                 try:
                     ini_data = ini_file_bytes.decode("windows-1252")
                 except UnicodeDecodeError:
-                    print(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
+                    self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
                     ini_data = ini_file_bytes.decode(errors="replace")
         ini_text = ini_data
 
