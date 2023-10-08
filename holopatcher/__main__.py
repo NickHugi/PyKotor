@@ -65,19 +65,22 @@ class App(tk.Tk):
         self.open_mod(CaseAwarePath.cwd())
 
     def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
-        directory_path_str = default_directory_path_str or filedialog.askdirectory()
-        self.mod_path = directory_path_str
-
-        tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
-        # handle when a user selects 'tslpatchdata' instead of mod root
-        if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
-            tslpatchdata_path = tslpatchdata_path.parent
-            self.mod_path = str(tslpatchdata_path.parent)
-
-        namespace_path = tslpatchdata_path / "namespaces.ini"
-        changes_path = tslpatchdata_path / "changes.ini"
-
         try:
+            directory_path_str = default_directory_path_str or filedialog.askdirectory()
+            if not directory_path_str:
+                return
+
+            self.mod_path = directory_path_str
+
+            tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
+            # handle when a user selects 'tslpatchdata' instead of mod root
+            if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+                tslpatchdata_path = tslpatchdata_path.parent
+                self.mod_path = str(tslpatchdata_path.parent)
+
+            namespace_path = tslpatchdata_path / "namespaces.ini"
+            changes_path = tslpatchdata_path / "changes.ini"
+
             if namespace_path.exists():
                 namespaces = NamespaceReader.from_filepath(namespace_path)
                 self.load_namespace(namespaces)
@@ -85,9 +88,9 @@ class App(tk.Tk):
                 namespaces = self.build_changes_as_namespace(changes_path)
                 self.load_namespace([namespaces])
             else:
-                if not default_directory_path_str and directory_path_str:
-                    messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 self.mod_path = ""
+                if not default_directory_path_str:  # don't show the error if the cwd was attempted
+                    messagebox.showerror("Error", "Could not find a mod located at the given folder.")
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {e}")
 
@@ -129,12 +132,23 @@ class App(tk.Tk):
             messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
             return
 
-        mod_path = CaseAwarePath(self.mod_path, "tslpatchdata")
-        ini_file = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get()).ini_filename
+        tslpatchdata_root_path = CaseAwarePath(self.mod_path, "tslpatchdata")
+        namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+        ini_file_path = (
+            tslpatchdata_root_path.joinpath(
+                namespace_option.data_folderpath,
+                namespace_option.ini_filename,
+            )
+            if namespace_option.data_folderpath
+            else tslpatchdata_root_path.joinpath(
+                namespace_option.ini_filename,
+            )
+        )
+        mod_path = ini_file_path.parent
 
         self.description_text.delete(0, tk.END)
 
-        installer = ModInstaller(mod_path, game_path, ini_file, self.logger)
+        installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
         installer.install()
 
     def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
