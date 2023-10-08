@@ -7,29 +7,13 @@ from configparser import ConfigParser
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 
+# required for below imports to find pykotor
+sys.path.append("..")
 
-def is_debugging() -> bool:
-    # Check if being debugged in popular IDEs. From stackoverflow.
-    return any(
-        [
-            bool(getattr(sys, "_MEIPASS", False)),
-            bool(getattr(sys, "gettrace", None)),
-            "__pydevd__" in sys.modules,
-            "pydevconsole" in sys.modules,
-            "vscodedebugpy" in sys.modules,
-        ],
-    )
-
-
-# Append parent paths for debugging support.
-if is_debugging():
-    sys.path.append(".")
-    sys.path.append("..")
-
-from pykotor.tools.path import CaseAwarePath
-from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
-from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.reader import NamespaceReader
+from pykotor.tools.path import CaseAwarePath  # noqa: E402
+from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace  # noqa: E402
+from pykotor.tslpatcher.logger import PatchLogger  # noqa: E402
+from pykotor.tslpatcher.reader import NamespaceReader  # noqa: E402
 
 
 class App(tk.Tk):
