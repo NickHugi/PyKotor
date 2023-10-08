@@ -389,15 +389,11 @@ def locate_game_path(game: Game) -> CaseAwarePath | None:
         "Linux": {
             Game.K1: [
                 CaseAwarePath("~/.local/share/Steam/common/SteamApps/swkotor"),
-                CaseAwarePath("~/.local/share/Steam/common/steamapps/swkotor"),
                 CaseAwarePath("~/.local/share/Steam/common/swkotor"),
             ],
             Game.K2: [
                 CaseAwarePath(
                     "~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II",
-                ),
-                CaseAwarePath(
-                    "~/.local/share/Steam/common/steamapps/Knights of the Old Republic II",
                 ),
                 CaseAwarePath(
                     "~/.local/share/Steam/common/Knights of the Old Republic II",

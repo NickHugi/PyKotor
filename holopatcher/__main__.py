@@ -184,8 +184,6 @@ class App(tk.Tk):
 
 def main():
     app = App()
-    while True:
-        app.mainloop()
-
+    app.mainloop()
 
 main()
