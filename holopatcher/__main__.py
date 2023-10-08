@@ -68,8 +68,14 @@ class App(tk.Tk):
         directory_path_str = default_directory_path_str or filedialog.askdirectory()
         self.mod_path = directory_path_str
 
-        namespace_path = CaseAwarePath(directory_path_str, "tslpatchdata", "namespaces.ini")
-        changes_path = CaseAwarePath(directory_path_str, "tslpatchdata", "changes.ini")
+        tslpatchdata_path = CaseAwarePath(directory_path_str, "tslpatchdata")
+        # handle when a user selects 'tslpatchdata' instead of mod root
+        if not tslpatchdata_path.exists() and tslpatchdata_path.parent.name.lower() == "tslpatchdata":
+            tslpatchdata_path = tslpatchdata_path.parent
+            self.mod_path = str(tslpatchdata_path.parent)
+
+        namespace_path = tslpatchdata_path / "namespaces.ini"
+        changes_path = tslpatchdata_path / "changes.ini"
 
         try:
             if namespace_path.exists():
@@ -78,13 +84,18 @@ class App(tk.Tk):
             elif changes_path.exists():
                 namespaces = self.build_changes_as_namespace(changes_path)
                 self.load_namespace([namespaces])
-            elif not default_directory_path_str:
-                messagebox.showerror("Error", "Could not find a mod located at the given folder.")
+            else:
+                if not default_directory_path_str and directory_path_str:
+                    messagebox.showerror("Error", "Could not find a mod located at the given folder.")
+                self.mod_path = ""
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {e}")
 
     def open_kotor(self) -> None:
-        directory = CaseAwarePath(filedialog.askdirectory())
+        directory_path_str = filedialog.askdirectory()
+        if not directory_path_str:
+            return
+        directory = CaseAwarePath(directory_path_str)
 
         # handle possibility of user selecting a nested folder within KOTOR dir (usually override)
         # TODO: double check if chitin.key exists on mac/mobile versions.
@@ -94,6 +105,9 @@ class App(tk.Tk):
             and not directory.joinpath("chitin.key").exists()
         ):
             directory = directory.parent
+        if not directory.joinpath("chitin.key").exists():
+            messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
+            return
         self.gamepath_entry.delete(0, tk.END)
         self.gamepath_entry.insert(0, str(directory))
 
@@ -107,8 +121,15 @@ class App(tk.Tk):
             )
 
     def begin_install_thread(self):
-        mod_path = CaseAwarePath(self.mod_path, "tslpatchdata")
+        if not self.mod_path:
+            messagebox.showinfo("No mod chosen", "Select your mod directory before starting an install")
+            return
         game_path = self.gamepath_entry.get()
+        if not game_path:
+            messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
+            return
+
+        mod_path = CaseAwarePath(self.mod_path, "tslpatchdata")
         ini_file = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get()).ini_filename
 
         self.description_text.delete(0, tk.END)
