@@ -8,7 +8,7 @@ from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 
 # required for below imports to find pykotor
-sys.path.append("..")
+sys.path.append(".")
 
 from pykotor.tools.path import CaseAwarePath  # noqa: E402
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace  # noqa: E402
