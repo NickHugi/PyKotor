@@ -44,7 +44,7 @@ class App(tk.Tk):
         self.gamepaths = ttk.Combobox(self, state="readonly")
         self.gamepaths.place(x=5, y=35, width=310, height=25)
         self.default_game_paths = locate_game_path()
-        self.gamepaths["values"] = (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K1])
+        self.gamepaths["values"] = [str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()]
 
         self.description_text = tk.Text(self, state="disabled", wrap="none")
         self.description_text.place(x=5, y=65, width=390, height=400)
@@ -185,7 +185,7 @@ class App(tk.Tk):
         if game_number:
             game = Game(game_number)
             prechosen_gamepath = self.gamepaths.get()
-            self.gamepaths["values"] = [str(path) for path in self.default_game_paths[game]]
+            self.gamepaths["values"] = [str(path) for path in self.default_game_paths[game] if path.exists()]
             if prechosen_gamepath in self.gamepaths["values"]:
                 self.gamepaths.set(prechosen_gamepath)
             else:
