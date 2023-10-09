@@ -181,4 +181,5 @@
   "./toolset",
   ".",
 ],
+"python.testing.unittestEnabled": true,
 }

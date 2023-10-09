@@ -116,13 +116,15 @@ class BasePath:
                 raise TypeError(msg)
 
             formatted_path_str = cls._fix_path_formatting(path_str, cls._flavour.sep)  # type: ignore[_flavour exists in children]
-            super_object = cls._create_instance(formatted_path_str, **kwargs)  # type: ignore[pylance general]
-            args_list[i] = super_object
-        return super().__new__(cls, *args, **kwargs)
+            arg_pathlib_instance = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore  # noqa: PGH003
+            if has_attr_excluding_object(cls, "__init__"):
+                arg_pathlib_instance.__init__(formatted_path_str, **kwargs)
+            args_list[i] = arg_pathlib_instance
+        return super().__new__(cls, *args_list, **kwargs)
 
     @classmethod
     def _create_instance(cls, *args, **kwargs):
-        instance = super().__new__(cls, *args, **kwargs)  # type: ignore  # noqa: PGH003
+        instance = cls.__new__(cls, *args, **kwargs)  # type: ignore  # noqa: PGH003
         if has_attr_excluding_object(cls, "__init__"):
             instance.__init__(*args, **kwargs)
         return instance
@@ -308,10 +310,10 @@ class CaseAwarePath(Path):
             # parts in their original case.
             # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
             elif not next_path.exists():
-                return CaseAwarePath.__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
+                return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))
 
         # return a CaseAwarePath instance without infinitely recursing through the constructor
-        return CaseAwarePath.__new__(CaseAwarePath, *parts)
+        return CaseAwarePath._create_instance(*parts)
 
     @classmethod
     def _find_closest_match(cls, target, candidates: Generator[Path, None, None]) -> str:
