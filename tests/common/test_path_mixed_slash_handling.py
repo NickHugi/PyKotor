@@ -69,7 +69,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
                 # Network Paths
                 self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder\\")
-                if sys.version_info <= (3, 11):
+                if sys.version_info < (3, 12):
                     self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\server\\folder")
                     self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\server\\folder")
                 else:
@@ -93,7 +93,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
-                if sys.version_info <= (3, 11):
+                if sys.version_info < (3, 12):
                     self.assertEqual(str(PathType("//")), "\\")
                     self.assertEqual(str(PathType("///")), "\\")
                 else:
