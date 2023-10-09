@@ -46,6 +46,8 @@ def simple_wrapper(fn_name, wrapped_class_type):
         orig_fn = wrapped_class_type._original_methods[fn_name]
 
         def parse_arg(arg):
+            if isinstance(arg, str):
+                print("PARSEARG:",arg)
             if is_instance_or_subinstance(arg, PurePath) and CaseAwarePath.should_resolve_case(arg):
                 return CaseAwarePath._get_case_sensitive_path(arg)
 
@@ -117,16 +119,32 @@ class BasePath:
 
             formatted_path_str = cls._fix_path_formatting(path_str, cls._flavour.sep)  # type: ignore[_flavour exists in children]
             arg_pathlib_instance = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore  # noqa: PGH003
-            if has_attr_excluding_object(cls, "__init__"):
-                arg_pathlib_instance.__init__(formatted_path_str, **kwargs)
+            arg_pathlib_instance.__init__(formatted_path_str, **kwargs)
             args_list[i] = arg_pathlib_instance
         return super().__new__(cls, *args_list, **kwargs)
+    
+    def __init__(self, *args, _called_from_path=True):
+        if not _called_from_path:
+            return super().__init__(*args)
+        args_list = list(args)
+        for i, arg in enumerate(args_list):
+            if isinstance(arg, type(self)):
+                continue
+            path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
+            if path_str is None:
+                msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
+                raise TypeError(msg)
+
+            formatted_path_str = type(self)._fix_path_formatting(path_str, self._flavour.sep)  # type: ignore[_flavour exists in children]
+            arg_pathlib_instance = super().__new__(type(self), formatted_path_str)  # type: ignore  # noqa: PGH003
+            arg_pathlib_instance.__init__(formatted_path_str, _called_from_path=False)
+            args_list[i] = arg_pathlib_instance
+        return super().__init__(*args_list)
 
     @classmethod
     def _create_instance(cls, *args, **kwargs):
         instance = cls.__new__(cls, *args, **kwargs)  # type: ignore  # noqa: PGH003
-        if has_attr_excluding_object(cls, "__init__"):
-            instance.__init__(*args, **kwargs)
+        instance.__init__(*args, **kwargs)
         return instance
 
     def __str__(self):
@@ -282,6 +300,7 @@ class CaseAwarePath(Path):
 
     @staticmethod
     def _get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
+        print("CASESENS")
         pathlib_path: pathlib.Path = pathlib.Path(path)
         parts = list(pathlib_path.parts)
 
