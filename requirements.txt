@@ -3,13 +3,8 @@ chardet~=4.0
 numpy~=1.21
 PyGLM~=2.5
 PyOpenGL~=3.1
-setuptools~=57.4
+setuptools>=57.4
 pyperclip~=1.8
-MyPy
-ruff
-pylint
-pyinstaller
-pre-commit
 certifi==2021.10.8
 charset-normalizer~=2.0
 idna~=3.3
