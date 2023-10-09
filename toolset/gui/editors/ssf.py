@@ -1,12 +1,16 @@
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5.QtWidgets import QFileDialog, QWidget
 
-from pykotor.extract.installation import Installation
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.ssf import SSF, SSFSound, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from pykotor.extract.installation import Installation
 
 
 class SSFEditor(Editor):
@@ -90,7 +94,7 @@ class SSFEditor(Editor):
         self.ui.rejoinPartyStrrefSpin.setValue(ssf.get(SSFSound.REJOINED_PARTY))
         self.ui.poisonedStrrefSpin.setValue(ssf.get(SSFSound.POISONED))
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         ssf = SSF()
 
         ssf.set_data(SSFSound.BATTLE_CRY_1, self.ui.battlecry1StrrefSpin.value())

@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
@@ -108,7 +108,7 @@ class GITEditor(Editor):
             color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r * 255), int(color.g * 255), int(color.b * 255), int(color.a * 255))
 
-        self.materialColors: Dict[SurfaceMaterial, QColor] = {
+        self.materialColors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: intColorToQColor(self.settings.undefinedMaterialColour),
             SurfaceMaterial.OBSCURING: intColorToQColor(self.settings.obscuringMaterialColour),
             SurfaceMaterial.DIRT: intColorToQColor(self.settings.dirtMaterialColour),
@@ -131,8 +131,8 @@ class GITEditor(Editor):
             SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
             SurfaceMaterial.TRIGGER: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
         }
-        self.nameBuffer: Dict[ResourceIdentifier, str] = {}
-        self.tagBuffer: Dict[ResourceIdentifier, str] = {}
+        self.nameBuffer: dict[ResourceIdentifier, str] = {}
+        self.tagBuffer: dict[ResourceIdentifier, str] = {}
 
         self.ui.renderArea.materialColors = self.materialColors
         self.ui.renderArea.hideWalkmeshEdges = True
@@ -265,7 +265,7 @@ class GITEditor(Editor):
         self._mode = _InstanceMode(self, self._installation, self._git)
         self.updateVisibility()
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         return bytes_git(self._git), b""
 
     def new(self) -> None:
@@ -382,22 +382,22 @@ class GITEditor(Editor):
         item = self.ui.listWidget.currentItem()
         self._mode.openListContextMenu(item, globalPoint)
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         worldDelta = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         self._controls.onMouseMoved(screen, delta, world, worldDelta, buttons, keys)
         self._mode.updateStatusBar(world)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls.onMouseScrolled(delta, buttons, keys)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._controls.onMousePressed(screen, buttons, keys)
 
-    def onMouseReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseReleased(self, buttons: set[int], keys: set[int]) -> None:
         self._controls.onMouseReleased(Vector2(0, 0), buttons, keys)
 
-    def onKeyPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyPressed(self, buttons: set[int], keys: set[int]) -> None:
         self._controls.onKeyboardPressed(buttons, keys)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
@@ -483,11 +483,11 @@ class _InstanceMode(_Mode):
         self._ui.renderArea.geometrySelection.clear()
         self.updateVisibility()
 
-    def setSelection(self, instances: List[GITInstance]) -> None:
-        # Set the renderer widget selection
+    def setSelection(self, instances: list[GITInstance]) -> None:
+        # set the renderer widget selection
         self._ui.renderArea.instanceSelection.select(instances)
 
-        # Set the list widget selection
+        # set the list widget selection
         self._ui.listWidget.blockSignals(True)
         for i in range(self._ui.listWidget.count()):
             item = self._ui.listWidget.item(i)
@@ -574,7 +574,7 @@ class _InstanceMode(_Mode):
         if isinstance(instance, GITCamera):
             item.setText(str(instance.camera_id))
             return
-        elif isinstance(instance, GITCreature):
+        if isinstance(instance, GITCreature):
             if self._editor.settings.creatureLabel == "tag":
                 name = self._editor.getInstanceExternalTag(instance)
             elif self._editor.settings.creatureLabel == "name":
@@ -644,8 +644,7 @@ class _InstanceMode(_Mode):
     def getInstanceTooltip(self, instance: GITInstance) -> str:
         if isinstance(instance, GITCamera):
             return "Struct Index: {}\nCamera ID: {}".format(self._git.index(instance), instance.camera_id)
-        else:
-            return "Struct Index: {}\nResRef: {}".format(self._git.index(instance), instance.identifier().resname)
+        return "Struct Index: {}\nResRef: {}".format(self._git.index(instance), instance.identifier().resname)
 
     # region Interface Methods
     def onFilterEdited(self, text: str) -> None:
@@ -921,7 +920,7 @@ class GITControlScheme:
         self.duplicateSelected: ControlItem = ControlItem(self.settings.duplicateSelectedBind)
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if self.zoomCamera.satisfied(buttons, keys):
             self.editor.zoomCamera(delta.y / 50)
 
@@ -931,8 +930,8 @@ class GITControlScheme:
         screenDelta: Vector2,
         world: Vector2,
         worldDelta: Vector2,
-        buttons: Set[int],
-        keys: Set[int],
+        buttons: set[int],
+        keys: set[int],
     ) -> None:
         if self.panCamera.satisfied(buttons, keys):
             self.editor.moveCamera(-worldDelta.x, -worldDelta.y)
@@ -943,22 +942,22 @@ class GITControlScheme:
         if self.rotateSelectedToPoint.satisfied(buttons, keys):
             self.editor.rotateSelectedToPoint(world.x, world.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         if self.selectUnderneath.satisfied(buttons, keys):
             self.editor.selectUnderneath()
         if self.duplicateSelected.satisfied(buttons, keys):
             position = self.editor.ui.renderArea.toWorldCoords(screen.x, screen.y)
             self.editor.duplicateSelected(position)
 
-    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         ...
 
-    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
 
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
         ...

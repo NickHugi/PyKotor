@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl
@@ -23,7 +23,7 @@ QtKey = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
 
-def get_nums(string_input: str) -> List[int]:
+def get_nums(string_input: str) -> list[int]:
     """Returns the numbers stored within a string. Numbers in a string are seperated by any non-numeric character.
 
     Args:

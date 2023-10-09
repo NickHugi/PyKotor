@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from contextlib import suppress
-from typing import Optional, Tuple
+from typing import Optional
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from utils.window import openResourceEditor
@@ -135,7 +137,7 @@ class UTPEditor(Editor):
 
         self.updateItemCount()
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         utp = self._utp
 
         # Basic

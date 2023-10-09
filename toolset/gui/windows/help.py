@@ -1,9 +1,10 @@
 import json
 import os
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ElemTree
 import zipfile
 from contextlib import suppress
-from typing import Dict, Optional
+from pathlib import Path, PurePath
+from typing import Optional
 
 import markdown
 import requests
@@ -18,7 +19,7 @@ from toolset.gui.dialogs.asyncloader import AsyncLoader
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
 
-    def __init__(self, parent: Optional[QWidget], startingPage: Optional[str] = None):
+    def __init__(self, parent: Optional[QWidget], startingPage: Optional[os.PathLike] = None):
         super().__init__(parent)
 
         self.version: Optional[int] = None
@@ -45,7 +46,7 @@ class HelpWindow(QMainWindow):
         self.ui.contentsTree.clear()
 
         with suppress(Exception):
-            tree = ET.parse("./help/contents.xml")
+            tree = ElemTree.parse("./help/contents.xml")
             root = tree.getroot()
 
             self.version = root.get("version")
@@ -53,7 +54,7 @@ class HelpWindow(QMainWindow):
 
             # Old JSON code:
 
-    def _setupContentsRecJSON(self, parent: Optional[QTreeWidgetItem], data: Dict) -> None:
+    def _setupContentsRecJSON(self, parent: Optional[QTreeWidgetItem], data: dict) -> None:
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         if "structure" in data:
@@ -63,7 +64,7 @@ class HelpWindow(QMainWindow):
                 add(item)
                 self._setupContentsRecJSON(item, data["structure"][title])
 
-    def _setupContentsRecXML(self, parent: Optional[QTreeWidgetItem], element: ET.Element) -> None:
+    def _setupContentsRecXML(self, parent: Optional[QTreeWidgetItem], element: ElemTree.Element) -> None:
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         for child in element:
@@ -74,7 +75,7 @@ class HelpWindow(QMainWindow):
 
     def checkForUpdates(self) -> None:
         with suppress(Exception):
-            req = requests.get(UPDATE_INFO_LINK)
+            req = requests.get(UPDATE_INFO_LINK, timeout=120)
             updateInfoData = json.loads(req.text)
 
             if self.version is None or updateInfoData["help"]["version"] > self.version:
@@ -93,30 +94,41 @@ class HelpWindow(QMainWindow):
                         self._setupContents()
 
     def _downloadUpdate(self, link: str) -> None:
-        if not os.path.exists("./help"):
-            os.mkdir("./help")
-        response = requests.get(link, stream=True)
-        with open("./help/help.zip", "wb") as f:
+        help_zip = Path("./help", "help.zip")
+        if not help_zip.parent.exists():
+            help_zip.parent.mkdir(exist_ok=True, parents=True)
+        response = requests.get(link, stream=True, timeout=120)
+        with help_zip.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
-        with zipfile.ZipFile("./help/help.zip", "r") as zip_ref:
-            zip_ref.extractall("./help")
+        with zipfile.ZipFile(help_zip, "r") as zip_ref:
+            zip_ref.extractall(help_zip.parent)
 
-    def displayFile(self, filepath: str) -> None:
+    def displayFile(self, file_path: os.PathLike) -> None:
+        pl_file_path = file_path if isinstance(file_path, PurePath) else Path(file_path)
         try:
-            text = BinaryReader.load_file(filepath).decode()
+            text = BinaryReader.load_file(pl_file_path).decode()
             html = (
-                markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.endswith(".md") else text
+                markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"])
+                if pl_file_path.suffix.lower() == ".md"
+                else text
             )
             self.ui.textDisplay.setHtml(html)
         except (OSError, FileNotFoundError):
-            QMessageBox(QMessageBox.Critical, "Failed to open help file", "Could not access '{}'.".format(filepath)).exec_()
+            QMessageBox(
+                QMessageBox.Critical,
+                "Failed to open help file",
+                f"Could not access '{pl_file_path}'.",
+            ).exec_()
 
     def onContentsClicked(self) -> None:
         if self.ui.contentsTree.selectedItems():
             item = self.ui.contentsTree.selectedItems()[0]
-            filename = item.data(0, QtCore.Qt.UserRole)
-            if filename is not None and filename != "":
-                self.ui.textDisplay.setSearchPaths(["./help", "./help/{}".format(os.path.dirname(filename))])
-                self.displayFile(f"./help/{filename}")
+            file_path_str = item.data(0, QtCore.Qt.UserRole)
+            if file_path_str:
+                help_subvar = Path("./help", file_path_str)
+                self.ui.textDisplay.setSearchPaths(
+                    ["./help", str(help_subvar)],
+                )
+                self.displayFile(help_subvar)

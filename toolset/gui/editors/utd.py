@@ -1,4 +1,6 @@
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import Optional
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 from utils.window import openResourceEditor
@@ -120,7 +122,7 @@ class UTDEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         utd = self._utd
 
         # Basic

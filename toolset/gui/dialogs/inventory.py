@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple, Union
+from typing import TYPE_CHECKING, NamedTuple, Optional, Union
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
@@ -58,10 +58,10 @@ class InventoryEditor(QDialog):
         self,
         parent: QWidget,
         installation: HTInstallation,
-        capsules: List[Capsule],
-        folders: List[str],
-        inventory: List[InventoryItem],
-        equipment: Dict[EquipmentSlot, InventoryItem],
+        capsules: list[Capsule],
+        folders: list[str],
+        inventory: list[InventoryItem],
+        equipment: dict[EquipmentSlot, InventoryItem],
         droid: bool = False,
         hide_equipment: bool = False,
         is_store: bool = False,
@@ -86,8 +86,8 @@ class InventoryEditor(QDialog):
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)
 
         self._installation: HTInstallation = installation
-        self._capsules: List[Capsule] = capsules
-        self._slotMap: Dict[EquipmentSlot, SlotMapping] = {
+        self._capsules: list[Capsule] = capsules
+        self._slotMap: dict[EquipmentSlot, SlotMapping] = {
             EquipmentSlot.IMPLANT: SlotMapping(self.ui.implantPicture, self.ui.implantFrame, ":/images/inventory/{}_implant.png"),
             EquipmentSlot.HEAD: SlotMapping(self.ui.headPicture, self.ui.headFrame, ":/images/inventory/{}_head.png"),
             EquipmentSlot.GAUNTLET: SlotMapping(
@@ -107,8 +107,8 @@ class InventoryEditor(QDialog):
             EquipmentSlot.HIDE: SlotMapping(self.ui.hidePicture, self.ui.hideFrame, ":/images/inventory/{}_armor.png"),
         }
         self._droid = droid
-        self.inventory: List[InventoryItem] = inventory
-        self.equipment: Dict[EquipmentSlot, InventoryItem] = equipment
+        self.inventory: list[InventoryItem] = inventory
+        self.equipment: dict[EquipmentSlot, InventoryItem] = equipment
         self.is_store: bool = is_store
 
         self.ui.implantFrame.itemDropped.connect(
@@ -234,7 +234,7 @@ class InventoryEditor(QDialog):
     def getItemImage(self, uti: Optional[UTI]) -> QPixmap:
         return self._installation.getItemIconFromUTI(uti)
 
-    def getItem(self, resname: str, filepath: os.PathLike | str) -> Tuple[os.PathLike, str, UTI]:
+    def getItem(self, resname: str, filepath: os.PathLike | str) -> tuple[os.PathLike, str, UTI]:
         uti: UTI | None = None
         name: str = ""
         c_filepath = CaseAwarePath(filepath)
@@ -506,7 +506,7 @@ class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
 class ItemBuilderDialog(QDialog):
     """Popup dialog responsible for extracting a list of resources from the game files."""
 
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule]):
+    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -523,9 +523,9 @@ class ItemBuilderDialog(QDialog):
         self.coreModel = ItemModel(installation.main_window)
         self.modulesModel = ItemModel(self.parent())
         self.overrideModel = ItemModel(self.parent())
-        self._tlk: TLK = read_tlk(installation.path() + "dialog.tlk")
+        self._tlk: TLK = read_tlk(installation.path() / "dialog.tlk")
         self._installation: HTInstallation = installation
-        self._capsules: List[Capsule] = capsules
+        self._capsules: list[Capsule] = capsules
 
         self._worker = ItemBuilderWorker(installation, capsules)
         self._worker.utiLoaded.connect(self.utiLoaded)
@@ -558,37 +558,36 @@ class ItemBuilderDialog(QDialog):
 
         if slots & (EquipmentSlot.CLAW1.value | EquipmentSlot.CLAW2.value | EquipmentSlot.CLAW3.value):
             return "Creature Claw"
-        elif slots & EquipmentSlot.HEAD.value:
+        if slots & EquipmentSlot.HEAD.value:
             return "Droid Sensors" if droid else "Headgear"
-        elif slots & EquipmentSlot.IMPLANT.value and not droid:
+        if slots & EquipmentSlot.IMPLANT.value and not droid:
             return "Implants"
-        elif slots & EquipmentSlot.GAUNTLET.value and not droid:
+        if slots & EquipmentSlot.GAUNTLET.value and not droid:
             return "Gauntlets"
-        elif slots & EquipmentSlot.IMPLANT.value and droid:
+        if slots & EquipmentSlot.IMPLANT.value and droid:
             return "Droid Utilities"
-        elif slots & EquipmentSlot.LEFT_ARM.value:
+        if slots & EquipmentSlot.LEFT_ARM.value:
             return "Droid Special Weapons" if droid else "Shields"
-        elif slots & EquipmentSlot.ARMOR.value:
+        if slots & EquipmentSlot.ARMOR.value:
             return "Droid Plating" if droid else "Armor"
-        elif slots & EquipmentSlot.LEFT_HAND.value:
+        if slots & EquipmentSlot.LEFT_HAND.value:
             return "Weapons (Single)"
-        elif slots & EquipmentSlot.RIGHT_HAND.value:
+        if slots & EquipmentSlot.RIGHT_HAND.value:
             return "Weapons (Double)"
-        elif slots & EquipmentSlot.BELT.value:
+        if slots & EquipmentSlot.BELT.value:
             return "Droid Shields" if droid else "Belts"
-        elif slots & EquipmentSlot.HIDE.value:
+        if slots & EquipmentSlot.HIDE.value:
             return "Creature Hide"
-        elif slots == 0:
+        if slots == 0:
             return "Miscellaneous"
-        else:
-            return "Unknown"
+        return "Unknown"
 
 
 class ItemBuilderWorker(QThread):
     utiLoaded = QtCore.pyqtSignal(object, object)
     finished = QtCore.pyqtSignal()
 
-    def __init__(self, installation: HTInstallation, capsules: List[Capsule]):
+    def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
         super().__init__()
         self._installation = installation
         self._capsules = capsules
@@ -606,10 +605,9 @@ class ItemBuilderWorker(QThread):
         for resource in self._installation.override_resources(""):
             if resource.restype() == ResourceType.UTI:
                 queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
-        for capsule in self._capsules:
-            for resource in capsule:
-                if resource.restype() == ResourceType.UTI:
-                    queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
+        for resource in list(self._capsules):
+            if resource.restype() == ResourceType.UTI:
+                queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
         results = self._installation.resources(
             queries,

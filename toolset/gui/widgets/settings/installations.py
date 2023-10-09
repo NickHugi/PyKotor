@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import os
-from typing import Any, Dict
+from typing import Any
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
@@ -104,7 +106,7 @@ class InstallationConfig:
 
     @name.setter
     def name(self, value: str) -> None:
-        installations = self._settings.value("installations", {}, Dict[str, Any])
+        installations = self._settings.value("installations", {}, dict[str, Any])
         installation = installations[self._name]
 
         del installations[self._name]
@@ -141,7 +143,7 @@ class GlobalSettings(Settings):
     def __init__(self):
         super().__init__("Global")
 
-    def installations(self) -> Dict[str, InstallationConfig]:
+    def installations(self) -> dict[str, InstallationConfig]:
         if self.settings.value("installations", None) is None:
             self.settings.setValue(
                 "installations",
@@ -151,11 +153,7 @@ class GlobalSettings(Settings):
                 },
             )
 
-        installations = {}
-        for name in self.settings.value("installations", {}):
-            installations[name] = InstallationConfig(name)
-
-        return installations
+        return {name: InstallationConfig(name) for name in self.settings.value("installations", {})}
 
     # region Strings
     extractPath = Settings._addSetting(

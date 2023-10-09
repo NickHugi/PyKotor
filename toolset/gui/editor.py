@@ -3,7 +3,7 @@ from __future__ import annotations
 import traceback
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QIcon, QPixmap
@@ -57,8 +57,8 @@ class Editor(QMainWindow):
         parent: Optional[QWidget],
         title: str,
         iconName: str,
-        readSupported: List[ResourceType],
-        writeSupported: List[ResourceType],
+        readSupported: list[ResourceType],
+        writeSupported: list[ResourceType],
         installation: Optional[HTInstallation] = None,
         mainwindow: Optional[QMainWindow] = None,
     ):
@@ -68,8 +68,8 @@ class Editor(QMainWindow):
         self._resref: Optional[str] = None
         self._restype: Optional[ResourceType] = None
         self._revert: Optional[bytes] = None
-        self._readSupported: List[ResourceType] = readSupported
-        self._writeSupported: List[ResourceType] = writeSupported
+        self._readSupported: list[ResourceType] = readSupported
+        self._writeSupported: list[ResourceType] = writeSupported
         self._global_settings: GlobalSettings = GlobalSettings()
         self._installation: Optional[HTInstallation] = installation
         self._mainwindow = mainwindow
@@ -297,7 +297,7 @@ class Editor(QMainWindow):
                 self.load(c_filepath, resref, restype, data)
 
     @abstractmethod
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:

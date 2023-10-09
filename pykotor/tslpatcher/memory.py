@@ -28,8 +28,7 @@ class TokenUsage2DA(TokenUsage):
         self.token_id: int = token_id
 
     def value(self, memory: PatcherMemory) -> str:
-        memory_stored_str = memory.memory_2da[self.token_id]
-        return memory_stored_str
+        return memory.memory_2da[self.token_id]
 
 
 class TokenUsageTLK(TokenUsage):

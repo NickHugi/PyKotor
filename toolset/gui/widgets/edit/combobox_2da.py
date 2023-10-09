@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
@@ -31,7 +31,7 @@ class ComboBox2DA(QComboBox):
 
     def setItems(
         self,
-        values: List[str],
+        values: [str],
         sortAlphabetically: bool = True,
         cleanupStrings: bool = True,
         ignoreBlanks: bool = False,

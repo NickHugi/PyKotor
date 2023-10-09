@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Dict, List, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from PyQt5.QtGui import QImage
 from utils.misc import get_nums
@@ -20,15 +20,15 @@ if TYPE_CHECKING:
 class Kit:
     def __init__(self, name: str):
         self.name: str = name
-        self.components: List[KitComponent] = []
-        self.doors: List[KitDoor] = []
+        self.components: list[KitComponent] = []
+        self.doors: list[KitDoor] = []
         self.textures: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.lightmaps: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.txis: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
-        self.always: Dict[CaseAwarePath, bytes] = {}
-        self.side_padding: Dict[int, Dict[int, MDLMDXTuple]] = {}
-        self.top_padding: Dict[int, Dict[int, MDLMDXTuple]] = {}
-        self.skyboxes: Dict[str, MDLMDXTuple] = {}
+        self.always: dict[CaseAwarePath, bytes] = {}
+        self.side_padding: dict[int, dict[int, MDLMDXTuple]] = {}
+        self.top_padding: dict[int, dict[int, MDLMDXTuple]] = {}
+        self.skyboxes: dict[str, MDLMDXTuple] = {}
 
 
 class KitComponent:
@@ -36,7 +36,7 @@ class KitComponent:
         self.kit: Kit = kit
         self.image: QImage = image
         self.name: str = name
-        self.hooks: List[KitComponentHook] = []
+        self.hooks: list[KitComponentHook] = []
 
         self.bwm: BWM = bwm
         self.mdl: bytes = mdl
@@ -64,7 +64,7 @@ class MDLMDXTuple(NamedTuple):
     mdx: bytes
 
 
-def load_kits(path: os.PathLike | str) -> List[Kit]:
+def load_kits(path: os.PathLike | str) -> list[Kit]:
     kits = []
 
     kits_path = CaseAwarePath(path)

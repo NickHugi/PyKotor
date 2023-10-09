@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
@@ -34,7 +34,7 @@ def openResourceEditor(
     installation: Optional[HTInstallation] = None,
     parentwindow: Optional[QWidget] = None,
     gff_specialized: Optional[bool] = None,
-) -> Union[Tuple[str, QWidget], Tuple[None, None]]:
+) -> Union[tuple[str, QWidget], tuple[None, None]]:
     """Opens an editor for the specified resource. If the user settings have the editor set to inbuilt it will return
     the editor, otherwise it returns None.
 

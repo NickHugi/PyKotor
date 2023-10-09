@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import math
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 
 from pykotor.common.geometry import Vector2
@@ -10,12 +11,14 @@ from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.read_mdl import gl_load_mdl
 from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
-from pykotor.resource.generics.utc import UTC
 from toolset.data.misc import ControlItem
 from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 
 if TYPE_CHECKING:
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+
     from pykotor.extract.installation import Installation
+    from pykotor.resource.generics.utc import UTC
 
 
 class ModelRenderer(QOpenGLWidget):
@@ -27,8 +30,8 @@ class ModelRenderer(QOpenGLWidget):
         self._modelToLoad = None
         self._creatureToLoad = None
 
-        self._keysDown: Set[int] = set()
-        self._mouseDown: Set[int] = set()
+        self._keysDown: set[int] = set()
+        self._mouseDown: set[int] = set()
         self._mousePrev: Vector2 = Vector2(0, 0)
 
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()

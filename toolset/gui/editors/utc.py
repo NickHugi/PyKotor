@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from contextlib import suppress
-from typing import Optional, Tuple
+from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
@@ -276,7 +278,7 @@ class UTCEditor(Editor):
         # Comments
         self.ui.comments.setPlainText(utc.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         utc = self._utc
 
         utc.first_name = self.ui.firstnameEdit.locstring()
@@ -487,16 +489,14 @@ class UTCEditor(Editor):
             item = self.ui.featList.item(i)
             if item.data(QtCore.Qt.UserRole) == featId:
                 return item
-        else:
-            return None
+        return None
 
     def getPowerItem(self, powerId: int) -> Optional[QListWidgetItem]:
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             if item.data(QtCore.Qt.UserRole) == powerId:
                 return item
-        else:
-            return None
+        return None
 
     def togglePreview(self) -> None:
         self.globalSettings.showPreviewUTC = not self.globalSettings.showPreviewUTC

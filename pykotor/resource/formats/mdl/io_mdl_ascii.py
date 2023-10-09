@@ -64,7 +64,7 @@ class MDLAsciiWriter:
 
         all_nodes = self._mdl.all_nodes()
         for node in all_nodes:
-            self._write_node(node, False, 0)
+            self._write_node(node, anim=False, indent=0)
         self._writer.write_line(0, f"endmodelgeom {self._mdl.name}")
 
         for anim in self._mdl.anims:
@@ -75,7 +75,7 @@ class MDLAsciiWriter:
             self._writer.write_line(1, f"animroot {anim.root_model}")  # ???
 
             for node in anim.all_nodes():
-                self._write_node(node, True, 1)
+                self._write_node(node, anim=True, indent=1)
 
             self._writer.write_line(0, f"doneanim {anim.name} {anim.root_model}")
 

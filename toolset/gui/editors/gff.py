@@ -1,4 +1,6 @@
-from typing import Any, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QItemSelectionRange, QModelIndex, QSortFilterProxyModel
@@ -8,7 +10,6 @@ from PyQt5.QtWidgets import QFileDialog, QListWidgetItem, QMenu, QShortcut, QWid
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import ResRef
-from pykotor.extract.installation import Installation
 from pykotor.extract.talktable import TalkTable
 from pykotor.resource.formats.gff import (
     GFF,
@@ -21,6 +22,9 @@ from pykotor.resource.formats.gff import (
 )
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from pykotor.extract.installation import Installation
 
 _VALUE_NODE_ROLE = QtCore.Qt.UserRole + 1
 _TYPE_NODE_ROLE = QtCore.Qt.UserRole + 2
@@ -152,7 +156,7 @@ class GFFEditor(Editor):
             self.refreshItemText(childNode)
             self._load_struct(childNode, gffSturct)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         try:
             content = GFFContent(self._restype.extension.upper() + " ")
         except ValueError:
@@ -243,7 +247,7 @@ class GFFEditor(Editor):
             self.ui.fieldBox.setEnabled(False)
 
             self.ui.pages.setCurrentWidget(self.ui.intPage)
-            self.ui.intSpin.setRange(-1, 4294967295)
+            self.ui.intSpin.setRange(-1, 0xFFFFFFFF)
             self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
         else:
             self.ui.fieldBox.setEnabled(True)
@@ -252,35 +256,35 @@ class GFFEditor(Editor):
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int8:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-128, 127)
+                self.ui.intSpin.setRange(-0x80, 0x7F)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int16:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-32768, 32767)
+                self.ui.intSpin.setRange(-0x8000, 0x7FFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int32:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-2147483648, 2147483647)
+                self.ui.intSpin.setRange(-0x80000000, 0x7FFFFFFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int64:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-9223372036854775808, 9223372036854775807)
+                self.ui.intSpin.setRange(-0x8000000000000000, 0x7FFFFFFFFFFFFFFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt8:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 255)
+                self.ui.intSpin.setRange(0, 0xFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt16:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 65535)
+                self.ui.intSpin.setRange(0, 0xFFFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt32:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 4294967295)
+                self.ui.intSpin.setRange(0, 0xFFFFFFFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt64:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 18446744073709551615)
+                self.ui.intSpin.setRange(0, 0xFFFFFFFFFFFFFFFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Double or item.data(_TYPE_NODE_ROLE) == GFFFieldType.Single:
                 self.ui.pages.setCurrentWidget(self.ui.floatPage)
@@ -293,7 +297,7 @@ class GFFEditor(Editor):
                 self.ui.textEdit.setPlainText(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct:
                 self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-1, 4294967295)
+                self.ui.intSpin.setRange(-1, 0xFFFFFFFF)
                 self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
                 self.ui.pages.setCurrentWidget(self.ui.blankPage)
@@ -365,9 +369,7 @@ class GFFEditor(Editor):
             item.setData(vec4, _VALUE_NODE_ROLE)
         elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.LocalizedString]:
             item.data(_VALUE_NODE_ROLE).stringref = self.ui.stringrefSpin.value()
-        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct]:
-            item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
-        elif item.data(_TYPE_NODE_ROLE) is None:
+        elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct] or item.data(_TYPE_NODE_ROLE) is None:
             item.setData(self.ui.intSpin.value(), _VALUE_NODE_ROLE)
 
         self.refreshItemText(item)
@@ -401,7 +403,7 @@ class GFFEditor(Editor):
             if item.data(_ID_SUBSTRING_ROLE) == substringId:
                 return
 
-        item = QListWidgetItem(language.name.title() + ", " + gender.name.title())
+        item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
         item.setData(_ID_SUBSTRING_ROLE, substringId)
         item.setData(_TEXT_SUBSTRING_ROLE, "")
         self.ui.substringList.addItem(item)
@@ -606,5 +608,4 @@ class GFFSortFilterProxyModel(QSortFilterProxyModel):
             leftInt = int(leftText)
             rightInt = int(rightText)
             return leftInt < rightInt
-        else:
-            return leftText < rightText
+        return leftText < rightText

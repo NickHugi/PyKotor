@@ -1,9 +1,9 @@
-import os
 import subprocess
 
 from PyQt5.QtWidgets import QFileDialog
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.tools.path import CaseAwarePath, Path
 from toolset.gui.widgets.settings.installations import (
     GlobalSettings,
     NoConfigurationSetError,
@@ -34,20 +34,26 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
         The string of the decompiled script.
     """
     global_settings = GlobalSettings()
+    extract_path = Path(global_settings.extractPath)
 
-    if not os.path.exists(global_settings.extractPath):
-        global_settings.extractPath = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-        if not os.path.exists(global_settings.extractPath):
+    if not extract_path.exists():
+        extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
+        if not extract_path.exists():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    if not os.path.exists(global_settings.ncsDecompilerPath):
-        global_settings.ncsDecompilerPath, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
-        if not os.path.exists(global_settings.ncsDecompilerPath):
+    ncs_decompiler_path = CaseAwarePath(global_settings.ncsDecompilerPath)
+    if not ncs_decompiler_path.exists():
+        ncs_decompiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
+        ncs_decompiler_path = Path(ncs_decompiler_path)
+        if not ncs_decompiler_path.exists():
             msg = "NCS Decompiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    tempCompiledPath = f"{global_settings.extractPath}/tempscript.ncs"
+    global_settings.extractPath = str(extract_path)
+    global_settings.ncsDecompilerPath = str(ncs_decompiler_path)
+
+    tempCompiledPath = extract_path / "tempscript.ncs"
     BinaryWriter.dump(tempCompiledPath, compiled)
 
     gameIndex = "--kotor2" if tsl else "--kotor"
@@ -87,21 +93,27 @@ def compileScript(source: str, tsl: bool) -> bytes:
         Bytes object of the compiled script.
     """
     global_settings = GlobalSettings()
+    extract_path = Path(global_settings.extractPath)
 
-    if not os.path.exists(global_settings.extractPath):
-        global_settings.extractPath = QFileDialog.getExistingDirectory(None, "Select a temp directory")
-        if not os.path.exists(global_settings.extractPath):
+    if not extract_path.exists():
+        extract_path = Path(QFileDialog.getExistingDirectory(None, "Select a temp directory"))
+        if not extract_path.exists():
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    if not os.path.exists(global_settings.nssCompilerPath):
-        global_settings.nssCompilerPath, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
-        if not os.path.exists(global_settings.nssCompilerPath):
+    nss_compiler_path = CaseAwarePath(global_settings.nssCompilerPath)
+    if not nss_compiler_path.exists():
+        nss_compiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
+        nss_compiler_path = Path(nss_compiler_path)
+        if not nss_compiler_path.exists():
             msg = "NCS Compiler has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    tempSourcePath = f"{global_settings.extractPath}/tempscript.nss"
-    tempCompiledPath = f"{global_settings.extractPath}/tempscript.ncs"
+    global_settings.extractPath = str(extract_path)
+    global_settings.nssCompilerPath = str(nss_compiler_path)
+
+    tempSourcePath = extract_path / "tempscript.nss"
+    tempCompiledPath = extract_path / "tempscript.ncs"
     BinaryWriter.dump(tempSourcePath, source.encode())
 
     gameIndex = "2" if tsl else "1"

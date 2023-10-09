@@ -1,14 +1,19 @@
+from __future__ import annotations
+
 import io
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from PIL import Image, ImageOps
 from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QWidget
 
-from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.extract.installation import Installation
 
 
 class TPCEditor(Editor):
@@ -63,7 +68,7 @@ class TPCEditor(Editor):
         self.ui.textureImage.setPixmap(pixmap)
         self.ui.txiEdit.setPlainText("")
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         self._tpc.txi = self.ui.txiEdit.toPlainText()
 
         data = bytearray()

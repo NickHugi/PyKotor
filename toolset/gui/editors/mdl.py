@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5.QtWidgets import QMessageBox, QWidget
 
@@ -88,7 +88,7 @@ class MDLEditor(Editor):
     def _loadMDL(self, mdl: MDL) -> None:
         self._mdl = mdl
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
         data_ext = bytearray()
         write_mdl(self._mdl, data, ResourceType.MDL, data_ext)

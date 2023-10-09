@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import struct
-from typing import Dict, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QImage, QPixmap
@@ -8,8 +10,10 @@ from PyQt5.QtWidgets import QListWidgetItem, QShortcut, QWidget
 from pykotor.common.geometry import SurfaceMaterial, Vector2
 from pykotor.resource.formats.bwm import BWM, BWMFace, read_bwm, write_bwm
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from toolset.data.installation import HTInstallation
 
 _TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1
 _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2
@@ -29,7 +33,7 @@ class BWMEditor(Editor):
 
         self._bwm: Optional[BWM] = None
 
-        self.materialColors: Dict[SurfaceMaterial, QColor] = {
+        self.materialColors: dict[SurfaceMaterial, QColor] = {
             SurfaceMaterial.UNDEFINED: QColor(0xF45086),
             SurfaceMaterial.OBSCURING: QColor(0x555555),
             SurfaceMaterial.DIRT: QColor(0x800000),
@@ -94,7 +98,7 @@ class BWMEditor(Editor):
             addTransItem(face, 2, face.trans2)
             addTransItem(face, 3, face.trans3)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
         write_bwm(self._bwm, data)
         return bytes(data), b""
@@ -102,7 +106,7 @@ class BWMEditor(Editor):
     def new(self) -> None:
         super().new()
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         worldData = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         face = self._bwm.face_at(world.x, world.y)
@@ -122,7 +126,7 @@ class BWMEditor(Editor):
 
         self.statusBar().showMessage(coordsText + faceText + xy)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
             self.ui.renderArea.zoomInCamera(delta.y / 50)
 

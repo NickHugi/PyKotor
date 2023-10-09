@@ -348,7 +348,7 @@ class NCS:
         current object.
 
         :param optimizers: A list of NCSOptimizer objects
-        :type optimizers: List[NCSOptimizer]
+        :type optimizers: list[NCSOptimizer]
         """
         for optimizer in optimizers:
             optimizer.optimize(self)
@@ -377,8 +377,7 @@ class NCSInstruction:
     def __str__(self):
         if self.jump is None:
             return f"Instruction: {self.ins_type.name} {self.args}"
-        else:
-            return f"Instruction: {self.ins_type.name} jump to '{self.jump}'"
+        return f"Instruction: {self.ins_type.name} jump to '{self.jump}'"
 
     def __repr__(self):
         return f"NCSInstruction({self.ins_type}, {self.jump}, {self.args})"

@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import json
 import math
-import os
 import zipfile
 from contextlib import suppress
 from copy import copy, deepcopy
-from typing import Dict, List, Optional, Set, Tuple
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 import requests
 from config import UPDATE_INFO_LINK
@@ -38,13 +40,16 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.bwm import BWMFace
+from pykotor.tools.path import CaseAwarePath
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
-from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.windows.help import HelpWindow
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.bwm import BWMFace
+    from toolset.data.installation import HTInstallation
 
 
 class IndoorMapBuilder(QMainWindow):
@@ -52,7 +57,7 @@ class IndoorMapBuilder(QMainWindow):
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
-        self._kits: List[Kit] = []
+        self._kits: list[Kit] = []
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
@@ -119,17 +124,21 @@ class IndoorMapBuilder(QMainWindow):
         if self._filepath == "":
             self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
-            self.setWindowTitle("{} - {} - Map Builder".format(self._filepath, self._installation.name))
+            self.setWindowTitle(
+                f"{self._filepath} - {self._installation.name} - Map Builder",
+            )
 
     def _refreshStatusBar(self) -> None:
         screen = self.ui.mapRenderer.mapFromGlobal(self.cursor().pos())
         world = self.ui.mapRenderer.toWorldCoords(screen.x(), screen.y())
         obj = self.ui.mapRenderer.roomUnderMouse()
 
-        self.statusBar().showMessage("X: {}, Y: {}, Object: {}".format(world.x, world.y, obj.component.name if obj else ""))
+        self.statusBar().showMessage(
+            f'X: {world.x}, Y: {world.y}, Object: {obj.component.name if obj else ""}',
+        )
 
     def showHelpWindow(self) -> None:
-        window = HelpWindow(self, "./help/tools/2-mapBuilder.md")
+        window = HelpWindow(self, Path("./help", "tools", "2-mapBuilder.md"))
         window.show()
 
     def save(self) -> None:
@@ -168,16 +177,16 @@ class IndoorMapBuilder(QMainWindow):
         self._setupKits()
 
     def buildMap(self) -> None:
-        path = f"{self._installation.module_path()}{self._map.moduleId}.mod"
+        mod_file_path = self._installation.module_path() / f"{self._map.moduleId}.mod"
 
         def task():
-            return self._map.build(self._installation, self._kits, path)
+            return self._map.build(self._installation, self._kits, mod_file_path)
 
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
 
         if loader.exec_():
-            msg = "You can warp to the game using the code 'warp {}'. ".format(self._map.moduleId)
-            msg += f"Map files can be found in:\n{path}"
+            msg = f"You can warp to the game using the code 'warp {self._map.moduleId}'. "
+            msg += f"Map files can be found in:\n'{mod_file_path}'"
             QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
 
     def deleteSelected(self) -> None:
@@ -209,7 +218,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.componentImage.setPixmap(QPixmap.fromImage(component.image))
         self.ui.mapRenderer.setCursorComponent(component)
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._refreshStatusBar()
         worldDelta = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
@@ -238,23 +247,12 @@ class IndoorMapBuilder(QMainWindow):
                         snapping.position = shift + snapping.position
             self._map.rebuildRoomConnections()
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
             if self.ui.mapRenderer._cursorComponent is not None:
                 component = self.selectedComponent()
                 if component is not None:
-                    room = IndoorMapRoom(
-                        component,
-                        self.ui.mapRenderer._cursorPoint,
-                        self.ui.mapRenderer._cursorRotation,
-                        self.ui.mapRenderer._cursorFlipX,
-                        self.ui.mapRenderer._cursorFlipY,
-                    )
-                    self._map.rooms.append(room)
-                    self._map.rebuildRoomConnections()
-                    self.ui.mapRenderer._cursorRotation = 0.0
-                    self.ui.mapRenderer._cursorFlipX = False
-                    self.ui.mapRenderer._cursorFlipY = False
+                    self._build_indoor_map_room(component)
                 if QtCore.Qt.Key_Shift not in keys:
                     self.ui.mapRenderer.setCursorComponent(None)
                     self.ui.componentList.clearSelection()
@@ -270,13 +268,27 @@ class IndoorMapBuilder(QMainWindow):
         if QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
             self.ui.mapRenderer.toggleCursorFlip()
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def _build_indoor_map_room(self, component):
+        room = IndoorMapRoom(
+            component,
+            self.ui.mapRenderer._cursorPoint,
+            self.ui.mapRenderer._cursorRotation,
+            self.ui.mapRenderer._cursorFlipX,
+            self.ui.mapRenderer._cursorFlipY,
+        )
+        self._map.rooms.append(room)
+        self._map.rebuildRoomConnections()
+        self.ui.mapRenderer._cursorRotation = 0.0
+        self.ui.mapRenderer._cursorFlipX = False
+        self.ui.mapRenderer._cursorFlipY = False
+
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
             self.ui.mapRenderer.zoomInCamera(delta.y / 50)
         else:
             self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
-    def onMouseDoubleClicked(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseDoubleClicked(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():
             self.ui.mapRenderer.clearSelectedRooms()
             self.addConnectedToSelection(self.ui.mapRenderer.roomUnderMouse())
@@ -323,7 +335,7 @@ class IndoorMapRenderer(QWidget):
 
         self._map: IndoorMap = IndoorMap()
         self._underMouseRoom: Optional[IndoorMapRoom] = None
-        self._selectedRooms: List[IndoorMapRoom] = []
+        self._selectedRooms: list[IndoorMapRoom] = []
 
         self._camPosition: Vector2 = Vector2.from_null()
         self._camRotation: float = 0.0
@@ -334,8 +346,8 @@ class IndoorMapRenderer(QWidget):
         self._cursorFlipX: bool = False
         self._cursorFlipY: bool = False
 
-        self._keysDown: Set[int] = set()
-        self._mouseDown: Set[int] = set()
+        self._keysDown: set[int] = set()
+        self._mouseDown: set[int] = set()
         self._mousePrev: Vector2 = Vector2.from_null()
 
         self.hideMagnets: bool = False
@@ -364,7 +376,7 @@ class IndoorMapRenderer(QWidget):
     def roomUnderMouse(self) -> Optional[IndoorMapRoom]:
         return self._underMouseRoom
 
-    def selectedRooms(self) -> List[IndoorMapRoom]:
+    def selectedRooms(self) -> list[IndoorMapRoom]:
         return self._selectedRooms
 
     def clearSelectedRooms(self) -> None:
@@ -434,7 +446,7 @@ class IndoorMapRenderer(QWidget):
         y2 = x * sin + y * cos
         return Vector2(x2, y2)
 
-    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> Tuple:
+    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> tuple:
         hook1 = None
         hook2 = None
 
@@ -761,13 +773,13 @@ class KitDownloader(QDialog):
         self._setupDownloads()
 
     def _setupDownloads(self) -> None:
-        req = requests.get(UPDATE_INFO_LINK)
+        req = requests.get(UPDATE_INFO_LINK, timeout=120)
         updateInfoData = json.loads(req.text)
 
         for kitName, kitDict in updateInfoData["kits"].items():
             kitId = kitDict["id"]
-            kitPath = f"./kits/{kitId}.json"
-            if os.path.exists(kitPath):
+            kitPath = CaseAwarePath("kits", f"{kitId}.json")
+            if kitPath.exists():
                 button = QPushButton("Already Downloaded")
                 button.setEnabled(False)
                 with suppress(Exception):
@@ -783,7 +795,7 @@ class KitDownloader(QDialog):
             layout: QFormLayout = self.ui.groupBox.layout()
             layout.addRow(kitName, button)
 
-    def _downloadButtonPressed(self, button: QPushButton, infoDict: Dict) -> None:
+    def _downloadButtonPressed(self, button: QPushButton, infoDict: dict) -> None:
         button.setText("Downloading")
         button.setEnabled(False)
 
@@ -798,11 +810,11 @@ class KitDownloader(QDialog):
             button.setEnabled(True)
 
     def _downloadKit(self, kitId: str, link: str) -> None:
-        response = requests.get(link, stream=True)
-        filepath = f"./kits/{kitId}.zip"
-        with open(filepath, "wb") as f:
+        response = requests.get(link, stream=True, timeout=120)
+        filepath = CaseAwarePath("kits", f"{kitId}.zip")
+        with filepath.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
         with zipfile.ZipFile(filepath, "r") as zip_ref:
-            zip_ref.extractall("./kits")
+            zip_ref.extractall(f"./{filepath.parent.name}")

@@ -21,6 +21,7 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.string import ireplace
 
 if TYPE_CHECKING:
     import os
@@ -126,7 +127,7 @@ def clone_module(
     new_textures = {}
     for room in lyt.rooms:
         old_model_name = room.model
-        new_model_name = old_model_name.lower().replace(old_identifier, identifier)
+        new_model_name = ireplace(old_model_name, old_identifier, identifier)
 
         room.model = new_model_name
         if vis.room_exists(old_model_name):

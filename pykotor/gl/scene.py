@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional, Union
 
 import glm
 from glm import mat4, quat, vec3, vec4
@@ -107,8 +107,8 @@ class Scene:
         self.installation: Optional[Installation] = installation
         self.textures: CaseInsensitiveDict[Texture] = CaseInsensitiveDict()
         self.models: CaseInsensitiveDict[Model] = CaseInsensitiveDict()
-        self.objects: Dict[Any, RenderObject] = {}
-        self.selection: List[RenderObject] = []
+        self.objects: dict[Any, RenderObject] = {}
+        self.selection: list[RenderObject] = []
         self.module: Optional[Module] = module
         self.camera: Camera = Camera()
         self.cursor: RenderObject = RenderObject("cursor")
@@ -117,7 +117,7 @@ class Scene:
 
         self.git: Optional[GIT] = None
         self.layout: Optional[LYT] = None
-        self.clearCacheBuffer: List[ResourceIdentifier] = []
+        self.clearCacheBuffer: list[ResourceIdentifier] = []
 
         self.picker_shader: Shader = Shader(PICKER_VSHADER, PICKER_FSHADER)
         self.plain_shader: Shader = Shader(PLAIN_VSHADER, PLAIN_FSHADER)
@@ -197,16 +197,10 @@ class Scene:
 
             rhand_hook = self.model(body_model).find("rhand")
             if rhand_model and rhand_hook:
-                rhand_obj = RenderObject(rhand_model)
-                rhand_obj.set_transform(rhand_hook.global_transform())
-                obj.children.append(rhand_obj)
-
+                self._transform_hand(rhand_model, rhand_hook, obj)
             lhand_hook = self.model(body_model).find("lhand")
             if lhand_model and lhand_hook:
-                lhand_obj = RenderObject(lhand_model)
-                lhand_obj.set_transform(lhand_hook.global_transform())
-                obj.children.append(lhand_obj)
-
+                self._transform_hand(lhand_model, lhand_hook, obj)
             if head_hook is None:
                 mask_hook = self.model(body_model).find("gogglehook")
             elif head_model:
@@ -226,17 +220,23 @@ class Scene:
 
         return obj
 
-    def buildCache(self, clearCache: bool = False) -> None:
+    # TODO Rename this here and in `getCreatureRenderObject`
+    def _transform_hand(self, arg0, arg1, obj):
+        rhand_obj = RenderObject(arg0)
+        rhand_obj.set_transform(arg1.global_transform())
+        obj.children.append(rhand_obj)
+
+    def buildCache(self, clear_cache: bool = False) -> None:
         if self.module is None:
             return
 
-        if clearCache:
+        if clear_cache:
             self.objects = {}
 
         for identifier in self.clearCacheBuffer:
-            for creature in copy(self.git.creatures):
-                if identifier.resname == creature.resref and identifier.restype == ResourceType.UTC:
-                    del self.objects[creature]
+            for git_creature in copy(self.git.creatures):
+                if identifier.resname == git_creature.resref and identifier.restype == ResourceType.UTC:
+                    del self.objects[git_creature]
             for placeable in copy(self.git.placeables):
                 if identifier.resname == placeable.resref and identifier.restype == ResourceType.UTP:
                     del self.objects[placeable]
@@ -296,12 +296,12 @@ class Scene:
             self.objects[placeable].set_position(placeable.position.x, placeable.position.y, placeable.position.z)
             self.objects[placeable].set_rotation(0, 0, placeable.bearing)
 
-        for creature in self.git.creatures:
+        for git_creature in self.git.creatures:
             if creature not in self.objects:
-                self.objects[creature] = self.getCreatureRenderObject(creature)
+                self.objects[git_creature] = self.getCreatureRenderObject(git_creature)
 
-            self.objects[creature].set_position(creature.position.x, creature.position.y, creature.position.z)
-            self.objects[creature].set_rotation(0, 0, creature.bearing)
+            self.objects[git_creature].set_position(git_creature.position.x, git_creature.position.y, git_creature.position.z)
+            self.objects[git_creature].set_rotation(0, 0, git_creature.bearing)
 
         for waypoint in self.git.waypoints:
             if waypoint not in self.objects:
@@ -322,12 +322,15 @@ class Scene:
         for sound in self.git.sounds:
             if sound not in self.objects:
                 with suppress(Exception):
-                    uts = self.module.sound(sound.resref.get()).resource()
+                    uts = self.module.sound(sound.resref.get()).resource
 
-                    def gen_boundary(boundary=Boundary.from_circle(self, uts.max_distance)):
-                        return boundary
-
-                obj = RenderObject("sound", vec3(), vec3(), data=sound, gen_boundary=gen_boundary)
+                obj = RenderObject(
+                    "sound",
+                    vec3(),
+                    vec3(),
+                    data=sound,
+                    gen_boundary=lambda boundary: (boundary or Boundary.from_circle(self, uts.max_distance)),
+                )
                 self.objects[sound] = obj
 
             self.objects[sound].set_position(sound.position.x, sound.position.y, sound.position.z)
@@ -335,11 +338,13 @@ class Scene:
 
         for encounter in self.git.encounters:
             if encounter not in self.objects:
-
-                def gen_boundary(boundary=Boundary(self, encounter.geometry.points)):
-                    return boundary
-
-                obj = RenderObject("encounter", vec3(), vec3(), data=encounter, gen_boundary=gen_boundary)
+                obj = RenderObject(
+                    "encounter",
+                    vec3(),
+                    vec3(),
+                    data=encounter,
+                    gen_boundary=lambda boundary: (boundary or Boundary(self, encounter.geometry.points)),
+                )
                 self.objects[encounter] = obj
 
             self.objects[encounter].set_position(encounter.position.x, encounter.position.y, encounter.position.z)
@@ -347,11 +352,13 @@ class Scene:
 
         for trigger in self.git.triggers:
             if trigger not in self.objects:
-
-                def gen_boundary(boundary=Boundary(self, trigger.geometry.points)):
-                    return boundary
-
-                obj = RenderObject("trigger", vec3(), vec3(), data=trigger, gen_boundary=gen_boundary)
+                obj = RenderObject(
+                    "trigger",
+                    vec3(),
+                    vec3(),
+                    data=trigger,
+                    gen_boundary=lambda boundary: (boundary or Boundary(self, trigger.geometry.points)),
+                )
                 self.objects[trigger] = obj
 
             self.objects[trigger].set_position(trigger.position.x, trigger.position.y, trigger.position.z)
@@ -368,24 +375,27 @@ class Scene:
 
         # Detect if GIT still exists; if they do not then remove them from the render list
         for obj in copy(self.objects):
-            if isinstance(obj, GITCreature) and obj not in self.git.creatures:
-                del self.objects[obj]
-            if isinstance(obj, GITPlaceable) and obj not in self.git.placeables:
-                del self.objects[obj]
-            if isinstance(obj, GITDoor) and obj not in self.git.doors:
-                del self.objects[obj]
-            if isinstance(obj, GITTrigger) and obj not in self.git.triggers:
-                del self.objects[obj]
-            if isinstance(obj, GITStore) and obj not in self.git.stores:
-                del self.objects[obj]
-            if isinstance(obj, GITCamera) and obj not in self.git.cameras:
-                del self.objects[obj]
-            if isinstance(obj, GITWaypoint) and obj not in self.git.waypoints:
-                del self.objects[obj]
-            if isinstance(obj, GITEncounter) and obj not in self.git.encounters:
-                del self.objects[obj]
-            if isinstance(obj, GITSound) and obj not in self.git.sounds:
-                del self.objects[obj]
+            self._del_git_objects(obj)
+
+    def _del_git_objects(self, obj):
+        if isinstance(obj, GITCreature) and obj not in self.git.creatures:
+            del self.objects[obj]
+        if isinstance(obj, GITPlaceable) and obj not in self.git.placeables:
+            del self.objects[obj]
+        if isinstance(obj, GITDoor) and obj not in self.git.doors:
+            del self.objects[obj]
+        if isinstance(obj, GITTrigger) and obj not in self.git.triggers:
+            del self.objects[obj]
+        if isinstance(obj, GITStore) and obj not in self.git.stores:
+            del self.objects[obj]
+        if isinstance(obj, GITCamera) and obj not in self.git.cameras:
+            del self.objects[obj]
+        if isinstance(obj, GITWaypoint) and obj not in self.git.waypoints:
+            del self.objects[obj]
+        if isinstance(obj, GITEncounter) and obj not in self.git.encounters:
+            del self.objects[obj]
+        if isinstance(obj, GITSound) and obj not in self.git.sounds:
+            del self.objects[obj]
 
     def render(self) -> None:
         self.buildCache()
@@ -480,12 +490,12 @@ class Scene:
         self.picker_shader.set_matrix4("view", self.camera.view())
         self.picker_shader.set_matrix4("projection", self.camera.projection())
         instances = list(self.objects.values())
-        for _i, obj in enumerate(instances):
+        for obj in instances:
             int_rgb = instances.index(obj)
             r = int_rgb & 0xFF
             g = (int_rgb >> 8) & 0xFF
             b = (int_rgb >> 16) & 0xFF
-            color = vec3(r / 255, g / 255, b / 255)
+            color = vec3(r / 0xFF, g / 0xFF, b / 0xFF)
             self.picker_shader.set_vector3("colorId", color)
 
             self._picker_render_object(obj, mat4())
@@ -577,7 +587,7 @@ class Scene:
                 # If an error occurs during the loading process, just use a blank image.
                 tpc = TPC()
 
-            self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(255, 0, 255)
+            self.textures[name] = Texture.from_tpc(tpc) if tpc is not None else Texture.from_color(0xFF, 0, 0xFF)
         return self.textures[name]
 
     def model(self, name: str) -> Model:
@@ -651,15 +661,15 @@ class RenderObject:
     def __init__(
         self,
         model: str,
-        position: vec3 = None,
-        rotation: vec3 = None,
+        position: vec3 | None = None,
+        rotation: vec3 | None = None,
         *,
         data: Any = None,
         gen_boundary: Optional[Callable[[], Boundary]] = None,
         override_texture: Optional[str] = None,
     ):
         self.model: str = model
-        self.children: List[RenderObject] = []
+        self.children: list[RenderObject] = []
         self._transform: mat4 = mat4()
         self._position: vec3 = position if position is not None else vec3()
         self._rotation: vec3 = rotation if rotation is not None else vec3()

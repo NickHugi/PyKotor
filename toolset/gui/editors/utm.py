@@ -1,7 +1,7 @@
-from contextlib import suppress
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from PyQt5.QtWidgets import QWidget
+from contextlib import suppress
+from typing import TYPE_CHECKING, Optional
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -9,10 +9,14 @@ from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utm import UTM, dismantle_utm, read_utm
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.dialogs.inventory import InventoryEditor
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from toolset.data.installation import HTInstallation
 
 
 class UTMEditor(Editor):
@@ -63,7 +67,7 @@ class UTMEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utm.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         utm = self._utm
 
         # Basic

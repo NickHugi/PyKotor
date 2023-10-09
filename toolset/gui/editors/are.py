@@ -1,4 +1,6 @@
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5.QtGui import QColor, QImage, QPixmap
 from PyQt5.QtWidgets import QColorDialog, QLabel, QWidget
@@ -17,7 +19,9 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.long_spinbox import LongSpinBox
+
+if TYPE_CHECKING:
+    from toolset.gui.widgets.long_spinbox import LongSpinBox
 
 
 class AREEditor(Editor):
@@ -144,7 +148,7 @@ class AREEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(are.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         are = self._are
 
         # Basic

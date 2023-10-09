@@ -1,14 +1,18 @@
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from PyQt5.QtWidgets import QWidget
+from typing import TYPE_CHECKING, Optional
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utw import UTW, dismantle_utw, read_utw
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from toolset.data.installation import HTInstallation
 
 
 class UTWEditor(Editor):
@@ -59,7 +63,7 @@ class UTWEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utw.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         utw = self._utw
 
         utw.name = self.ui.nameEdit.locstring()
