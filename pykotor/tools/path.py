@@ -111,14 +111,25 @@ class BasePath:
         return super().__new__(cls, *cls.parse_args(*args), **kwargs)
     
     def __init__(self, *args, _called_from_pathlib=True):
-        # Check if any of the classes in the MRO, excluding object, have an __init__ definition
-        if not any('__init__' in cls.__dict__ for cls in self.__class__.mro()[1:-1]):
-            return super().__init__()
+        # Loop over the MRO starting from the class after the current class
+        next_init_method_class = self.__class__
+        for cls in self.__class__.mro():
+            if '__init__' in cls.__dict__ and cls is not BasePath:
+                next_init_method_class = cls
+                break
+
+        # Check if the class that defines the next __init__ is object
+        if next_init_method_class is object:
+            return
+
+        # If not object, fetch the __init__ of that class
+        init_method = next_init_method_class.__init__
+
         # Parse args if called from pathlib (Python 3.12+)
-        elif _called_from_pathlib:
-            return super().__init__(*self.parse_args(*args))
+        if _called_from_pathlib:
+            init_method(self, *self.parse_args(*args))
         else:
-            return super().__init__(*args)
+            init_method(self, *args)
     
     @classmethod
     def parse_args(cls, *args):
