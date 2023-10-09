@@ -16,7 +16,7 @@ from pathlib import (
 from typing import Generator, List, Tuple, Union
 
 PathElem = Union[str, os.PathLike]
-PATH_TYPES = Union[PathElem, list[PathElem], tuple[PathElem, ...]]
+PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
 
 def has_attr_excluding_object(cls, attr_name):
