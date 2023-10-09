@@ -111,7 +111,14 @@ class BasePath:
         return super().__new__(cls, *cls.parse_args(*args), **kwargs)
     
     def __init__(self, *args, _called_from_pathlib=True):
-        return super().__init__(*self.parse_args(*args)) if _called_from_pathlib else super().__init__(*args)
+        # Check if any of the classes in the MRO, excluding object, have an __init__ definition
+        if not any('__init__' in cls.__dict__ for cls in self.__class__.mro()[1:-1]):
+            return super().__init__()
+        # Parse args if called from pathlib (Python 3.12+)
+        elif _called_from_pathlib:
+            return super().__init__(*self.parse_args(*args))
+        else:
+            return super().__init__(*args)
     
     @classmethod
     def parse_args(cls, *args):
