@@ -46,8 +46,6 @@ def simple_wrapper(fn_name, wrapped_class_type):
         orig_fn = wrapped_class_type._original_methods[fn_name]
 
         def parse_arg(arg):
-            if isinstance(arg, str):
-                print("PARSEARG:",arg)
             if is_instance_or_subinstance(arg, PurePath) and CaseAwarePath.should_resolve_case(arg):
                 return CaseAwarePath._get_case_sensitive_path(arg)
 
@@ -307,7 +305,6 @@ class CaseAwarePath(Path):
 
     @staticmethod
     def _get_case_sensitive_path(path: os.PathLike | str) -> CaseAwarePath:
-        print("CASESENS")
         pathlib_path: pathlib.Path = pathlib.Path(path)
         parts = list(pathlib_path.parts)
 
