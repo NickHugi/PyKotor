@@ -108,6 +108,13 @@ class BasePath:
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
 
     def __new__(cls, *args: PATH_TYPES, **kwargs):
+        return super().__new__(cls, *cls.parse_args(*args), **kwargs)
+    
+    def __init__(self, *args, _called_from_pathlib=True):
+        return super().__init__(*self.parse_args(*args)) if _called_from_pathlib else super().__init__(*args)
+    
+    @classmethod
+    def parse_args(cls, *args):
         args_list = list(args)
         for i, arg in enumerate(args_list):
             if isinstance(arg, cls):
@@ -118,28 +125,10 @@ class BasePath:
                 raise TypeError(msg)
 
             formatted_path_str = cls._fix_path_formatting(path_str, cls._flavour.sep)  # type: ignore[_flavour exists in children]
-            arg_pathlib_instance = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore  # noqa: PGH003
-            arg_pathlib_instance.__init__(formatted_path_str, **kwargs)
+            arg_pathlib_instance = super().__new__(cls, formatted_path_str)  # type: ignore  # noqa: PGH003
+            arg_pathlib_instance.__init__(formatted_path_str, _called_from_pathlib=False)
             args_list[i] = arg_pathlib_instance
-        return super().__new__(cls, *args_list, **kwargs)
-    
-    def __init__(self, *args, _called_from_path=True):
-        if not _called_from_path:
-            return super().__init__(*args)
-        args_list = list(args)
-        for i, arg in enumerate(args_list):
-            if isinstance(arg, type(self)):
-                continue
-            path_str = arg if isinstance(arg, str) else getattr(arg, "__fspath__", lambda: None)()
-            if path_str is None:
-                msg = f"Object '{arg}' (index {i} of *args) must be str or a path-like object, but instead was '{type(arg)}'"
-                raise TypeError(msg)
-
-            formatted_path_str = type(self)._fix_path_formatting(path_str, self._flavour.sep)  # type: ignore[_flavour exists in children]
-            arg_pathlib_instance = super().__new__(type(self), formatted_path_str)  # type: ignore  # noqa: PGH003
-            arg_pathlib_instance.__init__(formatted_path_str, _called_from_path=False)
-            args_list[i] = arg_pathlib_instance
-        return super().__init__(*args_list)
+        return args_list
 
     @classmethod
     def _create_instance(cls, *args, **kwargs):
@@ -167,7 +156,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self)._create_instance(self, key)
+        return self._create_instance(self, key)
 
     def __rtruediv__(self, key: PathElem):
         """Appends a path part with the divider operator '/'.
@@ -178,7 +167,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self)._create_instance(key, self)
+        return self._create_instance(key, self)
 
     def __add__(self, key: PathElem):
         """Appends a path part with the addition operator '+'.
@@ -189,7 +178,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self)._create_instance(self, key)
+        return self._create_instance(self, key)
 
     def __radd__(self, key: PathElem):
         """Appends a path part with the addition operator '+'.
@@ -200,7 +189,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self)._create_instance(key, self)
+        return self._create_instance(key, self)
 
     def joinpath(self, *args: PATH_TYPES):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -212,7 +201,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self)._create_instance(self, *args)
+        return self._create_instance(self, *args)
 
     def endswith(self, *text: str, case_sensitive=False) -> bool:
         if case_sensitive:
