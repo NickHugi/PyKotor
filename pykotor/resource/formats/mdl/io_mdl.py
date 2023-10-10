@@ -1278,7 +1278,7 @@ class MDLBinaryReader:
 
         if auto_close:
             self._reader.close()
-            if self._reader_ext is not None:
+        if auto_close and self._reader_ext is not None:
                 self._reader_ext.close()
 
         return self._mdl
@@ -1889,11 +1889,17 @@ class MDLBinaryWriter:
 
     def _node_type(
         self,
-        node: MDLNode,
+        node: MDLNode
     ) -> int:
         type_id = 1
-        if node.mesh:
-            type_id |= MDLNodeFlags.MESH
+        if node.mesh: type_id = type_id | MDLNodeFlags.MESH
+        # if node.skin: type_id = type_id | MDLNodeFlags.SKIN
+        # if node.dangly: type_id = type_id | MDLNodeFlags.DANGLY
+        # if node.saber: type_id = type_id | MDLNodeFlags.SABER
+        # if node.aabb: type_id = type_id | MDLNodeFlags.AABB
+        # if node.emitter: type_id = type_id | MDLNodeFlags.EMITTER
+        # if node.light: type_id = type_id | MDLNodeFlags.LIGHT
+        # if node.reference: type_id = type_id | MDLNodeFlags.REFERENCE
         return type_id
 
     def _write_all(

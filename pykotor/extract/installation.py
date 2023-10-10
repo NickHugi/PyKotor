@@ -105,7 +105,7 @@ class Installation:
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
 
         self._chitin: list[FileResource] = []
-        self._modules: dict[str, list[FileResource]] = {}
+        self._modules = CaseInsensitiveDict()
         self._lips: dict[str, list[FileResource]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
         self._override = CaseInsensitiveDict()
@@ -238,7 +238,7 @@ class Installation:
         resource_path = self._path
 
         for folder_name in folder_names:
-            resource_path = resource_path / folder_name
+            resource_path = self._path / folder_name
             if resource_path.is_dir():
                 break
         if resource_path == self._path:
@@ -656,7 +656,7 @@ class Installation:
     ) -> list[LocationResult]:
         """Returns a list filepaths for where a particular resource matching the given resref and restype are located.
 
-        This is a wrapper of the locations() method provided to make searching for a single resource more contvenient.
+        This is a wrapper of the locations() method provided to make searching for a single resource more convenient.
 
         Args:
         ----
@@ -877,13 +877,19 @@ class Installation:
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders
 
-        order = order or [
-            SearchLocation.CUSTOM_FOLDERS,
-            SearchLocation.OVERRIDE,
-            SearchLocation.CUSTOM_MODULES,
-            SearchLocation.TEXTURES_TPA,
-            SearchLocation.CHITIN,
-        ]
+        order = (
+            order
+            if order is not None
+            else (
+                [
+                    SearchLocation.CUSTOM_FOLDERS,
+                    SearchLocation.OVERRIDE,
+                    SearchLocation.CUSTOM_MODULES,
+                    SearchLocation.TEXTURES_TPA,
+                    SearchLocation.CHITIN,
+                ]
+            )
+        )
 
         textures: CaseInsensitiveDict[TPC | None] = CaseInsensitiveDict[Optional[TPC]]()
         texture_types = [ResourceType.TPC, ResourceType.TGA]
@@ -933,18 +939,10 @@ class Installation:
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
-            SearchLocation.TEXTURES_TPA: lambda: check_list(
-                self._texturepacks["swpc_tex_tpa.erf"],
-            ),
-            SearchLocation.TEXTURES_TPB: lambda: check_list(
-                self._texturepacks["swpc_tex_tpb.erf"],
-            ),
-            SearchLocation.TEXTURES_TPC: lambda: check_list(
-                self._texturepacks["swpc_tex_tpc.erf"],
-            ),
-            SearchLocation.TEXTURES_GUI: lambda: check_list(
-                self._texturepacks["swpc_tex_gui.erf"],
-            ),
+            SearchLocation.TEXTURES_TPA: lambda: check_list(self._texturepacks["swpc_tex_tpa.erf"]),
+            SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks["swpc_tex_tpb.erf"]),
+            SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks["swpc_tex_tpc.erf"]),
+            SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks["swpc_tex_gui.erf"]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
@@ -1009,13 +1007,19 @@ class Installation:
         capsules = capsules or []
         folders = folders or []
 
-        order = order or [
-            SearchLocation.CUSTOM_FOLDERS,
-            SearchLocation.OVERRIDE,
-            SearchLocation.CUSTOM_MODULES,
-            SearchLocation.SOUND,
-            SearchLocation.CHITIN,
-        ]
+        order = (
+            order
+            if order is not None
+            else (
+                [
+                    SearchLocation.CUSTOM_FOLDERS,
+                    SearchLocation.OVERRIDE,
+                    SearchLocation.CUSTOM_MODULES,
+                    SearchLocation.SOUND,
+                    SearchLocation.CHITIN,
+                ]
+            )
+        )
 
         sounds: CaseInsensitiveDict[bytes | None] = CaseInsensitiveDict[Optional[bytes]]()
         texture_types = [ResourceType.WAV, ResourceType.MP3]
@@ -1065,18 +1069,10 @@ class Installation:
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
-            SearchLocation.TEXTURES_TPA: lambda: check_list(
-                self._texturepacks["swpc_tex_tpa.erf"],
-            ),
-            SearchLocation.TEXTURES_TPB: lambda: check_list(
-                self._texturepacks["swpc_tex_tpb.erf"],
-            ),
-            SearchLocation.TEXTURES_TPC: lambda: check_list(
-                self._texturepacks["swpc_tex_tpc.erf"],
-            ),
-            SearchLocation.TEXTURES_GUI: lambda: check_list(
-                self._texturepacks["swpc_tex_gui.erf"],
-            ),
+            SearchLocation.TEXTURES_TPA: lambda: check_list(self._texturepacks["swpc_tex_tpa.erf"]),
+            SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks["swpc_tex_tpb.erf"]),
+            SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks["swpc_tex_tpc.erf"]),
+            SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks["swpc_tex_gui.erf"]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
@@ -1207,7 +1203,7 @@ class Installation:
                 are: GFF = read_gff(capsule.resource(tag, ResourceType.ARE))
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
-                    name = self._talktable.string(locstring.stringref) or ""
+                    name = self._talktable.string(locstring.stringref) or "" # TODO: why did I add 'or ""'?
                 elif locstring.exists(Language.ENGLISH, Gender.MALE):
                     name = locstring.get(Language.ENGLISH, Gender.MALE) or ""
                 break
