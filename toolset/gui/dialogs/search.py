@@ -1,19 +1,23 @@
-from typing import Dict, List, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem, QWidget
 from utils.window import openResourceEditor
 
-from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
+
+if TYPE_CHECKING:
+    from pykotor.extract.file import FileResource
+    from toolset.data.installation import HTInstallation
 
 
 class FileSearcher(QDialog):
     """Searches through the."""
 
-    def __init__(self, parent: QWidget, installations: Dict[str, HTInstallation]):
+    def __init__(self, parent: QWidget, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
         from toolset.uic.dialogs import search
@@ -24,7 +28,7 @@ class FileSearcher(QDialog):
         self.results = []
         self.installation: Optional[HTInstallation] = None
 
-        self._installations: Dict[str, HTInstallation] = installations
+        self._installations: dict[str, HTInstallation] = installations
         for name, installation in installations.items():
             self.ui.installationSelect.addItem(name, installation)
 
@@ -87,9 +91,9 @@ class FileSearcher(QDialog):
         searchCore: bool,
         searchModules: bool,
         searchOverride: bool,
-        checkTypes: List[ResourceType],
+        checkTypes: list[ResourceType],
     ) -> None:
-        searchIn: List[FileResource] = []
+        searchIn: list[FileResource] = []
         results = []
 
         if searchCore:
@@ -101,15 +105,11 @@ class FileSearcher(QDialog):
 
         def search(resource):
             if resource.restype() in checkTypes:
-                if caseSensitive and text in resource.resname():
-                    results.append(resource)
-                elif caseSensitive and text.lower() in resource.resname().lower():
+                if caseSensitive and text in resource.resname() or caseSensitive and text.lower() in resource.resname().lower():
                     results.append(resource)
                 elif not filenamesOnly:
                     decoded = resource.data().decode(errors="ignore")
-                    if caseSensitive and text in decoded:
-                        results.append(resource)
-                    elif not caseSensitive and text.lower() in decoded.lower():
+                    if caseSensitive and text in decoded or not caseSensitive and text.lower() in decoded.lower():
                         results.append(resource)
 
         searches = [lambda resource=resource: search(resource) for resource in searchIn]
@@ -119,7 +119,7 @@ class FileSearcher(QDialog):
 
 
 class FileResults(QDialog):
-    def __init__(self, parent: QWidget, results: List[FileResource], installation: HTInstallation):
+    def __init__(self, parent: QWidget, results: list[FileResource], installation: HTInstallation):
         super().__init__(parent)
 
         from toolset.uic.dialogs.search_result import Ui_Dialog

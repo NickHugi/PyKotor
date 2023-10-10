@@ -1,5 +1,3 @@
-from typing import List
-
 from PyQt5.QtWidgets import QWidget
 
 from pykotor.common.misc import Color
@@ -11,8 +9,8 @@ class SettingsWidget(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self.binds: List = []
-        self.colours: List = []
+        self.binds: list = []
+        self.colours: list = []
         self.settings = None
 
     def _registerBind(self, widget: SetBindWidget, bindName: str) -> None:

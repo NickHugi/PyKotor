@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import struct
-from typing import List, Optional
+from typing import TYPE_CHECKING, Optional
 
 import glm
 from glm import mat4, vec3, vec4
 
-from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.mdl import Mesh, Model, Node
 
+if TYPE_CHECKING:
+    from pykotor.common.stream import BinaryReader
 
-def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: List[str]) -> Node:
+
+def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: list[str]) -> Node:
     mdl.seek(offset)
     node_type = mdl.read_uint16()
     # supernode_id = mdl.read_uint16()  # noqa: ERA001

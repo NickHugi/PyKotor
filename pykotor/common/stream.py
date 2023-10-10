@@ -1857,7 +1857,7 @@ class BinaryWriterBytearray(BinaryWriter):
         if prefix_length == 0:
             pass
         elif prefix_length == 1:
-            if len(value) > 255:
+            if len(value) > 0xFF:
                 msg = "The string length is too large for a prefix length of 1."
                 raise ValueError(msg)
             self.write_uint8(len(value), big=big)

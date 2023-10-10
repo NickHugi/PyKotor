@@ -171,14 +171,14 @@ def change_textures(
 
         for texture, offsets in offsets.items():
             for offset in offsets:
-                offset += 12
+                new_offset = offset + 12
                 data = (
-                    data[:offset]
+                    data[:new_offset]
                     + struct.pack(
                         "32s",
                         textures[texture].ljust(32, "\0").encode("ascii"),
                     )
-                    + data[offset + 32 :]
+                    + data[new_offset + 32 :]
                 )
 
     return bytes(data)

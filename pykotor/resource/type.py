@@ -237,11 +237,11 @@ class ResourceType:
         A ResourceType and a str are equal if the extension is equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
         """
-        if type(other) is ResourceType:
+        if isinstance(other, ResourceType):
             return self is other
-        if type(other) is str:
+        if isinstance(other, str):
             return self.extension == other
-        if type(other) is int:
+        if isinstance(other, int):
             return self.type_id == other
         return NotImplemented
 

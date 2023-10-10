@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 from contextlib import suppress
 from copy import copy
@@ -28,8 +27,14 @@ from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.resource.formats.gff import GFF
 
+
+def is_kotor_install_dir(path: os.PathLike | str) -> bool:
+    c_path: CaseAwarePath = CaseAwarePath(path)
+    return c_path.is_dir() and c_path.joinpath("chitin.key").exists()
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
 class SearchLocation(IntEnum):
@@ -103,10 +108,10 @@ class Installation:
         self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
-        self._override: dict[str, list[FileResource]] = {}
+        self._override = CaseInsensitiveDict()
         self._streammusic: list[FileResource] = []
         self._streamsounds: list[FileResource] = []
-        self._streamvoices: list[FileResource] = []
+        self._streamwaves: list[FileResource] = []
         self._rims: dict[str, list[FileResource]] = {}
 
         self.log.add_note("Load modules...")
@@ -123,8 +128,8 @@ class Installation:
         self.load_streammusic()
         self.log.add_note("Load streamsounds...")
         self.load_streamsounds()
-        self.log.add_note("Load streamvoices...")
-        self.load_streamvoices()
+        self.log.add_note(f"Load {'streamvoice' if self.game() == Game.K2 else 'streamwaves'}...")
+        self.load_streamwaves()
         self.log.add_note("Load rims...")
         self.load_rims()
         self.log.add_note("Finished loading installation")
@@ -231,20 +236,22 @@ class Installation:
         optional: bool = False,
     ) -> CaseAwarePath:
         resource_path = self._path
-        folder_names_lower: set[str] = {name.lower() for name in folder_names}
 
-        for folder_path in resource_path.iterdir():
-            if folder_path.is_dir() and folder_path.name.lower() in folder_names_lower:
-                resource_path = folder_path
+        for folder_name in folder_names:
+            resource_path = resource_path / folder_name
+            if resource_path.is_dir():
                 break
         if resource_path == self._path:
             if optional:
-                return CaseAwarePath(resource_path, folder_names[0])
+                return next(
+                    (self._path / name for name in folder_names if (self._path / name).exists()),
+                    self._path / folder_names[0],
+                )
             raise ValueError(error_msg.format(self._path))
 
         return resource_path
 
-    def streamvoice_path(self) -> CaseAwarePath:
+    def streamwaves_path(self) -> CaseAwarePath:
         """Returns the path to streamvoice folder of the Installation. This method maintains the case of the foldername.
 
         In the first game, this folder has been named "streamwaves".
@@ -304,32 +311,7 @@ class Installation:
         for module in texturepacks_files:
             self._texturepacks[module.name] = list(Capsule(texturepacks_path / module))
 
-    def load_override(self) -> None:
-        """Reloads the list of subdirectories in the override folder linked to the Installation."""
-        self._override = {}
-        override_path = self.override_path()
-
-        for current_path, _, files in os.walk(override_path):
-            current_path_obj = CaseAwarePath(current_path)
-            relative_dir = str(current_path_obj.relative_to(override_path))
-
-            self._override[relative_dir] = []
-
-            for filename in files:
-                full_file_path = current_path_obj / filename
-                with suppress(Exception):
-                    name, ext = filename.rsplit(".", 1)
-                    size = full_file_path.stat().st_size
-                    resource = FileResource(
-                        name,
-                        ResourceType.from_extension(ext),
-                        size,
-                        0,
-                        full_file_path,
-                    )
-                    self._override[relative_dir].append(resource)
-
-    def reload_override(self, directory: str) -> None:
+    def reload_override(self, directory: str | None = None) -> None:
         """Reloads the list of resources in subdirectory of the override folder linked to the Installation.
 
         Args:
@@ -337,73 +319,80 @@ class Installation:
             directory: The subdirectory in the override folder.
         """
         override_path = self.override_path()
-        override_subfolder_path = override_path / directory
+        target_dirs = [override_path / directory] if directory else [f for f in override_path.rglob("*") if f.is_dir()]
 
-        self._override[directory] = []
-        for file in override_subfolder_path.iterdir():
-            with suppress(Exception):
-                size = file.stat().st_size
-                resource = FileResource(
+        for folder in target_dirs:
+            relative_folder = str(folder.relative_to(override_path))
+            self._override[relative_folder] = [
+                FileResource(
                     file.name,
                     ResourceType.from_extension(file.suffix[1:]),
+                    file.stat().st_size,
+                    0,
+                    file,
+                )
+                for file in folder.iterdir()
+                if not file.is_dir()
+            ]
+
+    def load_override(self) -> None:
+        """Reloads the list of subdirectories in the override folder linked to the Installation."""
+        self._override = {}
+        override_path = self.override_path()
+
+        for file in override_path.rglob("*"):
+            relative_dir = str(file.relative_to(override_path))
+            self._override[relative_dir] = []
+            with suppress(Exception):
+                name, ext = file.stem, file.suffix[1:]
+                size = file.stat().st_size
+                resource = FileResource(
+                    name,
+                    ResourceType.from_extension(ext),
                     size,
                     0,
                     file,
                 )
-                self._override[directory].append(resource)
+                self._override[relative_dir].append(resource)
 
-    def load_streammusic(self) -> None:
-        self._streammusic = []
-        streammusic_path = self.streammusic_path()
-        for file in streammusic_path.iterdir():
+    def load_resources_list(self, path: os.PathLike | str, recurse=True) -> list[FileResource]:
+        """Load resources for a given path and store them in the provided list.
+
+        Args:
+        ----
+            path_method (os.PathLike | str): path for lookup.
+            recurse (bool): whether to recurse into subfolders (default is True)
+
+        Returns:
+        -------
+            (list[FileResource]): The list where resources at the path have been stored.
+        """
+        c_path = CaseAwarePath(path)
+        resource_list = []
+        for file in c_path.rglob("*") if recurse else c_path.iterdir():
             with suppress(Exception):
-                file_path = streammusic_path / file
-                identifier = ResourceIdentifier.from_path(file_path)
+                identifier = ResourceIdentifier.from_path(file)
                 resource = FileResource(
                     identifier.resname,
                     identifier.restype,
-                    file_path.stat().st_size,
+                    file.stat().st_size,
                     0,
-                    file_path,
+                    file,
                 )
+                resource_list.append(resource)
+        return resource_list
 
-                self._streammusic.append(resource)
+    def load_streammusic(self) -> None:
+        """Reloads the list of resources in the streammusic folder linked to the Installation."""
+        self._streammusic = self.load_resources_list(self.streammusic_path(), recurse=False)
 
     def load_streamsounds(self) -> None:
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
-        self._streamsounds = []
-        streamsounds_path = self.streamsounds_path()
-        for file in streamsounds_path.iterdir():
-            with suppress(Exception):
-                file_path = streamsounds_path / file
-                identifier = ResourceIdentifier.from_path(file_path)
-                resource = FileResource(
-                    identifier.resname,
-                    identifier.restype,
-                    file_path.stat().st_size,
-                    0,
-                    file_path,
-                )
+        self._streamsounds = self.load_resources_list(self.streamsounds_path(), recurse=False)
 
-                self._streamsounds.append(resource)
-
-    def load_streamvoices(self) -> None:
-        """Reloads the list of resources in the streamvoices folder linked to the Installation."""
-        self._streamvoices = []
-        streamvoices_path = self.streamvoice_path()
-        for dirpath, _dirnames, filenames in os.walk(streamvoices_path):
-            for filename in filenames:
-                with suppress(Exception):
-                    file_path = CaseAwarePath(dirpath, filename)
-                    identifier = ResourceIdentifier.from_path(file_path)
-                    resource = FileResource(
-                        identifier.resname,
-                        identifier.restype,
-                        file_path.stat().st_size,
-                        0,
-                        file_path,
-                    )
-                    self._streamvoices.append(resource)
+    def load_streamwaves(self) -> None:
+        """Reloads the list of resources in the streamvoice/streamwaves folder linked to the Installation."""
+        self._streamwaves = self.load_resources_list(self.streamwaves_path(), recurse=True)
 
     def load_rims(
         self,
@@ -412,9 +401,9 @@ class Installation:
         self._rims = {}
         with suppress(ValueError):
             rims_path: CaseAwarePath = self.rims_path()
-            file_list: list[CaseAwarePath] = [file for file in rims_path.iterdir() if is_rim_file(file.name)]
-            for file_path in file_list:
-                self._rims[file_path.name] = list(Capsule(rims_path / file_path))
+            for file in rims_path.iterdir():
+                if is_rim_file(file.name):
+                    self._rims[file.name] = list(Capsule(file))
 
     # endregion
 
@@ -535,9 +524,13 @@ class Installation:
     # endregion
 
     def game(self) -> Game:
-        if CaseAwarePath(self._path / "swkotor2.exe").exists():
+        if (self._path.joinpath("streamvoice").exists() or self._path.joinpath("swkotor2.exe")) and is_kotor_install_dir(
+            self._path,
+        ):
             return Game(2)
-        if CaseAwarePath(self._path / "swkotor.exe").exists():
+        if (self._path.joinpath("streamwaves").exists() or self._path.joinpath("swkotor.exe")) and is_kotor_install_dir(
+            self._path,
+        ):
             return Game(1)
         msg = "Could not find the game executable!"
         raise ValueError(msg)
@@ -626,7 +619,7 @@ class Installation:
             location_list = locations.get(query, [])
 
             if not location_list:
-                self.log.add_error(f"Resource not found: {query}")
+                self.log.add_error(f"Resource not found: '{query}'")
                 results[query] = None
                 continue
 
@@ -770,9 +763,9 @@ class Installation:
                         locations[resource.identifier()].append(location)
 
         def check_folders(values: list[CaseAwarePath]):
-            for folder in values:
-                folder = CaseAwarePath(folder)
-                for file in folder.iterdir():
+            for folderpath in values:
+                c_folderpath = CaseAwarePath(folderpath)
+                for file in c_folderpath.iterdir():
                     if not file.is_file():
                         continue
                     for query in queries:
@@ -794,7 +787,7 @@ class Installation:
                                 locations[identifier].append(location)
 
         function_map = {
-            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),  # type: ignore[case insensitive dict]
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -813,7 +806,7 @@ class Installation:
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
-            SearchLocation.VOICE: lambda: check_list(self._streamvoices),
+            SearchLocation.VOICE: lambda: check_list(self._streamwaves),
             SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
         }
@@ -865,7 +858,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[CaseAwarePath] | None = None,
+        folders: list[CaseAwarePath | str] | None = None,
     ) -> CaseInsensitiveDict[TPC | None]:
         """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
         texture could not be found then the value is None.
@@ -924,19 +917,19 @@ class Installation:
                         resource = capsule.resource(resname, ResourceType.TGA)
                         textures[resname] = read_tpc(resource)
 
-        def check_folders(values: list[CaseAwarePath]):
+        def check_folders(values: list[CaseAwarePath | str]):
             for folder in values:
-                folder = CaseAwarePath(folder)
-                for file in [file for file in folder.iterdir() if file.is_file()]:
+                c_folder = folder if isinstance(folder, CaseAwarePath) else CaseAwarePath(folder)
+                for file in [file for file in c_folder.iterdir() if file.is_file()]:
                     identifier = ResourceIdentifier.from_path(file.name)
-                    filepath: CaseAwarePath = CaseAwarePath(folder, file)
+                    filepath: CaseAwarePath = CaseAwarePath(c_folder, file)
                     for resname in queries:
                         if identifier.resname == resname and identifier.restype in texture_types:
                             data = BinaryReader.load_file(filepath)
                             textures[resname] = read_tpc(data)
 
         function_map = {
-            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),  # type: ignore[case insensitive dict]
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -955,7 +948,7 @@ class Installation:
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
-            SearchLocation.VOICE: lambda: check_list(self._streamvoices),
+            SearchLocation.VOICE: lambda: check_list(self._streamwaves),
             SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
         }
@@ -1068,7 +1061,7 @@ class Installation:
                             sounds[resname] = fix_audio(data)
 
         function_map = {
-            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),  # type: ignore[case insensitive dict]
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -1087,7 +1080,7 @@ class Installation:
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
-            SearchLocation.VOICE: lambda: check_list(self._streamvoices),
+            SearchLocation.VOICE: lambda: check_list(self._streamwaves),
             SearchLocation.CUSTOM_MODULES: lambda: check_capsules(capsules),
             SearchLocation.CUSTOM_FOLDERS: lambda: check_folders(folders),
         }

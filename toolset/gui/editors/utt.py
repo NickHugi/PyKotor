@@ -1,6 +1,6 @@
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from PyQt5.QtWidgets import QWidget
+from typing import TYPE_CHECKING, Optional
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -9,6 +9,9 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class UTTEditor(Editor):
@@ -87,7 +90,7 @@ class UTTEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         utt = self._utt
 
         # Basic

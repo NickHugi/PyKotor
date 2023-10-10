@@ -392,18 +392,7 @@ class _Node:
             self.trimesh.write(writer, game)
 
         if self.trimesh:
-            [writer.write_uint32(count) for count in self.trimesh.indices_counts]
-            [writer.write_uint32(offset) for offset in self.trimesh.indices_offsets]
-            [writer.write_uint32(counter) for counter in self.trimesh.inverted_counters]
-
-            for face in self.trimesh.faces:
-                writer.write_uint16(face.vertex1)
-                writer.write_uint16(face.vertex2)
-                writer.write_uint16(face.vertex3)
-
-            [writer.write_vector3(vertex) for vertex in self.trimesh.vertices]
-            [face.write(writer) for face in self.trimesh.faces]
-
+            self._write_trimesh_data(writer)
         for child_offset in self.children_offsets:
             writer.write_uint32(child_offset)
 
@@ -416,6 +405,19 @@ class _Node:
         if len(self.children_offsets) != self.header.children_count:
             msg = f"Number of child offsets in array does not match header count in {self.header.name_id} ({len(self.children_offsets)} vs {self.header.children_count})."
             raise ValueError(msg)
+
+    def _write_trimesh_data(self, writer: BinaryWriter):
+        [writer.write_uint32(count) for count in self.trimesh.indices_counts]
+        [writer.write_uint32(offset) for offset in self.trimesh.indices_offsets]
+        [writer.write_uint32(counter) for counter in self.trimesh.inverted_counters]
+
+        for face in self.trimesh.faces:
+            writer.write_uint16(face.vertex1)
+            writer.write_uint16(face.vertex2)
+            writer.write_uint16(face.vertex3)
+
+        [writer.write_vector3(vertex) for vertex in self.trimesh.vertices]
+        [face.write(writer) for face in self.trimesh.faces]
 
     def all_headers_size(
         self,

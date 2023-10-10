@@ -1,4 +1,6 @@
-from typing import Dict, List, NamedTuple
+from __future__ import annotations
+
+from typing import NamedTuple
 
 from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
 
@@ -14,12 +16,12 @@ _INSTALLATION_INDEX = 1
 class ModuleOption(NamedTuple):
     name: str
     root: str
-    files: List[str]
+    files: list[str]
     installation: HTInstallation
 
 
 class CloneModuleDialog(QDialog):
-    def __init__(self, parent: QWidget, active: HTInstallation, installations: Dict[str, HTInstallation]):
+    def __init__(self, parent: QWidget, active: HTInstallation, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
         from toolset.uic.dialogs import clone_module
@@ -28,7 +30,7 @@ class CloneModuleDialog(QDialog):
         self.ui.setupUi(self)
 
         self._active: HTInstallation = active
-        self._installations: Dict[str, HTInstallation] = {active.name: active}
+        self._installations: dict[str, HTInstallation] = {active.name: active}
 
         self.ui.createButton.clicked.connect(self.ok)
         self.ui.cancelButton.clicked.connect(self.close)
@@ -82,7 +84,7 @@ class CloneModuleDialog(QDialog):
             ).exec_()
 
     def loadModules(self) -> None:
-        options: Dict[str, ModuleOption] = {}
+        options: dict[str, ModuleOption] = {}
         for installation in self._installations.values():
             for filename, name in installation.module_names().items():
                 root = Module.get_root(filename)

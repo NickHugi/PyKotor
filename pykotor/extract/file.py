@@ -112,7 +112,7 @@ class ResourceResult(NamedTuple):
     resname: str
     restype: ResourceType
     filepath: CaseAwarePath
-    data: bytes | None
+    data: bytes
 
 
 class LocationResult(NamedTuple):

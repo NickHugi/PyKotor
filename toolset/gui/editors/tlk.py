@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from time import sleep
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSortFilterProxyModel, QThread
@@ -9,8 +11,10 @@ from PyQt5.QtWidgets import QDialog, QProgressBar, QShortcut, QVBoxLayout, QWidg
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import TLK, TLKEntry, read_tlk, write_tlk
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from toolset.data.installation import HTInstallation
 
 
 class TLKEditor(Editor):
@@ -79,7 +83,7 @@ class TLKEditor(Editor):
         self.ui.textEdit.setEnabled(False)
         self.ui.soundEdit.setEnabled(False)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         tlk = TLK()
 
         for i in range(self.model.rowCount()):
@@ -168,7 +172,7 @@ class LoaderDialog(QDialog):
     def onEntryCount(self, count: int):
         self._progressBar.setMaximum(count)
 
-    def onBatch(self, batch: List[QStandardItem]):
+    def onBatch(self, batch: [QStandardItem]):
         for row in batch:
             self.model.appendRow(row)
             index = self.model.rowCount() - 1

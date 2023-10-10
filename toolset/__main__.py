@@ -1,15 +1,22 @@
+from __future__ import annotations
+
 import multiprocessing
 import os
+from pathlib import Path
 import sys
 import traceback
-from types import TracebackType
 
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
 sys.path.append(".")
 sys.path.append("..")
+from typing import TYPE_CHECKING
+
 from toolset.gui.windows.main import ToolWindow
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
 os.environ["QT_DEBUG_PLUGINS"] = "1"
@@ -20,7 +27,7 @@ os.environ["QT_DEBUG_PLUGINS"] = "1"
 
 
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):
-    with open("errorlog.txt", "a") as file:
+    with Path("errorlog.txt").open("a") as file:
         file.writelines(traceback.format_exception(e, value, tback))
         file.write("\n----------------------\n")
     raise e

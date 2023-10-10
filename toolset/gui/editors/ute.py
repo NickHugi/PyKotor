@@ -1,4 +1,6 @@
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import Optional
 
 from PyQt5.QtWidgets import (
     QCheckBox,
@@ -97,7 +99,7 @@ class UTEEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         ute = self._ute
 
         # Basic

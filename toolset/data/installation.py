@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 from contextlib import suppress
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
-from PyQt5.QtWidgets import QWidget
 
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.formats.twoda import TwoDA, read_2da
-from pykotor.resource.generics.uti import UTI
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
+
+    from pykotor.resource.generics.uti import UTI
 
 
 class HTInstallation(Installation):
@@ -66,8 +71,8 @@ class HTInstallation(Installation):
         self.main_window: QWidget = main_window
         self.cacheCoreItems: Optional[QStandardItemModel] = None
 
-        self._cache2da: Dict[str, TwoDA] = {}
-        self._cacheTpc: Dict[str, TPC] = {}
+        self._cache2da: dict[str, TwoDA] = {}
+        self._cacheTpc: dict[str, TPC] = {}
 
     # region Cache 2DA
     def htGetCache2DA(self, resname: str):
@@ -77,7 +82,7 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
+    def htBatchCache2DA(self, resnames: list[str], reload: bool = False):
         if reload:
             queries = [ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames]
         else:
@@ -102,7 +107,7 @@ class HTInstallation(Installation):
             self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
         return self._cacheTpc[resname] if resname in self._cacheTpc else None
 
-    def htBatchCacheTPC(self, names: List[str], reload: bool = False):
+    def htBatchCacheTPC(self, names: list[str], reload: bool = False):
         if reload:
             queries = list(names)
         else:

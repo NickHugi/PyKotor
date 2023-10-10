@@ -1,6 +1,7 @@
 # Rigorously test the string result of each pathlib module.
 # The goal isn't really to test pathlib.Path or pykotor\tools\path, the goal is to determine if there was a breaking change in a patch release.
 import os
+import sys
 import unittest
 from unittest.mock import patch
 from pykotor.tools.path import PurePosixPath as CustomPurePosixPath
@@ -68,8 +69,12 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
                 # Network Paths
                 self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder\\")
-                self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\server\\folder")
-                self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\server\\folder")
+                if sys.version_info < (3, 12):
+                    self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\server\\folder")
+                    self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\server\\folder")
+                else:
+                    self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
+                    self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
                 self.assertEqual(
                     str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
@@ -88,9 +93,13 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
                 # Bizarre Scenarios
                 self.assertEqual(str(PathType("")), ".")
-                self.assertEqual(str(PathType("//")), "\\")
+                if sys.version_info < (3, 12):
+                    self.assertEqual(str(PathType("//")), "\\")
+                    self.assertEqual(str(PathType("///")), "\\")
+                else:
+                    self.assertEqual(str(PathType("//")), "\\\\")
+                    self.assertEqual(str(PathType("///")), "\\\\\\")
                 self.assertEqual(str(PathType("C:")), "C:")
-                self.assertEqual(str(PathType("///")), "\\")
                 self.assertEqual(str(PathType("C:/./Users/../test/")), "C:\\Users\\..\\test")
                 self.assertEqual(str(PathType("~/folder/")), "~\\folder")
 

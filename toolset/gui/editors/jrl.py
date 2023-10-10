@@ -1,6 +1,7 @@
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from PyQt5.QtCore import QItemSelection, QPoint
+from typing import TYPE_CHECKING, Optional
+
 from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView, QWidget
 
@@ -17,6 +18,9 @@ from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from PyQt5.QtCore import QItemSelection, QPoint
 
 
 class JRLEditor(Editor):
@@ -106,7 +110,7 @@ class JRLEditor(Editor):
                 self.refreshEntryItem(entryItem)
                 questItem.appendRow(entryItem)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
         write_gff(dismantle_jrl(self._jrl), data)
         return data, b""

@@ -1,18 +1,22 @@
-from typing import Set
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QWidget
 from utils.misc import getStringFromKey
 
-from toolset.data.misc import Bind
+if TYPE_CHECKING:
+    from PyQt5.QtGui import QKeyEvent
+
+    from toolset.data.misc import Bind
 
 
 class SetBindWidget(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self.keybind: Set[int] = set()
+        self.keybind: set[int] = set()
         self.recordBind: bool = False
 
         from toolset.uic.widgets.set_bind import Ui_Form
@@ -65,7 +69,7 @@ class SetBindWidget(QWidget):
         self.updateKeybindText()
 
     def bind(self) -> Bind:
-        mousebind: Set[int] = self.ui.mouseCombo.currentData()
+        mousebind: set[int] = self.ui.mouseCombo.currentData()
         return self.keybind, mousebind
 
     def updateKeybindText(self) -> None:

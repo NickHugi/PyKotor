@@ -23,16 +23,16 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertSetEqual(test_set, {CaseAwarePath("TEST\\path\\to\\nothing")})
 
     def test_valid_name_property(self):
-        self.assertTrue((CaseAwarePath("test", "data\\something.test")).name == "something.test")
-        self.assertTrue((CaseAwarePath("test") / "data/something.test").name == "something.test")
-        self.assertTrue((CaseAwarePath("test").joinpath("data\\something.test")).name == "something.test")
-        self.assertTrue((CaseAwarePath("test").joinpath("data/something.test")).name == "something.test")
+        self.assertEqual((CaseAwarePath("test", "data\\something.test")).name, "something.test")
+        self.assertEqual((CaseAwarePath("test") / "data/something.test").name, "something.test")
+        self.assertEqual((CaseAwarePath("test").joinpath("data\\something.test")).name, "something.test")
+        self.assertEqual((CaseAwarePath("test").joinpath("data/something.test")).name, "something.test")
 
     def test_valid_name_property_on_pathlib_path(self):
-        self.assertTrue(CaseAwarePath(Path("data\\something.test")).name == "something.test")
-        self.assertTrue(CaseAwarePath(Path("data/something.test")).name == "something.test")
-        self.assertTrue((CaseAwarePath("test", Path("data\\something.test"))).name == "something.test")
-        self.assertTrue((CaseAwarePath("test") / Path("data/something.test")).name == "something.test")
+        self.assertEqual(CaseAwarePath(Path("data\\something.test")).name, "something.test")
+        self.assertEqual(CaseAwarePath(Path("data/something.test")).name, "something.test")
+        self.assertEqual((CaseAwarePath("test", Path("data\\something.test"))).name, "something.test")
+        self.assertEqual((CaseAwarePath("test") / Path("data/something.test")).name, "something.test")
 
     def test_new_invalid_argument(self):
         with self.assertRaises(TypeError):
@@ -47,7 +47,7 @@ class TestCaseAwarePath(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_find_closest_match(self):
         items = [CaseAwarePath("test"), CaseAwarePath("TEST"), CaseAwarePath("TesT"), CaseAwarePath("teSt")]
-        self.assertEqual(str(CaseAwarePath._find_closest_match("teST", items)), "teSt")
+        self.assertEqual(str(CaseAwarePath._find_closest_match("teST", items)), "teSt") # type: ignore[generator vs list]
 
     @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_get_matching_characters_count(self):

@@ -38,7 +38,7 @@ class AudioPlayer(QMainWindow):
         self.player.stop()
         self.buffer = QBuffer(self)
         self.buffer.setData(data)
-        self.setWindowTitle(resname + "." + restype.extension + " - Audio Player")
+        self.setWindowTitle(f"{resname}.{restype.extension} - Audio Player")
         if self.buffer.open(QIODevice.ReadOnly):
             self.player.setMedia(QMediaContent(), self.buffer)
             QtCore.QTimer.singleShot(0, self.player.play)

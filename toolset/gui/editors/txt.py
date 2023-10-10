@@ -1,4 +1,6 @@
-from typing import Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 try:
     import chardet
@@ -6,9 +8,11 @@ except ImportError:
     chardet = None
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
-from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    from pykotor.extract.installation import Installation
 
 
 class TXTEditor(Editor):
@@ -47,7 +51,7 @@ class TXTEditor(Editor):
                 except UnicodeDecodeError:
                     self.ui.textEdit.setPlainText(data.decode(encoding="windows-1252", errors="replace"))
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode(), b""
 
     def new(self) -> None:

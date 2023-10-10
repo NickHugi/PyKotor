@@ -4,7 +4,7 @@ import ctypes
 import math
 import struct
 from copy import copy
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import glm
 import numpy as np
@@ -52,7 +52,7 @@ class Model:
             nodes.extend(node.children)
         return None
 
-    def all(self) -> List[Node]:
+    def all(self) -> list[Node]:
         all_nodes = []
         search = [self.root]
         while search:
@@ -61,7 +61,7 @@ class Model:
             all_nodes.append(node)
         return all_nodes
 
-    def box(self) -> Tuple[vec3, vec3]:
+    def box(self) -> tuple[vec3, vec3]:
         min_point = vec3(100000, 100000, 100000)
         max_point = vec3(-100000, -100000, -100000)
         self._box_rec(self.root, mat4(), min_point, max_point)
@@ -105,7 +105,7 @@ class Node:
         self._transform: mat4 = mat4()
         self._position: vec3 = glm.vec3()
         self._rotation: quat = glm.quat()
-        self.children: List[Node] = []
+        self.children: list[Node] = []
         self.render: bool = True
         self.mesh: Optional[Mesh] = None
 
@@ -117,7 +117,7 @@ class Node:
             ancestor = ancestor._parent
         return ancestor
 
-    def ancestors(self) -> List[Node]:
+    def ancestors(self) -> list[Node]:
         ancestors = []
         ancestor = self._parent
         while ancestor:
@@ -299,7 +299,7 @@ class Cube:
 
 
 class Boundary:
-    def __init__(self, scene: Scene, vertices: List[Vector3]):
+    def __init__(self, scene: Scene, vertices: list[Vector3]):
         self._scene = scene
 
         vertices, elements = self._build_nd(vertices)
@@ -348,7 +348,7 @@ class Boundary:
         glBindVertexArray(self._vao)
         glDrawElements(GL_TRIANGLES, self._face_count, GL_UNSIGNED_SHORT, None)
 
-    def _build_nd(self, vertices) -> Tuple[ndarray, ndarray]:
+    def _build_nd(self, vertices) -> tuple[ndarray, ndarray]:
         npvertices = []
         [npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z+2)]) for vertex in vertices]
 

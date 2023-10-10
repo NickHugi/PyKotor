@@ -4,9 +4,10 @@ import json
 import tempfile
 import traceback
 from contextlib import suppress
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from distutils.version import StrictVersion
-from typing import TYPE_CHECKING, ClassVar, List, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar, Optional
 
 import requests
 from config import PROGRAM_VERSION, UPDATE_INFO_LINK
@@ -27,6 +28,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_rim_file
 from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.string import ireplace
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
@@ -224,7 +226,7 @@ class ToolWindow(QMainWindow):
     def onTexturesChanged(self, new_texture_pack: str) -> None:
         self.ui.texturesWidget.setResources(self.active.texturepack_resources(new_texture_pack))
 
-    def onExtractResources(self, resources: List[FileResource]) -> None:
+    def onExtractResources(self, resources: list[FileResource]) -> None:
         if len(resources) == 1:
             # Player saves resource with a specific name
             default = f"{resources[0].resname()}.{resources[0].restype().extension}"
@@ -249,7 +251,7 @@ class ToolWindow(QMainWindow):
 
                 loader.exec_()
 
-    def onOpenResources(self, resources: List[FileResource], use_specialized_editor: Optional[bool] = None) -> None:
+    def onOpenResources(self, resources: list[FileResource], use_specialized_editor: Optional[bool] = None) -> None:
         for resource in resources:
             filepath, editor = openResourceEditor(
                 str(resource.filepath()),
@@ -270,8 +272,8 @@ class ToolWindow(QMainWindow):
     def dropEvent(self, e: QtGui.QDropEvent) -> None:
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
-                filepath = url.toLocalFile()
-                with open(filepath, "rb") as file:
+                filepath = Path(url.toLocalFile())
+                with filepath.open("rb") as file:
                     resref, restype = ResourceIdentifier.from_path(filepath)
                     data = file.read()
                     openResourceEditor(filepath, resref, restype, data, self.active, self)
@@ -406,7 +408,7 @@ class ToolWindow(QMainWindow):
             silent: If true, only shows popup if an update is available.
         """
         try:
-            req = requests.get(UPDATE_INFO_LINK)
+            req = requests.get(UPDATE_INFO_LINK, timeout=120)
             data = json.loads(req.text)
 
             latest_version = data["latestVersion"]
@@ -472,14 +474,14 @@ class ToolWindow(QMainWindow):
         for module in sortedKeys:
             # Some users may choose to have their RIM files for the same module merged into a single option for the
             # dropdown menu.
-            if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
+            if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
                 continue
 
             item = QStandardItem(f"{areaNames[module]} [{module}]")
             item.setData(module, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and module.endswith(".rim"):
+            if self.settings.greyRIMText and module.lower().endswith(".rim"):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
@@ -511,8 +513,8 @@ class ToolWindow(QMainWindow):
     def changeModule(self, module: str) -> None:
         # Some users may choose to merge their RIM files under one option in the Modules tab; if this is the case we
         # need to account for this.
-        if self.settings.joinRIMsTogether and module.endswith("_s.rim"):
-            module = module.replace("_s.rim", ".rim")
+        if self.settings.joinRIMsTogether and module.lower().endswith("_s.rim"):
+            module = ireplace(module, "_s.rim", ".rim")
 
         self.ui.modulesWidget.changeSection(module)
 
@@ -622,9 +624,9 @@ class ToolWindow(QMainWindow):
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader) -> None:
         try:
             data = resource.data()
-            filepath: CaseAwarePath = CaseAwarePath(filepath)
-            folderpath = filepath.parent
-            filename = filepath.name
+            c_filepath: CaseAwarePath = CaseAwarePath(filepath)
+            folderpath = c_filepath.parent
+            filename = c_filepath.name
 
             decompile_tpc = self.ui.tpcDecompileCheckbox.isChecked()
             extract_txi = self.ui.tpcTxiCheckbox.isChecked()
@@ -649,7 +651,7 @@ class ToolWindow(QMainWindow):
                 if decompile_tpc:
                     data = bytearray()
                     write_tpc(tpc, data, ResourceType.TGA)
-                    filepath = filepath.with_suffix(filepath.suffix.lower().replace(".tpc", ".tga"))
+                    c_filepath = c_filepath.with_suffix(c_filepath.suffix.lower().replace(".tpc", ".tga"))
             if resource.restype() == ResourceType.MDL and manipulate_mdl:
                 if decompile_mdl:
                     mdx_data = self.active.resource(resource.resname(), ResourceType.MDX).data
@@ -657,7 +659,7 @@ class ToolWindow(QMainWindow):
 
                     data = bytearray()
                     write_mdl(mdl, data, ResourceType.MDL_ASCII)
-                    filepath = filepath.replace(".mdl", ".ascii.mdl")
+                    c_filepath = c_filepath.replace(".mdl", ".ascii.mdl")
 
                 if extract_textures_mdl:
                     try:
@@ -679,7 +681,7 @@ class ToolWindow(QMainWindow):
                             ),
                         )
 
-            with filepath.open("wb") as file:
+            with c_filepath.open("wb") as file:
                 file.write(data)
         except Exception as e:
             traceback.print_exc()
@@ -706,13 +708,13 @@ class ToolWindow(QMainWindow):
 class FolderObserver(FileSystemEventHandler):
     def __init__(self, window: ToolWindow):
         self.window = window
-        self.lastModified = datetime.now()
+        self.lastModified = datetime.now(timezone.utc).astimezone()
 
     def on_any_event(self, event):
-        if datetime.now() - self.lastModified < timedelta(seconds=1):
+        if datetime.now(timezone.utc).astimezone() - self.lastModified < timedelta(seconds=1):
             return
 
-        self.lastModified = datetime.now()
+        self.lastModified = datetime.now(timezone.utc).astimezone()
 
         module_path = self.window.active.module_path()
         override_path = self.window.active.override_path()

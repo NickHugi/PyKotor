@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy, deepcopy
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
@@ -184,7 +184,7 @@ class DLGEditor(Editor):
             self._loadDLGRec(item, start, seen_link, seen_node)
             self.model.appendRow(item)
 
-    def _loadDLGRec(self, item: QStandardItem, link: DLGLink, seen_link: List[DLGLink], seen_node: List[DLGNode]):
+    def _loadDLGRec(self, item: QStandardItem, link: DLGLink, seen_link: list[DLGLink], seen_node: list[DLGNode]):
         node = link.node
         item.setData(link, _LINK_ROLE)
 
@@ -203,7 +203,7 @@ class DLGEditor(Editor):
                 self._loadDLGRec(child_item, child_link, seen_link, seen_node)
                 item.appendRow(child_item)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         self._dlg.on_abort = ResRef(self.ui.onAbortEdit.text())
         self._dlg.on_end = ResRef(self.ui.onEndEdit.text())
         self._dlg.vo_id = self.ui.voIdEdit.text()
@@ -297,7 +297,7 @@ class DLGEditor(Editor):
         for i, label in enumerate(videoEffects.get_column("label")):
             self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
 
-    def editText(self, e) -> None:  # noqa: ARG002
+    def editText(self, e) -> None:  # noqa: ARG002, RUF100
         indexes = self.ui.dialogTree.selectionModel().selectedIndexes()
         if indexes:
             item = self.model.itemFromIndex(indexes[0])

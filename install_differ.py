@@ -368,12 +368,12 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
     streamwaves_path1: CaseAwarePath = (
         install_path1.joinpath("streamwaves")
         if install_path1.joinpath("streamwaves").exists()
-        else install_path1.joinpath("streamvoices")
+        else install_path1.joinpath("streamvoice")
     )
     streamwaves_path2: CaseAwarePath = (
         install_path2.joinpath("streamwaves")
         if install_path2.joinpath("streamwaves").exists()
-        else install_path2.joinpath("streamvoices")
+        else install_path2.joinpath("streamvoice")
     )
     is_same_result = diff_directories(streamwaves_path1, streamwaves_path2) and is_same_result
     return is_same_result  # noqa: RET504

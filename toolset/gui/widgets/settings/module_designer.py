@@ -1,11 +1,15 @@
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
 from utils.misc import QtKey, QtMouse
 
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget
+
+if TYPE_CHECKING:
+    from PyQt5.QtWidgets import QWidget
 
 
 class ModuleDesignerWidget(SettingsWidget):
@@ -15,8 +19,8 @@ class ModuleDesignerWidget(SettingsWidget):
         super().__init__(parent)
 
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
-        self.binds: List = []
-        self.colours: List = []
+        self.binds: list = []
+        self.colours: list = []
 
         from toolset.uic.widgets.settings import module_designer
 

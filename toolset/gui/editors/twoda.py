@@ -113,7 +113,7 @@ class TwoDAEditor(Editor):
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         twoda = TwoDA()
 
         for i in range(self.model.columnCount())[1:]:
@@ -177,7 +177,7 @@ class TwoDAEditor(Editor):
         topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
         topLeftItem = self.model.itemFromIndex(topLeftIndex)
 
-        top, left = y, x = topLeftItem.row(), topLeftItem.column()
+        _top, left = y, x = topLeftItem.row(), topLeftItem.column()
 
         for row in rows:
             for cell in row.split("\t"):

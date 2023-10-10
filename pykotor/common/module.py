@@ -102,7 +102,7 @@ class Module:
         """
         c_file_path = CaseAwarePath(filepath)
         root = str(
-            c_file_path.with_suffix(c_file_path.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", ""))
+            c_file_path.with_suffix(c_file_path.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")),
         )
         roota = root[:5]
         rootb = root[5:]
@@ -596,7 +596,7 @@ class ModuleResource(Generic[T]):
             return self._installation.string(res.name)
         return None
 
-    def data(self) -> bytes:
+    def data(self) -> bytes | None:
         """Opens the file at the active location and returns the data.
 
         Raises
@@ -611,17 +611,16 @@ class ModuleResource(Generic[T]):
             msg = f"No file is currently active for resource '{self.resname}.{self._restype.extension}'."
             raise ValueError(msg)
         if is_capsule_file(self._active.name):
-            capsule = Capsule(self._active)
-            return capsule.resource(self._resname, self._restype)
+            return Capsule(self._active).resource(self._resname, self._restype)
         if is_bif_file(self._active.name):
             return self._installation.resource(
                 self._resname,
                 self._restype,
                 [SearchLocation.CHITIN],
-            ).data
+            ).__dict__.get("data", None)
         return BinaryReader.load_file(self._active)
 
-    def resource(self) -> T | None:
+    def resource(self) -> T:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
         Returns
@@ -717,13 +716,17 @@ class ModuleResource(Generic[T]):
         self._resource = None
         self.resource()
 
-    def active(self) -> CaseAwarePath | None:
+    def active(self) -> CaseAwarePath:
         """Returns the filepath of the currently active file for the resource.
 
         Returns
         -------
             Filepath to the active resource.
         """
+        if self._active is None:
+            msg = "Active resource is not set."
+            raise ValueError(msg)
+
         return self._active
 
     def save(

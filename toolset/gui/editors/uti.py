@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from contextlib import suppress
-from typing import Optional, Tuple
+from typing import Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
@@ -125,7 +127,7 @@ class UTIEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(uti.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         uti = self._uti
 
         # Basic

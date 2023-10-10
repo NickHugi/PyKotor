@@ -86,7 +86,7 @@ def read_ssf(
 
     if file_format == ResourceType.SSF:
         return SSFBinaryReader(source, offset, size or 0).load()
-    elif file_format == ResourceType.SSF_XML:
+    if file_format == ResourceType.SSF_XML:
         return SSFXMLReader(source, offset, size or 0).load()
     return None
 

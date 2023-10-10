@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import TYPE_CHECKING, ClassVar, Optional, Tuple, Union
+from typing import TYPE_CHECKING, ClassVar, Optional, Union
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
@@ -38,7 +38,10 @@ from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.gui.widgets.settings.installations import (
+    GlobalSettings,
+    NoConfigurationSetError,
+)
 
 if TYPE_CHECKING:
     from pykotor.common.script import ScriptFunction
@@ -121,10 +124,10 @@ class NSSEditor(Editor):
                 QMessageBox(QMessageBox.Critical, "Filepath is not set", str(e)).exec_()
                 self.new()
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         if self._restype.NSS:
             return self.ui.codeEdit.toPlainText().encode(), b""
-        elif self._restype.NCS:
+        if self._restype.NCS:
             compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
             return None
         return None

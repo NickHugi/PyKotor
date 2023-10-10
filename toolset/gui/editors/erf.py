@@ -1,20 +1,24 @@
-import os
-from typing import List, Optional, Tuple, Union
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional, Union
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
-from pykotor.tools.path import CaseAwarePath
 from utils.window import openResourceEditor
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
+from pykotor.tools.path import CaseAwarePath
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
+
+if TYPE_CHECKING:
+    from toolset.data.installation import HTInstallation
 
 
 class ERFEditor(Editor):
@@ -84,7 +88,7 @@ class ERFEditor(Editor):
                 self,
             ).show()
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         data = bytearray()
 
         if self._restype == ResourceType.RIM:
@@ -94,7 +98,7 @@ class ERFEditor(Editor):
                 resource = item.data()
                 rim.set_data(resource.resref.get(), resource.restype, resource.data)
             write_rim(rim, data)
-        if self._restype in [ResourceType.ERF, ResourceType.MOD]: # sourcery skip: split-or-ifs
+        if self._restype in [ResourceType.ERF, ResourceType.MOD]:  # sourcery skip: split-or-ifs
             erfType = ERFType.ERF if self._restype == ResourceType.ERF else ERFType.MOD
             erf = ERF(erfType)
             for i in range(self.model.rowCount()):
@@ -123,7 +127,7 @@ class ERFEditor(Editor):
         data = self.build()
         self._revert = data
 
-        with open(self._filepath, "wb") as file:
+        with self._filepath.open("wb") as file:
             file.write(data[0])
 
     def extractSelected(self) -> None:
@@ -143,11 +147,12 @@ class ERFEditor(Editor):
             item = self.model.itemFromIndex(index)
             self.model.removeRow(item.row())
 
-    def addResources(self, filepaths: List[str]) -> None:
+    def addResources(self, filepaths: list[str]) -> None:
         for filepath in filepaths:
+            c_filepath = Path(filepath)
             try:
-                with open(filepath, "rb") as file:
-                    resref, restype_ext = os.path.basename(filepath).split(".", 1)
+                with c_filepath.open("rb") as file:
+                    resref, restype_ext = c_filepath.parent.name.split(".", 1)
                     restype = ResourceType.from_extension(restype_ext)
                     data = file.read()
 
@@ -162,7 +167,7 @@ class ERFEditor(Editor):
                 QMessageBox(
                     QMessageBox.Critical,
                     "Failed to add resource",
-                    f"Could not add resource at {filepath}.",
+                    f"Could not add resource at {c_filepath}.",
                 ).exec_()
 
     def selectFilesToAdd(self) -> None:
@@ -199,7 +204,7 @@ class ERFEditor(Editor):
             editor.savedFile.connect(self.resourceSaved)
 
     def refresh(self) -> None:
-        with open(self._filepath, "rb") as file:
+        with self._filepath.open("rb") as file:
             data = file.read()
             self.load(self._filepath, self._resref, self._restype, data)
 
@@ -246,24 +251,22 @@ class ERFEditorTable(QTableView):
         if event.mimeData().hasUrls:
             event.setDropAction(QtCore.Qt.CopyAction)
             event.accept()
-            links = []
-            for url in event.mimeData().urls():
-                links.append(str(url.toLocalFile()))
+            links = [str(url.toLocalFile()) for url in event.mimeData().urls()]
             self.resourceDropped.emit(links)
         else:
             event.ignore()
 
     def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
-        tempDir = GlobalSettings().extractPath
+        tempDir = CaseAwarePath(GlobalSettings().extractPath)
 
-        if not tempDir or not os.path.exists(tempDir) or not os.path.isdir(tempDir):
+        if not tempDir or not tempDir.exists() or not tempDir.is_dir():
             return
 
         urls = []
         for index in [index for index in self.selectedIndexes() if index.column() == 0]:
             resource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
-            filepath = f"{tempDir}/{resource.resref.get()}.{resource.restype.extension}"
-            with open(filepath, "wb") as file:
+            filepath = CaseAwarePath(f"{tempDir}/{resource.resref.get()}.{resource.restype.extension}")
+            with filepath.open("wb") as file:
                 file.write(resource.data)
             urls.append(QtCore.QUrl.fromLocalFile(filepath))
 

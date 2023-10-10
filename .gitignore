@@ -4,7 +4,7 @@ venv
 dist
 PyKotor.egg-info
 ignore
-build/*
+build
 *.pyc
 .vscode/launch.json
 debug.log
@@ -20,3 +20,11 @@ output.prof
 *.spec
 errorlog.txt
 *.log
+EXE-*.toc
+*.pkg
+*.exe.manifest
+*PYZ-*.pyz
+base_library.zip
+Analysis-*.toc
+PKG-*.toc
+Tree-*.toc

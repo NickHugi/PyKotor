@@ -12,16 +12,18 @@ from pathlib import (
     PurePosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
     PureWindowsPath,  # type: ignore[pylance_reportGeneralTypeIssues]
     WindowsPath,  # type: ignore[pylance_reportGeneralTypeIssues]
-    _PosixFlavour,  # type: ignore[pylance_reportGeneralTypeIssues]
-    _WindowsFlavour,  # type: ignore[pylance_reportGeneralTypeIssues]
 )
-from typing import TYPE_CHECKING, Generator, List, Tuple, Union
-
-if TYPE_CHECKING:
-    from pykotor.common.misc import Game
+from typing import Generator, List, Tuple, Union
 
 PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
+
+
+def has_attr_excluding_object(cls, attr_name):
+    # Exclude the built-in 'object' class
+    mro_classes = [c for c in cls.mro() if c != object]
+
+    return any(attr_name in base_class.__dict__ for base_class in mro_classes)
 
 
 def is_class_or_subclass_but_not_instance(cls, target_cls):
@@ -104,12 +106,31 @@ class BasePath:
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
 
     def __new__(cls, *args: PATH_TYPES, **kwargs):
-        # if the only arg passed is already a cls, don't do heavy lifting trying to re-parse it.
-        if len(args) == 1:
-            arg0 = args[0]
-            if isinstance(arg0, cls):
-                return arg0  # type: ignore  # noqa: PGH003
+        return super().__new__(cls, *cls.parse_args(*args), **kwargs)
+    
+    def __init__(self, *args, _called_from_pathlib=True):
+        # Loop over the MRO starting from the class after the current class
+        next_init_method_class = self.__class__
+        for cls in self.__class__.mro():
+            if '__init__' in cls.__dict__ and cls is not BasePath:
+                next_init_method_class = cls
+                break
 
+        # Check if the class that defines the next __init__ is object
+        if next_init_method_class is object:
+            return
+
+        # If not object, fetch the __init__ of that class
+        init_method = next_init_method_class.__init__
+
+        # Parse args if called from pathlib (Python 3.12+)
+        if _called_from_pathlib:
+            init_method(self, *self.parse_args(*args))
+        else:
+            init_method(self, *args)
+    
+    @classmethod
+    def parse_args(cls, *args):
         args_list = list(args)
         for i, arg in enumerate(args_list):
             if isinstance(arg, cls):
@@ -120,14 +141,26 @@ class BasePath:
                 raise TypeError(msg)
 
             formatted_path_str = cls._fix_path_formatting(path_str, cls._flavour.sep)  # type: ignore[_flavour exists in children]
-            super_object = super().__new__(cls, formatted_path_str, **kwargs)  # type: ignore[pylance general]
-            args_list[i] = super_object
-        return super().__new__(cls, *args_list, **kwargs)  # type: ignore  # noqa: PGH003
+            arg_pathlib_instance = super().__new__(cls, formatted_path_str)  # type: ignore  # noqa: PGH003
+            arg_pathlib_instance.__init__(formatted_path_str, _called_from_pathlib=False)
+            args_list[i] = arg_pathlib_instance
+        return args_list
+
+    @classmethod
+    def _create_instance(cls, *args, **kwargs):
+        instance = cls.__new__(cls, *args, **kwargs)  # type: ignore  # noqa: PGH003
+        instance.__init__(*args, **kwargs)
+        return instance
 
     def __str__(self):
-        return self.__class__._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
+        """Call _fix_path_formatting before returning the pathlib class's __str__ result.
+        In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
+        """
+        str_result = self.__class__._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
+        return "." if str_result == "" else str_result
 
     def __fspath__(self):
+        """Ensures any use of __fspath__ will call our __str__ method."""
         return str(self)
 
     def __truediv__(self, key: PathElem):
@@ -139,7 +172,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self).__new__(type(self), self, key)
+        return self._create_instance(self, key)
 
     def __rtruediv__(self, key: PathElem):
         """Appends a path part with the divider operator '/'.
@@ -150,7 +183,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self).__new__(type(self), key, self)
+        return self._create_instance(key, self)
 
     def __add__(self, key: PathElem):
         """Appends a path part with the addition operator '+'.
@@ -161,7 +194,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self).__new__(type(self), self, key)
+        return self._create_instance(self, key)
 
     def __radd__(self, key: PathElem):
         """Appends a path part with the addition operator '+'.
@@ -172,7 +205,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self).__new__(type(self), key, self)
+        return self._create_instance(key, self)
 
     def joinpath(self, *args: PATH_TYPES):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -184,7 +217,7 @@ class BasePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return type(self).__new__(type(self), self, *args)
+        return self._create_instance(self, *args)
 
     def endswith(self, *text: str, case_sensitive=False) -> bool:
         if case_sensitive:
@@ -221,7 +254,7 @@ class BasePath:
 
 
 class PurePath(BasePath, PurePath):
-    _flavour = _WindowsFlavour() if os.name == "nt" else _PosixFlavour()  # type: ignore pylint: disable-all
+    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
 
 class PurePosixPath(BasePath, PurePosixPath):
@@ -233,7 +266,7 @@ class PureWindowsPath(BasePath, PureWindowsPath):
 
 
 class Path(BasePath, Path):
-    _flavour = _WindowsFlavour() if os.name == "nt" else _PosixFlavour()  # type: ignore pylint: disable-all
+    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
     pass
 
 
@@ -254,13 +287,11 @@ class CaseAwarePath(Path):
 
     def __hash__(self):
         """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
-        path_hash = hash((self.__class__.__name__, super().__str__().lower()))
-        return path_hash  # noqa: RET504
+        return hash((self.__class__.__name__, super().__str__().lower()))
 
     def __eq__(self, other):
         """All pathlib classes that derive from PurePath are equal to this object if their paths are case-insensitive equivalents."""
-        is_equal = isinstance(other, pathlib.PurePath) and self._fix_path_formatting(str(other)).lower() == super().__str__().lower()
-        return is_equal  # noqa: RET504
+        return isinstance(other, pathlib.PurePath) and self._fix_path_formatting(str(other)).lower() == super().__str__().lower()
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__str__().lower()})"
@@ -302,10 +333,10 @@ class CaseAwarePath(Path):
             # parts in their original case.
             # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
             elif not next_path.exists():
-                return CaseAwarePath.__new__(CaseAwarePath, base_path.joinpath(*parts[i:]))
+                return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))
 
         # return a CaseAwarePath instance without infinitely recursing through the constructor
-        return CaseAwarePath.__new__(CaseAwarePath, *parts)
+        return CaseAwarePath._create_instance(*parts)
 
     @classmethod
     def _find_closest_match(cls, target, candidates: Generator[Path, None, None]) -> str:
@@ -350,7 +381,7 @@ elif os.name == "nt":
     CaseAwarePath = Path  # type: ignore[pylance_reportGeneralTypeIssues]
 
 
-def locate_game_path(game: Game) -> CaseAwarePath | None:
+def locate_game_path():
     from pykotor.common.misc import Game
 
     locations = {
@@ -389,15 +420,11 @@ def locate_game_path(game: Game) -> CaseAwarePath | None:
         "Linux": {
             Game.K1: [
                 CaseAwarePath("~/.local/share/Steam/common/SteamApps/swkotor"),
-                CaseAwarePath("~/.local/share/Steam/common/steamapps/swkotor"),
                 CaseAwarePath("~/.local/share/Steam/common/swkotor"),
             ],
             Game.K2: [
                 CaseAwarePath(
                     "~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II",
-                ),
-                CaseAwarePath(
-                    "~/.local/share/Steam/common/steamapps/Knights of the Old Republic II",
                 ),
                 CaseAwarePath(
                     "~/.local/share/Steam/common/Knights of the Old Republic II",
@@ -406,5 +433,4 @@ def locate_game_path(game: Game) -> CaseAwarePath | None:
         },
     }
 
-    potential = locations[platform.system()][game]
-    return next((path for path in potential if path.exists()), None)
+    return locations[platform.system()]

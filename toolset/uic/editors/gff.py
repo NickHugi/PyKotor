@@ -322,7 +322,7 @@ class Ui_MainWindow:
         self.typeCombo.setItemText(12, _translate("MainWindow", "LocalizedString"))
         self.typeCombo.setItemText(13, _translate("MainWindow", "Binary"))
         self.typeCombo.setItemText(14, _translate("MainWindow", "Struct"))
-        self.typeCombo.setItemText(15, _translate("MainWindow", "List"))
+        self.typeCombo.setItemText(15, _translate("MainWindow", "list"))
         self.typeCombo.setItemText(16, _translate("MainWindow", "Vector4"))
         self.typeCombo.setItemText(17, _translate("MainWindow", "Vector3"))
         self.label_3.setText(_translate("MainWindow", "X"))

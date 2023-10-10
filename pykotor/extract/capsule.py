@@ -73,7 +73,7 @@ class Capsule:
             (resource for resource in self._resources if resource == query),
             None,
         )
-        return None if resource is None else resource.data()
+        return resource and resource.data() or None
 
     def batch(
         self,
