@@ -620,7 +620,6 @@ class ModuleResource(Generic[T]):
             ).__dict__.get("data", None)
         return BinaryReader.load_file(self._active)
 
-    @property
     def resource(self) -> T:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
@@ -717,7 +716,6 @@ class ModuleResource(Generic[T]):
         self._resource = None
         self.resource()
 
-    @property
     def active(self) -> CaseAwarePath:
         """Returns the filepath of the currently active file for the resource.
 
@@ -730,10 +728,6 @@ class ModuleResource(Generic[T]):
             raise ValueError(msg)
 
         return self._active
-
-    @active.setter
-    def active(self, value: CaseAwarePath) -> None:
-        self._active = value
 
     def save(
         self,
