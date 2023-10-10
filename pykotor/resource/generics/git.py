@@ -116,29 +116,27 @@ class GIT:
         -------
             The index into one of the GIT instance lists.
         """
-        with contextlib.suppress(TypeError):
-            if isinstance(instance, GITCreature):
-                return self.creatures.index(instance)
-            if isinstance(instance, GITPlaceable):
-                return self.placeables.index(instance)
-            if isinstance(instance, GITDoor):
-                return self.doors.index(instance)
-            if isinstance(instance, GITTrigger):
-                return self.triggers.index(instance)
-            if isinstance(instance, GITEncounter):
-                return self.encounters.index(instance)
-            if isinstance(instance, GITWaypoint):
-                return self.waypoints.index(instance)
-            if isinstance(instance, GITCamera):
-                return self.cameras.index(instance)
-            if isinstance(instance, GITSound):
-                return self.sounds.index(instance)
-            if isinstance(instance, GITStore):
-                return self.stores.index(instance)
+        if isinstance(instance, GITCreature):
+            return self.creatures.index(instance)
+        if isinstance(instance, GITPlaceable):
+            return self.placeables.index(instance)
+        if isinstance(instance, GITDoor):
+            return self.doors.index(instance)
+        if isinstance(instance, GITTrigger):
+            return self.triggers.index(instance)
+        if isinstance(instance, GITEncounter):
+            return self.encounters.index(instance)
+        if isinstance(instance, GITWaypoint):
+            return self.waypoints.index(instance)
+        if isinstance(instance, GITCamera):
+            return self.cameras.index(instance)
+        if isinstance(instance, GITSound):
+            return self.sounds.index(instance)
+        if isinstance(instance, GITStore):
+            return self.stores.index(instance)
 
-            # msg = "Could not find instance in GIT object."  # noqa: ERA001
-            # raise TypeError(msg)  # noqa: ERA001
-        return -1
+        msg = "Could not find instance in GIT object."
+        raise ValueError(msg)
 
     def add(
         self,
@@ -191,8 +189,7 @@ class GIT:
                 ValueError("Store instance already exists inside the GIT object.")
             return self.stores.append(instance)
 
-        TypeError("Tired to add invalid instance.")
-        return None
+        raise ValueError("Tried to add invalid instance.")
 
 
 class GITInstance(ABC):
