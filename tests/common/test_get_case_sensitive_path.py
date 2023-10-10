@@ -139,6 +139,8 @@ class TestCaseAwarePath(TestCase):
 
         case_aware_deep_path = CaseAwarePath(f"{str(self.temp_path)}/A/B/C/D/E")
         self.assertTrue(case_aware_deep_path.exists())
+        case_aware_deep_path = CaseAwarePath(self.temp_path) / "A" / "B" / "C" / "D" / "E"
+        self.assertTrue(case_aware_deep_path.exists())
 
     def test_recursive_directory_creation(self):
         recursive_path: Path = self.temp_path / "x" / "y" / "z"
