@@ -70,13 +70,13 @@ class TLKBinaryReader(ResourceReader):
         self,
         stringref: int,
     ):
-        self._reader.read_uint32()  # unused
+        self._reader.read_uint32()  # unused - flags
         sound_resref = self._reader.read_string(16)
-        self._reader.read_uint32()  # unused
-        self._reader.read_uint32()  # unused
+        self._reader.read_uint32()  # unused - volume variance
+        self._reader.read_uint32()  # unused - pitch variance
         text_offset = self._reader.read_uint32()
         text_length = self._reader.read_uint32()
-        self._reader.read_single()  # unused
+        self._reader.read_single()  # unused - sound length
 
         self._tlk.entries[stringref].voiceover = ResRef(sound_resref)
 
