@@ -19,145 +19,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-class RTFText(tk.Text):
-    def __init__(self, master=None, **kw):
-        self.frame = tk.Frame(master)
-
-        self.vbar = tk.Scrollbar(self.frame)
-        kw.update({"yscrollcommand": self.vbar.set})
-        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.vbar["command"] = self.yview
-
-        tk.Text.__init__(self, self.frame, **kw)
-        self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        text_meths = vars(tk.Text).keys()
-        methods = vars(tk.Pack).keys() | vars(tk.Grid).keys() | vars(tk.Place).keys()
-        methods = methods.difference(text_meths)
-
-        for m in methods:
-            if m[0] != "_" and m != "config" and m != "configure":
-                setattr(self, m, getattr(self.frame, m))
-
-    def setRTF(self, rtf, pad, bg, font):
-        message = "".join(rtf)
-        parts = re.split(r"(\<.*?\>)", message)
-        taglist = []
-        fontNames = ["Courier"]
-        fontWeight = "normal"
-        fontSlant = "roman"
-        fontUnderline = False
-        fontSizes = [10]
-        fontColors = ["black"]
-        backColors = ["white"]
-        align = "left"
-
-        self.configure(padx=pad[0])
-        self.configure(pady=pad[1])
-        self.configure(bg=bg)
-        self.configure(font=font)
-
-        for idx, part in enumerate(parts):
-            if len(part) > 0:
-                if part[0] == "<":
-                    part = part.lower()
-                    if part[:8] == "<family:":
-                        fontNames.append(part[8:-1])
-                    if part == "</family>":
-                        fontNames.pop()
-                    if part[:6] == "<size:":
-                        fontSizes.append(int(part[6:-1]))
-                    if part == "</size>":
-                        fontSizes.pop()
-                    if part[:7] == "<color:":
-                        fontColors.append(part[7:-1])
-                    if part == "</color>":
-                        fontColors.pop()
-                    if part[:12] == "<background:":
-                        backColors.append(part[12:-1])
-                    if part == "</background>":
-                        backColors.pop()
-
-                    if part == "<b>":
-                        fontWeight = "bold"
-                    if part == "</b>":
-                        fontWeight = "normal"
-                    if part == "<i>":
-                        fontSlant = "italic"
-                    if part == "</i>":
-                        fontSlant = "roman"
-                    if part == "<u>":
-                        fontUnderline = True
-                    if part == "</u>":
-                        fontUnderline = False
-                    if part == "<h1>":
-                        fontSizes.append(18)
-                    if part == "</h1>":
-                        fontSizes.pop()
-                    if part == "<h2>":
-                        fontSizes.append(15)
-                    if part == "</h2>":
-                        fontSizes.pop()
-                    if part == "<h3>":
-                        fontSizes.append(12)
-                    if part == "</h3>":
-                        fontSizes.pop()
-                    if part == "<h4>":
-                        fontSizes.append(10)
-                    if part == "</h4>":
-                        fontSizes.pop()
-                    if part == "<center>":
-                        align = "center"
-                    if part == "</center>":
-                        align = "left"
-
-                    if part == "<code>":
-                        fontNames.append("Terminal")
-                        fontSizes.append(10)
-                    if part == "</code>":
-                        fontNames.pop()
-                        fontSizes.pop()
-
-                    if part == "<codei>":
-                        backColors.append("lightgrey")
-                        fontNames.append("Terminal")
-                        fontSizes.append(10)
-                    if part == "</codei>":
-                        backColors.pop()
-                        fontNames.pop()
-                        fontSizes.pop()
-
-                    if part == "<hr>":
-                        fontSizes.append(1)
-                        backColors.append("black")
-                    if part == "</hr>":
-                        fontSizes.pop()
-                        backColors.pop()
-                else:
-                    tagname = f"{idx}"
-                    taglist = (tagname,)
-                    self.insert(tk.END, part, taglist)
-                    fontName = fontNames[len(fontNames) - 1]
-                    fontSize = fontSizes[len(fontSizes) - 1]
-                    fontColor = fontColors[len(fontColors) - 1]
-                    backColor = backColors[len(backColors) - 1]
-                    hFont = tkfont.Font(
-                        family=fontName,
-                        size=fontSize,
-                        weight=fontWeight,
-                        slant=fontSlant,
-                        underline=fontUnderline,
-                    )
-                    self.tag_configure(idx, font=hFont)
-                    self.tag_configure(idx, foreground=fontColor)
-                    self.tag_configure(idx, background=backColor)
-                    self.tag_configure(idx, justify=align)
-        self.configure(state="disabled")
-
-    def __str__(self):
-        return str(self.frame)
-
-
 class LeftCutOffCombobox(ttk.Combobox):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -379,7 +240,9 @@ class App(tk.Tk):
         )
         mod_path = ini_file_path.parent
 
-        self.description_text.delete(0, tk.END)
+        self.description_text.config(state="normal")
+        self.description_text.delete(1.0, tk.END)
+        self.description_text.config(state="disabled")
 
         installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
         installer.install()
@@ -452,123 +315,386 @@ class App(tk.Tk):
         self.description_text.see(tk.END)
         self.description_text.config(state="disabled")
 
+
 def striprtf(text):
-   pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
-   # control words which specify a "destionation".
-   destinations = frozenset((
-      "aftncn","aftnsep","aftnsepc","annotation","atnauthor","atndate","atnicn","atnid",
-      "atnparent","atnref","atntime","atrfend","atrfstart","author","background",
-      "bkmkend","bkmkstart","blipuid","buptim","category","colorschememapping",
-      "colortbl","comment","company","creatim","datafield","datastore","defchp","defpap",
-      "do","doccomm","docvar","dptxbxtext","ebcend","ebcstart","factoidname","falt",
-      "fchars","ffdeftext","ffentrymcr","ffexitmcr","ffformat","ffhelptext","ffl",
-      "ffname","ffstattext","field","file","filetbl","fldinst","fldrslt","fldtype",
-      "fname","fontemb","fontfile","fonttbl","footer","footerf","footerl","footerr",
-      "footnote","formfield","ftncn","ftnsep","ftnsepc","g","generator","gridtbl",
-      "header","headerf","headerl","headerr","hl","hlfr","hlinkbase","hlloc","hlsrc",
-      "hsv","htmltag","info","keycode","keywords","latentstyles","lchars","levelnumbers",
-      "leveltext","lfolevel","linkval","list","listlevel","listname","listoverride",
-      "listoverridetable","listpicture","liststylename","listtable","listtext",
-      "lsdlockedexcept","macc","maccPr","mailmerge","maln","malnScr","manager","margPr",
-      "mbar","mbarPr","mbaseJc","mbegChr","mborderBox","mborderBoxPr","mbox","mboxPr",
-      "mchr","mcount","mctrlPr","md","mdeg","mdegHide","mden","mdiff","mdPr","me",
-      "mendChr","meqArr","meqArrPr","mf","mfName","mfPr","mfunc","mfuncPr","mgroupChr",
-      "mgroupChrPr","mgrow","mhideBot","mhideLeft","mhideRight","mhideTop","mhtmltag",
-      "mlim","mlimloc","mlimlow","mlimlowPr","mlimupp","mlimuppPr","mm","mmaddfieldname",
-      "mmath","mmathPict","mmathPr","mmaxdist","mmc","mmcJc","mmconnectstr",
-      "mmconnectstrdata","mmcPr","mmcs","mmdatasource","mmheadersource","mmmailsubject",
-      "mmodso","mmodsofilter","mmodsofldmpdata","mmodsomappedname","mmodsoname",
-      "mmodsorecipdata","mmodsosort","mmodsosrc","mmodsotable","mmodsoudl",
-      "mmodsoudldata","mmodsouniquetag","mmPr","mmquery","mmr","mnary","mnaryPr",
-      "mnoBreak","mnum","mobjDist","moMath","moMathPara","moMathParaPr","mopEmu",
-      "mphant","mphantPr","mplcHide","mpos","mr","mrad","mradPr","mrPr","msepChr",
-      "mshow","mshp","msPre","msPrePr","msSub","msSubPr","msSubSup","msSubSupPr","msSup",
-      "msSupPr","mstrikeBLTR","mstrikeH","mstrikeTLBR","mstrikeV","msub","msubHide",
-      "msup","msupHide","mtransp","mtype","mvertJc","mvfmf","mvfml","mvtof","mvtol",
-      "mzeroAsc","mzeroDesc","mzeroWid","nesttableprops","nextfile","nonesttables",
-      "objalias","objclass","objdata","object","objname","objsect","objtime","oldcprops",
-      "oldpprops","oldsprops","oldtprops","oleclsid","operator","panose","password",
-      "passwordhash","pgp","pgptbl","picprop","pict","pn","pnseclvl","pntext","pntxta",
-      "pntxtb","printim","private","propname","protend","protstart","protusertbl","pxe",
-      "result","revtbl","revtim","rsidtbl","rxe","shp","shpgrp","shpinst",
-      "shppict","shprslt","shptxt","sn","sp","staticval","stylesheet","subject","sv",
-      "svb","tc","template","themedata","title","txe","ud","upr","userprops",
-      "wgrffmtfilter","windowcaption","writereservation","writereservhash","xe","xform",
-      "xmlattrname","xmlattrvalue","xmlclose","xmlname","xmlnstbl",
-      "xmlopen",
-   ))
-   # Translation of some special characters.
-   specialchars = {
-      "par": "\n",
-      "sect": "\n\n",
-      "page": "\n\n",
-      "line": "\n",
-      "tab": "\t",
-      "emdash": "\u2014",
-      "endash": "\u2013",
-      "emspace": "\u2003",
-      "enspace": "\u2002",
-      "qmspace": "\u2005",
-      "bullet": "\u2022",
-      "lquote": "\u2018",
-      "rquote": "\u2019",
-      "ldblquote": "\201C",
-      "rdblquote": "\u201D",
-   }
-   stack = []
-   ignorable = False       # Whether this group (and all inside it) are "ignorable".
-   ucskip = 1              # Number of ASCII characters to skip after a unicode character.
-   curskip = 0             # Number of ASCII characters left to skip
-   out = []                # Output buffer.
-   for match in pattern.finditer(text):
-      word,arg,hex,char,brace,tchar = match.groups()
-      if brace:
-         curskip = 0
-         if brace == "{":
-            # Push state
-            stack.append((ucskip,ignorable))
-         elif brace == "}":
-            # Pop state
-            ucskip,ignorable = stack.pop()
-      elif char: # \x (not a letter)
-         curskip = 0
-         if char == "~":
-            if not ignorable:
-                out.append("\xA0")
-         elif char in "{}\\":
-            if not ignorable:
-               out.append(char)
-         elif char == "*":
-            ignorable = True
-      elif word: # \foo
-         curskip = 0
-         if word in destinations:
-            ignorable = True
-         elif ignorable:
-            pass
-         elif word in specialchars:
-            out.append(specialchars[word])
-         elif word == "uc":
-            ucskip = int(arg)
-         elif word == "u":
-            c = int(arg)
-            if c < 0: c += 0x10000
-            if c > 127: out.append(chr(c))
-            else: out.append(chr(c))
-            curskip = ucskip
-      elif hex: # \'xx
-         if curskip > 0:
-            curskip -= 1
-         elif not ignorable:
-            c = int(hex,16)
-            if c > 127: out.append(chr(c))
-            else: out.append(chr(c))
-      elif tchar:
-         if curskip > 0:
-            curskip -= 1
-         elif not ignorable:
-            out.append(tchar)
-   return "".join(out)
+    pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
+    # control words which specify a "destionation".
+    destinations = frozenset(
+        (
+            "aftncn",
+            "aftnsep",
+            "aftnsepc",
+            "annotation",
+            "atnauthor",
+            "atndate",
+            "atnicn",
+            "atnid",
+            "atnparent",
+            "atnref",
+            "atntime",
+            "atrfend",
+            "atrfstart",
+            "author",
+            "background",
+            "bkmkend",
+            "bkmkstart",
+            "blipuid",
+            "buptim",
+            "category",
+            "colorschememapping",
+            "colortbl",
+            "comment",
+            "company",
+            "creatim",
+            "datafield",
+            "datastore",
+            "defchp",
+            "defpap",
+            "do",
+            "doccomm",
+            "docvar",
+            "dptxbxtext",
+            "ebcend",
+            "ebcstart",
+            "factoidname",
+            "falt",
+            "fchars",
+            "ffdeftext",
+            "ffentrymcr",
+            "ffexitmcr",
+            "ffformat",
+            "ffhelptext",
+            "ffl",
+            "ffname",
+            "ffstattext",
+            "field",
+            "file",
+            "filetbl",
+            "fldinst",
+            "fldrslt",
+            "fldtype",
+            "fname",
+            "fontemb",
+            "fontfile",
+            "fonttbl",
+            "footer",
+            "footerf",
+            "footerl",
+            "footerr",
+            "footnote",
+            "formfield",
+            "ftncn",
+            "ftnsep",
+            "ftnsepc",
+            "g",
+            "generator",
+            "gridtbl",
+            "header",
+            "headerf",
+            "headerl",
+            "headerr",
+            "hl",
+            "hlfr",
+            "hlinkbase",
+            "hlloc",
+            "hlsrc",
+            "hsv",
+            "htmltag",
+            "info",
+            "keycode",
+            "keywords",
+            "latentstyles",
+            "lchars",
+            "levelnumbers",
+            "leveltext",
+            "lfolevel",
+            "linkval",
+            "list",
+            "listlevel",
+            "listname",
+            "listoverride",
+            "listoverridetable",
+            "listpicture",
+            "liststylename",
+            "listtable",
+            "listtext",
+            "lsdlockedexcept",
+            "macc",
+            "maccPr",
+            "mailmerge",
+            "maln",
+            "malnScr",
+            "manager",
+            "margPr",
+            "mbar",
+            "mbarPr",
+            "mbaseJc",
+            "mbegChr",
+            "mborderBox",
+            "mborderBoxPr",
+            "mbox",
+            "mboxPr",
+            "mchr",
+            "mcount",
+            "mctrlPr",
+            "md",
+            "mdeg",
+            "mdegHide",
+            "mden",
+            "mdiff",
+            "mdPr",
+            "me",
+            "mendChr",
+            "meqArr",
+            "meqArrPr",
+            "mf",
+            "mfName",
+            "mfPr",
+            "mfunc",
+            "mfuncPr",
+            "mgroupChr",
+            "mgroupChrPr",
+            "mgrow",
+            "mhideBot",
+            "mhideLeft",
+            "mhideRight",
+            "mhideTop",
+            "mhtmltag",
+            "mlim",
+            "mlimloc",
+            "mlimlow",
+            "mlimlowPr",
+            "mlimupp",
+            "mlimuppPr",
+            "mm",
+            "mmaddfieldname",
+            "mmath",
+            "mmathPict",
+            "mmathPr",
+            "mmaxdist",
+            "mmc",
+            "mmcJc",
+            "mmconnectstr",
+            "mmconnectstrdata",
+            "mmcPr",
+            "mmcs",
+            "mmdatasource",
+            "mmheadersource",
+            "mmmailsubject",
+            "mmodso",
+            "mmodsofilter",
+            "mmodsofldmpdata",
+            "mmodsomappedname",
+            "mmodsoname",
+            "mmodsorecipdata",
+            "mmodsosort",
+            "mmodsosrc",
+            "mmodsotable",
+            "mmodsoudl",
+            "mmodsoudldata",
+            "mmodsouniquetag",
+            "mmPr",
+            "mmquery",
+            "mmr",
+            "mnary",
+            "mnaryPr",
+            "mnoBreak",
+            "mnum",
+            "mobjDist",
+            "moMath",
+            "moMathPara",
+            "moMathParaPr",
+            "mopEmu",
+            "mphant",
+            "mphantPr",
+            "mplcHide",
+            "mpos",
+            "mr",
+            "mrad",
+            "mradPr",
+            "mrPr",
+            "msepChr",
+            "mshow",
+            "mshp",
+            "msPre",
+            "msPrePr",
+            "msSub",
+            "msSubPr",
+            "msSubSup",
+            "msSubSupPr",
+            "msSup",
+            "msSupPr",
+            "mstrikeBLTR",
+            "mstrikeH",
+            "mstrikeTLBR",
+            "mstrikeV",
+            "msub",
+            "msubHide",
+            "msup",
+            "msupHide",
+            "mtransp",
+            "mtype",
+            "mvertJc",
+            "mvfmf",
+            "mvfml",
+            "mvtof",
+            "mvtol",
+            "mzeroAsc",
+            "mzeroDesc",
+            "mzeroWid",
+            "nesttableprops",
+            "nextfile",
+            "nonesttables",
+            "objalias",
+            "objclass",
+            "objdata",
+            "object",
+            "objname",
+            "objsect",
+            "objtime",
+            "oldcprops",
+            "oldpprops",
+            "oldsprops",
+            "oldtprops",
+            "oleclsid",
+            "operator",
+            "panose",
+            "password",
+            "passwordhash",
+            "pgp",
+            "pgptbl",
+            "picprop",
+            "pict",
+            "pn",
+            "pnseclvl",
+            "pntext",
+            "pntxta",
+            "pntxtb",
+            "printim",
+            "private",
+            "propname",
+            "protend",
+            "protstart",
+            "protusertbl",
+            "pxe",
+            "result",
+            "revtbl",
+            "revtim",
+            "rsidtbl",
+            "rxe",
+            "shp",
+            "shpgrp",
+            "shpinst",
+            "shppict",
+            "shprslt",
+            "shptxt",
+            "sn",
+            "sp",
+            "staticval",
+            "stylesheet",
+            "subject",
+            "sv",
+            "svb",
+            "tc",
+            "template",
+            "themedata",
+            "title",
+            "txe",
+            "ud",
+            "upr",
+            "userprops",
+            "wgrffmtfilter",
+            "windowcaption",
+            "writereservation",
+            "writereservhash",
+            "xe",
+            "xform",
+            "xmlattrname",
+            "xmlattrvalue",
+            "xmlclose",
+            "xmlname",
+            "xmlnstbl",
+            "xmlopen",
+        )
+    )
+    # Translation of some special characters.
+    specialchars = {
+        "par": "\n",
+        "sect": "\n\n",
+        "page": "\n\n",
+        "line": "\n",
+        "tab": "\t",
+        "emdash": "\u2014",
+        "endash": "\u2013",
+        "emspace": "\u2003",
+        "enspace": "\u2002",
+        "qmspace": "\u2005",
+        "bullet": "\u2022",
+        "lquote": "\u2018",
+        "rquote": "\u2019",
+        "ldblquote": "\201C",
+        "rdblquote": "\u201D",
+    }
+    stack = []
+    ignorable = False  # Whether this group (and all inside it) are "ignorable".
+    ucskip = 1  # Number of ASCII characters to skip after a unicode character.
+    curskip = 0  # Number of ASCII characters left to skip
+    out = []  # Output buffer.
+    for match in pattern.finditer(text):
+        word, arg, hex, char, brace, tchar = match.groups()
+        if brace:
+            curskip = 0
+            if brace == "{":
+                # Push state
+                stack.append((ucskip, ignorable))
+            elif brace == "}":
+                # Pop state
+                ucskip, ignorable = stack.pop()
+        elif char:  # \x (not a letter)
+            curskip = 0
+            if char == "~":
+                if not ignorable:
+                    out.append("\xA0")
+            elif char in "{}\\":
+                if not ignorable:
+                    out.append(char)
+            elif char == "*":
+                ignorable = True
+        elif word:  # \foo
+            curskip = 0
+            if word in destinations:
+                ignorable = True
+            elif ignorable:
+                pass
+            elif word in specialchars:
+                out.append(specialchars[word])
+            elif word == "uc":
+                ucskip = int(arg)
+            elif word == "u":
+                c = int(arg)
+                if c < 0:
+                    c += 0x10000
+                if c > 127:
+                    out.append(chr(c))
+                else:
+                    out.append(chr(c))
+                curskip = ucskip
+        elif hex:  # \'xx
+            if curskip > 0:
+                curskip -= 1
+            elif not ignorable:
+                c = int(hex, 16)
+                if c > 127:
+                    out.append(chr(c))
+                else:
+                    out.append(chr(c))
+        elif tchar:
+            if curskip > 0:
+                curskip -= 1
+            elif not ignorable:
+                out.append(tchar)
+    return "".join(out)
+
 
 def main():
     app = App()
