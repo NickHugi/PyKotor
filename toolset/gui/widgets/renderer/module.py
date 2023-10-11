@@ -66,7 +66,7 @@ class ModuleRenderer(QOpenGLWidget):
         self._keysDown: set[int] = set()
         self._mouseDown: set[int] = set()
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
-        self._mousePressTime: datetime = datetime.now(timezone.utc).astimezone()
+        self._mousePressTime: datetime = datetime.now(tz=timezone.utc).astimezone()
 
         self.doSelect: bool = False  # Set to true to select object at mouse pointer
         self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
@@ -108,15 +108,7 @@ class ModuleRenderer(QOpenGLWidget):
     def paintGL(self) -> None:
         start = datetime.now(timezone.utc).astimezone()
         if not self._init:
-            self._init = True
-
-            self.scene = Scene(installation=self._installation, module=self._module)
-            self.scene.camera.fov = self.settings.fieldOfView
-            self.scene.camera.width = self.width()
-            self.scene.camera.height = self.height()
-
-            self.sceneInitalized.emit()
-
+            self._init_paint_gl()
         if self.doSelect:
             self.doSelect = False
             obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
@@ -138,7 +130,17 @@ class ModuleRenderer(QOpenGLWidget):
             self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
 
         self.scene.render()
-        self._renderTime = int((datetime.now(timezone.utc).astimezone() - start).total_seconds() * 1000)
+        self._renderTime = int((datetime.now(tz=timezone.utc).astimezone() - start).total_seconds() * 1000)
+
+    def _init_paint_gl(self):
+        self._init = True
+
+        self.scene = Scene(installation=self._installation, module=self._module)
+        self.scene.camera.fov = self.settings.fieldOfView
+        self.scene.camera.width = self.width()
+        self.scene.camera.height = self.height()
+
+        self.sceneInitalized.emit()
 
     # region Accessors
     def keysDown(self) -> set[int]:
@@ -222,11 +224,11 @@ class ModuleRenderer(QOpenGLWidget):
 
         world = self.scene.cursor.position()
         self._mousePrev = screen
-        if datetime.now(timezone.utc).astimezone() - self._mousePressTime > timedelta(milliseconds=60):
+        if datetime.now(tz=timezone.utc).astimezone() - self._mousePressTime > timedelta(milliseconds=60):
             self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
-        self._mousePressTime = datetime.now(timezone.utc).astimezone()
+        self._mousePressTime = datetime.now(tz=timezone.utc).astimezone()
         self._mouseDown.add(e.button())
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
