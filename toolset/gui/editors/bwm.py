@@ -119,7 +119,7 @@ class BWMEditor(Editor):
             self.changeFaceMaterial(face)
 
         coordsText = f"x: {world.x:.2f}, {world.y:.2f}"
-        faceText = ", face: {}".format("None" if face is None else self._bwm.faces.index(face))
+        faceText = f', face: {"None" if face is None else self._bwm.faces.index(face)}'
 
         screen = self.ui.renderArea.toRenderCoords(world.x, world.y)
         xy = f" || x: {screen.x:.2f}, " + f"y: {screen.y:.2f}, "

@@ -403,26 +403,26 @@ class ConfigReader:
             self.config.patches_gff.append(modifications)
 
             modifier: ModifyGFF | None = None
-            for name, value in modifications_ini.items():
-                if name == "!Destination":
+            for key, value in modifications_ini.items():
+                if key == "!Destination":
                     modifications.destination = CaseAwarePath(value)
-                elif name == "!ReplaceFile":
+                elif key == "!ReplaceFile":
                     modifications.replace_file = bool(int(value))
-                elif name.lower() in ["!filename", "!saveas"]:
+                elif key.lower() in ["!filename", "!saveas"]:
                     modifications.filename = value
-                elif name.startswith("AddField"):
+                elif key.startswith("AddField"):
                     modifier = self.add_field_gff(value, dict(self.ini[value]))
                     if modifier:  # if None, then an error occurred
                         modifications.modifiers.append(modifier)
-                elif name.startswith("2DAMEMORY"):
+                elif key.startswith("2DAMEMORY"):
                     modifier = Memory2DAModifierGFF(
                         file,
-                        int(name[9:]),
-                        value,
+                        int(key[9:]),
+                        PureWindowsPath(""),
                     )
                     modifications.modifiers.append(modifier)
                 else:
-                    modifier = self.modify_field_gff(name, value)
+                    modifier = self.modify_field_gff(key, value)
                     modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
@@ -451,7 +451,7 @@ class ConfigReader:
             return FieldValueTLKMemory(token_id)
         return FieldValueConstant(int(raw_value))
 
-    def modify_field_gff(self, name: str, string_value: str) -> ModifyFieldGFF:
+    def modify_field_gff(self, key: str, string_value: str) -> ModifyFieldGFF:
         value = None
         if string_value.startswith("2DAMEMORY"):
             token_id = int(string_value[9:])
@@ -474,18 +474,23 @@ class ConfigReader:
                 string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"),
             )
 
-        if "(strref)" in name:
+        if "(strref)" in key:
             value = FieldValueConstant(LocalizedStringDelta(value))
-            name = name[: name.index("(strref)")]
-        elif "(lang" in name:
-            substring_id = int(name[name.index("(lang") + 5 : -1])
+            key = key[: key.index("(strref)")]
+        elif "(lang" in key:
+            substring_id = int(key[key.index("(lang") + 5 : -1])
             language, gender = LocalizedString.substring_pair(substring_id)
             locstring = LocalizedStringDelta()
             locstring.set_data(language, gender, string_value)
             value = FieldValueConstant(locstring)
-            name = name[: name.index("(lang")]
+            key = key[: key.index("(lang")]
+        elif key.startswith("2DAMEMORY"):
+            if value != "!FieldPath":
+                msg = f"Cannot assign {value} to 2DAMEMORY here, GFFList only supports !FieldPath"
+                raise ValueError(msg)
+            value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
-        return ModifyFieldGFF(name, value)
+        return ModifyFieldGFF(PureWindowsPath(key), value)
 
     def add_field_gff(
         self,
@@ -493,7 +498,7 @@ class ConfigReader:
         ini_data: dict[str, str],
         inside_list: bool = False,
         current_path: PureWindowsPath | None = None,
-    ) -> ModifyGFF | None:  # sourcery skip: extract-method, remove-unreachable-code
+    ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -513,14 +518,15 @@ class ConfigReader:
             "List": GFFFieldType.List,
         }
 
-        raw_path = ini_data.get("Path", "").strip()
-        path = PureWindowsPath(raw_path) if raw_path else None
-
-        field_type = fieldname_to_fieldtype[ini_data["FieldType"]]
-        label = ini_data["Label"]
-        raw_value = ini_data.get("Value")
-        value = None
+        field_type: GFFFieldType = fieldname_to_fieldtype[ini_data["FieldType"]]
+        label: str = ini_data["Label"].strip()
+        raw_path: str = ini_data.get("Path", "").strip()
+        raw_value: str | None = ini_data.get("Value")
+        value: FieldValue | LocalizedStringDelta | None = None
         struct_id = 0
+
+        path: PureWindowsPath = PureWindowsPath(raw_path)
+        path = path if path.name else (current_path or PureWindowsPath(""))
 
         if raw_value is None:
             if field_type.return_type() == LocalizedString:
@@ -546,11 +552,12 @@ class ConfigReader:
                         f"Invalid struct id: expected int but got '{raw_struct_id}' in '{identifier}'. Using default of 0",
                     )
                 value = FieldValueConstant(GFFStruct(struct_id))
+                path /= ">>##INDEXINLIST##<<"
             else:
-                self.log.add_error(
-                    f"Could not find valid field return type in '{identifier}' matching '{field_type.return_type()}' in this context",
+                msg = (
+                    f"Could not find valid field return type in '{identifier}' matching field type '{field_type}' in this context"
                 )
-                return None
+                raise ValueError(msg)
         elif raw_value.startswith("2DAMEMORY"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
@@ -578,10 +585,8 @@ class ConfigReader:
             components = [float(axis.replace(",", ".")) for axis in raw_value.split("|")]
             value = FieldValueConstant(Vector4(*components))
         else:
-            self.log.add_error(
-                f"Could not parse fieldtype '{field_type}' identifier '{identifier}' value '{value}'. Skipping...",
-            )
-            return None
+            msg = f"Could not parse fieldtype '{field_type}' identifier '{identifier}' value '{value}'."
+            raise ValueError(msg)
 
         modifiers: list[ModifyGFF] = []
 
@@ -590,22 +595,20 @@ class ConfigReader:
             if key.startswith("2DAMEMORY"):
                 if x == "ListIndex":
                     index_in_list_token = int(key[9:])
-                else:
+                elif x == "!FieldPath":
                     modifier = Memory2DAModifierGFF(
                         identifier,
                         int(key[9:]),
-                        x,
-                        label,
                         path,
-                        modifiers,
                     )
-                    modifiers.append(modifier)
+                    modifiers.insert(0, modifier)
             if key.startswith("AddField"):
                 nested_ini = dict(self.ini[x].items())
                 nested_modifier: ModifyGFF | None = self.add_field_gff(
                     x,
                     nested_ini,
                     inside_list=field_type.return_type() is GFFList,
+                    current_path=path / label,
                 )
                 if nested_modifier:  # if none, an error occured.
                     modifiers.append(nested_modifier)
@@ -615,6 +618,7 @@ class ConfigReader:
             return AddStructToListGFF(
                 identifier,
                 struct_id,
+                value,
                 path,
                 index_in_list_token,
                 modifiers,

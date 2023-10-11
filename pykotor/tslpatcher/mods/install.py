@@ -331,6 +331,7 @@ class InstallFile:
                 destination.mkdir(parents=True, exist_ok=True)
 
             with print_lock:
+                create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
                 if file_exists:
                     log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
                 else:

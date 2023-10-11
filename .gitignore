@@ -30,3 +30,4 @@ PKG-*.toc
 Tree-*.toc
 errorlog.txt
 log_install_differ.log
+logs/*

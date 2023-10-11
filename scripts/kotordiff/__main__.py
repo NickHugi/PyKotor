@@ -5,7 +5,13 @@ import cProfile
 import hashlib
 import io
 import os
+import pathlib
+import sys
 
+# Ensure the directory of the script is in sys.path
+script_dir = pathlib.Path(__file__).parent.resolve()
+if str(script_dir) not in sys.path:
+    sys.path.insert(0, str(script_dir))
 from settings import setup_environment
 
 setup_environment()
@@ -197,7 +203,7 @@ def diff_data(
             # message = f"Both LIP resources missing in memory:\t'{where}'"  # noqa: ERA001
             # log_output(message)  # noqa: ERA001
             # log_output(len(message) * "-")  # noqa: ERA001
-            return None
+            return True
         if lip1 and lip2:
             diff = DiffLIP(lip1, lip2, log_output)
             if not diff.is_same():

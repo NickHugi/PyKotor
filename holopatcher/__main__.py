@@ -1,86 +1,25 @@
 from __future__ import annotations
 
 import os
-import pathlib
 import re
 import sys
 import tkinter as tk
 from configparser import ConfigParser
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
-from tkinter import font as tkfont
 from typing import TYPE_CHECKING
 
-# Ensure the directory of the script is in sys.path
-script_dir = pathlib.Path(__file__).parent.resolve()
-if str(script_dir) not in sys.path:
-    sys.path.insert(0, str(script_dir))
-from settings import setup_environment
+# required for below imports to find pykotor
+sys.path.append(".")
 
-setup_environment()
-
-from pykotor.common.misc import Game
-from pykotor.tools.path import CaseAwarePath, locate_game_path
-from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
-from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.reader import NamespaceReader
+from pykotor.common.misc import Game  # noqa: E402
+from pykotor.tools.path import CaseAwarePath, locate_game_path  # noqa: E402
+from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace  # noqa: E402
+from pykotor.tslpatcher.logger import PatchLogger  # noqa: E402
+from pykotor.tslpatcher.reader import NamespaceReader  # noqa: E402
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-class LeftCutOffCombobox(ttk.Combobox):
-    def __init__(self, master=None, **kwargs):
-        super().__init__(master, **kwargs)
-
-        # Create a separate StringVar to control the display
-        self.display_var = tk.StringVar()
-        self["textvariable"] = self.display_var
-        self.bind("<<ComboboxSelected>>", self.update_display_value)
-
-        # Bind the postcommand to modify dropdown items' display
-        self["postcommand"] = self.update_dropdown_display
-        # Bind the <Unmap> event to restore the original values
-        self.bind("<Unmap>", self.restore_original_values)
-        self.bind("<FocusOut>", self.restore_original_values)
-
-    def update_display_value(self, event=None):
-        # Update the displayed value based on the actual value selected
-        actual_value = self.get()
-        display_value = actual_value
-
-        # Estimate the width of the dropdown arrow. This may need tweaking based on the theme or style.
-        arrow_width = 25  # This value may need adjustments based on the visual theme
-
-        while self.font_measure(f"...{display_value}") > (self.winfo_width() - arrow_width):
-            display_value = display_value[1:]
-
-        if display_value != actual_value:
-            self.display_var.set(f"...{display_value}")
-        else:
-            self.display_var.set(actual_value)
-
-    def update_dropdown_display(self):
-        # This method gets called just before the dropdown is displayed
-        # Temporarily set the values for display
-        display_values = [self.truncate_text(item) for item in self["values"]]
-        super().configure(values=display_values)
-
-    def restore_original_values(self, event=None):
-        # Restore the original values after the dropdown has been closed
-        super().configure(values=self["values"])
-
-    def truncate_text(self, text):
-        available_space = self.winfo_width() - 25  # subtract estimated arrow width
-        while self.font_measure(f"...{text}") > available_space:
-            text = text[1:]
-        return f"...{text}" if text != self.get() else text
-
-    def font_measure(self, text):
-        return tkfont.Font(font=self.cget("font")).measure(text)
-
-    def font_average_width(self):
-        return self.font_measure("m")
 
 
 class App(tk.Tk):
@@ -102,12 +41,10 @@ class App(tk.Tk):
         self.namespaces_combobox = ttk.Combobox(self, state="readonly")
         self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
 
-        self.gamepaths = ttk.Combobox(self)
+        self.gamepaths = ttk.Combobox(self, state="readonly")
         self.gamepaths.place(x=5, y=35, width=310, height=25)
         self.default_game_paths = locate_game_path()
-        self.gamepaths["values"] = [
-            str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()
-        ]
+        self.gamepaths["values"] = [str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()]
 
         self.description_text = tk.Text(self, state="disabled", wrap="none")
         self.description_text.place(x=5, y=65, width=390, height=400)
@@ -231,7 +168,7 @@ class App(tk.Tk):
             namespace = PatcherNamespace()
             namespace.ini_filename = "changes.ini"
             namespace.info_filename = "info.rtf"
-            namespace.name = ini.get("Settings", "WindowCaption", fallback="default")
+            namespace.name = ini.get("Settings", "WindowCaption")
 
         return namespace
 
@@ -242,13 +179,9 @@ class App(tk.Tk):
         namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         game_number: int | None
         if namespace_option.data_folderpath:
-            game_number = self.extract_lookup_game_number(
-                CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.data_folderpath, namespace_option.ini_filename),
-            )
+            game_number = self.extract_lookup_game_number(CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.data_folderpath, namespace_option.ini_filename))
         else:
-            game_number = self.extract_lookup_game_number(
-                CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename),
-            )
+            game_number = self.extract_lookup_game_number(CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename))
         if game_number:
             game = Game(game_number)
             prechosen_gamepath = self.gamepaths.get()
@@ -257,6 +190,7 @@ class App(tk.Tk):
                 self.gamepaths.set(prechosen_gamepath)
             else:
                 self.gamepaths.set("")
+
 
     def write_log(self, message: str) -> None:
         self.description_text.config(state="normal")
@@ -268,6 +202,5 @@ class App(tk.Tk):
 def main():
     app = App()
     app.mainloop()
-
 
 main()

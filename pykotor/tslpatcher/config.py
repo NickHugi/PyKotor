@@ -173,7 +173,9 @@ class ModInstaller:
                 try:
                     ini_data = ini_file_bytes.decode("windows-1252")
                 except UnicodeDecodeError:
-                    self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
+                    self.log.add_warning(
+                        f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...",
+                    )
                     ini_data = ini_file_bytes.decode(errors="replace")
         ini_text = ini_data
 
@@ -193,7 +195,7 @@ class ModInstaller:
         templates = {}
 
         # Create a timestamped backup directory
-        tz_aware_datetime = datetime.now(tz=timezone.utc)
+        tz_aware_datetime = datetime.now(tz=timezone.utc).astimezone()
         timestamp = tz_aware_datetime.strftime("%Y-%m-%d_%H.%M.%S")
         backup_dir = self.mod_path
         while not backup_dir.joinpath("tslpatchdata").exists() and backup_dir.parent.name:
@@ -401,7 +403,7 @@ class ModInstaller:
 
             self.log.complete_patch()
 
-        self.log.add_note("Applying patches from [SSFList]...")
+        self.log.add_note(f"Applying {len(config.patches_ssf)} patches from [SSFList]...")
         for ssf_patch in config.patches_ssf:
             ssf_output_filepath: CaseAwarePath = self.game_path / "Override" / ssf_patch.filename
 

@@ -1,7 +1,12 @@
-"""This module holds various unrelated classes."""
+"""This module holds various unrelated classes and methods."""
+
 
 from __future__ import annotations
 
+import contextlib
+import subprocess
+import time
+from datetime import datetime, timedelta, timezone
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Generic, TypeVar
 
@@ -114,6 +119,45 @@ class ResRef:
         self,
     ) -> str:
         return self._value
+
+
+def get_local_timezone():
+    # 1. Try using Python 3.9+'s zoneinfo
+    with contextlib.suppress(ImportError):
+        from zoneinfo import ZoneInfo
+
+        return ZoneInfo("local")
+    # 2. Try using dateutil
+    with contextlib.suppress(ImportError):
+        import dateutil.tz  # type: ignore[missing import]
+
+        return dateutil.tz.tzlocal()
+    # 3. Try using pytz
+    with contextlib.suppress(ImportError):
+        import pytz  # type: ignore[missing import]
+
+        local_datetime = datetime.now(pytz.utc).astimezone()
+        return local_datetime.tzinfo
+    # 4. Fallback to OS-specific methods
+
+    # For UNIX-like systems (using date command)
+    with contextlib.suppress(Exception):
+        result = subprocess.run(["date", "+%z"], stdout=subprocess.PIPE).stdout.decode().strip()
+        offset_minutes = int(result[:-2]) * 60 + int(result[-2:])
+        hours, remainder = divmod(abs(offset_minutes), 60)
+        sign = "-" if offset_minutes < 0 else "+"
+        tzname = f"{sign}{hours:02}:{remainder:02}"
+        return timezone(timedelta(minutes=offset_minutes), tzname)
+    # For Windows
+    with contextlib.suppress(Exception):
+        result = subprocess.run("tzutil /g", shell=True, stdout=subprocess.PIPE).stdout.decode().strip()
+        offset_minutes = -(time.timezone / 60) if time.localtime().tm_isdst == 0 else -(time.altzone / 60)
+        hours, remainder = divmod(abs(offset_minutes), 60)
+        sign = "-" if offset_minutes < 0 else "+"
+        tzname = f"{sign}{hours:02}:{remainder:02}"
+        return timezone(timedelta(minutes=offset_minutes), tzname)
+    # Ultimate fallback: Return UTC if unable to determine local timezone
+    return timezone.utc
 
 
 class Game(IntEnum):

@@ -109,7 +109,7 @@ class Installation:
         self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
-        self._override: dict[str, list[FileResource]] = CaseInsensitiveDict()
+        self._override = CaseInsensitiveDict()
         self._streammusic: list[FileResource] = []
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []

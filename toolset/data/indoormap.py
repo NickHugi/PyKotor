@@ -298,7 +298,6 @@ class IndoorMap:
             msg = "Map file is corrupted."
             raise ValueError(msg) from e
 
-    # TODO Rename this here and in `load`
     def _load_data(self, data, kits):
         self.name = LocalizedString(data["name"]["stringref"])
         for stringid in [key for key in data["name"] if key.isnumeric()]:
@@ -412,7 +411,6 @@ class IndoorMap:
 
         return MinimapData(image, imagePointMin, imagePointMax, worldPointMin, worldPointMax)
 
-    # TODO Rename this here and in `generateMinimap`
     def _normalize_bwm_vertices(self, bbmin, vertex, bbmax):
         bbmin.x = min(bbmin.x, vertex.x)
         bbmin.y = min(bbmin.y, vertex.y)
