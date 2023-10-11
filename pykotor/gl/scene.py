@@ -220,7 +220,6 @@ class Scene:
 
         return obj
 
-    # TODO Rename this here and in `getCreatureRenderObject`
     def _transform_hand(self, arg0, arg1, obj):
         rhand_obj = RenderObject(arg0)
         rhand_obj.set_transform(arg1.global_transform())

@@ -1880,7 +1880,7 @@ class BinaryWriterBytearray(BinaryWriter):
                 value += padding
             value = value[:string_length]
 
-        self._extracted_from_write_line_42(value, encoding)
+        self._encode_val_and_update_position(value, encoding)
 
     def write_line(
         self,
@@ -1900,10 +1900,9 @@ class BinaryWriterBytearray(BinaryWriter):
             line += " "
         line += "\n"
 
-        self._extracted_from_write_line_42(line, "ascii")
+        self._encode_val_and_update_position(line, "ascii")
 
-    # TODO: Rename this here and in `write_string` and `write_line`
-    def _extracted_from_write_line_42(self, value: str, encoding: str):
+    def _encode_val_and_update_position(self, value: str, encoding: str):
         encoded = value.encode(encoding)
         self._ba[self._position : self._position + len(encoded)] = encoded
         self._position += len(encoded)

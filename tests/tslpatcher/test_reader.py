@@ -1733,7 +1733,6 @@ class TestConfigReader(TestCase):
         self.assertIsNone(mod_2.value.stored.stringref)
         self.assertEqual(1, len(mod_2.value.stored))
 
-    # TODO Rename this here and in `test_gff_modify_type_locstring`
     def _assert_types_and_path(self, config):
         result = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(result, ModifyFieldGFF)
@@ -1885,28 +1884,27 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_0, 123)
+        self._assert_batch(mod_0, 123)
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_1, 123)
+        self._assert_batch(mod_1, 123)
 
         mod_2 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_2, 123)
+        self._assert_batch(mod_2, 123)
 
         mod_3 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_3, 123)
+        self._assert_batch(mod_3, 123)
 
         mod_4 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_4, 123)
+        self._assert_batch(mod_4, 123)
 
         mod_5 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_5, 123)
+        self._assert_batch(mod_5, 123)
 
         mod_6 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_6, 123)
+        self._assert_batch(mod_6, 123)
 
-    # TODO Rename this here and in `test_gff_add_ints`
-    def _extracted_from_test_gff_add_ints_67(self, this_mod, stored):
+    def _assert_batch(self, this_mod, stored):
         self.assertIsInstance(this_mod, AddFieldGFF)
         self.assertIsInstance(this_mod.value, FieldValueConstant)
         self.assertEqual("SomeList", str(this_mod.path))
@@ -1951,10 +1949,10 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_0, 1.23)
+        self._assert_batch(mod_0, 1.23)
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_1, 1.23)
+        self._assert_batch(mod_1, 1.23)
 
     def test_gff_add_string(self):
         """Test that the add field modifiers are registered correctly."""
@@ -1987,7 +1985,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_0, "abc")
+        self._assert_batch(mod_0, "abc")
 
     def test_gff_add_vector3(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2020,7 +2018,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_0, Vector3(1, 2, 3))
+        self._assert_batch(mod_0, Vector3(1, 2, 3))
 
     def test_gff_add_vector4(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2053,7 +2051,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_0, Vector4(1, 2, 3, 4))
+        self._assert_batch(mod_0, Vector4(1, 2, 3, 4))
 
     def test_gff_add_resref(self):
         """Test that the add field modifiers are registered correctly."""
@@ -2086,7 +2084,7 @@ class TestConfigReader(TestCase):
         ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self._extracted_from_test_gff_add_ints_67(mod_0, ResRef("abc"))
+        self._assert_batch(mod_0, ResRef("abc"))
 
     def test_gff_add_locstring(self):
         """Test that the add field modifiers are registered correctly."""
