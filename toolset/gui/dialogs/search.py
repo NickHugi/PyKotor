@@ -99,9 +99,11 @@ class FileSearcher(QDialog):
         if searchCore:
             searchIn.extend(installation.chitin_resources())
         if searchModules:
-            [searchIn.extend(installation.module_resources(module)) for module in installation.modules_list()]
+            for module in installation.modules_list():
+                searchIn.extend(installation.module_resources(module))
         if searchOverride:
-            [searchIn.extend(installation.override_resources(folder)) for folder in installation.override_list()]
+            for folder in installation.override_list():
+                searchIn.extend(installation.override_resources(folder))
 
         def search(resource):
             if resource.restype() in checkTypes:

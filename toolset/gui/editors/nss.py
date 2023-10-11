@@ -37,6 +37,11 @@ from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import read_erf, write_erf
 from pykotor.resource.formats.rim import read_rim, write_rim
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import (
+    is_bif_file,
+    is_erf_or_mod_file,
+    is_rim_file,
+)
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import (
     GlobalSettings,
@@ -149,27 +154,27 @@ class NSSEditor(Editor):
             source = self.ui.codeEdit.toPlainText()
             data = compileScript(source, self._installation.tsl)
 
-            filepath = self._filepath if self._filepath is not None else ""
-            if filepath.endswith((".erf", ".mod")):
-                savePath = f"{filepath}/{self._resref}.{self._restype.extension}"
-                erf = read_erf(filepath)
+            save_path_str = ""
+            if self._filepath is None or is_bif_file(self._filepath.name):
+                save_path_str = self._installation.override_path() / f"{self._resref}.ncs"
+                BinaryWriter.dump(save_path_str, data)
+            elif is_erf_or_mod_file(self._filepath.name):
+                erf = read_erf(self._filepath)
                 erf.set_data(self._resref, ResourceType.NCS, data)
-                write_erf(erf, filepath)
-            elif filepath.endswith(".rim"):
-                savePath = f"{filepath}/{self._resref}.{self._restype.extension}"
-                rim = read_rim(filepath)
+                write_erf(erf, self._filepath)
+                save_path_str = self._filepath / f"{self._resref}.{self._restype.extension}"
+            elif is_rim_file(self._filepath.name):
+                rim = read_rim(self._filepath)
                 rim.set_data(self._resref, ResourceType.NCS, data)
-                write_rim(rim, filepath)
-            else:
-                savePath = filepath.replace(".nss", ".ncs")
-                if filepath.endswith(".bif") or filepath == "":
-                    savePath = f"{self._installation.override_path()}{self._resref}.ncs"
-                BinaryWriter.dump(savePath, data)
+                write_rim(rim, self._filepath)
+                save_path_str = self._filepath / f"{self._resref}.{self._restype.extension}"
 
+            if not save_path_str:
+                raise FileNotFoundError("No filepath chosen.")
             QMessageBox(
                 QMessageBox.Information,
                 "Success",
-                f"Compiled script successfully saved to:\n {savePath}.",
+                f"Compiled script successfully saved to:\n '{save_path_str}'.",
             ).exec_()
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to compile", str(e)).exec_()

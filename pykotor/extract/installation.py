@@ -36,6 +36,7 @@ def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     c_path: CaseAwarePath = CaseAwarePath(path)
     return c_path.is_dir() and c_path.joinpath("chitin.key").exists()
 
+
 # The SearchLocation class is an enumeration that represents different locations for searching.
 class SearchLocation(IntEnum):
     OVERRIDE = 0
@@ -105,10 +106,10 @@ class Installation:
         self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
 
         self._chitin: list[FileResource] = []
-        self._modules = CaseInsensitiveDict()
+        self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
-        self._override = CaseInsensitiveDict()
+        self._override: dict[str, list[FileResource]] = CaseInsensitiveDict()
         self._streammusic: list[FileResource] = []
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []
@@ -203,6 +204,7 @@ class Installation:
         return self._find_resource_folderpath(
             ("rims",),
             "Could not find rims folder in '{}'.",
+            optional=True,
         )
 
     def streammusic_path(self) -> CaseAwarePath:
@@ -311,49 +313,31 @@ class Installation:
         for module in texturepacks_files:
             self._texturepacks[module.name] = list(Capsule(texturepacks_path / module))
 
-    def reload_override(self, directory: str | None = None) -> None:
-        """Reloads the list of resources in subdirectory of the override folder linked to the Installation.
+    def load_override(self, directory: str | None = None) -> None:
+        """Reloads the list of resources in a specific subdirectory of the override folder linked to the Installation.
+        If a directory argument is not passed, this will reload all subdirectories in the Override folder.
+
+        the _override dict follows the following example format:
+        _override[""] = list[FileResource]  # the loose files in the Override folder
+        _override["subdir1"] = list[FileResource]  # the loose files in subdir1
+        _override["subdir2"] = list[FileResource]  # the loose files in subdir2
+        _override["subdir1/subdir3"] = list[FileResource]  # the loose files in subdir1/subdir3. Key is always a posix path (delimited by /'s)
 
         Args:
         ----
             directory: The subdirectory in the override folder.
         """
         override_path = self.override_path()
-        target_dirs = [override_path / directory] if directory else [f for f in override_path.rglob("*") if f.is_dir()]
+        if directory is not None:
+            target_dirs = [override_path / directory]
+            self._override[directory] = []
+        else:
+            target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
+            self._override = CaseInsensitiveDict()
 
         for folder in target_dirs:
-            relative_folder = str(folder.relative_to(override_path))
-            self._override[relative_folder] = [
-                FileResource(
-                    file.name,
-                    ResourceType.from_extension(file.suffix[1:]),
-                    file.stat().st_size,
-                    0,
-                    file,
-                )
-                for file in folder.iterdir()
-                if not file.is_dir()
-            ]
-
-    def load_override(self) -> None:
-        """Reloads the list of subdirectories in the override folder linked to the Installation."""
-        self._override = {}
-        override_path = self.override_path()
-
-        for file in override_path.rglob("*"):
-            relative_dir = str(file.relative_to(override_path))
-            self._override[relative_dir] = []
-            with suppress(Exception):
-                name, ext = file.stem, file.suffix[1:]
-                size = file.stat().st_size
-                resource = FileResource(
-                    name,
-                    ResourceType.from_extension(ext),
-                    size,
-                    0,
-                    file,
-                )
-                self._override[relative_dir].append(resource)
+            relative_folder = folder.relative_to(override_path).as_posix()
+            self._override[relative_folder] = self.load_resources_list(folder, recurse=False)
 
     def load_resources_list(self, path: os.PathLike | str, recurse=True) -> list[FileResource]:
         """Load resources for a given path and store them in the provided list.
@@ -399,7 +383,7 @@ class Installation:
     ) -> None:
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = {}
-        with suppress(ValueError):
+        with suppress(FileNotFoundError, IsADirectoryError, ValueError):
             rims_path: CaseAwarePath = self.rims_path()
             for file in rims_path.iterdir():
                 if is_rim_file(file.name):
@@ -1203,7 +1187,7 @@ class Installation:
                 are: GFF = read_gff(capsule.resource(tag, ResourceType.ARE))
                 locstring = are.root.get_locstring("Name")
                 if locstring.stringref > 0:
-                    name = self._talktable.string(locstring.stringref) or "" # TODO: why did I add 'or ""'?
+                    name = self._talktable.string(locstring.stringref) or ""  # TODO: why did I add 'or ""'?
                 elif locstring.exists(Language.ENGLISH, Gender.MALE):
                     name = locstring.get(Language.ENGLISH, Gender.MALE) or ""
                 break
