@@ -626,7 +626,6 @@ class ToolWindow(QMainWindow):
             data = resource.data()
             c_filepath: CaseAwarePath = CaseAwarePath(filepath)
             c_folderpath = c_filepath.parent
-            filename = c_filepath.name
 
             decompile_tpc = self.ui.tpcDecompileCheckbox.isChecked()
             extract_txi = self.ui.tpcTxiCheckbox.isChecked()
@@ -644,8 +643,7 @@ class ToolWindow(QMainWindow):
                 tpc = read_tpc(data)
 
                 if extract_txi:
-                    txi_filename = filename.lower().replace(".tpc", ".txi")
-                    with c_folderpath.joinpath(txi_filename).open("wb") as file:
+                    with c_filepath.with_suffix(c_filepath.suffix.lower().replace(".tpc", ".txi")).open("wb") as file:
                         file.write(tpc.txi.encode("ascii"))
 
                 if decompile_tpc:
@@ -659,7 +657,7 @@ class ToolWindow(QMainWindow):
 
                     data = bytearray()
                     write_mdl(mdl, data, ResourceType.MDL_ASCII)
-                    c_filepath = c_filepath.replace(".mdl", ".ascii.mdl")
+                    c_filepath = c_filepath.with_suffix(c_filepath.suffix.lower().replace(".mdl", ".ascii.mdl"))
 
                 if extract_textures_mdl:
                     try:
@@ -672,12 +670,16 @@ class ToolWindow(QMainWindow):
                                 file_format = ResourceType.TGA if decompile_tpc else ResourceType.TPC
                                 extension = "tga" if file_format == ResourceType.TGA else "tpc"
                                 write_tpc(tpc, c_folderpath.joinpath(f"{texture}.{extension}"), file_format)
-                            except Exception:
-                                loader.errors.append(ValueError(f"Could not find or extract tpc: {texture}"))
-                    except:
+                            except Exception as original_exception:  # noqa: PERF203
+                                loader.errors.append(
+                                    ValueError(
+                                        f"Could not find or extract tpc: {texture} Original error: {original_exception!s}",
+                                    ),
+                                )
+                    except Exception as original_exception:
                         loader.errors.append(
                             ValueError(
-                                f"Could not determine textures used in model: {resource.resname()}",
+                                f"Could not determine textures used in model: {resource.resname()} Original error: {original_exception!s}",
                             ),
                         )
 
@@ -685,8 +687,8 @@ class ToolWindow(QMainWindow):
                 file.write(data)
         except Exception as e:
             traceback.print_exc()
-            msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
-            raise Exception(msg) from e
+            msg = f"Failed to extract resource: '{resource.resname()}.{resource.restype().extension}'"
+            raise e.__class__(msg) from e
 
     def openFromFile(self) -> None:
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
@@ -711,7 +713,7 @@ class FolderObserver(FileSystemEventHandler):
         self.lastModified = datetime.now(timezone.utc).astimezone()
 
     def on_any_event(self, event):
-        if datetime.now(timezone.utc).astimezone() - self.lastModified < timedelta(seconds=1):
+        if datetime.now(tz=timezone.utc).astimezone() - self.lastModified < timedelta(seconds=1):
             return
 
         self.lastModified = datetime.now(timezone.utc).astimezone()
