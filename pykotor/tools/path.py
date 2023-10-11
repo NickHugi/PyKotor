@@ -473,6 +473,11 @@ def locate_game_path():
                 path = CaseAwarePath(path_str)
                 if path not in locations[os_str][Game.K1]:
                     locations[os_str][Game.K1].append(path)
+            path_str = resolve_reg_key_to_path(regoption, "PATH")
+            if path_str:
+                path = CaseAwarePath(path_str)
+                if path not in locations[os_str][Game.K1]:
+                    locations[os_str][Game.K1].append(path)
         for regoption in KOTOR2RegOptions:
             path_str = resolve_reg_key_to_path(regoption, "InstallLocation")
             if path_str:
@@ -480,6 +485,11 @@ def locate_game_path():
                 if path not in locations[os_str][Game.K2]:
                     locations[os_str][Game.K2].append(path)
             path_str = resolve_reg_key_to_path(regoption, "Path")
+            if path_str:
+                path = CaseAwarePath(path_str)
+                if path not in locations[os_str][Game.K2]:
+                    locations[os_str][Game.K2].append(path)
+            path_str = resolve_reg_key_to_path(regoption, "PATH")
             if path_str:
                 path = CaseAwarePath(path_str)
                 if path not in locations[os_str][Game.K2]:
