@@ -134,7 +134,7 @@ class DiffGFF:
             self.log(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of old struct:")
             for label, field_type, field_value in struct:
-                self.log(fieldtype_to_fieldname.get(field_type, "FIELDTYPE INVALID"), f"{label}='{field_value}'")
+                self.log(fieldtype_to_fieldname.get(field_type, field_type), f"{label}='{field_value}'")
             self.log()
             is_same_result = False
 
@@ -143,7 +143,7 @@ class DiffGFF:
             self.log(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of new struct:")
             for label, field_type, field_value in struct:
-                self.log(fieldtype_to_fieldname.get(field_type, "FIELDTYPE INVALID"), f"{label}='{field_value}'")
+                self.log(fieldtype_to_fieldname.get(field_type, field_type), f"{label}='{field_value}'")
             self.log()
             is_same_result = False
 

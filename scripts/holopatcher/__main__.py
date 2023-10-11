@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import sys
 import tkinter as tk
@@ -10,6 +11,10 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING
 
+# Ensure the directory of the script is in sys.path
+script_dir = pathlib.Path(__file__).parent.resolve()
+if str(script_dir) not in sys.path:
+    sys.path.insert(0, str(script_dir))
 from settings import setup_environment
 
 setup_environment()
