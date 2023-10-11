@@ -36,7 +36,7 @@ class ERFBinaryReader(ResourceReader):
         self._erf = ERF(ERFType.MOD if file_type == ERFType.MOD.value else ERFType.ERF)
 
         if file_version != "V1.0":
-            msg = "The ERF version that was loaded is unsupported."
+            msg = f"ERF version '{file_version}' is unsupported."
             raise ValueError(msg)
 
         self._reader.skip(8)

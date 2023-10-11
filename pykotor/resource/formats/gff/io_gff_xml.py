@@ -220,10 +220,10 @@ class GFFXMLWriter(ResourceWriter):
         elif field_type == GFFFieldType.Binary:
             xml_field.tag = "data"
             xml_field.text = base64.b64encode(value).decode()
-        elif field_type == GFFFieldType.Vector4:
-            self._extracted_from__build_field_60(xml_field, value)
         elif field_type == GFFFieldType.Vector3:
-            self._extracted_from__build_field_71(xml_field, value)
+            self._build_vector3(xml_field, value)
+        elif field_type == GFFFieldType.Vector4:
+            self._build_vector4(xml_field, value)
         elif field_type == GFFFieldType.Struct:
             xml_field.tag = "struct"
             self._build_struct(value, xml_field)
@@ -234,8 +234,7 @@ class GFFXMLWriter(ResourceWriter):
                 xml_field.append(subelement)
                 self._build_struct(gff_struct, subelement)
 
-    # TODO Rename this here and in `_build_field`
-    def _extracted_from__build_field_71(self, xml_field, value):
+    def _build_vector3(self, xml_field: ElementTree.Element, value):
         xml_field.tag = "vector"
         x_element = ElementTree.Element("double")
         x_element.text = str(value.x)
@@ -245,8 +244,7 @@ class GFFXMLWriter(ResourceWriter):
         z_element.text = str(value.z)
         xml_field.extend([x_element, y_element, z_element])
 
-    # TODO Rename this here and in `_build_field`
-    def _extracted_from__build_field_60(self, xml_field, value):
+    def _build_vector4(self, xml_field: ElementTree.Element, value):
         xml_field.tag = "orientation"
         x_element = ElementTree.Element("double")
         x_element.text = str(value.x)

@@ -217,7 +217,7 @@ class ToolWindow(QMainWindow):
         self.ui.overrideWidget.setResources(self.active.override_resources(new_directory))
 
     def onOverrideReload(self, directory) -> None:
-        self.active.reload_override(directory)
+        self.active.load_override(directory)
         self.ui.overrideWidget.setResources(self.active.override_resources(directory))
 
     def onOverrideRefresh(self) -> None:
@@ -364,7 +364,7 @@ class ToolWindow(QMainWindow):
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self) -> None:
-        self.active.reload_override("")
+        self.active.load_override("")
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data, self.active, self)
 
@@ -625,7 +625,7 @@ class ToolWindow(QMainWindow):
         try:
             data = resource.data()
             c_filepath: CaseAwarePath = CaseAwarePath(filepath)
-            folderpath = c_filepath.parent
+            c_folderpath = c_filepath.parent
             filename = c_filepath.name
 
             decompile_tpc = self.ui.tpcDecompileCheckbox.isChecked()
@@ -645,7 +645,7 @@ class ToolWindow(QMainWindow):
 
                 if extract_txi:
                     txi_filename = filename.lower().replace(".tpc", ".txi")
-                    with folderpath.joinpath(txi_filename).open("wb") as file:
+                    with c_folderpath.joinpath(txi_filename).open("wb") as file:
                         file.write(tpc.txi.encode("ascii"))
 
                 if decompile_tpc:
@@ -667,11 +667,11 @@ class ToolWindow(QMainWindow):
                             try:
                                 tpc = self.active.texture(texture)
                                 if extract_txi:
-                                    with folderpath.joinpath(f"{texture}.txi").open("wb") as file:
+                                    with c_folderpath.joinpath(f"{texture}.txi").open("wb") as file:
                                         file.write(tpc.txi.encode("ascii"))
                                 file_format = ResourceType.TGA if decompile_tpc else ResourceType.TPC
                                 extension = "tga" if file_format == ResourceType.TGA else "tpc"
-                                write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
+                                write_tpc(tpc, c_folderpath.joinpath(f"{texture}.{extension}"), file_format)
                             except Exception:
                                 loader.errors.append(ValueError(f"Could not find or extract tpc: {texture}"))
                     except:

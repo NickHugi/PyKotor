@@ -52,6 +52,7 @@ ignore = [
     "ANN101",   # Missing type annotation for {name} in method
     "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
     "D401",     # First line of docstring should be in imperative mood
+    "E402",     # Module level import not at top of file
     "E501",     # line too long
     "FBT001",   # Boolean positional arg in function definition
     "FBT002",   # Boolean default value in function definition

@@ -118,13 +118,13 @@ def get_weapon_models(
     lhand_resref = utc.equipment[EquipmentSlot.LEFT_HAND].resref.get() if EquipmentSlot.LEFT_HAND in utc.equipment else None
 
     if rhand_resref is not None:
-        rhand_model = _extracted_from_get_weapon_models_37(
+        rhand_model = _load_hand_uti(
             installation,
             rhand_resref,
             baseitems,
         )
     if lhand_resref is not None:
-        lhand_model = _extracted_from_get_weapon_models_37(
+        lhand_model = _load_hand_uti(
             installation,
             lhand_resref,
             baseitems,
@@ -132,8 +132,7 @@ def get_weapon_models(
     return rhand_model, lhand_model
 
 
-# TODO Rename this here and in `get_weapon_models`
-def _extracted_from_get_weapon_models_37(
+def _load_hand_uti(
     installation: Installation,
     hand_resref: str,
     baseitems: TwoDA | None,

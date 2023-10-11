@@ -147,9 +147,9 @@ class Editor(QMainWindow):
             )
 
     def saveAs(self) -> None:
-        filepath, filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
-        if filepath != "":
-            encapsulated = filepath.lower().endswith((".erf", ".mod", ".rim"))
+        filepath_str, _filter = QFileDialog.getSaveFileName(self, "Save As", "", self._saveFilter, "")
+        if filepath_str != "":
+            encapsulated = filepath_str.lower().endswith((".erf", ".mod", ".rim"))
             encapsulated = encapsulated and "Save into module (*.erf *.mod *.rim)" in self._saveFilter
             if encapsulated:
                 if self._resref is None:
@@ -160,9 +160,9 @@ class Editor(QMainWindow):
                 if dialog2.exec_():
                     self._resref = dialog2.resref()
                     self._restype = dialog2.restype()
-                    self._filepath = CaseAwarePath(filepath)
+                    self._filepath = CaseAwarePath(filepath_str)
             else:
-                self._filepath = CaseAwarePath(filepath)
+                self._filepath = CaseAwarePath(filepath_str)
                 self._resref, restype_ext = self._filepath.stem, self._filepath.suffix[1:]
                 self._restype = ResourceType.from_extension(restype_ext)
             self.save()
@@ -271,9 +271,7 @@ class Editor(QMainWindow):
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with (self._filepath.with_suffix(self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open(
-                "wb",
-            ) as file:
+            with (self._filepath.with_suffix(self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open("wb") as file:
                 file.write(data_ext)
 
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)

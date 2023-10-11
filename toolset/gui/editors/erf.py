@@ -131,15 +131,15 @@ class ERFEditor(Editor):
             file.write(data[0])
 
     def extractSelected(self) -> None:
-        folderpath = QFileDialog.getExistingDirectory(self, "Extract to folder")
+        folderpath_str = QFileDialog.getExistingDirectory(self, "Extract to folder")
 
-        if folderpath != "":
+        if folderpath_str != "":
             self.ui.tableView.selectionModel().selectedRows()
             for index in self.ui.tableView.selectionModel().selectedRows(0):
                 item = self.model.itemFromIndex(index)
                 resource = item.data()
-                filepath = CaseAwarePath(f"{folderpath}/{resource.resref}.{resource.restype.extension}")
-                with filepath.open("wb") as file:
+                file_path = CaseAwarePath(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
+                with file_path.open("wb") as file:
                     file.write(resource.data)
 
     def removeSelected(self) -> None:

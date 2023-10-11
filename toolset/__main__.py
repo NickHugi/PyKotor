@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import multiprocessing
 import os
-from pathlib import Path
 import sys
 import traceback
+from pathlib import Path
 
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication

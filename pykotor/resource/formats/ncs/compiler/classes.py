@@ -1968,7 +1968,7 @@ class DynamicDataType:
         self.builtin: DataType = datatype
         self._struct: str | None = struct_name
 
-    def __eq__(self, other: DynamicDataType | DataType | object) -> bool:
+    def __eq__(self, other: DynamicDataType | DataType) -> bool:
         if isinstance(other, DynamicDataType):
             if self.builtin == other.builtin:
                 return self.builtin != DataType.STRUCT or (self.builtin == DataType.STRUCT and self._struct == other._struct)

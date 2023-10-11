@@ -70,26 +70,26 @@ class GFFBinaryReader(ResourceReader):
         self._gff.content = GFFContent(file_type)
 
         self._struct_offset = self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # struct count
         self._field_offset = self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # field count
         label_offset = self._reader.read_uint32()
         label_count = self._reader.read_uint32()
         self._field_data_offset = self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # field data count
         self._field_indices_offset = self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # field indices count
         self._list_indices_offset = self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # list indices count
 
         self._labels = []
         self._reader.seek(label_offset)
         self._labels.extend(self._reader.read_string(16) for _i in range(label_count))
-        self._read_and_build_struct(self._gff.root, 0)
+        self._load_struct(self._gff.root, 0)
 
         return self._gff
 
-    def _read_and_build_struct(
+    def _load_struct(
         self,
         gff_struct: GFFStruct,
         struct_index: int,
@@ -151,10 +151,10 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Struct:
             struct_index = self._reader.read_uint32()
             value = GFFStruct()
-            self._read_and_build_struct(value, struct_index)
+            self._load_struct(value, struct_index)
             gff_struct.set_struct(label, value)
         elif field_type is GFFFieldType.List:
-            self._read_and_build_list(gff_struct, label)
+            self._load_list(gff_struct, label)
         elif field_type is GFFFieldType.UInt8:
             gff_struct.set_uint8(label, self._reader.read_uint8())
         elif field_type is GFFFieldType.Int8:
@@ -170,7 +170,7 @@ class GFFBinaryReader(ResourceReader):
         elif field_type is GFFFieldType.Single:
             gff_struct.set_single(label, self._reader.read_single())
 
-    def _read_and_build_list(self, gff_struct, label):
+    def _load_list(self, gff_struct, label):
         offset = self._reader.read_uint32()  # relative to list indices
         self._reader.seek(self._list_indices_offset + offset)
         value = GFFList()
@@ -179,7 +179,7 @@ class GFFBinaryReader(ResourceReader):
         for struct_index in list_indices:
             value.add(0)
             child = value.at(len(value) - 1)
-            self._read_and_build_struct(child, struct_index)
+            self._load_struct(child, struct_index)
         gff_struct.set_list(label, value)
 
 
