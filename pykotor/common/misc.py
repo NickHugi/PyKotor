@@ -160,11 +160,6 @@ def get_local_timezone():
     return timezone.utc
 
 
-# Test the function
-local_tz = get_local_timezone()
-print(local_tz)
-
-
 class Game(IntEnum):
     """Represents which game."""
 
