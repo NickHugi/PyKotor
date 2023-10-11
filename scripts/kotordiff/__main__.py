@@ -12,6 +12,7 @@ import sys
 script_dir = pathlib.Path(__file__).parent.resolve()
 if str(script_dir) not in sys.path:
     sys.path.insert(0, str(script_dir))
+sys.path.append(".")
 from settings import setup_environment
 
 setup_environment()
@@ -30,6 +31,7 @@ from pykotor.tslpatcher.diff.tlk import DiffTLK
 from pykotor.tslpatcher.diff.twoda import Diff2DA
 
 OUTPUT_LOG: Path
+LOGGING_ENABLED: bool
 
 
 def log_output(*args, **kwargs) -> None:
@@ -379,6 +381,7 @@ parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any u
 parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is ignored)")
 parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
 parser.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
+parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
 parser.add_argument(
     "--use-profiler",
     type=bool,
@@ -387,6 +390,9 @@ parser.add_argument(
 )
 
 parser_args, unknown = parser.parse_known_args()
+LOGGING_ENABLED = parser_args.logging
+if LOGGING_ENABLED is None:
+    LOGGING_ENABLED = True
 while True:
     parser_args.path1 = CaseAwarePath(
         parser_args.path1
@@ -411,17 +417,18 @@ while True:
     print("Invalid path:", parser_args.path2)
     parser.print_help()
     parser_args.path2 = None
-while True:
-    OUTPUT_LOG = CaseAwarePath(
-        parser_args.output_log
-        or (unknown[2] if len(unknown) > 2 else None)
-        or input("Filepath of the desired output logfile: ")
-        or "log_install_differ.log",
-    ).resolve()
-    if OUTPUT_LOG.parent.exists():
-        break
-    print("Invalid path:", OUTPUT_LOG)
-    parser.print_help()
+if LOGGING_ENABLED:
+    while True:
+        OUTPUT_LOG = CaseAwarePath(
+            parser_args.output_log
+            or (unknown[2] if len(unknown) > 2 else None)
+            or input("Filepath of the desired output logfile: ")
+            or "log_install_differ.log",
+        ).resolve()
+        if OUTPUT_LOG.parent.exists():
+            break
+        print("Invalid path:", OUTPUT_LOG)
+        parser.print_help()
 
 parser_args.ignore_rims = bool(parser_args.ignore_rims)
 parser_args.ignore_lips = bool(parser_args.ignore_lips)
@@ -461,8 +468,13 @@ try:
             " MATCHES " if comparison else " DOES NOT MATCH ",
             f"'{relative_path_from_to(parser_args.path1, parser_args.path2)}'",
         )
+        if comparison is True:
+            sys.exit(0)
+        if comparison is False:
+            sys.exit(1)
     if comparison is None:
         log_output("Error during comparison")
+        sys.exit(-1)
 except KeyboardInterrupt:
     if profiler is not None:
         profiler.disable()
