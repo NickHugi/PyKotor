@@ -314,8 +314,9 @@ class Installation:
             self._texturepacks[module.name] = list(Capsule(texturepacks_path / module))
 
     def load_override(self, directory: str | None = None) -> None:
-        """Reloads the list of resources in a specific subdirectory of the override folder linked to the Installation.
+        """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
         If a directory argument is not passed, this will reload all subdirectories in the Override folder.
+        If directory argument is "", this will load all the loose files in the Override folder.
 
         the _override dict follows the following example format:
         _override[""] = list[FileResource]  # the loose files in the Override folder
@@ -333,6 +334,7 @@ class Installation:
             self._override[directory] = []
         else:
             target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
+            target_dirs.append(override_path)
             self._override = CaseInsensitiveDict()
 
         for folder in target_dirs:

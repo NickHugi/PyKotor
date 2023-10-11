@@ -138,7 +138,7 @@ class ERFEditor(Editor):
             for index in self.ui.tableView.selectionModel().selectedRows(0):
                 item = self.model.itemFromIndex(index)
                 resource = item.data()
-                file_path = CaseAwarePath(folderpath_str, f"{resource.resref.resource.restype.extension}")
+                file_path = CaseAwarePath(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
                 with file_path.open("wb") as file:
                     file.write(resource.data)
 
