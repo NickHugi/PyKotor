@@ -1,23 +1,13 @@
 from __future__ import annotations
 
 import os
-import pathlib
 import re
-import sys
 import tkinter as tk
 from configparser import ConfigParser
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING
-
-# Ensure the directory of the script is in sys.path
-script_dir = pathlib.Path(__file__).parent.resolve()
-if str(script_dir) not in sys.path:
-    sys.path.insert(0, str(script_dir))
-from settings import setup_environment
-
-setup_environment()
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, locate_game_path
@@ -112,10 +102,11 @@ class App(tk.Tk):
         self.description_text = tk.Text(self, state="disabled", wrap="none")
         self.description_text.place(x=5, y=65, width=390, height=400)
 
-        ttk.Button(self, text="Browse", command=self.open_mod).place(x=320, y=5, width=75, height=25)
+        self.browse_button = ttk.Button(self, text="Browse", command=self.open_mod)
+        self.browse_button.place(x=320, y=5, width=75, height=25)
         ttk.Button(self, text="...", command=self.open_kotor).place(x=320, y=35, width=75, height=25)
-        ttk.Button(self, text="Install", command=self.begin_install).place(x=5, y=470, width=75, height=25)
-        ttk.Progressbar(self).place(x=85, y=470, width=310, height=25)
+        ttk.Button(self, text="Install", command=self.begin_install).place(x=320, y=470, width=75, height=25)
+        ttk.Progressbar(self).place(x=5, y=470, width=310, height=25)
 
         self.open_mod(CaseAwarePath.cwd())
 
@@ -150,9 +141,13 @@ class App(tk.Tk):
             if namespace_path.exists():
                 namespaces = NamespaceReader.from_filepath(namespace_path)
                 self.load_namespace(namespaces)
+                if default_directory_path_str:
+                    self.browse_button.place_forget()
             elif changes_path.exists():
                 namespaces = self.build_changes_as_namespace(changes_path)
                 self.load_namespace([namespaces])
+                if default_directory_path_str:
+                    self.browse_button.place_forget()
             else:
                 self.mod_path = ""
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
@@ -177,7 +172,7 @@ class App(tk.Tk):
         if not directory.joinpath("chitin.key").exists():
             messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
             return
-        self.gamepaths["values"] = [str(directory)]
+        self.gamepaths.set(str(directory))
 
     def begin_install(self) -> None:
         try:

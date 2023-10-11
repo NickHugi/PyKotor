@@ -5,8 +5,9 @@ import os
 import pathlib
 import platform
 import re
+import winreg
 from pathlib import (
-    Path,
+    Path,  # type: ignore[pylance_reportGeneralTypeIssues]
     PosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
     PurePath,  # type: ignore[pylance_reportGeneralTypeIssues]
     PurePosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
@@ -107,12 +108,12 @@ class BasePath:
 
     def __new__(cls, *args: PATH_TYPES, **kwargs):
         return super().__new__(cls, *cls.parse_args(*args), **kwargs)
-    
+
     def __init__(self, *args, _called_from_pathlib=True):
         # Loop over the MRO starting from the class after the current class
         next_init_method_class = self.__class__
         for cls in self.__class__.mro():
-            if '__init__' in cls.__dict__ and cls is not BasePath:
+            if "__init__" in cls.__dict__ and cls is not BasePath:
                 next_init_method_class = cls
                 break
 
@@ -128,7 +129,7 @@ class BasePath:
             init_method(self, *self.parse_args(*args))
         else:
             init_method(self, *args)
-    
+
     @classmethod
     def parse_args(cls, *args):
         args_list = list(args)
@@ -381,8 +382,36 @@ elif os.name == "nt":
     CaseAwarePath = Path  # type: ignore[pylance_reportGeneralTypeIssues]
 
 
+def resolve_reg_key_to_path(reg_key):
+    try:
+        root, subkey = reg_key.split("\\", 1)
+        root_key = getattr(winreg, root)
+        with winreg.OpenKey(root_key, subkey) as key:
+            resolved_path, _ = winreg.QueryValueEx(key, "InstallLocation")
+            return resolved_path
+    except (FileNotFoundError, PermissionError):
+        return None
+
+
+KOTOR2RegOptions = [
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 208580",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\GOG.com\\Games\\1421404581",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\LucasArts\\KotOR2",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\LucasArts\\KotOR2",
+]
+
+KOTOR1RegOptions = [
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 32370",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\GOG.com\\Games\\1207666283",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\BioWare\\SW\\KOTOR",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\BioWare\\SW\\KOTOR",
+]
+
+
 def locate_game_path():
     from pykotor.common.misc import Game
+
+    os_str = platform.system()
 
     locations = {
         "Windows": {
@@ -432,5 +461,18 @@ def locate_game_path():
             ],
         },
     }
+    if os_str == "Windows":
+        for regoption in KOTOR1RegOptions:
+            path_str = resolve_reg_key_to_path(regoption)
+            if path_str:
+                path = CaseAwarePath(path_str)
+                if path not in locations[os_str][Game.K1]:
+                    locations[os_str][Game.K1].append(path)
+        for regoption in KOTOR2RegOptions:
+            path_str = resolve_reg_key_to_path(regoption)
+            if path_str:
+                path = CaseAwarePath(path_str)
+                if path not in locations[os_str][Game.K2]:
+                    locations[os_str][Game.K2].append(path)
 
-    return locations[platform.system()]
+    return locations[os_str]
