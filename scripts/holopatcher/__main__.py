@@ -19,6 +19,145 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+class RTFText(tk.Text):
+    def __init__(self, master=None, **kw):
+        self.frame = tk.Frame(master)
+
+        self.vbar = tk.Scrollbar(self.frame)
+        kw.update({"yscrollcommand": self.vbar.set})
+        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.vbar["command"] = self.yview
+
+        tk.Text.__init__(self, self.frame, **kw)
+        self.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        text_meths = vars(tk.Text).keys()
+        methods = vars(tk.Pack).keys() | vars(tk.Grid).keys() | vars(tk.Place).keys()
+        methods = methods.difference(text_meths)
+
+        for m in methods:
+            if m[0] != "_" and m != "config" and m != "configure":
+                setattr(self, m, getattr(self.frame, m))
+
+    def setRTF(self, rtf, pad, bg, font):
+        message = "".join(rtf)
+        parts = re.split(r"(\<.*?\>)", message)
+        taglist = []
+        fontNames = ["Courier"]
+        fontWeight = "normal"
+        fontSlant = "roman"
+        fontUnderline = False
+        fontSizes = [10]
+        fontColors = ["black"]
+        backColors = ["white"]
+        align = "left"
+
+        self.configure(padx=pad[0])
+        self.configure(pady=pad[1])
+        self.configure(bg=bg)
+        self.configure(font=font)
+
+        for idx, part in enumerate(parts):
+            if len(part) > 0:
+                if part[0] == "<":
+                    part = part.lower()
+                    if part[:8] == "<family:":
+                        fontNames.append(part[8:-1])
+                    if part == "</family>":
+                        fontNames.pop()
+                    if part[:6] == "<size:":
+                        fontSizes.append(int(part[6:-1]))
+                    if part == "</size>":
+                        fontSizes.pop()
+                    if part[:7] == "<color:":
+                        fontColors.append(part[7:-1])
+                    if part == "</color>":
+                        fontColors.pop()
+                    if part[:12] == "<background:":
+                        backColors.append(part[12:-1])
+                    if part == "</background>":
+                        backColors.pop()
+
+                    if part == "<b>":
+                        fontWeight = "bold"
+                    if part == "</b>":
+                        fontWeight = "normal"
+                    if part == "<i>":
+                        fontSlant = "italic"
+                    if part == "</i>":
+                        fontSlant = "roman"
+                    if part == "<u>":
+                        fontUnderline = True
+                    if part == "</u>":
+                        fontUnderline = False
+                    if part == "<h1>":
+                        fontSizes.append(18)
+                    if part == "</h1>":
+                        fontSizes.pop()
+                    if part == "<h2>":
+                        fontSizes.append(15)
+                    if part == "</h2>":
+                        fontSizes.pop()
+                    if part == "<h3>":
+                        fontSizes.append(12)
+                    if part == "</h3>":
+                        fontSizes.pop()
+                    if part == "<h4>":
+                        fontSizes.append(10)
+                    if part == "</h4>":
+                        fontSizes.pop()
+                    if part == "<center>":
+                        align = "center"
+                    if part == "</center>":
+                        align = "left"
+
+                    if part == "<code>":
+                        fontNames.append("Terminal")
+                        fontSizes.append(10)
+                    if part == "</code>":
+                        fontNames.pop()
+                        fontSizes.pop()
+
+                    if part == "<codei>":
+                        backColors.append("lightgrey")
+                        fontNames.append("Terminal")
+                        fontSizes.append(10)
+                    if part == "</codei>":
+                        backColors.pop()
+                        fontNames.pop()
+                        fontSizes.pop()
+
+                    if part == "<hr>":
+                        fontSizes.append(1)
+                        backColors.append("black")
+                    if part == "</hr>":
+                        fontSizes.pop()
+                        backColors.pop()
+                else:
+                    tagname = f"{idx}"
+                    taglist = (tagname,)
+                    self.insert(tk.END, part, taglist)
+                    fontName = fontNames[len(fontNames) - 1]
+                    fontSize = fontSizes[len(fontSizes) - 1]
+                    fontColor = fontColors[len(fontColors) - 1]
+                    backColor = backColors[len(backColors) - 1]
+                    hFont = tkfont.Font(
+                        family=fontName,
+                        size=fontSize,
+                        weight=fontWeight,
+                        slant=fontSlant,
+                        underline=fontUnderline,
+                    )
+                    self.tag_configure(idx, font=hFont)
+                    self.tag_configure(idx, foreground=fontColor)
+                    self.tag_configure(idx, background=backColor)
+                    self.tag_configure(idx, justify=align)
+        self.configure(state="disabled")
+
+    def __str__(self):
+        return str(self.frame)
+
+
 class LeftCutOffCombobox(ttk.Combobox):
     def __init__(self, master=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -91,6 +230,7 @@ class App(tk.Tk):
 
         self.namespaces_combobox = ttk.Combobox(self, state="readonly")
         self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
+        self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_combobox_change)
 
         self.gamepaths = ttk.Combobox(self)
         self.gamepaths.place(x=5, y=35, width=310, height=25)
@@ -99,8 +239,20 @@ class App(tk.Tk):
             str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()
         ]
 
-        self.description_text = tk.Text(self, state="disabled", wrap="none")
-        self.description_text.place(x=5, y=65, width=390, height=400)
+        # Create a Frame to hold the Text and Scrollbar widgets
+        text_frame = tk.Frame(self)
+        text_frame.place(x=5, y=65, width=390, height=400)
+
+        # Create the Scrollbar and pack it to the right side of the Frame
+        scrollbar = tk.Scrollbar(text_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Create the Text widget with word wrapping and pack it to the left side of the Frame
+        self.description_text = tk.Text(text_frame, wrap=tk.WORD, yscrollcommand=scrollbar.set)
+        self.description_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+
+        # Link the Scrollbar to the Text widget
+        scrollbar.config(command=self.description_text.yview)
 
         self.browse_button = ttk.Button(self, text="Browse", command=self.open_mod)
         self.browse_button.place(x=320, y=5, width=75, height=25)
@@ -109,6 +261,27 @@ class App(tk.Tk):
         ttk.Progressbar(self).place(x=5, y=470, width=310, height=25)
 
         self.open_mod(CaseAwarePath.cwd())
+
+    def on_combobox_change(self, event):
+        try:
+            namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+            if namespace_option.data_folderpath:
+                changes_ini_path = CaseAwarePath(
+                    self.mod_path,
+                    "tslpatchdata",
+                    namespace_option.data_folderpath,
+                    namespace_option.ini_filename,
+                )
+            else:
+                changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
+            with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
+                stripped_content = striprtf(rtf.read())
+                self.description_text.config(state="normal")
+                self.description_text.delete(1.0, tk.END)
+                self.description_text.insert(tk.END, stripped_content)
+                self.description_text.config(state="disabled")
+        except Exception as e:
+            messagebox.showerror("Error", f"An unexpected error occurred while loading namespace option: {e}")
 
     def extract_lookup_game_number(self, changes_path: Path):
         if not changes_path.exists():
@@ -210,6 +383,13 @@ class App(tk.Tk):
 
         installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
         installer.install()
+        log_file_path: CaseAwarePath = mod_path / "installlog.txt"
+        with log_file_path.open("w", encoding="utf-8") as log_file:
+            for log in installer.log.all_logs:
+                log_file.write(f"{log.message}\n")
+        messagebox.showinfo(
+            "Install complete! Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
+        )
 
     def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
         c_filepath = CaseAwarePath(filepath)
@@ -237,13 +417,26 @@ class App(tk.Tk):
         namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         game_number: int | None
         if namespace_option.data_folderpath:
+            changes_ini_path = CaseAwarePath(
+                self.mod_path,
+                "tslpatchdata",
+                namespace_option.data_folderpath,
+                namespace_option.ini_filename,
+            )
             game_number = self.extract_lookup_game_number(
-                CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.data_folderpath, namespace_option.ini_filename),
+                changes_ini_path,
             )
         else:
+            changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
             game_number = self.extract_lookup_game_number(
-                CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename),
+                changes_ini_path,
             )
+        with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
+            stripped_content = striprtf(rtf.read())
+            self.description_text.config(state="normal")
+            self.description_text.delete(1.0, tk.END)
+            self.description_text.insert(tk.END, stripped_content)
+            self.description_text.config(state="disabled")
         if game_number:
             game = Game(game_number)
             prechosen_gamepath = self.gamepaths.get()
@@ -259,6 +452,123 @@ class App(tk.Tk):
         self.description_text.see(tk.END)
         self.description_text.config(state="disabled")
 
+def striprtf(text):
+   pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
+   # control words which specify a "destionation".
+   destinations = frozenset((
+      "aftncn","aftnsep","aftnsepc","annotation","atnauthor","atndate","atnicn","atnid",
+      "atnparent","atnref","atntime","atrfend","atrfstart","author","background",
+      "bkmkend","bkmkstart","blipuid","buptim","category","colorschememapping",
+      "colortbl","comment","company","creatim","datafield","datastore","defchp","defpap",
+      "do","doccomm","docvar","dptxbxtext","ebcend","ebcstart","factoidname","falt",
+      "fchars","ffdeftext","ffentrymcr","ffexitmcr","ffformat","ffhelptext","ffl",
+      "ffname","ffstattext","field","file","filetbl","fldinst","fldrslt","fldtype",
+      "fname","fontemb","fontfile","fonttbl","footer","footerf","footerl","footerr",
+      "footnote","formfield","ftncn","ftnsep","ftnsepc","g","generator","gridtbl",
+      "header","headerf","headerl","headerr","hl","hlfr","hlinkbase","hlloc","hlsrc",
+      "hsv","htmltag","info","keycode","keywords","latentstyles","lchars","levelnumbers",
+      "leveltext","lfolevel","linkval","list","listlevel","listname","listoverride",
+      "listoverridetable","listpicture","liststylename","listtable","listtext",
+      "lsdlockedexcept","macc","maccPr","mailmerge","maln","malnScr","manager","margPr",
+      "mbar","mbarPr","mbaseJc","mbegChr","mborderBox","mborderBoxPr","mbox","mboxPr",
+      "mchr","mcount","mctrlPr","md","mdeg","mdegHide","mden","mdiff","mdPr","me",
+      "mendChr","meqArr","meqArrPr","mf","mfName","mfPr","mfunc","mfuncPr","mgroupChr",
+      "mgroupChrPr","mgrow","mhideBot","mhideLeft","mhideRight","mhideTop","mhtmltag",
+      "mlim","mlimloc","mlimlow","mlimlowPr","mlimupp","mlimuppPr","mm","mmaddfieldname",
+      "mmath","mmathPict","mmathPr","mmaxdist","mmc","mmcJc","mmconnectstr",
+      "mmconnectstrdata","mmcPr","mmcs","mmdatasource","mmheadersource","mmmailsubject",
+      "mmodso","mmodsofilter","mmodsofldmpdata","mmodsomappedname","mmodsoname",
+      "mmodsorecipdata","mmodsosort","mmodsosrc","mmodsotable","mmodsoudl",
+      "mmodsoudldata","mmodsouniquetag","mmPr","mmquery","mmr","mnary","mnaryPr",
+      "mnoBreak","mnum","mobjDist","moMath","moMathPara","moMathParaPr","mopEmu",
+      "mphant","mphantPr","mplcHide","mpos","mr","mrad","mradPr","mrPr","msepChr",
+      "mshow","mshp","msPre","msPrePr","msSub","msSubPr","msSubSup","msSubSupPr","msSup",
+      "msSupPr","mstrikeBLTR","mstrikeH","mstrikeTLBR","mstrikeV","msub","msubHide",
+      "msup","msupHide","mtransp","mtype","mvertJc","mvfmf","mvfml","mvtof","mvtol",
+      "mzeroAsc","mzeroDesc","mzeroWid","nesttableprops","nextfile","nonesttables",
+      "objalias","objclass","objdata","object","objname","objsect","objtime","oldcprops",
+      "oldpprops","oldsprops","oldtprops","oleclsid","operator","panose","password",
+      "passwordhash","pgp","pgptbl","picprop","pict","pn","pnseclvl","pntext","pntxta",
+      "pntxtb","printim","private","propname","protend","protstart","protusertbl","pxe",
+      "result","revtbl","revtim","rsidtbl","rxe","shp","shpgrp","shpinst",
+      "shppict","shprslt","shptxt","sn","sp","staticval","stylesheet","subject","sv",
+      "svb","tc","template","themedata","title","txe","ud","upr","userprops",
+      "wgrffmtfilter","windowcaption","writereservation","writereservhash","xe","xform",
+      "xmlattrname","xmlattrvalue","xmlclose","xmlname","xmlnstbl",
+      "xmlopen",
+   ))
+   # Translation of some special characters.
+   specialchars = {
+      "par": "\n",
+      "sect": "\n\n",
+      "page": "\n\n",
+      "line": "\n",
+      "tab": "\t",
+      "emdash": "\u2014",
+      "endash": "\u2013",
+      "emspace": "\u2003",
+      "enspace": "\u2002",
+      "qmspace": "\u2005",
+      "bullet": "\u2022",
+      "lquote": "\u2018",
+      "rquote": "\u2019",
+      "ldblquote": "\201C",
+      "rdblquote": "\u201D",
+   }
+   stack = []
+   ignorable = False       # Whether this group (and all inside it) are "ignorable".
+   ucskip = 1              # Number of ASCII characters to skip after a unicode character.
+   curskip = 0             # Number of ASCII characters left to skip
+   out = []                # Output buffer.
+   for match in pattern.finditer(text):
+      word,arg,hex,char,brace,tchar = match.groups()
+      if brace:
+         curskip = 0
+         if brace == "{":
+            # Push state
+            stack.append((ucskip,ignorable))
+         elif brace == "}":
+            # Pop state
+            ucskip,ignorable = stack.pop()
+      elif char: # \x (not a letter)
+         curskip = 0
+         if char == "~":
+            if not ignorable:
+                out.append("\xA0")
+         elif char in "{}\\":
+            if not ignorable:
+               out.append(char)
+         elif char == "*":
+            ignorable = True
+      elif word: # \foo
+         curskip = 0
+         if word in destinations:
+            ignorable = True
+         elif ignorable:
+            pass
+         elif word in specialchars:
+            out.append(specialchars[word])
+         elif word == "uc":
+            ucskip = int(arg)
+         elif word == "u":
+            c = int(arg)
+            if c < 0: c += 0x10000
+            if c > 127: out.append(chr(c))
+            else: out.append(chr(c))
+            curskip = ucskip
+      elif hex: # \'xx
+         if curskip > 0:
+            curskip -= 1
+         elif not ignorable:
+            c = int(hex,16)
+            if c > 127: out.append(chr(c))
+            else: out.append(chr(c))
+      elif tchar:
+         if curskip > 0:
+            curskip -= 1
+         elif not ignorable:
+            out.append(tchar)
+   return "".join(out)
 
 def main():
     app = App()

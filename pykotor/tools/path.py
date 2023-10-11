@@ -382,12 +382,12 @@ elif os.name == "nt":
     CaseAwarePath = Path  # type: ignore[pylance_reportGeneralTypeIssues]
 
 
-def resolve_reg_key_to_path(reg_key):
+def resolve_reg_key_to_path(reg_key, keystr):
     try:
         root, subkey = reg_key.split("\\", 1)
         root_key = getattr(winreg, root)
         with winreg.OpenKey(root_key, subkey) as key:
-            resolved_path, _ = winreg.QueryValueEx(key, "InstallLocation")
+            resolved_path, _ = winreg.QueryValueEx(key, keystr)
             return resolved_path
     except (FileNotFoundError, PermissionError):
         return None
@@ -463,13 +463,23 @@ def locate_game_path():
     }
     if os_str == "Windows":
         for regoption in KOTOR1RegOptions:
-            path_str = resolve_reg_key_to_path(regoption)
+            path_str = resolve_reg_key_to_path(regoption, "InstallLocation")
+            if path_str:
+                path = CaseAwarePath(path_str)
+                if path not in locations[os_str][Game.K1]:
+                    locations[os_str][Game.K1].append(path)
+            path_str = resolve_reg_key_to_path(regoption, "Path")
             if path_str:
                 path = CaseAwarePath(path_str)
                 if path not in locations[os_str][Game.K1]:
                     locations[os_str][Game.K1].append(path)
         for regoption in KOTOR2RegOptions:
-            path_str = resolve_reg_key_to_path(regoption)
+            path_str = resolve_reg_key_to_path(regoption, "InstallLocation")
+            if path_str:
+                path = CaseAwarePath(path_str)
+                if path not in locations[os_str][Game.K2]:
+                    locations[os_str][Game.K2].append(path)
+            path_str = resolve_reg_key_to_path(regoption, "Path")
             if path_str:
                 path = CaseAwarePath(path_str)
                 if path not in locations[os_str][Game.K2]:
