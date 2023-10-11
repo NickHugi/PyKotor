@@ -1,21 +1,17 @@
-from __future__ import annotations
-
 import struct
-from typing import TYPE_CHECKING, Optional
+from typing import List, Optional
 
 import glm
 from glm import mat4, vec3, vec4
 
+from pykotor.common.stream import BinaryReader
 from pykotor.gl.models.mdl import Mesh, Model, Node
 
-if TYPE_CHECKING:
-    from pykotor.common.stream import BinaryReader
 
-
-def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: list[str]) -> Node:
+def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: List[str]) -> Node:
     mdl.seek(offset)
     node_type = mdl.read_uint16()
-    # supernode_id = mdl.read_uint16()  # noqa: ERA001
+    mdl.read_uint16()  # supernode id
     name_id = mdl.read_uint16()
     node = Node(scene, node, names[name_id])
 
@@ -31,10 +27,10 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
     if node_type & 0b100000:
         mdl.seek(offset + 80)
         fp = mdl.read_uint32()
-        k2 = fp in [4216880, 4216816, 4216864]
+        k2 = fp in (4216880, 4216816, 4216864)
 
         mdl.seek(offset + 80 + 8)
-        # offset_to_faces = mdl.read_uint32()  # noqa: ERA001
+        mdl.read_uint32()  # offset_to_faces
         face_count = mdl.read_uint32()
 
         mdl.seek(offset + 80 + 88)
@@ -51,7 +47,7 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
         else:
             mdl.seek(offset + 80 + 324)
         mdx_offset = mdl.read_uint32()
-        # offset_to_vertices = mdl.read_uint32()  # noqa: ERA001
+        mdl.read_uint32()  # offset_to_vertices
 
         element_data = []
         mdl.seek(offset + 80 + 184)
@@ -131,11 +127,8 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
     offset_to_name_offsets = mdl.read_uint32()
     name_count = mdl.read_uint32()
 
-    name_offsets = []
     mdl.seek(offset_to_name_offsets)
-    for _i in range(name_count):
-        name_offsets.append(mdl.read_uint32())
-
+    name_offsets = [mdl.read_uint32() for i in range(name_count)]
     names = []
     for name_offset in name_offsets:
         mdl.seek(name_offset)
@@ -149,7 +142,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
 
         mdl.seek(offset)
         node_type = mdl.read_uint16()
-        # supernode_id = mdl.read_uint16()  # noqa: ERA001
+        mdl.read_uint16()  # supernode id
         name_id = mdl.read_uint16()
 
         mdl.seek(offset + 16)
@@ -190,17 +183,17 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
             merged[key] = []
         merged[key].append((offset, transform))
 
-    for key in merged:
+    for key, value in merged.items():
         vertex_data = bytearray()
         elements = []
         child = Node(scene, root, "child")
         root.children.append(child)
 
         last_element = 0
-        for offset, transform in merged[key]:
+        for offset, transform in value:
             mdl.seek(offset + 80)
             fp = mdl.read_uint32()
-            k2 = fp in [4216880, 4216816, 4216864]
+            k2 = fp in (4216880, 4216816, 4216864)
 
             mdl.seek(offset + 80 + 252)
             mdx_block_size = mdl.read_uint32()
@@ -212,7 +205,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
             mdx_lightmap_offset = mdl.read_int32()
 
             mdl.seek(offset + 80 + 8)
-            # offset_to_faces = mdl.read_uint32()  # noqa: ERA001
+            mdl.read_uint32()  # offset_to_faces
             face_count = mdl.read_uint32()
             mdl.seek(offset + 80 + 184)
             element_offsets_count = mdl.read_uint32()
