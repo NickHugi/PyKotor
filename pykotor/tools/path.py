@@ -396,15 +396,17 @@ def resolve_reg_key_to_path(reg_key, keystr):
 KOTOR2RegOptions = [
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 208580",
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\GOG.com\\Games\\1421404581",
-    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\LucasArts\\KotOR2",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1421404581",
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\LucasArts\\KotOR2",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\LucasArts\\KotOR2",
 ]
 
 KOTOR1RegOptions = [
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 32370",
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\GOG.com\\Games\\1207666283",
-    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\BioWare\\SW\\KOTOR",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\GOG.com\\Games\\1207666283",
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\BioWare\\SW\\KOTOR",
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\BioWare\\SW\\KOTOR",
 ]
 
 
