@@ -187,6 +187,10 @@ class ModInstaller:
     # extract into multiple funcs perhaps?
     def install(self) -> None:
         config = self.config()
+        if config.required_file:
+            requiredfile_path = self.game_path / "Override" / config.required_file
+            if not requiredfile_path.exists():
+                raise ImportError(config.required_message.strip() or "cannot install - missing a required mod")
 
         installation = Installation(self.game_path, self.log)
         memory = PatcherMemory()

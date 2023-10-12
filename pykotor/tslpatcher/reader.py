@@ -144,7 +144,7 @@ class ConfigReader:
         else:
             self.config.game_number = None
         self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
-        self.config.required_message = self.ini.get("Settings", "Required", fallback="")
+        self.config.required_message = self.ini.get("Settings", "RequiredMsg", fallback="")
 
     def load_filelist(self) -> None:
         if "InstallList" not in self.ini:
