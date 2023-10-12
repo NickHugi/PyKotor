@@ -324,11 +324,9 @@ class ModInstaller:
                     f"Patching '{gff_patch.filename}' in the '{rel_output_container_path}' archive.",
                 )
                 if not capsule._path.exists():
-                    self.log.add_warning(
-                        f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{gff_patch.filename}'. Please note that TSLPatcher would have errored in this scenario!",
-                    )
-                    self.log.add_warning(
-                        "The above warning most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
+                    self.log.add_error(
+                        f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{gff_patch.filename}'."
+                        " This most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
             else:
                 create_backup(
@@ -371,8 +369,8 @@ class ModInstaller:
                     rel_output_container_path.parent,
                 )
                 if not nss_output_container_path.exists():
-                    self.log.add_warning(
-                        f"The capsule '{rel_output_container_path}' did not exist when patching GFF '{nss_patch.filename}'. Please note that TSLPatcher would have errored in this scenario!"
+                    self.log.add_error(
+                        f"The capsule '{rel_output_container_path}' did not exist when compiling NSS '{nss_patch.filename}'."
                         " This most likely indicates a different problem existed beforehand, such as a missing mod dependency.",
                     )
             else:
