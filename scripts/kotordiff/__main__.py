@@ -51,7 +51,7 @@ def compute_sha256(where: os.PathLike | str | bytes):
     """Compute the SHA-256 hash of the data."""
     if isinstance(where, bytes):
         return compute_sha256_from_bytes(where)
-    if isinstance(where, (os.PathLike | str)):
+    if isinstance(where, (os.PathLike, str)):
         file_path = CaseAwarePath(where)
         return compute_sha256_from_path(file_path)
     return None
@@ -326,6 +326,10 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
     modules_path1: CaseAwarePath = install_path1 / "Modules"
     modules_path2: CaseAwarePath = install_path2 / "Modules"
+    is_same_result = diff_directories(modules_path1, modules_path2) and is_same_result
+
+    modules_path1: CaseAwarePath = install_path1 / "rims"
+    modules_path2: CaseAwarePath = install_path2 / "rims"
     is_same_result = diff_directories(modules_path1, modules_path2) and is_same_result
 
     lips_path1: CaseAwarePath = install_path1 / "Lips"
