@@ -8,14 +8,9 @@ import os
 import pathlib
 import sys
 
-# Ensure the directory of the script is in sys.path
-script_dir = pathlib.Path(__file__).parent.resolve()
-if str(script_dir) not in sys.path:
-    sys.path.insert(0, str(script_dir))
-sys.path.append(".")
-from settings import setup_environment
-
-setup_environment()
+if not getattr(sys, "frozen", False):
+    thisfile_path = pathlib.Path(__file__).resolve()
+    sys.path.append(str(thisfile_path.parent.parent.parent))
 
 from pykotor.resource.formats.erf import ERFResource, read_erf
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff

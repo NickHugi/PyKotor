@@ -6,22 +6,20 @@ import sys
 import tkinter as tk
 import traceback
 from configparser import ConfigParser
+from pathlib import Path
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from typing import TYPE_CHECKING
 
-if getattr(sys, "frozen", False) is False:
-    sys.path.append(".")
+if not getattr(sys, "frozen", False):
+    thisfile_path = Path(__file__).resolve()
+    sys.path.append(str(thisfile_path.parent.parent.parent))
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, locate_game_path
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.reader import NamespaceReader
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class LeftCutOffCombobox(ttk.Combobox):
@@ -110,7 +108,7 @@ class App(tk.Tk):
         self.namespaces_combobox = ttk.Combobox(self, state="readonly")
         self.namespaces_combobox.set("Select the mod to install")
         self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
-        self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_combobox_change)
+        self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_namespace_option_chosen)
 
         self.browse_button = ttk.Button(self, text="Browse", command=self.open_mod)
         self.browse_button.place(x=320, y=5, width=75, height=25)
@@ -122,6 +120,7 @@ class App(tk.Tk):
         self.gamepaths["values"] = [
             str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()
         ]
+        self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         ttk.Button(self, text="Browse", command=self.open_kotor).place(x=320, y=35, width=75, height=25)
 
         # Create a Frame to hold the Text and Scrollbar widgets
@@ -146,7 +145,15 @@ class App(tk.Tk):
 
         self.open_mod(CaseAwarePath.cwd())
 
-    def on_combobox_change(self, event):
+    def on_gamepaths_chosen(self, event):
+        self.after(10, self.move_cursor_to_end)
+
+    def move_cursor_to_end(self):
+        self.gamepaths.focus_set()
+        self.gamepaths.icursor(tk.END)
+        self.gamepaths.xview(tk.END)
+
+    def on_namespace_option_chosen(self, event):
         try:
             namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             if namespace_option.data_folderpath:
@@ -159,7 +166,7 @@ class App(tk.Tk):
             else:
                 changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
             with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
-                self._strip_and_set_rtf_text(rtf)
+                self.set_stripped_rtf_text(rtf)
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred while loading namespace option: {e}")
 
@@ -215,7 +222,6 @@ class App(tk.Tk):
         directory = CaseAwarePath(directory_path_str)
 
         # handle possibility of user selecting a nested folder within KOTOR dir (usually override)
-        # TODO: double check if chitin.key exists on mac/mobile versions.
         while (
             directory.parent.name
             and directory.parent.name != directory.parts[1]
@@ -348,20 +354,23 @@ class App(tk.Tk):
             changes_ini_path,
         )
         with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
-            self._strip_and_set_rtf_text(rtf)
+            self.set_stripped_rtf_text(rtf)
         if game_number:
-            game = Game(game_number)
-            prechosen_gamepath = self.gamepaths.get()
-            gamepaths_list = [str(path) for path in self.default_game_paths[game] if path.exists()]
-            if game == Game.K2:
-                gamepaths_list.extend([str(path) for path in self.default_game_paths[Game.K1] if path.exists()])
-            self.gamepaths["values"] = gamepaths_list
-            if prechosen_gamepath in self.gamepaths["values"]:
-                self.gamepaths.set(prechosen_gamepath)
-            else:
-                self.gamepaths.set("Select your KOTOR directory path")
+            self._handle_gamepaths_with_mod(game_number)
 
-    def _strip_and_set_rtf_text(self, rtf):
+    def _handle_gamepaths_with_mod(self, game_number):
+        game = Game(game_number)
+        prechosen_gamepath = self.gamepaths.get()
+        gamepaths_list = [str(path) for path in self.default_game_paths[game] if path.exists()]
+        if game == Game.K2:
+            gamepaths_list.extend([str(path) for path in self.default_game_paths[Game.K1] if path.exists()])
+        self.gamepaths["values"] = gamepaths_list
+        if prechosen_gamepath in self.gamepaths["values"]:
+            self.gamepaths.set(prechosen_gamepath)
+        else:
+            self.gamepaths.set("Select your KOTOR directory path")
+
+    def set_stripped_rtf_text(self, rtf):
         stripped_content = striprtf(rtf.read())
         self.description_text.config(state="normal")
         self.description_text.delete(1.0, tk.END)
