@@ -131,7 +131,7 @@ class AddStructToListGFF(ModifyGFF):
     ):
         self.identifier: str = identifier
         self.new_struct_location: FieldValue = value
-        self.path: PureWindowsPath = path
+        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
         self.struct_id: int = struct_id or 0
         self.index_to_token: int | None = index_to_token
 
