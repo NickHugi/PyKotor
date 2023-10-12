@@ -139,9 +139,10 @@ class App(tk.Tk):
         # Link the Scrollbar to the Text widget
         scrollbar.config(command=self.description_text.yview)
 
-        ttk.Button(self, text="Install", command=self.begin_install).place(x=320, y=470, width=75, height=25)
+        ttk.Button(self, text="Exit", command=lambda: sys.exit(0)).place(x=5, y=470, width=75, height=25)
         self.progressbar = ttk.Progressbar(self)
-        self.progressbar.place(x=5, y=470, width=310, height=25)
+        self.progressbar.place(x=85, y=470, width=230, height=25)
+        ttk.Button(self, text="Install", command=self.begin_install).place(x=320, y=470, width=75, height=25)
 
         self.open_mod(CaseAwarePath.cwd())
 
@@ -271,19 +272,7 @@ class App(tk.Tk):
 
         installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
         try:
-            installer.install()
-            installer.log.add_note(
-                f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings",
-            )
-            self.progressbar["value"] = 100
-            log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
-            with log_file_path.open("w", encoding="utf-8") as log_file:
-                for log in installer.log.all_logs:
-                    log_file.write(f"{log.message}\n")
-            messagebox.showinfo(
-                "Install complete!",
-                "Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
-            )
+            self._execute_mod_install(installer, tslpatchdata_root_path)
         except Exception as e:
             self._handle_exception_during_install(
                 e,
@@ -291,8 +280,23 @@ class App(tk.Tk):
                 tslpatchdata_root_path,
             )
 
+    def _execute_mod_install(self, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
+        installer.install()
+        installer.log.add_note(
+            f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings",
+        )
+        self.progressbar["value"] = 100
+        log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
+        with log_file_path.open("w", encoding="utf-8") as log_file:
+            for log in installer.log.all_logs:
+                log_file.write(f"{log.message}\n")
+        messagebox.showinfo(
+            "Install complete!",
+            "Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
+        )
+
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
-        short_error_msg = f"{type(e).__name__}: {e.args}"
+        short_error_msg = f"{type(e).__name__}: {e.args[0]}"
         self.write_log(short_error_msg)
         installer.log.add_error("The installation was aborted with errors")
         log_file_path = tslpatchdata_root_path.parent / "installlog.txt"
