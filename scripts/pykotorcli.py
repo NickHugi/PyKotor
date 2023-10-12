@@ -4,6 +4,9 @@ import argparse
 import sys
 from enum import IntEnum
 
+if getattr(sys, "frozen", False) is False:
+    sys.path.append(".")
+
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.reader import NamespaceReader
