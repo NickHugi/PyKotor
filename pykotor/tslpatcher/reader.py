@@ -152,6 +152,9 @@ class ConfigReader:
 
         folders_ini = dict(self.ini["InstallList"].items())
         for key, foldername in folders_ini.items():
+            if key not in self.ini:
+                msg = f"The section [{key}] was not found in the ini, referenced by {key}={foldername} in [InstallList]"
+                raise KeyError(msg)
             folder_install = InstallFolder(foldername)
             self.config.install_list.append(folder_install)
 
@@ -315,7 +318,10 @@ class ConfigReader:
 
         files = dict(self.ini["2DAList"].items())
 
-        for file in files.values():
+        for identifier, file in files.items():
+            if file not in self.ini:
+                msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [2DAList]"
+                raise KeyError(msg)
             modification_ids = dict(self.ini[file].items())
 
             modifications = Modifications2DA(file)
@@ -369,6 +375,9 @@ class ConfigReader:
         files = dict(self.ini["SSFList"].items())
 
         for identifier, file in files.items():
+            if file not in self.ini:
+                msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [SSFList]"
+                raise KeyError(msg)
             modifications_ini = dict(self.ini[file].items())
             replace = identifier.startswith("Replace")
 
@@ -396,6 +405,9 @@ class ConfigReader:
         files = dict(self.ini["GFFList"].items())
 
         for identifier, file in files.items():
+            if file not in self.ini:
+                msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [GFFList]"
+                raise KeyError(msg)
             modifications_ini = dict(self.ini[file].items())
             replace = identifier.startswith("Replace")
 
