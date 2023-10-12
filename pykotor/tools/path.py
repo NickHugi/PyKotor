@@ -5,7 +5,6 @@ import os
 import pathlib
 import platform
 import re
-import winreg
 from pathlib import (
     Path,  # type: ignore[pylance_reportGeneralTypeIssues]
     PosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
@@ -383,6 +382,8 @@ elif os.name == "nt":
 
 
 def resolve_reg_key_to_path(reg_key, keystr):
+    import winreg
+
     try:
         root, subkey = reg_key.split("\\", 1)
         root_key = getattr(winreg, root)
