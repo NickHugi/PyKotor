@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 import tkinter as tk
+import traceback
 from configparser import ConfigParser
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 from typing import TYPE_CHECKING
+
+if getattr(sys, "frozen", False) is False:
+    sys.path.append(".")
 
 from pykotor.common.misc import Game
 from pykotor.tools.path import CaseAwarePath, locate_game_path
@@ -76,7 +81,20 @@ class LeftCutOffCombobox(ttk.Combobox):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.geometry("400x500")
+        # Set window dimensions
+        window_width = 400
+        window_height = 500
+
+        # Get screen dimensions
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        # Calculate position to center the window
+        x_position = int((screen_width / 2) - (window_width / 2))
+        y_position = int((screen_height / 2) - (window_height / 2))
+
+        # Set the dimensions and position
+        self.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
         self.resizable(width=False, height=False)
         self.title("HoloPatcher")
 
@@ -136,11 +154,7 @@ class App(tk.Tk):
             else:
                 changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
             with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
-                stripped_content = striprtf(rtf.read())
-                self.description_text.config(state="normal")
-                self.description_text.delete(1.0, tk.END)
-                self.description_text.insert(tk.END, stripped_content)
-                self.description_text.config(state="disabled")
+                self._strip_and_set_rtf_text(rtf)
         except Exception as e:
             messagebox.showerror("Error", f"An unexpected error occurred while loading namespace option: {e}")
 
@@ -212,10 +226,17 @@ class App(tk.Tk):
         try:
             Thread(target=self.begin_install_thread).start()
         except Exception as e:
+            error_type = type(e).__name__
+            error_args = e.args
+            error_cause = type(e.__cause__).__name__ if e.__cause__ else "None"
+
+            error_message = f"Exception Type: {error_type}\nException Arguments: {error_args}\nOriginal Exception: {error_cause}"
+
             messagebox.showerror(
                 "Error",
-                f"An unexpected error occurred during the installation and the program was forced to exit: {e}",
+                f"An unexpected error occurred during the installation and the program was forced to exit:\n{error_message}",
             )
+            sys.exit(1)
 
     def begin_install_thread(self):
         if not self.mod_path:
@@ -245,14 +266,31 @@ class App(tk.Tk):
         self.description_text.config(state="disabled")
 
         installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
-        installer.install()
-        log_file_path: CaseAwarePath = mod_path / "installlog.txt"
-        with log_file_path.open("w", encoding="utf-8") as log_file:
-            for log in installer.log.all_logs:
-                log_file.write(f"{log.message}\n")
-        messagebox.showinfo(
-            "Install complete! Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
-        )
+        try:
+            installer.install()
+            installer.log.add_note("The installation is complete!")
+            log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
+            with log_file_path.open("w", encoding="utf-8") as log_file:
+                for log in installer.log.all_logs:
+                    log_file.write(f"{log.message}\n")
+            messagebox.showinfo(
+                "Install complete!",
+                "Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
+            )
+        except Exception as e:
+            short_error_msg = f"{type(e).__name__}: {e.args}"
+            self.write_log(short_error_msg)
+            installer.log.add_error("The installation was aborted with errors")
+            log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
+            with log_file_path.open("w", encoding="utf-8") as log_file:
+                for log in installer.log.all_logs:
+                    log_file.write(f"{log.message}\n")
+                log_file.write(f"{traceback.format_exc()}\n")
+            messagebox.showerror(
+                "Error",
+                f"An unexpected error occurred during the installation and the installation was forced to terminate:\n{short_error_msg}",
+            )
+            raise
 
     def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
         c_filepath = CaseAwarePath(filepath)
@@ -286,28 +324,31 @@ class App(tk.Tk):
                 namespace_option.data_folderpath,
                 namespace_option.ini_filename,
             )
-            game_number = self.extract_lookup_game_number(
-                changes_ini_path,
-            )
         else:
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
-            game_number = self.extract_lookup_game_number(
-                changes_ini_path,
-            )
+        game_number = self.extract_lookup_game_number(
+            changes_ini_path,
+        )
         with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
-            stripped_content = striprtf(rtf.read())
-            self.description_text.config(state="normal")
-            self.description_text.delete(1.0, tk.END)
-            self.description_text.insert(tk.END, stripped_content)
-            self.description_text.config(state="disabled")
+            self._strip_and_set_rtf_text(rtf)
         if game_number:
             game = Game(game_number)
             prechosen_gamepath = self.gamepaths.get()
-            self.gamepaths["values"] = [str(path) for path in self.default_game_paths[game] if path.exists()]
+            gamepaths_list = [str(path) for path in self.default_game_paths[game] if path.exists()]
+            if game == Game.K2:
+                gamepaths_list.extend([str(path) for path in self.default_game_paths[Game.K1] if path.exists()])
+            self.gamepaths["values"] = gamepaths_list
             if prechosen_gamepath in self.gamepaths["values"]:
                 self.gamepaths.set(prechosen_gamepath)
             else:
                 self.gamepaths.set("")
+
+    def _strip_and_set_rtf_text(self, rtf):
+        stripped_content = striprtf(rtf.read())
+        self.description_text.config(state="normal")
+        self.description_text.delete(1.0, tk.END)
+        self.description_text.insert(tk.END, stripped_content)
+        self.description_text.config(state="disabled")
 
     def write_log(self, message: str) -> None:
         self.description_text.config(state="normal")
@@ -615,7 +656,7 @@ def striprtf(text):
             "xmlname",
             "xmlnstbl",
             "xmlopen",
-        )
+        ),
     )
     # Translation of some special characters.
     specialchars = {
@@ -674,20 +715,14 @@ def striprtf(text):
                 c = int(arg)
                 if c < 0:
                     c += 0x10000
-                if c > 127:
-                    out.append(chr(c))
-                else:
-                    out.append(chr(c))
+                out.append(chr(c))
                 curskip = ucskip
         elif hex:  # \'xx
             if curskip > 0:
                 curskip -= 1
             elif not ignorable:
                 c = int(hex, 16)
-                if c > 127:
-                    out.append(chr(c))
-                else:
-                    out.append(chr(c))
+                out.append(chr(c))
         elif tchar:
             if curskip > 0:
                 curskip -= 1
