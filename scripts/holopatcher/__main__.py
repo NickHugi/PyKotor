@@ -268,7 +268,9 @@ class App(tk.Tk):
         installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
         try:
             installer.install()
-            installer.log.add_note("The installation is complete!")
+            installer.log.add_note(
+                f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings",
+            )
             log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
             with log_file_path.open("w", encoding="utf-8") as log_file:
                 for log in installer.log.all_logs:
