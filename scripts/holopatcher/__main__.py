@@ -108,15 +108,21 @@ class App(tk.Tk):
         self.logger.error_observable.subscribe(self.write_log)
 
         self.namespaces_combobox = ttk.Combobox(self, state="readonly")
+        self.namespaces_combobox.set("Select the mod to install")
         self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
         self.namespaces_combobox.bind("<<ComboboxSelected>>", self.on_combobox_change)
 
+        self.browse_button = ttk.Button(self, text="Browse", command=self.open_mod)
+        self.browse_button.place(x=320, y=5, width=75, height=25)
+
         self.gamepaths = ttk.Combobox(self)
+        self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.place(x=5, y=35, width=310, height=25)
         self.default_game_paths = locate_game_path()
         self.gamepaths["values"] = [
             str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()
         ]
+        ttk.Button(self, text="Browse", command=self.open_kotor).place(x=320, y=35, width=75, height=25)
 
         # Create a Frame to hold the Text and Scrollbar widgets
         text_frame = tk.Frame(self)
@@ -133,11 +139,9 @@ class App(tk.Tk):
         # Link the Scrollbar to the Text widget
         scrollbar.config(command=self.description_text.yview)
 
-        self.browse_button = ttk.Button(self, text="Browse", command=self.open_mod)
-        self.browse_button.place(x=320, y=5, width=75, height=25)
-        ttk.Button(self, text="...", command=self.open_kotor).place(x=320, y=35, width=75, height=25)
         ttk.Button(self, text="Install", command=self.begin_install).place(x=320, y=470, width=75, height=25)
-        ttk.Progressbar(self).place(x=5, y=470, width=310, height=25)
+        self.progressbar = ttk.Progressbar(self)
+        self.progressbar.place(x=5, y=470, width=310, height=25)
 
         self.open_mod(CaseAwarePath.cwd())
 
@@ -271,6 +275,7 @@ class App(tk.Tk):
             installer.log.add_note(
                 f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings",
             )
+            self.progressbar["value"] = 100
             log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
             with log_file_path.open("w", encoding="utf-8") as log_file:
                 for log in installer.log.all_logs:
@@ -280,19 +285,26 @@ class App(tk.Tk):
                 "Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
             )
         except Exception as e:
-            short_error_msg = f"{type(e).__name__}: {e.args}"
-            self.write_log(short_error_msg)
-            installer.log.add_error("The installation was aborted with errors")
-            log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
-            with log_file_path.open("w", encoding="utf-8") as log_file:
-                for log in installer.log.all_logs:
-                    log_file.write(f"{log.message}\n")
-                log_file.write(f"{traceback.format_exc()}\n")
-            messagebox.showerror(
-                "Error",
-                f"An unexpected error occurred during the installation and the installation was forced to terminate:\n{short_error_msg}",
+            self._handle_exception_during_install(
+                e,
+                installer,
+                tslpatchdata_root_path,
             )
-            raise
+
+    def _handle_exception_during_install(self, e: Exception, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
+        short_error_msg = f"{type(e).__name__}: {e.args}"
+        self.write_log(short_error_msg)
+        installer.log.add_error("The installation was aborted with errors")
+        log_file_path = tslpatchdata_root_path.parent / "installlog.txt"
+        with log_file_path.open("w", encoding="utf-8") as log_file:
+            for log in installer.log.all_logs:
+                log_file.write(f"{log.message}\n")
+            log_file.write(f"{traceback.format_exc()}\n")
+        messagebox.showerror(
+            "Error",
+            f"An unexpected error occurred during the installation and the installation was forced to terminate:\n{short_error_msg}",
+        )
+        raise
 
     def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
         c_filepath = CaseAwarePath(filepath)
@@ -343,7 +355,7 @@ class App(tk.Tk):
             if prechosen_gamepath in self.gamepaths["values"]:
                 self.gamepaths.set(prechosen_gamepath)
             else:
-                self.gamepaths.set("")
+                self.gamepaths.set("Select your KOTOR directory path")
 
     def _strip_and_set_rtf_text(self, rtf):
         stripped_content = striprtf(rtf.read())
