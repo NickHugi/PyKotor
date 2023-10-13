@@ -138,8 +138,9 @@ class ConfigReader:
         if lookup_game_number:
             try:
                 self.config.game_number = int(lookup_game_number)
-            except ValueError:
-                self.log.add_error(f"Invalid game number: '{lookup_game_number}' Could not determine the kotor game!")
+            except ValueError as e:
+                msg = f"Invalid game number: '{lookup_game_number}' Could not determine the kotor game!"
+                raise ValueError(msg) from e
         else:
             self.config.game_number = None
         self.config.required_file = settings_ini.get("Required")
@@ -601,9 +602,8 @@ class ConfigReader:
                 if raw_struct_id and is_int(raw_struct_id):
                     struct_id = int(raw_struct_id)
                 elif raw_struct_id:
-                    self.log.add_error(
-                        f"Invalid struct id: expected int but got '{raw_struct_id}' in '{identifier}'. Using default of 0",
-                    )
+                    msg = f"Invalid struct id: expected int but got '{raw_struct_id}' in '[{identifier}]'"
+                    raise ValueError(msg)
                 value = FieldValueConstant(GFFStruct(struct_id))
                 path /= ">>##INDEXINLIST##<<"
             else:
