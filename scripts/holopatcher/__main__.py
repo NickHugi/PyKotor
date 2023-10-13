@@ -297,10 +297,16 @@ class App(tk.Tk):
         with log_file_path.open("w", encoding="utf-8") as log_file:
             for log in installer.log.all_logs:
                 log_file.write(f"{log.message}\n")
-        messagebox.showinfo(
-            "Install complete!",
-            "Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
-        )
+        if len(installer.log.errors) > 0:
+            messagebox.showwarning(
+                "Install completed with errors",
+                f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details",
+            )
+        else:
+            messagebox.showinfo(
+                "Install complete!",
+                "Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
+            )
 
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
         short_error_msg = f"{type(e).__name__}: {e.args[0]}"
