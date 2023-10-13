@@ -783,10 +783,10 @@ class ConfigReader:
         store_tlk: dict[int, RowValue] = {}
 
         for modifier, value in modifiers.items():
-            modifier_lowercase = modifier.lower()
+            modifier_lowercase = modifier.lower().strip()
             value_lowercase = value.lower()
             is_store_2da = modifier_lowercase.startswith("2damemory")
-            is_store_tlk = modifier_lowercase.startswith("strref")
+            is_store_tlk = modifier_lowercase.startswith("strref") and len(modifier_lowercase) > 6
             is_row_label = modifier_lowercase in ["rowlabel", "newrowlabel"]
 
             row_value = None
