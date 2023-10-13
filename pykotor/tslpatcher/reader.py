@@ -11,7 +11,7 @@ except ImportError:
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef
+from pykotor.common.misc import CaseInsensitiveDict, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
@@ -124,33 +124,36 @@ class ConfigReader:
         return self.config
 
     def load_settings(self) -> None:
-        self.config.window_title = self.ini.get(
-            "Settings",
-            "WindowCaption",
-            fallback="",
+        settings_section = next(
+            (section for section in self.ini.sections() if section.lower() == "settings"),
+            None,
         )
-        self.config.confirm_message = self.ini.get(
-            "Settings",
-            "ConfirmMessage",
-            fallback="",
-        )
+        if not settings_section:
+            return
+        settings_ini = CaseInsensitiveDict(dict(self.ini[settings_section].items()))
+        self.config.window_title = settings_ini.get("WindowCaption") or ""
+        self.config.confirm_message = settings_ini.get("ConfirmMessage") or ""
         # Try to get the value and convert it to an integer
-        lookup_game_number = self.ini.get("Settings", "LookupGameNumber", fallback=None)
-        if lookup_game_number is not None:
+        lookup_game_number = settings_ini.get("LookupGameNumber")
+        if lookup_game_number:
             try:
                 self.config.game_number = int(lookup_game_number)
             except ValueError:
                 self.log.add_error(f"Invalid game number: '{lookup_game_number}' Could not determine the kotor game!")
         else:
             self.config.game_number = None
-        self.config.required_file = self.ini.get("Settings", "Required", fallback=None)
-        self.config.required_message = self.ini.get("Settings", "RequiredMsg", fallback="")
+        self.config.required_file = settings_ini.get("Required")
+        self.config.required_message = settings_ini.get("RequiredMsg") or ""
 
     def load_filelist(self) -> None:
-        if "InstallList" not in self.ini:
+        install_list_section = next(
+            (section for section in self.ini.sections() if section.lower() == "installlist"),
+            None,
+        )
+        if not install_list_section:
             return
 
-        folders_ini = dict(self.ini["InstallList"].items())
+        folders_ini = CaseInsensitiveDict(dict(self.ini[install_list_section].items()))
         for key, foldername in folders_ini.items():
             if key not in self.ini:
                 msg = f"The section [{key}] was not found in the ini, referenced by {key}={foldername} in [InstallList]"
@@ -158,17 +161,21 @@ class ConfigReader:
             folder_install = InstallFolder(foldername)
             self.config.install_list.append(folder_install)
 
-            files_ini = dict(self.ini[key].items())
+            files_ini = CaseInsensitiveDict(dict(self.ini[key].items()))
             for key2, filename in files_ini.items():
                 replace_existing = key2.lower().startswith("replace")
                 file_install = InstallFile(filename, replace_existing)
                 folder_install.files.append(file_install)
 
     def load_tlk_list(self) -> None:
-        if "TLKList" not in self.ini:
+        tlk_list_section = next(
+            (section for section in self.ini.sections() if section.lower() == "tlklist"),
+            None,
+        )
+        if not tlk_list_section:
             return
 
-        tlk_list_edits = dict(self.ini["TLKList"].items())
+        tlk_list_edits = dict(self.ini[tlk_list_section].items())
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         append_tlk_edits = None
 
@@ -193,8 +200,8 @@ class ConfigReader:
             if end is None:
                 return range(int(start), int(start) + 1)
             if end < start:
-                self.log.add_error(f"start of range {start} must be less than end of range {end}. Skipping...")
-                return range(0)  # empty range
+                msg = f"start of range {start} must be less than end of range {end}."
+                raise ValueError(msg)
             return range(start, end + 1)
 
         tlk_list_ignored_indices: set[int] = set()
@@ -232,7 +239,8 @@ class ConfigReader:
                             is_replacement,
                         )
                 except ValueError as e:
-                    self.log.add_error(f"Could not parse {mod_key}={mod_value}: {e}. Skipping...")
+                    msg = f"Could not parse {mod_key}={mod_value}"
+                    raise ValueError(msg) from e
 
         for i in tlk_list_edits:
             try:
@@ -241,7 +249,8 @@ class ConfigReader:
                         parse_range(i[6:]),
                     )
             except ValueError as e:
-                self.log.add_error(f"Could not parse ignore index {i}: {e}. Skipping...")
+                msg = f"Could not parse ignore index {i}"
+                raise ValueError(msg) from e
 
         for key, value in tlk_list_edits.items():
             try:
@@ -253,8 +262,8 @@ class ConfigReader:
                     if append_tlk_edits is None:
                         append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
                     if len(append_tlk_edits) == 0:
-                        self.log.add_error(f"Could not find append.tlk on disk to perform modifier '{key}={value}'. Skipping...")
-                        continue
+                        msg = f"Could not find append.tlk on disk to perform modifier '{key}={value}'"
+                        raise FileNotFoundError(msg)
                     strref_range = parse_range(key[6:])
                     token_id_range = parse_range(value)
                     process_tlk_entries(
@@ -266,13 +275,13 @@ class ConfigReader:
                 elif key.startswith("file"):
                     tlk_modifications_path: CaseAwarePath = self.mod_path / value
                     if value not in self.ini:
-                        self.log.add_error(f"INI header for '{value}' referenced in TLKList key '{key}' not found. Skipping...")
-                        continue
-                    tlk_ini_edits = dict(self.ini[value].items())
+                        msg = f"INI header for '{value}' referenced in TLKList key '{key}' not found"
+                        raise ValueError(msg)
+                    tlk_ini_edits = CaseInsensitiveDict(dict(self.ini[value].items()))
                     modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
                     if len(modifications_tlk_data) == 0:
-                        self.log.add_error(f"Could not find {value}.tlk on disk to perform modifier 'key=value'. Skipping...")
-                        continue
+                        msg: str = f"Could not find {value}.tlk on disk to perform modifier 'key=value'"
+                        raise FileNotFoundError(msg)
                     process_tlk_entries(
                         modifications_tlk_data,
                         tlk_ini_edits.keys(),
@@ -295,34 +304,37 @@ class ConfigReader:
                     elif property_name == "sound":
                         modifier_dict[token_id]["voiceover"] = ResRef(value)
                     else:
-                        self.log.add_error(
-                            f"Invalid TLKList syntax for key '{key}' value '{value}', expected 'sound' or 'text'. Skipping...",
-                        )
-                        continue
+                        msg = f"Invalid TLKList syntax for key '{key}' value '{value}', expected 'sound' or 'text'"
+                        raise ValueError(msg)
 
                     text = modifier_dict[token_id].get("text")
-                    voiceover = modifier_dict[token_id].get("voiceover")
+                    voiceover = modifier_dict[token_id].get("voiceover", ResRef.from_blank())
 
-                    # TODO(th3w1zard1): allow optional voiceover.
                     if isinstance(text, str) and isinstance(voiceover, ResRef):
                         modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
                         self.config.patches_tlk.modifiers.append(modifier)
                 else:
-                    self.log.add_error(f"Invalid syntax in TLKList: '{key}={value}'. Skipping...")
+                    msg = f"Invalid syntax in TLKList: '{key}={value}'"
+                    raise ValueError(msg)
             except ValueError as e:
-                self.log.add_error(f"Could not parse {key}={value}: {e}. Skipping...")
+                msg = f"Could not parse {key}={value}"
+                raise ValueError(msg) from e
 
     def load_2da(self) -> None:
-        if "2DAList" not in self.ini:
+        twoda_list_section = next(
+            (section for section in self.ini.sections() if section.lower() == "2dalist"),
+            None,
+        )
+        if not twoda_list_section:
             return
 
-        files = dict(self.ini["2DAList"].items())
+        files = CaseInsensitiveDict(dict(self.ini[twoda_list_section].items()))
 
         for identifier, file in files.items():
             if file not in self.ini:
                 msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [2DAList]"
                 raise KeyError(msg)
-            modification_ids = dict(self.ini[file].items())
+            modification_ids = CaseInsensitiveDict(dict(self.ini[file].items()))
 
             modifications = Modifications2DA(file)
             self.config.patches_2da.append(modifications)
@@ -331,14 +343,18 @@ class ConfigReader:
                 manipulation: Modify2DA | None = self.discern_2da(
                     key,
                     modification_id,
-                    dict(self.ini[modification_id].items()),
+                    CaseInsensitiveDict(dict(self.ini[modification_id].items())),
                 )
                 if not manipulation:  # an error occured
                     continue
                 modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
-        if "SSFList" not in self.ini:
+        ssf_list_section = next(
+            (section for section in self.ini.sections() if section.lower() == "ssflist"),
+            None,
+        )
+        if not ssf_list_section:
             return
 
         configstr_to_ssfsound: dict[str, SSFSound] = {
@@ -372,23 +388,23 @@ class ConfigReader:
             "Poisoned": SSFSound.POISONED,
         }
 
-        files = dict(self.ini["SSFList"].items())
+        files = CaseInsensitiveDict(dict(self.ini[ssf_list_section].items()))
 
         for identifier, file in files.items():
             if file not in self.ini:
                 msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [SSFList]"
                 raise KeyError(msg)
-            modifications_ini = dict(self.ini[file].items())
-            replace = identifier.startswith("Replace")
+            modifications_ini = CaseInsensitiveDict(dict(self.ini[file].items()))
+            replace = identifier.lower().startswith("replace")
 
             modifications = ModificationsSSF(file, replace)
             self.config.patches_ssf.append(modifications)
 
             for name, value in modifications_ini.items():
-                if value.startswith("2DAMEMORY"):
+                if value.lower().startswith("2damemory"):
                     token_id = int(value[9:])
                     value = TokenUsage2DA(token_id)
-                elif value.startswith("StrRef"):
+                elif value.lower().startswith("strref"):
                     token_id = int(value[6:])
                     value = TokenUsageTLK(token_id)
                 else:
@@ -399,34 +415,50 @@ class ConfigReader:
                 modifications.modifiers.append(modifier)
 
     def load_gff(self) -> None:
-        if "GFFList" not in self.ini:
+        gff_list_section = next(
+            (section for section in self.ini.sections() if section.lower() == "gfflist"),
+            None,
+        )
+        if not gff_list_section:
             return
 
-        files = dict(self.ini["GFFList"].items())
+        files = CaseInsensitiveDict(dict(self.ini[gff_list_section].items()))
 
         for identifier, file in files.items():
-            if file not in self.ini:
+            file_section = next(
+                (section for section in self.ini.sections() if section.lower() == file.lower()),
+                None,
+            )
+            if not file_section:
                 msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [GFFList]"
                 raise KeyError(msg)
-            modifications_ini = dict(self.ini[file].items())
-            replace = identifier.startswith("Replace")
+            modifications_ini = CaseInsensitiveDict(dict(self.ini[file_section].items()))
+            replace = identifier.lower().startswith("replace")
 
             modifications = ModificationsGFF(file, replace)
             self.config.patches_gff.append(modifications)
 
             modifier: ModifyGFF | None = None
             for key, value in modifications_ini.items():
-                if key == "!Destination":
+                lowercase_key = key.lower()
+                if lowercase_key == "!destination":
                     modifications.destination = CaseAwarePath(value)
-                elif key == "!ReplaceFile":
+                elif lowercase_key == "!replacefile":
                     modifications.replace_file = bool(int(value))
-                elif key.lower() in ["!filename", "!saveas"]:
+                elif lowercase_key in ["!filename", "!saveas"]:
                     modifications.filename = value
-                elif key.startswith("AddField"):
-                    modifier = self.add_field_gff(value, dict(self.ini[value]))
+                elif lowercase_key.startswith("addfield"):
+                    value_section = next(
+                        (section for section in self.ini.sections() if section.lower() == value.lower()),
+                        None,
+                    )
+                    if not value_section:
+                        msg = f"The section [{value}] was not found in the ini, referenced by {key}={value} in [{file_section}]"
+                        raise KeyError(msg)
+                    modifier = self.add_field_gff(value, CaseInsensitiveDict(dict(self.ini[value_section])))
                     if modifier:  # if None, then an error occurred
                         modifications.modifiers.append(modifier)
-                elif key.startswith("2DAMEMORY"):
+                elif lowercase_key.startswith("2damemory"):
                     modifier = Memory2DAModifierGFF(
                         file,
                         int(key[9:]),
@@ -438,14 +470,23 @@ class ConfigReader:
                     modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
-        if "CompileList" not in self.ini:
+        compilelist_section = next(
+            (section for section in self.ini.sections() if section.lower() == "compilelist"),
+            None,
+        )
+        if not compilelist_section:
             return
 
-        files = dict(self.ini["CompileList"].items())
-        destination = files.pop("!Destination", None)
+        files = CaseInsensitiveDict(dict(self.ini[compilelist_section].items()))
+        destination = None
+        for key, value in files.items():
+            if key.lower() == "!destination":
+                destination = value
+                del files[key]  # Remove the found item from the dictionary
+                break
 
         for identifier, file in files.items():
-            replace = identifier.startswith("Replace")
+            replace = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
             self.config.patches_nss.append(modifications)
 
@@ -455,20 +496,21 @@ class ConfigReader:
     #################
 
     def field_value_gff(self, raw_value: str) -> FieldValue:
-        if raw_value.startswith("StrRef"):
+        if raw_value.lower().startswith("strref"):
             token_id = int(raw_value[6:])
             return FieldValueTLKMemory(token_id)
-        if raw_value.startswith("2DAMEMORY"):
+        if raw_value.lower().startswith("2damemory"):
             token_id = int(raw_value[9:])
             return FieldValueTLKMemory(token_id)
         return FieldValueConstant(int(raw_value))
 
     def modify_field_gff(self, key: str, string_value: str) -> ModifyFieldGFF:
         value = None
-        if string_value.startswith("2DAMEMORY"):
+        string_value_lower = string_value.lower()
+        if string_value_lower.startswith("2damemory"):
             token_id = int(string_value[9:])
             value = FieldValue2DAMemory(token_id)
-        elif string_value.startswith("StrRef"):
+        elif string_value_lower.startswith("strref"):
             token_id = int(string_value[6:])
             value = FieldValueTLKMemory(token_id)
         elif is_int(string_value):
@@ -485,20 +527,19 @@ class ConfigReader:
             value = FieldValueConstant(
                 string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"),
             )
-
-        if "(strref)" in key:
+        if "(strref)" in key.lower():
             value = FieldValueConstant(LocalizedStringDelta(value))
-            key = key[: key.index("(strref)")]
-        elif "(lang" in key:
-            substring_id = int(key[key.index("(lang") + 5 : -1])
+            key = key[: key.lower().index("(strref)")]
+        elif "(lang" in key.lower():
+            substring_id = int(key[key.lower().index("(lang") + 5 : -1])
             language, gender = LocalizedString.substring_pair(substring_id)
             locstring = LocalizedStringDelta()
             locstring.set_data(language, gender, string_value)
             value = FieldValueConstant(locstring)
-            key = key[: key.index("(lang")]
-        elif key.startswith("2DAMEMORY"):
-            if value != "!FieldPath":
-                msg = f"Cannot assign {value} to 2DAMEMORY here, GFFList only supports !FieldPath"
+            key = key[: key.lower().index("(lang")]
+        elif key.lower().startswith("2damemory"):
+            if string_value_lower != "!fieldpath" and not string_value_lower.startswith("2damemory"):
+                msg = f"Cannot parse {key}={value}, GFFList only supports 2DAMEMORY#=!FieldPath assignments"
                 raise ValueError(msg)
             value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
@@ -507,7 +548,7 @@ class ConfigReader:
     def add_field_gff(
         self,
         identifier: str,
-        ini_data: dict[str, str],
+        ini_data: CaseInsensitiveDict,
         inside_list: bool = False,
         current_path: PureWindowsPath | None = None,
     ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
@@ -546,7 +587,7 @@ class ConfigReader:
 
                 value = LocalizedStringDelta(stringref)
                 for substring, text in ini_data.items():
-                    if not substring.startswith("lang"):
+                    if not substring.lower().startswith("lang"):
                         continue
                     substring_id = int(substring[4:])
                     language, gender = value.substring_pair(substring_id)
@@ -604,18 +645,19 @@ class ConfigReader:
 
         index_in_list_token = None
         for key, x in ini_data.items():
-            if key.startswith("2DAMEMORY"):
-                if x == "ListIndex":
+            lowercase_key = key.lower()
+            if lowercase_key.startswith("2damemory"):
+                if x.lower() == "listindex":
                     index_in_list_token = int(key[9:])
-                elif x == "!FieldPath":
+                elif x.lower() == "!fieldpath":
                     modifier = Memory2DAModifierGFF(
                         identifier,
                         int(key[9:]),
                         path,
                     )
                     modifiers.insert(0, modifier)
-            if key.startswith("AddField"):
-                nested_ini = dict(self.ini[x].items())
+            if lowercase_key.startswith("addfield"):
+                nested_ini = CaseInsensitiveDict(dict(self.ini[x].items()))
                 nested_modifier: ModifyGFF | None = self.add_field_gff(
                     x,
                     nested_ini,
@@ -650,16 +692,17 @@ class ConfigReader:
         self,
         key: str,
         identifier: str,
-        modifiers: dict[str, str],
+        modifiers: CaseInsensitiveDict,
     ) -> Modify2DA | None:
         modification = None
-        if key.startswith("ChangeRow"):
+        lowercase_key = key.lower()
+        if lowercase_key.startswith("changerow"):
             target = self.target_2da(identifier, modifiers)
             if target is None:
                 return None
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
             modification = ChangeRow2DA(identifier, target, cells, store_2da, store_tlk)
-        elif key.startswith("AddRow"):
+        elif lowercase_key.startswith("addrow"):
             exclusive_column = self.exclusive_column_2da(modifiers)
             row_label = self.row_label_2da(identifier, modifiers)
             cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
@@ -671,7 +714,7 @@ class ConfigReader:
                 store_2da,
                 store_tlk,
             )
-        elif key.startswith("CopyRow"):
+        elif lowercase_key.startswith("copyrow"):
             target = self.target_2da(identifier, modifiers)
             if not target:
                 return None
@@ -687,7 +730,7 @@ class ConfigReader:
                 store_2da,
                 store_tlk,
             )
-        elif key.startswith("AddColumn"):
+        elif lowercase_key.startswith("addcolumn"):
             header = modifiers.pop("ColumnLabel")
             default = modifiers.pop("DefaultValue")
             default = default if default != "****" else ""
@@ -704,13 +747,12 @@ class ConfigReader:
                 store_2da,
             )
         else:
-            self.log.add_error(
-                f"Could not parse key '{key}', expecting one of ['ChangeRow', 'AddColumn', 'AddRow', 'CopyRow']. Skipping...",
-            )
+            msg = f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow', 'AddColumn', 'AddRow', 'CopyRow']. Skipping..."
+            raise KeyError(msg)
 
         return modification
 
-    def target_2da(self, identifier: str, modifiers: dict[str, str]) -> Target | None:
+    def target_2da(self, identifier: str, modifiers: CaseInsensitiveDict) -> Target | None:
         target: Target | None = None
         if "RowIndex" in modifiers:
             target = Target(TargetType.ROW_INDEX, int(modifiers["RowIndex"]))
@@ -726,7 +768,7 @@ class ConfigReader:
 
         return target
 
-    def exclusive_column_2da(self, modifiers: dict[str, str]) -> str | None:
+    def exclusive_column_2da(self, modifiers: CaseInsensitiveDict) -> str | None:
         if "ExclusiveColumn" in modifiers:
             return modifiers.pop("ExclusiveColumn")
         return None
@@ -734,29 +776,31 @@ class ConfigReader:
     def cells_2da(
         self,
         identifier: str,
-        modifiers: dict[str, str],
+        modifiers: CaseInsensitiveDict,
     ) -> tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]]:
         cells: dict[str, RowValue] = {}
         store_2da: dict[int, RowValue] = {}
         store_tlk: dict[int, RowValue] = {}
 
         for modifier, value in modifiers.items():
-            is_store_2da = modifier.startswith("2DAMEMORY")
-            is_store_tlk = modifier.startswith("StrRef")
-            is_row_label = modifier in ["RowLabel", "NewRowLabel"]
+            modifier_lowercase = modifier.lower()
+            value_lowercase = value.lower()
+            is_store_2da = modifier_lowercase.startswith("2damemory")
+            is_store_tlk = modifier_lowercase.startswith("strref")
+            is_row_label = modifier_lowercase in ["rowlabel", "newrowlabel"]
 
             row_value = None
-            if value.startswith("2DAMEMORY"):
+            if value_lowercase.startswith("2damemory"):
                 token_id = int(value[9:])
                 row_value = RowValue2DAMemory(token_id)
-            elif value.startswith("StrRef"):
+            elif value_lowercase.startswith("strref"):
                 token_id = int(value[6:])
                 row_value = RowValueTLKMemory(token_id)
-            elif value == "high()":
-                row_value = RowValueHigh(None) if modifier == "RowLabel" else RowValueHigh(value)
-            elif value == "RowIndex":
+            elif value_lowercase == "high()":
+                row_value = RowValueHigh(None) if modifier == "rowlabel" else RowValueHigh(value)
+            elif value_lowercase == "rowindex":
                 row_value = RowValueRowIndex()
-            elif value == "RowLabel":
+            elif value_lowercase == "rowlabel":
                 row_value = RowValueRowLabel()
             elif is_store_2da or is_store_tlk:
                 row_value = RowValueRowCell(value)
@@ -776,7 +820,7 @@ class ConfigReader:
 
         return cells, store_2da, store_tlk
 
-    def row_label_2da(self, identifier: str, modifiers: dict[str, str]) -> str | None:
+    def row_label_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> str | None:
         if "RowLabel" in modifiers:
             return modifiers.pop("RowLabel")
         if "NewRowLabel" in modifiers:
@@ -786,15 +830,18 @@ class ConfigReader:
     def column_inserts_2da(
         self,
         identifier: str,
-        modifiers: dict[str, str],
+        modifiers: CaseInsensitiveDict[str],
     ) -> tuple[dict[int, RowValue], dict[str, RowValue], dict[int, str]]:
         index_insert: dict[int, RowValue] = {}
         label_insert: dict[str, RowValue] = {}
         store_2da: dict[int, str] = {}
 
         for modifier, value in modifiers.items():
-            is_store_2da = value.startswith("2DAMEMORY")
-            is_store_tlk = value.startswith("StrRef")
+            modifier_lowercase = modifier.lower()
+            value_lowercase = value.lower()
+
+            is_store_2da = value_lowercase.startswith("2damemory")
+            is_store_tlk = value_lowercase.startswith("strref")
 
             row_value: RowValue | None = None
             if is_store_2da:
@@ -806,13 +853,13 @@ class ConfigReader:
             else:
                 row_value = RowValueConstant(value)
 
-            if modifier.startswith("I"):
+            if modifier_lowercase.startswith("i"):
                 index = int(modifier[1:])
                 index_insert[index] = row_value
-            elif modifier.startswith("L"):
+            elif modifier_lowercase.startswith("l"):
                 label = modifier[1:]
                 label_insert[label] = row_value
-            elif modifier.startswith("2DAMEMORY"):
+            elif modifier_lowercase.startswith("2damemory"):
                 token_id = int(modifier[9:])
                 store_2da[token_id] = value
 
@@ -859,7 +906,7 @@ class NamespaceReader:
         if section_key is None:
             msg = "'namespaces' section not found in INI file."
             raise KeyError(msg)
-        namespace_ids = dict(self.ini[section_key].items()).values()
+        namespace_ids = CaseInsensitiveDict(dict(self.ini[section_key].items())).values()
         namespaces: list[PatcherNamespace] = []
 
         for namespace_id in namespace_ids:
@@ -871,14 +918,15 @@ class NamespaceReader:
             if namespace_section_key is None:
                 msg = f"'{namespace_id}' section not found in INI file."
                 raise KeyError(msg)
+            this_namespace_section = CaseInsensitiveDict(dict(self.ini[namespace_section_key].items()))
 
             namespace = PatcherNamespace()
             namespace.namespace_id = namespace_section_key
-            namespace.ini_filename = self.ini[namespace_section_key]["IniName"]
-            namespace.info_filename = self.ini[namespace_section_key]["InfoName"]
-            namespace.data_folderpath = self.ini[namespace_section_key].get("DataPath")
-            namespace.name = self.ini[namespace_section_key].get("Name")
-            namespace.description = self.ini[namespace_section_key].get("Description")
+            namespace.ini_filename = this_namespace_section["IniName"]
+            namespace.info_filename = this_namespace_section["InfoName"]
+            namespace.data_folderpath = this_namespace_section.get("DataPath")
+            namespace.name = this_namespace_section.get("Name")
+            namespace.description = this_namespace_section.get("Description")
             namespaces.append(namespace)
 
         return namespaces

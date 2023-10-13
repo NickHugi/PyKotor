@@ -469,71 +469,53 @@ class EquipmentSlot(Enum):
 class CaseInsensitiveDict(Generic[T]):
     def __init__(
         self,
+        initial: dict[str, T] | None = None,
     ):
         self._dictionary: dict[str, T] = {}
         self._case_map: dict[str, str] = {}
+        if initial:
+            for key, value in initial.items():
+                self[key] = value  # Utilize the __setitem__ method for setting items
 
-    def __getitem__(
-        self,
-        key: str,
-    ):
-        return self._dictionary[key.lower()]
+    def __getitem__(self, key: str) -> T:
+        return self._dictionary[self._case_map[key.lower()]]
 
-    def __setitem__(
-        self,
-        key: str,
-        value: T,
-    ):
-        self._dictionary[key.lower()] = value
-        self._case_map[key.lower()] = key
+    def __setitem__(self, key: str, value: T):
+        lower_key = key.lower()
+        self._case_map[lower_key] = key  # Store the original form
+        self._dictionary[key] = value
 
-    def __delitem__(
-        self,
-        key: str,
-    ):
-        del self._dictionary[key.lower()]
-        del self._case_map[key.lower()]
+    def __delitem__(self, key: str):
+        lower_key = key.lower()
+        del self._dictionary[self._case_map[lower_key]]
+        del self._case_map[lower_key]
 
-    def __contains__(
-        self,
-        key: str,
-    ):
-        return key.lower() in self._dictionary
+    def __contains__(self, key: str) -> bool:
+        return key.lower() in self._case_map
 
-    def __len__(
-        self,
-    ):
+    def __len__(self) -> int:
         return len(self._dictionary)
 
-    def __repr__(
-        self,
-    ):
+    def __repr__(self) -> str:
         return repr(self._dictionary)
 
-    def pop(
-        self,
-        key: str,
-    ):
-        self._dictionary.pop(key.lower())
-        self._case_map.pop(key.lower())
+    def pop(self, key: str) -> T:
+        lower_key = key.lower()
+        value = self._dictionary.pop(self._case_map[lower_key])
+        self._case_map.pop(lower_key)
+        return value
 
-    def get(
-        self,
-        key: str,
-    ):
-        return self._dictionary[key.lower()]
+    def get(self, key: str, default: T | None = None) -> T | None:
+        key_lookup = self._case_map.get(key.lower(), ">>##UNIQUE_NONE_VAL##<<")
+        if key_lookup == ">>##UNIQUE_NONE_VAL##<<":
+            return default
+        return self._dictionary.get(key_lookup, default)
 
-    def items(
-        self,
-    ):
-        return [(self._case_map[key], value) for key, value in self._dictionary.items()]
+    def items(self):
+        return self._dictionary.items()
 
-    def values(
-        self,
-    ):
+    def values(self):
         return self._dictionary.values()
 
-    def keys(
-        self,
-    ):
-        return [self._case_map[key] for key in self._dictionary]
+    def keys(self):
+        return self._dictionary.keys()

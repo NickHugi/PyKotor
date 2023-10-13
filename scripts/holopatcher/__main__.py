@@ -15,7 +15,7 @@ if not getattr(sys, "frozen", False):
     thisfile_path = Path(__file__).resolve()
     sys.path.append(str(thisfile_path.parent.parent.parent))
 
-from pykotor.common.misc import Game
+from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.tools.path import CaseAwarePath, locate_game_path
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
@@ -176,7 +176,7 @@ class App(tk.Tk):
         pattern = r"LookupGameNumber=(\d+)"
         with changes_path.open("r", encoding="utf-8") as file:
             for line in file:
-                match = re.search(pattern, line)
+                match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     return int(match[1])
         return None
@@ -232,6 +232,7 @@ class App(tk.Tk):
             messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
             return
         self.gamepaths.set(str(directory))
+        self.after(10, self.move_cursor_to_end)
 
     def begin_install(self) -> None:
         try:
@@ -331,7 +332,15 @@ class App(tk.Tk):
             namespace = PatcherNamespace()
             namespace.ini_filename = "changes.ini"
             namespace.info_filename = "info.rtf"
-            namespace.name = ini.get("Settings", "WindowCaption", fallback="default")
+            settings_section = next(
+                (section for section in ini.sections() if section.lower() == "settings"),
+                None,
+            )
+            if not settings_section:
+                namespace.name = "default"
+                return namespace
+            settings_ini = CaseInsensitiveDict(dict(ini[settings_section].items()))
+            namespace.name = settings_ini.get("WindowCaption") or "default"
 
         return namespace
 
