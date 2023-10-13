@@ -291,13 +291,12 @@ class InstallFile:
     ) -> None:
         resname, restype = self._identifier()
 
-        create_backup(log, destination.path(), backup_dir, processed_files, "Modules")
         if self.replace_existing or destination.resource(resname, restype) is None:
-            if self.replace_existing and destination.resource(resname, restype) is not None:
-                with print_lock:
+            with print_lock:
+                create_backup(log, destination.path(), backup_dir, processed_files, "Modules")
+                if self.replace_existing and destination.resource(resname, restype) is not None:
                     log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
-            else:
-                with print_lock:
+                else:
                     log.add_note(f"Adding file '{self.filename}' to the '{destination.filename()}' archive...")
 
             data = BinaryReader.load_file(source_folder / self.filename)
@@ -319,9 +318,6 @@ class InstallFile:
         data = BinaryReader.load_file(source_folder / self.filename)
         save_file_to = destination / self.filename
         file_exists: bool = save_file_to.exists()
-
-        with print_lock:
-            create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
         if self.replace_existing or not file_exists:
             # reduce io work from destination.exists() by first using our file exists check.
             if not file_exists and not destination.exists():
