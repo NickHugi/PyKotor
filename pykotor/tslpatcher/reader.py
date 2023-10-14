@@ -156,13 +156,17 @@ class ConfigReader:
 
         folders_ini = CaseInsensitiveDict(dict(self.ini[install_list_section].items()))
         for key, foldername in folders_ini.items():
-            if key not in self.ini:
+            foldername_section = next(
+                (section for section in self.ini.sections() if section.lower() == key.lower()),
+                None,
+            )
+            if foldername_section is None:
                 msg = f"The section [{key}] was not found in the ini, referenced by {key}={foldername} in [InstallList]"
                 raise KeyError(msg)
             folder_install = InstallFolder(foldername)
             self.config.install_list.append(folder_install)
 
-            files_ini = CaseInsensitiveDict(dict(self.ini[key].items()))
+            files_ini = CaseInsensitiveDict(dict(self.ini[foldername_section].items()))
             for key2, filename in files_ini.items():
                 replace_existing = key2.lower().startswith("replace")
                 file_install = InstallFile(filename, replace_existing)
@@ -249,7 +253,7 @@ class ConfigReader:
                     tlk_list_ignored_indices.update(
                         parse_range(i[6:]),
                     )
-            except ValueError as e:
+            except ValueError as e:  # noqa: PERF203
                 msg = f"Could not parse ignore index {i}"
                 raise ValueError(msg) from e
 
@@ -281,7 +285,7 @@ class ConfigReader:
                     tlk_ini_edits = CaseInsensitiveDict(dict(self.ini[value].items()))
                     modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
                     if len(modifications_tlk_data) == 0:
-                        msg: str = f"Could not find {value}.tlk on disk to perform modifier 'key=value'"
+                        msg: str = f"Could not find '{value}.tlk' on disk to perform modifier '{key}={value}'"
                         raise FileNotFoundError(msg)
                     process_tlk_entries(
                         modifications_tlk_data,
@@ -333,7 +337,7 @@ class ConfigReader:
 
         for identifier, file in files.items():
             if file not in self.ini:
-                msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [2DAList]"
+                msg = f"The section [{file}] was not found in the ini, referenced by '{identifier}={file}' in [2DAList]"
                 raise KeyError(msg)
             modification_ids = CaseInsensitiveDict(dict(self.ini[file].items()))
 
@@ -404,15 +408,15 @@ class ConfigReader:
             for name, value in modifications_ini.items():
                 if value.lower().startswith("2damemory"):
                     token_id = int(value[9:])
-                    value = TokenUsage2DA(token_id)
+                    new_value = TokenUsage2DA(token_id)
                 elif value.lower().startswith("strref"):
                     token_id = int(value[6:])
-                    value = TokenUsageTLK(token_id)
+                    new_value = TokenUsageTLK(token_id)
                 else:
-                    value = NoTokenUsage(int(value))
+                    new_value = NoTokenUsage(int(value))
 
                 sound = configstr_to_ssfsound[name]
-                modifier = ModifySSF(sound, value)
+                modifier = ModifySSF(sound, new_value)
                 modifications.modifiers.append(modifier)
 
     def load_gff(self) -> None:
@@ -550,7 +554,6 @@ class ConfigReader:
         self,
         identifier: str,
         ini_data: CaseInsensitiveDict,
-        inside_list: bool = False,
         current_path: PureWindowsPath | None = None,
     ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
         fieldname_to_fieldtype = {
@@ -574,7 +577,7 @@ class ConfigReader:
 
         field_type: GFFFieldType = fieldname_to_fieldtype[ini_data["FieldType"]]
         label: str = ini_data["Label"].strip()
-        raw_path: str = ini_data.get("Path", "").strip()
+        raw_path: str = ini_data.get("Path", "").strip()  # type: ignore[never None]
         raw_value: str | None = ini_data.get("Value")
         value: FieldValue | LocalizedStringDelta | None = None
         struct_id = 0
@@ -661,13 +664,12 @@ class ConfigReader:
                 nested_modifier: ModifyGFF | None = self.add_field_gff(
                     x,
                     nested_ini,
-                    inside_list=field_type.return_type() is GFFList,
                     current_path=path / label,
                 )
                 if nested_modifier:  # if none, an error occured.
                     modifiers.append(nested_modifier)
 
-        # If current field is a struct inside a list, check inside_list OR no label defined.
+        # If current field is a struct inside a list, check if no label defined.
         if not label.strip() and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
                 identifier,
@@ -747,7 +749,7 @@ class ConfigReader:
                 store_2da,
             )
         else:
-            msg = f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow', 'AddColumn', 'AddRow', 'CopyRow']. Skipping..."
+            msg = f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow', 'AddColumn', 'AddRow', 'CopyRow']"
             raise KeyError(msg)
 
         return modification

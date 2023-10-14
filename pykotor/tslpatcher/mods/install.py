@@ -286,6 +286,7 @@ class InstallFile:
         log: PatchLogger,
         source_folder: CaseAwarePath,
         destination: Capsule,
+        local_folder: str,
         backup_dir: CaseAwarePath,
         processed_files: set,
     ) -> None:
@@ -293,7 +294,7 @@ class InstallFile:
 
         if self.replace_existing or destination.resource(resname, restype) is None:
             with print_lock:
-                create_backup(log, destination.path(), backup_dir, processed_files, "Modules")
+                create_backup(log, destination.path(), backup_dir, processed_files, local_folder)
                 if self.replace_existing and destination.resource(resname, restype) is not None:
                     log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
                 else:
@@ -363,7 +364,7 @@ class InstallFolder:
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
             for file in self.files:
-                file.apply_encapsulated(log, source_path, destination, backup_dir, processed_files)
+                file.apply_encapsulated(log, source_path, destination, self.foldername, backup_dir, processed_files)
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # Submit each task individually using executor.submit
@@ -386,7 +387,7 @@ class InstallFolder:
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         future.result()  # Process the result if needed
-                    except Exception as thread_exception:
+                    except Exception as thread_exception:  # noqa: PERF203
                         # Handle any exceptions that occurred during execution
                         with print_lock:  # Acquire the lock before printing
                             log.add_error(f"Exception occurred: {thread_exception}")
