@@ -286,7 +286,7 @@ class InstallFile:
         log: PatchLogger,
         source_folder: CaseAwarePath,
         destination: Capsule,
-        local_folder: str,
+        local_folder: os.PathLike | str,
         backup_dir: CaseAwarePath,
         processed_files: set,
     ) -> None:
@@ -312,7 +312,7 @@ class InstallFile:
         log: PatchLogger,
         source_folder: CaseAwarePath,
         destination: CaseAwarePath,
-        local_folder: str,
+        local_folder: os.PathLike | str,
         backup_dir: CaseAwarePath,
         processed_files: set,
     ) -> None:
@@ -363,8 +363,9 @@ class InstallFolder:
 
         if is_capsule_file(self.foldername):
             destination = Capsule(target, create_nonexisting=True)
+            local_folder = PurePath(self.foldername).parent
             for file in self.files:
-                file.apply_encapsulated(log, source_path, destination, self.foldername, backup_dir, processed_files)
+                file.apply_encapsulated(log, source_path, destination, local_folder, backup_dir, processed_files)
         else:
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 # Submit each task individually using executor.submit
