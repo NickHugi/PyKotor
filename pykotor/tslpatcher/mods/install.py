@@ -223,7 +223,9 @@ fi
 declare -a filesToDelete
 mapfile -t filesToDelete < "$deleteListFile"
 existingFiles=()
+echo "Building file lists..."
 for file in "${{filesToDelete[@]}}"; do
+    normalizedFile=$(echo "$file" | tr '\\' '/')
     if [[ -n "$file" && -f "$file" ]]; then
         existingFiles+=("$file")
     else
@@ -260,7 +262,7 @@ fi
 
 while IFS= read -r -d $'\0' file; do
     relativePath=${{file#$mostRecentBackupFolder}}
-    destinationPath="{main_folder}$relativePath"
+    destinationPath="{main_folder}/$relativePath"
     destinationDir=$(dirname "$destinationPath")
     if [[ ! -d "$destinationDir" ]]; then
         mkdir -p "$destinationDir"
