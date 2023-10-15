@@ -3,7 +3,6 @@ import os
 import xml.etree.ElementTree as ElemTree
 import zipfile
 from contextlib import suppress
-from pathlib import Path, PurePath
 from typing import Optional
 
 import markdown
@@ -13,6 +12,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 
 from pykotor.common.stream import BinaryReader
+from pykotor.tools.path import Path, PurePath
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 
 

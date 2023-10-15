@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import concurrent.futures
 import shutil
 import threading
-from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
+from pykotor.tools.path import PurePath
 
 if TYPE_CHECKING:
     import os
@@ -369,28 +368,12 @@ class InstallFolder:
             for file in self.files:
                 file.apply_encapsulated(log, source_path, destination, local_folder, backup_dir, processed_files)
         else:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                # Submit each task individually using executor.submit
-                futures = [
-                    executor.submit(
-                        lambda file: file.apply_file(
-                            log,
-                            source_path,
-                            target,
-                            self.foldername,
-                            backup_dir,
-                            processed_files,
-                        ),
-                        file,
-                    )
-                    for file in self.files
-                ]
-
-                # Use as_completed to get the results as they complete
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        future.result()  # Process the result if needed
-                    except Exception as thread_exception:  # noqa: PERF203
-                        # Handle any exceptions that occurred during execution
-                        with print_lock:  # Acquire the lock before printing
-                            log.add_error(f"Exception occurred: {thread_exception}")
+            for file in self.files:
+                file.apply_file(
+                    log,
+                    source_path,
+                    target,
+                    self.foldername,
+                    backup_dir,
+                    processed_files,
+                )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+import os
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.twoda import (
@@ -13,7 +13,6 @@ from pykotor.resource.formats.twoda import (
     TwoDAJSONWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CaseAwarePath
 
 
 def detect_2da(
@@ -51,7 +50,7 @@ def detect_2da(
         return ResourceType.INVALID
 
     try:
-        if isinstance(source, (str, Path, CaseAwarePath)):
+        if isinstance(source, (str, os.PathLike)):
             with BinaryReader.from_file(source, offset) as reader:
                 file_format = check(reader.read_string(4))
         elif isinstance(source, (bytes, bytearray)):

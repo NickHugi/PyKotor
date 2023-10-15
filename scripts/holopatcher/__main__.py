@@ -185,7 +185,7 @@ class App(tk.Tk):
                 changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
             with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
                 self.set_stripped_rtf_text(rtf)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             messagebox.showerror("Error", f"An unexpected error occurred while loading namespace option: {e}")
 
     def extract_lookup_game_number(self, changes_path: Path):
@@ -230,39 +230,42 @@ class App(tk.Tk):
                 self.mod_path = ""
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {e}")
 
     def open_kotor(self) -> None:
-        directory_path_str = filedialog.askdirectory()
-        if not directory_path_str:
-            return
-        directory = CaseAwarePath(directory_path_str)
+        try:
+            directory_path_str = filedialog.askdirectory()
+            if not directory_path_str:
+                return
+            directory = CaseAwarePath(directory_path_str)
 
-        # handle possibility of user selecting a nested folder within KOTOR dir (usually override)
-        while (
-            directory.parent.name
-            and directory.parent.name != directory.parts[1]
-            and not directory.joinpath("chitin.key").exists()
-        ):
-            directory = directory.parent
-        if not directory.joinpath("chitin.key").exists():
-            messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
-            return
-        self.gamepaths.set(str(directory))
-        self.after(10, self.move_cursor_to_end)
+            # handle possibility of user selecting a nested folder within KOTOR dir (usually override)
+            while (
+                directory.parent.name
+                and directory.parent.name != directory.parts[1]
+                and not directory.joinpath("chitin.key").exists()
+            ):
+                directory = directory.parent
+            if not directory.joinpath("chitin.key").exists():
+                messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
+                return
+            self.gamepaths.set(str(directory))
+            self.after(10, self.move_cursor_to_end)
+        except Exception as e:  # noqa: BLE001
+            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {e}")
 
     def begin_install(self) -> None:
-        if self.install_running:
-            messagebox.showinfo(
-                "Install already running",
-                "Cannot start an install while the previous installation is still ongoing",
-            )
-            return
         try:
+            if self.install_running:
+                messagebox.showinfo(
+                    "Install already running",
+                    "Cannot start an install while the previous installation is still ongoing",
+                )
+                return
             self.install_thread = Thread(target=self.begin_install_thread)
             self.install_thread.start()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             error_type = type(e).__name__
             error_args = e.args
             error_cause = type(e.__cause__).__name__ if e.__cause__ else "None"
@@ -305,7 +308,7 @@ class App(tk.Tk):
         installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
         try:
             self._execute_mod_install(installer, tslpatchdata_root_path)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(
                 e,
                 installer,

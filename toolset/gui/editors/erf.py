@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 from PyQt5 import QtCore, QtGui
@@ -13,7 +12,7 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, Path
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 

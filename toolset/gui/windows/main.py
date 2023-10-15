@@ -6,7 +6,6 @@ import traceback
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from distutils.version import StrictVersion
-from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Optional
 
 import requests
@@ -27,7 +26,7 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_rim_file
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, Path
 from pykotor.tools.string import ireplace
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
