@@ -6,6 +6,7 @@ import sys
 import tkinter as tk
 import traceback
 from configparser import ConfigParser
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
@@ -288,9 +289,24 @@ class App(tk.Tk):
             )
 
     def _execute_mod_install(self, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
+        install_start_time = datetime.now(timezone.utc).astimezone()
         installer.install()
+        total_install_time = datetime.now(timezone.utc).astimezone() - install_start_time
+
+        days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
+        hours, remainder = divmod(remainder, 60 * 60)
+        minutes, seconds = divmod(remainder, 60)
+
+        time_str = (
+            f"{f'{int(days)} days, ' if days else ''}"
+            f"{f'{int(hours)} hours, ' if hours else ''}"
+            f"{f'{int(minutes)} minutes, ' if minutes or not (days or hours) else ''}"
+            f"{int(seconds)} seconds"
+        )
+
         installer.log.add_note(
-            f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings",
+            f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings. "
+            f"Total install time: {time_str}",
         )
         self.progressbar["value"] = 100
         log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
@@ -300,12 +316,12 @@ class App(tk.Tk):
         if len(installer.log.errors) > 0:
             messagebox.showwarning(
                 "Install completed with errors",
-                f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details",
+                f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details. Total install time: {time_str}",
             )
         else:
             messagebox.showinfo(
                 "Install complete!",
-                "Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes.",
+                f"Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes. Total install time: {time_str}",
             )
 
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import concurrent.futures
-import os
 import shutil
 import threading
 from pathlib import PurePath
@@ -13,6 +12,8 @@ from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
 
@@ -36,44 +37,46 @@ def create_backup(
     else:
         backup_filepath = backup_folderpath / destination_filepath.name
 
-    if destination_file_str_lower not in processed_files and destination_filepath.exists():
-        # Check if the backup path exists and generate a new one if necessary
-        i = 2
-        filestem = backup_filepath.stem
-        while backup_filepath.exists():
-            backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
-            i += 1
+    if destination_file_str_lower not in processed_files:
+        if destination_filepath.exists():
+            # Check if the backup path exists and generate a new one if necessary
+            i = 2
+            filestem = backup_filepath.stem
+            while backup_filepath.exists():
+                backup_filepath = backup_filepath.parent / f"{filestem} ({i}){backup_filepath.suffix}"
+                i += 1
 
-        log.add_note(f"Backing up '{destination_file_str}'...")
-        if subdirectory_backup_path:
-            subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
-        try:
-            shutil.copy(destination_filepath, backup_filepath)
-        except PermissionError as e:
-            log.add_warning(f"Failed to create backup of '{destination_file_str}': {e}")
-    else:
-        # Write a list of files that should be removed in order to uninstall the mod
-        uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
-        uninstall_folder.mkdir(exist_ok=True)
+            log.add_note(f"Backing up '{destination_file_str}'...")
+            if subdirectory_backup_path:
+                subdirectory_backup_path.mkdir(exist_ok=True, parents=True)
+            try:
+                shutil.copy(destination_filepath, backup_filepath)
+            except PermissionError as e:
+                log.add_warning(f"Failed to create backup of '{destination_file_str}': {e}")
+        else:
+            # Write a list of files that should be removed in order to uninstall the mod
+            uninstall_folder = backup_folderpath.parent.parent.joinpath("uninstall")
+            uninstall_folder.mkdir(exist_ok=True)
 
-        # Write the file path to remove these files.txt in backup directory
-        with backup_folderpath.joinpath("remove these files.txt").open("a") as f:
-            f.write("\n" + str(destination_filepath))
+            # Write the file path to remove these files.txt in backup directory
+            removal_files_txt = backup_folderpath.joinpath("remove these files.txt")
+            already_exists = removal_files_txt.exists()
+            with removal_files_txt.open("a") as f:
+                f.write(("\n" if already_exists else "") + destination_file_str)
 
-        # Write the PowerShell uninstall script to the uninstall folder
-        subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
-        game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
-        write_powershell_uninstall_script(backup_folderpath, uninstall_folder, game_folder)
+            # Write the PowerShell uninstall script to the uninstall folder
+            subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None
+            game_folder = destination_filepath.parents[len(subdir_temp.parts)] if subdir_temp else destination_filepath.parent
+            write_powershell_uninstall_script(backup_folderpath, uninstall_folder, game_folder)
 
-    # Add the lowercased path string to the processed_files set
-    processed_files.add(destination_file_str_lower)
+        # Add the lowercased path string to the processed_files set
+        processed_files.add(destination_file_str_lower)
 
 
 def write_powershell_uninstall_script(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: PurePath):
-    if os.name == "nt":
-        with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
-            f.write(
-                rf"""
+    with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
+        f.write(
+            rf"""
 #!/usr/bin/env pwsh
 $backupParentFolder = Get-Item -Path "..$([System.IO.Path]::DirectorySeparatorChar)backup"
 $mostRecentBackupFolder = Get-ChildItem -Path $backupParentFolder.FullName -Directory | ForEach-Object {{
@@ -140,8 +143,8 @@ if ($fileCount -lt 6) {{
 }}
 
 $validConfirmations = @("y", "yes")
-$confirmation = Read-Host "Really uninstall $numberOfExistingFiles files and restore the most recent backup (containing $fileCount files and $folderCount folders)?"
-if ($confirmation.ToLower() -notin $validConfirmations) {{
+$confirmation = Read-Host "Really uninstall $numberOfExistingFiles files and restore the most recent backup (containing $fileCount files and $folderCount folders)? (y/N)"
+if ($confirmation.Trim().ToLower() -notin $validConfirmations) {{
     Write-Host "Operation cancelled."
     exit
 }}
@@ -180,11 +183,10 @@ foreach ($file in $allItemsInBackup) {{
 Pause
 
 """,
-            )
-    elif os.name == "posix":
-        with uninstall_folder.joinpath("uninstall.sh").open("w", newline="\n") as f:
-            f.write(
-                rf"""
+        )
+    with uninstall_folder.joinpath("uninstall.sh").open("w", newline="\n") as f:
+        f.write(
+            rf"""
 #!/bin/bash
 
 backupParentFolder="../backup"
@@ -270,7 +272,7 @@ done < <(find "$mostRecentBackupFolder" -type f ! -name 'remove these files.txt'
 read -rp "Press enter to continue..."
 
     """,
-            )
+        )
 
 
 class InstallFile:
