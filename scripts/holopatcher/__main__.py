@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import sys
@@ -139,12 +140,28 @@ class App(tk.Tk):
         # Link the Scrollbar to the Text widget
         scrollbar.config(command=self.description_text.yview)
 
-        ttk.Button(self, text="Exit", command=lambda: sys.exit(0)).place(x=5, y=470, width=75, height=25)
+        self.install_running = False
+        self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
+        self.exit_button = ttk.Button(self, text="Exit", command=self.handle_exit_button)
+        self.exit_button.place(x=5, y=470, width=75, height=25)
         self.progressbar = ttk.Progressbar(self)
         self.progressbar.place(x=85, y=470, width=230, height=25)
         ttk.Button(self, text="Install", command=self.begin_install).place(x=320, y=470, width=75, height=25)
 
         self.open_mod(CaseAwarePath.cwd())
+
+    def handle_exit_button(self):
+        if not self.install_running:
+            sys.exit(0)
+        if not messagebox.askyesnocancel(
+            "Really cancel the current installation? ",
+            "CONTINUING WILL BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
+        ):
+            return
+        with contextlib.suppress(Exception):
+            self.install_thread._stop()  # type: ignore[hidden method]
+        self.destroy()
+        sys.exit(2)
 
     def on_gamepaths_chosen(self, event):
         self.after(10, self.move_cursor_to_end)
@@ -236,8 +253,15 @@ class App(tk.Tk):
         self.after(10, self.move_cursor_to_end)
 
     def begin_install(self) -> None:
+        if self.install_running:
+            messagebox.showinfo(
+                "Install already running",
+                "Cannot start an install while the previous installation is still ongoing",
+            )
+            return
         try:
-            Thread(target=self.begin_install_thread).start()
+            self.install_thread = Thread(target=self.begin_install_thread)
+            self.install_thread.start()
         except Exception as e:
             error_type = type(e).__name__
             error_args = e.args
@@ -287,8 +311,10 @@ class App(tk.Tk):
                 installer,
                 tslpatchdata_root_path,
             )
+        self.install_running = False
 
     def _execute_mod_install(self, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
+        self.install_running = True
         install_start_time = datetime.now(timezone.utc).astimezone()
         installer.install()
         total_install_time = datetime.now(timezone.utc).astimezone() - install_start_time
