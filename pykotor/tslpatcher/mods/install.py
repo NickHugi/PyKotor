@@ -129,11 +129,11 @@ foreach ($file in $filesToDelete) {{
 $numberOfExistingFiles = $existingFiles.Count
 
 $allItemsInBackup = Get-ChildItem -Path $mostRecentBackupFolder -Recurse | Where-Object {{ $_.Name -ne 'remove these files.txt' }}
-$fileCount = ($allItemsInBackup | Where-Object {{ -not $_.PSIsContainer }}).Count
+$filesInBackup = ($allItemsInBackup | Where-Object {{ -not $_.PSIsContainer }})
 $folderCount = ($allItemsInBackup | Where-Object {{ $_.PSIsContainer }}).Count
 
 # Display relative file paths if file count is less than 6
-if ($fileCount -lt 6) {{
+if ($filesInBackup.Count -lt 6) {{
     $allItemsInBackup |
     Where-Object {{ -not $_.PSIsContainer }} |
     ForEach-Object {{
@@ -143,7 +143,7 @@ if ($fileCount -lt 6) {{
 }}
 
 $validConfirmations = @("y", "yes")
-$confirmation = Read-Host "Really uninstall $numberOfExistingFiles files and restore the most recent backup (containing $fileCount files and $folderCount folders)? (y/N)"
+$confirmation = Read-Host "Really uninstall $numberOfExistingFiles files and restore the most recent backup (containing $($filesInBackup.Count) files and $folderCount folders)? (y/N)"
 if ($confirmation.Trim().ToLower() -notin $validConfirmations) {{
     Write-Host "Operation cancelled."
     exit
@@ -162,7 +162,7 @@ if ($deletedCount -ne 0) {{
     Write-Host "Deleted $deletedCount files."
 }}
 
-foreach ($file in $allItemsInBackup) {{
+foreach ($file in $filesInBackup) {{
     try {{
         $relativePath = $file.FullName.Substring($mostRecentBackupFolder.Length)
         $destinationPath = Join-Path -Path "{main_folder}" -ChildPath $relativePath
