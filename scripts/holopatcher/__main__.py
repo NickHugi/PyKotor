@@ -153,7 +153,7 @@ class App(tk.Tk):
     def handle_exit_button(self):
         if not self.install_running:
             sys.exit(0)
-        if not messagebox.askyesnocancel(
+        if not messagebox.askyesno(
             "Really cancel the current installation? ",
             "CONTINUING WILL BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
         ):
