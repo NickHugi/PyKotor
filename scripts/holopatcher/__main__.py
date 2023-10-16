@@ -152,7 +152,6 @@ class App(tk.Tk):
         self.exit_button.place(x=5, y=470, width=75, height=25)
         self.progressbar = ttk.Progressbar(self)
         self.progressbar.place(x=5, y=500, width=390, height=15)
-        self.progressbar["value"] = 100
         self.install_button = ttk.Button(self, text="Install", command=self.begin_install)
         self.install_button.place(x=320, y=470, width=75, height=25)
         self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
