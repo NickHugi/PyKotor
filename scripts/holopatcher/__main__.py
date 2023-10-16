@@ -916,7 +916,7 @@ def striprtf(text):
     curskip = 0  # Number of ASCII characters left to skip
     out = []  # Output buffer.
     for match in pattern.finditer(text):
-        word, arg, hex, char, brace, tchar = match.groups()
+        word, arg, hexcode, char, brace, tchar = match.groups()
         if brace:
             curskip = 0
             if brace == "{":
@@ -951,11 +951,11 @@ def striprtf(text):
                     c += 0x10000
                 out.append(chr(c))
                 curskip = ucskip
-        elif hex:  # \'xx
+        elif hexcode:  # \'xx
             if curskip > 0:
                 curskip -= 1
             elif not ignorable:
-                c = int(hex, 16)
+                c = int(hexcode, 16)
                 out.append(chr(c))
         elif tchar:
             if curskip > 0:
