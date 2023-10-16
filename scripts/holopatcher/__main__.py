@@ -139,7 +139,7 @@ class App(tk.Tk):
         self.description_text = tk.Text(text_frame, wrap=tk.WORD, yscrollcommand=scrollbar.set)
         # Get the current font properties
         font_obj = tkfont.Font(font=self.description_text.cget("font"))
-        font_obj.configure(size=10)
+        font_obj.configure(size=8)
         self.description_text.configure(font=font_obj)
         self.description_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
@@ -497,6 +497,11 @@ class App(tk.Tk):
             "Error",
             f"An unexpected error occurred during the installation and the installation was forced to terminate:\n{short_error_msg}",
         )
+        self.install_running = False
+        self.install_button.config(state=tk.NORMAL)
+        self.uninstall_button.config(state=tk.NORMAL)
+        self.gamepaths_browse_button.config(state=tk.NORMAL)
+        self.browse_button.config(state=tk.NORMAL)
         raise
 
     def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
