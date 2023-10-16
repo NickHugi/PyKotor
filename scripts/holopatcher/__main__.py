@@ -173,6 +173,11 @@ class App(tk.Tk):
         if cmdline_args.install:
             self.oneshot = True
             self.begin_install_thread()
+            sys.exit()
+        if cmdline_args.uninstall:
+            self.oneshot = True
+            self.uninstall_selected_mod()
+            sys.exit()
 
     def hide_console(self):
         """Hide the console window in GUI mode."""
