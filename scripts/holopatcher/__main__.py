@@ -137,6 +137,10 @@ class App(tk.Tk):
 
         # Create the Text widget with word wrapping and pack it to the left side of the Frame
         self.description_text = tk.Text(text_frame, wrap=tk.WORD, yscrollcommand=scrollbar.set)
+        # Get the current font properties
+        font_obj = tkfont.Font(font=self.description_text.cget("font"))
+        font_obj.configure(size=10)
+        self.description_text.configure(font=font_obj)
         self.description_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
         # Link the Scrollbar to the Text widget
