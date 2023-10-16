@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+from pykotor.common.misc import Game
+
 try:
     import chardet
 except ImportError:
@@ -14,7 +16,11 @@ except ImportError:
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.extract.installation import (
+    Installation,
+    SearchLocation,
+    is_kotor_install_dir,
+)
 from pykotor.resource.formats.erf import ERF, read_erf, write_erf
 from pykotor.resource.formats.erf.erf_data import ERFType
 from pykotor.resource.formats.gff import read_gff
@@ -184,6 +190,18 @@ class ModInstaller:
 
         return self._config
 
+    def game(self) -> Game:
+        if (self.game_path.joinpath("streamvoice").exists() or self.game_path.joinpath("swkotor2.exe")) and is_kotor_install_dir(
+            self.game_path,
+        ):
+            return Game(2)
+        if (self.game_path.joinpath("streamwaves").exists() or self.game_path.joinpath("swkotor.exe")) and is_kotor_install_dir(
+            self.game_path,
+        ):
+            return Game(1)
+        msg = "Could not find the game executable!"
+        raise ValueError(msg)
+
     # extract into multiple funcs perhaps?
     def install(self) -> None:
         config = self.config()
@@ -228,7 +246,11 @@ class ModInstaller:
             create_backup(self.log, dialog_tlk_path, backup_dir, processed_files)
             self.log.add_note("Patching dialog.tlk...")
             config.patches_tlk.apply(dialog_tlk, memory)
-            write_tlk(dialog_tlk, dialog_tlk_path)
+            write_tlk(
+                dialog_tlk,
+                dialog_tlk_path,
+                strip_soundlength=self.game() == Game.K2,
+            )
             self.log.complete_patch()
 
         # Move nwscript.nss to Override if there are any nss patches to do

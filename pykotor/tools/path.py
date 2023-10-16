@@ -264,7 +264,6 @@ class PureWindowsPath(BasePath, PureWindowsPath):
 
 class Path(BasePath, Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
-    pass
 
 
 class PosixPath(BasePath, PosixPath):

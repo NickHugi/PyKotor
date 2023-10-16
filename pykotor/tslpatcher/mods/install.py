@@ -281,9 +281,6 @@ class InstallFile:
         self.filename: str = filename
         self.replace_existing: bool = replace_existing
 
-    def _identifier(self) -> ResourceIdentifier:
-        return ResourceIdentifier.from_path(self.filename)
-
     def apply_encapsulated(
         self,
         log: PatchLogger,
@@ -293,7 +290,7 @@ class InstallFile:
         backup_dir: CaseAwarePath,
         processed_files: set,
     ) -> None:
-        resname, restype = self._identifier()
+        resname, restype = ResourceIdentifier.from_path(self.filename)
 
         if self.replace_existing or destination.resource(resname, restype) is None:
             with print_lock:

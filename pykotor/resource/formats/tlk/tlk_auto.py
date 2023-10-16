@@ -112,6 +112,7 @@ def write_tlk(
     tlk: TLK,
     target: TARGET_TYPES,
     file_format: ResourceType = ResourceType.TLK,
+    strip_soundlength=False,
 ) -> None:
     """Writes the TLK data to the target location with the specified format (TLK, TLK_XML or TLK_JSON).
 
@@ -128,11 +129,11 @@ def write_tlk(
         ValueError: If the specified format was unsupported.
     """
     if file_format == ResourceType.TLK:
-        TLKBinaryWriter(tlk, target).write()
+        TLKBinaryWriter(tlk, target, strip_soundlength).write()
     elif file_format == ResourceType.TLK_XML:
-        TLKXMLWriter(tlk, target).write()
+        TLKXMLWriter(tlk, target, strip_soundlength).write()
     elif file_format == ResourceType.TLK_JSON:
-        TLKJSONWriter(tlk, target).write()
+        TLKJSONWriter(tlk, target, strip_soundlength).write()
     else:
         msg = "Unsupported format specified; use TLK or TLK_XML."
         raise ValueError(msg)

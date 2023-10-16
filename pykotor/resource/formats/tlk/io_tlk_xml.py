@@ -51,10 +51,12 @@ class TLKXMLWriter(ResourceWriter):
         self,
         tlk: TLK,
         target: TARGET_TYPES,
+        strip_soundlength = False
     ):
         super().__init__(target)
         self._xml: ElementTree.Element = ElementTree.Element("xml")
         self._tlk: TLK = tlk
+        self._strip_soundlength = False
 
     @autoclose
     def write(

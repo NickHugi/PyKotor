@@ -2,23 +2,24 @@ from __future__ import annotations
 
 import contextlib
 import os
+import pathlib
 import re
+import shutil
 import sys
 import tkinter as tk
 import traceback
 from configparser import ConfigParser
 from datetime import datetime, timezone
-from pathlib import Path
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 
 if not getattr(sys, "frozen", False):
-    thisfile_path = Path(__file__).resolve()
+    thisfile_path = pathlib.Path(__file__).resolve()
     sys.path.append(str(thisfile_path.parent.parent.parent))
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
-from pykotor.tools.path import CaseAwarePath, locate_game_path
+from pykotor.tools.path import CaseAwarePath, Path, locate_game_path
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.reader import NamespaceReader
@@ -83,7 +84,7 @@ class App(tk.Tk):
         super().__init__()
         # Set window dimensions
         window_width = 400
-        window_height = 500
+        window_height = 520
 
         # Get screen dimensions
         screen_width = self.winfo_screenwidth()
@@ -123,7 +124,8 @@ class App(tk.Tk):
             str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()
         ]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
-        ttk.Button(self, text="Browse", command=self.open_kotor).place(x=320, y=35, width=75, height=25)
+        self.gamepaths_browse_button = ttk.Button(self, text="Browse", command=self.open_kotor)
+        self.gamepaths_browse_button.place(x=320, y=35, width=75, height=25)
 
         # Create a Frame to hold the Text and Scrollbar widgets
         text_frame = tk.Frame(self)
@@ -145,10 +147,121 @@ class App(tk.Tk):
         self.exit_button = ttk.Button(self, text="Exit", command=self.handle_exit_button)
         self.exit_button.place(x=5, y=470, width=75, height=25)
         self.progressbar = ttk.Progressbar(self)
-        self.progressbar.place(x=85, y=470, width=230, height=25)
-        ttk.Button(self, text="Install", command=self.begin_install).place(x=320, y=470, width=75, height=25)
+        self.progressbar.place(x=5, y=500, width=390, height=15)
+        self.progressbar["value"] = 100
+        self.install_button = ttk.Button(self, text="Install", command=self.begin_install)
+        self.install_button.place(x=320, y=470, width=75, height=25)
+        self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
+        self.uninstall_button.place(x=160, y=470, width=75, height=25)
 
         self.open_mod(CaseAwarePath.cwd())
+
+    def uninstall_selected_mod(self):
+        if self.install_running:
+            messagebox.showerror("An install is already running!", "Please wait for all operations to finish")
+            return
+        namespace_option = next((x for x in self.namespaces if x.name == self.namespaces_combobox.get()), None)
+        if not self.namespaces or not namespace_option:
+            messagebox.showerror("No mod loaded", "Load/select a mod first.")
+            return
+        destination_folder = Path(self.gamepaths.get())
+        if not destination_folder.exists():
+            messagebox.showerror("No game path selected", "Select your KOTOR directory first")
+            return
+        backup_parent_folder = Path(self.mod_path, "backup")
+        if not backup_parent_folder.exists():
+            messagebox.showerror(
+                "Backup folder empty/missing.",
+                f"Could not find backup folder '{backup_parent_folder}'{os.linesep*2}Are you sure the mod is installed?",
+            )
+            return
+
+        self._clear_description_textbox()
+        sorted_backup_folders = []
+        for folder in backup_parent_folder.iterdir():
+            try:
+                dt = datetime.strptime(folder.name, "%Y-%m-%d_%H.%M.%S").astimezone()
+                self.write_log(f"Found backup '{folder.name}'")
+                sorted_backup_folders.append((folder, dt))
+            except ValueError:  # noqa: PERF203
+                if folder.name.strip():
+                    self.write_log(f"Ignoring directory '{folder.name}' because it is not timestamped as '%Y-%m-%d_%H.%M.%S'")
+
+        if not sorted_backup_folders:
+            messagebox.showerror(
+                "No backups found!",
+                f"No backups found at '{backup_parent_folder}'!{os.linesep}HoloPatcher cannot uninstall TSLPatcher.exe installations.",
+            )
+            return
+        sorted_backup_folders.sort(key=lambda x: x[1], reverse=True)
+        most_recent_backup_folder = backup_parent_folder / str(sorted_backup_folders[0][0])
+        self.write_log(f"Using backup folder '{most_recent_backup_folder}'")
+        delete_list_file = most_recent_backup_folder / "remove these files.txt"
+        if not delete_list_file.exists():
+            messagebox.showerror(
+                "File list missing from backup"
+                f"'remove these files.txt' missing from backup '{most_recent_backup_folder}', cannot restore backup.",
+            )
+            return
+
+        existing_files = set()
+        missing_files = False
+        with delete_list_file.open("r") as f:
+            for line in f:
+                line = line.strip()  # noqa: PLW2901
+
+                if line:
+                    this_filepath = Path(line)
+                    if this_filepath.is_file():
+                        existing_files.add(line)
+                    else:
+                        missing_files = True
+                        print(f"ERROR! {line} no longer exists!")
+        if missing_files:
+            messagebox.showerror(
+                "Backup out of date or mismatched",
+                (
+                    f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
+                    f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
+                    f"Also ensure you selected the right mod, and the right KOTOR folder."
+                ),
+            )
+            return
+        all_items_in_backup = list(Path(most_recent_backup_folder).rglob("*"))
+        files_in_backup = [item for item in all_items_in_backup if item.is_file()]
+        folder_count = len(all_items_in_backup) - len(files_in_backup)
+
+        if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
+            for item in files_in_backup:
+                self.write_log(f"Would restore file '{item.relative_to(most_recent_backup_folder)!s}'")
+        if not messagebox.askyesno(
+            "Confirmation",
+            f"Really uninstall {len(existing_files)} files and restore the most recent backup (containing {len(files_in_backup)} files and {folder_count} folders)?",
+        ):
+            return
+        deleted_count = 0
+        for file in existing_files:
+            if Path(file).exists():
+                Path(file).unlink()
+                self.write_log(f"Removed {file}...")
+                deleted_count += 1
+
+        try:
+            for file in files_in_backup:
+                relative_path = str(file).replace(str(most_recent_backup_folder), "")
+                destination_path = destination_folder / relative_path.lstrip("\\")
+                destination_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(file, destination_path)
+                self.write_log(f"Restoring backup of '{file.name}' to '{destination_path.parent}'...")
+        except Exception as e:
+            messagebox.showerror(
+                "Unexpected exception restoring backup!",
+                f"Failed to restore backup because of exception:{os.linesep*2}{type(e).__name__}: {e.args[0]}",
+            )
+        messagebox.showinfo(
+            "Uninstall completed!",
+            f"Deleted {deleted_count} files and successfully restored backup {most_recent_backup_folder.name}",
+        )
 
     def handle_exit_button(self):
         if not self.install_running:
@@ -160,6 +273,7 @@ class App(tk.Tk):
             return
         with contextlib.suppress(Exception):
             self.install_thread._stop()  # type: ignore[hidden method]
+            print("force terminate of install thread succeeded")
         self.destroy()
         sys.exit(2)
 
@@ -186,7 +300,10 @@ class App(tk.Tk):
             with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
                 self.set_stripped_rtf_text(rtf)
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror("Error", f"An unexpected error occurred while loading namespace option: {e}")
+            messagebox.showerror(
+                "Error",
+                f"An unexpected error occurred while loading namespace option: {type(e).__name__}: {e.args[0]}",
+            )
 
     def extract_lookup_game_number(self, changes_path: Path):
         if not changes_path.exists():
@@ -231,7 +348,7 @@ class App(tk.Tk):
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {e}")
+            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {type(e).__name__}: {e.args[0]}")
 
     def open_kotor(self) -> None:
         try:
@@ -253,7 +370,7 @@ class App(tk.Tk):
             self.gamepaths.set(str(directory))
             self.after(10, self.move_cursor_to_end)
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {e}")
+            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {type(e).__name__}: {e.args[0]}")
 
     def begin_install(self) -> None:
         try:
@@ -301,10 +418,7 @@ class App(tk.Tk):
         )
         mod_path = ini_file_path.parent
 
-        self.description_text.config(state="normal")
-        self.description_text.delete(1.0, tk.END)
-        self.description_text.config(state="disabled")
-
+        self._clear_description_textbox()
         installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
         try:
             self._execute_mod_install(installer, tslpatchdata_root_path)
@@ -315,10 +429,24 @@ class App(tk.Tk):
                 tslpatchdata_root_path,
             )
         self.install_running = False
+        self.install_button.config(state=tk.NORMAL)
+        self.uninstall_button.config(state=tk.NORMAL)
+        self.gamepaths_browse_button.config(state=tk.NORMAL)
+        self.browse_button.config(state=tk.NORMAL)
+
+    def _clear_description_textbox(self):
+        self.description_text.config(state=tk.NORMAL)
+        self.description_text.delete(1.0, tk.END)
+        self.description_text.config(state=tk.DISABLED)
 
     def _execute_mod_install(self, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
         self.install_running = True
+        self.install_button.config(state=tk.DISABLED)
+        self.uninstall_button.config(state=tk.DISABLED)
+        self.gamepaths_browse_button.config(state=tk.DISABLED)
+        self.browse_button.config(state=tk.DISABLED)
         install_start_time = datetime.now(timezone.utc).astimezone()
+        self.progressbar["value"] = 10
         installer.install()
         total_install_time = datetime.now(timezone.utc).astimezone() - install_start_time
 
@@ -388,10 +516,10 @@ class App(tk.Tk):
                 None,
             )
             if not settings_section:
-                namespace.name = "default"
+                namespace.name = "<< Untitled Mod Loaded >>"
                 return namespace
             settings_ini = CaseInsensitiveDict(dict(ini[settings_section].items()))
-            namespace.name = settings_ini.get("WindowCaption") or "default"
+            namespace.name = settings_ini.get("WindowCaption", "<< Untitled Mod Loaded >>")
 
         return namespace
 
@@ -432,16 +560,31 @@ class App(tk.Tk):
 
     def set_stripped_rtf_text(self, rtf):
         stripped_content = striprtf(rtf.read())
-        self.description_text.config(state="normal")
+        self.description_text.config(state=tk.NORMAL)
         self.description_text.delete(1.0, tk.END)
         self.description_text.insert(tk.END, stripped_content)
-        self.description_text.config(state="disabled")
+        self.description_text.config(state=tk.DISABLED)
 
     def write_log(self, message: str) -> None:
-        self.description_text.config(state="normal")
+        """Writes a message to the log.
+
+        Args:
+        ----
+            message (str): The message to write to the log.
+
+        Returns:
+        -------
+            None
+        Processes the log message by:
+            - Setting the description text widget to editable
+            - Inserting the message plus a newline at the end of the text
+            - Scrolling to the end of the text
+            - Making the description text widget not editable again.
+        """
+        self.description_text.config(state=tk.NORMAL)
         self.description_text.insert(tk.END, message + os.linesep)
         self.description_text.see(tk.END)
-        self.description_text.config(state="disabled")
+        self.description_text.config(state=tk.DISABLED)
 
 
 def striprtf(text):

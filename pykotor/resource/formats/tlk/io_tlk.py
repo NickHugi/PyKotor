@@ -99,9 +99,11 @@ class TLKBinaryWriter(ResourceWriter):
         self,
         tlk: TLK,
         target: TARGET_TYPES,
+        strip_soundlength=False,
     ):
         super().__init__(target)
         self._tlk = tlk
+        self._strip_soundlength = strip_soundlength
 
     @autoclose
     def write(
@@ -112,7 +114,7 @@ class TLKBinaryWriter(ResourceWriter):
 
         text_offset = WrappedInt(0)
         [self._write_entry(entry, text_offset) for entry in self._tlk.entries]
-        [self._writer.write_string(entry.text) for entry in self._tlk.entries]
+        [self._writer.write_string(entry.text, "utf-8") for entry in self._tlk.entries]
 
     def _calculate_entries_offset(
         self,
@@ -148,7 +150,7 @@ class TLKBinaryWriter(ResourceWriter):
         # Check for SND_PRESENT: If sound_resref is not None, not an empty string, or not False
         if sound_resref:
             entry_flags |= 0x0002
-            # entry_flags |= 0x0004  # unused - SNDLENGTH_PRESENT  # noqa: ERA001
+        entry_flags |= 0x0004  # both vanilla dialog.tlk files have this set.
 
         self._writer.write_uint32(entry_flags)
         self._writer.write_string(sound_resref, string_length=16)

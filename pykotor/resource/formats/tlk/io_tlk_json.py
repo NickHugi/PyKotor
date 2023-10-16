@@ -46,10 +46,12 @@ class TLKJSONWriter(ResourceWriter):
         self,
         twoda: TLK,
         target: TARGET_TYPES,
+        strip_soundlength = False,
     ):
         super().__init__(target)
         self._tlk: TLK = twoda
         self._json = {"strings": []}
+        self._strip_soundlength = strip_soundlength
 
     @autoclose
     def write(

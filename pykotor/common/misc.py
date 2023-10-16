@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     import os
 
 T = TypeVar("T")
+VT = TypeVar("VT")
+_unique_sentinel = object()
 
 
 class ResRef:
@@ -505,11 +507,10 @@ class CaseInsensitiveDict(Generic[T]):
         self._case_map.pop(lower_key)
         return value
 
-    def get(self, key: str, default: T | None = None) -> T | None:
-        key_lookup = self._case_map.get(key.lower(), ">>##UNIQUE_NONE_VAL##<<")
-        if key_lookup == ">>##UNIQUE_NONE_VAL##<<":
-            return default
-        return self._dictionary.get(key_lookup, default)
+    def get(self, __key: str, __default: VT = None) -> VT | T:
+        # sourcery skip: compare-via-equals
+        key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[ignore key_lookup]
+        return __default if key_lookup is _unique_sentinel else self._dictionary.get(key_lookup, __default)
 
     def items(self):
         return self._dictionary.items()
