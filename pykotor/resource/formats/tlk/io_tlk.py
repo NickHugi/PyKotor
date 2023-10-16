@@ -114,7 +114,7 @@ class TLKBinaryWriter(ResourceWriter):
 
         text_offset = WrappedInt(0)
         [self._write_entry(entry, text_offset) for entry in self._tlk.entries]
-        [self._writer.write_string(entry.text, "utf-8") for entry in self._tlk.entries]
+        [self._writer.write_string(entry.text) for entry in self._tlk.entries]
 
     def _calculate_entries_offset(
         self,
