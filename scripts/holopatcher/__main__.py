@@ -296,7 +296,7 @@ class App(tk.Tk):
 
     def handle_exit_button(self):
         if not self.install_running:
-            sys.exit(0)
+            sys.exit(ExitCode.SUCCESS)
         if not messagebox.askyesno(
             "Really cancel the current installation? ",
             "CONTINUING WILL BREAK YOUR GAME AND REQUIRE A FULL KOTOR REINSTALL!",
@@ -306,7 +306,7 @@ class App(tk.Tk):
             self.install_thread._stop()  # type: ignore[hidden method]
             print("force terminate of install thread succeeded")
         self.destroy()
-        sys.exit(2)
+        sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
     def on_gamepaths_chosen(self, event):
         self.after(10, self.move_cursor_to_end)
@@ -424,7 +424,7 @@ class App(tk.Tk):
                 "Error",
                 f"An unexpected error occurred during the installation and the program was forced to exit:\n{error_message}",
             )
-            sys.exit(1)
+            sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
     def begin_install_thread(self):
         if not self.mod_path:
@@ -460,7 +460,7 @@ class App(tk.Tk):
                 tslpatchdata_root_path,
             )
             if self.oneshot:
-                sys.exit(2)
+                sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
         self.install_running = False
         self.install_button.config(state=tk.NORMAL)
         self.uninstall_button.config(state=tk.NORMAL)
@@ -509,7 +509,7 @@ class App(tk.Tk):
                 f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details. Total install time: {time_str}",
             )
             if self.oneshot:
-                sys.exit(1)
+                sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
         else:
             messagebox.showinfo(
                 "Install complete!",
@@ -535,8 +535,6 @@ class App(tk.Tk):
         self.gamepaths_browse_button.config(state=tk.NORMAL)
         self.browse_button.config(state=tk.NORMAL)
         raise
-        if self.oneshot:
-            sys.exit(2)
 
     def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
         c_filepath = CaseAwarePath(filepath)
