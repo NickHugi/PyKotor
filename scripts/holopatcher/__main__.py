@@ -139,7 +139,7 @@ class App(tk.Tk):
         self.description_text = tk.Text(text_frame, wrap=tk.WORD, yscrollcommand=scrollbar.set)
         # Get the current font properties
         font_obj = tkfont.Font(font=self.description_text.cget("font"))
-        font_obj.configure(size=8)
+        font_obj.configure(size=9)
         self.description_text.configure(font=font_obj)
         self.description_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
@@ -495,7 +495,7 @@ class App(tk.Tk):
             log_file.write(f"{traceback.format_exc()}\n")
         messagebox.showerror(
             "Error",
-            f"An unexpected error occurred during the installation and the installation was forced to terminate:\n{short_error_msg}",
+            f"An unexpected error occurred during the installation and the installation was forced to terminate:{os.linesep*2}{short_error_msg}",
         )
         self.install_running = False
         self.install_button.config(state=tk.NORMAL)
