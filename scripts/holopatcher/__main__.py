@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import contextlib
 import os
 import pathlib
@@ -10,77 +11,80 @@ import tkinter as tk
 import traceback
 from configparser import ConfigParser
 from datetime import datetime, timezone
+from enum import IntEnum
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 
 if not getattr(sys, "frozen", False):
     thisfile_path = pathlib.Path(__file__).resolve()
-    sys.path.append(str(thisfile_path.parent.parent.parent))
+    project_root = thisfile_path.parent.parent.parent
+    if project_root.joinpath("pykotor").exists():
+        sys.path.append(str(project_root))
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
+from pykotor.tools.misc import striprtf
 from pykotor.tools.path import CaseAwarePath, Path, locate_game_path
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.reader import NamespaceReader
 
 
-class LeftCutOffCombobox(ttk.Combobox):
-    def __init__(self, master=None, **kwargs):
-        super().__init__(master, **kwargs)
+class ExitCode(IntEnum):
+    SUCCESS = 0
+    NUMBER_OF_ARGS = 1
+    NAMESPACES_INI_NOT_FOUND = 2
+    NAMESPACE_INDEX_OUT_OF_RANGE = 3
+    CHANGES_INI_NOT_FOUND = 4
+    ABORT_INSTALL_UNSAFE = 5
+    EXCEPTION_DURING_INSTALL = 6
+    INSTALL_COMPLETED_WITH_ERRORS = 7
 
-        # Create a separate StringVar to control the display
-        self.display_var = tk.StringVar()
-        self["textvariable"] = self.display_var
-        self.bind("<<ComboboxSelected>>", self.update_display_value)
 
-        # Bind the postcommand to modify dropdown items' display
-        self["postcommand"] = self.update_dropdown_display
-        # Bind the <Unmap> event to restore the original values
-        self.bind("<Unmap>", self.restore_original_values)
-        self.bind("<FocusOut>", self.restore_original_values)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="HoloPatcher CLI")
 
-    def update_display_value(self, event=None):
-        # Update the displayed value based on the actual value selected
-        actual_value = self.get()
-        display_value = actual_value
+    # Positional arguments for the old syntax
+    parser.add_argument("--game-dir", type=str, help="Path to game directory")
+    parser.add_argument("--tslpatchdata", type=str, help="Path to tslpatchdata")
+    parser.add_argument(
+        "--namespace-option-index",
+        type=int,
+        help="Namespace option index",
+    )
+    parser.add_argument(
+        "--noconsole",
+        action="store_true",
+        help="Hides the console when launching HoloPatcher (default).",
+    )
+    parser.add_argument(
+        "--nogui",
+        action="store_true",
+        help="Hides the UI when launching HoloPatcher. Only useful if using --install.",
+    )
+    parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
+    parser.add_argument("--install", action="store_true", help="Starts an install immediately on launch.")
 
-        # Estimate the width of the dropdown arrow. This may need tweaking based on the theme or style.
-        arrow_width = 25  # This value may need adjustments based on the visual theme
+    # Add additional named arguments here if needed
 
-        while self.font_measure(f"...{display_value}") > (self.winfo_width() - arrow_width):
-            display_value = display_value[1:]
+    args, unknown = parser.parse_known_args()
 
-        if display_value != actual_value:
-            self.display_var.set(f"...{display_value}")
-        else:
-            self.display_var.set(actual_value)
+    # If using the old syntax, we'll manually parse the first three arguments
+    if len(unknown) >= 2:
+        args.game_dir = unknown[0]
+        args.tslpatchdata = unknown[1]
+        if len(unknown) == 3:
+            try:
+                args.namespace_option_index = int(unknown[2])
+            except ValueError:
+                print("Invalid namespace_option_index. It should be an integer.")
+                sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
-    def update_dropdown_display(self):
-        # This method gets called just before the dropdown is displayed
-        # Temporarily set the values for display
-        display_values = [self.truncate_text(item) for item in self["values"]]
-        super().configure(values=display_values)
-
-    def restore_original_values(self, event=None):
-        # Restore the original values after the dropdown has been closed
-        super().configure(values=self["values"])
-
-    def truncate_text(self, text):
-        available_space = self.winfo_width() - 25  # subtract estimated arrow width
-        while self.font_measure(f"...{text}") > available_space:
-            text = text[1:]
-        return f"...{text}" if text != self.get() else text
-
-    def font_measure(self, text):
-        return tkfont.Font(font=self.cget("font")).measure(text)
-
-    def font_average_width(self):
-        return self.font_measure("m")
+    return args
 
 
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(self, cmdline_args):
         super().__init__()
         # Set window dimensions
         window_width = 400
@@ -157,7 +161,26 @@ class App(tk.Tk):
         self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
         self.uninstall_button.place(x=160, y=470, width=75, height=25)
 
-        self.open_mod(CaseAwarePath.cwd())
+        self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
+        if cmdline_args.game_dir:
+            self.open_kotor(cmdline_args.game_dir)
+        if cmdline_args.namespace_option_index:
+            self.namespaces_combobox.set(self.namespaces_combobox["values"].get(cmdline_args.namespace_option_index))
+        if cmdline_args.noconsole:
+            self.hide_console()
+        if cmdline_args.nogui:
+            self.withdraw()
+        if cmdline_args.install:
+            self.oneshot = True
+            self.begin_install_thread()
+
+    def hide_console(self):
+        """Hide the console window in GUI mode."""
+        # Windows
+        if os.name == "nt":
+            import ctypes
+
+            ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
     def uninstall_selected_mod(self):
         if self.install_running:
@@ -202,7 +225,7 @@ class App(tk.Tk):
         delete_list_file = most_recent_backup_folder / "remove these files.txt"
         if not delete_list_file.exists():
             messagebox.showerror(
-                "File list missing from backup"
+                "File list missing from backup",
                 f"'remove these files.txt' missing from backup '{most_recent_backup_folder}', cannot restore backup.",
             )
             return
@@ -353,9 +376,9 @@ class App(tk.Tk):
         except Exception as e:  # noqa: BLE001
             messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {type(e).__name__}: {e.args[0]}")
 
-    def open_kotor(self) -> None:
+    def open_kotor(self, default_kotor_dir_str=None) -> None:
         try:
-            directory_path_str = filedialog.askdirectory()
+            directory_path_str = default_kotor_dir_str or filedialog.askdirectory()
             if not directory_path_str:
                 return
             directory = CaseAwarePath(directory_path_str)
@@ -367,7 +390,7 @@ class App(tk.Tk):
                 and not directory.joinpath("chitin.key").exists()
             ):
                 directory = directory.parent
-            if not directory.joinpath("chitin.key").exists():
+            if not default_kotor_dir_str and not directory.joinpath("chitin.key").exists():
                 messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
                 return
             self.gamepaths.set(str(directory))
@@ -431,6 +454,8 @@ class App(tk.Tk):
                 installer,
                 tslpatchdata_root_path,
             )
+            if self.oneshot:
+                sys.exit(2)
         self.install_running = False
         self.install_button.config(state=tk.NORMAL)
         self.uninstall_button.config(state=tk.NORMAL)
@@ -478,6 +503,8 @@ class App(tk.Tk):
                 "Install completed with errors",
                 f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details. Total install time: {time_str}",
             )
+            if self.oneshot:
+                sys.exit(1)
         else:
             messagebox.showinfo(
                 "Install complete!",
@@ -503,6 +530,8 @@ class App(tk.Tk):
         self.gamepaths_browse_button.config(state=tk.NORMAL)
         self.browse_button.config(state=tk.NORMAL)
         raise
+        if self.oneshot:
+            sys.exit(2)
 
     def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
         c_filepath = CaseAwarePath(filepath)
@@ -594,383 +623,18 @@ class App(tk.Tk):
         self.description_text.see(tk.END)
         self.description_text.config(state=tk.DISABLED)
 
-
-def striprtf(text):
-    pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
-    # control words which specify a "destionation".
-    destinations = frozenset(
-        (
-            "aftncn",
-            "aftnsep",
-            "aftnsepc",
-            "annotation",
-            "atnauthor",
-            "atndate",
-            "atnicn",
-            "atnid",
-            "atnparent",
-            "atnref",
-            "atntime",
-            "atrfend",
-            "atrfstart",
-            "author",
-            "background",
-            "bkmkend",
-            "bkmkstart",
-            "blipuid",
-            "buptim",
-            "category",
-            "colorschememapping",
-            "colortbl",
-            "comment",
-            "company",
-            "creatim",
-            "datafield",
-            "datastore",
-            "defchp",
-            "defpap",
-            "do",
-            "doccomm",
-            "docvar",
-            "dptxbxtext",
-            "ebcend",
-            "ebcstart",
-            "factoidname",
-            "falt",
-            "fchars",
-            "ffdeftext",
-            "ffentrymcr",
-            "ffexitmcr",
-            "ffformat",
-            "ffhelptext",
-            "ffl",
-            "ffname",
-            "ffstattext",
-            "field",
-            "file",
-            "filetbl",
-            "fldinst",
-            "fldrslt",
-            "fldtype",
-            "fname",
-            "fontemb",
-            "fontfile",
-            "fonttbl",
-            "footer",
-            "footerf",
-            "footerl",
-            "footerr",
-            "footnote",
-            "formfield",
-            "ftncn",
-            "ftnsep",
-            "ftnsepc",
-            "g",
-            "generator",
-            "gridtbl",
-            "header",
-            "headerf",
-            "headerl",
-            "headerr",
-            "hl",
-            "hlfr",
-            "hlinkbase",
-            "hlloc",
-            "hlsrc",
-            "hsv",
-            "htmltag",
-            "info",
-            "keycode",
-            "keywords",
-            "latentstyles",
-            "lchars",
-            "levelnumbers",
-            "leveltext",
-            "lfolevel",
-            "linkval",
-            "list",
-            "listlevel",
-            "listname",
-            "listoverride",
-            "listoverridetable",
-            "listpicture",
-            "liststylename",
-            "listtable",
-            "listtext",
-            "lsdlockedexcept",
-            "macc",
-            "maccPr",
-            "mailmerge",
-            "maln",
-            "malnScr",
-            "manager",
-            "margPr",
-            "mbar",
-            "mbarPr",
-            "mbaseJc",
-            "mbegChr",
-            "mborderBox",
-            "mborderBoxPr",
-            "mbox",
-            "mboxPr",
-            "mchr",
-            "mcount",
-            "mctrlPr",
-            "md",
-            "mdeg",
-            "mdegHide",
-            "mden",
-            "mdiff",
-            "mdPr",
-            "me",
-            "mendChr",
-            "meqArr",
-            "meqArrPr",
-            "mf",
-            "mfName",
-            "mfPr",
-            "mfunc",
-            "mfuncPr",
-            "mgroupChr",
-            "mgroupChrPr",
-            "mgrow",
-            "mhideBot",
-            "mhideLeft",
-            "mhideRight",
-            "mhideTop",
-            "mhtmltag",
-            "mlim",
-            "mlimloc",
-            "mlimlow",
-            "mlimlowPr",
-            "mlimupp",
-            "mlimuppPr",
-            "mm",
-            "mmaddfieldname",
-            "mmath",
-            "mmathPict",
-            "mmathPr",
-            "mmaxdist",
-            "mmc",
-            "mmcJc",
-            "mmconnectstr",
-            "mmconnectstrdata",
-            "mmcPr",
-            "mmcs",
-            "mmdatasource",
-            "mmheadersource",
-            "mmmailsubject",
-            "mmodso",
-            "mmodsofilter",
-            "mmodsofldmpdata",
-            "mmodsomappedname",
-            "mmodsoname",
-            "mmodsorecipdata",
-            "mmodsosort",
-            "mmodsosrc",
-            "mmodsotable",
-            "mmodsoudl",
-            "mmodsoudldata",
-            "mmodsouniquetag",
-            "mmPr",
-            "mmquery",
-            "mmr",
-            "mnary",
-            "mnaryPr",
-            "mnoBreak",
-            "mnum",
-            "mobjDist",
-            "moMath",
-            "moMathPara",
-            "moMathParaPr",
-            "mopEmu",
-            "mphant",
-            "mphantPr",
-            "mplcHide",
-            "mpos",
-            "mr",
-            "mrad",
-            "mradPr",
-            "mrPr",
-            "msepChr",
-            "mshow",
-            "mshp",
-            "msPre",
-            "msPrePr",
-            "msSub",
-            "msSubPr",
-            "msSubSup",
-            "msSubSupPr",
-            "msSup",
-            "msSupPr",
-            "mstrikeBLTR",
-            "mstrikeH",
-            "mstrikeTLBR",
-            "mstrikeV",
-            "msub",
-            "msubHide",
-            "msup",
-            "msupHide",
-            "mtransp",
-            "mtype",
-            "mvertJc",
-            "mvfmf",
-            "mvfml",
-            "mvtof",
-            "mvtol",
-            "mzeroAsc",
-            "mzeroDesc",
-            "mzeroWid",
-            "nesttableprops",
-            "nextfile",
-            "nonesttables",
-            "objalias",
-            "objclass",
-            "objdata",
-            "object",
-            "objname",
-            "objsect",
-            "objtime",
-            "oldcprops",
-            "oldpprops",
-            "oldsprops",
-            "oldtprops",
-            "oleclsid",
-            "operator",
-            "panose",
-            "password",
-            "passwordhash",
-            "pgp",
-            "pgptbl",
-            "picprop",
-            "pict",
-            "pn",
-            "pnseclvl",
-            "pntext",
-            "pntxta",
-            "pntxtb",
-            "printim",
-            "private",
-            "propname",
-            "protend",
-            "protstart",
-            "protusertbl",
-            "pxe",
-            "result",
-            "revtbl",
-            "revtim",
-            "rsidtbl",
-            "rxe",
-            "shp",
-            "shpgrp",
-            "shpinst",
-            "shppict",
-            "shprslt",
-            "shptxt",
-            "sn",
-            "sp",
-            "staticval",
-            "stylesheet",
-            "subject",
-            "sv",
-            "svb",
-            "tc",
-            "template",
-            "themedata",
-            "title",
-            "txe",
-            "ud",
-            "upr",
-            "userprops",
-            "wgrffmtfilter",
-            "windowcaption",
-            "writereservation",
-            "writereservhash",
-            "xe",
-            "xform",
-            "xmlattrname",
-            "xmlattrvalue",
-            "xmlclose",
-            "xmlname",
-            "xmlnstbl",
-            "xmlopen",
-        ),
-    )
-    # Translation of some special characters.
-    specialchars = {
-        "par": "\n",
-        "sect": "\n\n",
-        "page": "\n\n",
-        "line": "\n",
-        "tab": "\t",
-        "emdash": "\u2014",
-        "endash": "\u2013",
-        "emspace": "\u2003",
-        "enspace": "\u2002",
-        "qmspace": "\u2005",
-        "bullet": "\u2022",
-        "lquote": "\u2018",
-        "rquote": "\u2019",
-        "ldblquote": "\201C",
-        "rdblquote": "\u201D",
-    }
-    stack = []
-    ignorable = False  # Whether this group (and all inside it) are "ignorable".
-    ucskip = 1  # Number of ASCII characters to skip after a unicode character.
-    curskip = 0  # Number of ASCII characters left to skip
-    out = []  # Output buffer.
-    for match in pattern.finditer(text):
-        word, arg, hexcode, char, brace, tchar = match.groups()
-        if brace:
-            curskip = 0
-            if brace == "{":
-                # Push state
-                stack.append((ucskip, ignorable))
-            elif brace == "}":
-                # Pop state
-                ucskip, ignorable = stack.pop()
-        elif char:  # \x (not a letter)
-            curskip = 0
-            if char == "~":
-                if not ignorable:
-                    out.append("\xA0")
-            elif char in "{}\\":
-                if not ignorable:
-                    out.append(char)
-            elif char == "*":
-                ignorable = True
-        elif word:  # \foo
-            curskip = 0
-            if word in destinations:
-                ignorable = True
-            elif ignorable:
-                pass
-            elif word in specialchars:
-                out.append(specialchars[word])
-            elif word == "uc":
-                ucskip = int(arg)
-            elif word == "u":
-                c = int(arg)
-                if c < 0:
-                    c += 0x10000
-                out.append(chr(c))
-                curskip = ucskip
-        elif hexcode:  # \'xx
-            if curskip > 0:
-                curskip -= 1
-            elif not ignorable:
-                c = int(hexcode, 16)
-                out.append(chr(c))
-        elif tchar:
-            if curskip > 0:
-                curskip -= 1
-            elif not ignorable:
-                out.append(tchar)
-    return "".join(out)
+    def show_error(self, exc_type, exc_value, exc_traceback):
+        """Show error in a dialog."""
+        error = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        root = tk.Tk()
+        root.withdraw()  # Hide root window
+        messagebox.showerror("Error", error)
+        root.destroy()
 
 
 def main():
-    app = App()
+    args = parse_args()
+    app = App(args)
     app.mainloop()
 
 
