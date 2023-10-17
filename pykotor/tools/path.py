@@ -445,10 +445,22 @@ def locate_game_path():
             Game.K1: [
                 CaseAwarePath("~/.local/share/Steam/common/SteamApps/swkotor"),
                 CaseAwarePath("~/.local/share/Steam/common/swkotor"),
+                # wsl paths
+                CaseAwarePath("/mnt/C/Program Files/Steam/steamapps/common/swkotor"),
+                CaseAwarePath("/mnt/C/Program Files (x86)/Steam/steamapps/common/swkotor"),
+                CaseAwarePath("/mnt/C/Program Files/LucasArts/SWKotOR"),
+                CaseAwarePath("/mnt/C/Program Files (x86)/LucasArts/SWKotOR"),
+                CaseAwarePath("/mnt/C/GOG Games/Star Wars - KotOR"),
             ],
             Game.K2: [
                 CaseAwarePath("~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II"),
                 CaseAwarePath("~/.local/share/Steam/common/Knights of the Old Republic II"),
+                # wsl paths
+                CaseAwarePath("/mnt/C/Program Files/Steam/steamapps/common/Knights of the Old Republic II"),
+                CaseAwarePath("/mnt/C/Program Files (x86)/Steam/steamapps/common/Knights of the Old Republic II"),
+                CaseAwarePath("/mnt/C/Program Files/LucasArts/SWKotOR2"),
+                CaseAwarePath("/mnt/C/Program Files (x86)/LucasArts/SWKotOR2"),
+                CaseAwarePath("/mnt/C/GOG Games/Star Wars - KotOR2"),
             ],
         },
     }
