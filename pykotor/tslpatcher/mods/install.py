@@ -59,9 +59,9 @@ def create_backup(
 
             # Write the file path to remove these files.txt in backup directory
             removal_files_txt = backup_folderpath.joinpath("remove these files.txt")
-            already_exists = removal_files_txt.exists()
+            line = ("\n" if removal_files_txt.exists() else "") + destination_file_str
             with removal_files_txt.open("a") as f:
-                f.write(("\n" if already_exists else "") + destination_file_str)
+                f.write(line)
 
             # Write the PowerShell uninstall script to the uninstall folder
             subdir_temp = PurePath(subdirectory_path) if subdirectory_path else None

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import ctypes
 import os
 import pathlib
 import re
@@ -54,13 +55,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--noconsole",
-        action="store_true",
+        action="store_false",
         help="Hides the console when launching HoloPatcher (default).",
-    )
-    parser.add_argument(
-        "--nogui",
-        action="store_true",
-        help="Hides the UI when launching HoloPatcher. Only useful if using --install.",
     )
     parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
     parser.add_argument("--install", action="store_true", help="Starts an install immediately on launch.")
@@ -168,8 +164,40 @@ class App(tk.Tk):
             self.namespaces_combobox.set(self.namespaces_combobox["values"].get(cmdline_args.namespace_option_index))
         if cmdline_args.noconsole:
             self.hide_console()
-        if cmdline_args.nogui:
+        if cmdline_args.install or cmdline_args.uninstall:
             self.withdraw()
+
+            class MessageboxOverride:
+                @staticmethod
+                def showinfo(title, message):
+                    print(f"[Note] - {title}: {message}")
+
+                @staticmethod
+                def showwarning(title, message):
+                    print(f"[Warning] - {title}: {message}")
+
+                @staticmethod
+                def showerror(title, message):
+                    print(f"[Error] - {title}: {message}")
+
+                @staticmethod
+                def askyesno(title, message):
+                    """Console-based replacement for messagebox.askyesno and similar."""
+                    print(f"{title}\n{message}")
+                    while True:
+                        response = input("(y/N)").lower().strip()
+                        if response in ["yes", "y"]:
+                            return True
+                        if response in ["no", "n"]:
+                            return False
+                        print("Invalid input. Please enter 'yes' or 'no'")
+
+            messagebox.showinfo = MessageboxOverride.showinfo
+            messagebox.showwarning = MessageboxOverride.showwarning
+            messagebox.showerror = MessageboxOverride.showerror
+            messagebox.askyesno = MessageboxOverride.askyesno
+            messagebox.askyesnocancel = MessageboxOverride.askyesno
+            messagebox.askretrycancel = MessageboxOverride.askyesno
         if cmdline_args.install:
             self.oneshot = True
             self.begin_install_thread()
@@ -229,35 +257,36 @@ class App(tk.Tk):
         self.write_log(f"Using backup folder '{most_recent_backup_folder}'")
         delete_list_file = most_recent_backup_folder / "remove these files.txt"
         if not delete_list_file.exists():
-            messagebox.showerror(
-                "File list missing from backup",
-                f"'remove these files.txt' missing from backup '{most_recent_backup_folder}', cannot restore backup.",
-            )
-            return
-
+            # messagebox.showerror(
+            #     "File list missing from backup",
+            #     f"'remove these files.txt' missing from backup '{most_recent_backup_folder}', cannot restore backup.",  # noqa: ERA001
+            # )  # noqa: ERA001, RUF100
+            # return  # noqa: ERA001, RUF100
+            pass
         existing_files = set()
-        missing_files = False
-        with delete_list_file.open("r") as f:
-            for line in f:
-                line = line.strip()  # noqa: PLW2901
+        if delete_list_file.exists():
+            missing_files = False
+            with delete_list_file.open("r") as f:
+                for line in f:
+                    line = line.strip()  # noqa: PLW2901
 
-                if line:
-                    this_filepath = Path(line)
-                    if this_filepath.is_file():
-                        existing_files.add(line)
-                    else:
-                        missing_files = True
-                        print(f"ERROR! {line} no longer exists!")
-        if missing_files:
-            messagebox.showerror(
-                "Backup out of date or mismatched",
-                (
-                    f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
-                    f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
-                    f"Also ensure you selected the right mod, and the right KOTOR folder."
-                ),
-            )
-            return
+                    if line:
+                        this_filepath = Path(line)
+                        if this_filepath.is_file():
+                            existing_files.add(line)
+                        else:
+                            missing_files = True
+                            print(f"ERROR! {line} no longer exists!")
+            if missing_files:
+                messagebox.showerror(
+                    "Backup out of date or mismatched",
+                    (
+                        f"This backup doesn't match your current KOTOR installation. Files are missing/changed in your KOTOR install.{os.linesep}"
+                        f"It is important that you uninstall all mods in their installed order when utilizing this feature.{os.linesep}"
+                        f"Also ensure you selected the right mod, and the right KOTOR folder."
+                    ),
+                )
+                return
         all_items_in_backup = list(Path(most_recent_backup_folder).rglob("*"))
         files_in_backup = [item for item in all_items_in_backup if item.is_file()]
         folder_count = len(all_items_in_backup) - len(files_in_backup)
@@ -279,20 +308,31 @@ class App(tk.Tk):
 
         try:
             for file in files_in_backup:
-                relative_path = str(file).replace(str(most_recent_backup_folder), "")
-                destination_path = destination_folder / relative_path.lstrip("\\")
+                destination_path = destination_folder / file.relative_to(most_recent_backup_folder)
                 destination_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy(file, destination_path)
-                self.write_log(f"Restoring backup of '{file.name}' to '{destination_path.parent}'...")
+                self.write_log(
+                    f"Restoring backup of '{file.name}' to '{destination_path.relative_to(destination_folder.parent)}'...",
+                )
         except Exception as e:
             messagebox.showerror(
                 "Unexpected exception restoring backup!",
                 f"Failed to restore backup because of exception:{os.linesep*2}{type(e).__name__}: {e.args[0]}",
             )
-        messagebox.showinfo(
+        while messagebox.askyesno(
             "Uninstall completed!",
-            f"Deleted {deleted_count} files and successfully restored backup {most_recent_backup_folder.name}",
-        )
+            f"Deleted {deleted_count} files and successfully restored backup {most_recent_backup_folder.name}{os.linesep*2}"
+            f"Would you like to delete the backup {most_recent_backup_folder.name} now that it's been restored?",
+        ):
+            try:
+                shutil.rmtree(most_recent_backup_folder)
+                self.write_log(f"Deleted restored backup '{most_recent_backup_folder.name}'")
+                break
+            except PermissionError:
+                messagebox.showerror(
+                    "Permission Error",
+                    "Unable to delete the restored backup due to permission issues. Please try again.",
+                )
 
     def handle_exit_button(self):
         if not self.install_running:
@@ -305,6 +345,8 @@ class App(tk.Tk):
         with contextlib.suppress(Exception):
             self.install_thread._stop()  # type: ignore[hidden method]
             print("force terminate of install thread succeeded")
+        with contextlib.suppress(Exception):
+            ctypes.pythonapi.PyThreadState_SetExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
@@ -626,13 +668,16 @@ class App(tk.Tk):
         self.description_text.see(tk.END)
         self.description_text.config(state=tk.DISABLED)
 
-    def show_error(self, exc_type, exc_value, exc_traceback):
-        """Show error in a dialog."""
-        error = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        root = tk.Tk()
-        root.withdraw()  # Hide root window
-        messagebox.showerror("Error", error)
-        root.destroy()
+
+def custom_excepthook(exc_type, exc_value, exc_traceback):
+    error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    messagebox.showerror("Error", error_msg)
+    root.destroy()
+
+
+sys.excepthook = custom_excepthook
 
 
 def main():
