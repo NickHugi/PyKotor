@@ -156,6 +156,7 @@ class App(tk.Tk):
         self.install_button.place(x=320, y=470, width=75, height=25)
         self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
         self.uninstall_button.place(x=160, y=470, width=75, height=25)
+        self.uninstall_button.place_forget()
 
         self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
         if cmdline_args.game_dir:
