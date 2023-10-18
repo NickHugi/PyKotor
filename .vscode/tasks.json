@@ -146,6 +146,7 @@
         "--onefile",
         "--clean",
         "--name=holopatcher",
+        "--path=${workspaceFolder}",
         "--icon=resources/icons/patcher_icon_v2.png",
         "scripts/holopatcher/__main__.py"
       ],
@@ -160,6 +161,7 @@
         "--onefile",
         "--clean",
         "--name=kotordiff",
+        "--path=${workspaceFolder}",
         "scripts/kotordiff/__main__.py"
       ],
       "problemMatcher": []
