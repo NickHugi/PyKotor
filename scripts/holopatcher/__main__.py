@@ -200,6 +200,8 @@ class App(tk.Tk):
             messagebox.askyesno = MessageboxOverride.askyesno
             messagebox.askyesnocancel = MessageboxOverride.askyesno
             messagebox.askretrycancel = MessageboxOverride.askyesno
+            global messagebox
+            messagebox = MessageboxOverride
         if cmdline_args.install:
             self.oneshot = True
             self.begin_install_thread()
@@ -629,7 +631,7 @@ class App(tk.Tk):
         game_number = self.extract_lookup_game_number(
             changes_ini_path,
         )
-        with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
+        with changes_ini_path.parent.joinpath(namespace_option.info_filename.strip() or "info.rtf").open("r") as rtf:
             self.set_stripped_rtf_text(rtf)
         if game_number:
             self._handle_gamepaths_with_mod(game_number)
