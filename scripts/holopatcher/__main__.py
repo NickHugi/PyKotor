@@ -163,7 +163,7 @@ class App(tk.Tk):
         if cmdline_args.game_dir:
             self.open_kotor(cmdline_args.game_dir)
         if cmdline_args.namespace_option_index:
-            self.namespaces_combobox.set(self.namespaces_combobox["values"].get(cmdline_args.namespace_option_index))
+            self.namespaces_combobox.set(self.namespaces_combobox["values"][cmdline_args.namespace_option_index])
         if not cmdline_args.console:
             self.hide_console()
         if cmdline_args.install or cmdline_args.uninstall:
@@ -316,7 +316,7 @@ class App(tk.Tk):
                 self.write_log(
                     f"Restoring backup of '{file.name}' to '{destination_path.relative_to(destination_folder.parent)}'...",
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             messagebox.showerror(
                 "Unexpected exception restoring backup!",
                 f"Failed to restore backup because of exception:{os.linesep*2}{type(e).__name__}: {e.args[0]}",
