@@ -3,7 +3,6 @@
 import os
 import sys
 import unittest
-from unittest.mock import patch
 from pykotor.tools.path import PurePosixPath as CustomPurePosixPath
 from pykotor.tools.path import PureWindowsPath as CustomPureWindowsPath
 from pykotor.tools.path import WindowsPath as CustomWindowsPath
@@ -158,7 +157,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 else:
                     self.assertEqual(str(PathType("//")), "\\\\")
                 self.assertEqual(str(PathType("C:")), "C:")
-                if sys.version_info < (3, 12):
+                if sys.version_info < (3, 12) or sys.version_info >= (3, 12) and os.name != "nt":
                     self.assertEqual(str(PathType("///")), "/".replace("/", os.sep))
                 else:
                     self.assertEqual(str(PathType("///")), "///".replace("/", os.sep))
@@ -245,7 +244,7 @@ class TestPathlibMixedSlashes(unittest.TestCase):
 
     def test_custom_path_edge_cases_os_specific(self):
         # sourcery skip: extract-duplicate-method
-        for PathType in [CaseAwarePath, CustomPath, CustomPurePath]:
+        for PathType in {CaseAwarePath, CustomPath, CustomPurePath}:
             with self.subTest(PathType=PathType):
                 # Absolute vs Relative Paths
                 self.assertEqual(str(PathType("C:/")), "C:")
