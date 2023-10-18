@@ -23,6 +23,10 @@ if not getattr(sys, "frozen", False):
     if project_root.joinpath("pykotor").exists():
         sys.path.append(str(project_root))
 
+if hasattr(sys, "frozen") and not os.isatty(sys.stdout.fileno()):
+    msg = "This script should only be compiled with the '--console' flag in PyInstaller."
+    raise RuntimeError(msg)
+
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.tools.misc import striprtf
 from pykotor.tools.path import CaseAwarePath, Path, locate_game_path
@@ -54,8 +58,8 @@ def parse_args() -> argparse.Namespace:
         help="Namespace option index",
     )
     parser.add_argument(
-        "--noconsole",
-        action="store_false",
+        "--console",
+        action="store_true",
         help="Hides the console when launching HoloPatcher (default).",
     )
     parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
@@ -163,7 +167,7 @@ class App(tk.Tk):
             self.open_kotor(cmdline_args.game_dir)
         if cmdline_args.namespace_option_index:
             self.namespaces_combobox.set(self.namespaces_combobox["values"].get(cmdline_args.namespace_option_index))
-        if cmdline_args.noconsole:
+        if not cmdline_args.console:
             self.hide_console()
         if cmdline_args.install or cmdline_args.uninstall:
             self.withdraw()
@@ -347,7 +351,7 @@ class App(tk.Tk):
             self.install_thread._stop()  # type: ignore[hidden method]
             print("force terminate of install thread succeeded")
         with contextlib.suppress(Exception):
-            ctypes.pythonapi.PyThreadState_SetExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
