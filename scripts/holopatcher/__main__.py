@@ -57,7 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--console",
         action="store_true",
-        help="Hides the console when launching HoloPatcher (default).",
+        help="Show the console when launching HoloPatcher.",
     )
     parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
     parser.add_argument("--install", action="store_true", help="Starts an install immediately on launch.")
@@ -473,10 +473,14 @@ class App(tk.Tk):
     def begin_install_thread(self):
         if not self.mod_path:
             messagebox.showinfo("No mod chosen", "Select your mod directory before starting an install")
+            if self.oneshot:
+                sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
         game_path = self.gamepaths.get()
         if not game_path:
             messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
+            if self.oneshot:
+                sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
 
         tslpatchdata_root_path = CaseAwarePath(self.mod_path, "tslpatchdata")
