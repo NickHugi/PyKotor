@@ -16,3 +16,6 @@ Pillow~=9.0
 Markdown~=3.3
 jsmin~=3.0
 requests~=2.27
+# For Python 3.12, uncomment the next line and comment the last line
+# git+https://github.com/szabolcsdombi/PyGLM.git@fix-source-dist#egg=PyGLM
+PyGLM~=2.0
