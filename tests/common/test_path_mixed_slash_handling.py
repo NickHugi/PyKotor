@@ -130,8 +130,14 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\\\server\\\\folder")
                 elif os.name == "nt":
                     self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder\\")
-                    self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\server\\folder")
-                    self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\server\\folder")
+                    if sys.version_info < (3, 12):
+                        self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\server\\folder")
+                    else:
+                        self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
+                    if sys.version_info < (3, 12):
+                        self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\server\\folder")
+                    else:
+                        self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
 
                 # Special Characters
                 self.assertEqual(str(PathType("C:/Users/test folder/")), "C:/Users/test folder".replace("/", os.sep))
@@ -147,10 +153,15 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("")), ".")
                 if os.name == "posix":
                     self.assertEqual(str(PathType("//")), "//".replace("/", os.sep))
-                else:
+                elif sys.version_info < (3, 12):
                     self.assertEqual(str(PathType("//")), "\\")
+                else:
+                    self.assertEqual(str(PathType("//")), "\\\\")
                 self.assertEqual(str(PathType("C:")), "C:")
-                self.assertEqual(str(PathType("///")), "/".replace("/", os.sep))
+                if sys.version_info < (3, 12):
+                    self.assertEqual(str(PathType("///")), "/".replace("/", os.sep))
+                else:
+                    self.assertEqual(str(PathType("///")), "///".replace("/", os.sep))
                 self.assertEqual(str(PathType("C:/./Users/../test/")), "C:/Users/../test".replace("/", os.sep))
                 self.assertEqual(str(PathType("~/folder/")), "~/folder".replace("/", os.sep))
 
