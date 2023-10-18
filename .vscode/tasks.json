@@ -136,6 +136,33 @@
         "reveal": "always"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Build HoloPatcher",
+      "type": "shell",
+      "command": "pyinstaller",
+      "args": [
+        "--console",
+        "--onefile",
+        "--clean",
+        "--name=holopatcher",
+        "--icon=resources/icons/patcher_icon_v2.png",
+        "scripts/holopatcher/__main__.py"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build KotorDiff",
+      "type": "shell",
+      "command": "pyinstaller",
+      "args": [
+        "--console",
+        "--onefile",
+        "--clean",
+        "--name=kotordiff",
+        "scripts/kotordiff/__main__.py"
+      ],
+      "problemMatcher": []
     }
   ]
 }

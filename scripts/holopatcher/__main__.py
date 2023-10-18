@@ -23,10 +23,6 @@ if not getattr(sys, "frozen", False):
     if project_root.joinpath("pykotor").exists():
         sys.path.append(str(project_root))
 
-if hasattr(sys, "frozen") and not os.isatty(sys.stdout.fileno()):
-    msg = "This script should only be compiled with the '--console' flag in PyInstaller."
-    raise RuntimeError(msg)
-
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.tools.misc import striprtf
 from pykotor.tools.path import CaseAwarePath, Path, locate_game_path
@@ -37,13 +33,14 @@ from pykotor.tslpatcher.reader import NamespaceReader
 
 class ExitCode(IntEnum):
     SUCCESS = 0
-    NUMBER_OF_ARGS = 1
-    NAMESPACES_INI_NOT_FOUND = 2
-    NAMESPACE_INDEX_OUT_OF_RANGE = 3
-    CHANGES_INI_NOT_FOUND = 4
-    ABORT_INSTALL_UNSAFE = 5
-    EXCEPTION_DURING_INSTALL = 6
-    INSTALL_COMPLETED_WITH_ERRORS = 7
+    UNKNOWN_STARTUP_ERROR = 1
+    NUMBER_OF_ARGS = 2
+    NAMESPACES_INI_NOT_FOUND = 3
+    NAMESPACE_INDEX_OUT_OF_RANGE = 4
+    CHANGES_INI_NOT_FOUND = 5
+    ABORT_INSTALL_UNSAFE = 6
+    EXCEPTION_DURING_INSTALL = 7
+    INSTALL_COMPLETED_WITH_ERRORS = 8
 
 
 def parse_args() -> argparse.Namespace:
