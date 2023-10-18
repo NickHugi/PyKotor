@@ -200,8 +200,6 @@ class App(tk.Tk):
             messagebox.askyesno = MessageboxOverride.askyesno
             messagebox.askyesnocancel = MessageboxOverride.askyesno
             messagebox.askretrycancel = MessageboxOverride.askyesno
-            global messagebox
-            messagebox = MessageboxOverride
         if cmdline_args.install:
             self.oneshot = True
             self.begin_install_thread()
