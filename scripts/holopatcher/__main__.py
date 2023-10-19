@@ -372,7 +372,11 @@ class App(tk.Tk):
                 )
             else:
                 changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
-            with changes_ini_path.parent.joinpath("info.rtf").open("r") as rtf:
+            info_rtf = changes_ini_path.parent.joinpath(namespace_option.info_filename.strip() or "info.rtf")
+            if not info_rtf.exists():
+                messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
+                return
+            with info_rtf.open("r") as rtf:
                 self.set_stripped_rtf_text(rtf)
         except Exception as e:  # noqa: BLE001
             messagebox.showerror(
