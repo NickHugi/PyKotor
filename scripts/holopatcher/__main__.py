@@ -23,12 +23,17 @@ if not getattr(sys, "frozen", False):
     if project_root.joinpath("pykotor").exists():
         sys.path.append(str(project_root))
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.tools.misc import striprtf
 from pykotor.tools.path import CaseAwarePath, Path, locate_game_path
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.reader import NamespaceReader
+
+if TYPE_CHECKING:
+    from io import TextIOWrapper
 
 
 class ExitCode(IntEnum):
@@ -654,7 +659,7 @@ class App(tk.Tk):
         else:
             self.gamepaths.set("Select your KOTOR directory path")
 
-    def set_stripped_rtf_text(self, rtf):
+    def set_stripped_rtf_text(self, rtf: TextIOWrapper):
         stripped_content = striprtf(rtf.read())
         self.description_text.config(state=tk.NORMAL)
         self.description_text.delete(1.0, tk.END)
