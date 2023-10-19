@@ -470,13 +470,14 @@ try:
         if comparison is True:
             sys.exit(0)
         if comparison is False:
-            sys.exit(1)
+            sys.exit(2)
     if comparison is None:
         log_output("Error during comparison")
-        sys.exit(-1)
+        sys.exit(3)
 except KeyboardInterrupt:
     if profiler is not None:
         profiler.disable()
         profiler_output_file = Path("profiler_output.pstat").resolve()
         profiler.dump_stats(str(profiler_output_file))
         log_output(f"Profiler output saved to: {profiler_output_file}")
+    raise
