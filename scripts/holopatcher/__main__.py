@@ -629,10 +629,14 @@ class App(tk.Tk):
         game_number = self.extract_lookup_game_number(
             changes_ini_path,
         )
-        with changes_ini_path.parent.joinpath(namespace_option.info_filename.strip() or "info.rtf").open("r") as rtf:
-            self.set_stripped_rtf_text(rtf)
         if game_number:
             self._handle_gamepaths_with_mod(game_number)
+        info_rtf = changes_ini_path.parent.joinpath(namespace_option.info_filename.strip() or "info.rtf")
+        if not info_rtf.exists():
+            messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
+            return
+        with info_rtf.open("r") as rtf:
+            self.set_stripped_rtf_text(rtf)
 
     def _handle_gamepaths_with_mod(self, game_number):
         game = Game(game_number)
