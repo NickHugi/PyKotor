@@ -191,15 +191,11 @@ class ModInstaller:
         return self._config
 
     def game(self) -> Game:
-        if (self.game_path.joinpath("streamvoice").exists() or self.game_path.joinpath("swkotor2.exe")) and is_kotor_install_dir(
-            self.game_path,
-        ):
+        if (self.game_path.joinpath("streamvoice").exists() or self.game_path.joinpath("swkotor2.exe")):
             return Game(2)
-        if (self.game_path.joinpath("streamwaves").exists() or self.game_path.joinpath("swkotor.exe")) and is_kotor_install_dir(
-            self.game_path,
-        ):
+        if (self.game_path.joinpath("streamwaves").exists() or self.game_path.joinpath("swkotor.exe")):
             return Game(1)
-        msg = "Could not find the game executable!"
+        msg = "Could not determine which KOTOR game to load!"
         raise ValueError(msg)
 
     # extract into multiple funcs perhaps?
