@@ -183,34 +183,50 @@ ASPECT_RATIO_TO_RESOLUTION = {
     # Other common ratios (especially for tablets, phones, or other devices) can be added as well.
 }
 
-
-def main():
-    input_file: CaseAwarePath = parser_args.input
-
-    if input_file.suffix.lower() != ".gui":
-        print(f"Invalid GUI file: {input_file!s}")
+def process_file(gui_file: CaseAwarePath, output_dir: CaseAwarePath):
+    if gui_file.suffix.lower() != ".gui":
+        print(f"Invalid GUI file: {gui_file!s}")
         return
 
-    gui_data: GFF | None = read_gff(input_file)
+    gui_data: GFF | None = read_gff(gui_file)
     if not gui_data:
-        print(f"Could not read GUI file: {input_file!s}")
+        print(f"Could not read GUI file: {gui_file!s}")
         return
 
-    log("Using hardcoded aspect ratios and resolutions.")
+    log(f"Processing GUI file: {gui_file!s}")
 
     # Processing and saving the resolutions based on the ASPECT_RATIO_TO_RESOLUTION dictionary
     for aspect_ratio in ASPECT_RATIO_TO_RESOLUTION:
-        aspect_ratio_dir: CaseAwarePath = parser_args.output / aspect_ratio.replace(":", "x")
+        aspect_ratio_dir: CaseAwarePath = output_dir / aspect_ratio.replace(":", "x")
         aspect_ratio_dir.mkdir(exist_ok=True, parents=True)
         log(f"Created directory for aspect ratio {aspect_ratio} at {aspect_ratio_dir!s}")
-        for (width, height) in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
 
+        for (width, height) in ASPECT_RATIO_TO_RESOLUTION[aspect_ratio]:
             adjusted_gui_data = adjust_controls_for_resolution(gui_data, width, height)
             output_filename = f"{width}x{height}.gui"
             output_path: CaseAwarePath = aspect_ratio_dir / output_filename
             output_path.touch(exist_ok=True)
             write_gff(adjusted_gui_data, output_path)
             log(f"Processed and wrote GUI data for resolution {width}x{height} at {output_path!s}")
+
+def main():
+    input_path: CaseAwarePath = parser_args.input
+
+    if input_path.is_file():
+        process_file(input_path, parser_args.output)
+
+    elif input_path.is_dir():
+        for gui_file in input_path.rglob("*.gui", case_sensitive=False):
+            relative_path = gui_file.relative_to(input_path)
+            new_output_dir = parser_args.output / relative_path.parent / gui_file.stem
+            new_output_dir.mkdir(parents=True, exist_ok=True)
+            process_file(gui_file, new_output_dir)
+
+    else:
+        print(f"Invalid input: {input_path!s}. It's neither a file nor a directory.")
+        return
+
+main()
 
 main()
 
