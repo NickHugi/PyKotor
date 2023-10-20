@@ -413,6 +413,16 @@ class App(tk.Tk):
                 if match:
                     return int(match[1])
         return None
+    
+    def check_access(self, directory: Path):
+        if directory.has_access():
+            return True
+        if messagebox.askyesno("Permission error", f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to gain permission now?"):
+            if not directory.gain_access():
+                messagebox.showerror("Unauthorized", "Could not gain permission! Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.")
+                return False
+        messagebox.showerror("Unauthorized", f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep*2}Please fix this problem before attempting an installation. Ensure the folder is writeable or rerun holopatcher with elevated privileges.")
+        return False
 
     def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
         try:
@@ -445,6 +455,9 @@ class App(tk.Tk):
                 self.mod_path = ""
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
+                return
+
+            self.check_access(tslpatchdata_path)
         except Exception as e:  # noqa: BLE001
             error_name = type(e).__name__
             if isinstance(e, FileNotFoundError) and len(e.args) > 1:
@@ -461,6 +474,7 @@ class App(tk.Tk):
             if not directory_path_str:
                 return
             directory = CaseAwarePath(directory_path_str)
+            self.check_access(directory)
             directory_str = str(directory)
             self.gamepaths.set(str(directory))
             if directory_str not in self.gamepaths["values"]:
@@ -511,6 +525,7 @@ class App(tk.Tk):
             if self.oneshot:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
+        self.check_access(Path(self.gamepaths.get()))
 
         tslpatchdata_root_path = CaseAwarePath(self.mod_path, "tslpatchdata")
         namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())

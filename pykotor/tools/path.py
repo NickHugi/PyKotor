@@ -14,6 +14,7 @@ from pathlib import (
     WindowsPath,  # type: ignore[pylance_reportGeneralTypeIssues]
 )
 from typing import Generator, List, Tuple, Union
+import uuid
 
 PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
@@ -215,51 +216,6 @@ class BasePath:
             key (path-like object or str path):
         """
         return self._create_instance(self, *args)
-    
-    # Safe rglob operation
-    def safe_rglob(self: Path, pattern: str):
-        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
-            yield from self.rglob(pattern)
-
-    # Safe iterdir operation
-    def safe_iterdir(self: Path):
-        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
-            yield from self.iterdir()
-
-    # Safe is_dir operation
-    def safe_isdir(self: Path):
-        try:
-            return self.is_dir()
-        except Exception:
-            return False
-
-    # Safe is_file operation
-    def safe_isfile(self: Path):
-        try:
-            return self.is_file()
-        except Exception:
-            return False
-
-    # Safe exists operation
-    def safe_exists(self: Path):
-        try:
-            return self.exists()
-        except Exception:
-            return False
-    
-    # Safe stat operation
-    def safe_stat(self: Path, *args, **kwargs):
-        try:
-            return self.stat(*args, **kwargs)
-        except Exception:
-            return None
-    
-    # Safe open operation
-    def safe_open(self: Path, *args, **kwargs):
-        try:
-            return self.open(*args, **kwargs)
-        except Exception:
-            return None
 
     def endswith(self, *text: str, case_sensitive=False) -> bool:
         if case_sensitive:
@@ -309,6 +265,122 @@ class PureWindowsPath(BasePath, PureWindowsPath):
 
 class Path(BasePath, Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
+    
+    # Safe rglob operation
+    def safe_rglob(self, pattern: str):
+        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
+            yield from self.rglob(pattern)
+
+    # Safe iterdir operation
+    def safe_iterdir(self):
+        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
+            yield from self.iterdir()
+
+    # Safe is_dir operation
+    def safe_isdir(self):
+        try:
+            return self.is_dir()
+        except Exception:
+            return False
+
+    # Safe is_file operation
+    def safe_isfile(self):
+        try:
+            return self.is_file()
+        except Exception:
+            return False
+
+    # Safe exists operation
+    def safe_exists(self):
+        try:
+            return self.exists()
+        except Exception:
+            return False
+    
+    # Safe stat operation
+    def safe_stat(self, *args, **kwargs):
+        try:
+            return self.stat(*args, **kwargs)
+        except Exception:
+            return None
+    
+    # Safe open operation
+    def safe_open(self, *args, **kwargs):
+        try:
+            return self.open(*args, **kwargs)
+        except Exception:
+            return None
+
+    def has_access(self, recurse=False) -> bool:
+        """
+        Check if we have access to the path.
+        :param path: The pathlib.Path object to check (can be a file or a folder)
+        :return: True if path can be modified, False otherwise.
+        """
+        try:
+            path_obj = Path(self)
+            if path_obj.is_dir():
+                test_path = path_obj / f"temp_test_file_{uuid.uuid4().hex}.tmp"
+                with test_path.open('w') as f:
+                    f.write("test")
+                test_path.unlink()
+                success = True
+                if recurse:
+                    for f in path_obj.rglob("*"):
+                        success &= f.has_access()
+                return success
+            if path_obj.is_file():
+                access =  os.access(path_obj, os.R_OK) and os.access(path_obj, os.W_OK)
+                return access
+            return False
+        except:
+            return False
+
+    def gain_access(self, mode=0o755, owner_uid=-1, owner_gid=-1):
+        success = True
+
+        try:
+            if not self.has_access():
+                if owner_uid != -1 or owner_gid != -1 and os.name != "nt":
+                    os.chown(self, owner_uid, owner_gid)
+            if self.has_access():
+                return True
+
+        except Exception as e:
+            print(f"Error during chown for {self!s}: {e}")
+            success = False
+
+        try:
+            if not self.has_access():
+                self.chmod(mode)
+            if self.has_access():
+                return True
+
+        except Exception as e:
+            print(f"Error during chmod for {self!s}: {e}")
+            success = False
+
+        try:
+            if not self.has_access():
+                # TODO: prompt the user for access with os-native methods.
+                if platform.system() == "Darwin":
+                    self.request_mac_permission()
+                elif sys.platform == "Linux":
+                    self.request_linux_permission()
+                elif sys.platform == "Windows":
+                    self.request_windows_permission()
+
+        except Exception as e:
+            print(f"Error during platform-specific permission request for {self!s}: {e}")
+            success = False
+
+        # If directory, recurse into it
+        if self.safe_isdir():
+            for child in self.safe_iterdir():
+                child_success = child.gain_access(mode, owner_uid, owner_gid)
+                success = success and child_success
+
+        return success
 
 
 class PosixPath(BasePath, PosixPath):
