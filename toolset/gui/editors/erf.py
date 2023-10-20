@@ -258,7 +258,7 @@ class ERFEditorTable(QTableView):
     def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
         tempDir = CaseAwarePath(GlobalSettings().extractPath)
 
-        if not tempDir or not tempDir.exists() or not tempDir.is_dir():
+        if not tempDir or not tempDir.safe_isdir():
             return
 
         urls = []

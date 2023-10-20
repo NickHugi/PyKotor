@@ -721,7 +721,7 @@ class FolderObserver(FileSystemEventHandler):
         override_path = self.window.active.override_path()
         modified_path = CaseAwarePath(event.src_path)
 
-        is_dir = modified_path.is_dir()
+        is_dir = modified_path.safe_isdir()
 
         if module_path == modified_path and not is_dir:
             module_file = modified_path.name

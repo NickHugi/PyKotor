@@ -297,8 +297,8 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...")
 
     # Store relative paths instead of just filenames
-    files_path1 = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.rglob("*") if f.is_file()}
-    files_path2 = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.rglob("*") if f.is_file()}
+    files_path1 = {f.relative_to(c_dir1).as_posix().lower() for f in c_dir1.safe_rglob("*") if f.safe_isfile()}
+    files_path2 = {f.relative_to(c_dir2).as_posix().lower() for f in c_dir2.safe_rglob("*") if f.safe_isfile()}
 
     # Merge both sets to iterate over unique relative paths
     all_files = files_path1.union(files_path2)
@@ -352,7 +352,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     c_path: CaseAwarePath = CaseAwarePath(path)
-    return c_path.is_dir() and c_path.joinpath("chitin.key").exists()
+    return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 
 def run_differ_from_args(path1: CaseAwarePath, path2: CaseAwarePath) -> bool | None:
@@ -364,9 +364,9 @@ def run_differ_from_args(path1: CaseAwarePath, path2: CaseAwarePath) -> bool | N
         return None
     if is_kotor_install_dir(path1) and is_kotor_install_dir(path2):
         return diff_installs(path1, path2)
-    if path1.is_dir() and path2.is_dir():
+    if path1.safe_isdir() and path2.safe_isdir():
         return diff_directories(path1, path2)
-    if path1.is_file() and path2.is_file():
+    if path1.safe_isfile() and path2.safe_isfile():
         return diff_files(path1, path2)
     msg = f"--path1='{path1.name}' and --path2='{path2.name}' must be the same type"
     raise ValueError(msg)

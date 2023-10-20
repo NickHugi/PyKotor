@@ -279,7 +279,7 @@ class App(tk.Tk):
 
                     if line:
                         this_filepath = Path(line)
-                        if this_filepath.is_file():
+                        if this_filepath.safe_isfile():
                             existing_files.add(line)
                         else:
                             missing_files = True
@@ -294,8 +294,8 @@ class App(tk.Tk):
                     ),
                 )
                 return
-        all_items_in_backup = list(Path(most_recent_backup_folder).rglob("*"))
-        files_in_backup = [item for item in all_items_in_backup if item.is_file()]
+        all_items_in_backup = list(Path(most_recent_backup_folder).safe_rglob("*"))
+        files_in_backup = [item for item in all_items_in_backup if item.safe_isfile()]
         folder_count = len(all_items_in_backup) - len(files_in_backup)
 
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]

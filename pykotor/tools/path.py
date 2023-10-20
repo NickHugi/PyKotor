@@ -215,6 +215,51 @@ class BasePath:
             key (path-like object or str path):
         """
         return self._create_instance(self, *args)
+    
+    # Safe rglob operation
+    def safe_rglob(self: Path, pattern: str):
+        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
+            yield from self.rglob(pattern)
+
+    # Safe iterdir operation
+    def safe_iterdir(self: Path):
+        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
+            yield from self.iterdir()
+
+    # Safe is_dir operation
+    def safe_isdir(self: Path):
+        try:
+            return self.is_dir()
+        except Exception:
+            return False
+
+    # Safe is_file operation
+    def safe_isfile(self: Path):
+        try:
+            return self.is_file()
+        except Exception:
+            return False
+
+    # Safe exists operation
+    def safe_exists(self: Path):
+        try:
+            return self.exists()
+        except Exception:
+            return False
+    
+    # Safe stat operation
+    def safe_stat(self: Path, *args, **kwargs):
+        try:
+            return self.stat(*args, **kwargs)
+        except Exception:
+            return None
+    
+    # Safe open operation
+    def safe_open(self: Path, *args, **kwargs):
+        try:
+            return self.open(*args, **kwargs)
+        except Exception:
+            return None
 
     def endswith(self, *text: str, case_sensitive=False) -> bool:
         if case_sensitive:
@@ -309,18 +354,8 @@ class CaseAwarePath(Path):
             next_path: Path = Path(*parts[: i + 1])
 
             # Find the first non-existent case-sensitive file/folder in hierarchy
-            if not next_path.is_dir() and base_path.is_dir():
-                # iterate ignoring permission/read issues from the directory.
-                def safe_iterdir(curpath: Path):
-                    with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
-                        yield from curpath.iterdir()
-                def safe_isdir(curpath: Path):
-                    try:
-                        return curpath.is_dir()
-                    except (PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
-                        return False
-
-                base_path_items_generator = (item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or safe_isdir(item))
+            if not next_path.safe_isdir() and base_path.safe_isdir():
+                base_path_items_generator = (item for item in base_path.safe_iterdir() if (i == len(parts) - 1) or item.safe_isdir())
 
                 # if multiple are found, use the one that most closely matches our case
                 # A closest match is defined in this context as the file/folder's name which has the most case-sensitive positional character matches

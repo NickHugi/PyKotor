@@ -7,7 +7,7 @@ QRC_TARGET_DIR = "../toolset/"
 
 
 def get_ui_files():
-    return list(CaseAwarePath(".").rglob("*.ui"))
+    return list(CaseAwarePath(".").safe_rglob("*.ui"))
 
 
 def compile_ui(ignore_timestamp: bool = False):

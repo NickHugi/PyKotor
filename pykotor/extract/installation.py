@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
     c_path: CaseAwarePath = CaseAwarePath(path)
-    return c_path.is_dir() and c_path.joinpath("chitin.key").exists()
+    return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 
 # The SearchLocation class is an enumeration that represents different locations for searching.
@@ -242,7 +242,7 @@ class Installation:
             resource_path = self._path
             for folder_name in folder_names:
                 resource_path = self._path / folder_name
-                if resource_path.is_dir():
+                if resource_path.safe_isdir():
                     return resource_path
             if optional:
                 return self._path / folder_names[0]
@@ -343,7 +343,7 @@ class Installation:
             target_dirs = [override_path / directory]
             self._override[directory] = []
         else:
-            target_dirs = [f for f in override_path.rglob("*") if f.is_dir()]
+            target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
             target_dirs.append(override_path)
             self._override = CaseInsensitiveDict()
 
@@ -375,7 +375,7 @@ class Installation:
             self.log.add_warning(f"The '{c_path.name}' folder did not exist at '{c_path!s}' when loading the installation, skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(c_path.rglob("*")) if recurse else list(c_path.iterdir())
+        files_list: list[CaseAwarePath] = list(c_path.safe_rglob("*")) if recurse else list(c_path.safe_iterdir())
 
         for file in files_list:
             if capsule_check and capsule_check(file.name):
@@ -774,7 +774,7 @@ class Installation:
             for folderpath in values:
                 c_folderpath = CaseAwarePath(folderpath)
                 for file in c_folderpath.iterdir():
-                    if not file.is_file():
+                    if not file.safe_isfile():
                         continue
                     for query in queries:
                         with suppress(Exception):
@@ -934,7 +934,7 @@ class Installation:
         def check_folders(values: list[CaseAwarePath | str]):
             for folder in values:
                 c_folder = folder if isinstance(folder, CaseAwarePath) else CaseAwarePath(folder)
-                for file in [file for file in c_folder.iterdir() if file.is_file()]:
+                for file in [file for file in c_folder.iterdir() if file.safe_isfile()]:
                     identifier = ResourceIdentifier.from_path(file.name)
                     filepath: CaseAwarePath = CaseAwarePath(c_folder, file)
                     for resname in queries:
@@ -1065,7 +1065,7 @@ class Installation:
         def check_folders(values: list[str] | list[CaseAwarePath]):
             for folder in values:
                 filepath: CaseAwarePath = CaseAwarePath(folder)
-                for file in [file for file in filepath.iterdir() if file.is_file()]:
+                for file in [file for file in filepath.iterdir() if file.safe_isfile()]:
                     identifier = ResourceIdentifier.from_path(file.name)
                     for resname in resnames:
                         if identifier.resname == resname and identifier.restype in texture_types:
