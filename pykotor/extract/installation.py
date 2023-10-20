@@ -281,7 +281,7 @@ class Installation:
         self,
     ) -> None:
         """Reloads the list of module files in the rims folder linked to the Installation."""
-        self._rims = self.load_resources_list(  # type: ignore[always a dict]
+        self._rims = self.load_resources(  # type: ignore[always a dict]
             self.rims_path(),
             capsule_check=is_rim_file,
             recurse=False,
@@ -289,7 +289,7 @@ class Installation:
 
     def load_modules(self) -> None:
         """Reloads the list of modules files in the modules folder linked to the Installation."""
-        self._modules = self.load_resources_list(  # type: ignore[always a dict]
+        self._modules = self.load_resources(  # type: ignore[always a dict]
             self.module_path(),
             capsule_check=is_capsule_file,
             recurse=False,
@@ -307,7 +307,7 @@ class Installation:
         self,
     ) -> None:
         """Reloads the list of modules in the lips folder linked to the Installation."""
-        self._lips = self.load_resources_list(  # type: ignore[always a dict]
+        self._lips = self.load_resources(  # type: ignore[always a dict]
             self.lips_path(),
             capsule_check=is_mod_file,
             recurse=False,
@@ -317,7 +317,7 @@ class Installation:
         self,
     ) -> None:
         """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
-        self._texturepacks = self.load_resources_list(  # type: ignore[always a dict]
+        self._texturepacks = self.load_resources(  # type: ignore[always a dict]
             self.texturepacks_path(),
             capsule_check=is_erf_file,
             recurse=False,
@@ -350,12 +350,12 @@ class Installation:
 
         for folder in target_dirs:
             relative_folder = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
-            self._override[relative_folder] = self.load_resources_list(
+            self._override[relative_folder] = self.load_resources(
                 folder,
                 recurse=False,  # we already are recursing here in load_override
             )
 
-    def load_resources_list(self, path: os.PathLike | str, capsule_check=None, recurse=True) -> dict[str, list[FileResource]] | list[FileResource]:
+    def load_resources(self, path: os.PathLike | str, capsule_check=None, recurse=True) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in the provided list.
 
         Args:
@@ -399,21 +399,21 @@ class Installation:
 
     def load_streammusic(self) -> None:
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
-        self._streammusic = self.load_resources_list(  # type: ignore[always a list]
+        self._streammusic = self.load_resources(  # type: ignore[always a list]
             self.streammusic_path(),
             recurse=False,
         )
 
     def load_streamsounds(self) -> None:
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
-        self._streamsounds = self.load_resources_list(  # type: ignore[always a list]
+        self._streamsounds = self.load_resources(  # type: ignore[always a list]
             self.streamsounds_path(),
             recurse=False,
         )
 
     def load_streamwaves(self) -> None:
         """Reloads the list of resources in the streamvoice/streamwaves folder linked to the Installation."""
-        self._streamwaves = self.load_resources_list(  # type: ignore[always a list]
+        self._streamwaves = self.load_resources(  # type: ignore[always a list]
             self.streamwaves_path(),
             recurse=True,
         )
