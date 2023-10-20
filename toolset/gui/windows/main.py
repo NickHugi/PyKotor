@@ -363,7 +363,7 @@ class ToolWindow(QMainWindow):
         openResourceEditor(filepath, "dialog", ResourceType.TLK, data, self.active, self)
 
     def openActiveJournal(self) -> None:
-        self.active.load_override("")
+        self.active.load_override(".")
         res = self.active.resource("global", ResourceType.JRL, [SearchLocation.OVERRIDE, SearchLocation.CHITIN])
         openResourceEditor(res.filepath, "global", ResourceType.JRL, res.data, self.active, self)
 
@@ -480,7 +480,7 @@ class ToolWindow(QMainWindow):
             item.setData(module, QtCore.Qt.UserRole)
 
             # Some users may choose to have items representing RIM files to have grey text.
-            if self.settings.greyRIMText and module.lower().endswith(".rim"):
+            if self.settings.greyRIMText and is_rim_file(module):
                 item.setForeground(self.palette().shadow())
 
             modules.append(item)
@@ -493,7 +493,7 @@ class ToolWindow(QMainWindow):
 
         sections = []
         for directory in self.active.override_list():
-            section = QStandardItem(directory if directory != "" else "[Root]")
+            section = QStandardItem(directory if directory != "." else "[Root]")
             section.setData(directory, QtCore.Qt.UserRole)
             sections.append(section)
         self.ui.overrideWidget.setSections(sections)

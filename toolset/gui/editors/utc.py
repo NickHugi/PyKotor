@@ -455,7 +455,7 @@ class UTCEditor(Editor):
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
-            self._installation.load_override("")
+            self._installation.load_override(".")
 
     def openInventory(self) -> None:
         droid = self.ui.raceSelect.currentIndex() == 0
