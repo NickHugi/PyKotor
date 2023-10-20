@@ -48,7 +48,7 @@ class ExitCode(IntEnum):
     INSTALL_COMPLETED_WITH_ERRORS = 8
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args():
     parser = argparse.ArgumentParser(description="HoloPatcher CLI")
 
     # Positional arguments for the old syntax
