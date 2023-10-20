@@ -165,6 +165,20 @@
         "scripts/kotordiff/__main__.py"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "Build GUI Creator",
+      "type": "shell",
+      "command": "pyinstaller",
+      "args": [
+        "--console",
+        "--onefile",
+        "--clean",
+        "--name=gui_creator",
+        "--path=${workspaceFolder}",
+        "scripts/guicreator/__main__.py"
+      ],
+      "problemMatcher": []
     }
   ]
 }
