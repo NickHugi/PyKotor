@@ -312,10 +312,15 @@ class CaseAwarePath(Path):
             if not next_path.is_dir() and base_path.is_dir():
                 # iterate ignoring permission/read issues from the directory.
                 def safe_iterdir(curpath: Path):
-                    with contextlib.suppress(PermissionError, IOError, IsADirectoryError):
+                    with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
                         yield from curpath.iterdir()
+                def safe_isdir(curpath: Path):
+                    try:
+                        return curpath.is_dir()
+                    except (PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
+                        return False
 
-                base_path_items_generator = (item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or item.is_dir())
+                base_path_items_generator = (item for item in safe_iterdir(base_path) if (i == len(parts) - 1) or safe_isdir(item))
 
                 # if multiple are found, use the one that most closely matches our case
                 # A closest match is defined in this context as the file/folder's name which has the most case-sensitive positional character matches
