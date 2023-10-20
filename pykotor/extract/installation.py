@@ -282,7 +282,7 @@ class Installation:
     ) -> None:
         """Reloads the list of module files in the rims folder linked to the Installation."""
         self._rims = self.load_resources_list(  # type: ignore[always a dict]
-            self.texturepacks_path(),
+            self.rims_path(),
             capsule_check=is_rim_file,
             recurse=False,
         )
@@ -290,7 +290,7 @@ class Installation:
     def load_modules(self) -> None:
         """Reloads the list of modules files in the modules folder linked to the Installation."""
         self._modules = self.load_resources_list(  # type: ignore[always a dict]
-            self.texturepacks_path(),
+            self.module_path(),
             capsule_check=is_capsule_file,
             recurse=False,
         )
