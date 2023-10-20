@@ -52,7 +52,7 @@ class Capsule:
         resref: str,
         restype: ResourceType,
         reload: bool = False,
-    ) -> bytes:
+    ) -> bytes | None:
         """Returns the bytes data of the specified resource. If the resource does not exist then returns None instead.
 
         Args:
@@ -69,8 +69,8 @@ class Capsule:
             self.reload()
 
         query = ResourceIdentifier(resref, restype)
-        resource = next(resource for resource in self._resources if resource == query)
-        return resource.data()
+        resource = next((resource for resource in self._resources if resource == query), None)
+        return resource.data() if resource else None
 
     def batch(
         self,
