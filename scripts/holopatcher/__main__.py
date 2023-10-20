@@ -415,12 +415,12 @@ class App(tk.Tk):
                     return int(match[1])
         return None
     
-    def check_access(self, directory: Path):
-        if directory.has_access():
+    def check_access(self, directory: Path, recurse=False):
+        if directory.has_access(recurse):
             return True
-        if messagebox.askyesno("Permission error", f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to gain permission now?"):
+        if messagebox.askyesno("Permission error", f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?"):
             if not directory.gain_access():
-                messagebox.showerror("Unauthorized", "Could not gain permission! Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.")
+                messagebox.showerror("Could not gain permission!", "Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.")
                 return False
         messagebox.showerror("Unauthorized", f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep*2}Please fix this problem before attempting an installation. Ensure the folder is writeable or rerun holopatcher with elevated privileges.")
         return False
@@ -458,7 +458,7 @@ class App(tk.Tk):
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
                 return
 
-            self.check_access(tslpatchdata_path)
+            self.check_access(tslpatchdata_path, recurse=True)
         except Exception as e:  # noqa: BLE001
             error_name = type(e).__name__
             if isinstance(e, FileNotFoundError) and len(e.args) > 1:
