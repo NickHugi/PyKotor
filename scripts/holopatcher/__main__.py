@@ -369,8 +369,9 @@ class App(tk.Tk):
 
     def move_cursor_to_end(self):
         self.gamepaths.focus_set()
-        self.gamepaths.icursor(tk.END)
-        self.gamepaths.xview(tk.END)
+        position = len(self.gamepaths.get())
+        self.gamepaths.icursor(position)
+        self.gamepaths.xview(position)
 
     def on_namespace_option_chosen(self, event):
         try:
