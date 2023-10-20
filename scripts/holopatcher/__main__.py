@@ -440,17 +440,9 @@ class App(tk.Tk):
             if not directory_path_str:
                 return
             directory = CaseAwarePath(directory_path_str)
-
-            # handle possibility of user selecting a nested folder within KOTOR dir (usually override)
-            while (
-                directory.parent.name
-                and directory.parent.name != directory.parts[1]
-                and not directory.joinpath("chitin.key").exists()
-            ):
-                directory = directory.parent
-            if not default_kotor_dir_str and not directory.joinpath("chitin.key").exists():
-                messagebox.showerror("Invalid KOTOR directory", "Select a valid KOTOR installation.")
-                return
+            directory_str = str(directory)
+            if directory_str not in self.gamepaths["values"]:
+                self.gamepaths["values"] = self.gamepaths["values"] + (directory_str,)
             self.gamepaths.set(str(directory))
             self.after(10, self.move_cursor_to_end)
         except Exception as e:  # noqa: BLE001
@@ -480,13 +472,13 @@ class App(tk.Tk):
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
     def begin_install_thread(self):
-        if not self.mod_path:
+        if not self.mod_path or not CaseAwarePath(self.mod_path).exists():
             messagebox.showinfo("No mod chosen", "Select your mod directory before starting an install")
             if self.oneshot:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
         game_path = self.gamepaths.get()
-        if not game_path:
+        if not game_path or not CaseAwarePath(game_path).exists():
             messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
             if self.oneshot:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
@@ -574,7 +566,11 @@ class App(tk.Tk):
             )
 
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
-        short_error_msg = f"{type(e).__name__}: {e.args[0]}"
+        error_name = type(e).__name__
+        if isinstance(e, FileNotFoundError) and len(e.args) > 1:
+            short_error_msg = f"{e.args[1]}: {e.filename}"
+        else:
+            short_error_msg = f"{error_name}: {e.args[0]}"
         self.write_log(short_error_msg)
         installer.log.add_error("The installation was aborted with errors")
         log_file_path = tslpatchdata_root_path.parent / "installlog.txt"
@@ -583,7 +579,7 @@ class App(tk.Tk):
                 log_file.write(f"{log.message}\n")
             log_file.write(f"{traceback.format_exc()}\n")
         messagebox.showerror(
-            "Error",
+            error_name,
             f"An unexpected error occurred during the installation and the installation was forced to terminate:{os.linesep*2}{short_error_msg}",
         )
         self.install_running = False
@@ -649,15 +645,10 @@ class App(tk.Tk):
 
     def _handle_gamepaths_with_mod(self, game_number):
         game = Game(game_number)
-        prechosen_gamepath = self.gamepaths.get()
         gamepaths_list = [str(path) for path in self.default_game_paths[game] if path.exists()]
         if game == Game.K2:
             gamepaths_list.extend([str(path) for path in self.default_game_paths[Game.K1] if path.exists()])
         self.gamepaths["values"] = gamepaths_list
-        if prechosen_gamepath in self.gamepaths["values"]:
-            self.gamepaths.set(prechosen_gamepath)
-        else:
-            self.gamepaths.set("Select your KOTOR directory path")
 
     def set_stripped_rtf_text(self, rtf: TextIOWrapper):
         stripped_content = striprtf(rtf.read())
