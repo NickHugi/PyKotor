@@ -462,9 +462,9 @@ class App(tk.Tk):
                 return
             directory = CaseAwarePath(directory_path_str)
             directory_str = str(directory)
-            if directory_str not in self.gamepaths["values"]:
-                self.gamepaths["values"] = self.gamepaths["values"] + (directory_str,)
             self.gamepaths.set(str(directory))
+            if directory_str not in self.gamepaths["values"]:
+                self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
             self.after(10, self.move_cursor_to_end)
         except Exception as e:  # noqa: BLE001
             error_name = type(e).__name__
