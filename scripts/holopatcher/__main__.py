@@ -322,9 +322,16 @@ class App(tk.Tk):
                     f"Restoring backup of '{file.name}' to '{destination_path.relative_to(destination_folder.parent)}'...",
                 )
         except Exception as e:  # noqa: BLE001
+            error_name = type(e).__name__
+            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
+                short_error_msg = f"{e.args[1]}: {e.filename}"
+            elif e.args:
+                short_error_msg = f"{error_name}: {e.args[0]}"
+            else:
+                short_error_msg = f"{error_name}"
             messagebox.showerror(
                 "Unexpected exception restoring backup!",
-                f"Failed to restore backup because of exception:{os.linesep*2}{type(e).__name__}: {e.args[0]}",
+                f"Failed to restore backup because of exception:{os.linesep*2}{short_error_msg}",
             )
         while messagebox.askyesno(
             "Uninstall completed!",
@@ -384,9 +391,16 @@ class App(tk.Tk):
             with info_rtf.open("r") as rtf:
                 self.set_stripped_rtf_text(rtf)
         except Exception as e:  # noqa: BLE001
+            error_name = type(e).__name__
+            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
+                short_error_msg = f"{e.args[1]}: {e.filename}"
+            elif e.args:
+                short_error_msg = f"{error_name}: {e.args[0]}"
+            else:
+                short_error_msg = f"{error_name}"
             messagebox.showerror(
                 "Error",
-                f"An unexpected error occurred while loading namespace option: {type(e).__name__}: {e.args[0]}",
+                f"An unexpected error occurred while loading namespace option: {short_error_msg}",
             )
 
     def extract_lookup_game_number(self, changes_path: Path):
@@ -432,7 +446,14 @@ class App(tk.Tk):
                 if not default_directory_path_str:  # don't show the error if the cwd was attempted
                     messagebox.showerror("Error", "Could not find a mod located at the given folder.")
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {type(e).__name__}: {e.args[0]}")
+            error_name = type(e).__name__
+            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
+                short_error_msg = f"{e.args[1]}: {e.filename}"
+            elif e.args:
+                short_error_msg = f"{error_name}: {e.args[0]}"
+            else:
+                short_error_msg = f"{error_name}"
+            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {short_error_msg}")
 
     def open_kotor(self, default_kotor_dir_str=None) -> None:
         try:
@@ -446,7 +467,14 @@ class App(tk.Tk):
             self.gamepaths.set(str(directory))
             self.after(10, self.move_cursor_to_end)
         except Exception as e:  # noqa: BLE001
-            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {type(e).__name__}: {e.args[0]}")
+            error_name = type(e).__name__
+            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
+                short_error_msg = f"{e.args[1]}: {e.filename}"
+            elif e.args:
+                short_error_msg = f"{error_name}: {e.args[0]}"
+            else:
+                short_error_msg = f"{error_name}"
+            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {short_error_msg}")
 
     def begin_install(self) -> None:
         try:
@@ -569,8 +597,10 @@ class App(tk.Tk):
         error_name = type(e).__name__
         if isinstance(e, FileNotFoundError) and len(e.args) > 1:
             short_error_msg = f"{e.args[1]}: {e.filename}"
-        else:
+        elif e.args:
             short_error_msg = f"{error_name}: {e.args[0]}"
+        else:
+            short_error_msg = f"{error_name}"
         self.write_log(short_error_msg)
         installer.log.add_error("The installation was aborted with errors")
         log_file_path = tslpatchdata_root_path.parent / "installlog.txt"
