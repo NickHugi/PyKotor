@@ -167,6 +167,7 @@ class Installation:
         return self._find_resource_folderpath(
             ("Override",),
             "Could not find the Override folder in '{}'.",
+            optional=True,
         )
 
     def lips_path(self) -> CaseAwarePath:
