@@ -69,10 +69,10 @@ def adjust_controls_for_resolution(gui_data: GFF, target_width, target_height):
 
     for i, control_struct in enumerate(gui_data.root._fields["CONTROLS"]._value):
         if new_gff.root._fields["CONTROLS"]._value._structs[i]._fields.get("SCROLLBAR"):
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("TOP", scale_value(control_struct._fields["EXTENT"]._value["TOP"], height_scale_factor))
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("LEFT", scale_value(control_struct._fields["EXTENT"]._value["LEFT"], width_scale_factor))
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("HEIGHT", scale_value(control_struct._fields["EXTENT"]._value["HEIGHT"], height_scale_factor))
-            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("WIDTH", scale_value(control_struct._fields["EXTENT"]._value["WIDTH"], width_scale_factor))
+            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("TOP", scale_value(control_struct._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["TOP"], height_scale_factor))
+            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("LEFT", scale_value(control_struct._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["LEFT"], width_scale_factor))
+            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("HEIGHT", scale_value(control_struct._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["HEIGHT"], height_scale_factor))
+            new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value.set_int32("WIDTH", scale_value(control_struct._value._structs[i]._fields["SCROLLBAR"]._value._fields["EXTENT"]._value["WIDTH"], width_scale_factor))
         new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["EXTENT"]._value.set_int32("TOP", scale_value(control_struct._fields["EXTENT"]._value["TOP"], height_scale_factor))
         new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["EXTENT"]._value.set_int32("LEFT", scale_value(control_struct._fields["EXTENT"]._value["LEFT"], width_scale_factor))
         new_gff.root._fields["CONTROLS"]._value._structs[i]._fields["EXTENT"]._value.set_int32("HEIGHT", scale_value(control_struct._fields["EXTENT"]._value["HEIGHT"], height_scale_factor))
