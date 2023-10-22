@@ -121,7 +121,7 @@ class Vector2:
         key,
         value,
     ):
-        if isinstance(key, int) and (isinstance(value, float | int)):
+        if isinstance(key, int) and (isinstance(value, (float, int))):
             if key == 0:
                 self.x = value
             elif key == 1:
