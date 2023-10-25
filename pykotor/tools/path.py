@@ -303,7 +303,7 @@ class Path(BasePath, Path):
             return self.stat(*args, **kwargs)
         except Exception:
             return None
-    
+
     # Safe open operation
     def safe_open(self, *args, **kwargs):
         try:
@@ -503,111 +503,95 @@ def resolve_reg_key_to_path(reg_key, keystr):
 
 
 KOTOR1RegOptions = [
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 32370",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1207666283",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1207666283",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR",
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 32370", "InstallLocation"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1207666283", "PATH"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1207666283", "PATH"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR", "Path"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR", "Path"),
 ]
 
 KOTOR2RegOptions = [
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 208580",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1421404581",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1421404581",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2",
-    r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2",
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 208580", "InstallLocation"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1421404581", "PATH"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1421404581", "PATH"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2", "Path"),
+    (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2", "Path"),
 ]
 
-
-def locate_game_path():
+def get_default_game_paths():
     from pykotor.common.misc import Game
-
-    os_str = platform.system()
-
-    locations = {
+    return {
         "Windows": {
             Game.K1: [
-                CaseAwarePath(r"C:\Program Files\Steam\steamapps\common\swkotor"),
-                CaseAwarePath(r"C:\Program Files (x86)\Steam\steamapps\common\swkotor"),
-                CaseAwarePath(r"C:\Program Files\LucasArts\SWKotOR"),
-                CaseAwarePath(r"C:\Program Files (x86)\LucasArts\SWKotOR"),
-                CaseAwarePath(r"C:\GOG Games\Star Wars - KotOR"),
+                r"C:\Program Files\Steam\steamapps\common\swkotor",
+                r"C:\Program Files (x86)\Steam\steamapps\common\swkotor",
+                r"C:\Program Files\LucasArts\SWKotOR",
+                r"C:\Program Files (x86)\LucasArts\SWKotOR",
+                r"C:\GOG Games\Star Wars - KotOR",
             ],
             Game.K2: [
-                CaseAwarePath(r"C:\Program Files\Steam\steamapps\common\Knights of the Old Republic II"),
-                CaseAwarePath(r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II"),
-                CaseAwarePath(r"C:\Program Files\LucasArts\SWKotOR2"),
-                CaseAwarePath(r"C:\Program Files (x86)\LucasArts\SWKotOR2"),
-                CaseAwarePath(r"C:\GOG Games\Star Wars - KotOR2"),
+                r"C:\Program Files\Steam\steamapps\common\Knights of the Old Republic II",
+                r"C:\Program Files (x86)\Steam\steamapps\common\Knights of the Old Republic II",
+                r"C:\Program Files\LucasArts\SWKotOR2",
+                r"C:\Program Files (x86)\LucasArts\SWKotOR2",
+                r"C:\GOG Games\Star Wars - KotOR2",
             ],
         },
         "Darwin": {
             Game.K1: [
-                CaseAwarePath(
-                    "~/Library/Application Support/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets",
-                ),
+                "~/Library/Application Support/Steam/steamapps/common/swkotor/Knights of the Old Republic.app/Contents/Assets",
             ],
             Game.K2: [
-                CaseAwarePath(
-                    "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/Knights of the Old Republic II.app/Contents/Assets",
-                ),
+                "~/Library/Application Support/Steam/steamapps/common/Knights of the Old Republic II/Knights of the Old Republic II.app/Contents/Assets",
             ],
         },
         "Linux": {
             Game.K1: [
-                CaseAwarePath("~/.local/share/Steam/common/SteamApps/swkotor"),
-                CaseAwarePath("~/.local/share/Steam/common/swkotor"),
+                "~/.local/share/Steam/common/SteamApps/swkotor",
+                "~/.local/share/Steam/common/steamapps/swkotor",
+                "~/.local/share/Steam/common/swkotor",
                 # wsl paths
-                CaseAwarePath("/mnt/C/Program Files/Steam/steamapps/common/swkotor"),
-                CaseAwarePath("/mnt/C/Program Files (x86)/Steam/steamapps/common/swkotor"),
-                CaseAwarePath("/mnt/C/Program Files/LucasArts/SWKotOR"),
-                CaseAwarePath("/mnt/C/Program Files (x86)/LucasArts/SWKotOR"),
-                CaseAwarePath("/mnt/C/GOG Games/Star Wars - KotOR"),
+                "/mnt/C/Program Files/Steam/steamapps/common/swkotor",
+                "/mnt/C/Program Files (x86)/Steam/steamapps/common/swkotor",
+                "/mnt/C/Program Files/LucasArts/SWKotOR",
+                "/mnt/C/Program Files (x86)/LucasArts/SWKotOR",
+                "/mnt/C/GOG Games/Star Wars - KotOR",
             ],
             Game.K2: [
-                CaseAwarePath("~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II"),
-                CaseAwarePath("~/.local/share/Steam/common/Knights of the Old Republic II"),
+                "~/.local/share/Steam/common/SteamApps/Knights of the Old Republic II",
+                "~/.local/share/Steam/common/steamapps/Knights of the Old Republic II",
+                "~/.local/share/Steam/common/Knights of the Old Republic II",
                 # wsl paths
-                CaseAwarePath("/mnt/C/Program Files/Steam/steamapps/common/Knights of the Old Republic II"),
-                CaseAwarePath("/mnt/C/Program Files (x86)/Steam/steamapps/common/Knights of the Old Republic II"),
-                CaseAwarePath("/mnt/C/Program Files/LucasArts/SWKotOR2"),
-                CaseAwarePath("/mnt/C/Program Files (x86)/LucasArts/SWKotOR2"),
-                CaseAwarePath("/mnt/C/GOG Games/Star Wars - KotOR2"),
+                "/mnt/C/Program Files/Steam/steamapps/common/Knights of the Old Republic II",
+                "/mnt/C/Program Files (x86)/Steam/steamapps/common/Knights of the Old Republic II",
+                "/mnt/C/Program Files/LucasArts/SWKotOR2",
+                "/mnt/C/Program Files (x86)/LucasArts/SWKotOR2",
+                "/mnt/C/GOG Games/Star Wars - KotOR2",
             ],
         },
     }
-    if os_str == "Windows":
-        for regoption in KOTOR1RegOptions:
-            path_str = resolve_reg_key_to_path(regoption, "InstallLocation")
-            if path_str:
-                path = CaseAwarePath(path_str).resolve()
-                if path not in locations[os_str][Game.K1]:
-                    locations[os_str][Game.K1].append(path)
-            path_str = resolve_reg_key_to_path(regoption, "Path")
-            if path_str:
-                path = CaseAwarePath(path_str).resolve()
-                if path not in locations[os_str][Game.K1]:
-                    locations[os_str][Game.K1].append(path)
-            path_str = resolve_reg_key_to_path(regoption, "PATH")
-            if path_str:
-                path = CaseAwarePath(path_str).resolve()
-                if path not in locations[os_str][Game.K1]:
-                    locations[os_str][Game.K1].append(path)
-        for regoption in KOTOR2RegOptions:
-            path_str = resolve_reg_key_to_path(regoption, "InstallLocation")
-            if path_str:
-                path = CaseAwarePath(path_str).resolve()
-                if path not in locations[os_str][Game.K2]:
-                    locations[os_str][Game.K2].append(path)
-            path_str = resolve_reg_key_to_path(regoption, "Path")
-            if path_str:
-                path = CaseAwarePath(path_str).resolve()
-                if path not in locations[os_str][Game.K2]:
-                    locations[os_str][Game.K2].append(path)
-            path_str = resolve_reg_key_to_path(regoption, "PATH")
-            if path_str:
-                path = CaseAwarePath(path_str).resolve()
-                if path not in locations[os_str][Game.K2]:
-                    locations[os_str][Game.K2].append(path)
 
-    return locations[os_str]
+def locate_game_path(game = None):
+    from pykotor.common.misc import Game
+
+    os_str = platform.system()
+
+    # Build hardcoded default kotor locations
+    raw_locations = get_default_game_paths()
+    locations: dict[Game, set[CaseAwarePath]] = {
+        game: {CaseAwarePath(path) for path in paths}
+        for game, paths in raw_locations.get(os_str, {}).items()
+    }
+
+    # Build kotor locations by registry (if on windows)
+    if os_str == "Windows":
+        for game_option, reg_options in ((Game.K1, KOTOR1RegOptions), (Game.K2, KOTOR2RegOptions)):
+            if game is not None and game != game_option:
+                continue
+            for reg_key, reg_valname in reg_options:
+                path_str = resolve_reg_key_to_path(reg_key, reg_valname)
+                if path_str:
+                    locations[game_option].add(CaseAwarePath(path_str).resolve())
+
+
+    return locations

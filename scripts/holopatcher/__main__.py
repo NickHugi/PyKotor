@@ -127,7 +127,7 @@ class App(tk.Tk):
         self.gamepaths.place(x=5, y=35, width=310, height=25)
         self.default_game_paths = locate_game_path()
         self.gamepaths["values"] = [
-            str(path) for path in (self.default_game_paths[Game.K1] + self.default_game_paths[Game.K2]) if path.exists()
+            str(path) for path in (*self.default_game_paths[Game.K1], *self.default_game_paths[Game.K2]) if path.exists()
         ]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         self.gamepaths_browse_button = ttk.Button(self, text="Browse", command=self.open_kotor)
