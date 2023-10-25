@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import argparse
 import cProfile
-import hashlib
-import io
 import os
-import pathlib
 import sys
+from hashlib import sha256
+from io import StringIO
+from pathlib import Path as pathlibPath
 
 if not getattr(sys, "frozen", False):
-    thisfile_path = pathlib.Path(__file__).resolve()
-    sys.path.append(str(thisfile_path.parent.parent.parent))
+    thisfile_path = pathlibPath(__file__).resolve()
+    sys.path.append(str(thisfile_path.parents[2]))
 
 from pykotor.resource.formats.erf import ERFResource, read_erf
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
@@ -31,7 +31,7 @@ LOGGING_ENABLED: bool
 
 def log_output(*args, **kwargs) -> None:
     # Create an in-memory text stream
-    buffer = io.StringIO()
+    buffer = StringIO()
 
     # Print to the in-memory stream
     print(*args, file=buffer, **kwargs)
@@ -59,23 +59,23 @@ def compute_sha256(where: os.PathLike | str | bytes):
 
 def compute_sha256_from_path(file_path: CaseAwarePath) -> str:
     """Compute the SHA-256 hash of a file."""
-    sha256 = hashlib.sha256()
+    sha256_hash = sha256()
 
     with file_path.open("rb") as f:
         while True:
             data = f.read(0x10000)  # read in 64k chunks
             if not data:
                 break
-            sha256.update(data)
+            sha256_hash.update(data)
 
-    return sha256.hexdigest()
+    return sha256_hash.hexdigest()
 
 
 def compute_sha256_from_bytes(data: bytes) -> str:
     """Compute the SHA-256 hash of bytes data."""
-    sha256 = hashlib.sha256()
-    sha256.update(data)
-    return sha256.hexdigest()
+    sha256_hash = sha256()
+    sha256_hash.update(data)
+    return sha256_hash.hexdigest()
 
 
 def relative_path_from_to(src, dst) -> CaseAwarePath:
