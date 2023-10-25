@@ -265,63 +265,62 @@ class PureWindowsPath(BasePath, PureWindowsPath):
 
 class Path(BasePath, Path):
     _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
-    
+
     # Safe rglob operation
     def safe_rglob(self, pattern: str):
-        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
+        with contextlib.suppress(Exception):
             yield from self.rglob(pattern)
 
     # Safe iterdir operation
     def safe_iterdir(self):
-        with contextlib.suppress(PermissionError, IOError, OSError, FileNotFoundError, IsADirectoryError):
+        with contextlib.suppress(Exception):
             yield from self.iterdir()
 
     # Safe is_dir operation
-    def safe_isdir(self):
+    def safe_isdir(self) -> bool:
         try:
             return self.is_dir()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     # Safe is_file operation
-    def safe_isfile(self):
+    def safe_isfile(self) -> bool:
         try:
             return self.is_file()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     # Safe exists operation
-    def safe_exists(self):
+    def safe_exists(self) -> bool:
         try:
             return self.exists()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
-    
+
     # Safe stat operation
     def safe_stat(self, *args, **kwargs):
         try:
             return self.stat(*args, **kwargs)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     # Safe open operation
     def safe_open(self, *args, **kwargs):
         try:
             return self.open(*args, **kwargs)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def has_access(self, recurse=False) -> bool:
-        """
-        Check if we have access to the path.
+        """Check if we have access to the path.
         :param path: The pathlib.Path object to check (can be a file or a folder)
         :return: True if path can be modified, False otherwise.
         """
         try:
-            path_obj = Path(self)
-            if path_obj.is_dir():
+            path_obj = Path(self)  # prevents usage of CaseAwarePath's wrappers
+            if path_obj.is_dir():  # sourcery skip: extract-method
                 test_path = path_obj / f"temp_test_file_{uuid.uuid4().hex}.tmp"
-                with test_path.open('w') as f:
+                with test_path.open("w") as f:
                     f.write("test")
                 test_path.unlink()
                 success = True
@@ -330,39 +329,30 @@ class Path(BasePath, Path):
                         success &= f.has_access()
                 return success
             if path_obj.is_file():
-                access =  os.access(path_obj, os.R_OK) and os.access(path_obj, os.W_OK)
-                return access
+                return os.access(path_obj, os.R_OK) and os.access(path_obj, os.W_OK)
+        except Exception:  # noqa: BLE001
             return False
-        except:
-            return False
+        return False
 
-    def gain_access(self, mode=0o755, owner_uid=-1, owner_gid=-1):
-        success = True
+    def gain_access(self, mode=0o755, owner_uid=-1, owner_gid=-1, recurse=True):
 
-        try:
-            if not self.has_access():
-                if owner_uid != -1 or owner_gid != -1 and os.name != "nt":
-                    os.chown(self, owner_uid, owner_gid)
-            if self.has_access():
-                return True
+        # (Unix) Gain ownership of the folder
+        if os.name != "nt" and (owner_uid != -1 or owner_gid != -1) and not self.has_access():
+            try:
+                os.chown(self, owner_uid, owner_gid)
+            except Exception as e:  # noqa: BLE001
+                print(f"Error during chown for {self!s}: {e}")
 
-        except Exception as e:
-            print(f"Error during chown for {self!s}: {e}")
-            success = False
-
-        try:
-            if not self.has_access():
+        # chmod the folder
+        if not self.has_access():
+            try:
                 self.chmod(mode)
-            if self.has_access():
-                return True
+            except Exception as e:  # noqa: BLE001
+                print(f"Error during chmod for {self!s}: {e}")
 
-        except Exception as e:
-            print(f"Error during chmod for {self!s}: {e}")
-            success = False
-
-        try:
-            if not self.has_access():
-                # TODO: prompt the user for access with os-native methods.
+        # TODO: prompt the user and gain access with os-native methods.
+        if not self.has_access():
+            try:
                 if platform.system() == "Darwin":
                     self.request_mac_permission()
                 elif sys.platform == "Linux":
@@ -370,15 +360,17 @@ class Path(BasePath, Path):
                 elif sys.platform == "Windows":
                     self.request_windows_permission()
 
-        except Exception as e:
-            print(f"Error during platform-specific permission request for {self!s}: {e}")
-            success = False
+            except Exception as e:  # noqa: BLE001
+                print(f"Error during platform-specific permission request for {self!s}: {e}")
 
-        # If directory, recurse into it
-        if self.safe_isdir():
-            for child in self.safe_iterdir():
-                child_success = child.gain_access(mode, owner_uid, owner_gid)
-                success = success and child_success
+        success: bool = self.has_access()
+        try:
+            if recurse and self.is_dir():
+                for child in self.iterdir():
+                    success &= child.gain_access(mode, owner_uid, owner_gid)
+        except Exception as e:  # noqa: BLE001
+            print(f"Error gaining access for children of {self!s}: {e}")
+            success = False
 
         return success
 
@@ -440,7 +432,7 @@ class CaseAwarePath(Path):
             # return a CaseAwarePath instance that resolves the case of existing items on disk, joined with the non-existing
             # parts in their original case.
             # if parts[1] is not found on disk, i.e. when i is 1 and base_path.exists() returns False, this will also return the original path.
-            elif not next_path.exists():
+            elif not next_path.safe_exists():
                 return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))
 
         # return a CaseAwarePath instance without infinitely recursing through the constructor
@@ -473,7 +465,7 @@ class CaseAwarePath(Path):
     def should_resolve_case(path) -> bool:
         if os.name == "nt":
             return False
-        if isinstance(path, Path):
+        if isinstance(path, os.PathLike):
             path_obj = pathlib.Path(path)
             return path_obj.is_absolute() and not path_obj.exists()
         if isinstance(path, str):
