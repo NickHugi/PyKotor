@@ -19,7 +19,7 @@ from tkinter import font as tkfont
 
 if not getattr(sys, "frozen", False):
     thisfile_path = pathlib.Path(__file__).resolve()
-    project_root = thisfile_path.parent.parent.parent
+    project_root = thisfile_path.parents[2]
     if project_root.joinpath("pykotor").exists():
         sys.path.append(str(project_root))
 
