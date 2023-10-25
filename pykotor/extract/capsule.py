@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier, ResourceResult
 from pykotor.resource.formats.erf import ERF, ERFType, read_erf, write_erf
@@ -7,6 +9,9 @@ from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
 from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    import os
 
 
 class Capsule:
@@ -17,7 +22,7 @@ class Capsule:
 
     def __init__(
         self,
-        path: CaseAwarePath | str,
+        path: os.PathLike | str,
         create_nonexisting: bool = False,
     ):
         self._path: CaseAwarePath = CaseAwarePath(path).resolve()

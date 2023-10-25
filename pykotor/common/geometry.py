@@ -57,7 +57,7 @@ class Vector2:
     def __add__(
         self,
         other,
-    ) -> Vector2:
+    ):
         """Adds the components of two Vector2 objects."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -70,7 +70,7 @@ class Vector2:
     def __sub__(
         self,
         other,
-    ) -> Vector2:
+    ):
         """Subtracts the components of two Vector2 objects."""
         if not isinstance(other, Vector2):
             return NotImplemented
@@ -83,7 +83,7 @@ class Vector2:
     def __mul__(
         self,
         other,
-    ) -> Vector2:
+    ):
         """Multiplies the components by a scalar integer."""
         if not isinstance(other, int):
             return NotImplemented
@@ -96,7 +96,7 @@ class Vector2:
     def __truediv__(
         self,
         other,
-    ) -> Vector2:
+    ):
         if isinstance(other, int):
             new = Vector2.from_vector2(self)
             new.x /= other

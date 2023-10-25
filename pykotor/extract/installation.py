@@ -99,7 +99,7 @@ class Installation:
         ResourceType.DDS,
     ]
 
-    def __init__(self, path: CaseAwarePath | os.PathLike | str, logger: PatchLogger | None = None):
+    def __init__(self, path: os.PathLike | str, logger: PatchLogger | None = None):
         self._path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
         self.log = logger or PatchLogger()
 
