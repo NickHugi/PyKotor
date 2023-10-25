@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 class ExitCode(IntEnum):
     SUCCESS = 0
-    UNKNOWN_STARTUP_ERROR = 1
+    UNKNOWN_STARTUP_ERROR = 1  # happens outside of our code
     NUMBER_OF_ARGS = 2
     NAMESPACES_INI_NOT_FOUND = 3
     NAMESPACE_INDEX_OUT_OF_RANGE = 4
@@ -414,14 +414,16 @@ class App(tk.Tk):
                 if match:
                     return int(match[1])
         return None
-    
+
     def check_access(self, directory: Path, recurse=False):
         if directory.has_access(recurse):
             return True
-        if messagebox.askyesno("Permission error", f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?"):
-            if not directory.gain_access():
-                messagebox.showerror("Could not gain permission!", "Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.")
-                return False
+        if (
+            messagebox.askyesno("Permission error", f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?")
+            and not directory.gain_access()
+        ):
+            messagebox.showerror("Could not gain permission!", "Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.")
+            return False
         if not directory.has_access(recurse):
             messagebox.showerror("Unauthorized", f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep*2}Please fix this problem before attempting an installation. Ensure the folder is writeable or rerun holopatcher with elevated privileges.")
             return False
@@ -727,6 +729,7 @@ class App(tk.Tk):
         self.description_text.config(state=tk.DISABLED)
 
 
+# when pyinstaller compiled in console mode, this will match the same error message behavior of --noconsole.
 def custom_excepthook(exc_type, exc_value, exc_traceback):
     error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     root = tk.Tk()
