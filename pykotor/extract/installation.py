@@ -109,7 +109,7 @@ class Installation:
         self._modules: dict[str, list[FileResource]] = {}
         self._lips: dict[str, list[FileResource]] = {}
         self._texturepacks: dict[str, list[FileResource]] = {}
-        self._override = CaseInsensitiveDict()
+        self._override: dict[str, list[FileResource]] = {}
         self._streammusic: list[FileResource] = []
         self._streamsounds: list[FileResource] = []
         self._streamwaves: list[FileResource] = []
@@ -346,7 +346,7 @@ class Installation:
         else:
             target_dirs = [f for f in override_path.safe_rglob("*") if f.safe_isdir()]
             target_dirs.append(override_path)
-            self._override = CaseInsensitiveDict()
+            self._override = {}
 
         for folder in target_dirs:
             relative_folder = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
@@ -537,12 +537,25 @@ class Installation:
     # endregion
 
     def game(self) -> Game:
-        if (self._path.joinpath("streamvoice").exists() or self._path.joinpath("swkotor2.exe")):
+        path = self._path
+        def check(x):
+            return path.joinpath(x).exists()
+
+        is_game1_stream = check("streamwaves") and not check("streamvoice")
+        is_game1_exe = check("swkotor.exe") and not check("swkotor2.exe")
+        is_game1_rims = check("rims")
+
+        is_game2_stream = check("streamvoice") and not check("streamwaves")
+        is_game2_exe = check("swkotor2.exe") and not check("swkotor.exe")
+
+        if any([is_game2_stream, is_game2_exe]):
             return Game(2)
-        if (self._path.joinpath("streamwaves").exists() or self._path.joinpath("swkotor.exe")):
+        if any([is_game1_stream, is_game1_exe, is_game1_rims]):
             return Game(1)
+
         msg = "Could not find the game executable!"
         raise ValueError(msg)
+
 
     def talktable(self) -> TalkTable:
         """Returns the TalkTable linked to the Installation.
@@ -796,7 +809,7 @@ class Installation:
                                 locations[identifier].append(location)
 
         function_map = {
-            SearchLocation.OVERRIDE: lambda: check_dict(self._override),  # type: ignore[case insensitive dict]
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -944,7 +957,7 @@ class Installation:
                             textures[resname] = read_tpc(data)
 
         function_map = {
-            SearchLocation.OVERRIDE: lambda: check_dict(self._override),  # type: ignore[case insensitive dict]
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
@@ -1063,7 +1076,7 @@ class Installation:
                     if resource is not None:
                         sounds[resname] = fix_audio(resource)
 
-        def check_folders(values: list[str] | list[CaseAwarePath]):
+        def check_folders(values: list[CaseAwarePath]):
             for folder in values:
                 filepath: CaseAwarePath = CaseAwarePath(folder)
                 for file in [file for file in filepath.iterdir() if file.safe_isfile()]:
@@ -1074,7 +1087,7 @@ class Installation:
                             sounds[resname] = fix_audio(data)
 
         function_map = {
-            SearchLocation.OVERRIDE: lambda: check_dict(self._override),  # type: ignore[case insensitive dict]
+            SearchLocation.OVERRIDE: lambda: check_dict(self._override),
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
