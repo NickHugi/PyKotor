@@ -80,7 +80,7 @@ def parse_args():
     if number_of_positional_args == max_positional_args:
         kwargs.namespace_option_index = positional[2]
     try:
-        kwargs.namespace_option_index = positional[2]
+        kwargs.namespace_option_index = int(kwargs.namespace_option_index)
     except ValueError:
         print("Invalid namespace_option_index. It should be an integer.")
         sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
