@@ -67,22 +67,25 @@ def parse_args():
     parser.add_argument("--uninstall", action="store_true", help="Uninstalls the selected mod.")
     parser.add_argument("--install", action="store_true", help="Starts an install immediately on launch.")
 
-    # Add additional named arguments here if needed
+    kwargs, positional = parser.parse_known_args()
 
-    args, unknown = parser.parse_known_args()
+    required_number_of_positional_args = 2
+    max_positional_args = 3  # sourcery skip: move-assign
 
-    # If using the old syntax, we'll manually parse the first three arguments
-    if len(unknown) >= 2:
-        args.game_dir = unknown[0]
-        args.tslpatchdata = unknown[1]
-        if len(unknown) == 3:
-            try:
-                args.namespace_option_index = int(unknown[2])
-            except ValueError:
-                print("Invalid namespace_option_index. It should be an integer.")
-                sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
+    # Unify positional args with the keyword args.
+    number_of_positional_args = len(positional)
+    if number_of_positional_args == required_number_of_positional_args:
+        kwargs.game_dir = positional[0]
+        kwargs.tslpatchdata = positional[1]
+    if number_of_positional_args == max_positional_args:
+        kwargs.namespace_option_index = positional[2]
+    try:
+        kwargs.namespace_option_index = positional[2]
+    except ValueError:
+        print("Invalid namespace_option_index. It should be an integer.")
+        sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
-    return args
+    return kwargs
 
 
 class App(tk.Tk):
