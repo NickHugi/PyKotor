@@ -60,9 +60,9 @@ def construct_utw(
     utw.tag = root.acquire("Tag", "")
     utw.name = root.acquire("LocalizedName", LocalizedString.from_invalid())
     utw.description = root.acquire("Description", LocalizedString.from_invalid())
-    utw.has_map_note = root.acquire("HasMapNote", 0)
+    utw.has_map_note = bool(root.acquire("HasMapNote", 0))
     utw.map_note = root.acquire("MapNote", LocalizedString.from_invalid())
-    utw.map_note_enabled = root.acquire("MapNoteEnabled", 0)
+    utw.map_note_enabled = bool(root.acquire("MapNoteEnabled", 0))
     utw.palette_id = root.acquire("PaletteID", 0)
     utw.comment = root.acquire("Comment", "")
 

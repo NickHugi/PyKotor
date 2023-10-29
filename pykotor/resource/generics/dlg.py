@@ -434,8 +434,8 @@ def construct_dlg(
         node.wait_flags = gff_struct.acquire("WaitFlags", 0)
         node.camera_angle = gff_struct.acquire("CameraAngle", 0)
         node.fade_type = gff_struct.acquire("FadeType", 0)
-        node.sound_exists = gff_struct.acquire("SoundExists", 0)
-        node.vo_text_changed = gff_struct.acquire("Changed", 0)
+        node.sound_exists = bool(gff_struct.acquire("SoundExists", 0))
+        node.vo_text_changed = bool(gff_struct.acquire("Changed", 0))
 
         for anim_struct in gff_struct.acquire("AnimList", GFFList()):
             anim = DLGAnimation()
@@ -460,11 +460,11 @@ def construct_dlg(
         node.emotion_id = gff_struct.acquire("Emotion", 0)
         node.facial_id = gff_struct.acquire("FacialAnim", 0)
         node.node_id = gff_struct.acquire("NodeID", 0)
-        node.unskippable = gff_struct.acquire("NodeUnskippable", 0)
+        node.unskippable = bool(gff_struct.acquire("NodeUnskippable", 0))
         node.post_proc_node = gff_struct.acquire("PostProcNode", 0)
-        node.record_no_vo_override = gff_struct.acquire("RecordNoVOOverri", 0)
-        node.record_vo = gff_struct.acquire("RecordVO", 0)
-        node.vo_text_changed = gff_struct.acquire("VOTextChanged", 0)
+        node.record_no_vo_override = bool(gff_struct.acquire("RecordNoVOOverri", 0))
+        node.record_vo = bool(gff_struct.acquire("RecordVO", 0))
+        node.vo_text_changed = bool(gff_struct.acquire("VOTextChanged", 0))
 
         if gff_struct.exists("QuestEntry"):
             node.quest_entry = gff_struct.acquire("QuestEntry", 0)
@@ -495,9 +495,9 @@ def construct_dlg(
     ):
         link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
         link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
-        link.logic = gff_struct.acquire("Logic", 0)
-        link.active1_not = gff_struct.acquire("Not", 0)
-        link.active2_not = gff_struct.acquire("Not2", 0)
+        link.logic = bool(gff_struct.acquire("Logic", 0))
+        link.active1_not = bool(gff_struct.acquire("Not", 0))
+        link.active2_not = bool(gff_struct.acquire("Not2", 0))
         link.active1_param1 = gff_struct.acquire("Param1", 0)
         link.active1_param2 = gff_struct.acquire("Param2", 0)
         link.active1_param3 = gff_struct.acquire("Param3", 0)
@@ -527,13 +527,13 @@ def construct_dlg(
     dlg.camera_model = root.acquire("CameraModel", ResRef.from_blank())
     dlg.computer_type = DLGComputerType(root.acquire("ComputerType", 0))
     dlg.conversation_type = DLGConversationType(root.acquire("ConversationType", 0))
-    dlg.old_hit_check = root.acquire("OldHitCheck", 0)
-    dlg.unequip_hands = root.acquire("UnequipHItem", 0)
-    dlg.unequip_items = root.acquire("UnequipItems", 0)
+    dlg.old_hit_check = bool(root.acquire("OldHitCheck", 0))
+    dlg.unequip_hands = bool(root.acquire("UnequipHItem", 0))
+    dlg.unequip_items = bool(root.acquire("UnequipItems", 0))
     dlg.vo_id = root.acquire("VO_ID", "")
     dlg.alien_race_owner = root.acquire("AlienRaceOwner", 0)
     dlg.post_proc_owner = root.acquire("PostProcOwner", 0)
-    dlg.record_no_vo = root.acquire("RecordNoVO", 0)
+    dlg.record_no_vo = bool(root.acquire("RecordNoVO", 0))
     dlg.next_node_id = root.acquire("NextNodeID", 0)
     dlg.delay_entry = root.acquire("DelayEntry", 0)
     dlg.delay_reply = root.acquire("DelayReply", 0)
@@ -560,7 +560,7 @@ def construct_dlg(
             link = DLGLink()
             link.node = all_replies[link_struct.acquire("Index", 0)]
             link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", 0)
+            link.comment = link_struct.acquire("LinkComment", "")
 
             entry.links.append(link)
             construct_link(link_struct, link)
@@ -573,7 +573,7 @@ def construct_dlg(
             link = DLGLink()
             link.node = all_entries[link_struct.acquire("Index", 0)]
             link.is_child = bool(link_struct.acquire("IsChild", 0))
-            link.comment = link_struct.acquire("LinkComment", 0)
+            link.comment = link_struct.acquire("LinkComment", "")
 
             reply.links.append(link)
             construct_link(link_struct, link)
