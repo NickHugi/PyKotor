@@ -157,7 +157,6 @@
     "-p",
     "*test*.py"
   ],
-"pythonTestExplorer.testplanEnabled": false,
 "python.analysis.inlayHints.callArgumentNames": "off",
 "python.analysis.inlayHints.functionReturnTypes": true,
 "python.analysis.inlayHints.variableTypes": true,

@@ -447,7 +447,7 @@ class ConfigReader:
             for key, value in modifications_ini.items():
                 lowercase_key = key.lower()
                 if lowercase_key == "!destination":
-                    modifications.destination = CaseAwarePath(value)
+                    modifications.destination = value
                 elif lowercase_key == "!replacefile":
                     modifications.replace_file = bool(int(value))
                 elif lowercase_key in ["!filename", "!saveas"]:

@@ -167,6 +167,7 @@ class Capsule:
         restype: ResourceType,
         resdata: bytes,
     ):
+        container: RIM | ERF
         if is_rim_file(self._path.name):
             container = read_rim(self._path)
             container.set_data(resname, restype, resdata)

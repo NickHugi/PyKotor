@@ -419,13 +419,22 @@ class App(tk.Tk):
         if directory.has_access(recurse):
             return True
         if (
-            messagebox.askyesno("Permission error", f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?")
+            messagebox.askyesno(
+                "Permission error",
+                f"HoloPatcher does not have permissions to the path '{directory!s}', would you like to attempt to gain permission automatically?",
+            )
             and not directory.gain_access()
         ):
-            messagebox.showerror("Could not gain permission!", "Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.")
+            messagebox.showerror(
+                "Could not gain permission!",
+                "Please run HoloPatcher with elevated permissions, and ensure the selected folder exists and is writeable.",
+            )
             return False
         if not directory.has_access(recurse):
-            messagebox.showerror("Unauthorized", f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep*2}Please fix this problem before attempting an installation. Ensure the folder is writeable or rerun holopatcher with elevated privileges.")
+            messagebox.showerror(
+                "Unauthorized",
+                f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep*2}Please fix this problem before attempting an installation. Ensure the folder is writeable or rerun holopatcher with elevated privileges.",
+            )
             return False
         return True
 

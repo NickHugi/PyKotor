@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf
+
 if TYPE_CHECKING:
+    from pykotor.common.misc import Game
     from pykotor.resource.formats.ssf import SSF, SSFSound
+    from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
 
 
@@ -24,9 +28,13 @@ class ModificationsSSF:
         modifiers: list[ModifySSF] | None = None,
     ):
         self.filename: str = filename
+        self.destination = "Override"
         self.replace_file: bool = replace_file
+        self.no_replacefile_check = True
         self.modifiers: list[ModifySSF] = modifiers if modifiers is not None else []
 
-    def apply(self, ssf: SSF, memory: PatcherMemory) -> None:
+    def apply(self, ssf_bytes: bytes, memory: PatcherMemory, log: PatchLogger, game: Game) -> bytes:
+        ssf: SSF = read_ssf(ssf_bytes)
         for modifier in self.modifiers:
             modifier.apply(ssf, memory)
+        return bytes_ssf(ssf)

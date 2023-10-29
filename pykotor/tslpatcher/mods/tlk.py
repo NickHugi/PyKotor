@@ -2,22 +2,30 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk, read_tlk
+
 if TYPE_CHECKING:
-    from pykotor.common.misc import ResRef
+    from pykotor.common.misc import Game, ResRef
     from pykotor.resource.formats.tlk import TLK
+    from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
 class ModificationsTLK:
-    def __init__(self):
+    def __init__(self, filename="dialog.tlk", destination="."):
         self.modifiers: list[ModifyTLK] = []
+        self.filename = filename
+        self.destination = destination
 
-    def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
+    def apply(self, dialog_tlk_bytes: bytes, memory: PatcherMemory, log: PatchLogger, game: Game) -> bytes:
+        dialog = read_tlk(dialog_tlk_bytes)
         for modifier in self.modifiers:
             if modifier.is_replacement:
                 modifier.replace(dialog, memory)
             else:
                 modifier.insert(dialog, memory)
+            log.complete_patch()
+        return bytes_tlk(dialog)
 
 
 class ModifyTLK:

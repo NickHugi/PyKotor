@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import shutil
-import threading
 from typing import TYPE_CHECKING
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
@@ -15,9 +14,6 @@ if TYPE_CHECKING:
 
     from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
-
-
-print_lock = threading.Lock()
 
 
 def create_backup(
@@ -72,7 +68,7 @@ def create_backup(
         processed_files.add(destination_file_str_lower)
 
 
-def write_powershell_uninstall_script(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: PurePath):
+def write_powershell_uninstall_script(backup_dir: CaseAwarePath, uninstall_folder: CaseAwarePath, main_folder: CaseAwarePath):
     with uninstall_folder.joinpath("uninstall.ps1").open("w") as f:
         f.write(
             rf"""
@@ -293,12 +289,11 @@ class InstallFile:
         resname, restype = ResourceIdentifier.from_path(self.filename)
 
         if self.replace_existing or destination.resource(resname, restype) is None:
-            with print_lock:
-                create_backup(log, destination.path(), backup_dir, processed_files, local_folder)
-                if self.replace_existing and destination.resource(resname, restype) is not None:
-                    log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
-                else:
-                    log.add_note(f"Adding file '{self.filename}' to the '{destination.filename()}' archive...")
+            create_backup(log, destination.path(), backup_dir, processed_files, local_folder)
+            if self.replace_existing and destination.resource(resname, restype) is not None:
+                log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
+            else:
+                log.add_note(f"Adding file '{self.filename}' to the '{destination.filename()}' archive...")
 
             data = BinaryReader.load_file(source_folder / self.filename)
             destination.add(resname, restype, data)
@@ -322,22 +317,18 @@ class InstallFile:
         if self.replace_existing or not file_exists:
             # reduce io work from destination.exists() by first using our file exists check.
             if not file_exists and not destination.exists():
-                with print_lock:
-                    log.add_note(f"Folder '{destination}' did not exist, creating it...")
-                # might exist at this point due to multithreading so we set exist_ok=True.
-                destination.mkdir(parents=True, exist_ok=True)
+                log.add_note(f"Folder '{destination}' did not exist, creating it...")
+                destination.mkdir(parents=True)
 
-            with print_lock:
-                create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
-                if file_exists:
-                    log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
-                else:
-                    log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
+            create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
+            if file_exists:
+                log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
+            else:
+                log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
 
             BinaryWriter.dump(save_file_to, data)
         else:
-            with print_lock:
-                log.add_warning(f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file...")
+            log.add_warning(f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file...")
 
 
 class InstallFolder:

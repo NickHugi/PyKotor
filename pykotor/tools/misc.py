@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import hashlib
 import re
+from typing import TYPE_CHECKING
 
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
+
+if TYPE_CHECKING:
+    import os
 
 
-def generate_filehash_sha256(filepath: str | CaseAwarePath) -> str:
+def generate_filehash_sha256(filepath: os.PathLike | str) -> str:
     sha1_hash = hashlib.sha256()
-    filepath = filepath if isinstance(filepath, CaseAwarePath) else CaseAwarePath(filepath)
+    filepath = filepath if isinstance(filepath, Path) else Path(filepath)
     with filepath.open("rb") as f:
         data = f.read(65536)
         while data:  # read in 64k chunks
@@ -95,7 +99,7 @@ def case_insensitive_replace(s: str, old: str, new: str) -> str:
 def striprtf(text):
     """Strips RTF encoding utterly and completely."""
     pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
-    # control words which specify a "destionation".
+    # control words which specify a "destination".
     destinations = frozenset(
         (
             "aftncn",
