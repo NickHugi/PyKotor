@@ -5,10 +5,14 @@ from pykotor.common.misc import ResRef
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.resource.formats.gff import GFF, GFFList, GFFFieldType
+from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.gff.gff_data import GFFStruct
 from pykotor.resource.formats.ssf import SSF, SSFSound
+from pykotor.resource.formats.ssf.ssf_auto import bytes_ssf, read_ssf
 from pykotor.resource.formats.tlk import TLK
+from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk, read_tlk
 from pykotor.resource.formats.twoda import TwoDA
+from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.tools.path import PureWindowsPath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
@@ -63,7 +67,7 @@ class TestManipulateTLK(TestCase):
         dialog_tlk.add("Old1")
         dialog_tlk.add("Old2")
 
-        config.apply(dialog_tlk, memory)
+        dialog_tlk = read_tlk(config.apply(bytes_tlk(dialog_tlk), memory))
 
         self.assertEqual(4, len(dialog_tlk))
         self.assertEqual("Append2", dialog_tlk.get(2).text)
@@ -89,7 +93,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
         config = Modifications2DA("")
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueConstant("X")}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "X"], twoda.get_column("Col1"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -103,7 +107,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
         config = Modifications2DA("")
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_LABEL, "1"), {"Col1": RowValueConstant("X")}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "X"], twoda.get_column("Col1"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -123,7 +127,7 @@ class TestManipulate2DA(TestCase):
                 {"Col2": RowValueConstant("X")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "d"], twoda.get_column("label"))
         self.assertEqual(["b", "X"], twoda.get_column("Col2"))
@@ -140,7 +144,7 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValueTLKMemory(0)}))
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValueTLKMemory(1)}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["0", "1"], twoda.get_column("Col1"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -157,7 +161,7 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValue2DAMemory(0)}))
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 1), {"Col1": RowValue2DAMemory(1)}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["mem0", "mem1"], twoda.get_column("Col1"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -172,7 +176,7 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col1": RowValueHigh("Col1")}))
         config.modifiers.append(ChangeRow2DA("", Target(TargetType.ROW_INDEX, 0), {"Col2": RowValueHigh("Col2")}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["3", "2"], twoda.get_column("Col1"))
         self.assertEqual(["5", "4"], twoda.get_column("Col2"))
@@ -193,7 +197,7 @@ class TestManipulate2DA(TestCase):
                 store_2da={5: RowValueRowIndex()},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "d"], twoda.get_column("Col1"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -215,7 +219,7 @@ class TestManipulate2DA(TestCase):
                 store_2da={5: RowValueRowLabel()},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "d"], twoda.get_column("Col1"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -237,7 +241,7 @@ class TestManipulate2DA(TestCase):
                 store_2da={5: RowValueRowCell("label")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "d"], twoda.get_column("label"))
         self.assertEqual(["b", "e"], twoda.get_column("Col2"))
@@ -256,7 +260,7 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(AddRow2DA("", None, None, {}))
         config.modifiers.append(AddRow2DA("", None, None, {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual("0", twoda.get_label(0))
@@ -270,7 +274,7 @@ class TestManipulate2DA(TestCase):
 
         config = Modifications2DA("")
         config.modifiers.append(AddRow2DA("", None, "r1", {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(1, twoda.get_height())
         self.assertEqual("r1", twoda.get_label(0))
@@ -290,7 +294,7 @@ class TestManipulate2DA(TestCase):
                 {"Col1": RowValueConstant("123"), "Col2": RowValueConstant("ABC")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(1, twoda.get_height())
         self.assertEqual("0", twoda.get_label(0))
@@ -315,7 +319,7 @@ class TestManipulate2DA(TestCase):
                 },
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual("2", twoda.get_label(2))
@@ -344,7 +348,7 @@ class TestManipulate2DA(TestCase):
                 },
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual(["a", "d", "g"], twoda.get_column("Col1"))
@@ -359,7 +363,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
         config = Modifications2DA("")
         config.modifiers.append(AddRow2DA("", "Col4", "2", {}))
-        # config.apply(twoda, memory)
+        # twoda = read_2da(config.apply(bytes_2da(twoda), memory))
         # TODO
 
     def test_add_exclusive_none(self):
@@ -393,7 +397,7 @@ class TestManipulate2DA(TestCase):
                 },
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(4, twoda.get_height())
         self.assertEqual(["a", "d", "g", "j"], twoda.get_column("Col1"))
@@ -408,7 +412,7 @@ class TestManipulate2DA(TestCase):
         memory = PatcherMemory()
         config = Modifications2DA("")
         config.modifiers.append(AddRow2DA("", "", "2", {"Col1": RowValueHigh("Col1")}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["1", "2", "3"], twoda.get_column("Col1"))
 
@@ -422,7 +426,7 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(AddRow2DA("", None, "0", {"Col1": RowValueTLKMemory(0)}))
         config.modifiers.append(AddRow2DA("", None, "1", {"Col1": RowValueTLKMemory(1)}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["5", "6"], twoda.get_column("Col1"))
 
@@ -436,7 +440,7 @@ class TestManipulate2DA(TestCase):
         config = Modifications2DA("")
         config.modifiers.append(AddRow2DA("", None, "0", {"Col1": RowValue2DAMemory(0)}))
         config.modifiers.append(AddRow2DA("", None, "1", {"Col1": RowValue2DAMemory(1)}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["5", "6"], twoda.get_column("Col1"))
 
@@ -464,7 +468,7 @@ class TestManipulate2DA(TestCase):
                 store_2da={6: RowValueRowIndex()},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(2, twoda.get_height())
         self.assertEqual(["X", "Y"], twoda.get_column("Col1"))
@@ -491,7 +495,7 @@ class TestManipulate2DA(TestCase):
                 {"Col2": RowValueConstant("X")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -514,7 +518,7 @@ class TestManipulate2DA(TestCase):
                 {"Col2": RowValueConstant("X")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual(["a", "c", "c"], twoda.get_column("Col1"))
@@ -536,7 +540,7 @@ class TestManipulate2DA(TestCase):
                 {"Col1": RowValueConstant("c"), "Col2": RowValueConstant("d")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(2, twoda.get_height())
         self.assertEqual("1", twoda.get_label(1))
@@ -559,7 +563,7 @@ class TestManipulate2DA(TestCase):
                 {"Col1": RowValueConstant("a"), "Col2": RowValueConstant("X")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(1, twoda.get_height())
         self.assertEqual("0", twoda.get_label(0))
@@ -591,7 +595,7 @@ class TestManipulate2DA(TestCase):
                 {"Col1": RowValueConstant("e"), "Col2": RowValueConstant("f")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual("1", twoda.get_label(1))
@@ -608,7 +612,7 @@ class TestManipulate2DA(TestCase):
 
         config = Modifications2DA("")
         config.modifiers.append(CopyRow2DA("", Target(TargetType.ROW_INDEX, 0), None, "r2", {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual("r2", twoda.get_label(2))
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -631,7 +635,7 @@ class TestManipulate2DA(TestCase):
                 {"Col2": RowValueHigh("Col2")},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(3, twoda.get_height())
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
@@ -655,7 +659,7 @@ class TestManipulate2DA(TestCase):
                 {"Col2": RowValueTLKMemory(0)},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
         self.assertEqual(["1", "2", "5"], twoda.get_column("Col2"))
@@ -678,7 +682,7 @@ class TestManipulate2DA(TestCase):
                 {"Col2": RowValue2DAMemory(0)},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
         self.assertEqual(["1", "2", "5"], twoda.get_column("Col2"))
@@ -701,7 +705,7 @@ class TestManipulate2DA(TestCase):
                 store_2da={5: RowValueRowIndex()},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c", "a"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d", "b"], twoda.get_column("Col2"))
@@ -719,7 +723,7 @@ class TestManipulate2DA(TestCase):
 
         config = Modifications2DA("")
         config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {}, {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d"], twoda.get_column("Col2"))
@@ -734,7 +738,7 @@ class TestManipulate2DA(TestCase):
 
         config = Modifications2DA("")
         config.modifiers.append(AddColumn2DA("", "Col3", "X", {}, {}, {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d"], twoda.get_column("Col2"))
@@ -749,7 +753,7 @@ class TestManipulate2DA(TestCase):
 
         config = Modifications2DA("")
         config.modifiers.append(AddColumn2DA("", "Col3", "", {0: RowValueConstant("X")}, {}, {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d"], twoda.get_column("Col2"))
@@ -765,7 +769,7 @@ class TestManipulate2DA(TestCase):
 
         config = Modifications2DA("")
         config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {"1": RowValue2DAMemory(5)}, {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d"], twoda.get_column("Col2"))
@@ -781,7 +785,7 @@ class TestManipulate2DA(TestCase):
 
         config = Modifications2DA("")
         config.modifiers.append(AddColumn2DA("", "Col3", "", {}, {"1": RowValueTLKMemory(5)}, {}))
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d"], twoda.get_column("Col2"))
@@ -805,7 +809,7 @@ class TestManipulate2DA(TestCase):
                 store_2da={0: "I0"},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d"], twoda.get_column("Col2"))
@@ -830,7 +834,7 @@ class TestManipulate2DA(TestCase):
                 store_2da={0: "L1"},
             )
         )
-        config.apply(twoda, memory)
+        twoda = read_2da(config.apply(bytes_2da(twoda), memory))
 
         self.assertEqual(["a", "c"], twoda.get_column("Col1"))
         self.assertEqual(["b", "d"], twoda.get_column("Col2"))
@@ -848,7 +852,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint8("Field1"))
 
@@ -859,7 +863,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int8("Field1"))
 
@@ -870,7 +874,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint16("Field1"))
 
@@ -881,7 +885,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int16("Field1"))
 
@@ -892,7 +896,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint32("Field1"))
 
@@ -903,7 +907,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int32("Field1"))
 
@@ -914,7 +918,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_uint64("Field1"))
 
@@ -925,7 +929,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2, gff.root.get_int64("Field1"))
 
@@ -936,9 +940,9 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
-        self.assertEqual(2.345, gff.root.get_single("Field1"))
+        self.assertEqual(2.3450000286102295, gff.root.get_single("Field1"))
 
     def test_modify_field_double(self):
         gff = GFF()
@@ -947,7 +951,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(2.345678))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(2.345678, gff.root.get_double("Field1"))
 
@@ -958,7 +962,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant("def"))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("def", gff.root.get_string("Field1"))
 
@@ -978,7 +982,7 @@ class TestManipulateGFF(TestCase):
                 )
             ],
         )
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(1, gff.root.get_locstring("Field1").stringref)
 
@@ -989,7 +993,7 @@ class TestManipulateGFF(TestCase):
         memory = PatcherMemory()
 
         config = ModificationsGFF("", False, [ModifyFieldGFF("Field1", FieldValueConstant(Vector3(1, 2, 3)))])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(Vector3(1, 2, 3), gff.root.get_vector3("Field1"))
 
@@ -1004,7 +1008,7 @@ class TestManipulateGFF(TestCase):
             False,
             [ModifyFieldGFF("Field1", FieldValueConstant(Vector4(1, 2, 3, 4)))],
         )
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(Vector4(1, 2, 3, 4), gff.root.get_vector4("Field1"))
 
@@ -1015,12 +1019,14 @@ class TestManipulateGFF(TestCase):
         gff_struct.set_string("String", "")
 
         memory = PatcherMemory()
-        modifiers: list[ModifyGFF] = [ModifyFieldGFF("List\\0\\String", FieldValueConstant("abc"))]
+        modifiers: list[ModifyGFF] = [ModifyFieldGFF(PureWindowsPath("List\\0\\String"), FieldValueConstant("abc"))]
 
         config = ModificationsGFF("", False, modifiers)
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
+        patched_gff_list = gff.root.get_list("List")
+        patched_gff_struct = patched_gff_list.at(0)
 
-        self.assertEqual("abc", gff_struct.get_string("String"))
+        self.assertEqual("abc", patched_gff_struct.get_string("String"))
 
     def test_modify_2damemory(self):
         gff = GFF()
@@ -1033,7 +1039,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(ModifyFieldGFF("String", FieldValue2DAMemory(5)))
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValue2DAMemory(5)))
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1049,7 +1055,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(ModifyFieldGFF("String", FieldValueTLKMemory(5)))
         config.modifiers.append(ModifyFieldGFF("Integer", FieldValueTLKMemory(5)))
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1070,7 +1076,7 @@ class TestManipulateGFF(TestCase):
         add_field2.modifiers.append(add_field3)
 
         config = ModificationsGFF("", False, [add_field1])
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertIsNotNone(gff.root.get_list("List"))
         self.assertIsNotNone(gff.root.get_list("List").at(0))
@@ -1091,12 +1097,14 @@ class TestManipulateGFF(TestCase):
                 "String",
                 GFFFieldType.String,
                 FieldValueConstant("abc"),
-                path="List\\0",
+                path=PureWindowsPath("List\\0"),
             )
         )
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
+        patched_gff_list = gff.root.get_list("List")
+        patched_gff_struct = patched_gff_list.at(0)
 
-        self.assertEqual("abc", gff_struct.get_string("String"))
+        self.assertEqual("abc", patched_gff_struct.get_string("String"))
 
     def test_add_use_2damemory(self):
         gff = GFF()
@@ -1107,7 +1115,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValue2DAMemory(5), PureWindowsPath("")))
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValue2DAMemory(5), PureWindowsPath("")))
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1121,7 +1129,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddFieldGFF("", "String", GFFFieldType.String, FieldValueTLKMemory(5), PureWindowsPath("")))
         config.modifiers.append(AddFieldGFF("", "Integer", GFFFieldType.UInt8, FieldValueTLKMemory(5), PureWindowsPath("")))
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("123", gff.root.get_string("String"))
         self.assertEqual(123, gff.root.get_uint8("Integer"))
@@ -1148,7 +1156,7 @@ class TestManipulateGFF(TestCase):
             False,
             modifiers,
         )
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual(123, gff.root.get_locstring("Field1").stringref)
 
@@ -1163,11 +1171,12 @@ class TestManipulateGFF(TestCase):
         config.modifiers.append(AddStructToListGFF("", 1, FieldValueConstant(GFFStruct()), "List", None))
         config.modifiers.append(AddStructToListGFF("", 2, FieldValueConstant(GFFStruct()), "List", None))
 
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
+        patched_gff_list = gff.root.get_list("List")
 
-        self.assertEqual(0, gff_list.at(0).struct_id)  # type: ignore
-        self.assertEqual(1, gff_list.at(1).struct_id)  # type: ignore
-        self.assertEqual(2, gff_list.at(2).struct_id)  # type: ignore
+        self.assertEqual(0, patched_gff_list.at(0).struct_id)  # type: ignore
+        self.assertEqual(1, patched_gff_list.at(1).struct_id)  # type: ignore
+        self.assertEqual(2, patched_gff_list.at(2).struct_id)  # type: ignore
 
     def test_addlist_store_2damemory(self) -> None:
         gff = GFF()
@@ -1178,7 +1187,7 @@ class TestManipulateGFF(TestCase):
         config = ModificationsGFF("", False, [])
         config.modifiers.append(AddStructToListGFF("", 0, FieldValueConstant(GFFStruct()), "List"))
         config.modifiers.append(AddStructToListGFF("", 1, FieldValueConstant(GFFStruct()), "List", index_to_token=12))
-        config.apply(gff, memory, PatchLogger())
+        gff = read_gff(config.apply(bytes_gff(gff), memory, PatchLogger()))
 
         self.assertEqual("1", memory.memory_2da[12])
 
@@ -1191,7 +1200,7 @@ class TestManipulateSSF(TestCase):
 
         config = ModificationsSSF("", False, [])
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_1, NoTokenUsage(5)))
-        config.apply(ssf, memory)
+        ssf = read_ssf(config.apply(bytes_ssf(ssf), memory))
 
         self.assertEqual(5, ssf.get(SSFSound.BATTLE_CRY_1))
 
@@ -1203,7 +1212,7 @@ class TestManipulateSSF(TestCase):
 
         config = ModificationsSSF("", False, [])
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_2, TokenUsage2DA(5)))
-        config.apply(ssf, memory)
+        ssf = read_ssf(config.apply(bytes_ssf(ssf), memory))
 
         self.assertEqual(123, ssf.get(SSFSound.BATTLE_CRY_2))
 
@@ -1215,6 +1224,6 @@ class TestManipulateSSF(TestCase):
 
         config = ModificationsSSF("", False, [])
         config.modifiers.append(ModifySSF(SSFSound.BATTLE_CRY_3, TokenUsageTLK(5)))
-        config.apply(ssf, memory)
+        ssf = read_ssf(config.apply(bytes_ssf(ssf), memory))
 
         self.assertEqual(321, ssf.get(SSFSound.BATTLE_CRY_3))

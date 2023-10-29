@@ -14,6 +14,7 @@ from pykotor.resource.formats.gff import (
     bytes_gff,
     read_gff,
 )
+from pykotor.resource.type import SOURCE_TYPES
 from pykotor.tools.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -290,7 +291,7 @@ class Memory2DAModifierGFF(ModifyGFF):
 class ModifyFieldGFF(ModifyGFF):
     def __init__(
         self,
-        path: PureWindowsPath,
+        path: PureWindowsPath | str,
         value: FieldValue,
     ) -> None:
         self.path: PureWindowsPath = PureWindowsPath(path)
@@ -360,7 +361,7 @@ class ModificationsGFF:
 
     def apply(
         self,
-        gff_bytes: bytes,
+        gff_bytes: SOURCE_TYPES,
         memory: PatcherMemory,
         logger: PatchLogger,
         game: Game | None = None,
