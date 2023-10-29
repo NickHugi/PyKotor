@@ -149,7 +149,7 @@ class ResourceType:
         contents: str,
     ):
         self.type_id = type_id
-        self.extension = extension
+        self.extension = extension.lower()
         self.category = category
         self.contents = contents
 
@@ -176,8 +176,8 @@ class ResourceType:
 
     def __eq__(
         self,
-        other: ResourceType | str | int,
-    ):  # sourcery skip: assign-if-exp, reintroduce-else
+        other,
+    ):
         """Two ResourceTypes are equal if they are the same.
         A ResourceType and a str are equal if the extension is equal to the string.
         A ResourceType and a int are equal if the type_id is equal to the integer.
@@ -185,7 +185,7 @@ class ResourceType:
         if isinstance(other, ResourceType):
             return self is other
         if isinstance(other, str):
-            return self.extension == other
+            return self.extension == other.lower()
         if isinstance(other, int):
             return self.type_id == other
         return NotImplemented

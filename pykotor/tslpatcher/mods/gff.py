@@ -363,7 +363,7 @@ class ModificationsGFF:
         gff_bytes: bytes,
         memory: PatcherMemory,
         logger: PatchLogger,
-        game: Game,
+        game: Game | None = None,
     ) -> bytes:
         gff: GFF = read_gff(gff_bytes)
         for change_field in self.modifiers:

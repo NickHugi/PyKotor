@@ -4,12 +4,10 @@ from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
-from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
+from pykotor.resource.formats.twoda import bytes_2da, read_2da
 
 if TYPE_CHECKING:
-    from pykotor.common.misc import Game
     from pykotor.resource.formats.twoda import TwoDA, TwoDARow
-    from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
@@ -60,7 +58,7 @@ class Modifications2DA:
         self.destination = "Override"
         self.modifiers: list[Modify2DA] = []
 
-    def apply(self, twoda_bytes: bytes, memory: PatcherMemory, log: PatchLogger, game: Game) -> bytes:
+    def apply(self, twoda_bytes: bytes, memory: PatcherMemory, log=None, game=None) -> bytes:
         twoda: TwoDA = read_2da(twoda_bytes)
         for row in self.modifiers:
             row.apply(twoda, memory)

@@ -13,6 +13,7 @@ from pykotor.resource.formats.twoda.io_twoda_json import (
 )
 from pykotor.resource.formats.twoda.twoda_auto import (
     detect_2da,
+    bytes_2da,
     read_2da,
     write_2da,
 )

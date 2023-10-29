@@ -17,7 +17,7 @@ class ModificationsTLK:
         self.filename = filename
         self.destination = destination
 
-    def apply(self, dialog_tlk_bytes: bytes, memory: PatcherMemory, log: PatchLogger, game: Game) -> bytes:
+    def apply(self, dialog_tlk_bytes: bytes, memory: PatcherMemory, log: PatchLogger, game: Game | None = None) -> bytes:
         dialog = read_tlk(dialog_tlk_bytes)
         for modifier in self.modifiers:
             if modifier.is_replacement:

@@ -9,6 +9,7 @@ from pykotor.resource.formats.ssf.io_ssf_xml import (
 )
 from pykotor.resource.formats.ssf.ssf_auto import (
     detect_ssf,
+    bytes_ssf,
     read_ssf,
     write_ssf,
 )
