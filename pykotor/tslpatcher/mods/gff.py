@@ -6,8 +6,14 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFFieldType,
+    GFFList,
+    GFFStruct,
+    bytes_gff,
+    read_gff,
+)
 from pykotor.tools.path import PureWindowsPath
 
 if TYPE_CHECKING:
@@ -92,7 +98,7 @@ class ModifyGFF(ABC):
         path = PureWindowsPath(path)
         if not path.name:
             return root_container
-        container: GFFStruct | GFFList = root_container
+        container: GFFStruct | GFFList | None = root_container
         for step in path.parts:
             if isinstance(container, GFFStruct):
                 container = container.acquire(step, None, (GFFStruct, GFFList))
@@ -108,7 +114,7 @@ class ModifyGFF(ABC):
     ) -> _GFFField | None:
         path = PureWindowsPath(path)
         label: str = path.name
-        container: GFFStruct | GFFList = root_container
+        container: GFFStruct | GFFList | None = root_container
         for step in path.parent.parts:
             if isinstance(container, GFFStruct):
                 container = container.acquire(step, None, (GFFStruct, GFFList))
