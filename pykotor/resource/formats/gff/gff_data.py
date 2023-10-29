@@ -274,7 +274,7 @@ class GFFStruct:
         self,
         label: str,
         default: T,
-        object_type: U | None = None,
+        object_type: type[U | T] | tuple[type[U], ...] | None = None,
     ) -> T | U:
         """Gets the value from the specified field. If the field does not exist or the value type does not match the
         specified type then the default is returned instead.
@@ -291,8 +291,12 @@ class GFFStruct:
         """
         value = default
         if object_type is None:
-            object_type = type(value)
-        if self.exists(label) and isinstance(self[label], object_type):
+            object_type = type(default)
+        if (
+            self.exists(label)
+            and object_type is not None
+            and isinstance(self[label], object_type)
+        ):
             value = self[label]
         return value
 
