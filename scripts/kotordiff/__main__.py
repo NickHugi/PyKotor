@@ -282,11 +282,11 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         missing_in_capsule1 = capsule2_resources.keys() - capsule1_resources.keys()
         missing_in_capsule2 = capsule1_resources.keys() - capsule2_resources.keys()
         for resref in missing_in_capsule1:
-            message = (f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype.extension.upper()}")
+            message = (f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype().extension.upper()}")
             log_output(message)
 
         for resref in missing_in_capsule2:
-            message = (f"Capsule2 resource missing\t{c_file2_rel}\t{resref}\t{capsule1_resources[resref].restype.extension.upper()}")
+            message = (f"Capsule2 resource missing\t{c_file2_rel}\t{resref}\t{capsule1_resources[resref].restype().extension.upper()}")
             log_output(message)
 
         # Checking for differences
