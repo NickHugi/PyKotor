@@ -15,7 +15,7 @@ class ModificationsTLK:
     def apply(self, dialog: TLK, memory: PatcherMemory) -> None:
         for modifier in self.modifiers:
             if modifier.is_replacement:
-                modifier.replace(dialog)
+                modifier.replace(dialog, memory)
             else:
                 modifier.insert(dialog, memory)
 
@@ -37,5 +37,6 @@ class ModifyTLK:
         dialog.add(self.text, self.sound.get())
         memory.memory_str[self.token_id] = len(dialog.entries) - 1
 
-    def replace(self, dialog: TLK) -> None:
+    def replace(self, dialog: TLK, memory: PatcherMemory) -> None:
         dialog.replace(self.token_id, self.text, self.sound.get())
+        memory.memory_str[self.token_id] = self.token_id
