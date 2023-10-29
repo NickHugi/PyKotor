@@ -14,33 +14,6 @@ TARGET_TYPES = Union[os.PathLike, str, bytearray, BinaryWriter]
 
 
 class ResourceReader:
-    @overload
-    def __init__(
-        self,
-        filepath: os.PathLike | str,
-        offset: int = 0,
-        size: int = 0,
-    ):
-        ...
-
-    @overload
-    def __init__(
-        self,
-        data: bytes,
-        offset: int = 0,
-        size: int = 0,
-    ):
-        ...
-
-    @overload
-    def __init__(
-        self,
-        reader: BinaryReader,
-        offset: int = 0,
-        size: int = 0,
-    ):
-        ...
-
     def __init__(
         self,
         source: SOURCE_TYPES,
@@ -57,34 +30,6 @@ class ResourceReader:
 
 
 class ResourceWriter:
-    @overload
-    def __init__(
-        self,
-        filepath: os.PathLike | str,
-    ):
-        ...
-
-    @overload
-    def __init__(
-        self,
-        data: bytes,
-    ):
-        ...
-
-    @overload
-    def __init__(
-        self,
-        data: bytearray,
-    ):
-        ...
-
-    @overload
-    def __init__(
-        self,
-        reader: BinaryWriter,
-    ):
-        ...
-
     def __init__(
         self,
         target: TARGET_TYPES,
