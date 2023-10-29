@@ -431,7 +431,7 @@ class ModInstaller:
             search = installation.resource(
                 resname,
                 restype,
-                [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
+                [SearchLocation.CUSTOM_FOLDERS] if ssf_patch.replace_file else [SearchLocation.OVERRIDE, SearchLocation.CUSTOM_FOLDERS],
                 folders=[self.mod_path],
             )
             if search is None or search.data is None:
