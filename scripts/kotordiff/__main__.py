@@ -4,7 +4,6 @@ import argparse
 import cProfile
 import os
 import sys
-import traceback
 from hashlib import sha256
 from io import StringIO
 from pathlib import Path as pathlibPath
@@ -14,13 +13,13 @@ if not getattr(sys, "frozen", False):
     thisfile_path = pathlibPath(__file__).resolve()
     sys.path.append(str(thisfile_path.parents[2]))
 
-from pykotor.resource.formats.erf import ERFResource, read_erf
+
+from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
 from pykotor.resource.formats.lip import LIP, read_lip
-from pykotor.resource.formats.rim import RIMResource, read_rim
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.formats.twoda import read_2da
-from pykotor.tools.misc import is_capsule_file, is_erf_or_mod_file, is_rim_file
+from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
 from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.lip import DiffLIP
@@ -28,7 +27,8 @@ from pykotor.tslpatcher.diff.tlk import DiffTLK
 from pykotor.tslpatcher.diff.twoda import Diff2DA
 
 if TYPE_CHECKING:
-    from pykotor.resource.formats.twoda.twoda_data import TwoDA
+    from pykotor.extract.file import FileResource
+    from pykotor.resource.formats.twoda import TwoDA
 
 OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
@@ -261,40 +261,26 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         log_output(f"Missing file:\t{c_file2_rel}")
         return False
 
-    ext = c_file1_rel.suffix.lower()[1:]
 
     if is_capsule_file(c_file1_rel.name):
-        if is_erf_or_mod_file(c_file1_rel.name):
-            try:
-                file1_capsule = read_erf(file1)
-            except ValueError as e:
-                log_output(f"Could not load '{c_file1_rel}'. Reason: {e}")
-                return None
-            try:
-                file2_capsule = read_erf(file2)
-            except ValueError as e:
-                log_output(f"Could not load '{c_file2_rel}'. Reason: {e}")
-                return None
-        elif is_rim_file(c_file1_rel.name) and parser_args.ignore_rims is False:
-            try:
-                file1_capsule = read_rim(file1)
-            except ValueError as e:
-                log_output(f"Could not load '{c_file1_rel}'. Reason: {e}")
-                return None
-            try:
-                file2_capsule = read_rim(file2)
-            except ValueError as e:
-                log_output(f"Could not load '{c_file2_rel}'. Reason: {e}")
-                return None
-        else:
-            return True
-        capsule1_resources: dict[str, ERFResource | RIMResource] = {str(res.resref): res for res in file1_capsule}
-        capsule2_resources: dict[str, ERFResource | RIMResource] = {str(res.resref): res for res in file2_capsule}
+        try:
+            file1_capsule = Capsule(file1)
+        except ValueError as e:
+            log_output(f"Could not load '{c_file1_rel}'. Reason: {e}")
+            return None
+        try:
+            file2_capsule = Capsule(file2)
+        except ValueError as e:
+            log_output(f"Could not load '{c_file2_rel}'. Reason: {e}")
+            return None
+
+        # Build dict of resources
+        capsule1_resources: dict[str, FileResource] = {res.resname(): res for res in file1_capsule}
+        capsule2_resources: dict[str, FileResource] = {res.resname(): res for res in file2_capsule}
 
         # Identifying missing resources
         missing_in_capsule1 = capsule2_resources.keys() - capsule1_resources.keys()
         missing_in_capsule2 = capsule1_resources.keys() - capsule2_resources.keys()
-
         for resref in missing_in_capsule1:
             message = (f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype.extension.upper()}")
             log_output(message)
@@ -306,12 +292,12 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         # Checking for differences
         common_resrefs = capsule1_resources.keys() & capsule2_resources.keys()  # Intersection of keys
         for resref in common_resrefs:
-            res1: ERFResource | RIMResource = capsule1_resources[resref]
-            res2: ERFResource | RIMResource = capsule2_resources[resref]
-            ext = res1.restype.extension
-            is_same_result = diff_data(res1.data, res2.data, c_file1_rel, c_file2_rel, ext, resref) and is_same_result
+            res1: FileResource = capsule1_resources[resref]
+            res2: FileResource = capsule2_resources[resref]
+            ext = res1.restype().extension.lower()
+            is_same_result = diff_data(res1.data(), res2.data(), c_file1_rel, c_file2_rel, ext, resref) and is_same_result
         return is_same_result
-    return diff_data(c_file1, c_file2, c_file1_rel, c_file2_rel, ext)
+    return diff_data(c_file1, c_file2, c_file1_rel, c_file2_rel, c_file1_rel.suffix.lower()[1:])
 
 
 def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool | None:
