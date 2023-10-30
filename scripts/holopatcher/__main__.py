@@ -79,11 +79,12 @@ def parse_args():
         kwargs.tslpatchdata = positional[1]
     if number_of_positional_args == max_positional_args:
         kwargs.namespace_option_index = positional[2]
-    try:
-        kwargs.namespace_option_index = int(kwargs.namespace_option_index)
-    except ValueError:
-        print("Invalid namespace_option_index. It should be an integer.")
-        sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
+    if kwargs.namespace_option_index:
+        try:
+            kwargs.namespace_option_index = int(kwargs.namespace_option_index)
+        except ValueError:
+            print("Invalid namespace_option_index. It should be an integer.")
+            sys.exit(ExitCode.NAMESPACE_INDEX_OUT_OF_RANGE)
 
     return kwargs
 
@@ -209,11 +210,11 @@ class App(tk.Tk):
             messagebox.askyesnocancel = MessageboxOverride.askyesno
             messagebox.askretrycancel = MessageboxOverride.askyesno
         if cmdline_args.install:
-            self.oneshot = True
+            self.install = True
             self.begin_install_thread()
             sys.exit()
         if cmdline_args.uninstall:
-            self.oneshot = True
+            self.install = True
             self.uninstall_selected_mod()
             sys.exit()
 
@@ -533,13 +534,13 @@ class App(tk.Tk):
     def begin_install_thread(self):
         if not self.mod_path or not CaseAwarePath(self.mod_path).exists():
             messagebox.showinfo("No mod chosen", "Select your mod directory before starting an install")
-            if self.oneshot:
+            if self.install:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
         game_path = self.gamepaths.get()
         if not game_path or not CaseAwarePath(game_path).exists():
             messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
-            if self.oneshot:
+            if self.install:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
         self.check_access(Path(self.gamepaths.get()))
@@ -568,7 +569,7 @@ class App(tk.Tk):
                 installer,
                 tslpatchdata_root_path,
             )
-            if self.oneshot:
+            if self.install:
                 sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
         self.install_running = False
         self.install_button.config(state=tk.NORMAL)
@@ -617,7 +618,7 @@ class App(tk.Tk):
                 "Install completed with errors",
                 f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details. Total install time: {time_str}",
             )
-            if self.oneshot:
+            if self.install:
                 sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
         else:
             messagebox.showinfo(

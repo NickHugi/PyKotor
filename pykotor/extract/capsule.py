@@ -90,7 +90,7 @@ class Capsule:
             print(f"Cannot query '{queries}'. Reason: Capsule doesn't exist on disk: '{self._path}'")
             return {}
 
-        results = {}
+        results: dict[ResourceIdentifier, ResourceResult | None] = {}
         reader = BinaryReader.from_file(self._path)
 
         for query in queries:

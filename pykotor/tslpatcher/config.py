@@ -262,10 +262,10 @@ class ModInstaller:
         if replace_file:
             return BinaryReader.load_file(self.mod_path / patch.filename)
         if capsule is not None and exists_at_output_location:
-            return capsule.resource(*ResourceIdentifier.from_path(patch.filename))
+            return capsule.resource(*ResourceIdentifier.from_path(patch.filename), reload=True)
         if capsule is None and exists_at_output_location:
             return BinaryReader.load_file(output_container_path / patch.filename)
-        if capsule is None and not exists_at_output_location:
+        if exists_at_output_location:
             return BinaryReader.load_file(self.mod_path / patch.filename)
         return None
 
@@ -332,6 +332,7 @@ class ModInstaller:
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
             if not data_to_patch_bytes:
+                self.log.add_error("Could not find resource.")
                 continue
             patched_bytes_data = patch.apply(data_to_patch_bytes, memory, self.log, self.game())
             if capsule:
