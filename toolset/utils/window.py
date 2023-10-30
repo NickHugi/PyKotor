@@ -46,7 +46,7 @@ def openResourceEditor(
         data: The resource data.
         parentwindow:
         installation:
-        gffSpecialized: Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
+        gff_specialized: Use the editor specific to the GFF-type file. If None, uses is configured in the settings.
 
     Returns:
     -------
@@ -79,7 +79,7 @@ def openResourceEditor(
     from toolset.gui.windows.audio_player import AudioPlayer
 
     if gff_specialized is None:
-        gff_specialized = GlobalSettings().gffSpecializedEditors
+        gff_specialized = GlobalSettings().gff_specializedEditors
 
     editor = None
 

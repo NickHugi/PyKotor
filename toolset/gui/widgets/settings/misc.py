@@ -29,7 +29,7 @@ class MiscWidget(QWidget):
         self.ui.showPreviewUTPCheck.setChecked(self.settings.showPreviewUTP)
         self.ui.showPreviewUTDCheck.setChecked(self.settings.showPreviewUTD)
         self.ui.tempDirEdit.setText(self.settings.extractPath)
-        self.ui.gffEditorCombo.setCurrentIndex(1 if self.settings.gffSpecializedEditors else 0)
+        self.ui.gffEditorCombo.setCurrentIndex(1 if self.settings.gff_specializedEditors else 0)
         self.ui.ncsToolEdit.setText(self.settings.ncsDecompilerPath)
         self.ui.nssCompEdit.setText(self.settings.nssCompilerPath)
 
@@ -41,6 +41,6 @@ class MiscWidget(QWidget):
         self.settings.showPreviewUTP = self.ui.showPreviewUTPCheck.isChecked()
         self.settings.showPreviewUTD = self.ui.showPreviewUTDCheck.isChecked()
         self.settings.extractPath = self.ui.tempDirEdit.text()
-        self.settings.gffSpecializedEditors = bool(self.ui.gffEditorCombo.currentIndex())
+        self.settings.gff_specializedEditors = bool(self.ui.gffEditorCombo.currentIndex())
         self.settings.ncsDecompilerPath = self.ui.ncsToolEdit.text()
         self.settings.nssCompilerPath = self.ui.nssCompEdit.text()

@@ -177,8 +177,8 @@ class GlobalSettings(Settings):
         "firstTime",
         True
     )
-    gffSpecializedEditors = Settings._addSetting(
-        "gffSpecializedEditors",
+    gff_specializedEditors = Settings._addSetting(
+        "gff_specializedEditors",
         True
     )
     joinRIMsTogether = Settings._addSetting(

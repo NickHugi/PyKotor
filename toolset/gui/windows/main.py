@@ -235,7 +235,7 @@ class ToolWindow(QMainWindow):
         for resource in resources:
             filepath, editor = openResourceEditor(resource.filepath(), resource.resname(), resource.restype(),
                                                   resource.data(reload=True), self.active, self,
-                                                  gffSpecialized=useSpecializedEditor)
+                                                  gff_specialized=useSpecializedEditor)
     # endregion
 
     # region Events
