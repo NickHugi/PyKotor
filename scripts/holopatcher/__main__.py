@@ -206,9 +206,9 @@ class App(tk.Tk):
             messagebox.showinfo = MessageboxOverride.showinfo
             messagebox.showwarning = MessageboxOverride.showwarning
             messagebox.showerror = MessageboxOverride.showerror
-            messagebox.askyesno = MessageboxOverride.askyesno
-            messagebox.askyesnocancel = MessageboxOverride.askyesno
-            messagebox.askretrycancel = MessageboxOverride.askyesno
+            # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
+            # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
+            # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
         self.one_shot: bool = False
         if cmdline_args.install:
             self.one_shot = True
