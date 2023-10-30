@@ -237,7 +237,7 @@ class InventoryEditor(QDialog):
     def getItem(self, resname: str, filepath: os.PathLike | str) -> tuple[os.PathLike, str, UTI]:
         uti: UTI | None = None
         name: str = ""
-        c_filepath = Path(filepath)
+        c_filepath = filepath if isinstance(filepath, Path) else Path(filepath)
         if not c_filepath.exists():
             result = self._installation.resource(resname, ResourceType.UTI)
             if result is not None:
@@ -245,7 +245,7 @@ class InventoryEditor(QDialog):
                 filepath = result.filepath
                 name = self._installation.string(uti.name, "[No Name]")
         elif c_filepath.endswith((".rim", ".mod", ".erf")):
-            uti = read_uti(Capsule(filepath).resource(resname, ResourceType.UTI))
+            uti = read_uti(Capsule(c_filepath).resource(resname, ResourceType.UTI))
             name = self._installation.string(uti.name, "[No Name]")
         elif c_filepath.endswith(".bif"):
             uti = read_uti(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data)

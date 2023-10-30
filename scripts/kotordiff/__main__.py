@@ -20,7 +20,7 @@ from pykotor.resource.formats.lip import LIP, read_lip
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import Path, PureWindowsPath
+from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
 from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.lip import DiffLIP
 from pykotor.tslpatcher.diff.tlk import DiffTLK
@@ -59,7 +59,7 @@ def compute_sha256(where: os.PathLike | str | bytes):
         return sha256_hash.hexdigest()
 
     if isinstance(where, (os.PathLike, str)):
-        file_path = Path(where)
+        file_path = where if isinstance(where, Path) else Path(where).resolve()
 
         with file_path.open("rb") as f:
             while True:
@@ -248,8 +248,8 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
 
 
 def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | None:
-    c_file1 = Path(file1)
-    c_file2 = Path(file2)
+    c_file1 = file1 if isinstance(file1, Path) else Path(file1).resolve()
+    c_file2 = file2 if isinstance(file2, Path) else Path(file2).resolve()
     c_file1_rel: Path = relative_path_from_to(c_file2, c_file1)
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result = True
@@ -301,8 +301,8 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
 
 
 def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool | None:
-    c_dir1 = Path(dir1)
-    c_dir2 = Path(dir2)
+    c_dir1 = dir1 if isinstance(dir1, Path) else Path(dir1).resolve()
+    c_dir2 = dir1 if isinstance(dir1, Path) else Path(dir1).resolve()
 
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 
@@ -321,8 +321,8 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
-    install_path1 = Path(install_path1)
-    install_path2 = Path(install_path2)
+    install_path1 = install_path1 if isinstance(install_path1, Path) else Path(install_path1).resolve()
+    install_path2 = install_path2 if isinstance(install_path2, Path) else Path(install_path2).resolve()
     log_output()
     log_output((max(len(str(install_path1)) + 29, len(str(install_path2)) + 30)) * "-")
     log_output("Searching first install dir:", install_path1)
@@ -361,7 +361,7 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
-    c_path: Path = Path(path)
+    c_path: CaseAwarePath = CaseAwarePath(path)
     return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 

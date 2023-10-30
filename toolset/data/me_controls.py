@@ -166,7 +166,8 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyPressEvents = []
         self.keyReleaseEvents = []
 
-        f = Path(filepath).open("rb")
+        c_filepath = filepath if isinstance(filepath, Path) else Path(filepath).resolve()
+        f = c_filepath.open("rb")
         rootJSON = json.loads(jsmin(f.read().decode()))
 
         self.name = rootJSON["name"]

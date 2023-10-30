@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import traceback
 from abc import abstractmethod
-from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 from PyQt5 import QtCore
@@ -191,7 +190,7 @@ class Editor(QMainWindow):
                 self._saveEndsWithErf(data, data_ext)
             else:
                 self._saveEndsWithOther(data, data_ext)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             with Path("errorlog.txt").open("a") as file:
                 lines = traceback.format_exception(type(e), e, e.__traceback__)
                 file.writelines(lines)
@@ -220,7 +219,7 @@ class Editor(QMainWindow):
             if dialog.option == RimSaveOption.MOD:
                 folderpath = self._filepath.parent
                 filename = f"{Module.get_root(str(self._filepath))}.mod"
-                self._filepath = folderpath + filename
+                self._filepath = folderpath / filename
                 # Re-save with the updated filepath
                 self.save()
             elif dialog.option == RimSaveOption.Override:
@@ -271,15 +270,15 @@ class Editor(QMainWindow):
 
         # MDL is a special case - we need to save the MDX file with the MDL file.
         if self._restype == ResourceType.MDL:
-            with (self._filepath.with_suffix(self._filepath.suffix.lower().replace(".mdl", ".mdx"))).open("wb") as file:
+            with (self._filepath.with_suffix(".mdx")).open("wb") as file:
                 file.write(data_ext)
 
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
     def open(self):
-        filepath, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
-        if filepath != "":
-            c_filepath = Path(filepath)
+        filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
+        if filepath_str != "":
+            c_filepath = Path(filepath_str)
             encapsulated = is_capsule_file(c_filepath.name)
             encapsulated = encapsulated and "Load from module (*.erf *.mod *.rim)" in self._openFilter
             if encapsulated:
@@ -299,7 +298,7 @@ class Editor(QMainWindow):
         ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
-        self._filepath = Path(filepath)
+        self._filepath = filepath if isinstance(filepath, Path) else Path(filepath)
         self._resref = resref
         self._restype = restype
         self._revert = data

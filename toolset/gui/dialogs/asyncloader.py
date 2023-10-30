@@ -55,7 +55,7 @@ class AsyncLoader(QDialog):
 
     def updateInfo(self, text: str):
         self._infoText.setText(text)
-        if text == "":
+        if not text:
             self.setFixedSize(260, 40)
             self._infoText.setVisible(False)
         else:

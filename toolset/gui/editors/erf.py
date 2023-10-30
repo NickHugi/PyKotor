@@ -137,7 +137,7 @@ class ERFEditor(Editor):
             for index in self.ui.tableView.selectionModel().selectedRows(0):
                 item = self.model.itemFromIndex(index)
                 resource = item.data()
-                file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
+                file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}").resolve()
                 with file_path.open("wb") as file:
                     file.write(resource.data)
 
@@ -148,7 +148,7 @@ class ERFEditor(Editor):
 
     def addResources(self, filepaths: list[str]) -> None:
         for filepath in filepaths:
-            c_filepath = Path(filepath)
+            c_filepath = Path(filepath).resolve()
             try:
                 with c_filepath.open("rb") as file:
                     resref, restype_ext = c_filepath.parent.name.split(".", 1)
@@ -186,7 +186,7 @@ class ERFEditor(Editor):
                 QMessageBox(
                     QMessageBox.Warning,
                     "Cannot open nested ERF files",
-                    "Editing ERF or RIM files nested within each other is no supported.",
+                    "Editing ERF or RIM files nested within each other is not supported.",
                     QMessageBox.Ok,
                     self,
                 ).exec_()
@@ -209,13 +209,14 @@ class ERFEditor(Editor):
 
     def selectionChanged(self) -> None:
         if len(self.ui.tableView.selectedIndexes()) == 0:
-            self.ui.extractButton.setEnabled(False)
-            self.ui.openButton.setEnabled(False)
-            self.ui.unloadButton.setEnabled(False)
+            self._set_ui_controls_state(False)
         else:
-            self.ui.extractButton.setEnabled(True)
-            self.ui.openButton.setEnabled(True)
-            self.ui.unloadButton.setEnabled(True)
+            self._set_ui_controls_state(True)
+
+    def _set_ui_controls_state(self, state: bool):
+        self.ui.extractButton.setEnabled(state)
+        self.ui.openButton.setEnabled(state)
+        self.ui.unloadButton.setEnabled(state)
 
     def resourceSaved(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
         if filepath != self._filepath:
@@ -256,18 +257,19 @@ class ERFEditorTable(QTableView):
             event.ignore()
 
     def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
-        tempDir = Path(GlobalSettings().extractPath)
+        tempDir = Path(GlobalSettings().extractPath).resolve()
 
-        if not tempDir or not tempDir.safe_isdir():
+        if not tempDir or not tempDir.is_dir():
             return
 
         urls = []
         for index in [index for index in self.selectedIndexes() if index.column() == 0]:
             resource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
-            filepath = Path(f"{tempDir}/{resource.resref.get()}.{resource.restype.extension}")
+            file_stem, file_ext = resource.resref.get(), resource.restype.extension
+            filepath = Path(tempDir, f"{file_stem}.{file_ext}").resolve()
             with filepath.open("wb") as file:
                 file.write(resource.data)
-            urls.append(QtCore.QUrl.fromLocalFile(filepath))
+            urls.append(QtCore.QUrl.fromLocalFile(str(filepath)))
 
         mimeData = QMimeData()
         mimeData.setUrls(urls)

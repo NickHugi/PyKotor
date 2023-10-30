@@ -24,6 +24,7 @@ from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
     from pykotor.common.module import Module
+    from pykotor.extract.file import FileResource
     from toolset.data.installation import HTInstallation
 
 
@@ -86,12 +87,12 @@ class InsertInstanceDialog(QDialog):
         super().accept()
 
         new = True
-        resource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.UserRole)
+        resource: FileResource = self.ui.resourceList.selectedItems()[0].data(QtCore.Qt.UserRole)
 
         if self.ui.reuseResourceRadio.isChecked():
             new = False
             self.resname = resource.resname()
-            self.filepath = Path(resource.filepath())
+            self.filepath = resource.filepath()
             self.data = resource.data()
         elif self.ui.copyResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
