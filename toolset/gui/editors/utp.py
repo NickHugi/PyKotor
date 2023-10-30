@@ -1,29 +1,29 @@
-from __future__ import annotations
-
 from contextlib import suppress
-from typing import Optional
+from typing import Optional, Tuple
 
-from PyQt5.QtWidgets import QMessageBox, QWidget
-from utils.window import openResourceEditor
+from PyQt5.QtWidgets import QWidget, QMessageBox
 
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.dlg import DLG, dismantle_dlg
+from pykotor.resource.generics.dlg import dismantle_dlg, DLG
 from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
-from pykotor.tools import placeable
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.dialogs.inventory import InventoryEditor
-from toolset.gui.editor import Editor
+
+from data.installation import HTInstallation
+from gui.editor import Editor
+from gui.dialogs.inventory import InventoryEditor
+from utils.window import openResourceEditor
+
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from pykotor.tools import placeable
 
 
 class UTPEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
 
@@ -32,7 +32,6 @@ class UTPEditor(Editor):
         self._utp = UTP()
 
         from toolset.uic.editors.utp import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -137,7 +136,7 @@ class UTPEditor(Editor):
 
         self.updateItemCount()
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         utp = self._utp
 
         # Basic
@@ -196,14 +195,14 @@ class UTPEditor(Editor):
         gff = dismantle_utp(utp)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()
         self._loadUTP(UTP())
 
     def updateItemCount(self) -> None:
-        self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
+        self.ui.inventoryCountLabel.setText("Total Items: {}".format(len(self._utp.inventory)))
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
@@ -226,18 +225,16 @@ class UTPEditor(Editor):
         data, filepath = None, None
 
         if resname == "":
-            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor", "Conversation field cannot be blank.").exec_()
+            QMessageBox(QMessageBox.Critical, "Failed to open DLG Editor",
+                        "Conversation field cannot be blank.").exec_()
             return
 
         search = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(
-                QMessageBox.Information,
-                "DLG file not found",
-                "Do you wish to create a file in the override?",
-                QMessageBox.Yes | QMessageBox.No,
-            ).exec_()
+            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
+                                 "Do you wish to create a file in the override?",
+                                 QMessageBox.Yes | QMessageBox.No).exec_()
             if QMessageBox.Yes == msgbox:
                 data = bytearray()
 
@@ -251,14 +248,15 @@ class UTPEditor(Editor):
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
-            self._installation.load_override(".")
+            self._installation.reload_override("")
 
     def openInventory(self) -> None:
         capsules = []
 
         with suppress(Exception):
             root = Module.get_root(self._filepath)
-            capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
+            capsulesPaths = [path for path in self._installation.module_names() if
+                             root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() + path) for path in capsulesPaths])
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utp.inventory, {}, False, True)

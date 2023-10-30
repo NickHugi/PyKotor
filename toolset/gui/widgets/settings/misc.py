@@ -1,7 +1,11 @@
+import os
+from typing import Dict
+
 from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QWidget
 
-from toolset.gui.widgets.settings.installations import GlobalSettings
+from gui.widgets.settings.installations import GlobalSettings
 
 
 class MiscWidget(QWidget):
@@ -13,7 +17,6 @@ class MiscWidget(QWidget):
         self.settings = GlobalSettings()
 
         from toolset.uic.widgets.settings import misc
-
         self.ui = misc.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()

@@ -1,25 +1,25 @@
-from __future__ import annotations
+from typing import Optional, Tuple
 
-from typing import Optional
+from PyQt5.QtWidgets import QWidget, QMessageBox
 
-from PyQt5.QtWidgets import QMessageBox, QWidget
-from utils.window import openResourceEditor
-
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.dlg import DLG, dismantle_dlg
+from pykotor.resource.generics.dlg import dismantle_dlg, DLG
 from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
 from pykotor.resource.type import ResourceType
-from pykotor.tools import door
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
+
+from data.installation import HTInstallation
+from gui.editor import Editor
+from utils.window import openResourceEditor
+
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from pykotor.tools import door
 
 
 class UTDEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
         supported = [ResourceType.UTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
 
@@ -28,7 +28,6 @@ class UTDEditor(Editor):
         self._utd = UTD()
 
         from toolset.uic.editors.utd import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -122,7 +121,7 @@ class UTDEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utd.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         utd = self._utd
 
         # Basic
@@ -177,7 +176,7 @@ class UTDEditor(Editor):
         gff = dismantle_utd(utd)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()
@@ -210,12 +209,9 @@ class UTDEditor(Editor):
         search = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(
-                QMessageBox.Information,
-                "DLG file not found",
-                "Do you wish to create a file in the override?",
-                QMessageBox.Yes | QMessageBox.No,
-            ).exec_()
+            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
+                                 "Do you wish to create a file in the override?",
+                                 QMessageBox.Yes | QMessageBox.No).exec_()
             if QMessageBox.Yes == msgbox:
                 data = bytearray()
 
@@ -226,7 +222,7 @@ class UTDEditor(Editor):
                 writer.close()
         else:
             resname, restype, filepath, data = search
-            self._installation.load_override(".")
+            self._installation.reload_override("")
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)

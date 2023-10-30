@@ -1,35 +1,27 @@
-from __future__ import annotations
-
 from contextlib import suppress
-from typing import Optional
+from typing import Optional, Tuple
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (
-    QDialog,
-    QListWidgetItem,
-    QShortcut,
-    QTreeWidgetItem,
-    QWidget,
-)
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog, QShortcut
 
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_uti
+from pykotor.resource.generics.uti import UTI, dismantle_uti, UTIProperty, read_uti
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
+
+from data.installation import HTInstallation
+from gui.editor import Editor
 
 
 class UTIEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTI]
         super().__init__(parent, "Item Editor", "item", supported, supported, installation)
 
         self._uti = UTI()
 
         from toolset.uic.editors.uti import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -127,7 +119,7 @@ class UTIEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(uti.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         uti = self._uti
 
         # Basic
@@ -158,7 +150,7 @@ class UTIEditor(Editor):
         gff = dismantle_uti(uti)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()
@@ -227,13 +219,13 @@ class UTIEditor(Editor):
         costName = UTIEditor.costName(self._installation, utiProperty.cost_table, utiProperty.cost_value)
 
         if costName and subpropName:
-            text = f"{propName}: {subpropName} [{costName}]"
+            text = "{}: {} [{}]".format(propName, subpropName, costName)
         elif subpropName:
-            text = f"{propName}: {subpropName}"
+            text = "{}: {}".format(propName, subpropName)
         elif costName:
-            text = f"{propName}: [{costName}]"
+            text = "{}: [{}]".format(propName, costName)
         else:
-            text = f"{propName}"
+            text = "{}".format(propName)
 
         return text
 
@@ -259,18 +251,20 @@ class UTIEditor(Editor):
     def propertyName(installation: HTInstallation, prop: int):
         properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         stringref = properties.get_row(prop).get_integer("name")
-        return installation.talktable().string(stringref)
+        name = installation.talktable().string(stringref)
+        return name
 
     @staticmethod
     def subpropertyName(installation: HTInstallation, prop: int, subprop: int):
         properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         subtypeResname = properties.get_cell(prop, "subtyperesref")
-        if subtypeResname == "":
+        if subtypeResname  == "":
             return None
         subproperties = installation.htGetCache2DA(subtypeResname)
         headerStrref = "name" if "name" in subproperties.get_headers() else "string_ref"
         nameStrref = subproperties.get_row(subprop).get_integer(headerStrref)
-        return installation.talktable().string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
+        name = installation.talktable().string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
+        return name
 
     @staticmethod
     def costName(installation: HTInstallation, cost: int, value: int):
@@ -278,7 +272,8 @@ class UTIEditor(Editor):
             costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
             costtable = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
             stringref = costtable.get_row(value).get_integer("name")
-            return installation.talktable().string(stringref)
+            name = installation.talktable().string(stringref)
+            return name
         return None
 
     @staticmethod
@@ -287,7 +282,8 @@ class UTIEditor(Editor):
             paramtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
             paramtable = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
             stringref = paramtable.get_row(param).get_integer("name")
-            return installation.talktable().string(stringref)
+            name = installation.talktable().string(stringref)
+            return name
         return None
 
 
@@ -296,7 +292,6 @@ class PropertyEditor(QDialog):
         super().__init__()
 
         from toolset.uic.dialogs.property import Ui_Dialog
-
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -327,7 +322,7 @@ class PropertyEditor(QDialog):
         upgrades = installation.htGetCache2DA(HTInstallation.TwoDA_UPGRADES)
         self.ui.upgradeSelect.addItem("[None]", None)
         for i in range(upgrades.get_height()):
-            text = upgrades.get_cell(i, "label").replace("_", " ").title()
+            text = upgrades.get_cell(i, "label").replace("_" , " ").title()
             self.ui.upgradeSelect.addItem(text, i)
         if utiProperty.upgrade_type is not None:
             self.ui.upgradeSelect.setCurrentIndex(utiProperty.upgrade_type + 1)
@@ -338,11 +333,7 @@ class PropertyEditor(QDialog):
         propertyName = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
         self.ui.propertyEdit.setText(propertyName if propertyName else "")
 
-        subpropertyName = UTIEditor.subpropertyName(
-            self._installation,
-            self._utiProperty.property_name,
-            self._utiProperty.subtype,
-        )
+        subpropertyName = UTIEditor.subpropertyName(self._installation, self._utiProperty.property_name, self._utiProperty.subtype)
         self.ui.subpropertyEdit.setText(subpropertyName if subpropertyName else "")
 
         costName = UTIEditor.costName(self._installation, self._utiProperty.cost_table, self._utiProperty.cost_value)

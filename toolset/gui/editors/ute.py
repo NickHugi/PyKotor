@@ -1,31 +1,23 @@
-from __future__ import annotations
+from typing import Optional, Tuple
 
-from typing import Optional
+from PyQt5.QtWidgets import QWidget, QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
 
-from PyQt5.QtWidgets import (
-    QCheckBox,
-    QDoubleSpinBox,
-    QSpinBox,
-    QTableWidgetItem,
-    QWidget,
-)
-
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
+from pykotor.resource.generics.ute import UTE, dismantle_ute, UTECreature, read_ute
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
+
+from data.installation import HTInstallation
+from gui.editor import Editor
 
 
 class UTEEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         from toolset.uic.editors.ute import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -99,7 +91,7 @@ class UTEEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(ute.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         ute = self._ute
 
         # Basic
@@ -147,7 +139,7 @@ class UTEEditor(Editor):
         gff = dismantle_ute(ute)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QWidget
 
+from data.installation import HTInstallation
 from pykotor.resource.generics.dlg import DLGAnimation
-from toolset.data.installation import HTInstallation
 
 
 class EditAnimationDialog(QDialog):
@@ -9,17 +9,11 @@ class EditAnimationDialog(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs.edit_animation import Ui_Dialog
-
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
         animations_list = installation.htGetCache2DA(HTInstallation.TwoDA_DIALOG_ANIMS)
-        self.ui.animationSelect.setItems(
-            animations_list.get_column("name"),
-            sortAlphabetically=True,
-            cleanupStrings=True,
-            ignoreBlanks=True,
-        )
+        self.ui.animationSelect.setItems(animations_list.get_column("name"), sortAlphabetically=True, cleanupStrings=True, ignoreBlanks=True)
 
         self.ui.animationSelect.setCurrentIndex(animation.animation_id)
         self.ui.participantEdit.setText(animation.participant)

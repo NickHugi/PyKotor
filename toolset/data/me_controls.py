@@ -3,29 +3,24 @@ from __future__ import annotations
 import json
 import math
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import Set, List, Union, Any, Optional
 
 from jsmin import jsmin
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
-
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Camera
-from pykotor.tools.path import Path
+from pykotor.resource.generics.git import GITInstance
 
-if TYPE_CHECKING:
-    import os
-
-    from pykotor.resource.generics.git import GITInstance
-    from toolset.gui.widgets.renderer.module import ModuleRenderer
+from gui.widgets.renderer.module import ModuleRenderer
 
 
 def getMouseCode(string: str):
     MOUSE_MAP = {
         "LEFT": QtCore.Qt.LeftButton,
         "MIDDLE": QtCore.Qt.MiddleButton,
-        "RIGHT": QtCore.Qt.RightButton,
+        "RIGHT": QtCore.Qt.RightButton
     }
 
     return MOUSE_MAP[string]
@@ -35,42 +30,43 @@ def getKeyCode(string: str):
     KEY_MAP = {
         "CTRL": QtCore.Qt.Key_Control,
         "ALT": QtCore.Qt.Key_Alt,
-        "SHIFT": QtCore.Qt.Key_Shift,
+        "SHIFT": QtCore.Qt.Key_Shift
     }
 
     if string in KEY_MAP:
         return KEY_MAP[string]
-    return QKeySequence(string)[0]
+    else:
+        return QKeySequence(string)[0]
 
 
 class ModuleEditorControls(ABC):
     def __init__(self, renderer: ModuleRenderer):
         self.renderer: ModuleRenderer = renderer
         self.cameraStyle: str = "UNFOCUSED"
-        self.variables: list[DCVariable] = []
+        self.variables: List[DCVariable] = []
 
     @abstractmethod
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
     @abstractmethod
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
     @abstractmethod
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
     @abstractmethod
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
     @abstractmethod
-    def onKeyPressed(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
     @abstractmethod
-    def onKeyReleased(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
     def getValue(self, name: str) -> Any:
@@ -82,7 +78,7 @@ class ModuleEditorControls(ABC):
     def setValue(self, name: str, value: Any) -> Any:
         for variable in self.variables:
             if variable.name() == name:
-                return variable.set_data(value)
+                return variable.set(value)
         return None
 
     def wz(self, x: float, y: float, z: float) -> float:
@@ -123,7 +119,7 @@ class ModuleEditorControls(ABC):
 
     def alterCameraRotation(self, yaw: float, pitch: float) -> None:
         self.renderer.scene.camera.yaw += yaw
-        self.renderer.scene.camera.pitch = min(math.pi - 0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
+        self.renderer.scene.camera.pitch = min(math.pi-0.000001, max(0.000001, self.renderer.scene.camera.pitch + pitch))
 
     def setCameraRotation(self, yaw: float, pitch: float) -> None:
         self.renderer.scene.camera.yaw = yaw
@@ -142,23 +138,25 @@ class ModuleEditorControls(ABC):
 
 
 class DynamicModuleEditorControls(ModuleEditorControls):
-    def __init__(self, renderer: ModuleRenderer, filepath: Optional[str] = None):
+
+    def __init__(self, renderer: ModuleRenderer, filepath: str = None):
         super().__init__(renderer)
 
         self.name: str = ""
 
-        self.mouseMoveEvents: list[DCItem] = []
-        self.mousePressEvents: list[DCItem] = []
-        self.mouseReleaseEvents: list[DCItem] = []
-        self.mouseScrollEvents: list[DCItem] = []
-        self.keyPressEvents: list[DCItem] = []
-        self.keyReleaseEvents: list[DCItem] = []
+        self.mouseMoveEvents: List[DCItem] = []
+        self.mousePressEvents: List[DCItem] = []
+        self.mouseReleaseEvents: List[DCItem] = []
+        self.mouseScrollEvents: List[DCItem] = []
+        self.keyPressEvents: List[DCItem] = []
+        self.keyReleaseEvents: List[DCItem] = []
+        # self.keyHoldEvents: List[DCItem] = []
 
         if filepath is not None:
             self.load(filepath)
 
-    def load(self, filepath: os.PathLike | str) -> None:
-        self.variables: list[DCVariable] = []
+    def load(self, filepath: str) -> None:
+        self.variables: List[DCVariable] = []
         self.mouseMoveEvents = []
         self.mousePressEvents = []
         self.mouseReleaseEvents = []
@@ -166,8 +164,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyPressEvents = []
         self.keyReleaseEvents = []
 
-        c_filepath = filepath if isinstance(filepath, Path) else Path(filepath).resolve()
-        f = c_filepath.open("rb")
+        f = open(filepath, "rb")
         rootJSON = json.loads(jsmin(f.read().decode()))
 
         self.name = rootJSON["name"]
@@ -187,7 +184,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             elif data_type == "BOOL":
                 var = DCVariableBool(name, default)
             else:
-                ValueError(f"Unknown data type '{data_type}'.")
+                ValueError("Unknown data type '{}'.".format(data_type))
 
             self.variables.append(var)
 
@@ -205,8 +202,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             elif controlJSON["event"] == "KEY_RELEASE":
                 array = self.keyReleaseEvents
             else:
-                msg = "Unknown event '{}'.".format(controlJSON["event"])
-                raise ValueError(msg)
+                raise ValueError("Unknown event '{}'.".format(controlJSON["event"]))
 
             if controlJSON["keys"] is None:
                 keys = None
@@ -229,21 +225,19 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                 for effectJSON in effectsJSON:
                     args = effectsJSON[effectJSON]
 
-                    if effectJSON in DC_EFFECT_MAP:
+                    if effectJSON in DC_EFFECT_MAP.keys():
                         try:
                             effect = DC_EFFECT_MAP[effectJSON](*args)
                         except TypeError:
-                            msg = f"Invalid number of arguments for '{effectJSON}'."
-                            raise ValueError(msg)
+                            raise ValueError("Invalid number of arguments for '{}'.".format(effectJSON))
                     else:
-                        msg = f"Unknown effect '{effectJSON}'."
-                        raise ValueError(msg)
+                        raise ValueError("Unknown effect '{}'.".format(effectJSON))
 
                     effects.append(effect)
 
             array.append(DCItem(keys, mouse, effects))
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
         for event in self.mouseMoveEvents:
@@ -251,31 +245,31 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.mouseScrollEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, delta.x, delta.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.mousePressEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
-    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.mouseReleaseEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
-    def onKeyPressed(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyPressed(self, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.keyPressEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
                     effect.apply(self, 0, 0)
 
-    def onKeyReleased(self, buttons: set[int], keys: set[int]) -> None:
+    def onKeyReleased(self, buttons: Set[int], keys: Set[int]) -> None:
         for event in self.keyReleaseEvents:
             if (event.mouse == buttons or event.mouse is None) and (event.keys == keys or event.keys is None):
                 for effect in event.effects:
@@ -283,66 +277,55 @@ class DynamicModuleEditorControls(ModuleEditorControls):
 
 
 class HolocronModuleEditorControls(DynamicModuleEditorControls):
+
     def __init__(self, renderer: ModuleRenderer):
         super().__init__(renderer)
 
-        self.variables: list[DCVariable] = [
+        self.variables: List[DCVariable] = [
             DCVariableFloat("panCamSensitivity", 0.033),
             DCVariableFloat("rotateCamSensitivity", 0.005),
             DCVariableFloat("raiseCamSensitivity", 0.025),
             DCVariableFloat("panObjSensitivity", 0.033),
-            DCVariableFloat("rotateObjSensitivity", 0.005),
+            DCVariableFloat("rotateObjSensitivity", 0.005)
         ]
 
-        self.mouseMoveEvents: list[DCItem] = [
-            DCItem(
-                {getKeyCode("CTRL")},
-                {getMouseCode("LEFT")},
-                [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)],
-            ),
-            DCItem(
-                {getKeyCode("CTRL")},
-                {getMouseCode("MIDDLE")},
-                [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")],
-            ),
-            DCItem(set(), {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
-            DCItem(set(), {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
+        self.mouseMoveEvents: List[DCItem] = [
+            DCItem({getKeyCode("CTRL")}, {getMouseCode("LEFT")}, [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)]),
+            DCItem({getKeyCode("CTRL")}, {getMouseCode("MIDDLE")}, [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")]),
+            DCItem(set(),      {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
+            DCItem(set(),      {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")])
         ]
-        self.mousePressEvents: list[DCItem] = [
+        self.mousePressEvents: List[DCItem] = [
             DCItem(set(), {getMouseCode("LEFT")}, [DCEffectSelectObjectAtMouse()]),
-            DCItem(set(), {getMouseCode("RIGHT")}, [DCEffectOpenContextMenu()]),
+            DCItem(set(), {getMouseCode("RIGHT")}, [DCEffectOpenContextMenu()])
         ]
-        self.mouseReleaseEvents: list[DCItem] = []
-        self.mouseScrollEvents: list[DCItem] = [
-            DCItem({getKeyCode("CTRL")}, set(), [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")]),
+        self.mouseReleaseEvents: List[DCItem] = []
+        self.mouseScrollEvents: List[DCItem] = [
+            DCItem({getKeyCode("CTRL")}, set(), [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")])
         ]
-        self.keyPressEvents: list[DCItem] = [
+        self.keyPressEvents: List[DCItem] = [
             DCItem({getKeyCode("1")}, set(), [DCEffectSetCameraRotation(0, "crp")]),
-            DCItem(
-                {getKeyCode("3")},
-                set(),
-                [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi / 2, 0)],
-            ),
+            DCItem({getKeyCode("3")}, set(), [DCEffectSetCameraRotation(0, "crp"), DCEffectAlterCameraRotation(None, math.pi/2, 0)]),
             DCItem({getKeyCode("7")}, set(), [DCEffectSetCameraRotation("cry", 0)]),
-            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
-            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
-            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
-            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
-            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi / 8)]),
-            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi / 8, 0)]),
-            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi / 8)]),
-            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi / 8, 0)]),
+            DCItem({getKeyCode("4")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
+            DCItem({getKeyCode("6")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
+            DCItem({getKeyCode("8")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
+            DCItem({getKeyCode("2")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
+            DCItem({getKeyCode("W")}, set(), [DCEffectAlterCameraRotation(None, 0, math.pi/8)]),
+            DCItem({getKeyCode("A")}, set(), [DCEffectAlterCameraRotation(None, math.pi/8, 0)]),
+            DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
+            DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
             DCItem({getKeyCode("Q")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, 1)]),
-            DCItem({getKeyCode("Z")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, -1)]),
+            DCItem({getKeyCode("Z")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, -1)])
         ]
-        self.keyReleaseEvents: list[DCItem] = []
+        self.keyReleaseEvents: List[DCItem] = []
 
 
 class DCItem:
-    def __init__(self, keys: set[int], mouse: set[int], effects: list[DCEffect]):
-        self.keys: set[int] = keys
-        self.mouse: set[int] = mouse
-        self.effects: list[DCEffect] = effects
+    def __init__(self, keys: Set[int], mouse: Set[int], effects: List[DCEffect]):
+        self.keys: Set[int] = keys
+        self.mouse: Set[int] = mouse
+        self.effects: List[DCEffect] = effects
 
 
 class DCVariable:
@@ -353,10 +336,10 @@ class DCVariable:
         return self._name
 
     def get(self) -> Any:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def set(self, value: Any):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 # region Variable Classes
@@ -403,10 +386,10 @@ class DCVariableBool(DCVariable):
 
 
 class DCVariableString(DCVariable):
-    def __init__(self, name: str, value: str, allowed: list[str]):
+    def __init__(self, name: str, value: str, allowed: List[str]):
         super().__init__(name)
         self._value: str = value
-        self._allowed: list[str] = allowed
+        self._allowed: List[str] = allowed
 
     def name(self) -> str:
         return self._name
@@ -482,11 +465,10 @@ class DCEffect(ABC):
                 output = controls.renderer.scene.camera.pitch
 
             return output * modifier
-        if isinstance(value, (float, int)):
+        elif isinstance(value, float) or isinstance(value, int):
             return value
-        return 0
-
-
+        else:
+            return 0
 # endregion
 
 
@@ -561,14 +543,7 @@ class DCEffectAlterCameraZoom(DCEffect):
 
 # alterObjectPosition
 class DCEffectAlterObjectPosition(DCEffect):
-    def __init__(
-        self,
-        sensitivityVar: Optional[str],
-        snapToWalkmesh: bool,
-        x: Union[float, str],
-        y: Union[float, str],
-        z: Union[float, str],
-    ):
+    def __init__(self, sensitivityVar: Optional[str], snapToWalkmesh: bool, x: Union[float, str], y: Union[float, str], z: Union[float, str]):
         self.sensitivityVar: Optional[str] = sensitivityVar
         self.snapToWalkmesh: bool = snapToWalkmesh
         self.x: Union[float, str] = x
@@ -641,7 +616,6 @@ class DCEffectSnapCameraToObject(DCEffect):
         if controls.renderer.scene.selection:
             controls.renderer.snapCameraToPoint(controls.renderer.scene.selection[0].position(), self.distance)
 
-
 # endregion
 
 
@@ -657,5 +631,5 @@ DC_EFFECT_MAP = {
     "openContextMenu": DCEffectOpenContextMenu,
     "setVariable": DCEffectSetVariable,
     "changeCameraFocus": DCEffectChangeCameraFocus,
-    "snapCameraToObject": DCEffectSnapCameraToObject,
+    "snapCameraToObject": DCEffectSnapCameraToObject
 }

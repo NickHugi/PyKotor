@@ -109,7 +109,7 @@ class BWMEditor(Editor):
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         worldData = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
-        face = self._bwm.face_at(world.x, world.y)
+        face = self._bwm.faceAt(world.x, world.y)
 
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control in keys:
             self.ui.renderArea.panCamera(-worldData.x, -worldData.y)

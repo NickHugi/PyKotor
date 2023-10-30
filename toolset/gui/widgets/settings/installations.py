@@ -1,14 +1,12 @@
-from __future__ import annotations
-
 import os
-from typing import Any
+from typing import Dict, Any
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget
 
-from toolset.data.settings import Settings
+from data.settings import Settings
 
 
 class InstallationsWidget(QWidget):
@@ -21,7 +19,6 @@ class InstallationsWidget(QWidget):
         self.settings = GlobalSettings()
 
         from toolset.uic.widgets.settings import installations
-
         self.ui = installations.Ui_Form()
         self.ui.setupUi(self)
         self.setupValues()
@@ -31,7 +28,7 @@ class InstallationsWidget(QWidget):
         self.installationsModel.clear()
         for installation in self.settings.installations().values():
             item = QStandardItem(installation.name)
-            item.setData({"path": installation.path, "tsl": installation.tsl})
+            item.setData({'path': installation.path, 'tsl': installation.tsl})
             self.installationsModel.appendRow(item)
 
     def setupSignals(self) -> None:
@@ -56,7 +53,7 @@ class InstallationsWidget(QWidget):
 
     def addNewInstallation(self) -> None:
         item = QStandardItem("New")
-        item.setData({"path": "", "tsl": False})
+        item.setData({'path': '', 'tsl': False})
         self.installationsModel.appendRow(item)
         self.edited.emit()
 
@@ -75,8 +72,8 @@ class InstallationsWidget(QWidget):
         item = self.installationsModel.itemFromIndex(index)
 
         data = item.data()
-        data["path"] = self.ui.pathDirEdit.text()
-        data["tsl"] = self.ui.pathTslCheckbox.isChecked()
+        data['path'] = self.ui.pathDirEdit.text()
+        data['tsl'] = self.ui.pathTslCheckbox.isChecked()
         item.setData(data)
 
         item.setText(self.ui.pathNameEdit.text())
@@ -91,13 +88,13 @@ class InstallationsWidget(QWidget):
             item = self.installationsModel.itemFromIndex(index)
 
             self.ui.pathNameEdit.setText(item.text())
-            self.ui.pathDirEdit.setText(item.data()["path"])
-            self.ui.pathTslCheckbox.setChecked(bool(item.data()["tsl"]))
+            self.ui.pathDirEdit.setText(item.data()['path'])
+            self.ui.pathTslCheckbox.setChecked(bool(item.data()['tsl']))
 
 
 class InstallationConfig:
     def __init__(self, name: str):
-        self._settings = QSettings("HolocronToolset", "Global")
+        self._settings = QSettings('HolocronToolset', 'Global')
         self._name: str = name
 
     @property
@@ -106,14 +103,14 @@ class InstallationConfig:
 
     @name.setter
     def name(self, value: str) -> None:
-        installations = self._settings.value("installations", {}, dict[str, Any])
+        installations = self._settings.value("installations", {}, Dict[str, Any])
         installation = installations[self._name]
 
         del installations[self._name]
         installations[value] = installation
         installations[value]["name"] = value
 
-        self._settings.setValue("installations", installations)
+        self._settings.setValue('installations', installations)
         self._name = value
 
     @property
@@ -125,7 +122,7 @@ class InstallationConfig:
     def path(self, value: str) -> None:
         installations = self._settings.value("installations", {})
         installations[self._name]["path"] = value
-        self._settings.setValue("installations", installations)
+        self._settings.setValue('installations', installations)
 
     @property
     def tsl(self) -> bool:
@@ -136,72 +133,73 @@ class InstallationConfig:
     def tsl(self, value: bool) -> None:
         installations = self._settings.value("installations", {})
         installations[self._name]["tsl"] = value
-        self._settings.setValue("installations", installations)
+        self._settings.setValue('installations', installations)
 
 
 class GlobalSettings(Settings):
     def __init__(self):
         super().__init__("Global")
 
-    def installations(self) -> dict[str, InstallationConfig]:
+    def installations(self) -> Dict[str, InstallationConfig]:
         if self.settings.value("installations", None) is None:
-            self.settings.setValue(
-                "installations",
-                {
-                    "KotOR": {"name": "KotOR", "path": "", "tsl": False},
-                    "TSL": {"name": "TSL", "path": "", "tsl": True},
-                },
-            )
+            self.settings.setValue("installations", {
+                "KotOR": {"name": "KotOR", "path": "", "tsl": False},
+                "TSL": {"name": "TSL", "path": "", "tsl": True}
+            })
 
-        return {name: InstallationConfig(name) for name in self.settings.value("installations", {})}
+        installations = {}
+        for name, installation in self.settings.value("installations", {}).items():
+            installations[name] = InstallationConfig(name)
+
+        return installations
 
     # region Strings
     extractPath = Settings._addSetting(
         "extractPath",
-        "",
+        ""
     )
     nssCompilerPath = Settings._addSetting(
         "nssCompilerPath",
-        "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp",
+        "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp"
     )
     ncsDecompilerPath = Settings._addSetting(
         "ncsDecompilerPath",
-        "",
+        ""
     )
     # endregion
 
     # region Bools
     disableRIMSaving = Settings._addSetting(
         "disableRIMSaving",
-        True,
+        True
     )
     firstTime = Settings._addSetting(
         "firstTime",
-        True,
+        True
     )
     gffSpecializedEditors = Settings._addSetting(
         "gffSpecializedEditors",
-        True,
+        True
     )
     joinRIMsTogether = Settings._addSetting(
         "joinRIMsTogether",
-        False,
+        False
     )
     greyRIMText = Settings._addSetting(
         "greyRIMText",
-        True,
+        True
     )
     showPreviewUTC = Settings._addSetting(
         "showPreviewUTC",
-        True,
+        True
     )
     showPreviewUTP = Settings._addSetting(
         "showPreviewUTP",
-        True,
+        True
     )
     showPreviewUTD = Settings._addSetting(
         "showPreviewUTD",
-        True,
+        True
     )
     # endregion
 

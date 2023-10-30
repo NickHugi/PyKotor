@@ -1,4 +1,6 @@
-from PyQt5.QtGui import QIcon, QPixmap
+import math
+
+from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from pykotor.common.misc import ResRef
@@ -10,7 +12,6 @@ class EncounterDialog(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs.instance.encounter import Ui_Dialog
-
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 

@@ -1,26 +1,23 @@
-from __future__ import annotations
+from typing import Optional, Tuple
 
-from typing import TYPE_CHECKING, Optional
+from PyQt5.QtWidgets import QWidget
 
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utt import UTT, dismantle_utt, read_utt
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
 
-if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
+from data.installation import HTInstallation
+from gui.editor import Editor
 
 
 class UTTEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
         from toolset.uic.editors.utt import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -90,7 +87,7 @@ class UTTEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utt.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         utt = self._utt
 
         # Basic
@@ -131,7 +128,7 @@ class UTTEditor(Editor):
         gff = dismantle_utt(utt)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()

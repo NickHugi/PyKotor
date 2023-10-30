@@ -1,13 +1,11 @@
-from __future__ import annotations
+from typing import List, Dict, NamedTuple
 
-from typing import NamedTuple
-
-from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
-
+from PyQt5.QtWidgets import QDialog, QWidget, QMessageBox
 from pykotor.common.module import Module
 from pykotor.tools import module
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.asyncloader import AsyncLoader
+
+from data.installation import HTInstallation
+from gui.dialogs.asyncloader import AsyncLoader
 
 _ROOT_INDEX = 0
 _INSTALLATION_INDEX = 1
@@ -16,21 +14,20 @@ _INSTALLATION_INDEX = 1
 class ModuleOption(NamedTuple):
     name: str
     root: str
-    files: list[str]
+    files: List[str]
     installation: HTInstallation
 
 
 class CloneModuleDialog(QDialog):
-    def __init__(self, parent: QWidget, active: HTInstallation, installations: dict[str, HTInstallation]):
+    def __init__(self, parent: QWidget, active: HTInstallation, installations: Dict[str, HTInstallation]):
         super().__init__(parent)
 
         from toolset.uic.dialogs import clone_module
-
         self.ui = clone_module.Ui_Dialog()
         self.ui.setupUi(self)
 
         self._active: HTInstallation = active
-        self._installations: dict[str, HTInstallation] = {active.name: active}
+        self._installations: Dict[str, HTInstallation] = {active.name: active}
 
         self.ui.createButton.clicked.connect(self.ok)
         self.ui.cancelButton.clicked.connect(self.close)
@@ -53,38 +50,20 @@ class CloneModuleDialog(QDialog):
         keepSounds = self.ui.keepSoundsCheckbox.isChecked()
         keepPathing = self.ui.keepPathingCheckbox.isChecked()
 
-        def l():
-            return module.clone_module(
-                root,
-                identifier,
-                prefix,
-                name,
-                installation,
-                copyTextures=copyTextures,
-                copyLightmaps=copyLightmaps,
-                keepDoors=keepDoors,
-                keepPlaceables=keepPlaceables,
-                keepSounds=keepSounds,
-                keepPathing=keepPathing,
-            )
+        l = lambda: module.clone_module(root, identifier, prefix, name, installation, copyTextures=copyTextures,
+                                        copyLightmaps=copyLightmaps, keepDoors=keepDoors, keepPlaceables=keepPlaceables,
+                                        keepSounds=keepSounds, keepPathing=keepPathing)
 
         if copyTextures:
-            QMessageBox(
-                QMessageBox.Information,
-                "This may take a while",
-                "You have selected to create copies of the "
-                "texture. This process may add a few extra minutes to the waiting time.",
-            ).exec_()
+            QMessageBox(QMessageBox.Information, "This may take a while", "You have selected to create copies of the "
+                        "texture. This process may add a few extra minutes to the waiting time.").exec_()
 
         if AsyncLoader(self, "Creating module", l, "Failed to create module").exec_():
-            QMessageBox(
-                QMessageBox.Information,
-                "Clone Successful",
-                f"You can now warp to the cloned module '{identifier}'.",
-            ).exec_()
+            QMessageBox(QMessageBox.Information, "Clone Successful",
+                        "You can now warp to the cloned module '{}'.".format(identifier)).exec_()
 
     def loadModules(self) -> None:
-        options: dict[str, ModuleOption] = {}
+        options: Dict[str, ModuleOption] = {}
         for installation in self._installations.values():
             for filename, name in installation.module_names().items():
                 root = Module.get_root(filename)

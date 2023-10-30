@@ -1,18 +1,11 @@
-from __future__ import annotations
+from typing import Optional, Tuple
 
-from typing import TYPE_CHECKING, Optional
-
-try:
-    import chardet
-except ImportError:
-    chardet = None
-from PyQt5.QtWidgets import QPlainTextEdit, QWidget
-
+import chardet
+from PyQt5.QtWidgets import QWidget, QPlainTextEdit
+from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
-from toolset.gui.editor import Editor
 
-if TYPE_CHECKING:
-    from pykotor.extract.installation import Installation
+from gui.editor import Editor
 
 
 class TXTEditor(Editor):
@@ -24,7 +17,6 @@ class TXTEditor(Editor):
         self._wordWrap: bool = False
 
         from toolset.uic.editors.txt import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -40,19 +32,13 @@ class TXTEditor(Editor):
         try:
             # Try UTF-8 First - KotOR files typically do not use UTF8
             self.ui.textEdit.setPlainText(data.decode("windows-1252"))
-        except UnicodeDecodeError:
+        except:
             # Slower, auto detect encoding
-            encoding = (chardet.detect(data) or {}).get("encoding") if chardet else "utf8"
-            try:
-                self.ui.textEdit.setPlainText(data.decode(encoding))
-            except UnicodeDecodeError:
-                try:
-                    self.ui.textEdit.setPlainText(data.decode("cp-1252"))
-                except UnicodeDecodeError:
-                    self.ui.textEdit.setPlainText(data.decode(encoding="windows-1252", errors="replace"))
+            encoding = chardet.detect(data)['encoding']
+            self.ui.textEdit.setPlainText(data.decode(encoding))
 
-    def build(self) -> tuple[bytes, bytes]:
-        return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode(), b""
+    def build(self) -> Tuple[bytes, bytes]:
+        return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode(), b''
 
     def new(self) -> None:
         super().new()

@@ -263,7 +263,7 @@ class BWM:
             bbmax.z = max(bbmax.z, vertex.z)
         return bbmin, bbmax
 
-    def face_at(
+    def faceAt(
         self,
         x: float,
         y: float,

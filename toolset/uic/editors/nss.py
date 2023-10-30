@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'editors\nss.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_MainWindow:
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -123,6 +125,4 @@ class Ui_MainWindow:
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionCompile.setText(_translate("MainWindow", "Compile"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-
-
 from toolset.gui.editors.nss import CodeEditor

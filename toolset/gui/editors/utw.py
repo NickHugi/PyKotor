@@ -1,27 +1,23 @@
-from __future__ import annotations
+from typing import Optional, Tuple
 
-from typing import TYPE_CHECKING, Optional
+from PyQt5.QtWidgets import QWidget
 
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utw import UTW, dismantle_utw, read_utw
 from pykotor.resource.type import ResourceType
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
 
-if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-
-    from toolset.data.installation import HTInstallation
+from data.installation import HTInstallation
+from gui.editor import Editor
 
 
 class UTWEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
         from toolset.uic.editors.utw import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -63,7 +59,7 @@ class UTWEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utw.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         utw = self._utw
 
         utw.name = self.ui.nameEdit.locstring()
@@ -78,7 +74,7 @@ class UTWEditor(Editor):
         gff = dismantle_utw(utw)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()

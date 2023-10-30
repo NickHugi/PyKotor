@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import TYPE_CHECKING, ClassVar, Optional, Union
+from typing import TYPE_CHECKING
 
+from gui.editor import Editor
+from gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -34,35 +36,26 @@ from pykotor.common.scriptdefs import (
     TSL_FUNCTIONS,
 )
 from pykotor.common.stream import BinaryWriter
-from pykotor.resource.formats.erf import read_erf, write_erf
-from pykotor.resource.formats.rim import read_rim, write_rim
+from pykotor.resource.formats.erf import ERF, read_erf, write_erf
+from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import (
-    is_bif_file,
-    is_erf_or_mod_file,
-    is_rim_file,
-)
-from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.installations import (
-    GlobalSettings,
-    NoConfigurationSetError,
-)
+from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
+    from data.installation import HTInstallation
+
     from pykotor.common.script import ScriptFunction
-    from toolset.data.installation import HTInstallation
 
 
 class NSSEditor(Editor):
     TAB_SIZE = 4
     TAB_AS_SPACE = True
 
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation]):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None):
         supported = [ResourceType.NSS, ResourceType.NCS]
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
         from toolset.uic.editors.nss import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -129,12 +122,11 @@ class NSSEditor(Editor):
                 QMessageBox(QMessageBox.Critical, "Filepath is not set", str(e)).exec_()
                 self.new()
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes] | None:
         if self._restype.NSS:
             return self.ui.codeEdit.toPlainText().encode(), b""
         if self._restype.NCS:
             compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
-            return None
         return None
 
     def new(self) -> None:
@@ -154,31 +146,31 @@ class NSSEditor(Editor):
             source = self.ui.codeEdit.toPlainText()
             data = compileScript(source, self._installation.tsl)
 
-            save_path_str = ""
-            if self._filepath is None or is_bif_file(self._filepath.name):
-                save_path_str = self._installation.override_path() / f"{self._resref}.ncs"
-                BinaryWriter.dump(save_path_str, data)
-            elif is_erf_or_mod_file(self._filepath.name):
-                erf = read_erf(self._filepath)
+            filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
+            if filepath.endswith((".erf", ".mod")):
+                savePath = Path(filepath, f"{self._resref}.{self._restype.extension}")
+                erf: ERF = read_erf(filepath)
                 erf.set_data(self._resref, ResourceType.NCS, data)
-                write_erf(erf, self._filepath)
-                save_path_str = self._filepath / f"{self._resref}.{self._restype.extension}"
-            elif is_rim_file(self._filepath.name):
-                rim = read_rim(self._filepath)
+                write_erf(erf, filepath)
+            elif filepath.endswith(".rim"):
+                savePath = Path(filepath, f"{self._resref}.{self._restype.extension}")
+                rim: RIM = read_rim(filepath)
                 rim.set_data(self._resref, ResourceType.NCS, data)
-                write_rim(rim, self._filepath)
-                save_path_str = self._filepath / f"{self._resref}.{self._restype.extension}"
+                write_rim(rim, filepath)
+            else:
+                savePath = filepath.with_suffix(".ncs")
+                if not filepath or filepath.endswith(".bif"):
+                    savePath = self._installation.override_path() / f"{self._resref}.ncs"
+                BinaryWriter.dump(savePath, data)
 
-            if not save_path_str:
-                raise FileNotFoundError("No filepath chosen.")
             QMessageBox(
                 QMessageBox.Information,
                 "Success",
-                f"Compiled script successfully saved to:\n '{save_path_str}'.",
+                f"Compiled script successfully saved to:\n {savePath}.",
             ).exec_()
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to compile", str(e)).exec_()
-        except OSError as e:
+        except IOError as e:
             QMessageBox(QMessageBox.Critical, "Failed to save file", str(e)).exec_()
 
     def changeDescription(self) -> None:
@@ -215,7 +207,7 @@ class NSSEditor(Editor):
             insert = f"{function.name}()"
             self.insertTextAtCursor(insert, insert.index("(") + 1)
 
-    def insertTextAtCursor(self, insert: str, offset: Optional[int] = None) -> None:
+    def insertTextAtCursor(self, insert: str, offset: int = None) -> None:
         """Inserts the given text at the cursors location and then shifts the cursor position by the offset specified. If
         no offset is specified then the cursor is moved to the end of the inserted text.
 
@@ -241,7 +233,7 @@ class NSSEditor(Editor):
 
         if insertion:
             index = self.ui.codeEdit.textCursor().position()
-            inserted = self.ui.codeEdit.toPlainText()[index - 1 : index]
+            inserted = self.ui.codeEdit.toPlainText()[index-1:index]
             text = self.ui.codeEdit.toPlainText()[:index]
 
             startBrace = text.count("{")
@@ -318,14 +310,8 @@ class CodeEditor(QPlainTextEdit):
             if block.isVisible() and bottom >= e.rect().top():
                 number = str(blockNumber + 1)
                 painter.setPen(QColor(140, 140, 140))
-                painter.drawText(
-                    0,
-                    int(top),
-                    self._lineNumberArea.width(),
-                    self.fontMetrics().height(),
-                    QtCore.Qt.AlignCenter,
-                    number,
-                )
+                painter.drawText(0, int(top), self._lineNumberArea.width(), self.fontMetrics().height(),
+                                 QtCore.Qt.AlignCenter, number)
 
             block = block.next()
             top = bottom
@@ -376,32 +362,15 @@ class CodeEditor(QPlainTextEdit):
 
 
 class SyntaxHighlighter(QSyntaxHighlighter):
-    KEYWORDS: ClassVar[list[str]] = [
-        "return",
-        "float",
-        "int",
-        "object",
-        "location",
-        "void",
-        "effect",
-        "action",
-        "string",
-        "vector",
-        "talent",
-        "if",
-        "for",
-        "while",
-        "#include",
-        "TRUE",
-        "FALSE",
-    ]
+    KEYWORDS = ["return", "float", "int", "object", "location", "void", "effect", "action", "string", "vector",
+                "talent", "if", "for", "while", "#include", "TRUE", "FALSE"]
 
-    OPERATORS: ClassVar[list[str]] = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "+", "-", "/", "<<", ">>", "&", "|"]
+    OPERATORS = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
 
     COMMENT_BLOCK_START = QRegExp("/\\*")
     COMMENT_BLOCK_END = QRegExp("\\*/")
 
-    BRACES: ClassVar[list[str]] = ["{", "}", "(", ")", "[", "]"]
+    BRACES = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
     def __init__(self, parent: QTextDocument, installation: HTInstallation):
         super().__init__(parent)
@@ -410,11 +379,11 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "keyword": self.getCharFormat("blue"),
             "operator": self.getCharFormat("darkRed"),
             "numbers": self.getCharFormat("brown"),
-            "comment": self.getCharFormat("gray", bold=False, italic=True),
+            "comment": self.getCharFormat("gray", False, True),
             "string": self.getCharFormat("darkMagenta"),
             "brace": self.getCharFormat("darkRed"),
             "function": self.getCharFormat("darkGreen"),
-            "constant": self.getCharFormat("darkBlue"),
+            "constant": self.getCharFormat("darkBlue")
         }
 
         functions = [function.name for function in (TSL_FUNCTIONS if installation.tsl else KOTOR_FUNCTIONS)]
@@ -424,8 +393,8 @@ class SyntaxHighlighter(QSyntaxHighlighter):
         rules += [(r"\b%s\b" % w, 0, self.styles["keyword"]) for w in SyntaxHighlighter.KEYWORDS]
         rules += [(r"\b%s\b" % w, 0, self.styles["function"]) for w in functions]
         rules += [(r"\b%s\b" % w, 0, self.styles["constant"]) for w in constants]
-        rules += [(f"{o}", 0, self.styles["operator"]) for o in SyntaxHighlighter.OPERATORS]
-        rules += [(f"{o}", 0, self.styles["brace"]) for o in SyntaxHighlighter.BRACES]
+        rules += [(o, 0, self.styles["operator"]) for o in SyntaxHighlighter.OPERATORS]
+        rules += [(o, 0, self.styles["brace"]) for o in SyntaxHighlighter.BRACES]
 
         rules += [
             (r"\b[+-]?[0-9]+[lL]?\b", 0, self.styles["numbers"]),
@@ -464,7 +433,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             self.setFormat(startIndex, commentLength, self.styles["comment"])
             startIndex = SyntaxHighlighter.COMMENT_BLOCK_START.indexIn(text, startIndex + commentLength + 2)
 
-    def getCharFormat(self, color: Union[str, int], bold: bool = False, italic: bool = False) -> QTextCharFormat:
+    def getCharFormat(self, color: str | int, bold: bool = False, italic: bool = False) -> QTextCharFormat:
         color = QColor(color)
         textFormat = QTextCharFormat()
         textFormat.setForeground(color)

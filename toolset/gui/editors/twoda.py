@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import Optional, Tuple
 
-import pyperclip
+import pyperclip as pyperclip
 from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QAction, QMessageBox, QWidget
-
-from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QMessageBox, QWidget, QAction
+from pykotor.resource.formats.twoda import TwoDA, write_2da, read_2da
 from pykotor.resource.type import ResourceType
-from toolset.gui.editor import Editor
 
-if TYPE_CHECKING:
-    from toolset.data.installation import HTInstallation
+from data.installation import HTInstallation
+from gui.editor import Editor
 
 
 class TwoDAEditor(Editor):
@@ -23,7 +21,6 @@ class TwoDAEditor(Editor):
         self.resize(400, 250)
 
         from toolset.uic.editors.twoda import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -61,7 +58,7 @@ class TwoDAEditor(Editor):
         try:
             twoda = read_2da(data)
 
-            headers = ["", *list(twoda.get_headers())]
+            headers = [""] + list(twoda.get_headers())
             self.model.setColumnCount(len(headers))
             self.model.setHorizontalHeaderLabels(headers)
 
@@ -99,21 +96,19 @@ class TwoDAEditor(Editor):
 
             for header in headers[1:]:
                 action = QAction(header, self)
-                action.triggered.connect(
-                    lambda _, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header),
-                )
+                action.triggered.connect(lambda _, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
                 self.ui.menuSetRowHeader.addAction(action)
             # endregion
 
             self.proxyModel.setSourceModel(self.model)
             for i in range(twoda.get_height()):
                 self.ui.twodaTable.resizeColumnToContents(i)
-        except ValueError:
+        except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
             self.proxyModel.setSourceModel(self.model)
             self.new()
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         twoda = TwoDA()
 
         for i in range(self.model.columnCount())[1:]:
@@ -123,11 +118,11 @@ class TwoDAEditor(Editor):
             twoda.add_row()
             twoda.set_label(i, self.model.item(i, 0).text())
             for j, header in enumerate(twoda.get_headers()):
-                twoda.set_cell(i, header, self.model.item(i, j + 1).text())
+                twoda.set_cell(i, header, self.model.item(i, j+1).text())
 
         data = bytearray()
         write_2da(twoda, data, self._restype)
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()
@@ -177,7 +172,7 @@ class TwoDAEditor(Editor):
         topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
         topLeftItem = self.model.itemFromIndex(topLeftIndex)
 
-        _top, left = y, x = topLeftItem.row(), topLeftItem.column()
+        top, left = y, x = topLeftItem.row(), topLeftItem.column()
 
         for row in rows:
             for cell in row.split("\t"):
@@ -189,7 +184,9 @@ class TwoDAEditor(Editor):
             y += 1
 
     def insertRow(self) -> None:
-        """Inserts a new row at the end of the table."""
+        """
+        Inserts a new row at the end of the table.
+        """
         rowIndex = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for i in range(self.model.columnCount())])
         self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
@@ -200,7 +197,9 @@ class TwoDAEditor(Editor):
         self.resetVerticalHeaders()
 
     def duplicateRow(self) -> None:
-        """Inserts a new row, copying values of the selected row, at the end of the table."""
+        """
+        Inserts a new row, copying values of the selected row, at the end of the table.
+        """
         if self.ui.twodaTable.selectedIndexes():
             copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
 
@@ -214,7 +213,9 @@ class TwoDAEditor(Editor):
             self.resetVerticalHeaders()
 
     def removeSelectedRows(self) -> None:
-        """Removes the rows the user has selected."""
+        """
+        Removes the rows the user has selected.
+        """
         rows = set()
 
         for index in self.ui.twodaTable.selectedIndexes():
@@ -224,7 +225,9 @@ class TwoDAEditor(Editor):
             self.model.removeRow(row)
 
     def redoRowLabels(self) -> None:
-        """Iterates through every row setting the row label to match the row index."""
+        """
+        Iterates through every row setting the row label to match the row index.
+        """
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
@@ -248,9 +251,8 @@ class TwoDAEditor(Editor):
                     columnIndex = i
             headers = [self.model.item(i, columnIndex).text() for i in range(self.model.rowCount())]
         elif self.verticalHeaderOption == VerticalHeaderOption.NONE:
-            self.ui.twodaTable.verticalHeader().setStyleSheet(
-                "QHeaderView::section { color: rgba(0, 0, 0, 0.0); }QHeaderView::section:checked { color: #000000; }",
-            )
+            self.ui.twodaTable.verticalHeader().setStyleSheet("QHeaderView::section { color: rgba(0, 0, 0, 0.0); }"
+                                                              "QHeaderView::section:checked { color: #000000; }")
             headers = ["⯈" for _ in range(self.model.rowCount())]
 
         for i in range(self.model.rowCount()):

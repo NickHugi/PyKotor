@@ -1,6 +1,5 @@
-from PyQt5.QtGui import QColor, QImage, QPixmap
-from PyQt5.QtWidgets import QColorDialog, QWidget
-
+from PyQt5.QtGui import QColor, QPixmap, QImage
+from PyQt5.QtWidgets import QWidget, QColorDialog
 from pykotor.common.misc import Color
 
 
@@ -12,7 +11,6 @@ class ColorEdit(QWidget):
         self.allowAlpha: bool = False
 
         from toolset.uic.widgets.color_edit import Ui_Form
-
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 
@@ -21,7 +19,7 @@ class ColorEdit(QWidget):
 
     def openColorDialog(self) -> None:
         initColor = Color.from_rgba_integer(self.ui.colorSpin.value())
-        initQColor = QColor(int(initColor.r * 255), int(initColor.g * 255), int(initColor.b * 255), int(initColor.a * 255))
+        initQColor = QColor(int(initColor.r*255), int(initColor.g*255), int(initColor.b*255), int(initColor.a*255))
 
         dialog = QColorDialog(QColor(initQColor.red(), initQColor.green(), initQColor.blue(), initQColor.alpha()))
         dialog.setOption(QColorDialog.ShowAlphaChannel, on=self.allowAlpha)

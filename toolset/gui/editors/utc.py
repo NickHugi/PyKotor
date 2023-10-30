@@ -1,16 +1,14 @@
-from __future__ import annotations
-
 from contextlib import suppress
-from typing import Optional
+from copy import deepcopy
+from typing import Optional, Tuple
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QImage, QPixmap, QTransform
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
-from utils.window import openResourceEditor
+from PyQt5.QtGui import QPixmap, QImage, QTransform
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMessageBox
 
-from pykotor.common.language import Gender, Language
-from pykotor.common.misc import Game, ResRef
+from pykotor.common.language import Language, Gender
+from pykotor.common.misc import ResRef, Game
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -21,14 +19,17 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, dismantle_utc, read_utc
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.inventory import InventoryEditor
-from toolset.gui.editor import Editor
+
+from data.installation import HTInstallation
+from gui.editor import Editor
+from gui.dialogs.inventory import InventoryEditor
+from utils.window import openResourceEditor
+
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 
 class UTCEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
         supported = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
@@ -37,7 +38,6 @@ class UTCEditor(Editor):
         self._utc = UTC()
 
         from toolset.uic.editors.utc import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -62,14 +62,11 @@ class UTCEditor(Editor):
         self.ui.featList.itemChanged.connect(self.updateFeatSummary)
         self.ui.powerList.itemChanged.connect(self.updatePowerSummary)
 
+        #self.ui.appearanceSelect.currentIndexChanged.connect(self.update3dPreview)
         self.ui.alignmentSlider.valueChanged.connect(self.update3dPreview)
 
-        self.ui.actionSaveUnusedFields.triggered.connect(
-            lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()),
-        )
-        self.ui.actionAlwaysSaveK2Fields.triggered.connect(
-            lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()),
-        )
+        self.ui.actionSaveUnusedFields.triggered.connect(lambda: setattr(self.settings, "saveUnusedFields", self.ui.actionSaveUnusedFields.isChecked()))
+        self.ui.actionAlwaysSaveK2Fields.triggered.connect(lambda: setattr(self.settings, "alwaysSaveK2Fields", self.ui.actionAlwaysSaveK2Fields.isChecked()))
         self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
     def _setupInstallation(self, installation: HTInstallation):
@@ -80,19 +77,10 @@ class UTCEditor(Editor):
         self.ui.lastnameEdit.setInstallation(installation)
 
         # Load required 2da files if they have not been loaded already
-        required = [
-            HTInstallation.TwoDA_APPEARANCES,
-            HTInstallation.TwoDA_SOUNDSETS,
-            HTInstallation.TwoDA_PORTRAITS,
-            HTInstallation.TwoDA_SUBRACES,
-            HTInstallation.TwoDA_SPEEDS,
-            HTInstallation.TwoDA_FACTIONS,
-            HTInstallation.TwoDA_GENDERS,
-            HTInstallation.TwoDA_PERCEPTIONS,
-            HTInstallation.TwoDA_CLASSES,
-            HTInstallation.TwoDA_FEATS,
-            HTInstallation.TwoDA_POWERS,
-        ]
+        required = [HTInstallation.TwoDA_APPEARANCES, HTInstallation.TwoDA_SOUNDSETS, HTInstallation.TwoDA_PORTRAITS,
+                    HTInstallation.TwoDA_SUBRACES, HTInstallation.TwoDA_SPEEDS, HTInstallation.TwoDA_FACTIONS,
+                    HTInstallation.TwoDA_GENDERS, HTInstallation.TwoDA_PERCEPTIONS, HTInstallation.TwoDA_CLASSES,
+                    HTInstallation.TwoDA_FEATS, HTInstallation.TwoDA_POWERS]
         installation.htBatchCache2DA(required)
 
         appearances = installation.htGetCache2DA(HTInstallation.TwoDA_APPEARANCES)
@@ -113,9 +101,7 @@ class UTCEditor(Editor):
         self.ui.subraceSelect.setItems(subraces.get_column("label"))
         self.ui.speedSelect.setItems(speeds.get_column("label"))
         self.ui.factionSelect.setItems(factions.get_column("label"))
-        self.ui.genderSelect.setItems(
-            label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant")
-        )
+        self.ui.genderSelect.setItems(label.replace("_", " ").title().replace("Gender ", "") for label in genders.get_column("constant"))
         self.ui.perceptionSelect.setItems(perceptions.get_column("label"))
         self.ui.class1Select.setItems(classes.get_column("label"))
 
@@ -131,7 +117,7 @@ class UTCEditor(Editor):
         for feat in feats:
             stringref = feat.get_integer("name", 0)
             text = installation.talktable().string(stringref) if stringref != 0 else feat.get_string("label")
-            text = f"[Unused Feat ID: {feat.label()}]" if text == "" else text
+            text = "[Unused Feat ID: {}]".format(feat.label()) if text == "" else text
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(feat.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
@@ -145,7 +131,7 @@ class UTCEditor(Editor):
             stringref = power.get_integer("name", 0)
             text = installation.talktable().string(stringref) if stringref != 0 else power.get_string("label")
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
-            text = f"[Unused Power ID: {power.label()}]" if text == "" else text
+            text = "[Unused Power ID: {}]".format(power.label()) if text == "" else text
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(power.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
@@ -240,7 +226,7 @@ class UTCEditor(Editor):
         for feat in utc.feats:
             item = self.getFeatItem(feat)
             if item is None:
-                item = QListWidgetItem(f"[Modded Feat ID: {feat}]")
+                item = QListWidgetItem("[Modded Feat ID: {}]".format(feat))
                 item.setData(QtCore.Qt.UserRole, feat)
                 item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
                 self.ui.featList.addItem(item)
@@ -254,7 +240,7 @@ class UTCEditor(Editor):
             for power in utc_class.powers:
                 item = self.getPowerItem(power)
                 if item is None:
-                    item = QListWidgetItem(f"[Modded Power ID: {power}]")
+                    item = QListWidgetItem("[Modded Power ID: {}]".format(power))
                     item.setData(QtCore.Qt.UserRole, power)
                     item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
                     self.ui.powerList.addItem(item)
@@ -278,7 +264,7 @@ class UTCEditor(Editor):
         # Comments
         self.ui.comments.setPlainText(utc.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         utc = self._utc
 
         utc.first_name = self.ui.firstnameEdit.locstring()
@@ -370,7 +356,7 @@ class UTCEditor(Editor):
         gff = dismantle_utc(utc, version, use_deprecated=self.settings.saveUnusedFields)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()
@@ -382,14 +368,14 @@ class UTCEditor(Editor):
         locstring = self.ui.firstnameEdit.locstring()
         ltr = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
-        locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
+        locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.firstnameEdit.setLocstring(locstring)
 
     def randomizeLastname(self) -> None:
         locstring = self.ui.lastnameEdit.locstring()
         ltr = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
-        locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
+        locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.lastnameEdit.setLocstring(locstring)
 
     def generateTag(self) -> None:
@@ -436,12 +422,9 @@ class UTCEditor(Editor):
         search = self._installation.resource(resname, ResourceType.DLG)
 
         if search is None:
-            msgbox = QMessageBox(
-                QMessageBox.Information,
-                "DLG file not found",
-                "Do you wish to create a file in the override?",
-                QMessageBox.Yes | QMessageBox.No,
-            ).exec_()
+            msgbox = QMessageBox(QMessageBox.Information, "DLG file not found",
+                              "Do you wish to create a file in the override?",
+                              QMessageBox.Yes | QMessageBox.No).exec_()
             if QMessageBox.Yes == msgbox:
                 data = bytearray()
 
@@ -455,7 +438,7 @@ class UTCEditor(Editor):
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
-            self._installation.load_override(".")
+            self._installation.reload_override("")
 
     def openInventory(self) -> None:
         droid = self.ui.raceSelect.currentIndex() == 0
@@ -466,15 +449,7 @@ class UTCEditor(Editor):
             capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
             capsules.extend([Capsule(self._installation.module_path() + path) for path in capsulesPaths])
 
-        inventoryEditor = InventoryEditor(
-            self,
-            self._installation,
-            capsules,
-            [],
-            self._utc.inventory,
-            self._utc.equipment,
-            droid=droid,
-        )
+        inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
         if inventoryEditor.exec_():
             self._utc.inventory = inventoryEditor.inventory
             self._utc.equipment = inventoryEditor.equipment
@@ -482,21 +457,23 @@ class UTCEditor(Editor):
             self.update3dPreview()
 
     def updateItemCount(self) -> None:
-        self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utc.inventory)}")
+        self.ui.inventoryCountLabel.setText("Total Items: {}".format(len(self._utc.inventory)))
 
     def getFeatItem(self, featId: int) -> Optional[QListWidgetItem]:
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
             if item.data(QtCore.Qt.UserRole) == featId:
                 return item
-        return None
+        else:
+            return None
 
     def getPowerItem(self, powerId: int) -> Optional[QListWidgetItem]:
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             if item.data(QtCore.Qt.UserRole) == powerId:
                 return item
-        return None
+        else:
+            return None
 
     def togglePreview(self) -> None:
         self.globalSettings.showPreviewUTC = not self.globalSettings.showPreviewUTC
@@ -531,12 +508,12 @@ class UTCEditor(Editor):
                 self.ui.previewRenderer.setCreature(utc)
         else:
             self.ui.previewRenderer.setVisible(False)
-            self.setFixedSize(798 - 350, 553)
+            self.setFixedSize(798-350, 553)
 
 
 class UTCSettings:
     def __init__(self):
-        self.settings = QSettings("HolocronToolset", "UTCEditor")
+        self.settings = QSettings('HolocronToolset', 'UTCEditor')
 
     @property
     def saveUnusedFields(self) -> bool:
@@ -544,7 +521,7 @@ class UTCSettings:
 
     @saveUnusedFields.setter
     def saveUnusedFields(self, value: bool) -> None:
-        self.settings.setValue("saveUnusedFields", value)
+        self.settings.setValue('saveUnusedFields', value)
 
     @property
     def alwaysSaveK2Fields(self) -> bool:
@@ -552,4 +529,4 @@ class UTCSettings:
 
     @alwaysSaveK2Fields.setter
     def alwaysSaveK2Fields(self, value: bool) -> None:
-        self.settings.setValue("alwaysSaveK2Fields", value)
+        self.settings.setValue('alwaysSaveK2Fields', value)

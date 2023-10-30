@@ -3,9 +3,10 @@ from typing import Optional
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
 
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.language import LocalizedString
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+
+from data.installation import HTInstallation
 
 
 class LocalizedStringLineEdit(QWidget):
@@ -15,7 +16,6 @@ class LocalizedStringLineEdit(QWidget):
         super().__init__(parent)
 
         from toolset.uic.widgets.locstring_edit import Ui_Form
-
         self.ui = Ui_Form()
         self.ui.setupUi(self)
 

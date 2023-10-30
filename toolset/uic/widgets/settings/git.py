@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'widgets\settings\git.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtWidgets
 
 
-class Ui_Form:
+class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
         Form.resize(466, 773)
@@ -306,7 +308,5 @@ class Ui_Form:
         self.label_28.setText(_translate("Form", "Door:"))
         self.label_29.setText(_translate("Form", "Non-Walk Grass:"))
         self.coloursResetButton.setText(_translate("Form", "Reset"))
-
-
-from toolset.gui.widgets.edit.color import ColorEdit
+from gui.widgets.edit.color import ColorEdit
 from toolset.gui.widgets.set_bind import SetBindWidget

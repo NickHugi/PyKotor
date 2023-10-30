@@ -1,33 +1,29 @@
-from __future__ import annotations
-
 from contextlib import suppress
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, Tuple
 
+from PyQt5.QtWidgets import QWidget
+
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utm import UTM, dismantle_utm, read_utm
 from pykotor.resource.type import ResourceType
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.dialogs.inventory import InventoryEditor
-from toolset.gui.editor import Editor
 
-if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-
-    from toolset.data.installation import HTInstallation
+from data.installation import HTInstallation
+from gui.editor import Editor
+from gui.dialogs.inventory import InventoryEditor
 
 
 class UTMEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
         self._utm = UTM()
 
         from toolset.uic.editors.utm import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -67,7 +63,7 @@ class UTMEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(utm.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         utm = self._utm
 
         # Basic
@@ -88,7 +84,7 @@ class UTMEditor(Editor):
         gff = dismantle_utm(utm)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()

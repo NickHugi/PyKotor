@@ -1,20 +1,14 @@
-from __future__ import annotations
-
 from contextlib import suppress
-from typing import TYPE_CHECKING, Optional
+from typing import List, Optional, Dict
 
-from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
-
+from PyQt5.QtGui import QStandardItemModel, QPixmap, QImage, QTransform
+from PyQt5.QtWidgets import QWidget
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.formats.twoda import TwoDA, read_2da
+from pykotor.resource.generics.uti import UTI
 from pykotor.resource.type import ResourceType
-
-if TYPE_CHECKING:
-    from PyQt5.QtWidgets import QWidget
-
-    from pykotor.resource.generics.uti import UTI
 
 
 class HTInstallation(Installation):
@@ -62,17 +56,17 @@ class HTInstallation(Installation):
     TwoDA_PLOT = "plot"
     TwoDA_CAMERAS = "camerastyle"
 
-    def __init__(self, path: str, name: str, tsl: bool, main_window: QWidget):
+    def __init__(self, path: str, name: str, tsl: bool, mainWindow: QWidget):
         super().__init__(path)
 
         self.name = name
         self.tsl = tsl
 
-        self.main_window: QWidget = main_window
+        self.mainWindow: QWidget = mainWindow
         self.cacheCoreItems: Optional[QStandardItemModel] = None
 
-        self._cache2da: dict[str, TwoDA] = {}
-        self._cacheTpc: dict[str, TPC] = {}
+        self._cache2da: Dict[str, TwoDA] = {}
+        self._cacheTpc: Dict[str, TPC] = {}
 
     # region Cache 2DA
     def htGetCache2DA(self, resname: str):
@@ -82,7 +76,7 @@ class HTInstallation(Installation):
             self._cache2da[resname] = read_2da(result.data)
         return self._cache2da[resname]
 
-    def htBatchCache2DA(self, resnames: list[str], reload: bool = False):
+    def htBatchCache2DA(self, resnames: List[str], reload: bool = False):
         if reload:
             queries = [ResourceIdentifier(resname, ResourceType.TwoDA) for resname in resnames]
         else:
@@ -98,7 +92,6 @@ class HTInstallation(Installation):
 
     def htClearCache2DA(self):
         self._cache2da = {}
-
     # endregion
 
     # region Cache TPC
@@ -107,9 +100,9 @@ class HTInstallation(Installation):
             self._cacheTpc[resname] = self.texture(resname, [SearchLocation.TEXTURES_TPA, SearchLocation.TEXTURES_GUI])
         return self._cacheTpc[resname] if resname in self._cacheTpc else None
 
-    def htBatchCacheTPC(self, names: list[str], reload: bool = False):
+    def htBatchCacheTPC(self, names: List[str], reload: bool = False):
         if reload:
-            queries = list(names)
+            queries = [name for name in names]
         else:
             queries = [name for name in names if name not in self._cache2da]
 
@@ -121,7 +114,6 @@ class HTInstallation(Installation):
 
     def htClearCacheTPC(self):
         self._cacheTpc = {}
-
     # endregion
 
     def getItemIconFromUTI(self, uti: UTI) -> QPixmap:
@@ -137,7 +129,8 @@ class HTInstallation(Installation):
             if texture is not None:
                 width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
                 image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                return pixmap
 
         return pixmap
 
@@ -154,6 +147,7 @@ class HTInstallation(Installation):
             if texture is not None:
                 width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
                 image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+                return pixmap
 
         return pixmap

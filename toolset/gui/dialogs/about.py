@@ -1,5 +1,6 @@
-from config import PROGRAM_VERSION
 from PyQt5.QtWidgets import QDialog, QWidget
+
+from config import PROGRAM_VERSION
 
 
 class About(QDialog):
@@ -7,7 +8,6 @@ class About(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs import about
-
         self.ui = about.Ui_Dialog()
         self.ui.setupUi(self)
 

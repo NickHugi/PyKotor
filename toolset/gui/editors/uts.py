@@ -1,27 +1,23 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Optional
+from typing import Optional, Tuple
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice
+from PyQt5.QtCore import QIODevice, QBuffer
+from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
+from PyQt5.QtWidgets import QWidget, QMessageBox, QListWidgetItem
 
+from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
 
-if TYPE_CHECKING:
-    from PyQt5.QtGui import QCloseEvent
-
-    from toolset.data.installation import HTInstallation
+from data.installation import HTInstallation
+from gui.editor import Editor
 
 
 class UTSEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
         supported = [ResourceType.UTS]
         super().__init__(parent, "Sound Editor", "sound", supported, supported, installation)
 
@@ -31,7 +27,6 @@ class UTSEditor(Editor):
         self.buffer = QBuffer(self)
 
         from toolset.uic.editors.uts import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -125,7 +120,7 @@ class UTSEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(uts.comment)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         uts = self._uts
 
         # Basic
@@ -167,7 +162,7 @@ class UTSEditor(Editor):
         gff = dismantle_uts(uts)
         write_gff(gff, data)
 
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()

@@ -1,16 +1,18 @@
+from typing import List
+
 from PyQt5.QtWidgets import QWidget
 
+from gui.widgets.edit.color import ColorEdit
+from gui.widgets.set_bind import SetBindWidget
 from pykotor.common.misc import Color
-from toolset.gui.widgets.edit.color import ColorEdit
-from toolset.gui.widgets.set_bind import SetBindWidget
 
 
 class SettingsWidget(QWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self.binds: list = []
-        self.colours: list = []
+        self.binds: List = []
+        self.colours: List = []
         self.settings = None
 
     def _registerBind(self, widget: SetBindWidget, bindName: str) -> None:

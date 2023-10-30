@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'editors\ute.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtWidgets
 
 
-class Ui_MainWindow:
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(507, 313)
@@ -307,7 +309,5 @@ class Ui_MainWindow:
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-
-
-from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
-from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+from gui.widgets.edit.combobox_2da import ComboBox2DA
+from gui.widgets.edit.locstring import LocalizedStringLineEdit

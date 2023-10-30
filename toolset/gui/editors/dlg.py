@@ -1,56 +1,37 @@
-from __future__ import annotations
-
-from copy import copy, deepcopy
-from typing import TYPE_CHECKING, Optional
+from copy import deepcopy, copy
+from typing import Optional, List, Tuple
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
-from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import (
-    QListWidgetItem,
-    QMenu,
-    QMessageBox,
-    QPlainTextEdit,
-    QShortcut,
-    QWidget,
-)
+from PyQt5.QtCore import QItemSelection, QBuffer, QIODevice, QPoint, QItemSelectionModel
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QBrush
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtWidgets import QWidget, QListWidgetItem, QPlainTextEdit, QMenu, QMessageBox, QShortcut
 
+from gui.dialogs.edit.dialog_animation import EditAnimationDialog
+from gui.dialogs.edit.dialog_model import CutsceneModelDialog
+from gui.dialogs.edit.locstring import LocalizedStringDialog
+from gui.editor import Editor
+from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.dlg import (
-    DLG,
-    DLGComputerType,
-    DLGConversationType,
-    DLGEntry,
-    DLGLink,
-    DLGNode,
-    DLGReply,
-    dismantle_dlg,
-    read_dlg,
-)
+from pykotor.resource.generics.dlg import DLG, DLGLink, DLGNode, DLGReply, DLGEntry, dismantle_dlg, \
+    DLGConversationType, DLGComputerType, read_dlg
 from pykotor.resource.type import ResourceType
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
-from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
 
-if TYPE_CHECKING:
-    from pykotor.common.language import LocalizedString
+from data.installation import HTInstallation
+
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
 _COPY_ROLE = QtCore.Qt.UserRole + 2
 
 
 class DLGEditor(Editor):
-    def __init__(self, parent: QWidget | None, installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
         supported = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
         from toolset.uic.editors.dlg import Ui_MainWindow
-
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -177,33 +158,33 @@ class DLGEditor(Editor):
 
         self._dlg = dlg
         self.model.clear()
-        seen_link = []
-        seen_node = []
+        seenLink = []
+        seenNode = []
         for start in dlg.starters:
             item = QStandardItem()
-            self._loadDLGRec(item, start, seen_link, seen_node)
+            self._loadDLGRec(item, start, seenLink, seenNode)
             self.model.appendRow(item)
 
-    def _loadDLGRec(self, item: QStandardItem, link: DLGLink, seen_link: list[DLGLink], seen_node: list[DLGNode]):
+    def _loadDLGRec(self, item: QStandardItem, link: DLGLink, seenLink: List[DLGLink], seenNode: List[DLGNode]):
         node = link.node
         item.setData(link, _LINK_ROLE)
 
-        already_listed = link in seen_link or node in seen_node
-        if link not in seen_link:
-            seen_link.append(link)
-        if node not in seen_node:
-            seen_node.append(node)
+        alreadyListed = link in seenLink or node in seenNode
+        if not link in seenLink:
+            seenLink.append(link)
+        if not node in seenNode:
+            seenNode.append(node)
 
-        item.setData(already_listed, _COPY_ROLE)
+        item.setData(alreadyListed, _COPY_ROLE)
         self.refreshItem(item)
 
-        if not already_listed:
+        if not alreadyListed:
             for child_link in node.links:
                 child_item = QStandardItem()
-                self._loadDLGRec(child_item, child_link, seen_link, seen_node)
+                self._loadDLGRec(child_item, child_link, seenLink, seenNode)
                 item.appendRow(child_item)
 
-    def build(self) -> tuple[bytes, bytes]:
+    def build(self) -> Tuple[bytes, bytes]:
         self._dlg.on_abort = ResRef(self.ui.onAbortEdit.text())
         self._dlg.on_end = ResRef(self.ui.onEndEdit.text())
         self._dlg.vo_id = self.ui.voIdEdit.text()
@@ -221,7 +202,7 @@ class DLGEditor(Editor):
 
         data = bytearray()
         write_gff(dismantle_dlg(self._dlg), data)
-        return data, b""
+        return data, b''
 
     def new(self) -> None:
         super().new()
@@ -272,12 +253,8 @@ class DLGEditor(Editor):
         self.ui.logicSpin.setEnabled(installation.tsl)
 
         # Load required 2da files if they have not been loaded already
-        required = [
-            HTInstallation.TwoDA_EMOTIONS,
-            HTInstallation.TwoDA_EXPRESSIONS,
-            HTInstallation.TwoDA_VIDEO_EFFECTS,
-            HTInstallation.TwoDA_DIALOG_ANIMS,
-        ]
+        required = [HTInstallation.TwoDA_EMOTIONS, HTInstallation.TwoDA_EXPRESSIONS, HTInstallation.TwoDA_VIDEO_EFFECTS,
+                    HTInstallation.TwoDA_DIALOG_ANIMS]
         installation.htBatchCache2DA(required)
 
         videoEffects = installation.htGetCache2DA(HTInstallation.TwoDA_VIDEO_EFFECTS)
@@ -295,17 +272,17 @@ class DLGEditor(Editor):
         self.ui.cameraEffectSelect.clear()
         self.ui.cameraEffectSelect.addItem("[None]", None)
         for i, label in enumerate(videoEffects.get_column("label")):
-            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_", " ").title(), i)
+            self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
 
-    def editText(self, e) -> None:  # noqa: ARG002, RUF100
+    def editText(self, e) -> None:
         indexes = self.ui.dialogTree.selectionModel().selectedIndexes()
         if indexes:
             item = self.model.itemFromIndex(indexes[0])
             link: DLGLink = item.data(_LINK_ROLE)
-            is_copy: bool = item.data(_COPY_ROLE)
+            isCopy: bool = item.data(_COPY_ROLE)
             node: DLGNode = link.node
             dialog = LocalizedStringDialog(self, self._installation, node.text)
-            if dialog.exec_() and not is_copy:
+            if dialog.exec_() and not isCopy:
                 node.text = dialog.locstring
                 item.setText(self._installation.string(node.text, "(continue"))
                 self._loadLocstring(self.ui.textEdit, node.text)
@@ -322,50 +299,49 @@ class DLGEditor(Editor):
 
     def addNode(self, item: Optional[QStandardItem], node: DLGNode) -> None:
         # Update DLG
-        new_node = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
-        new_link = DLGLink(new_node)
-        node.links.append(new_link)
+        newNode = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
+        newLink = DLGLink(newNode)
+        node.links.append(newLink)
 
         # Sync TreeView with DLG
-        new_item = QStandardItem()
-        new_item.setData(new_link, _LINK_ROLE)
-        new_item.setData(value=False, role=_COPY_ROLE)
+        newItem = QStandardItem()
+        newItem.setData(newLink, _LINK_ROLE)
+        newItem.setData(False, _COPY_ROLE)
 
-        self.refreshItem(new_item)
-        if item:
-            item.appendRow(new_item)
+        self.refreshItem(newItem)
+        item.appendRow(newItem)
 
     def addRootNode(self) -> None:
-        new_node = DLGEntry()
-        new_link = DLGLink(new_node)
-        self._dlg.starters.append(new_link)
+        newNode = DLGEntry()
+        newLink = DLGLink(newNode)
+        self._dlg.starters.append(newLink)
 
-        new_item = QStandardItem()
-        new_item.setData(value=new_link, role=_LINK_ROLE)
-        new_item.setData(value=False, role=_COPY_ROLE)
+        newItem = QStandardItem()
+        newItem.setData(newLink, _LINK_ROLE)
+        newItem.setData(False, _COPY_ROLE)
 
-        self.refreshItem(new_item)
-        self.model.appendRow(new_item)
+        self.refreshItem(newItem)
+        self.model.appendRow(newItem)
 
     def addCopyLink(self, item: QStandardItem, target: DLGNode, source: DLGNode):
-        new_link = DLGLink(source)
-        target.links.append(new_link)
+        newLink = DLGLink(source)
+        target.links.append(newLink)
 
-        new_item = QStandardItem()
-        new_item.setData(value=new_link, role=_LINK_ROLE)
-        new_item.setData(value=True, role=_COPY_ROLE)
+        newItem = QStandardItem()
+        newItem.setData(newLink, _LINK_ROLE)
+        newItem.setData(True, _COPY_ROLE)
 
-        self.refreshItem(new_item)
-        item.appendRow(new_item)
+        self.refreshItem(newItem)
+        item.appendRow(newItem)
 
     def addCopy(self, item: QStandardItem, target: DLGNode, source: DLGNode):
-        source_copy = deepcopy(source)
-        new_link = DLGLink(source_copy)
-        target.links.append(new_link)
+        sourceCopy = deepcopy(source)
+        newLink = DLGLink(sourceCopy)
+        target.links.append(newLink)
 
-        new_item = QStandardItem()
-        self._loadDLGRec(new_item, new_link, [], [])
-        item.appendRow(new_item)
+        newItem = QStandardItem()
+        self._loadDLGRec(newItem, newLink, [], [])
+        item.appendRow(newItem)
 
     def copyNode(self, node: DLGNode):
         self._copy = node
@@ -380,14 +356,14 @@ class DLGEditor(Editor):
                     self._dlg.starters.remove(link)
             self.model.removeRow(item.row())
         else:
-            parent_item = item.parent()
-            parent_link: DLGLink = parent_item.data(_LINK_ROLE)
-            parent_node: DLGNode = parent_link.node
+            parentItem = item.parent()
+            parentLink: DLGLink = parentItem.data(_LINK_ROLE)
+            parentNode: DLGNode = parentLink.node
 
-            for link in copy(parent_node.links):
+            for link in copy(parentNode.links):
                 if link.node is node:
-                    parent_node.links.remove(link)
-            parent_item.removeRow(item.row())
+                    parentNode.links.remove(link)
+            parentItem.removeRow(item.row())
 
     def deleteSelectedNode(self) -> None:
         if self.ui.dialogTree.selectedIndexes():
@@ -402,15 +378,15 @@ class DLGEditor(Editor):
             parent = parent.parent()
 
     def jumpToOriginal(self, sourceItem: QStandardItem):
-        copied_link: DLGLink = sourceItem.data(_LINK_ROLE)
-        copied_node: DLGNode = copied_link.node
+        copiedLink: DLGLink = sourceItem.data(_LINK_ROLE)
+        copiedNode: DLGNode = copiedLink.node
 
         items = [self.model.item(i, 0) for i in range(self.model.rowCount())]
         while items:
             item = items.pop()
             link: DLGLink = item.data(_LINK_ROLE)
-            is_copy: bool = item.data(_COPY_ROLE)
-            if link.node is copied_node and not is_copy:
+            isCopy: bool = item.data(_COPY_ROLE)
+            if link.node is copiedNode and not isCopy:
                 self.expandToRoot(item)
                 self.ui.dialogTree.setCurrentIndex(item.index())
                 break
@@ -437,10 +413,8 @@ class DLGEditor(Editor):
     def playSound(self, resname: str) -> None:
         self.player.stop()
 
-        data = self._installation.sound(
-            resname,
-            [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE, SearchLocation.CHITIN],
-        )
+        data = self._installation.sound(resname, [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE,
+                                                  SearchLocation.CHITIN])
 
         if data:
             self.buffer = QBuffer(self)
@@ -461,21 +435,21 @@ class DLGEditor(Editor):
         self.model.appendRow(item)
 
     def shiftItem(self, item: QStandardItem, amount: int) -> None:
-        old_row = item.row()
+        oldRow = item.row()
         parent = self.model if item.parent() is None else item.parent()
-        new_row = old_row + amount
+        newRow = oldRow + amount
 
-        if new_row >= parent.rowCount() or new_row < 0:
+        if newRow >= parent.rowCount() or newRow < 0:
             return  # Already at the start/end of the branch
 
-        item = parent.takeRow(old_row)[0]
-        parent.insertRow(new_row, item)
+        item = parent.takeRow(oldRow)[0]
+        parent.insertRow(newRow, item)
         self.ui.dialogTree.selectionModel().select(item.index(), QItemSelectionModel.ClearAndSelect)
 
         # Sync DLG to tree changes
         links = self._dlg.starters if item.parent() is None else item.parent().data(_LINK_ROLE).node.links
-        link = links.pop(old_row)
-        links.insert(new_row, link)
+        link = links.pop(oldRow)
+        links.insert(newRow, link)
 
     def onTreeContextMenu(self, point: QPoint):
         index = self.ui.dialogTree.indexAt(point)
@@ -483,7 +457,7 @@ class DLGEditor(Editor):
 
         if item is not None:
             link: DLGLink = item.data(_LINK_ROLE)
-            is_copy: bool = item.data(_COPY_ROLE)
+            isCopy: bool = item.data(_COPY_ROLE)
             node: DLGNode = link.node
 
             menu = QMenu(self)
@@ -494,7 +468,7 @@ class DLGEditor(Editor):
             menu.addAction("Move Down").triggered.connect(lambda: self.shiftItem(item, 1))
             menu.addSeparator()
 
-            if not is_copy:
+            if not isCopy:
                 if isinstance(node, DLGReply):
                     menu.addAction("Add Entry").triggered.connect(lambda: self.addNode(item, node))
                     if isinstance(self._copy, DLGEntry):
@@ -530,7 +504,7 @@ class DLGEditor(Editor):
         if selection.indexes():
             item = self.model.itemFromIndex(selection.indexes()[0])
             link: DLGLink = item.data(_LINK_ROLE)
-            is_copy: bool = item.data(_COPY_ROLE)
+            isCopy: bool = item.data(_COPY_ROLE)
             node: DLGNode = link.node
 
             if isinstance(node, DLGEntry):
@@ -540,7 +514,7 @@ class DLGEditor(Editor):
                 self.ui.speakerEdit.setEnabled(False)
                 self.ui.speakerEdit.setText("")
 
-            self.ui.textEdit.setEnabled(not is_copy)
+            self.ui.textEdit.setEnabled(not isCopy)
 
             self.ui.listenerEdit.setText(node.listener)
             self._loadLocstring(self.ui.textEdit, node.text)
@@ -594,7 +568,7 @@ class DLGEditor(Editor):
             self.ui.cameraIdSpin.setValue(node.camera_id if node.camera_id is not None else -1)
             self.ui.cameraAnimSpin.setValue(node.camera_anim if node.camera_anim is not None else -1)
             self.ui.cameraAngleSelect.setCurrentIndex(node.camera_angle if node.camera_angle is not None else 0)
-            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect + 1 if node.camera_effect is not None else 0)
+            self.ui.cameraEffectSelect.setCurrentIndex(node.camera_effect+1 if node.camera_effect is not None else 0)
 
             self.ui.nodeUnskippableCheckbox.setChecked(node.unskippable)
             self.ui.nodeIdSpin.setValue(node.node_id)
@@ -715,7 +689,7 @@ class DLGEditor(Editor):
     def refreshStuntList(self) -> None:
         self.ui.stuntList.clear()
         for stunt in self._dlg.stunts:
-            text = f"{stunt.stunt_model} ({stunt.participant})"
+            text = "{} ({})".format(stunt.stunt_model, stunt.participant)
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, stunt)
             self.ui.stuntList.addItem(item)
@@ -767,7 +741,9 @@ class DLGEditor(Editor):
                     name = animations_list.get_cell(anim.animation_id, "name")
                 else:
                     name = str(anim.animation_id)
-                text = f"{name} ({anim.participant})"
+                text = "{} ({})".format(name, anim.participant)
                 item = QListWidgetItem(text)
                 item.setData(QtCore.Qt.UserRole, anim)
                 self.ui.animsList.addItem(item)
+
+

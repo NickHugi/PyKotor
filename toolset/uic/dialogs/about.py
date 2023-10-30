@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'dialogs\about.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_Dialog:
+class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(430, 162)
@@ -34,9 +36,5 @@ class Ui_Dialog:
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "About"))
         self.closeButton.setText(_translate("Dialog", "Close"))
-        self.aboutLabel.setText(
-            _translate(
-                "Dialog",
-                '<html><head/><body><p><span style=" font-size:10pt; font-weight:600;">Holocron Toolset</span><br/>Version X.X.X<br/>Copyright (c) 2022 Nicholas Hugi</p><p><a href="https://sketchfab.com/3d-models/sith-holocron-star-wars-cb3d49a6261a4913817e8e00d6ab6e43"><span style=" text-decoration: underline; color:#0000ff;">Holocron Image Source<br/></span></a><a href="https://deadlystream.com/profile/49753-cortisol/"><span style=" text-decoration: underline; color:#0000ff;">Deadlystream Page<br/></span></a><a href="https://github.com/NickHugi/HolocronToolset"><span style=" text-decoration: underline; color:#0000ff;">Github</span></a></p></body></html>',
-            ),
-        )
+        self.aboutLabel.setText(_translate("Dialog", "<html><head/><body><p><span style=\" font-size:10pt; font-weight:600;\">Holocron Toolset</span><br/>Version X.X.X<br/>Copyright (c) 2022 Nicholas Hugi</p><p><a href=\"https://sketchfab.com/3d-models/sith-holocron-star-wars-cb3d49a6261a4913817e8e00d6ab6e43\"><span style=\" text-decoration: underline; color:#0000ff;\">Holocron Image Source<br/></span></a><a href=\"https://deadlystream.com/profile/49753-cortisol/\"><span style=\" text-decoration: underline; color:#0000ff;\">Deadlystream Page<br/></span></a><a href=\"https://github.com/NickHugi/HolocronToolset\"><span style=\" text-decoration: underline; color:#0000ff;\">Github</span></a></p></body></html>"))
+import resources_rc

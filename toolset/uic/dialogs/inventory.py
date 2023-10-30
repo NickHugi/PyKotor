@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'dialogs\inventory.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_Dialog:
+class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(730, 611)
@@ -508,10 +510,7 @@ class Ui_Dialog:
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Dialog", "Module Items"))
         self.overrideSearchEdit.setPlaceholderText(_translate("Dialog", "search..."))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("Dialog", "Override Items"))
-        self.tabWidget_2.setTabText(
-            self.tabWidget_2.indexOf(self.standardEquipmentTab),
-            _translate("Dialog", "Standard Equipment"),
-        )
+        self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.standardEquipmentTab), _translate("Dialog", "Standard Equipment"))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.naturalEquipmentTab), _translate("Dialog", "Natural Equipment"))
         item = self.contentsTable.horizontalHeaderItem(0)
         item.setText(_translate("Dialog", "Icon"))
@@ -522,6 +521,5 @@ class Ui_Dialog:
         self.tabWidget_3.setTabText(self.tabWidget_3.indexOf(self.tab_6), _translate("Dialog", "Contents"))
         self.okButton.setText(_translate("Dialog", "OK"))
         self.cancelButton.setText(_translate("Dialog", "Cancel"))
-
-
 from toolset.gui.dialogs.inventory import DropFrame, InventoryTable
+import resources_rc

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'editors\uti.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtWidgets
 
 
-class Ui_MainWindow:
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(550, 323)
@@ -120,28 +122,28 @@ class Ui_MainWindow:
         self.label_44.setObjectName("label_44")
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_44)
         self.stackSpin = QtWidgets.QSpinBox(self.tab)
-        self.stackSpin.setMaximum(0xFFFF)
+        self.stackSpin.setMaximum(65535)
         self.stackSpin.setObjectName("stackSpin")
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.stackSpin)
         self.label_45 = QtWidgets.QLabel(self.tab)
         self.label_45.setObjectName("label_45")
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_45)
         self.modelVarSpin = QtWidgets.QSpinBox(self.tab)
-        self.modelVarSpin.setMaximum(0xFF)
+        self.modelVarSpin.setMaximum(255)
         self.modelVarSpin.setObjectName("modelVarSpin")
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.modelVarSpin)
         self.label_46 = QtWidgets.QLabel(self.tab)
         self.label_46.setObjectName("label_46")
         self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_46)
         self.bodyVarSpin = QtWidgets.QSpinBox(self.tab)
-        self.bodyVarSpin.setMaximum(0xFF)
+        self.bodyVarSpin.setMaximum(255)
         self.bodyVarSpin.setObjectName("bodyVarSpin")
         self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.bodyVarSpin)
         self.label_47 = QtWidgets.QLabel(self.tab)
         self.label_47.setObjectName("label_47")
         self.formLayout_2.setWidget(4, QtWidgets.QFormLayout.LabelRole, self.label_47)
         self.textureVarSpin = QtWidgets.QSpinBox(self.tab)
-        self.textureVarSpin.setMaximum(0xFF)
+        self.textureVarSpin.setMaximum(255)
         self.textureVarSpin.setObjectName("textureVarSpin")
         self.formLayout_2.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.textureVarSpin)
         self.verticalLayout.addLayout(self.formLayout_2)
@@ -289,7 +291,5 @@ class Ui_MainWindow:
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-
-
-from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
-from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+from gui.widgets.edit.combobox_2da import ComboBox2DA
+from gui.widgets.edit.locstring import LocalizedStringLineEdit

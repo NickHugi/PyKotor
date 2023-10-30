@@ -1,26 +1,14 @@
-from __future__ import annotations
-
 import traceback
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import Callable, Optional, Any, List
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import (
-    QDialog,
-    QLabel,
-    QMessageBox,
-    QProgressBar,
-    QVBoxLayout,
-    QWidget,
-)
-
-if TYPE_CHECKING:
-    from PyQt5.QtGui import QCloseEvent
+from PyQt5.QtGui import QCloseEvent
+from PyQt5.QtWidgets import QDialog, QWidget, QProgressBar, QMessageBox, QVBoxLayout, QLabel
 
 
 class AsyncLoader(QDialog):
-    def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: Optional[str] = None):
+    def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: str = None):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -55,7 +43,7 @@ class AsyncLoader(QDialog):
 
     def updateInfo(self, text: str):
         self._infoText.setText(text)
-        if not text:
+        if text == "":
             self.setFixedSize(260, 40)
             self._infoText.setVisible(False)
         else:
@@ -73,7 +61,7 @@ class AsyncLoader(QDialog):
         if self.errorTitle:
             QMessageBox(QMessageBox.Critical, self.errorTitle, str(error)).exec_()
 
-        with Path("errorlog.txt").open("a") as file:
+        with open("errorlog.txt", 'a') as file:
             lines = traceback.format_exception(type(self.error), self.error, self.error.__traceback__)
             file.writelines(lines)
             file.write("\n----------------------\n")
@@ -95,15 +83,8 @@ class AsyncWorker(QThread):
 
 
 class AsyncBatchLoader(QDialog):
-    def __init__(
-        self,
-        parent: QWidget,
-        title: str,
-        tasks: list[Callable],
-        errorTitle: Optional[str] = None,
-        *,
-        cascade: bool = False,
-    ):
+    def __init__(self, parent: QWidget, title: str, tasks: List[Callable], errorTitle: str = None, *,
+                 cascade: bool = False):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -124,8 +105,8 @@ class AsyncBatchLoader(QDialog):
 
         self.setWindowFlag(QtCore.Qt.WindowContextHelpButtonHint, False)
 
-        self.value: list[Any] = []
-        self.errors: list[Exception] = []
+        self.value: List[Any] = []
+        self.errors: List[Exception] = []
         self.errorTitle: Optional[str] = errorTitle
         self.successCount = 0
         self.failCount = 0
@@ -166,9 +147,9 @@ class AsyncBatchLoader(QDialog):
         if self.errors:
             self.reject()
             if self.errorTitle:
-                errorStrings = [str(error) + "\n" for error in self.errors]
-                QMessageBox(QMessageBox.Critical, self.errorTitle, "".join(errorStrings)).exec_()
-            with Path("errorlog.txt").open("a") as file:
+                errorStrings = [str(error)+"\n" for error in self.errors]
+                QMessageBox(QMessageBox.Critical, self.errorTitle, ''.join(errorStrings)).exec_()
+            with open("errorlog.txt", 'a') as file:
                 lines = []
                 for e in self.errors:
                     lines.extend(*traceback.format_exception(type(e), e, e.__traceback__))
@@ -183,9 +164,9 @@ class AsyncBatchWorker(QThread):
     failed = QtCore.pyqtSignal(object)
     completed = QtCore.pyqtSignal()
 
-    def __init__(self, parent: QWidget, tasks: list[Callable], cascade: bool):
+    def __init__(self, parent: QWidget, tasks: List[Callable], cascade: bool):
         super().__init__(parent)
-        self._tasks: list[Callable] = tasks
+        self._tasks: List[Callable] = tasks
         self._cascade: bool = cascade
 
     def run(self):

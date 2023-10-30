@@ -1,46 +1,26 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import TYPE_CHECKING, NamedTuple, Optional, Union
+from typing import Dict, List, NamedTuple, Optional, Union, Tuple
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
-from PyQt5.QtGui import (
-    QDragEnterEvent,
-    QDragMoveEvent,
-    QDropEvent,
-    QIcon,
-    QPixmap,
-    QStandardItem,
-    QStandardItemModel,
-)
-from PyQt5.QtWidgets import (
-    QAction,
-    QDialog,
-    QFrame,
-    QLabel,
-    QMenu,
-    QProgressBar,
-    QTableWidget,
-    QTableWidgetItem,
-    QTreeView,
-    QVBoxLayout,
-    QWidget,
-)
-
-from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
+from PyQt5.QtCore import QThread, QSortFilterProxyModel, QPoint, QSize
+from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QStandardItem, QDropEvent, QDragEnterEvent, QDragMoveEvent, \
+    QIcon, QTransform
+from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QProgressBar, QVBoxLayout, QFrame, QTreeView, QMenu, QAction, \
+    QTableWidget, QTableWidgetItem
+from pykotor.common.misc import InventoryItem, EquipmentSlot, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tlk import TLK, read_tlk
+from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import Path
-from toolset.data.installation import HTInstallation
 
-if TYPE_CHECKING:
-    import os
+from data.installation import HTInstallation
+
 
 _RESNAME_ROLE = QtCore.Qt.UserRole + 1
 _FILEPATH_ROLE = QtCore.Qt.UserRole + 2
@@ -54,22 +34,12 @@ class SlotMapping(NamedTuple):
 
 
 class InventoryEditor(QDialog):
-    def __init__(
-        self,
-        parent: QWidget,
-        installation: HTInstallation,
-        capsules: list[Capsule],
-        folders: list[str],
-        inventory: list[InventoryItem],
-        equipment: dict[EquipmentSlot, InventoryItem],
-        droid: bool = False,
-        hide_equipment: bool = False,
-        is_store: bool = False,
-    ):
+    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule], folders: List[str],
+                 inventory: List[InventoryItem], equipment: Dict[EquipmentSlot, InventoryItem], droid: bool = False,
+                 hide_equipment: bool = False, is_store: bool = False):
         super().__init__(parent)
 
         from toolset.uic.dialogs.inventory import Ui_Dialog
-
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
 
@@ -86,15 +56,11 @@ class InventoryEditor(QDialog):
         self.ui.modulesSearchEdit.textEdited.connect(self.doSearch)
 
         self._installation: HTInstallation = installation
-        self._capsules: list[Capsule] = capsules
-        self._slotMap: dict[EquipmentSlot, SlotMapping] = {
+        self._capsules: List[Capsule] = capsules
+        self._slotMap: Dict[EquipmentSlot, SlotMapping] = {
             EquipmentSlot.IMPLANT: SlotMapping(self.ui.implantPicture, self.ui.implantFrame, ":/images/inventory/{}_implant.png"),
             EquipmentSlot.HEAD: SlotMapping(self.ui.headPicture, self.ui.headFrame, ":/images/inventory/{}_head.png"),
-            EquipmentSlot.GAUNTLET: SlotMapping(
-                self.ui.gauntletPicture,
-                self.ui.gauntletFrame,
-                ":/images/inventory/{}_gauntlet.png",
-            ),
+            EquipmentSlot.GAUNTLET: SlotMapping(self.ui.gauntletPicture, self.ui.gauntletFrame, ":/images/inventory/{}_gauntlet.png"),
             EquipmentSlot.LEFT_ARM: SlotMapping(self.ui.armlPicture, self.ui.armlFrame, ":/images/inventory/{}_forearm_l.png"),
             EquipmentSlot.ARMOR: SlotMapping(self.ui.armorPicture, self.ui.armorFrame, ":/images/inventory/{}_armor.png"),
             EquipmentSlot.RIGHT_ARM: SlotMapping(self.ui.armrPicture, self.ui.armrFrame, ":/images/inventory/{}_forearm_r.png"),
@@ -107,57 +73,27 @@ class InventoryEditor(QDialog):
             EquipmentSlot.HIDE: SlotMapping(self.ui.hidePicture, self.ui.hideFrame, ":/images/inventory/{}_armor.png"),
         }
         self._droid = droid
-        self.inventory: list[InventoryItem] = inventory
-        self.equipment: dict[EquipmentSlot, InventoryItem] = equipment
+        self.inventory: List[InventoryItem] = inventory
+        self.equipment: Dict[EquipmentSlot, InventoryItem] = equipment
         self.is_store: bool = is_store
 
-        self.ui.implantFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.IMPLANT, resname, filepath, name),
-        )
-        self.ui.headFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.HEAD, resname, filepath, name),
-        )
-        self.ui.gauntletFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.GAUNTLET, resname, filepath, name),
-        )
-        self.ui.armlFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.LEFT_ARM, resname, filepath, name),
-        )
-        self.ui.armorFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.ARMOR, resname, filepath, name),
-        )
-        self.ui.armrFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.RIGHT_ARM, resname, filepath, name),
-        )
-        self.ui.handlFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.LEFT_HAND, resname, filepath, name),
-        )
-        self.ui.beltFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.BELT, resname, filepath, name),
-        )
-        self.ui.handrFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.RIGHT_HAND, resname, filepath, name),
-        )
-        self.ui.hideFrame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.HIDE, resname, filepath, name),
-        )
-        self.ui.claw1Frame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW1, resname, filepath, name),
-        )
-        self.ui.claw2Frame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW2, resname, filepath, name),
-        )
-        self.ui.claw3Frame.itemDropped.connect(
-            lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW3, resname, filepath, name),
-        )
+        self.ui.implantFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.IMPLANT, resname, filepath, name))
+        self.ui.headFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.HEAD, resname, filepath, name))
+        self.ui.gauntletFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.GAUNTLET, resname, filepath, name))
+        self.ui.armlFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.LEFT_ARM, resname, filepath, name))
+        self.ui.armorFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.ARMOR, resname, filepath, name))
+        self.ui.armrFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.RIGHT_ARM, resname, filepath, name))
+        self.ui.handlFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.LEFT_HAND, resname, filepath, name))
+        self.ui.beltFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.BELT, resname, filepath, name))
+        self.ui.handrFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.RIGHT_HAND, resname, filepath, name))
+        self.ui.hideFrame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.HIDE, resname, filepath, name))
+        self.ui.claw1Frame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW1, resname, filepath, name))
+        self.ui.claw2Frame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW2, resname, filepath, name))
+        self.ui.claw3Frame.itemDropped.connect(lambda filepath, resname, name: self.setEquipment(EquipmentSlot.CLAW3, resname, filepath, name))
 
-        self.ui.implantFrame.customContextMenuRequested.connect(
-            lambda point: self.openItemContextMenu(self.ui.implantFrame, point),
-        )
+        self.ui.implantFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.implantFrame, point))
         self.ui.headFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.headFrame, point))
-        self.ui.gauntletFrame.customContextMenuRequested.connect(
-            lambda point: self.openItemContextMenu(self.ui.gauntletFrame, point),
-        )
+        self.ui.gauntletFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.gauntletFrame, point))
         self.ui.armlFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.armlFrame, point))
         self.ui.armorFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.armorFrame, point))
         self.ui.armrFrame.customContextMenuRequested.connect(lambda point: self.openItemContextMenu(self.ui.armrFrame, point))
@@ -213,7 +149,7 @@ class InventoryEditor(QDialog):
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():
             # Very hacky, but isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
-            if "DropFrame" in str(type(widget)) and widget.resname:
+            if 'DropFrame' in str(type(widget)) and widget.resname:
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
 
     def buildItems(self) -> None:
@@ -234,35 +170,35 @@ class InventoryEditor(QDialog):
     def getItemImage(self, uti: Optional[UTI]) -> QPixmap:
         return self._installation.getItemIconFromUTI(uti)
 
-    def getItem(self, resname: str, filepath: os.PathLike | str) -> tuple[os.PathLike, str, UTI]:
-        uti: UTI | None = None
-        name: str = ""
-        c_filepath = filepath if isinstance(filepath, Path) else Path(filepath)
-        if not c_filepath.exists():
+    def getItem(self, resname: str, filepath: str) -> Tuple[str, str, UTI]:
+        uti = None
+        name = ""
+        if filepath == "":
             result = self._installation.resource(resname, ResourceType.UTI)
             if result is not None:
                 uti = read_uti(result.data)
                 filepath = result.filepath
                 name = self._installation.string(uti.name, "[No Name]")
-        elif c_filepath.endswith((".rim", ".mod", ".erf")):
-            uti = read_uti(Capsule(c_filepath).resource(resname, ResourceType.UTI))
+        elif filepath.endswith(".rim") or filepath.endswith(".mod") or filepath.endswith(".erf"):
+            uti = read_uti(Capsule(filepath).resource(resname, ResourceType.UTI))
             name = self._installation.string(uti.name, "[No Name]")
-        elif c_filepath.endswith(".bif"):
+        elif filepath.endswith(".bif"):
             uti = read_uti(self._installation.resource(resname, ResourceType.UTI, [SearchLocation.CHITIN]).data)
             name = self._installation.string(uti.name, "[No Name]")
         else:
             uti = read_uti(BinaryReader.load_file(filepath))
-        return c_filepath, name, uti
+        return filepath, name, uti
 
-    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: os.PathLike | str = "", name: str = "") -> None:
+    def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = "") -> None:
         slotPicture = self._slotMap[slot].label
+        slotFrame = self._slotMap[slot].frame
 
         if resname != "":
             filepath, name, uti = self.getItem(resname, filepath)
 
-            slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")
+            slotPicture.setToolTip("{}\n{}\n{}".format(resname, filepath, name))
             slotPicture.setPixmap(self.getItemImage(uti))
-            self._slotMap[slot].frame.setItem(resname, str(filepath), name, False, False)
+            slotFrame.setItem(resname, filepath, name, False, False)
         else:
             image = self._slotMap[slot].emptyImage.format("droid" if self._droid else "human")
             slotPicture.setToolTip("")
@@ -442,13 +378,7 @@ class InventoryTable(QTableWidget):
             iconItem.setFlags(iconItem.flags() ^ QtCore.Qt.ItemIsEditable)
             nameItem = QTableWidgetItem(item.text())
             nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
-            resnameItem = InventoryTableResnameItem(
-                item.data(_RESNAME_ROLE),
-                item.data(_FILEPATH_ROLE),
-                item.text(),
-                False,
-                False,
-            )
+            resnameItem = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
             self.setItem(rowID, 0, iconItem)
             self.setItem(rowID, 1, resnameItem)
             self.setItem(rowID, 2, nameItem)
@@ -504,9 +434,11 @@ class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
 
 
 class ItemBuilderDialog(QDialog):
-    """Popup dialog responsible for extracting a list of resources from the game files."""
+    """
+    Popup dialog responsible for extracting a list of resources from the game files.
+    """
 
-    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: list[Capsule]):
+    def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule]):
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -520,12 +452,12 @@ class ItemBuilderDialog(QDialog):
 
         self.setWindowTitle("Building Item Lists...")
 
-        self.coreModel = ItemModel(installation.main_window)
+        self.coreModel = ItemModel(installation.mainWindow)
         self.modulesModel = ItemModel(self.parent())
         self.overrideModel = ItemModel(self.parent())
-        self._tlk: TLK = read_tlk(installation.path() / "dialog.tlk")
+        self._tlk: TLK = read_tlk(installation.path() + "dialog.tlk")
         self._installation: HTInstallation = installation
-        self._capsules: list[Capsule] = capsules
+        self._capsules: List[Capsule] = capsules
 
         self._worker = ItemBuilderWorker(installation, capsules)
         self._worker.utiLoaded.connect(self.utiLoaded)
@@ -537,6 +469,9 @@ class ItemBuilderDialog(QDialog):
         name = self._installation.string(uti.name, result.resname) if uti is not None else result.resname
 
         # Split category by base item:
+        #  categoryNameID = baseitems.get_row(uti.base_item).get_integer("name")
+        #  categoryLabel = baseitems.get_cell(uti.base_item, "label")
+        #  category = self._tlk.get(categoryNameID).text if self._tlk.get(categoryNameID) is not None else categoryLabel
 
         slots = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0) if uti is not None else 0
         category = self.getCategory(uti)
@@ -558,36 +493,37 @@ class ItemBuilderDialog(QDialog):
 
         if slots & (EquipmentSlot.CLAW1.value | EquipmentSlot.CLAW2.value | EquipmentSlot.CLAW3.value):
             return "Creature Claw"
-        if slots & EquipmentSlot.HEAD.value:
+        elif slots & EquipmentSlot.HEAD.value:
             return "Droid Sensors" if droid else "Headgear"
-        if slots & EquipmentSlot.IMPLANT.value and not droid:
+        elif slots & EquipmentSlot.IMPLANT.value and not droid:
             return "Implants"
-        if slots & EquipmentSlot.GAUNTLET.value and not droid:
+        elif slots & EquipmentSlot.GAUNTLET.value and not droid:
             return "Gauntlets"
-        if slots & EquipmentSlot.IMPLANT.value and droid:
+        elif slots & EquipmentSlot.IMPLANT.value and droid:
             return "Droid Utilities"
-        if slots & EquipmentSlot.LEFT_ARM.value:
+        elif slots & EquipmentSlot.LEFT_ARM.value:
             return "Droid Special Weapons" if droid else "Shields"
-        if slots & EquipmentSlot.ARMOR.value:
+        elif slots & EquipmentSlot.ARMOR.value:
             return "Droid Plating" if droid else "Armor"
-        if slots & EquipmentSlot.LEFT_HAND.value:
+        elif slots & EquipmentSlot.LEFT_HAND.value:
             return "Weapons (Single)"
-        if slots & EquipmentSlot.RIGHT_HAND.value:
+        elif slots & EquipmentSlot.RIGHT_HAND.value:
             return "Weapons (Double)"
-        if slots & EquipmentSlot.BELT.value:
+        elif slots & EquipmentSlot.BELT.value:
             return "Droid Shields" if droid else "Belts"
-        if slots & EquipmentSlot.HIDE.value:
+        elif slots & EquipmentSlot.HIDE.value:
             return "Creature Hide"
-        if slots == 0:
+        elif slots == 0:
             return "Miscellaneous"
-        return "Unknown"
+        else:
+            return "Unknown"
 
 
 class ItemBuilderWorker(QThread):
     utiLoaded = QtCore.pyqtSignal(object, object)
     finished = QtCore.pyqtSignal()
 
-    def __init__(self, installation: HTInstallation, capsules: list[Capsule]):
+    def __init__(self, installation: HTInstallation, capsules: List[Capsule]):
         super().__init__()
         self._installation = installation
         self._capsules = capsules
@@ -595,25 +531,19 @@ class ItemBuilderWorker(QThread):
     def run(self) -> None:
         queries = []
         if self._installation.cacheCoreItems is None:
-            queries.extend(
-                [
-                    ResourceIdentifier(resource.resname(), resource.restype())
-                    for resource in self._installation.chitin_resources()
-                    if resource.restype() == ResourceType.UTI
-                ],
-            )
+            queries.extend([ResourceIdentifier(resource.resname(), resource.restype())
+                            for resource in self._installation.chitin_resources()
+                            if resource.restype() == ResourceType.UTI])
         for resource in self._installation.override_resources(""):
             if resource.restype() == ResourceType.UTI:
                 queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
-        for resource in list(self._capsules):
-            if resource.restype() == ResourceType.UTI:
-                queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
+        for capsule in self._capsules:
+            for resource in capsule:
+                if resource.restype() == ResourceType.UTI:
+                    queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
-        results = self._installation.resources(
-            queries,
-            [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
-            capsules=self._capsules,
-        )
+        results = self._installation.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
+                                               capsules=self._capsules)
         for result in results.values():
             uti = None
             with suppress(Exception):
@@ -647,7 +577,7 @@ class ItemModel(QStandardItemModel):
 
     def addItem(self, resname: str, category: str, filepath: str, name: str, slots: int) -> None:
         item = QStandardItem(name if name != "" else resname)
-        item.setToolTip(f"{resname}\n{filepath}\n{name}")
+        item.setToolTip("{}\n{}\n{}".format(resname, filepath, name))
         item.setData(filepath, _FILEPATH_ROLE)
         item.setData(resname, _RESNAME_ROLE)
         item.setData(slots, _SLOTS_ROLE)
@@ -659,7 +589,6 @@ class SetItemResRefDialog(QDialog):
         super().__init__(parent)
 
         from editors import ui_setitemresref
-
         self.ui = ui_setitemresref.Ui_Dialog()
         self.ui.setupUi(self)
 

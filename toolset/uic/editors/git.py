@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'editors\git.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_MainWindow:
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(838, 648)
@@ -47,35 +49,33 @@ class Ui_MainWindow:
         self.horizontalLayout_2.addItem(spacerItem)
         self.lockInstancesCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.lockInstancesCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.lockInstancesCheck.setStyleSheet(
-            "QCheckbox {\n"
-            "    spacing: 0px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/lock.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.lockInstancesCheck.setStyleSheet("QCheckbox {\n"
+"    spacing: 0px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator {\n"
+"    image: url(:/images/icons/lock.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.lockInstancesCheck.setText("")
         self.lockInstancesCheck.setChecked(False)
         self.lockInstancesCheck.setObjectName("lockInstancesCheck")
@@ -89,283 +89,265 @@ class Ui_MainWindow:
         self.horizontalLayout_2.addWidget(self.label)
         self.viewCreatureCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewCreatureCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewCreatureCheck.setStyleSheet(
-            "QCheckbox {\n"
-            "    spacing: 0px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/creature.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewCreatureCheck.setStyleSheet("QCheckbox {\n"
+"    spacing: 0px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/creature.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewCreatureCheck.setText("")
         self.viewCreatureCheck.setChecked(True)
         self.viewCreatureCheck.setObjectName("viewCreatureCheck")
         self.horizontalLayout_2.addWidget(self.viewCreatureCheck)
         self.viewDoorCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewDoorCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewDoorCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/door.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewDoorCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/door.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewDoorCheck.setText("")
         self.viewDoorCheck.setChecked(True)
         self.viewDoorCheck.setObjectName("viewDoorCheck")
         self.horizontalLayout_2.addWidget(self.viewDoorCheck)
         self.viewPlaceableCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewPlaceableCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewPlaceableCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/placeable.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewPlaceableCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/placeable.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewPlaceableCheck.setText("")
         self.viewPlaceableCheck.setChecked(True)
         self.viewPlaceableCheck.setObjectName("viewPlaceableCheck")
         self.horizontalLayout_2.addWidget(self.viewPlaceableCheck)
         self.viewStoreCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewStoreCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewStoreCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/merchant.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewStoreCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/merchant.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewStoreCheck.setText("")
         self.viewStoreCheck.setChecked(True)
         self.viewStoreCheck.setObjectName("viewStoreCheck")
         self.horizontalLayout_2.addWidget(self.viewStoreCheck)
         self.viewSoundCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewSoundCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewSoundCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/sound.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewSoundCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/sound.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewSoundCheck.setText("")
         self.viewSoundCheck.setChecked(True)
         self.viewSoundCheck.setObjectName("viewSoundCheck")
         self.horizontalLayout_2.addWidget(self.viewSoundCheck)
         self.viewWaypointCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewWaypointCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewWaypointCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/waypoint.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewWaypointCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/waypoint.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewWaypointCheck.setText("")
         self.viewWaypointCheck.setChecked(True)
         self.viewWaypointCheck.setObjectName("viewWaypointCheck")
         self.horizontalLayout_2.addWidget(self.viewWaypointCheck)
         self.viewCameraCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewCameraCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewCameraCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/camera.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewCameraCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/camera.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewCameraCheck.setText("")
         self.viewCameraCheck.setChecked(True)
         self.viewCameraCheck.setObjectName("viewCameraCheck")
         self.horizontalLayout_2.addWidget(self.viewCameraCheck)
         self.viewEncounterCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewEncounterCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewEncounterCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/encounter.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewEncounterCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/encounter.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewEncounterCheck.setText("")
         self.viewEncounterCheck.setChecked(True)
         self.viewEncounterCheck.setObjectName("viewEncounterCheck")
         self.horizontalLayout_2.addWidget(self.viewEncounterCheck)
         self.viewTriggerCheck = QtWidgets.QCheckBox(self.layoutWidget1)
         self.viewTriggerCheck.setMaximumSize(QtCore.QSize(28, 16777215))
-        self.viewTriggerCheck.setStyleSheet(
-            "QCheckBox::indicator {\n"
-            "    image: url(:/images/icons/k1/trigger.png);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.0);\n"
-            "    width: 26px;\n"
-            "    height: 26px;\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:unchecked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.2);\n"
-            "    border: 1px solid rgba(30, 144, 255, 0.4);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked {\n"
-            "    background: rgba(30, 144, 255, 0.4);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.6);\n"
-            "}\n"
-            "\n"
-            "QCheckBox::indicator:checked:hover {\n"
-            "    background: rgba(30, 144, 255, 0.5);\n"
-            "    border:1px solid rgba(30, 144, 255, 0.7);\n"
-            "}\n"
-            "\n"
-            "",
-        )
+        self.viewTriggerCheck.setStyleSheet("QCheckBox::indicator {\n"
+"    image: url(:/images/icons/k1/trigger.png);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.0);\n"
+"    width: 26px;\n"
+"    height: 26px;\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:unchecked:hover {\n"
+"    background: rgba(30, 144, 255, 0.2);\n"
+"    border: 1px solid rgba(30, 144, 255, 0.4);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked {\n"
+"    background: rgba(30, 144, 255, 0.4);\n"
+"    border:1px solid rgba(30, 144, 255, 0.6);\n"
+"}\n"
+"\n"
+"QCheckBox::indicator:checked:hover {\n"
+"    background: rgba(30, 144, 255, 0.5);\n"
+"    border:1px solid rgba(30, 144, 255, 0.7);\n"
+"}\n"
+"\n"
+"")
         self.viewTriggerCheck.setText("")
         self.viewTriggerCheck.setChecked(True)
         self.viewTriggerCheck.setObjectName("viewTriggerCheck")
@@ -600,6 +582,5 @@ class Ui_MainWindow:
         self.actionUseEncounterResRef.setText(_translate("MainWindow", "ResRef"))
         self.actionUseEncounterName.setText(_translate("MainWindow", "Name"))
         self.actionUseEncounterTag.setText(_translate("MainWindow", "Tag"))
-
-
 from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
+import resources_rc

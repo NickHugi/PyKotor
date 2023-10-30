@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'editors\uts.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtWidgets
 
 
-class Ui_MainWindow:
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(410, 364)
@@ -165,7 +167,7 @@ class Ui_MainWindow:
         self.verticalLayout_9 = QtWidgets.QVBoxLayout()
         self.verticalLayout_9.setObjectName("verticalLayout_9")
         self.soundList = QtWidgets.QListWidget(self.tab_3)
-        self.soundList.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked | QtWidgets.QAbstractItemView.EditKeyPressed)
+        self.soundList.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked|QtWidgets.QAbstractItemView.EditKeyPressed)
         self.soundList.setAlternatingRowColors(True)
         self.soundList.setObjectName("soundList")
         self.verticalLayout_9.addWidget(self.soundList)
@@ -356,6 +358,4 @@ class Ui_MainWindow:
         self.actionSave_As.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-
-
-from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+from gui.widgets.edit.locstring import LocalizedStringLineEdit

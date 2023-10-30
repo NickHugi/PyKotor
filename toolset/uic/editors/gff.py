@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'editors\gff.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_MainWindow:
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(668, 486)
@@ -104,8 +106,8 @@ class Ui_MainWindow:
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.floatSpin = QtWidgets.QDoubleSpinBox(self.floatPage)
         self.floatSpin.setDecimals(6)
-        self.floatSpin.setMinimum(-1e22)
-        self.floatSpin.setMaximum(1e23)
+        self.floatSpin.setMinimum(-1e+22)
+        self.floatSpin.setMaximum(1e+23)
         self.floatSpin.setStepType(QtWidgets.QAbstractSpinBox.AdaptiveDecimalStepType)
         self.floatSpin.setObjectName("floatSpin")
         self.verticalLayout_4.addWidget(self.floatSpin)
@@ -121,8 +123,8 @@ class Ui_MainWindow:
         self.formLayout_3.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_3)
         self.xVec3Spin = QtWidgets.QDoubleSpinBox(self.vector3Page)
         self.xVec3Spin.setDecimals(6)
-        self.xVec3Spin.setMinimum(-1e29)
-        self.xVec3Spin.setMaximum(1e26)
+        self.xVec3Spin.setMinimum(-1e+29)
+        self.xVec3Spin.setMaximum(1e+26)
         self.xVec3Spin.setObjectName("xVec3Spin")
         self.formLayout_3.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.xVec3Spin)
         self.label_4 = QtWidgets.QLabel(self.vector3Page)
@@ -130,8 +132,8 @@ class Ui_MainWindow:
         self.formLayout_3.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_4)
         self.yVec3Spin = QtWidgets.QDoubleSpinBox(self.vector3Page)
         self.yVec3Spin.setDecimals(6)
-        self.yVec3Spin.setMinimum(-1e29)
-        self.yVec3Spin.setMaximum(1e26)
+        self.yVec3Spin.setMinimum(-1e+29)
+        self.yVec3Spin.setMaximum(1e+26)
         self.yVec3Spin.setObjectName("yVec3Spin")
         self.formLayout_3.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.yVec3Spin)
         self.label_5 = QtWidgets.QLabel(self.vector3Page)
@@ -139,8 +141,8 @@ class Ui_MainWindow:
         self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_5)
         self.zVec3Spin = QtWidgets.QDoubleSpinBox(self.vector3Page)
         self.zVec3Spin.setDecimals(6)
-        self.zVec3Spin.setMinimum(-1e29)
-        self.zVec3Spin.setMaximum(1e26)
+        self.zVec3Spin.setMinimum(-1e+29)
+        self.zVec3Spin.setMaximum(1e+26)
         self.zVec3Spin.setObjectName("zVec3Spin")
         self.formLayout_3.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.zVec3Spin)
         self.pages.addWidget(self.vector3Page)
@@ -153,8 +155,8 @@ class Ui_MainWindow:
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_10)
         self.xVec4Spin = QtWidgets.QDoubleSpinBox(self.vector4Page)
         self.xVec4Spin.setDecimals(8)
-        self.xVec4Spin.setMinimum(-1e28)
-        self.xVec4Spin.setMaximum(1e29)
+        self.xVec4Spin.setMinimum(-1e+28)
+        self.xVec4Spin.setMaximum(1e+29)
         self.xVec4Spin.setObjectName("xVec4Spin")
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.xVec4Spin)
         self.label_8 = QtWidgets.QLabel(self.vector4Page)
@@ -162,8 +164,8 @@ class Ui_MainWindow:
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_8)
         self.yVec4Spin = QtWidgets.QDoubleSpinBox(self.vector4Page)
         self.yVec4Spin.setDecimals(8)
-        self.yVec4Spin.setMinimum(-1e28)
-        self.yVec4Spin.setMaximum(1e29)
+        self.yVec4Spin.setMinimum(-1e+28)
+        self.yVec4Spin.setMaximum(1e+29)
         self.yVec4Spin.setObjectName("yVec4Spin")
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.yVec4Spin)
         self.label_9 = QtWidgets.QLabel(self.vector4Page)
@@ -174,14 +176,14 @@ class Ui_MainWindow:
         self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label_7)
         self.zVec4Spin = QtWidgets.QDoubleSpinBox(self.vector4Page)
         self.zVec4Spin.setDecimals(8)
-        self.zVec4Spin.setMinimum(-1e28)
-        self.zVec4Spin.setMaximum(1e29)
+        self.zVec4Spin.setMinimum(-1e+28)
+        self.zVec4Spin.setMaximum(1e+29)
         self.zVec4Spin.setObjectName("zVec4Spin")
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.zVec4Spin)
         self.wVec4Spin = QtWidgets.QDoubleSpinBox(self.vector4Page)
         self.wVec4Spin.setDecimals(8)
-        self.wVec4Spin.setMinimum(-1e28)
-        self.wVec4Spin.setMaximum(1e29)
+        self.wVec4Spin.setMinimum(-1e+28)
+        self.wVec4Spin.setMaximum(1e+29)
         self.wVec4Spin.setObjectName("wVec4Spin")
         self.formLayout_2.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.wVec4Spin)
         self.pages.addWidget(self.vector4Page)
@@ -322,7 +324,7 @@ class Ui_MainWindow:
         self.typeCombo.setItemText(12, _translate("MainWindow", "LocalizedString"))
         self.typeCombo.setItemText(13, _translate("MainWindow", "Binary"))
         self.typeCombo.setItemText(14, _translate("MainWindow", "Struct"))
-        self.typeCombo.setItemText(15, _translate("MainWindow", "list"))
+        self.typeCombo.setItemText(15, _translate("MainWindow", "List"))
         self.typeCombo.setItemText(16, _translate("MainWindow", "Vector4"))
         self.typeCombo.setItemText(17, _translate("MainWindow", "Vector3"))
         self.label_3.setText(_translate("MainWindow", "X"))
@@ -352,6 +354,4 @@ class Ui_MainWindow:
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
         self.actionSetTLK.setText(_translate("MainWindow", "Set TLK"))
-
-
 from toolset.gui.widgets.long_spinbox import LongSpinBox

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Form implementation generated from reading ui file 'editors\utc.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
@@ -9,7 +11,7 @@
 from PyQt5 import QtCore, QtWidgets
 
 
-class Ui_MainWindow:
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(794, 584)
@@ -802,8 +804,8 @@ class Ui_MainWindow:
         self.min1HpCheckbox.setText(_translate("MainWindow", "Min 1 HP"))
         self.plotCheckbox.setText(_translate("MainWindow", "Plot"))
         self.isPcCheckbox.setText(_translate("MainWindow", "Is PC"))
-        self.noReorientateCheckbox.setText(_translate("MainWindow", "Doesn't Reorientate on PC"))
-        self.noBlockCheckbox.setText(_translate("MainWindow", "Doesn't Block PC"))
+        self.noReorientateCheckbox.setText(_translate("MainWindow", "Doesn\'t Reorientate on PC"))
+        self.noBlockCheckbox.setText(_translate("MainWindow", "Doesn\'t Block PC"))
         self.hologramCheckbox.setText(_translate("MainWindow", "Hologram"))
         self.groupBox_4.setTitle(_translate("MainWindow", "Race"))
         self.label_8.setText(_translate("MainWindow", "Race:"))
@@ -883,8 +885,6 @@ class Ui_MainWindow:
         self.actionSaveUnusedFields.setText(_translate("MainWindow", "Save Unused Fields"))
         self.actionAlwaysSaveK2Fields.setText(_translate("MainWindow", "Always Save K2 Fields"))
         self.actionShowPreview.setText(_translate("MainWindow", "Show Preview"))
-
-
-from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
-from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
+from gui.widgets.edit.combobox_2da import ComboBox2DA
+from gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.renderer.model import ModelRenderer
