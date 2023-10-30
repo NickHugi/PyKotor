@@ -373,19 +373,36 @@ class App(tk.Tk):
         self.gamepaths.icursor(position)
         self.gamepaths.xview(position)
 
+    def get_changes_from_namespace_option(self, namespace_option: PatcherNamespace):
+        ini_filename = namespace_option.ini_filename.strip() or "changes.ini"
+        if namespace_option.data_folderpath:
+            return CaseAwarePath(
+                self.mod_path,
+                "tslpatchdata",
+                namespace_option.data_folderpath,
+                ini_filename,
+            )
+        return CaseAwarePath(self.mod_path, "tslpatchdata", ini_filename)
+
+    def get_rtf_from_namespace_option(self, namespace_option: PatcherNamespace):
+        info_filename = namespace_option.info_filename.strip() or "info.rtf"
+        if namespace_option.data_folderpath:
+            return CaseAwarePath(
+                self.mod_path,
+                "tslpatchdata",
+                namespace_option.data_folderpath,
+                info_filename,
+            )
+        return CaseAwarePath(self.mod_path, "tslpatchdata", info_filename)
+
     def on_namespace_option_chosen(self, event):
         try:
             namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
-            if namespace_option.data_folderpath:
-                changes_ini_path = CaseAwarePath(
-                    self.mod_path,
-                    "tslpatchdata",
-                    namespace_option.data_folderpath,
-                    namespace_option.ini_filename,
-                )
-            else:
-                changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
-            info_rtf = changes_ini_path.parent.joinpath(namespace_option.info_filename.strip() or "info.rtf")
+            changes_ini_path = self.get_changes_from_namespace_option(namespace_option)
+            game_number: int | None = self.extract_lookup_game_number(changes_ini_path)
+            if game_number:
+                self._handle_gamepaths_with_mod(game_number)
+            info_rtf = self.get_rtf_from_namespace_option(namespace_option)
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
                 return
@@ -455,8 +472,8 @@ class App(tk.Tk):
                 if default_directory_path_str:
                     self.browse_button.place_forget()
             elif changes_path.exists():
-                namespaces = self.build_changes_as_namespace(changes_path)
-                self.load_namespace([namespaces])
+                namespaces = [self.build_changes_as_namespace(changes_path)]
+                self.load_namespace(namespaces)
                 if default_directory_path_str:
                     self.browse_button.place_forget()
             else:
@@ -524,30 +541,16 @@ class App(tk.Tk):
             return
         self.check_access(Path(self.gamepaths.get()))
 
-        tslpatchdata_root_path = CaseAwarePath(self.mod_path, "tslpatchdata")
         namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
-        ini_file_path = (
-            tslpatchdata_root_path.joinpath(
-                namespace_option.data_folderpath,
-                namespace_option.ini_filename,
-            )
-            if namespace_option.data_folderpath
-            else tslpatchdata_root_path.joinpath(
-                namespace_option.ini_filename,
-            )
-        )
-        mod_path = ini_file_path.parent
+        ini_file_path = self.get_changes_from_namespace_option(namespace_option)
+        namespace_mod_path = ini_file_path.parent
 
         self._clear_description_textbox()
-        installer = ModInstaller(mod_path, game_path, ini_file_path, self.logger)
+        installer = ModInstaller(namespace_mod_path, game_path, ini_file_path, self.logger)
         try:
-            self._execute_mod_install(installer, tslpatchdata_root_path)
+            self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
-            self._handle_exception_during_install(
-                e,
-                installer,
-                tslpatchdata_root_path,
-            )
+            self._handle_exception_during_install(e, installer)
             if self.one_shot:
                 sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
         self.install_running = False
@@ -561,7 +564,7 @@ class App(tk.Tk):
         self.description_text.delete(1.0, tk.END)
         self.description_text.config(state=tk.DISABLED)
 
-    def _execute_mod_install(self, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
+    def _execute_mod_install(self, installer: ModInstaller):
         self.install_running = True
         self.install_button.config(state=tk.DISABLED)
         self.uninstall_button.config(state=tk.DISABLED)
@@ -588,7 +591,7 @@ class App(tk.Tk):
             f"Total install time: {time_str}",
         )
         self.progressbar["value"] = 100
-        log_file_path: CaseAwarePath = tslpatchdata_root_path.parent / "installlog.txt"
+        log_file_path: Path = Path(self.mod_path, "installlog.txt")
         with log_file_path.open("w", encoding="utf-8") as log_file:
             for log in installer.log.all_logs:
                 log_file.write(f"{log.message}\n")
@@ -605,11 +608,11 @@ class App(tk.Tk):
                 f"Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes. Total install time: {time_str}",
             )
 
-    def _handle_exception_during_install(self, e: Exception, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
+    def _handle_exception_during_install(self, e: Exception, installer: ModInstaller):
         error_name, msg = universal_simplify_exception(e)
         self.write_log(msg)
         installer.log.add_error("The installation was aborted with errors")
-        log_file_path = tslpatchdata_root_path.parent / "installlog.txt"
+        log_file_path = Path(self.mod_path, "installlog.txt")
         with log_file_path.open("w", encoding="utf-8") as log_file:
             for log in installer.log.all_logs:
                 log_file.write(f"{log.message}\n")
@@ -625,9 +628,8 @@ class App(tk.Tk):
         self.browse_button.config(state=tk.NORMAL)
         raise
 
-    def build_changes_as_namespace(self, filepath: os.PathLike | str) -> PatcherNamespace:
-        c_filepath = CaseAwarePath(filepath)
-        with c_filepath.open() as file:
+    def build_changes_as_namespace(self, filepath: CaseAwarePath) -> PatcherNamespace:
+        with filepath.open() as file:
             ini = ConfigParser(
                 delimiters=("="),
                 allow_no_value=True,
@@ -656,28 +658,7 @@ class App(tk.Tk):
         self.namespaces_combobox["values"] = namespaces
         self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
         self.namespaces = namespaces
-        namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
-        game_number: int | None
-        if namespace_option.data_folderpath:
-            changes_ini_path = CaseAwarePath(
-                self.mod_path,
-                "tslpatchdata",
-                namespace_option.data_folderpath,
-                namespace_option.ini_filename,
-            )
-        else:
-            changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.ini_filename)
-        game_number = self.extract_lookup_game_number(
-            changes_ini_path,
-        )
-        if game_number:
-            self._handle_gamepaths_with_mod(game_number)
-        info_rtf = changes_ini_path.parent.joinpath(namespace_option.info_filename.strip() or "info.rtf")
-        if not info_rtf.exists():
-            messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
-            return
-        with info_rtf.open("r") as rtf:
-            self.set_stripped_rtf_text(rtf)
+        self.on_namespace_option_chosen(None)
 
     def _handle_gamepaths_with_mod(self, game_number):
         game = Game(game_number)
