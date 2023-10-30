@@ -85,7 +85,7 @@ class ConfigReader:
         ini_file_bytes = BinaryReader.load_file(resolved_file_path)
         encoding = "utf8"
         if chardet:
-            encoding = chardet.detect(ini_file_bytes).get("encoding") or encoding
+            encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") or encoding
         ini_data: str | None = None
         try:
             ini_data = ini_file_bytes.decode(encoding)

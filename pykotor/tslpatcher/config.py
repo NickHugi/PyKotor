@@ -16,9 +16,7 @@ except ImportError:
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.tools.misc import (
-    is_capsule_file,
-)
+from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, PurePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
@@ -143,15 +141,6 @@ class ModInstaller:
             return self._config
 
         ini_file_bytes = BinaryReader.load_file(self.changes_ini_path)
-
-        ini = ConfigParser(
-            delimiters=("="),
-            allow_no_value=True,
-            strict=False,
-            interpolation=None,
-        )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
-
         encoding = "utf8"
         if chardet:
             encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") or encoding
@@ -165,9 +154,7 @@ class ModInstaller:
                 try:
                     ini_data = ini_file_bytes.decode("windows-1252")
                 except UnicodeDecodeError:
-                    self.log.add_warning(
-                        f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...",
-                    )
+                    self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
                     ini_data = ini_file_bytes.decode(errors="replace")
         ini_text = ini_data
 
@@ -226,7 +213,7 @@ class ModInstaller:
         self._processed_backup_files = set()
         return (self._backup, self._processed_backup_files)
 
-    def handle_capsule_and_backup(self, patch, output_container_path: CaseAwarePath):
+    def handle_capsule_and_backup(self, patch, output_container_path: CaseAwarePath) -> tuple[bool, Capsule | None]:
         capsule = None
         filename = PurePath(patch.filename)
         if filename.suffix.lower() == ".nss":
@@ -246,7 +233,7 @@ class ModInstaller:
         output_container_path: CaseAwarePath,
         exists_at_output_location: bool | None = None,
         capsule: Capsule | None = None,
-    ):
+    ) -> bytes | None:
         if getattr(patch, "replace_file", False) or not exists_at_output_location:
             return BinaryReader.load_file(self.mod_path / patch.filename)
         if capsule is not None:
@@ -258,7 +245,7 @@ class ModInstaller:
         patch,
         exists: bool | None = False,
         capsule: Capsule | None = None,
-    ):
+    ) -> bool:
         local_folder = self.game_path.name if patch.destination == "." else patch.destination
         is_replaceable = hasattr(patch, "replace_file")
         replace_file = is_replaceable and patch.replace_file
