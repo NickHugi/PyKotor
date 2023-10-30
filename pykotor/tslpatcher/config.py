@@ -237,7 +237,7 @@ class ModInstaller:
         if getattr(patch, "replace_file", False) or not exists_at_output_location:
             return BinaryReader.load_file(self.mod_path / patch.filename)
         if capsule is not None:
-            return capsule.resource(*ResourceIdentifier.from_path(patch.filename), reload=True)
+            return capsule.resource(*ResourceIdentifier.from_path(patch.filename))
         return BinaryReader.load_file(output_container_path / patch.filename)
 
     def should_patch(
