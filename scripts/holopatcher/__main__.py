@@ -209,12 +209,13 @@ class App(tk.Tk):
             messagebox.askyesno = MessageboxOverride.askyesno
             messagebox.askyesnocancel = MessageboxOverride.askyesno
             messagebox.askretrycancel = MessageboxOverride.askyesno
+        self.one_shot: bool = False
         if cmdline_args.install:
-            self.install = True
+            self.one_shot = True
             self.begin_install_thread()
             sys.exit()
         if cmdline_args.uninstall:
-            self.install = True
+            self.one_shot = True
             self.uninstall_selected_mod()
             sys.exit()
 
@@ -534,13 +535,13 @@ class App(tk.Tk):
     def begin_install_thread(self):
         if not self.mod_path or not CaseAwarePath(self.mod_path).exists():
             messagebox.showinfo("No mod chosen", "Select your mod directory before starting an install")
-            if self.install:
+            if self.one_shot:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
         game_path = self.gamepaths.get()
         if not game_path or not CaseAwarePath(game_path).exists():
             messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
-            if self.install:
+            if self.one_shot:
                 sys.exit(ExitCode.NUMBER_OF_ARGS)
             return
         self.check_access(Path(self.gamepaths.get()))
@@ -569,7 +570,7 @@ class App(tk.Tk):
                 installer,
                 tslpatchdata_root_path,
             )
-            if self.install:
+            if self.one_shot:
                 sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
         self.install_running = False
         self.install_button.config(state=tk.NORMAL)
@@ -618,7 +619,7 @@ class App(tk.Tk):
                 "Install completed with errors",
                 f"The install completed with {len(installer.log.errors)} errors! The installation may not have been successful, check the logs for more details. Total install time: {time_str}",
             )
-            if self.install:
+            if self.one_shot:
                 sys.exit(ExitCode.INSTALL_COMPLETED_WITH_ERRORS)
         else:
             messagebox.showinfo(
