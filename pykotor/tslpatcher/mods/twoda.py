@@ -8,6 +8,7 @@ from pykotor.resource.formats.twoda import bytes_2da, read_2da
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.twoda import TwoDA, TwoDARow
+    from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
@@ -58,8 +59,8 @@ class Modifications2DA:
         self.destination = "Override"
         self.modifiers: list[Modify2DA] = []
 
-    def apply(self, twoda_bytes: bytes, memory: PatcherMemory, log=None, game=None) -> bytes:
-        twoda: TwoDA = read_2da(twoda_bytes)
+    def apply(self, source_2da: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
+        twoda: TwoDA = read_2da(source_2da)
         for row in self.modifiers:
             row.apply(twoda, memory)
         return bytes_2da(twoda)

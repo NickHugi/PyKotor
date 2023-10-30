@@ -6,6 +6,7 @@ from pykotor.resource.formats.ssf import bytes_ssf, read_ssf
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ssf import SSF, SSFSound
+    from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.memory import PatcherMemory, TokenUsage
 
 
@@ -31,8 +32,8 @@ class ModificationsSSF:
         self.no_replacefile_check = True
         self.modifiers: list[ModifySSF] = modifiers if modifiers is not None else []
 
-    def apply(self, ssf_bytes: bytes, memory: PatcherMemory, log=None, game=None) -> bytes:
-        ssf: SSF = read_ssf(ssf_bytes)
+    def apply(self, source_ssf: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:
+        ssf: SSF = read_ssf(source_ssf)
         for modifier in self.modifiers:
             modifier.apply(ssf, memory)
         return bytes_ssf(ssf)

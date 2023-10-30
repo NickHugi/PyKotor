@@ -7,6 +7,7 @@ from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk, read_tlk
 if TYPE_CHECKING:
     from pykotor.common.misc import Game, ResRef
     from pykotor.resource.formats.tlk import TLK
+    from pykotor.resource.type import SOURCE_TYPES
     from pykotor.tslpatcher.logger import PatchLogger
     from pykotor.tslpatcher.memory import PatcherMemory
 
@@ -17,8 +18,8 @@ class ModificationsTLK:
         self.filename = filename
         self.destination = destination
 
-    def apply(self, dialog_tlk_bytes: bytes, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> bytes:
-        dialog = read_tlk(dialog_tlk_bytes)
+    def apply(self, source_tlk: SOURCE_TYPES, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> bytes:
+        dialog = read_tlk(source_tlk)
         for modifier in self.modifiers:
             if modifier.is_replacement:
                 modifier.replace(dialog, memory)
