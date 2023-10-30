@@ -2,11 +2,11 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.append(".")
-sys.path.append("..")
-toolset_path = Path("./toolset")
+toolset_path = Path(__file__).parent
 if toolset_path.exists() and getattr(sys, "frozen", False) is False:
-    os.chdir(toolset_path)
+    sys.path.append(str(toolset_path))
+    sys.path.append(str(toolset_path.parent))
+os.chdir(str(toolset_path))
 
 import multiprocessing
 import traceback

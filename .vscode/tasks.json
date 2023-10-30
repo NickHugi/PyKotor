@@ -134,6 +134,36 @@
       "problemMatcher": []
     },
     {
+      "label": "Build Toolset (Windows)",
+      "type": "shell",
+      "command": "pyinstaller",
+      "args": [
+        "--noconsole",
+        "--onefile",
+        "--clean",
+        "--name=HolocronToolset",
+        "--path=${workspaceFolder}`;${workspaceFolder}\\toolset",
+        "--icon=resources/icons/sith.ico",
+        "toolset/__main__.py"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build Toolset (Unix)",
+      "type": "shell",
+      "command": "pyinstaller",
+      "args": [
+        "--noconsole",
+        "--onefile",
+        "--clean",
+        "--name=HolocronToolset",
+        "--path=${workspaceFolder}:${workspaceFolder}/toolset",
+        "--icon=resources/icons/sith.ico",
+        "toolset/__main__.py"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "Build KotorDiff",
       "type": "shell",
       "command": "pyinstaller",
