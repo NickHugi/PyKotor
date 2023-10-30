@@ -22,7 +22,7 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, Path
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
 
@@ -85,7 +85,7 @@ class SearchLocation(IntEnum):
 class ItemTuple(NamedTuple):
     resname: str
     name: str
-    filepath: CaseAwarePath
+    filepath: Path
 
 
 class Installation:
@@ -100,10 +100,10 @@ class Installation:
     ]
 
     def __init__(self, path: os.PathLike | str, logger: PatchLogger | None = None):
-        self._path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+        self._path: Path = path if isinstance(path, Path) else Path(path)
         self.log = logger or PatchLogger()
 
-        self._talktable: TalkTable = TalkTable(self._path / "dialog.tlk")
+        self._talktable: TalkTable = TalkTable(CaseAwarePath(self._path, "dialog.tlk"))
 
         self._chitin: list[FileResource] = []
         self._modules: dict[str, list[FileResource]] = {}
@@ -137,7 +137,7 @@ class Installation:
         self.log.add_note("Finished loading the installation")
 
     # region Get Paths
-    def path(self) -> CaseAwarePath:
+    def path(self) -> Path:
         """Returns the path to root folder of the Installation.
 
         Returns
@@ -155,7 +155,7 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("Modules",),
-            "Could not find the Modules folder in '{}'.",
+            "Could not find the 'modules' folder in '{}'.",
         )
 
     def override_path(self) -> CaseAwarePath:
@@ -167,12 +167,12 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("Override",),
-            "Could not find the Override folder in '{}'.",
+            "Could not find the 'override' folder in '{}'.",
             optional=True,
         )
 
     def lips_path(self) -> CaseAwarePath:
-        """Returns the path to lips folder of the Installation. This method maintains the case of the foldername.
+        """Returns the path to 'lips' folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -180,11 +180,11 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("lips",),
-            "Could not find the lips folder in '{}'.",
+            "Could not find the 'lips' folder in '{}'.",
         )
 
     def texturepacks_path(self) -> CaseAwarePath:
-        """Returns the path to texturepacks folder of the Installation. This method maintains the case of the foldername.
+        """Returns the path to 'texturepacks' folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -192,12 +192,12 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("texturepacks",),
-            "Could not find the TexturePacks folder in '{}'.",
+            "Could not find the 'texturepacks' folder in '{}'.",
             optional=True,
         )
 
     def rims_path(self) -> CaseAwarePath:
-        """Returns the path to rims folder of the Installation. This method maintains the case of the foldername.
+        """Returns the path to 'rims' folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -205,12 +205,12 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("rims",),
-            "Could not find the Rims folder in '{}'.",
+            "Could not find the 'rims' folder in '{}'.",
             optional=True,
         )
 
     def streammusic_path(self) -> CaseAwarePath:
-        """Returns the path to streammusic folder of the Installation. This method maintains the case of the foldername.
+        """Returns the path to 'streammusic' folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -218,11 +218,11 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("streammusic",),
-            "Could not find StreamMusic folder in '{}'.",
+            "Could not find 'streammusic' folder in '{}'.",
         )
 
     def streamsounds_path(self) -> CaseAwarePath:
-        """Returns the path to streamsounds folder of the Installation. This method maintains the case of the foldername.
+        """Returns the path to 'streamsounds' folder of the Installation. This method maintains the case of the foldername.
 
         Returns
         -------
@@ -230,8 +230,22 @@ class Installation:
         """
         return self._find_resource_folderpath(
             ("streamsounds",),
-            "Could not find StreamSounds folder in '{}'.",
+            "Could not find 'streamsounds' folder in '{}'.",
             optional=True,
+        )
+
+    def streamwaves_path(self) -> CaseAwarePath:
+        """Returns the path to 'streamwaves' folder of the Installation. This method maintains the case of the foldername.
+
+        In the second game, this folder has been named 'streamvoice'.
+
+        Returns
+        -------
+            The path to the streamvoice folder.
+        """
+        return self._find_resource_folderpath(
+            ("streamwaves", "streamvoice"),
+            "Could not find the 'streamwaves' or 'streamvoice' folder in '{}'.",
         )
 
     def _find_resource_folderpath(
@@ -243,34 +257,20 @@ class Installation:
         try:
             resource_path = self._path
             for folder_name in folder_names:
-                resource_path = self._path / folder_name
+                resource_path = CaseAwarePath(self._path, folder_name)
                 if resource_path.safe_isdir():
                     return resource_path
             if optional:
-                return self._path / folder_names[0]
+                return CaseAwarePath(self._path, folder_names[0])
         except Exception as e:
             raise OSError(error_msg.format(self._path)) from e
         raise FileNotFoundError(error_msg.format(self._path))
-
-    def streamwaves_path(self) -> CaseAwarePath:
-        """Returns the path to streamwaves folder of the Installation. This method maintains the case of the foldername.
-
-        In the second game, this folder has been named "streamvoice".
-
-        Returns
-        -------
-            The path to the streamvoice folder.
-        """
-        return self._find_resource_folderpath(
-            ("streamwaves", "streamvoice"),
-            "Could not find the 'streamwaves' or 'streamvoice' folder in '{}'.",
-        )
 
     # endregion
 
     # region Load Data
 
-    def load_resources(self, path: os.PathLike | str, capsule_check=None, recurse=False) -> dict[str, list[FileResource]] | list[FileResource]:
+    def load_resources(self, path: CaseAwarePath, capsule_check=None, recurse=False) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in the provided list.
 
         Args:
@@ -284,14 +284,13 @@ class Installation:
              or
             dict[str, list[FileResource]]: A dict keyed by filename to the encapsulated resources
         """
-        c_path = CaseAwarePath(path)
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
-        if not c_path.exists():
-            self.log.add_warning(f"The '{c_path.name}' folder did not exist at '{c_path!s}' when loading the installation, skipping...")
+        if not path.exists():
+            self.log.add_warning(f"The '{path.name}' folder did not exist at '{path!s}' when loading the installation, skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(c_path.safe_rglob("*")) if recurse else list(c_path.safe_iterdir())
+        files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())
         for file in files_list:
             if capsule_check and capsule_check(file.name):
                 resources[file.name] = list(Capsule(file))  # type: ignore[always a dict]
@@ -305,15 +304,16 @@ class Installation:
                     )
                     resources.append(resource)  # type: ignore[always a list]
         if not resources or not files_list:
-            self.log.add_warning(f"No resources found at '{c_path!s}' when loading the installation, skipping...")
+            self.log.add_warning(f"No resources found at '{path!s}' when loading the installation, skipping...")
         return resources
 
     def load_chitin(self) -> None:
         """Reloads the list of resources in the Chitin linked to the Installation."""
-        if not self._path.joinpath("chitin.key").exists():
+        c_path = CaseAwarePath(self._path)
+        if not c_path.joinpath("chitin.key").exists():
             self.log.add_warning(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
             return
-        self._chitin = list(Chitin(kotor_path=self._path))
+        self._chitin = list(Chitin(kotor_path=c_path))
 
     def load_lips(
         self,
@@ -544,7 +544,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[CaseAwarePath] | None = None,
+        folders: list[Path] | None = None,
     ) -> ResourceResult | None:
         """Returns a resource matching the specified resref and restype. If no resource is found then None is returned
         instead.
@@ -587,7 +587,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[CaseAwarePath] | None = None,
+        folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
         """Returns a dictionary mapping the items provided in the queries argument to the resource data if it was found. If
         the resource was not found, the value will be None.
@@ -650,7 +650,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[CaseAwarePath] | None = None,
+        folders: list[Path] | None = None,
     ) -> list[LocationResult]:
         """Returns a list filepaths for where a particular resource matching the given resref and restype are located.
 
@@ -686,7 +686,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[CaseAwarePath] | None = None,
+        folders: list[Path] | None = None,
     ) -> dict[ResourceIdentifier, list[LocationResult]]:
         """Returns a dictionary mapping the items provided in the queries argument to a list of locations for that
         respective resource.
@@ -760,10 +760,9 @@ class Installation:
                         )
                         locations[resource.identifier()].append(location)
 
-        def check_folders(values: list[CaseAwarePath]):
-            for folderpath in values:
-                c_folderpath = CaseAwarePath(folderpath)
-                for file in c_folderpath.iterdir():
+        def check_folders(values: list[Path]):
+            for folder in values:
+                for file in folder.iterdir():
                     if not file.safe_isfile():
                         continue
                     for query in queries:
@@ -820,7 +819,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[CaseAwarePath | str] | None = None,
+        folders: list[Path] | None = None,
     ) -> TPC | None:
         """Returns a TPC object loaded from a resource with the specified name. If the specified texture could not be found
         then the method returns None.
@@ -855,8 +854,8 @@ class Installation:
         queries: list[str],
         order: list[SearchLocation] | None = None,
         *,
-        capsules: list[Capsule] | None = None,
-        folders: list[CaseAwarePath | str] | None = None,
+        capsules: list[Capsule] | None = None,  # type: ignore[]
+        folders: list[Path] | None = None,  # type: ignore[]
     ) -> CaseInsensitiveDict[TPC | None]:
         """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
         texture could not be found then the value is None.
@@ -872,8 +871,8 @@ class Installation:
         -------
             A dictionary mapping case-insensitive strings to TPC objects or None.
         """
-        capsules = [] if capsules is None else capsules
-        folders = [] if folders is None else folders
+        capsules: list[Capsule] = [] if capsules is None else capsules
+        folders: list[Path] = [] if folders is None else folders
 
         order = (
             order
@@ -914,22 +913,18 @@ class Installation:
                 for resname in queries:
                     if capsule.exists(resname, ResourceType.TPC):
                         queries.remove(resname)
-                        resource = capsule.resource(resname, ResourceType.TPC)
-                        textures[resname] = read_tpc(resource)
+                        textures[resname] = read_tpc(capsule.resource(resname, ResourceType.TPC))
                     if capsule.exists(resname, ResourceType.TGA):
                         queries.remove(resname)
-                        resource = capsule.resource(resname, ResourceType.TGA)
-                        textures[resname] = read_tpc(resource)
+                        textures[resname] = read_tpc(capsule.resource(resname, ResourceType.TGA))
 
-        def check_folders(values: list[CaseAwarePath | str]):
+        def check_folders(values: list[Path]):
             for folder in values:
-                c_folder = folder if isinstance(folder, CaseAwarePath) else CaseAwarePath(folder)
-                for file in [file for file in c_folder.iterdir() if file.safe_isfile()]:
+                for file in [file for file in folder.iterdir() if file.safe_isfile()]:
                     identifier = ResourceIdentifier.from_path(file.name)
-                    filepath: CaseAwarePath = CaseAwarePath(c_folder, file)
                     for resname in queries:
                         if identifier.resname == resname and identifier.restype in texture_types:
-                            data = BinaryReader.load_file(filepath)
+                            data = BinaryReader.load_file(file)
                             textures[resname] = read_tpc(data)
 
         function_map = {
@@ -1052,10 +1047,9 @@ class Installation:
                     if resource is not None:
                         sounds[resname] = fix_audio(resource)
 
-        def check_folders(values: list[CaseAwarePath]):
+        def check_folders(values: list[Path]):
             for folder in values:
-                filepath: CaseAwarePath = CaseAwarePath(folder)
-                for file in [file for file in filepath.iterdir() if file.safe_isfile()]:
+                for file in [file for file in folder.iterdir() if file.safe_isfile()]:
                     identifier = ResourceIdentifier.from_path(file.name)
                     for resname in resnames:
                         if identifier.resname == resname and identifier.restype in texture_types:

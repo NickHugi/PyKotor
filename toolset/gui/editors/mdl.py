@@ -11,7 +11,7 @@ from pykotor.resource.formats.mdl import MDL, read_mdl, write_mdl
 from pykotor.resource.formats.rim import read_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
@@ -44,7 +44,7 @@ class MDLEditor(Editor):
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
-        c_filepath = CaseAwarePath(filepath)
+        c_filepath = Path(filepath)
 
         mdl_data = None
         mdx_data = None

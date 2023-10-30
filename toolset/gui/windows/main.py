@@ -26,7 +26,7 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.misc import is_rim_file
-from pykotor.tools.path import CaseAwarePath, Path
+from pykotor.tools.path import Path
 from pykotor.tools.string import ireplace
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.about import About
@@ -111,7 +111,7 @@ class ToolWindow(QMainWindow):
 
             # Create a directory used for dumping temp files
             with suppress(Exception):
-                extract_path = CaseAwarePath(str(tempfile.TemporaryDirectory()))
+                extract_path = Path(str(tempfile.TemporaryDirectory()))
                 extract_path.mkdir(exist_ok=True, parents=True)
                 self.settings.extractPath = extract_path
 
@@ -239,7 +239,7 @@ class ToolWindow(QMainWindow):
         elif len(resources) >= 1:
             # Player saves resources with original name to a specific directory
             folder_path_str = QFileDialog.getExistingDirectory(self, "Select directory to extract to")
-            folder_path = CaseAwarePath(folder_path_str)
+            folder_path = Path(folder_path_str)
             if folder_path_str:
                 loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
 
@@ -623,7 +623,7 @@ class ToolWindow(QMainWindow):
     def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader) -> None:
         try:
             data = resource.data()
-            c_filepath: CaseAwarePath = CaseAwarePath(filepath)
+            c_filepath: Path = Path(filepath)
             c_folderpath = c_filepath.parent
 
             decompile_tpc = self.ui.tpcDecompileCheckbox.isChecked()
@@ -693,7 +693,7 @@ class ToolWindow(QMainWindow):
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
 
         for filepath_str in filepaths:
-            filepath = CaseAwarePath(filepath_str)
+            filepath = Path(filepath_str)
             try:
                 resref, restype_ext = filepath.stem, filepath.suffix[1:]
                 restype = ResourceType.from_extension(restype_ext)
@@ -719,7 +719,7 @@ class FolderObserver(FileSystemEventHandler):
 
         module_path = self.window.active.module_path()
         override_path = self.window.active.override_path()
-        modified_path = CaseAwarePath(event.src_path)
+        modified_path = Path(event.src_path)
 
         is_dir = modified_path.safe_isdir()
 

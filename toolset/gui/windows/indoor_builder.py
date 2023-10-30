@@ -40,7 +40,7 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader
@@ -778,7 +778,7 @@ class KitDownloader(QDialog):
 
         for kitName, kitDict in updateInfoData["kits"].items():
             kitId = kitDict["id"]
-            kitPath = CaseAwarePath("kits", f"{kitId}.json")
+            kitPath = Path("kits", f"{kitId}.json")
             if kitPath.exists():
                 button = QPushButton("Already Downloaded")
                 button.setEnabled(False)
@@ -811,7 +811,7 @@ class KitDownloader(QDialog):
 
     def _downloadKit(self, kitId: str, link: str) -> None:
         response = requests.get(link, stream=True, timeout=120)
-        filepath = CaseAwarePath("kits", f"{kitId}.zip")
+        filepath = Path("kits", f"{kitId}.zip")
         with filepath.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:

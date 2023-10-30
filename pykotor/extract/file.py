@@ -7,7 +7,7 @@ from pykotor.tools.misc import (
     is_bif_file,
     is_capsule_file,
 )
-from pykotor.tools.path import CaseAwarePath, PurePath
+from pykotor.tools.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -22,12 +22,12 @@ class FileResource:
         restype: ResourceType,
         size: int,
         offset: int,
-        filepath: CaseAwarePath,
+        filepath: Path,
     ):
         self._resname: str = resname
         self._restype: ResourceType = restype
         self._size: int = size
-        self._filepath: CaseAwarePath = CaseAwarePath(filepath)
+        self._filepath: Path = filepath
         self._offset: int = offset
 
     def __repr__(
@@ -67,7 +67,7 @@ class FileResource:
 
     def filepath(
         self,
-    ) -> CaseAwarePath:
+    ) -> Path:
         return self._filepath
 
     def offset(
@@ -111,12 +111,12 @@ class FileResource:
 class ResourceResult(NamedTuple):
     resname: str
     restype: ResourceType
-    filepath: CaseAwarePath
+    filepath: Path
     data: bytes
 
 
 class LocationResult(NamedTuple):
-    filepath: CaseAwarePath
+    filepath: Path
     offset: int
     size: int
 

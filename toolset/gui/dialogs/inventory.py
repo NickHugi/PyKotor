@@ -36,7 +36,7 @@ from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 from toolset.data.installation import HTInstallation
 
 if TYPE_CHECKING:
@@ -237,7 +237,7 @@ class InventoryEditor(QDialog):
     def getItem(self, resname: str, filepath: os.PathLike | str) -> tuple[os.PathLike, str, UTI]:
         uti: UTI | None = None
         name: str = ""
-        c_filepath = CaseAwarePath(filepath)
+        c_filepath = Path(filepath)
         if not c_filepath.exists():
             result = self._installation.resource(resname, ResourceType.UTI)
             if result is not None:

@@ -29,7 +29,7 @@ from pykotor.tools.misc import (
     is_erf_or_mod_file,
     is_rim_file,
 )
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog
@@ -64,7 +64,7 @@ class Editor(QMainWindow):
     ):
         super().__init__(parent)
 
-        self._filepath: Optional[CaseAwarePath] = None
+        self._filepath: Optional[Path] = None
         self._resref: Optional[str] = None
         self._restype: Optional[ResourceType] = None
         self._revert: Optional[bytes] = None
@@ -160,9 +160,9 @@ class Editor(QMainWindow):
                 if dialog2.exec_():
                     self._resref = dialog2.resref()
                     self._restype = dialog2.restype()
-                    self._filepath = CaseAwarePath(filepath_str)
+                    self._filepath = Path(filepath_str)
             else:
-                self._filepath = CaseAwarePath(filepath_str)
+                self._filepath = Path(filepath_str)
                 self._resref, restype_ext = self._filepath.stem, self._filepath.suffix[1:]
                 self._restype = ResourceType.from_extension(restype_ext)
             self.save()
@@ -207,7 +207,7 @@ class Editor(QMainWindow):
             if dialog2.exec_():
                 self._resref = dialog2.resref()
                 self._restype = dialog2.restype()
-                self._filepath = CaseAwarePath(filepath)
+                self._filepath = Path(filepath)
                 self.save()
         elif dialog.option == BifSaveOption.Override:
             self._filepath = self._installation.override_path() / f"{self._resref}.{self._restype.extension}"
@@ -279,7 +279,7 @@ class Editor(QMainWindow):
     def open(self):
         filepath, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath != "":
-            c_filepath = CaseAwarePath(filepath)
+            c_filepath = Path(filepath)
             encapsulated = is_capsule_file(c_filepath.name)
             encapsulated = encapsulated and "Load from module (*.erf *.mod *.rim)" in self._openFilter
             if encapsulated:
@@ -299,7 +299,7 @@ class Editor(QMainWindow):
         ...
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
-        self._filepath = CaseAwarePath(filepath)
+        self._filepath = Path(filepath)
         self._resref = resref
         self._restype = restype
         self._revert = data

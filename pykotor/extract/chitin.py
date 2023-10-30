@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import FileResource, ResourceIdentifier
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    from pykotor.tools.path import CaseAwarePath
 
 
 class Chitin:
@@ -18,7 +22,7 @@ class Chitin:
         self,
         kotor_path: CaseAwarePath,
     ):
-        self._kotor_path = CaseAwarePath(kotor_path)
+        self._kotor_path: CaseAwarePath = kotor_path
 
         self._resources: list[FileResource] = []
         self.load()

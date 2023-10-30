@@ -4,7 +4,7 @@ from configparser import ConfigParser
 import shutil
 import tempfile
 import unittest
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 from unittest import TestCase
 
 from pykotor.common.language import Language, Gender
@@ -88,20 +88,20 @@ class TestConfigReader(TestCase):
             }
         )
         with tempfile.TemporaryDirectory() as tmpdirname:
-            self.mod_path = CaseAwarePath(tmpdirname) / "tslpatchdata"
+            self.mod_path = Path(tmpdirname) / "tslpatchdata"
         self.mod_path.mkdir(exist_ok=True, parents=True)
-        shutil.copy(CaseAwarePath("tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
-        shutil.copy(CaseAwarePath("tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
+        shutil.copy(Path("tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
+        shutil.copy(Path("tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
 
         # write it to a real file
         write_tlk(
             self.test_tlk_data,
-            str(CaseAwarePath(self.mod_path, "tlk_test_file.tlk")),
+            str(Path(self.mod_path, "tlk_test_file.tlk")),
             ResourceType.TLK,
         )
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path, "tlk_modifications_file.tlk")),
+            str(Path(self.mod_path, "tlk_modifications_file.tlk")),
             ResourceType.TLK,
         )
 
@@ -148,7 +148,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path, "append.tlk")),
+            str(Path(self.mod_path, "append.tlk")),
             ResourceType.TLK,
         )
 
@@ -176,7 +176,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path, "append.tlk")),
+            str(Path(self.mod_path, "append.tlk")),
             ResourceType.TLK,
         )
 
@@ -203,7 +203,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path, "append.tlk")),
+            str(Path(self.mod_path, "append.tlk")),
             ResourceType.TLK,
         )
 
@@ -446,7 +446,7 @@ class TestConfigReader(TestCase):
 
         write_tlk(
             self.modified_tlk_data,
-            str(CaseAwarePath(self.mod_path, "append.tlk")),
+            str(Path(self.mod_path, "append.tlk")),
             ResourceType.TLK,
         )
 

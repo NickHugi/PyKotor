@@ -12,7 +12,7 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath, Path
+from pykotor.tools.path import Path
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
@@ -137,7 +137,7 @@ class ERFEditor(Editor):
             for index in self.ui.tableView.selectionModel().selectedRows(0):
                 item = self.model.itemFromIndex(index)
                 resource = item.data()
-                file_path = CaseAwarePath(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
+                file_path = Path(folderpath_str, f"{resource.resref}.{resource.restype.extension}")
                 with file_path.open("wb") as file:
                     file.write(resource.data)
 
@@ -256,7 +256,7 @@ class ERFEditorTable(QTableView):
             event.ignore()
 
     def startDrag(self, actions: Union[QtCore.Qt.DropActions, QtCore.Qt.DropAction]) -> None:
-        tempDir = CaseAwarePath(GlobalSettings().extractPath)
+        tempDir = Path(GlobalSettings().extractPath)
 
         if not tempDir or not tempDir.safe_isdir():
             return
@@ -264,7 +264,7 @@ class ERFEditorTable(QTableView):
         urls = []
         for index in [index for index in self.selectedIndexes() if index.column() == 0]:
             resource = self.model().itemData(index)[QtCore.Qt.UserRole + 1]
-            filepath = CaseAwarePath(f"{tempDir}/{resource.resref.get()}.{resource.restype.extension}")
+            filepath = Path(f"{tempDir}/{resource.resref.get()}.{resource.restype.extension}")
             with filepath.open("wb") as file:
                 file.write(resource.data)
             urls.append(QtCore.QUrl.fromLocalFile(filepath))

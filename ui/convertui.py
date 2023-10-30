@@ -1,20 +1,20 @@
 import os
 
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 
 UI_TARGET_DIR = "../toolset/uic/"
 QRC_TARGET_DIR = "../toolset/"
 
 
 def get_ui_files():
-    return list(CaseAwarePath(".").safe_rglob("*.ui"))
+    return list(Path(".").safe_rglob("*.ui"))
 
 
 def compile_ui(ignore_timestamp: bool = False):
     for ui_source in get_ui_files():
         directory = ui_source.parent.name
         filename = ui_source.with_suffix(ui_source.suffix.lower().replace(".ui", ".py"))
-        subdir_ui_target = CaseAwarePath(UI_TARGET_DIR, directory)
+        subdir_ui_target = Path(UI_TARGET_DIR, directory)
         ui_target = subdir_ui_target / filename
 
         if not subdir_ui_target.exists():
@@ -33,8 +33,8 @@ def compile_ui(ignore_timestamp: bool = False):
 
 
 def compile_qrc(ignore_timestamp: bool = False):
-    qrc_source = CaseAwarePath("../resources/resources.qrc").resolve()
-    qrc_target = CaseAwarePath(QRC_TARGET_DIR, "resources_rc.py")
+    qrc_source = Path("../resources/resources.qrc").resolve()
+    qrc_target = Path(QRC_TARGET_DIR, "resources_rc.py")
 
     # If the target file does not yet exist, use timestamp=0 as this will force the timestamp check to pass
     source_timestamp = qrc_source.stat().st_mtime

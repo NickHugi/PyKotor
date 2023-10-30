@@ -11,7 +11,7 @@ from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, read_bwm
 from pykotor.resource.generics.utd import UTD, read_utd
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -25,7 +25,7 @@ class Kit:
         self.textures: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.lightmaps: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
         self.txis: CaseInsensitiveDict[bytes] = CaseInsensitiveDict()
-        self.always: dict[CaseAwarePath, bytes] = {}
+        self.always: dict[Path, bytes] = {}
         self.side_padding: dict[int, dict[int, MDLMDXTuple]] = {}
         self.top_padding: dict[int, dict[int, MDLMDXTuple]] = {}
         self.skyboxes: dict[str, MDLMDXTuple] = {}
@@ -67,7 +67,7 @@ class MDLMDXTuple(NamedTuple):
 def load_kits(path: os.PathLike | str) -> list[Kit]:
     kits = []
 
-    kits_path = CaseAwarePath(path)
+    kits_path = Path(path)
     for file in [file for file in kits_path.iterdir() if file.endswith(".json")]:
         kit_json = json.loads(BinaryReader.load_file(f"{kits_path}/{file}"))
         kit = Kit(kit_json["name"])

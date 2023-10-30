@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.tlk.tlk_auto import bytes_tlk, read_tlk
+from pykotor.tools.path import PurePath
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game, ResRef
@@ -13,9 +14,9 @@ if TYPE_CHECKING:
 
 
 class ModificationsTLK:
-    def __init__(self, filename="dialog.tlk", destination="."):
+    def __init__(self, filename: str = "dialog.tlk", destination: str = "."):
         self.modifiers: list[ModifyTLK] = []
-        self.filename = filename
+        self.filename: PurePath = PurePath(filename)
         self.destination = destination
 
     def apply(self, source_tlk: SOURCE_TYPES, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> bytes:

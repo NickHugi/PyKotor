@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES
@@ -94,7 +94,7 @@ class BinaryReader:
         -------
             A new BinaryReader instance.
         """
-        resolved_path = CaseAwarePath(path).resolve()
+        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
         stream = resolved_path.open("rb")
         return BinaryReader(stream, offset, size)
 
@@ -157,7 +157,7 @@ class BinaryReader:
         -------
             The bytes of the file.
         """
-        resolved_path = CaseAwarePath(path).resolve()
+        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
         with resolved_path.open("rb") as reader:
             reader.seek(offset)
             return reader.read() if size == -1 else reader.read(size)
@@ -657,7 +657,7 @@ class BinaryWriter(ABC):
         -------
             A new BinaryWriter instance.
         """
-        resolved_path = CaseAwarePath(path).resolve()
+        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
         stream = resolved_path.open("wb")
         return BinaryWriterFile(stream)
 
@@ -699,14 +699,14 @@ class BinaryWriter(ABC):
         path: os.PathLike | str,
         data: bytes,
     ) -> None:
-        """Convenience method used to writes the specified data to the specified file.
+        """Convenience method used to write the specified data to the specified file.
 
         Args:
         ----
             path: The filepath of the file.
             data: The data to write to the file.
         """
-        resolved_path = CaseAwarePath(path).resolve()
+        resolved_path = (path if isinstance(path, Path) else Path(path)).resolve()
         with resolved_path.open("wb") as file:
             file.write(data)
 

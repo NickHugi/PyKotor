@@ -3,7 +3,7 @@ import subprocess
 from PyQt5.QtWidgets import QFileDialog
 
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.tools.path import CaseAwarePath, Path
+from pykotor.tools.path import Path
 from toolset.gui.widgets.settings.installations import (
     GlobalSettings,
     NoConfigurationSetError,
@@ -42,7 +42,7 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    ncs_decompiler_path = CaseAwarePath(global_settings.ncsDecompilerPath)
+    ncs_decompiler_path = Path(global_settings.ncsDecompilerPath)
     if not ncs_decompiler_path.exists():
         ncs_decompiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Decompiler executable")
         ncs_decompiler_path = Path(ncs_decompiler_path)
@@ -101,7 +101,7 @@ def compileScript(source: str, tsl: bool) -> bytes:
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    nss_compiler_path = CaseAwarePath(global_settings.nssCompilerPath)
+    nss_compiler_path = Path(global_settings.nssCompilerPath)
     if not nss_compiler_path.exists():
         nss_compiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
         nss_compiler_path = Path(nss_compiler_path)

@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import ModInstaller
 
 class TestConfig(unittest.TestCase):
@@ -11,8 +11,8 @@ class TestConfig(unittest.TestCase):
         self.patch = Mock()
         setattr(self.patch, "filename", "test_filename")
         self.config = ModInstaller("","","")
-        setattr(self.config, "mod_path", CaseAwarePath("test_mod_path"))
-        self.output_container_path = CaseAwarePath("test_output_container_path")
+        setattr(self.config, "mod_path", Path("test_mod_path"))
+        self.output_container_path = Path("test_output_container_path")
 
     def tearDown(self):
         pass

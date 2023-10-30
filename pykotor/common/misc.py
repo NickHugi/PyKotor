@@ -8,10 +8,10 @@ import subprocess
 import time
 from datetime import datetime, timedelta, timezone
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, Iterable, Iterator, TypeVar, Optional
 
 from pykotor.common.geometry import Vector3
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import PurePath
 
 if TYPE_CHECKING:
     import os
@@ -87,7 +87,7 @@ class ResRef:
         -------
             A new ResRef instance.
         """
-        return cls(CaseAwarePath(file_path).name)
+        return cls(PurePath(file_path).name)
 
     def set_data(
         self,
@@ -466,6 +466,67 @@ class EquipmentSlot(Enum):
     # TSL Only:
     RIGHT_HAND_2 = 2**18
     LEFT_HAND_2 = 2**19
+
+
+class CaseInsensitiveHashSet(set, Generic[T]):
+    def __init__(self, iterable: Optional[Iterable[T]] = None):
+        super().__init__()
+        if iterable:
+            for item in iterable:
+                self.add(item)
+
+    def _normalize_key(self, item: T):
+        return item.lower() if isinstance(item, str) else item
+
+    def add(self, item: T):
+        """Add an element to a set.
+
+        This has no effect if the element is already present.
+        """
+        key = self._normalize_key(item)
+        if key not in self:
+            super().add(item)
+
+    def remove(self, item: T):
+        """Remove an element from a set; it must be a member.
+
+        If the element is not a member, raise a KeyError.
+        """
+        super().remove(self._normalize_key(item))
+
+    def discard(self, item: T):
+        """Remove an element from a set if it is a member.
+
+        Unlike set.remove(), the discard() method does not raise an exception when an element is missing from the set.
+        """
+        super().discard(self._normalize_key(item))
+
+    def update(self, *others):
+        """Update a set with the union of itself and others."""
+        for other in others:
+            for item in other:
+                self.add(item)
+
+    def __contains__(self, item: T) -> bool:
+        return super().__contains__(self._normalize_key(item))
+
+    def __le__(self, other) -> bool:
+        return super().__le__({self._normalize_key(item) for item in other})
+
+    def __lt__(self, other) -> bool:
+        return super().__lt__({self._normalize_key(item) for item in other})
+
+    def __eq__(self, other) -> bool:
+        return super().__eq__({self._normalize_key(item) for item in other})
+
+    def __ne__(self, other) -> bool:
+        return super().__ne__({self._normalize_key(item) for item in other})
+
+    def __gt__(self, other) -> bool:
+        return super().__gt__({self._normalize_key(item) for item in other})
+
+    def __ge__(self, other) -> bool:
+        return super().__ge__({self._normalize_key(item) for item in other})
 
 
 class CaseInsensitiveDict(Generic[T]):

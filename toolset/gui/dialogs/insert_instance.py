@@ -19,7 +19,7 @@ from pykotor.resource.generics.utt import UTT, bytes_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ class InsertInstanceDialog(QDialog):
 
         self.resname: str = ""
         self.data: bytes = b""
-        self.filepath: CaseAwarePath | None = None
+        self.filepath: Path | None = None
 
         from toolset.uic.dialogs.insert_instance import Ui_Dialog
 
@@ -91,15 +91,15 @@ class InsertInstanceDialog(QDialog):
         if self.ui.reuseResourceRadio.isChecked():
             new = False
             self.resname = resource.resname()
-            self.filepath = CaseAwarePath(resource.filepath())
+            self.filepath = Path(resource.filepath())
             self.data = resource.data()
         elif self.ui.copyResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
-            self.filepath = CaseAwarePath(self.ui.locationSelect.currentData())
+            self.filepath = Path(self.ui.locationSelect.currentData())
             self.data = resource.data()
         elif self.ui.createResourceRadio.isChecked():
             self.resname = self.ui.resrefEdit.text()
-            self.filepath = CaseAwarePath(self.ui.locationSelect.currentData())
+            self.filepath = Path(self.ui.locationSelect.currentData())
             if self._restype == ResourceType.UTC:
                 self.data = bytes_utc(UTC())
             elif self._restype == ResourceType.UTP:
@@ -129,7 +129,7 @@ class InsertInstanceDialog(QDialog):
                 rim.set_data(self.resname, self._restype, self.data)
                 write_rim(rim, self.filepath)
             else:
-                self.filepath = CaseAwarePath(self.filepath) / f"{self.resname}.{self._restype.extension}"
+                self.filepath = Path(self.filepath) / f"{self.resname}.{self._restype.extension}"
                 BinaryWriter.dump(self.filepath, self.data)
 
         self._module.add_locations(self.resname, self._restype, [self.filepath])

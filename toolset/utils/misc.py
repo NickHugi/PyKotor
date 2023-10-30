@@ -10,7 +10,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.erf import read_erf
 from pykotor.resource.formats.rim import read_rim
 from pykotor.tools.misc import is_erf_or_mod_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -77,7 +77,7 @@ def getStringFromKey(key: int) -> str:
 
 def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> Optional[bytes]:
     data = None
-    c_filepath = CaseAwarePath(filepath)
+    c_filepath = Path(filepath)
 
     if is_erf_or_mod_file(c_filepath.name):
         erf: ERF = read_erf(filepath)

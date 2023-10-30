@@ -7,7 +7,7 @@ from pykotor.resource.formats.ncs.compiler.classes import CompileException
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
 from pykotor.resource.formats.ncs.compiler.parser import NssParser
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 
 
 class TestNSSCompiler(TestCase):
@@ -1859,7 +1859,7 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
     def test_include_lookup(self):
-        includetest_script_path = CaseAwarePath("./tests/files/")
+        includetest_script_path = Path("./tests/files/")
         if not includetest_script_path.exists():
             raise FileNotFoundError("Could not find includetest.nss in the ../../files folder!")
         ncs = self.compile(

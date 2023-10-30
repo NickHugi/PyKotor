@@ -1,7 +1,7 @@
 import os
 import sys
 
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.append(project_root)
@@ -10,9 +10,9 @@ from unittest import TestCase
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
 
-BINARY_TEST_FILE = CaseAwarePath("tests/files/test.erf")
+BINARY_TEST_FILE = Path("tests/files/test.erf")
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = CaseAwarePath("tests/files/test_corrupted.gff")
+CORRUPT_BINARY_TEST_FILE = Path("tests/files/test_corrupted.gff")
 
 
 class TestERF(TestCase):

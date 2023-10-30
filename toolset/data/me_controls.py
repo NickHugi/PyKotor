@@ -12,7 +12,7 @@ from PyQt5.QtGui import QKeySequence
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Camera
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
     import os
@@ -166,7 +166,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyPressEvents = []
         self.keyReleaseEvents = []
 
-        f = CaseAwarePath(filepath).open("rb")
+        f = Path(filepath).open("rb")
         rootJSON = json.loads(jsmin(f.read().decode()))
 
         self.name = rootJSON["name"]

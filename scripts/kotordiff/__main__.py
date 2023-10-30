@@ -3,14 +3,14 @@ from __future__ import annotations
 import argparse
 import cProfile
 import os
+import pathlib
 import sys
 from hashlib import sha256
 from io import StringIO
-from pathlib import Path as pathlibPath
 from typing import TYPE_CHECKING
 
 if not getattr(sys, "frozen", False):
-    thisfile_path = pathlibPath(__file__).resolve()
+    thisfile_path = pathlib.Path(__file__).resolve()
     sys.path.append(str(thisfile_path.parents[2]))
 
 
@@ -20,7 +20,7 @@ from pykotor.resource.formats.lip import LIP, read_lip
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.formats.twoda import read_2da
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
+from pykotor.tools.path import Path, PureWindowsPath
 from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.lip import DiffLIP
 from pykotor.tslpatcher.diff.tlk import DiffTLK
@@ -59,7 +59,7 @@ def compute_sha256(where: os.PathLike | str | bytes):
         return sha256_hash.hexdigest()
 
     if isinstance(where, (os.PathLike, str)):
-        file_path = CaseAwarePath(where)
+        file_path = Path(where)
 
         with file_path.open("rb") as f:
             while True:
@@ -72,7 +72,7 @@ def compute_sha256(where: os.PathLike | str | bytes):
     return None
 
 
-def relative_path_from_to(src, dst) -> CaseAwarePath:
+def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
 
@@ -81,7 +81,7 @@ def relative_path_from_to(src, dst) -> CaseAwarePath:
         len(src_parts),
     )
     rel_parts = dst_parts[common_length:]
-    return CaseAwarePath(*rel_parts)
+    return Path(*rel_parts)
 
 
 def visual_length(s: str, tab_length=8) -> int:
@@ -101,10 +101,10 @@ gff_types = [x.value.lower().strip() for x in GFFContent]
 
 
 def diff_data(
-    data1: bytes | CaseAwarePath,
-    data2: bytes | CaseAwarePath,
-    file1_rel: CaseAwarePath,
-    file2_rel: CaseAwarePath,
+    data1: bytes | Path,
+    data2: bytes | Path,
+    file1_rel: Path,
+    file2_rel: Path,
     ext: str,
     resname: str | None = None,
 ) -> bool | None:
@@ -248,10 +248,10 @@ def log_output_with_separator(message, below=True, above=False, surround=False):
 
 
 def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | None:
-    c_file1 = CaseAwarePath(file1)
-    c_file2 = CaseAwarePath(file2)
-    c_file1_rel: CaseAwarePath = relative_path_from_to(c_file2, c_file1)
-    c_file2_rel: CaseAwarePath = relative_path_from_to(c_file1, c_file2)
+    c_file1 = Path(file1)
+    c_file2 = Path(file2)
+    c_file1_rel: Path = relative_path_from_to(c_file2, c_file1)
+    c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
     is_same_result = True
 
     if not c_file1.exists():
@@ -301,8 +301,8 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
 
 
 def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool | None:
-    c_dir1 = CaseAwarePath(dir1)
-    c_dir2 = CaseAwarePath(dir2)
+    c_dir1 = Path(dir1)
+    c_dir2 = Path(dir2)
 
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 
@@ -321,8 +321,8 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
-    install_path1 = CaseAwarePath(install_path1)
-    install_path2 = CaseAwarePath(install_path2)
+    install_path1 = Path(install_path1)
+    install_path2 = Path(install_path2)
     log_output()
     log_output((max(len(str(install_path1)) + 29, len(str(install_path2)) + 30)) * "-")
     log_output("Searching first install dir:", install_path1)
@@ -330,28 +330,28 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
     log_output()
 
     is_same_result = diff_files(install_path1.joinpath("dialog.tlk"), install_path2 / "dialog.tlk")
-    modules_path1: CaseAwarePath = install_path1 / "Modules"
-    modules_path2: CaseAwarePath = install_path2 / "Modules"
+    modules_path1: Path = install_path1 / "Modules"
+    modules_path2: Path = install_path2 / "Modules"
     is_same_result = diff_directories(modules_path1, modules_path2) and is_same_result
 
-    override_path1: CaseAwarePath = install_path1 / "Override"
-    override_path2: CaseAwarePath = install_path2 / "Override"
+    override_path1: Path = install_path1 / "Override"
+    override_path2: Path = install_path2 / "Override"
     is_same_result = diff_directories(override_path1, override_path2) and is_same_result
 
-    rims_path1: CaseAwarePath = install_path1 / "rims"
-    rims_path2: CaseAwarePath = install_path2 / "rims"
+    rims_path1: Path = install_path1 / "rims"
+    rims_path2: Path = install_path2 / "rims"
     is_same_result = diff_directories(rims_path1, rims_path2) and is_same_result
 
-    lips_path1: CaseAwarePath = install_path1 / "Lips"
-    lips_path2: CaseAwarePath = install_path2 / "Lips"
+    lips_path1: Path = install_path1 / "Lips"
+    lips_path2: Path = install_path2 / "Lips"
     is_same_result = diff_directories(lips_path1, lips_path2) and is_same_result
 
-    streamwaves_path1: CaseAwarePath = (
+    streamwaves_path1: Path = (
         install_path1.joinpath("streamwaves")
         if install_path1.joinpath("streamwaves").exists()
         else install_path1.joinpath("streamvoice")
     )
-    streamwaves_path2: CaseAwarePath = (
+    streamwaves_path2: Path = (
         install_path2.joinpath("streamwaves")
         if install_path2.joinpath("streamwaves").exists()
         else install_path2.joinpath("streamvoice")
@@ -361,11 +361,11 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
 
 
 def is_kotor_install_dir(path: os.PathLike | str) -> bool:
-    c_path: CaseAwarePath = CaseAwarePath(path)
+    c_path: Path = Path(path)
     return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
 
 
-def run_differ_from_args(path1: CaseAwarePath, path2: CaseAwarePath) -> bool | None:
+def run_differ_from_args(path1: Path, path2: Path) -> bool | None:
     if not path1.exists():
         log_output(f"--path1='{path1}' does not exist on disk, cannot diff")
         return None
@@ -401,7 +401,7 @@ parser.add_argument(
 parser_args, unknown = parser.parse_known_args()
 LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
 while True:
-    parser_args.path1 = CaseAwarePath(
+    parser_args.path1 = Path(
         parser_args.path1
         or (unknown[0] if len(unknown) > 0 else None)
         or input("Path to the first K1/TSL install, file, or directory to diff: ")
@@ -413,7 +413,7 @@ while True:
     parser.print_help()
     parser_args.path1 = None
 while True:
-    parser_args.path2 = CaseAwarePath(
+    parser_args.path2 = Path(
         parser_args.path2
         or (unknown[1] if len(unknown) > 1 else None)
         or input("Path to the second K1/TSL install, file, or directory to diff: ")
@@ -426,7 +426,7 @@ while True:
     parser_args.path2 = None
 if LOGGING_ENABLED:
     while True:
-        OUTPUT_LOG = CaseAwarePath(
+        OUTPUT_LOG = Path(
             parser_args.output_log
             or (unknown[2] if len(unknown) > 2 else None)
             or input("Filepath of the desired output logfile: ")

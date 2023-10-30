@@ -217,10 +217,22 @@ class BasePath:
         """
         return self._create_instance(self, *args)
 
-    def endswith(self, *text: str, case_sensitive=False) -> bool:
-        if case_sensitive:
-            return str(self).endswith(text)
-        return str(self).lower().endswith(tuple(t.lower() for t in text))
+    def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
+        # If case sensitivity is not required, normalize the self string and the text to lower case
+        if not case_sensitive:
+            self_str = str(self).lower()
+
+            # Normalize each string in the tuple if text is a tuple
+            if isinstance(text, tuple):
+                text = tuple(subtext.lower() for subtext in text)
+            else:
+                text = text.lower()
+        else:
+            self_str = self
+
+        # Utilize Python's built-in endswith method
+        return self_str.endswith(text)
+
 
     @staticmethod
     def _fix_path_formatting(str_path: str, slash=os.sep) -> str:
@@ -478,7 +490,7 @@ class CaseAwarePath(Path):
 if os.name == "posix":
     create_case_insensitive_pathlib_class(CaseAwarePath)
 elif os.name == "nt":
-    CaseAwarePath = Path  # type: ignore[pylance_reportGeneralTypeIssues]
+    CaseAwarePath = Path  # type: ignore[pylance reportGeneralTypeIssues]
 
 
 def resolve_reg_key_to_path(reg_key, keystr):

@@ -42,7 +42,7 @@ from pykotor.tools.misc import (
     is_rim_file,
 )
 from pykotor.tools.model import list_lightmaps, list_textures
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os
@@ -100,10 +100,8 @@ class Module:
         -------
             The string for the root name of a module.
         """
-        c_file_path = CaseAwarePath(filepath)
-        root = str(
-            c_file_path.with_suffix(c_file_path.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")),
-        )
+        filepath_obj = PurePath(filepath)
+        root = str(filepath_obj.with_suffix(filepath_obj.suffix.lower().replace(".rim", "").replace(".erf", "").replace(".mod", "")))
         roota = root[:5]
         rootb = root[5:]
         if "_" in rootb:
@@ -193,9 +191,9 @@ class Module:
         for model in self.models():
             with suppress(Exception):
                 data = model.data()
-                for texture in list_textures(data):
+                for texture in list_textures(data):  # type: ignore[]
                     textures.add(texture)
-                for lightmap in list_lightmaps(data):
+                for lightmap in list_lightmaps(data):  # type: ignore[]
                     textures.add(lightmap)
         for texture in textures:
             look_for.extend(
@@ -229,7 +227,7 @@ class Module:
         self,
         resname: str,
         restype: ResourceType,
-        locations: list[CaseAwarePath],
+        locations: list[Path],
     ):
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
@@ -551,9 +549,9 @@ class ModuleResource(Generic[T]):
         self._resname: str = resname
         self._installation = installation
         self._restype: ResourceType = restype
-        self._active: CaseAwarePath | None = None
+        self._active: Path | None = None
         self._resource: Any = None
-        self._locations: list[CaseAwarePath] = []
+        self._locations: list[Path] = []
 
     def resname(self) -> str:
         """Returns the resource name.
@@ -668,7 +666,7 @@ class ModuleResource(Generic[T]):
                 self._resource = conversions[self._restype](data)
         return self._resource
 
-    def add_locations(self, filepaths: list[CaseAwarePath]) -> None:
+    def add_locations(self, filepaths: list[Path]) -> None:
         """Adds a list of filepaths to the list of locations stored for the resource. If a filepath already exists, it is
         ignored.
 
@@ -684,10 +682,10 @@ class ModuleResource(Generic[T]):
 
     def locations(
         self,
-    ) -> list[CaseAwarePath]:
+    ) -> list[Path]:
         return self._locations
 
-    def activate(self, filepath: CaseAwarePath | None = None) -> None:
+    def activate(self, filepath: Path | None = None) -> None:
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         Raises:
@@ -716,7 +714,7 @@ class ModuleResource(Generic[T]):
         self._resource = None
         self.resource()
 
-    def active(self) -> CaseAwarePath:
+    def active(self) -> Path:
         """Returns the filepath of the currently active file for the resource.
 
         Returns

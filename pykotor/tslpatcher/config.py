@@ -84,7 +84,7 @@ class PatcherConfig:
         ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
         ini.read_string(ini_text)
 
-        ConfigReader(ini, CaseAwarePath(mod_path), logger).load(self)
+        ConfigReader(ini, mod_path, logger).load(self)
 
     def patch_count(self) -> int:
         return (
@@ -264,7 +264,7 @@ class ModInstaller:
         replace_file = is_replaceable and patch.replace_file
         no_replacefile_check = getattr(patch, "no_replacefile_check", None)
 
-        action = patch.action if hasattr(patch, "action") else "Patch "
+        action = getattr(patch, "action", "Patch" + " ")
         container_type = "folder" if capsule is None else "archive"
 
         if replace_file and exists:
