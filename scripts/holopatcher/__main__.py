@@ -507,7 +507,7 @@ class App(tk.Tk):
                 short_error_msg = f"{error_name}: {e.args[0]}"
             else:
                 short_error_msg = f"{error_name}"
-            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {short_error_msg}")
+            messagebox.showerror("Error", f"An unexpected error occurred while loading the game directory: {short_error_msg}")
 
     def begin_install(self) -> None:
         try:
