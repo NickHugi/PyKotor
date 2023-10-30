@@ -26,7 +26,7 @@ if not getattr(sys, "frozen", False):
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
-from pykotor.tools.misc import striprtf
+from pykotor.tools.misc import striprtf, universal_simplify_exception
 from pykotor.tools.path import CaseAwarePath, Path, locate_game_path
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
@@ -327,17 +327,12 @@ class App(tk.Tk):
                     f"Restoring backup of '{file.name}' to '{destination_path.relative_to(destination_folder.parent)}'...",
                 )
         except Exception as e:  # noqa: BLE001
-            error_name = type(e).__name__
-            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
-                short_error_msg = f"{e.args[1]}: {e.filename}"
-            elif e.args:
-                short_error_msg = f"{error_name}: {e.args[0]}"
-            else:
-                short_error_msg = f"{error_name}"
+            error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
-                "Unexpected exception restoring backup!",
-                f"Failed to restore backup because of exception:{os.linesep*2}{short_error_msg}",
+                error_name,
+                f"Failed to restore backup because of exception:{os.linesep*2}{msg}",
             )
+            return
         while messagebox.askyesno(
             "Uninstall completed!",
             f"Deleted {deleted_count} files and successfully restored backup {most_recent_backup_folder.name}{os.linesep*2}"
@@ -397,16 +392,10 @@ class App(tk.Tk):
             with info_rtf.open("r") as rtf:
                 self.set_stripped_rtf_text(rtf)
         except Exception as e:  # noqa: BLE001
-            error_name = type(e).__name__
-            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
-                short_error_msg = f"{e.args[1]}: {e.filename}"
-            elif e.args:
-                short_error_msg = f"{error_name}: {e.args[0]}"
-            else:
-                short_error_msg = f"{error_name}"
+            error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
-                "Error",
-                f"An unexpected error occurred while loading namespace option: {short_error_msg}",
+                error_name,
+                f"An unexpected error occurred while loading the namespace option.{os.linesep*2}{msg}",
             )
 
     def extract_lookup_game_number(self, changes_path: Path):
@@ -478,14 +467,11 @@ class App(tk.Tk):
 
             self.check_access(tslpatchdata_path, recurse=True)
         except Exception as e:  # noqa: BLE001
-            error_name = type(e).__name__
-            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
-                short_error_msg = f"{e.args[1]}: {e.filename}"
-            elif e.args:
-                short_error_msg = f"{error_name}: {e.args[0]}"
-            else:
-                short_error_msg = f"{error_name}"
-            messagebox.showerror("Error", f"An unexpected error occurred while loading mod info: {short_error_msg}")
+            error_name, msg = universal_simplify_exception(e)
+            messagebox.showerror(
+                error_name,
+                f"An unexpected error occurred while loading mod info.{os.linesep*2}{msg}",
+            )
 
     def open_kotor(self, default_kotor_dir_str=None) -> None:
         try:
@@ -500,14 +486,11 @@ class App(tk.Tk):
                 self.gamepaths["values"] = (*self.gamepaths["values"], directory_str)
             self.after(10, self.move_cursor_to_end)
         except Exception as e:  # noqa: BLE001
-            error_name = type(e).__name__
-            if isinstance(e, FileNotFoundError) and len(e.args) > 1:
-                short_error_msg = f"{e.args[1]}: {e.filename}"
-            elif e.args:
-                short_error_msg = f"{error_name}: {e.args[0]}"
-            else:
-                short_error_msg = f"{error_name}"
-            messagebox.showerror("Error", f"An unexpected error occurred while loading the game directory: {short_error_msg}")
+            error_name, msg = universal_simplify_exception(e)
+            messagebox.showerror(
+                error_name,
+                f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
+            )
 
     def begin_install(self) -> None:
         try:
@@ -520,15 +503,10 @@ class App(tk.Tk):
             self.install_thread = Thread(target=self.begin_install_thread)
             self.install_thread.start()
         except Exception as e:  # noqa: BLE001
-            error_type = type(e).__name__
-            error_args = e.args
-            error_cause = type(e.__cause__).__name__ if e.__cause__ else "None"
-
-            error_message = f"Exception Type: {error_type}\nException Arguments: {error_args}\nOriginal Exception: {error_cause}"
-
+            error_name, msg = universal_simplify_exception(e)
             messagebox.showerror(
-                "Error",
-                f"An unexpected error occurred during the installation and the program was forced to exit:\n{error_message}",
+                error_name,
+                f"An unexpected error occurred during the installation and the program was forced to exit.{os.linesep*2}{msg}",
             )
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
@@ -628,14 +606,8 @@ class App(tk.Tk):
             )
 
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller, tslpatchdata_root_path: CaseAwarePath):
-        error_name = type(e).__name__
-        if isinstance(e, FileNotFoundError) and len(e.args) > 1:
-            short_error_msg = f"{e.args[1]}: {e.filename}"
-        elif e.args:
-            short_error_msg = f"{error_name}: {e.args[0]}"
-        else:
-            short_error_msg = f"{error_name}"
-        self.write_log(short_error_msg)
+        error_name, msg = universal_simplify_exception(e)
+        self.write_log(msg)
         installer.log.add_error("The installation was aborted with errors")
         log_file_path = tslpatchdata_root_path.parent / "installlog.txt"
         with log_file_path.open("w", encoding="utf-8") as log_file:
@@ -644,7 +616,7 @@ class App(tk.Tk):
             log_file.write(f"{traceback.format_exc()}\n")
         messagebox.showerror(
             error_name,
-            f"An unexpected error occurred during the installation and the installation was forced to terminate:{os.linesep*2}{short_error_msg}",
+            f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep*2}{msg}",
         )
         self.install_running = False
         self.install_button.config(state=tk.NORMAL)

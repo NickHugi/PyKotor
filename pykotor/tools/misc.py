@@ -96,6 +96,46 @@ def case_insensitive_replace(s: str, old: str, new: str) -> str:
     return re.sub(re.escape(old), new, s, flags=re.I)
 
 
+def universal_simplify_exception(e):
+    error_name = type(e).__name__
+    # Fallback: use the exception type name itself
+    if not e.args:
+        return error_name, "Unknown cause"
+
+    # Handle FileNotFoundError, which has 'filename' attribute
+    if isinstance(e, FileNotFoundError):
+        if len(e.args) > 1:
+            return f"{e.args[1]}: {e.filename if hasattr(e, 'filename') else e.args[0]}"
+        return error_name, f"Could not find the file: '{e.filename if hasattr(e, 'filename') else e.args[0]}'"
+
+    # Handle PermissionError, which may have a 'filename' attribute
+    if isinstance(e, PermissionError):
+        return error_name, f"Permission Denied: {e.filename if hasattr(e, 'filename') else e.args[0]}"
+
+    # Handle TimeoutError
+    if isinstance(e, TimeoutError):
+        return error_name, f"Operation timed out: {e.args[0]}"
+
+    # Handle InterruptedError, which may have an 'errno' attribute
+    if isinstance(e, InterruptedError):
+        return error_name, f"Interrupted: {e.errno}"
+
+    # Handle ConnectionError, which may have a 'request' attribute if it's from the `requests` library
+    if isinstance(e, ConnectionError):
+        return error_name, f"Connection Error: {getattr(e, 'request', lambda: {'method': e.args[0]})().get('method', '')}"
+
+    # Add more oddball exception handling here as needed
+
+    # Try commonly used attributes for human-readable messages
+    for attr in ["strerror", "message", "reason", "filename", "filename1", "filename2"]:
+        msg = getattr(e, attr, None)
+        if msg:
+            return error_name, f"{error_name}: {msg}"
+
+    # Check if 'args' attribute has any information
+    return error_name, f"{error_name}: {','.join(e.args)}"
+
+
 def striprtf(text):
     """Strips RTF encoding utterly and completely."""
     pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
