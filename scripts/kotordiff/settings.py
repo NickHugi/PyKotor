@@ -11,7 +11,7 @@ SHOW_DEBUG_OUTPUT = False
 
 
 def setup_environment():
-    project_root_dir = Path(__file__).parent.parent.parent.resolve()
+    project_root_dir = Path(__file__).parents[2].resolve()
     local_pykotor_dir = project_root_dir / "pykotor"
     pip_pykotor_dir = None
 
