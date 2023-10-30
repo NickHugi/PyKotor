@@ -16,10 +16,6 @@ except ImportError:
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
-from pykotor.extract.installation import (
-    Installation,
-)
-from pykotor.resource.formats.tlk import read_tlk, write_tlk
 from pykotor.tools.misc import (
     is_capsule_file,
 )
@@ -135,7 +131,6 @@ class ModInstaller:
                 raise FileNotFoundError(msg)
 
         self._config: PatcherConfig | None = None
-        self._installation: Installation | None = None
         self._backup: CaseAwarePath | None = None
         self._processed_backup_files: set = set()
         self._game: Game | None = None
@@ -184,12 +179,6 @@ class ModInstaller:
             if not requiredfile_path.exists():
                 raise ImportError(self._config.required_message.strip() or "cannot install - missing a required mod")
         return self._config
-
-    def installation(self):
-        if self._installation:
-            return self._installation
-        self._installation = Installation(self.game_path, self.log)
-        return self._installation
 
     def game(self) -> Game:
         if self._game:
@@ -299,7 +288,8 @@ class ModInstaller:
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {action.lower().rstrip()} '{patch.filename}'. Skipping file...")
             return False
 
-        self.log.add_note(f"{action[:-1]}ing '{patch.filename}' and {'adding' if capsule else 'saving'} to the '{local_folder}' {container_type}")
+        save_type: str = "adding" if capsule is not None else "saving"
+        self.log.add_note(f"{action[:-1]}ing '{patch.filename}' and {save_type} to the '{local_folder}' {container_type}")
         return True
 
     def install(self) -> None:
@@ -335,7 +325,7 @@ class ModInstaller:
                 self.log.add_error(f"Could not locate resource to patch: '{patch.filename}'")
                 continue
             patched_bytes_data = patch.apply(data_to_patch_bytes, memory, self.log, self.game())
-            if capsule:
+            if capsule is not None:
                 capsule.add(*ResourceIdentifier.from_path(patch.filename), patched_bytes_data)
             else:
                 BinaryWriter.dump(output_container_path / patch.filename, patched_bytes_data)

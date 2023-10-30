@@ -42,7 +42,7 @@ class TestConfig(unittest.TestCase):
         setattr(self.patch, "replace_file", False)
 
         with patch("pykotor.common.stream.BinaryReader.load_file") as mock_load_file:
-            self._do_file_test(
+            self._do_main_test(
                 "BinaryReader.load_file result", mock_load_file, True, None
             )
 
@@ -51,7 +51,7 @@ class TestConfig(unittest.TestCase):
         setattr(self.patch, "replace_file", False)
 
         with patch("pykotor.common.stream.BinaryReader.load_file") as mock_load_file:
-            self._do_file_test(
+            self._do_main_test(
                 "BinaryReader.load_file result", mock_load_file, False, None
             )
 
@@ -66,11 +66,11 @@ class TestConfig(unittest.TestCase):
         setattr(self.patch, "replace_file", False)
         capsule = Capsule("test.mod")
         with patch(arg0) as mock_resource:
-            self._do_file_test(
+            self._do_main_test(
                 arg1, mock_resource, arg2, capsule
             )
 
-    def _do_file_test(self, arg0, arg1, exists_at_output_location, capsule):
+    def _do_main_test(self, arg0, arg1, exists_at_output_location, capsule):
         arg1.return_value = arg0
         result = self.config.lookup_resource(
             self.patch,
