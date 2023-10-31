@@ -53,7 +53,7 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
         mdx_offset = mdl.read_uint32()
         mdl.read_uint32()  # offset_to_vertices
 
-        element_data = []
+        element_data: list | bytes = []
         mdl.seek(offset + 80 + 184)
         element_offsets_count = mdl.read_uint32()
         offset_to_element_offsets = mdl.read_int32()

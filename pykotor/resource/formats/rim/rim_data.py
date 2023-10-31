@@ -38,13 +38,10 @@ class RIM:
         if isinstance(item, int):
             return self._resources[item]
         if isinstance(item, str):
-            resource = next(
-                [resource for resource in self._resources if resource.resref == item],
-                None,
-            )
-            if resource is None:
-                raise KeyError
-            return resource
+            try:
+                return next(resource for resource in self._resources if resource.resref == item)
+            except StopIteration as e:
+                raise KeyError from e
         return NotImplemented
 
     def __add__(self, other: RIM) -> RIM:

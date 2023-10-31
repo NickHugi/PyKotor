@@ -579,18 +579,7 @@ class FunctionDefinition(TopLevelObject):
             msg = f"Function '{name}' has already been defined."
             raise CompileException(msg)
         elif name in root.function_map and root.function_map[name].is_prototype():
-            if not self.is_matching_signature(root.function_map[name].definition):
-                msg = f"Prototype of function '{name}' does not match definition."
-                raise CompileException(msg)
-
-            # Function has forward declaration, insert the compiled definition after the stub
-            temp = NCS()
-            retn = NCSInstruction(NCSInstructionType.RETN)
-            self.block.compile(temp, root, None, retn, None, None)
-            temp.instructions.append(retn)
-
-            stub_index = ncs.instructions.index(root.function_map[name].instruction)
-            ncs.instructions[stub_index + 1 : stub_index + 1] = temp.instructions
+            self._compile_function(root, name, ncs)
         else:
             retn = NCSInstruction(NCSInstructionType.RETN)
 
@@ -600,19 +589,47 @@ class FunctionDefinition(TopLevelObject):
 
             root.function_map[name] = FunctionReference(function_start, self)
 
+    def _compile_function(self, root, name, ncs):
+        """
+        Compiles a function definition
+        Args: 
+            self: The compiler instance
+            root: The root node of the AST
+            name: The name of the function
+            ncs: The NCS block to insert the compiled code into
+        Returns: 
+            None: Does not return anything
+        Processing Logic:
+        1. Checks if the function signature matches the definition
+        2. Creates a temporary NCS block to hold the compiled code
+        3. Compiles the function body into the temporary block  
+        4. Inserts the compiled code after the forward declaration in the original block"""
+        if not self.is_matching_signature(root.function_map[name].definition):
+            msg = f"Prototype of function '{name}' does not match definition."
+            raise CompileException(msg)
+
+        # Function has forward declaration, insert the compiled definition after the stub
+        temp = NCS()
+        retn = NCSInstruction(NCSInstructionType.RETN)
+        self.block.compile(temp, root, None, retn, None, None)
+        temp.instructions.append(retn)
+
+        stub_index = ncs.instructions.index(root.function_map[name].instruction)
+        ncs.instructions[stub_index + 1 : stub_index + 1] = temp.instructions
+
     def is_matching_signature(self, prototype: FunctionForwardDeclaration) -> bool:
         if self.return_type != prototype.return_type:
             return False
         if len(self.parameters) != len(prototype.parameters):
             return False
-        for i, these_parameters in enumerate(self.parameters):
-            if these_parameters.data_type != prototype.parameters[i].data_type:
-                return False
-            # TODO: nwnnsscomp compiles fine when default values do not match
-            #       - how to handle? need some kind of warning system maybe.
-            # if self.parameters[i].default != prototype.parameters[i].default:
-            #     retrn False
-        return True
+        return all(
+            these_parameters.data_type == prototype.parameters[i].data_type
+            for i, these_parameters in enumerate(self.parameters)
+        )
+        # TODO: nwnnsscomp compiles fine when default values do not match
+        #       - how to handle? need some kind of warning system maybe.
+        # if self.parameters[i].default != prototype.parameters[i].default:
+        #     retrn False
 
 
 class FunctionDefinitionParam:
@@ -813,7 +830,7 @@ class StringExpression(Expression):
         super().__init__()
         self.value: str = value
 
-    def __eq__(self, other: StringExpression):
+    def __eq__(self, other):
         if isinstance(other, StringExpression):
             return self.value == other.value
         return NotImplemented
@@ -1968,7 +1985,7 @@ class DynamicDataType:
         self.builtin: DataType = datatype
         self._struct: str | None = struct_name
 
-    def __eq__(self, other: DynamicDataType | DataType) -> bool:
+    def __eq__(self, other) -> bool:
         if isinstance(other, DynamicDataType):
             if self.builtin == other.builtin:
                 return self.builtin != DataType.STRUCT or (self.builtin == DataType.STRUCT and self._struct == other._struct)

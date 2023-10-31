@@ -5,16 +5,9 @@ import os
 import pathlib
 import platform
 import re
-from pathlib import (
-    Path,  # type: ignore[pylance_reportGeneralTypeIssues]
-    PosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
-    PurePath,  # type: ignore[pylance_reportGeneralTypeIssues]
-    PurePosixPath,  # type: ignore[pylance_reportGeneralTypeIssues]
-    PureWindowsPath,  # type: ignore[pylance_reportGeneralTypeIssues]
-    WindowsPath,  # type: ignore[pylance_reportGeneralTypeIssues]
-)
-from typing import Generator, List, Tuple, Union
+import sys
 import uuid
+from typing import Generator, List, Tuple, Union
 
 PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
@@ -103,7 +96,7 @@ def create_case_insensitive_pathlib_class(cls):
                 wrapped_methods.add(attr_name)
 
 
-class BasePath:
+class BasePurePath:
     """BasePath is a class created to fix some annoyances with pathlib, such as its refusal to resolve mixed/repeating/trailing slashes."""
 
     def __new__(cls, *args: PATH_TYPES, **kwargs):
@@ -111,7 +104,7 @@ class BasePath:
 
     def __init__(self, *args, _called_from_pathlib=True):
         next_init_method_class = next(
-            (cls for cls in self.__class__.mro() if "__init__" in cls.__dict__ and cls is not BasePath),
+            (cls for cls in self.__class__.mro() if "__init__" in cls.__dict__ and cls is not BasePurePath),
             self.__class__,  # reminder: self.__class__ will never be BasePath
         )
         # Check if the class that defines the next __init__ is object
@@ -262,64 +255,67 @@ class BasePath:
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
 
+class PurePath(BasePurePath, pathlib.PurePath):
+    _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-class PurePath(BasePath, PurePath):
-    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
 
-
-class PurePosixPath(BasePath, PurePosixPath):
+class PurePosixPath(BasePurePath, pathlib.PurePosixPath):
     pass
 
 
-class PureWindowsPath(BasePath, PureWindowsPath):
+class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):
     pass
 
-
-class Path(BasePath, Path):
-    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
-
+class BasePath(BasePurePath):
     # Safe rglob operation
     def safe_rglob(self, pattern: str):
+        pathobj: Path = super()  # type: ignore[]
         with contextlib.suppress(Exception):
-            yield from self.rglob(pattern)
+            yield from pathobj.rglob(pattern)
 
     # Safe iterdir operation
     def safe_iterdir(self):
+        pathobj: Path = super()  # type: ignore[]
         with contextlib.suppress(Exception):
-            yield from self.iterdir()
+            yield from pathobj.iterdir()
 
     # Safe is_dir operation
     def safe_isdir(self) -> bool:
+        pathobj: Path = super()  # type: ignore[]
         try:
-            return self.is_dir()
+            return pathobj.is_dir()
         except Exception:  # noqa: BLE001
             return False
 
     # Safe is_file operation
     def safe_isfile(self) -> bool:
+        pathobj: Path = super()  # type: ignore[]
         try:
-            return self.is_file()
+            return pathobj.is_file()
         except Exception:  # noqa: BLE001
             return False
 
     # Safe exists operation
     def safe_exists(self) -> bool:
+        pathobj: Path = super()  # type: ignore[]
         try:
-            return self.exists()
+            return pathobj.exists()
         except Exception:  # noqa: BLE001
             return False
 
     # Safe stat operation
     def safe_stat(self, *args, **kwargs):
+        pathobj: Path = super()  # type: ignore[]
         try:
-            return self.stat(*args, **kwargs)
+            return pathobj.stat(*args, **kwargs)
         except Exception:  # noqa: BLE001
             return None
 
     # Safe open operation
     def safe_open(self, *args, **kwargs):
+        pathobj: Path = super()  # type: ignore[]
         try:
-            return self.open(*args, **kwargs)
+            return pathobj.open(*args, **kwargs)
         except Exception:  # noqa: BLE001
             return None
 
@@ -347,7 +343,7 @@ class Path(BasePath, Path):
         return False
 
     def gain_access(self, mode=0o755, owner_uid=-1, owner_gid=-1, recurse=True):
-
+        pathobj: Path = super()  # type: ignore[]
         # (Unix) Gain ownership of the folder
         if os.name != "nt" and (owner_uid != -1 or owner_gid != -1) and not self.has_access():
             try:
@@ -358,7 +354,7 @@ class Path(BasePath, Path):
         # chmod the folder
         if not self.has_access():
             try:
-                self.chmod(mode)
+                pathobj.chmod(mode)
             except Exception as e:  # noqa: BLE001
                 print(f"Error during chmod for {self!s}: {e}")
 
@@ -377,8 +373,8 @@ class Path(BasePath, Path):
 
         success: bool = self.has_access()
         try:
-            if recurse and self.is_dir():
-                for child in self.iterdir():
+            if recurse and pathobj.is_dir():
+                for child in pathobj.iterdir():
                     success &= child.gain_access(mode, owner_uid, owner_gid)
         except Exception as e:  # noqa: BLE001
             print(f"Error gaining access for children of {self!s}: {e}")
@@ -387,11 +383,15 @@ class Path(BasePath, Path):
         return success
 
 
-class PosixPath(BasePath, PosixPath):
+class Path(BasePath, pathlib.Path):
+    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
+
+
+class PosixPath(BasePath, pathlib.PosixPath):
     pass
 
 
-class WindowsPath(BasePath, WindowsPath):
+class WindowsPath(BasePath, pathlib.WindowsPath):
     pass
 
 
@@ -410,8 +410,10 @@ class CaseAwarePath(Path):
         """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
         return hash((self.__class__.__name__, super().__str__().lower()))
 
-    def __eq__(self, other: os.PathLike | str):
+    def __eq__(self, other: object):
         """All pathlib classes that derive from PurePath are equal to this object if their paths are case-insensitive equivalents."""
+        if not isinstance(other, (os.PathLike, str)):
+            return NotImplemented
         other = other.as_posix() if isinstance(other, pathlib.PurePath) else str(other)
         return self._fix_path_formatting(other).lower() == super().__str__().lower()
 
@@ -495,7 +497,7 @@ class CaseAwarePath(Path):
 if os.name == "posix":
     create_case_insensitive_pathlib_class(CaseAwarePath)
 elif os.name == "nt":
-    CaseAwarePath = Path  # type: ignore[pylance reportGeneralTypeIssues]
+    CaseAwarePath = Path  # type: ignore[misc]
 
 
 def resolve_reg_key_to_path(reg_key, keystr):

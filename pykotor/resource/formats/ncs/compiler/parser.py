@@ -69,7 +69,7 @@ class NssParser:
         functions: list[ScriptFunction],
         constants: list[ScriptConstant],
         library: dict[str, bytes],
-        library_lookup: list[str | CaseAwarePath] | str | CaseAwarePath | None,
+        library_lookup: list[str] | list[CaseAwarePath] | str | CaseAwarePath | None,
         errorlog=yacc.NullLogger(),
     ):
         self.parser = yacc.yacc(
@@ -96,8 +96,8 @@ class NssParser:
         else:
             self.library_lookup = [CaseAwarePath(library_lookup)]
 
-    tokens = NssLexer.tokens
-    literals = NssLexer.literals
+    tokens: list[str] = NssLexer.tokens
+    literals: list[str] = NssLexer.literals
 
     precedence = (
         ("left", "OR"),
@@ -516,7 +516,7 @@ class NssParser:
             data_type = engine_function.returntype
             p[0] = EngineCallExpression(engine_function, routine_id, data_type, args)
         else:
-            args: list[Expression] = p[3]
+            args = p[3]
             p[0] = FunctionCallExpression(identifier, args)
 
     def p_function_call_params(self, p):

@@ -84,9 +84,11 @@ class TPCTGAReader(ResourceReader):
                         pixel_rows[y].extend([r, g, b])
 
             if y_flipped:
-                [data.extend(pixels) for pixels in reversed(pixel_rows)]
+                for pixels in reversed(pixel_rows):
+                    data.extend(pixels)
             else:
-                [data.extend(pixels) for pixels in pixel_rows]
+                for pixels in pixel_rows:
+                    data.extend(pixels)
         elif datatype_code == _DataTypes.RLE_RGB:
             data = bytearray()
             pixels = []

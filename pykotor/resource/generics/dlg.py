@@ -370,7 +370,7 @@ class DLGLink:
 
     def __init__(
         self,
-        node: DLGNode = DLGNode,
+        node: DLGNode | None = None,
     ):
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode = node

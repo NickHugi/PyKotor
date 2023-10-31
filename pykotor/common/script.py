@@ -45,7 +45,7 @@ class ScriptParam:
     ):
         self.datatype: DataType = DataType(datatype)
         self.name: str = name
-        self.default: str | None = default
+        self.default: str | None = default  # TODO: fix type def
 
     def __repr__(
         self,

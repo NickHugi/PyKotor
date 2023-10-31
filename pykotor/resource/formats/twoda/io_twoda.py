@@ -102,9 +102,9 @@ class TwoDABinaryWriter(ResourceWriter):
         for row_label in self._twoda.get_labels():
             self._writer.write_string(str(row_label) + "\t")
 
-        values = []
-        value_offsets = []
-        cell_offsets = []
+        values: list[str] = []
+        value_offsets: list[int] = []
+        cell_offsets: list[int] = []
         data_size = 0
 
         for row in self._twoda:

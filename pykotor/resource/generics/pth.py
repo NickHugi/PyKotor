@@ -35,7 +35,7 @@ class PTH:
         self,
         item: int,
     ):
-        return self._points[int]
+        return self._points[item]
 
     def add(
         self,
@@ -120,7 +120,7 @@ class PTHEdge:
 
     def __eq__(
         self,
-        other: PTHEdge,
+        other,
     ):
         if not isinstance(other, PTHEdge):
             raise NotImplementedError

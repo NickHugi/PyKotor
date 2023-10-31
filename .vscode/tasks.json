@@ -2,6 +2,24 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "install_requirements",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt",
+        "--upgrade"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "pylint: whole project",
       "dependsOn": "install_requirements",
       "type": "shell",
@@ -45,7 +63,8 @@
         "--show-column-numbers",
         "--package",
         "pykotor",
-        "--check-untyped-defs"
+        "--check-untyped-defs",
+        "--no-strict-optional"
       ],
       "group": "test",
       "presentation": {
@@ -100,23 +119,6 @@
           "message": 5
         }
       }
-    },
-    {
-      "label": "install_requirements",
-      "type": "shell",
-      "command": "${command:python.interpreterPath}",
-      "args": [
-        "-m",
-        "pip",
-        "install",
-        "-r",
-        "requirements.txt"
-      ],
-      "presentation": {
-        "echo": true,
-        "reveal": "always"
-      },
-      "problemMatcher": []
     },
     {
       "label": "Build HoloPatcher",

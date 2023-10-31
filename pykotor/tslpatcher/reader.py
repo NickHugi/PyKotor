@@ -259,17 +259,17 @@ class ConfigReader:
 
         for key, value in tlk_list_edits.items():
             try:
-                key: str = key.lower()
-                if key.startswith("ignore"):
+                lowercase_key: str = key.lower()
+                if lowercase_key.startswith("ignore"):
                     continue
-                if key.startswith("strref"):
+                if lowercase_key.startswith("strref"):
                     # load append.tlk only if it's needed.
                     if append_tlk_edits is None:
                         append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
                     if len(append_tlk_edits) == 0:
-                        msg = f"Could not find append.tlk on disk to perform modifier '{key}={value}'"
+                        msg = f"Could not find append.tlk on disk to perform modifier '{lowercase_key}={value}'"
                         raise FileNotFoundError(msg)
-                    strref_range = parse_range(key[6:])
+                    strref_range = parse_range(lowercase_key[6:])
                     token_id_range = parse_range(value)
                     process_tlk_entries(
                         append_tlk_edits,
@@ -277,15 +277,15 @@ class ConfigReader:
                         token_id_range,
                         is_replacement=False,
                     )
-                elif key.startswith("file"):
+                elif lowercase_key.startswith("file"):
                     tlk_modifications_path: CaseAwarePath = self.mod_path / value
                     if value not in self.ini:
-                        msg = f"INI header for '{value}' referenced in TLKList key '{key}' not found"
+                        msg = f"INI header for '{value}' referenced in TLKList key '{lowercase_key}' not found"
                         raise ValueError(msg)
                     tlk_ini_edits = CaseInsensitiveDict(dict(self.ini[value].items()))
                     modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
                     if len(modifications_tlk_data) == 0:
-                        msg: str = f"Could not find '{value}.tlk' on disk to perform modifier '{key}={value}'"
+                        msg = f"Could not find '{value}.tlk' on disk to perform modifier '{lowercase_key}={value}'"
                         raise FileNotFoundError(msg)
                     process_tlk_entries(
                         modifications_tlk_data,
@@ -293,9 +293,9 @@ class ConfigReader:
                         tlk_ini_edits.values(),
                         is_replacement=True,
                     )
-                elif "\\" in key or "/" in key:
-                    delimiter = "\\" if "\\" in key else "/"
-                    token_id_str, property_name = key.split(delimiter)
+                elif "\\" in lowercase_key or "/" in lowercase_key:
+                    delimiter = "\\" if "\\" in lowercase_key else "/"
+                    token_id_str, property_name = lowercase_key.split(delimiter)
                     token_id = int(token_id_str)
 
                     if token_id not in modifier_dict:
@@ -309,7 +309,7 @@ class ConfigReader:
                     elif property_name == "sound":
                         modifier_dict[token_id]["voiceover"] = ResRef(value)
                     else:
-                        msg = f"Invalid TLKList syntax for key '{key}' value '{value}', expected 'sound' or 'text'"
+                        msg = f"Invalid TLKList syntax for key '{lowercase_key}' value '{value}', expected 'sound' or 'text'"
                         raise ValueError(msg)
 
                     text = modifier_dict[token_id].get("text")
@@ -319,10 +319,10 @@ class ConfigReader:
                         modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
                         self.config.patches_tlk.modifiers.append(modifier)
                 else:
-                    msg = f"Invalid syntax in TLKList: '{key}={value}'"
+                    msg = f"Invalid syntax in TLKList: '{lowercase_key}={value}'"
                     raise ValueError(msg)
             except ValueError as e:
-                msg = f"Could not parse {key}={value}"
+                msg = f"Could not parse {lowercase_key}={value}"
                 raise ValueError(msg) from e
 
     def load_2da(self) -> None:
@@ -778,7 +778,7 @@ class ConfigReader:
     def cells_2da(
         self,
         identifier: str,
-        modifiers: CaseInsensitiveDict,
+        modifiers: CaseInsensitiveDict[str],
     ) -> tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]]:
         cells: dict[str, RowValue] = {}
         store_2da: dict[int, RowValue] = {}

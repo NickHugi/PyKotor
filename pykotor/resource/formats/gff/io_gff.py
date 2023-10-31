@@ -137,8 +137,8 @@ class GFFBinaryReader(ResourceReader):
                 gff_struct.set_string(label, self._reader.read_string(length))
             elif field_type is GFFFieldType.ResRef:
                 length = self._reader.read_uint8()
-                value = ResRef(self._reader.read_string(length))
-                gff_struct.set_resref(label, value)
+                resref = ResRef(self._reader.read_string(length))
+                gff_struct.set_resref(label, resref)
             elif field_type is GFFFieldType.LocalizedString:
                 gff_struct.set_locstring(label, self._reader.read_locstring())
             elif field_type is GFFFieldType.Binary:
@@ -150,9 +150,9 @@ class GFFBinaryReader(ResourceReader):
                 gff_struct.set_vector4(label, self._reader.read_vector4())
         elif field_type is GFFFieldType.Struct:
             struct_index = self._reader.read_uint32()
-            value = GFFStruct()
-            self._load_struct(value, struct_index)
-            gff_struct.set_struct(label, value)
+            new_struct = GFFStruct()
+            self._load_struct(new_struct, struct_index)
+            gff_struct.set_struct(label, new_struct)
         elif field_type is GFFFieldType.List:
             self._load_list(gff_struct, label)
         elif field_type is GFFFieldType.UInt8:

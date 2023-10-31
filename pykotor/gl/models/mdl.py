@@ -350,7 +350,8 @@ class Boundary:
 
     def _build_nd(self, vertices) -> tuple[ndarray, ndarray]:
         npvertices = []
-        [npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z+2)]) for vertex in vertices]
+        for vertex in vertices:
+            npvertices.extend([*vertex, *Vector3(vertex.x, vertex.y, vertex.z+2)])
 
         npfaces = []
         count = len(vertices) * 2

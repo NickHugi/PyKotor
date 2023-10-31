@@ -407,17 +407,22 @@ class _Node:
             raise ValueError(msg)
 
     def _write_trimesh_data(self, writer: BinaryWriter):
-        [writer.write_uint32(count) for count in self.trimesh.indices_counts]
-        [writer.write_uint32(offset) for offset in self.trimesh.indices_offsets]
-        [writer.write_uint32(counter) for counter in self.trimesh.inverted_counters]
+        for count in self.trimesh.indices_counts:
+            writer.write_uint32(count)
+        for offset in self.trimesh.indices_offsets:
+            writer.write_uint32(offset)
+        for counter in self.trimesh.inverted_counters:
+            writer.write_uint32(counter)
 
         for face in self.trimesh.faces:
             writer.write_uint16(face.vertex1)
             writer.write_uint16(face.vertex2)
             writer.write_uint16(face.vertex3)
 
-        [writer.write_vector3(vertex) for vertex in self.trimesh.vertices]
-        [face.write(writer) for face in self.trimesh.faces]
+        for vertex in self.trimesh.vertices:
+            writer.write_vector3(vertex)
+        for face in self.trimesh.faces:
+            face.write(writer)
 
     def all_headers_size(
         self,
@@ -1026,7 +1031,6 @@ class _LightHeader:
         self.flare_colors_count2: int = 0
         self.offset_to_flare_textures: int = 0
         self.flare_textures_count: int = 0
-        self.flare_colors_count2: int = 0
         self.flare_radius: float = 0.0
         self.light_priority: int = 0
         self.ambient_only: int = 0
@@ -1941,10 +1945,13 @@ class MDLBinaryWriter:
         for name in self._names:
             self._writer.write_string(name + "\0")
 
-        [self._writer.write_uint32(anim_offset) for anim_offset in self._anim_offsets]
+        for anim_offset in self._anim_offsets:
+            self._writer.write_uint32(anim_offset)
 
-        [bin_anim.write(self._writer, self.game) for bin_anim in self._bin_anims]
-        [bin_node.write(self._writer, self.game) for bin_node in self._bin_nodes]
+        for bin_anim in self._bin_anims:
+            bin_anim.write(self._writer, self.game)
+        for bin_node in self._bin_nodes:
+            bin_node.write(self._writer, self.game)
 
         # Write to MDL
         mdl_writer = BinaryWriter.to_auto(self._target)

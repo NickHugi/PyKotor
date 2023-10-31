@@ -161,7 +161,7 @@ class Shader:
     def use(self) -> None:
         glUseProgram(self._id)
 
-    def uniform(self, uniform_name: str) -> None:
+    def uniform(self, uniform_name: str):
         return glGetUniformLocation(self._id, uniform_name)
 
     def set_matrix4(self, uniform: str, matrix: mat4):

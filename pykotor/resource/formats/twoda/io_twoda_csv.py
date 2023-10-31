@@ -30,7 +30,7 @@ class TwoDACSVReader(ResourceReader):
     ) -> TwoDA:
         self._twoda = TwoDA()
         data = self._reader.read_bytes(self._reader.size()).decode()
-        _csv: csv.reader = csv.reader(io.StringIO(data))
+        _csv = csv.reader(io.StringIO(data))
 
         headers = next(_csv)[1:]
         for header in headers:

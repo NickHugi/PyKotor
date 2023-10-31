@@ -557,8 +557,8 @@ class TwoDARow:
             msg = f"The header '{header}' does not exist."
             raise KeyError(msg)
 
-        value = "" if value is None else value
-        self._data[header] = str(value)
+        value_str = "" if value is None else str(value)
+        self._data[header] = value_str
 
     def set_float(
         self,

@@ -9,7 +9,7 @@ from pykotor.tools.path import CaseAwarePath
 
 class TestCaseAwarePath(TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory().name
+        self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(str(self.temp_dir.name))
 
     def tearDown(self):
@@ -262,7 +262,7 @@ class TestCaseAwarePath(TestCase):
         case_aware_hardlink_file = CaseAwarePath(f"{str(self.temp_path)}/HARDLINK.txt")
 
         source_file.touch()
-        case_aware_hardlink_file.link_to(source_file)
+        case_aware_hardlink_file.hardlink_to(source_file)
 
         self.assertTrue(hardlink_file.exists())
         self.assertTrue(os.path.samefile(str(hardlink_file), str(source_file)))

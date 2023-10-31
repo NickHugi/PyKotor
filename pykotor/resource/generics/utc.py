@@ -184,7 +184,7 @@ class UTC:
         self.description: LocalizedString = LocalizedString.from_invalid()
         self.lawfulness: int = 0
         self.phenotype_id: int = 0
-        self.on_rested: ResRef = ResRef.from_blank()
+        # self.on_rested: ResRef = ResRef.from_blank()  # noqa: ERA001
         self.subrace_name: str = ""
 
 
@@ -200,7 +200,7 @@ class UTCClass:
 
     def __eq__(
         self,
-        other: UTCClass,
+        other,
     ):
         return self.class_id == other.class_id and self.class_level == self.class_level
 

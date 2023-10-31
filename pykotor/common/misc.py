@@ -443,8 +443,10 @@ class InventoryItem:
 
     def __eq__(
         self,
-        other: InventoryItem,
+        other: object,
     ):
+        if not isinstance(other, InventoryItem):
+            return NotImplemented
         return self.resref == other.resref and self.droppable == other.droppable
 
 
@@ -507,7 +509,7 @@ class CaseInsensitiveHashSet(set, Generic[T]):
             for item in other:
                 self.add(item)
 
-    def __contains__(self, item: T) -> bool:
+    def __contains__(self, item) -> bool:
         return super().__contains__(self._normalize_key(item))
 
     def __le__(self, other) -> bool:
