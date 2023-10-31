@@ -1,23 +1,27 @@
 import multiprocessing
-import time
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from contextlib import suppress
 from time import sleep
 from typing import Dict, List, Optional, Set
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex, QPoint, QThread, QTimer
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QImage, QIcon, QPixmap, QTransform, QResizeEvent, QCloseEvent
-from PyQt5.QtWidgets import QWidget, QListView, QMenu, QHeaderView
-
 from data.installation import HTInstallation
-from pykotor.extract.installation import SearchLocation
+from PyQt5 import QtCore
+from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
+from PyQt5.QtGui import (
+    QIcon,
+    QImage,
+    QPixmap,
+    QResizeEvent,
+    QStandardItem,
+    QStandardItemModel,
+    QTransform,
+)
+from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 
 from pykotor.extract.file import FileResource
+from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-
 from pykotor.resource.type import ResourceType
-from utils.window import openResourceEditor
 
 GFF_TYPES = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
              ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
@@ -145,8 +149,10 @@ class ResourceList(MainWindowList):
         if len(resources) == 1:
             resource = resources[0]
             if resource.restype() in GFF_TYPES:
-                open1 = lambda: self.requestOpenResource.emit(resources, False)
-                open2 = lambda: self.requestOpenResource.emit(resources, True)
+                def open1():
+                    return self.requestOpenResource.emit(resources, False)
+                def open2():
+                    return self.requestOpenResource.emit(resources, True)
                 menu.addAction("Open").triggered.connect(open2)
                 menu.addAction("Open with GFF Editor").triggered.connect(open1)
 
@@ -163,8 +169,7 @@ class ResourceList(MainWindowList):
 
 
 class ResourceModel(QStandardItemModel):
-    """
-    A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources
+    """A data model used by the different trees (Core, Modules, Override). This class provides an easy way to add resources
     while sorting the into categories.
     """
 
@@ -210,12 +215,10 @@ class ResourceModel(QStandardItemModel):
         return self.resourceFromItems(items)
 
     def resourceFromItems(self, items: List[QStandardItem]) -> List[FileResource]:
-        return [item.resource for item in items if hasattr(item, 'resource')]
+        return [item.resource for item in items if hasattr(item, "resource")]
 
     def allResourcesItems(self) -> List[QStandardItem]:
-        """
-        Returns a list of all QStandardItem objects in the model that represents resource files.
-        """
+        """Returns a list of all QStandardItem objects in the model that represents resource files."""
         resources = []
         for category in self._categoryItems.values():
             for i in range(category.rowCount()):
