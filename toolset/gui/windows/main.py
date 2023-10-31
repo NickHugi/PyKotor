@@ -93,9 +93,7 @@ class ToolWindow(QMainWindow):
 
             # Create a directory used for dumping temp files
             with suppress(Exception):
-                extractPath = os.path.realpath('../..') + "/temp"
-                os.mkdir(extractPath)
-                self.settings.extractPath = extractPath
+                self.settings.extractPath = str(Path(str(TemporaryDirectory())))
 
         self.checkForUpdates(True)
 
