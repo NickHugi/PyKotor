@@ -9,7 +9,7 @@ from pykotor.tools.path import CaseAwarePath
 
 class TestCaseAwarePath(TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.TemporaryDirectory()
+        self.temp_dir = tempfile.TemporaryDirectory().name
         self.temp_path = Path(str(self.temp_dir.name))
 
     def tearDown(self):
