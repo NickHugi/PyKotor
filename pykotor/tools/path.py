@@ -402,13 +402,18 @@ class CaseAwarePath(Path):
             new_path = self.__class__._get_case_sensitive_path(new_path)
         return new_path
 
+    # Call __eq__ when using 'in' keyword
+    def __contains__(self, other_path: os.PathLike | str):
+        return super().__eq__(other_path)
+
     def __hash__(self):
         """Ensures any instance of this class will be treated the same in lists etc, if they're case-insensitive matches."""
         return hash((self.__class__.__name__, super().__str__().lower()))
 
-    def __eq__(self, other):
+    def __eq__(self, other: os.PathLike | str):
         """All pathlib classes that derive from PurePath are equal to this object if their paths are case-insensitive equivalents."""
-        return isinstance(other, pathlib.PurePath) and self._fix_path_formatting(str(other)).lower() == super().__str__().lower()
+        other = other.as_posix() if isinstance(other, pathlib.PurePath) else str(other)
+        return self._fix_path_formatting(other).lower() == super().__str__().lower()
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__str__().lower()})"
