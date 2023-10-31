@@ -262,7 +262,7 @@ class Installation:
                     return resource_path
             if optional:
                 return CaseAwarePath(self._path, folder_names[0])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise OSError(error_msg.format(self._path)) from e
         raise FileNotFoundError(error_msg.format(self._path))
 
@@ -518,7 +518,7 @@ class Installation:
         is_game2_stream = check("streamvoice") and not check("streamwaves")
         is_game2_exe = check("swkotor2.exe") and not check("swkotor.exe")
 
-        if any([is_game2_stream, is_game2_exe]):
+        if any([is_game2_stream, is_game2_exe]):  # check tsl before k1 because of the rims folder
             self._game = Game(2)
         if any([is_game1_stream, is_game1_exe, is_game1_rims]):
             self._game = Game(1)
@@ -788,18 +788,10 @@ class Installation:
             SearchLocation.MODULES: lambda: check_dict(self._modules),
             SearchLocation.LIPS: lambda: check_dict(self._lips),
             SearchLocation.RIMS: lambda: check_dict(self._rims),
-            SearchLocation.TEXTURES_TPA: lambda: check_list(
-                self._texturepacks["swpc_tex_tpa.erf"],
-            ),
-            SearchLocation.TEXTURES_TPB: lambda: check_list(
-                self._texturepacks["swpc_tex_tpb.erf"],
-            ),
-            SearchLocation.TEXTURES_TPC: lambda: check_list(
-                self._texturepacks["swpc_tex_tpc.erf"],
-            ),
-            SearchLocation.TEXTURES_GUI: lambda: check_list(
-                self._texturepacks["swpc_tex_gui.erf"],
-            ),
+            SearchLocation.TEXTURES_TPA: lambda: check_list(self._texturepacks["swpc_tex_tpa.erf"]),
+            SearchLocation.TEXTURES_TPB: lambda: check_list(self._texturepacks["swpc_tex_tpb.erf"]),
+            SearchLocation.TEXTURES_TPC: lambda: check_list(self._texturepacks["swpc_tex_tpc.erf"]),
+            SearchLocation.TEXTURES_GUI: lambda: check_list(self._texturepacks["swpc_tex_gui.erf"]),
             SearchLocation.CHITIN: lambda: check_list(self._chitin),
             SearchLocation.MUSIC: lambda: check_list(self._streammusic),
             SearchLocation.SOUND: lambda: check_list(self._streamsounds),
@@ -854,8 +846,8 @@ class Installation:
         queries: list[str],
         order: list[SearchLocation] | None = None,
         *,
-        capsules: list[Capsule] | None = None,  # type: ignore[]
-        folders: list[Path] | None = None,  # type: ignore[]
+        capsules: list[Capsule] | None = None,
+        folders: list[Path] | None = None,
     ) -> CaseInsensitiveDict[TPC | None]:
         """Returns a dictionary mapping the items provided in the queries argument to a TPC object if it exists. If the
         texture could not be found then the value is None.
@@ -871,8 +863,8 @@ class Installation:
         -------
             A dictionary mapping case-insensitive strings to TPC objects or None.
         """
-        capsules: list[Capsule] = [] if capsules is None else capsules
-        folders: list[Path] = [] if folders is None else folders
+        capsules = [] if capsules is None else capsules
+        folders = [] if folders is None else folders
 
         order = (
             order
@@ -981,7 +973,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[str] | None = None,
+        folders: list[Path] | None = None,
     ) -> CaseInsensitiveDict[bytes | None]:
         """Returns a dictionary mapping the items provided in the queries argument to a bytes object if the respective
         sound resource could be found. If the sound could not be found the value will return None.
