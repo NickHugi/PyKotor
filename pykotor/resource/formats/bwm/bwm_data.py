@@ -62,7 +62,7 @@ class BWM:
     def aabbs(
         self,
     ) -> list[BWMNodeAABB]:
-        aabbs = []
+        aabbs: list[BWMNodeAABB] = []
         self._aabbs_rec(aabbs, copy(self.faces))
         return aabbs
 
@@ -72,8 +72,10 @@ class BWM:
         faces: list[BWMFace],
         rlevel=0,
     ) -> None:
-        if rlevel > 128:
-            msg = f"rlevel must not exceed 128, but is equal to {rlevel}"
+
+        max_rlevel = 128
+        if rlevel > max_rlevel:
+            msg = f"rlevel must not exceed {max_rlevel}, but is equal to {rlevel}"
             raise ValueError(msg)
 
         if not faces:
@@ -81,116 +83,152 @@ class BWM:
             raise ValueError(msg)
 
         # Calculate bounding box
-        bbmin = Vector3(100000.0, 100000.0, 100000.0)
-        bbmax = Vector3(-100000.0, -100000.0, -100000.0)
-        bbcentre = Vector3.from_null()
-        for face in faces:
-            for vertex in [face.v1, face.v2, face.v3]:
-                for axis in range(3):
-                    bbmin[axis] = min(bbmin[axis], vertex[axis])
-                    bbmax[axis] = max(bbmax[axis], vertex[axis])
-            bbcentre += face.centre()
-        bbcentre = bbcentre / len(faces)
+        bbmin, bbmax, bbcentre = self._calculate_bounding_box(faces)
 
         # Only one face left - this node is a leaf
         if len(faces) == 1:
-            aabbs.append(BWMNodeAABB(bbmin, bbmax, faces[0], 0, None, None))
+            self._create_leaf_node(aabbs, bbmin, bbmax, faces[0])
             return
 
         # Find longest axis
-        split_axis = 0
-        bb_size: Vector3 = bbmax - bbmin
-        if bb_size.y > bb_size.x:
-            split_axis = 1
-        if bb_size.z > bb_size.y:
-            split_axis = 2
+        split_axis = self._find_longest_axis(bbmin, bbmax)
 
         # Change axis in case points are coplanar with the split plane
-        change_axis = True
-        for face in faces:
-            change_axis = change_axis and face.centre()[split_axis] == bbcentre[split_axis]
-        if change_axis:
-            split_axis = 0 if split_axis == 2 else split_axis + 1
+        if self._is_coplanar(faces, split_axis, bbcentre):
+            split_axis = self._get_next_axis(split_axis)
 
-        # Put faces on the left and right side of the split plane into separate
-        # lists. Try all axises to prevent tree degeneration.
-        faces_left: list[BWMFace] = []
-        faces_right: list[BWMFace] = []
-        tested_axes = 1
-        while True:
-            faces_left = []
-            faces_right = []
-            for face in faces:
-                centre = face.centre()
-                if centre[split_axis] < bbcentre[split_axis]:
-                    faces_left.append(face)
-                else:
-                    faces_right.append(face)
+        # Split faces along axis
+        faces_left, faces_right = self._split_faces(faces, split_axis, bbcentre)
 
-            if faces_left and faces_right:
-                break
+        if not faces_left or not faces_right:
+            msg = "Generated tree is degenerate"
+            raise RuntimeError(msg)
 
-            split_axis = 0 if split_axis == 2 else split_axis + 1
-            tested_axes += 1
-            if tested_axes == 3:
-                msg = "Generated tree is degenerate"
-                raise RuntimeError(msg)
-
-        aabb = BWMNodeAABB(bbmin, bbmax, None, split_axis + 1, None, None)
-        aabbs.append(aabb)
-        aabb.left = aabbs[-1]
+        # Create node and recurse
+        _aabb = self._create_node(aabbs, bbmin, bbmax, split_axis)
         self._aabbs_rec(aabbs, faces_left, rlevel + 1)
-        aabb.right = aabbs[-1]
         self._aabbs_rec(aabbs, faces_right, rlevel + 1)
 
-    def edges(
-        self,
-    ) -> list[BWMEdge]:
-        walkable = [face for face in self.faces if face.material.walkable()]
-        adjacencies = [self.adjacencies(face) for face in walkable]
+
+    def _calculate_bounding_box(self, faces):
+        bbmin = Vector3(100000, 100000, 100000)
+        bbmax = Vector3(-100000, -100000, -100000)
+        bbcentre = Vector3.from_null()
+
+        for face in faces:
+            self._update_bounds(face, bbmin, bbmax, bbcentre)
+
+        bbcentre = bbcentre / len(faces)
+        return bbmin, bbmax, bbcentre
+
+    def _update_bounds(self, face, bbmin, bbmax, bbcentre):
+        for vertex in [face.v1, face.v2, face.v3]:
+            for axis in range(3):
+                bbmin[axis] = min(bbmin[axis], vertex[axis]) 
+                bbmax[axis] = max(bbmax[axis], vertex[axis])
+        bbcentre += face.centre()
+
+    def _find_longest_axis(self, bbmin, bbmax):
+        bb_size = bbmax - bbmin
+        if bb_size.y > bb_size.x:
+            return 1
+        if bb_size.z > bb_size.y:
+            return 2
+        return 0
+
+    def _is_coplanar(self, faces, axis, bbcentre):
+        return all(face.centre()[axis] == bbcentre[axis] for face in faces)
+
+    def _get_next_axis(self, axis):
+        return 0 if axis == 2 else axis + 1
+
+    def _split_faces(self, faces, axis, bbcentre):
+        left = []
+        right = []
+        for face in faces:
+            centre = face.centre()
+            if centre[axis] < bbcentre[axis]:
+                left.append(face)
+            else:
+                right.append(face)
+        return left, right
+
+    def _create_leaf_node(self, aabbs: list, bbmin, bbmax, face):
+        aabbs.append(BWMNodeAABB(bbmin, bbmax, face, 0, None, None))
+
+    def _create_node(self, aabbs: list, bbmin, bbmax, axis):
+        aabb = BWMNodeAABB(bbmin, bbmax, None, axis + 1, None, None)
+        aabbs.append(aabb)
+        return aabb
+
+    def edges(self) -> list[BWMEdge]:
+        walkable_faces = self.filter_walkable_faces()
+        adjacencies: list[tuple[BWMAdjacency, BWMAdjacency, BWMAdjacency]] = [self.adjacencies(face) for face in walkable_faces]
 
         visited = set()
         edges = []
-        perimeters = []
-        for i, j in itertools.product(range(len(walkable)), range(3)):
-            if adjacencies[i][j] is not None:
-                continue
-            edge_index = i * 3 + j
-            if edge_index in visited:
-                continue
-            next_face = i
-            next_edge = j
-            while next_face != -1:
-                adj_edge = adjacencies[next_face][next_edge]
-                adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
-                if adj_edge is None:
-                    edge_index = 3 * next_face + next_edge
-                    if edge_index not in visited:
-                        face_id = edge_index // 3
-                        edge_id = edge_index % 3
-                        transition = -1
-                        if edge_id == 0 and self.faces[face_id].trans1 is not None:
-                            transition = self.faces[face_id].trans1
-                        if edge_id == 1 and self.faces[face_id].trans2 is not None:
-                            transition = self.faces[face_id].trans2
-                        if edge_id == 2 and self.faces[face_id].trans3 is not None:
-                            transition = self.faces[face_id].trans3
 
-                        edges.append(
-                            BWMEdge(self.faces[next_face], next_edge, transition or -1),
-                        )
-
-                        visited.add(edge_index)
-                        next_edge = (next_edge + 1) % 3
-                    else:
-                        next_face = -1
-                        edges[-1].final = True
-                        perimeters.append(len(edges))
-                else:
-                    next_face = adj_edge_index // 3
-                    next_edge = ((adj_edge_index % 3) + 1) % 3
+        for face_index, edge_index in itertools.product(range(len(walkable_faces)), range(3)):
+            self.process_edge(face_index, edge_index, adjacencies, visited, edges)
 
         return edges
+
+    def filter_walkable_faces(self) -> list[Face]:
+        return [face for face in self.faces if face.material.walkable()]
+
+    def process_edge(
+            self,
+            face_index: int,
+            edge_index: int,
+            adjacencies: list[tuple[BWMAdjacency, BWMAdjacency, BWMAdjacency]],
+            visited: set[int],
+            edges: list[BWMEdge]
+        ):
+        if adjacencies[face_index][edge_index] is not None:
+            return
+
+        current_edge_index = face_index * 3 + edge_index
+        if current_edge_index in visited:
+            return
+
+        next_face = face_index
+        next_edge = edge_index
+        while next_face != -1:
+            next_face, next_edge = self.process_adjacency(next_face, next_edge, adjacencies, visited, edges)
+
+    def process_adjacency(
+            self,
+            next_face: int,
+            next_edge: int,
+            adjacencies: list[tuple[BWMAdjacency, BWMAdjacency, BWMAdjacency]],
+            visited: set[int],
+            edges: list[BWMEdge]
+        ) -> tuple[int, int]:
+        adj_edge = adjacencies[next_face][next_edge]
+        adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
+
+        if adj_edge is None:
+            edge_index = 3 * next_face + next_edge
+            if edge_index not in visited:
+                transition = self.get_transition(next_face, next_edge)
+
+                edges.append(BWMEdge(self.faces[next_face], next_edge, transition or -1))
+                visited.add(edge_index)
+
+                next_edge = (next_edge + 1) % 3
+            else:
+                next_face = -1
+
+        else:
+            next_face = adj_edge_index // 3
+            next_edge = ((adj_edge_index % 3) + 1) % 3
+
+        return next_face, next_edge
+
+    def get_transition(self, face_index: int, edge_index: int) -> int:
+        face = self.faces[face_index]
+        transitions = [face.trans1, face.trans2, face.trans3]
+        return transitions[edge_index] or -1
 
     def adjacencies(
         self,
@@ -255,13 +293,16 @@ class BWM:
         bbmin = Vector3(1000000, 1000000, 1000000)
         bbmax = Vector3(-1000000, -1000000, -1000000)
         for vertex in self.vertices():
-            bbmin.x = min(bbmin.x, vertex.x)
-            bbmin.y = min(bbmin.y, vertex.y)
-            bbmin.z = min(bbmin.z, vertex.z)
-            bbmax.x = max(bbmax.x, vertex.x)
-            bbmax.y = max(bbmax.y, vertex.y)
-            bbmax.z = max(bbmax.z, vertex.z)
+            self._set_coords_to_bounds(bbmin, vertex, bbmax)
         return bbmin, bbmax
+
+    def _set_coords_to_bounds(self, bbmin, vertex, bbmax):
+        bbmin.x = min(bbmin.x, vertex.x)
+        bbmin.y = min(bbmin.y, vertex.y)
+        bbmin.z = min(bbmin.z, vertex.z)
+        bbmax.x = max(bbmax.x, vertex.x)
+        bbmax.y = max(bbmax.y, vertex.y)
+        bbmax.z = max(bbmax.z, vertex.z)
 
     def faceAt(
         self,
