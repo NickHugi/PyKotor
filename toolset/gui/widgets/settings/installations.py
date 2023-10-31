@@ -1,12 +1,14 @@
 import os
-from typing import Dict, Any
-
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QWidget
+from typing import Any, Dict
 
 from data.settings import Settings
+from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QWidget
+
+from pykotor.common.misc import Game
+from pykotor.tools.path import locate_game_path
 
 
 class InstallationsWidget(QWidget):
@@ -28,7 +30,7 @@ class InstallationsWidget(QWidget):
         self.installationsModel.clear()
         for installation in self.settings.installations().values():
             item = QStandardItem(installation.name)
-            item.setData({'path': installation.path, 'tsl': installation.tsl})
+            item.setData({"path": installation.path, "tsl": installation.tsl})
             self.installationsModel.appendRow(item)
 
     def setupSignals(self) -> None:
@@ -53,7 +55,7 @@ class InstallationsWidget(QWidget):
 
     def addNewInstallation(self) -> None:
         item = QStandardItem("New")
-        item.setData({'path': '', 'tsl': False})
+        item.setData({"path": '', "tsl": False})
         self.installationsModel.appendRow(item)
         self.edited.emit()
 
@@ -72,8 +74,8 @@ class InstallationsWidget(QWidget):
         item = self.installationsModel.itemFromIndex(index)
 
         data = item.data()
-        data['path'] = self.ui.pathDirEdit.text()
-        data['tsl'] = self.ui.pathTslCheckbox.isChecked()
+        data["path"] = self.ui.pathDirEdit.text()
+        data["tsl"] = self.ui.pathTslCheckbox.isChecked()
         item.setData(data)
 
         item.setText(self.ui.pathNameEdit.text())
@@ -88,13 +90,13 @@ class InstallationsWidget(QWidget):
             item = self.installationsModel.itemFromIndex(index)
 
             self.ui.pathNameEdit.setText(item.text())
-            self.ui.pathDirEdit.setText(item.data()['path'])
-            self.ui.pathTslCheckbox.setChecked(bool(item.data()['tsl']))
+            self.ui.pathDirEdit.setText(item.data()["path"])
+            self.ui.pathTslCheckbox.setChecked(bool(item.data()["tsl"]))
 
 
 class InstallationConfig:
     def __init__(self, name: str):
-        self._settings = QSettings('HolocronToolset', 'Global')
+        self._settings = QSettings("HolocronToolset", "Global")
         self._name: str = name
 
     @property
@@ -110,7 +112,7 @@ class InstallationConfig:
         installations[value] = installation
         installations[value]["name"] = value
 
-        self._settings.setValue('installations', installations)
+        self._settings.setValue("installations", installations)
         self._name = value
 
     @property
@@ -122,7 +124,7 @@ class InstallationConfig:
     def path(self, value: str) -> None:
         installations = self._settings.value("installations", {})
         installations[self._name]["path"] = value
-        self._settings.setValue('installations', installations)
+        self._settings.setValue("installations", installations)
 
     @property
     def tsl(self) -> bool:
@@ -133,7 +135,7 @@ class InstallationConfig:
     def tsl(self, value: bool) -> None:
         installations = self._settings.value("installations", {})
         installations[self._name]["tsl"] = value
-        self._settings.setValue('installations', installations)
+        self._settings.setValue("installations", installations)
 
 
 class GlobalSettings(Settings):
@@ -142,13 +144,31 @@ class GlobalSettings(Settings):
 
     def installations(self) -> Dict[str, InstallationConfig]:
         if self.settings.value("installations", None) is None:
-            self.settings.setValue("installations", {
-                "KotOR": {"name": "KotOR", "path": "", "tsl": False},
-                "TSL": {"name": "TSL", "path": "", "tsl": True}
-            })
+            default_paths = locate_game_path()
+            entries = {}
+            k1_index = 0
+            k2_index = 0
+            for game, paths in default_paths.items():
+                for path in paths:
+                    if not path.exists():
+                        continue
+                    game_name = "KotOR" if game==Game.K1 else "TSL"
+                    if game==Game.K1:
+                        if k1_index:
+                            game_name += f" ({k1_index})"
+                            k1_index += 1
+                        k1_index += 1
+                    if k2_index and game==Game.K2:
+                        if k2_index:
+                            game_name += f" ({k2_index})"
+                            k2_index += 1
+                        k2_index += 1
+                    entry = {game_name: {"name": game_name, "path": str(path), "tsl": game==Game.K2}}
+                    entries.update(entry)
+            self.settings.setValue("installations", entries)
 
         installations = {}
-        for name, installation in self.settings.value("installations", {}).items():
+        for name in self.settings.value("installations", {}):
             installations[name] = InstallationConfig(name)
 
         return installations
