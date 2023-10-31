@@ -1381,7 +1381,7 @@ class MDLBinaryReader:
                 face.a2 = bin_face.adjacent2
                 face.a3 = bin_face.adjacent3
                 face.normal = bin_face.normal
-                face.coefficient = bin_face.plane_coefficient
+                face.coefficient = int(bin_face.plane_coefficient)
                 face.material = SurfaceMaterial(bin_face.material)
 
         if bin_node.skin:
