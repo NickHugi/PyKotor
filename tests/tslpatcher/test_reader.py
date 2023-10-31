@@ -3,7 +3,6 @@ from __future__ import annotations
 from configparser import ConfigParser
 import shutil
 import tempfile
-import unittest
 from pykotor.tools.path import Path
 from unittest import TestCase
 
@@ -223,6 +222,7 @@ class TestConfigReader(TestCase):
         )
 
     def test_tlk_complex_changes(self):
+        # sourcery skip: extract-duplicate-method, remove-dict-keys, use-dict-items
         ini_text = """
         [TLKList]
         ignore123719=
@@ -239,7 +239,7 @@ class TestConfigReader(TestCase):
         124112=9
         125863=10
         50302=11
-    """
+        """
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
 
