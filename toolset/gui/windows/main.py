@@ -7,27 +7,17 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from distutils.version import StrictVersion
 from pathlib import Path
-from typing import Optional, List
+from tempfile import TemporaryDirectory
+from typing import List, Optional
 
 import requests
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QStandardItem, QIcon, QPixmap, QCloseEvent
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QTreeView
-
-from gui.dialogs.settings import SettingsDialog
-from gui.widgets.settings.misc import GlobalSettings
-from pykotor.tools import model
-
-from pykotor.common.module import Module
-from pykotor.common.stream import BinaryReader
-from pykotor.extract.file import FileResource, ResourceIdentifier
-from pykotor.extract.installation import SearchLocation
-from pykotor.resource.formats.mdl import read_mdl, write_mdl
-from pykotor.resource.formats.tpc import read_tpc, write_tpc
-from pykotor.resource.type import ResourceType
-
 from config import PROGRAM_VERSION, UPDATE_INFO_LINK
 from data.installation import HTInstallation
+from gui.dialogs.about import About
+from gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
+from gui.dialogs.clone_module import CloneModuleDialog
+from gui.dialogs.search import FileResults, FileSearcher
+from gui.dialogs.settings import SettingsDialog
 from gui.editors.dlg import DLGEditor
 from gui.editors.erf import ERFEditor
 from gui.editors.gff import GFFEditor
@@ -43,19 +33,26 @@ from gui.editors.utp import UTPEditor
 from gui.editors.uts import UTSEditor
 from gui.editors.utt import UTTEditor
 from gui.editors.utw import UTWEditor
-from gui.dialogs.about import About
-from gui.dialogs.asyncloader import AsyncLoader, AsyncBatchLoader
+from gui.widgets.main_widgets import ResourceList
+from gui.widgets.settings.misc import GlobalSettings
 from gui.windows.help import HelpWindow
-from gui.dialogs.search import FileSearcher, FileResults
-from gui.dialogs.clone_module import CloneModuleDialog
 from gui.windows.indoor_builder import IndoorMapBuilder
 from gui.windows.module_designer import ModuleDesigner
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
+from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
 from utils.misc import openLink
-from utils.window import openResourceEditor, addWindow
-from gui.widgets.main_widgets import ResourceList
-
-from watchdog.observers import Observer
+from utils.window import addWindow, openResourceEditor
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+from pykotor.common.stream import BinaryReader
+from pykotor.extract.file import FileResource, ResourceIdentifier
+from pykotor.extract.installation import SearchLocation
+from pykotor.resource.formats.mdl import read_mdl, write_mdl
+from pykotor.resource.formats.tpc import read_tpc, write_tpc
+from pykotor.resource.type import ResourceType
+from pykotor.tools import model
 
 
 class ToolWindow(QMainWindow):
@@ -547,20 +544,21 @@ class ToolWindow(QMainWindow):
         self.ui.sidebar.setEnabled(True)
 
         name = self.ui.gameCombo.itemText(index)
-        path = self.settings.installations()[name].path
+        path = self.settings.installations()[name].path.strip()
         tsl = self.settings.installations()[name].tsl
 
         # If the user has not set a path for the particular game yet, ask them too.
-        if path == "":
+        if not path:
             path = QFileDialog.getExistingDirectory(self, "Select the game directory for {}".format(name))
 
         # If the user still has not set a path, then return them to the [None] option.
-        if path == "":
+        if not path:
             self.ui.gameCombo.setCurrentIndex(0)
         else:
             # If the installation had not already been loaded previously this session, load it now
             if name not in self.installations:
-                task = lambda: HTInstallation(path, name, tsl, self)
+                def task():
+                    return HTInstallation(path, name, tsl, self)
                 loader = AsyncLoader(self, "Loading Installation", task, "Failed to load installation")
 
                 if loader.exec_():
