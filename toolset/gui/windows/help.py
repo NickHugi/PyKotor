@@ -3,6 +3,7 @@ import os
 import xml.etree.ElementTree as ET
 import zipfile
 from contextlib import suppress
+from pathlib import Path
 from typing import Dict, Optional
 
 import markdown
@@ -18,7 +19,7 @@ from pykotor.common.stream import BinaryReader
 class HelpWindow(QMainWindow):
     ENABLE_UPDATES = True
 
-    def __init__(self, parent: Optional[QWidget], startingPage: str = None):
+    def __init__(self, parent: Optional[QWidget], startingPage: Optional[str] = None):
         super().__init__(parent)
 
         self.version: Optional[int] = None
@@ -84,34 +85,37 @@ class HelpWindow(QMainWindow):
                 msgbox = QMessageBox(QMessageBox.Information, "Update available",
                                      "A newer version of the help book is available for download, would you like to download it?")
                 if msgbox.exec_():
-                    task = lambda: self._downloadUpdate(updateInfoData["help"]["directDownload"])
+                    def task():
+                        return self._downloadUpdate(updateInfoData["help"]["directDownload"])
                     loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
                     if loader.exec_():
                         self._setupContents()
 
     def _downloadUpdate(self, link: str) -> None:
-        if not os.path.exists("./help"):
-            os.mkdir("./help")
+        help_path = Path("help")
+        if not help_path.exists():
+            help_path.mkdir(parents=True)
         response = requests.get(link, stream=True)
-        with open("./help/help.zip", 'wb') as f:
+        help_zip_path = help_path / "help.zip"
+        with help_zip_path.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
-        with zipfile.ZipFile("./help/help.zip", 'r') as zip_ref:
+        with zipfile.ZipFile(help_zip_path, "r") as zip_ref:
             zip_ref.extractall("./help")
 
     def displayFile(self, filepath: str) -> None:
         try:
             text = BinaryReader.load_file(filepath).decode()
-            html = markdown.markdown(text, extensions=['tables', 'fenced_code', 'codehilite']) if filepath.endswith(".md") else text
+            html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.lower().endswith(".md") else text
             self.ui.textDisplay.setHtml(html)
-        except (IOError, FileNotFoundError) as e:
+        except (OSError, FileNotFoundError):
             QMessageBox(QMessageBox.Critical, "Failed to open help file", "Could not access '{}'.".format(filepath)).exec_()
 
     def onContentsClicked(self) -> None:
         if self.ui.contentsTree.selectedItems():
             item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)
-            if filename is not None and filename != "":
+            if filename:
                 self.ui.textDisplay.setSearchPaths(["./help", "./help/{}".format(os.path.dirname(filename))])
-                self.displayFile("./help/{}".format(filename))
+                self.displayFile(f"./help/{filename}")
