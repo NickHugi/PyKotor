@@ -1,14 +1,17 @@
 from contextlib import suppress
-from copy import deepcopy
 from typing import Optional, Tuple
 
+from data.installation import HTInstallation
+from gui.dialogs.inventory import InventoryEditor
+from gui.editor import Editor
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
-from PyQt5.QtGui import QPixmap, QImage, QTransform
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QMessageBox
+from PyQt5.QtGui import QImage, QPixmap, QTransform
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
+from utils.window import openResourceEditor
 
-from pykotor.common.language import Language, Gender
-from pykotor.common.misc import ResRef, Game
+from pykotor.common.language import Gender, Language
+from pykotor.common.misc import Game, ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
@@ -19,17 +22,11 @@ from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utc import UTC, UTCClass, dismantle_utc, read_utc
 from pykotor.resource.type import ResourceType
-
-from data.installation import HTInstallation
-from gui.editor import Editor
-from gui.dialogs.inventory import InventoryEditor
-from utils.window import openResourceEditor
-
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 
 class UTCEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
         supported = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
@@ -117,7 +114,7 @@ class UTCEditor(Editor):
         for feat in feats:
             stringref = feat.get_integer("name", 0)
             text = installation.talktable().string(stringref) if stringref != 0 else feat.get_string("label")
-            text = "[Unused Feat ID: {}]".format(feat.label()) if text == "" else text
+            text = f"[Unused Feat ID: {feat.label()}]" if text == "" else text
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(feat.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
@@ -131,7 +128,7 @@ class UTCEditor(Editor):
             stringref = power.get_integer("name", 0)
             text = installation.talktable().string(stringref) if stringref != 0 else power.get_string("label")
             text = text.replace("_", " ").replace("XXX", "").replace("\n", "").title()
-            text = "[Unused Power ID: {}]".format(power.label()) if text == "" else text
+            text = f"[Unused Power ID: {power.label()}]" if text == "" else text
             item = QListWidgetItem(text)
             item.setData(QtCore.Qt.UserRole, int(power.label()))
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
@@ -226,7 +223,7 @@ class UTCEditor(Editor):
         for feat in utc.feats:
             item = self.getFeatItem(feat)
             if item is None:
-                item = QListWidgetItem("[Modded Feat ID: {}]".format(feat))
+                item = QListWidgetItem(f"[Modded Feat ID: {feat}]")
                 item.setData(QtCore.Qt.UserRole, feat)
                 item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
                 self.ui.featList.addItem(item)
@@ -240,7 +237,7 @@ class UTCEditor(Editor):
             for power in utc_class.powers:
                 item = self.getPowerItem(power)
                 if item is None:
-                    item = QListWidgetItem("[Modded Power ID: {}]".format(power))
+                    item = QListWidgetItem(f"[Modded Power ID: {power}]")
                     item.setData(QtCore.Qt.UserRole, power)
                     item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
                     self.ui.powerList.addItem(item)
@@ -356,7 +353,7 @@ class UTCEditor(Editor):
         gff = dismantle_utc(utc, version, use_deprecated=self.settings.saveUnusedFields)
         write_gff(gff, data)
 
-        return data, b''
+        return data, b""
 
     def new(self) -> None:
         super().new()
@@ -368,14 +365,14 @@ class UTCEditor(Editor):
         locstring = self.ui.firstnameEdit.locstring()
         ltr = read_ltr(self._installation.resource(ltr_resname, ResourceType.LTR).data)
         locstring.stringref = -1
-        locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
+        locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.firstnameEdit.setLocstring(locstring)
 
     def randomizeLastname(self) -> None:
         locstring = self.ui.lastnameEdit.locstring()
         ltr = read_ltr(self._installation.resource("humanl", ResourceType.LTR).data)
         locstring.stringref = -1
-        locstring.set(Language.ENGLISH, Gender.MALE, ltr.generate())
+        locstring.set_data(Language.ENGLISH, Gender.MALE, ltr.generate())
         self.ui.lastnameEdit.setLocstring(locstring)
 
     def generateTag(self) -> None:
@@ -383,33 +380,33 @@ class UTCEditor(Editor):
 
     def portraitChanged(self, index: int) -> None:
         if index == 0:
-            image = QImage(bytes([0 for _ in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
+            image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(image)
-            self.ui.portraitPicture.setPixmap(pixmap)
         else:
-            alignment = self.ui.alignmentSlider.value()
-            portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
-            portrait = portraits.get_cell(index, "baseresref")
-            if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe") != "":
-                portrait = portraits.get_cell(index, "baseresrefe")
-            elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve") != "":
-                portrait = portraits.get_cell(index, "baseresrefve")
-            elif 20 >= alignment > 10 and portraits.get_cell(index, "baseresrefvve") != "":
-                portrait = portraits.get_cell(index, "baseresrefvve")
-            elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve") != "":
-                portrait = portraits.get_cell(index, "baseresrefvvve")
+            pixmap = self._build_pixmap(index)
+        self.ui.portraitPicture.setPixmap(pixmap)
 
-            texture = self._installation.texture(portrait, [SearchLocation.TEXTURES_GUI])
+    def _build_pixmap(self, index):
+        alignment = self.ui.alignmentSlider.value()
+        portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
+        portrait = portraits.get_cell(index, "baseresref")
+        if 40 >= alignment > 30 and portraits.get_cell(index, "baseresrefe") != "":
+            portrait = portraits.get_cell(index, "baseresrefe")
+        elif 30 >= alignment > 20 and portraits.get_cell(index, "baseresrefve") != "":
+            portrait = portraits.get_cell(index, "baseresrefve")
+        elif 20 >= alignment > 10 and portraits.get_cell(index, "baseresrefvve") != "":
+            portrait = portraits.get_cell(index, "baseresrefvve")
+        elif alignment <= 10 and portraits.get_cell(index, "baseresrefvvve") != "":
+            portrait = portraits.get_cell(index, "baseresrefvvve")
 
-            if texture is not None:
-                width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)
-                image = QImage(rgba, width, height, QImage.Format_RGB888)
-                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-                self.ui.portraitPicture.setPixmap(pixmap)
-            else:
-                image = QImage(bytes([0 for _ in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
-                pixmap = QPixmap.fromImage(image)
-                self.ui.portraitPicture.setPixmap(pixmap)
+        texture = self._installation.texture(portrait, [SearchLocation.TEXTURES_GUI])
+
+        if texture is not None:
+            width, height, rgba = texture.convert(TPCTextureFormat.RGB, 0)
+            image = QImage(rgba, width, height, QImage.Format_RGB888)
+            return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
+        image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
+        return QPixmap.fromImage(image)
 
     def editConversation(self) -> None:
         resname = self.ui.conversationEdit.text()
@@ -429,7 +426,7 @@ class UTCEditor(Editor):
                 data = bytearray()
 
                 write_gff(dismantle_dlg(DLG()), data)
-                filepath = self._installation.override_path() + resname + ".dlg"
+                filepath = self._installation.override_path() / f"{resname}.dlg"
                 writer = BinaryWriter.to_file(filepath)
                 writer.write_bytes(data)
                 writer.close()
@@ -438,7 +435,7 @@ class UTCEditor(Editor):
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
-            self._installation.reload_override("")
+            self._installation.load_override(".")
 
     def openInventory(self) -> None:
         droid = self.ui.raceSelect.currentIndex() == 0
@@ -447,7 +444,7 @@ class UTCEditor(Editor):
         with suppress(Exception):
             root = Module.get_root(self._filepath)
             capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
-            capsules.extend([Capsule(self._installation.module_path() + path) for path in capsulesPaths])
+            capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utc.inventory, self._utc.equipment, droid=droid)
         if inventoryEditor.exec_():
@@ -457,23 +454,21 @@ class UTCEditor(Editor):
             self.update3dPreview()
 
     def updateItemCount(self) -> None:
-        self.ui.inventoryCountLabel.setText("Total Items: {}".format(len(self._utc.inventory)))
+        self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utc.inventory)}")
 
     def getFeatItem(self, featId: int) -> Optional[QListWidgetItem]:
         for i in range(self.ui.featList.count()):
             item = self.ui.featList.item(i)
             if item.data(QtCore.Qt.UserRole) == featId:
                 return item
-        else:
-            return None
+        return None
 
     def getPowerItem(self, powerId: int) -> Optional[QListWidgetItem]:
         for i in range(self.ui.powerList.count()):
             item = self.ui.powerList.item(i)
             if item.data(QtCore.Qt.UserRole) == powerId:
                 return item
-        else:
-            return None
+        return None
 
     def togglePreview(self) -> None:
         self.globalSettings.showPreviewUTC = not self.globalSettings.showPreviewUTC
@@ -513,7 +508,7 @@ class UTCEditor(Editor):
 
 class UTCSettings:
     def __init__(self):
-        self.settings = QSettings('HolocronToolset', 'UTCEditor')
+        self.settings = QSettings("HolocronToolset", "UTCEditor")
 
     @property
     def saveUnusedFields(self) -> bool:
@@ -521,7 +516,7 @@ class UTCSettings:
 
     @saveUnusedFields.setter
     def saveUnusedFields(self, value: bool) -> None:
-        self.settings.setValue('saveUnusedFields', value)
+        self.settings.setValue("saveUnusedFields", value)
 
     @property
     def alwaysSaveK2Fields(self) -> bool:
@@ -529,4 +524,4 @@ class UTCSettings:
 
     @alwaysSaveK2Fields.setter
     def alwaysSaveK2Fields(self, value: bool) -> None:
-        self.settings.setValue('alwaysSaveK2Fields', value)
+        self.settings.setValue("alwaysSaveK2Fields", value)

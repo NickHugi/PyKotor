@@ -120,7 +120,7 @@ class UTDEditor(Editor):
         self.ui.commentsEdit.setPlainText(utd.comment)
 
     def build(self) -> Tuple[bytes, bytes]:
-        utd = self._utd
+        utd: UTD = self._utd
 
         # Basic
         utd.name = self.ui.nameEdit.locstring()
@@ -214,13 +214,13 @@ class UTDEditor(Editor):
                 data = bytearray()
 
                 write_gff(dismantle_dlg(DLG()), data)
-                filepath = self._installation.override_path() + resname + ".dlg"
+                filepath = self._installation.override_path() / f"{resname}.dlg"
                 writer = BinaryWriter.to_file(filepath)
                 writer.write_bytes(data)
                 writer.close()
         else:
             resname, restype, filepath, data = search
-            self._installation.reload_override("")
+            self._installation.load_override(".")
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
@@ -234,15 +234,18 @@ class UTDEditor(Editor):
         self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
 
         if self.globalSettings.showPreviewUTP:
-            self.setFixedSize(674, 457)
-
-            data, _ = self.build()
-            modelname = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)
-            mdl = self._installation.resource(modelname, ResourceType.MDL)
-            mdx = self._installation.resource(modelname, ResourceType.MDX)
-            if mdl and mdx:
-                self.ui.previewRenderer.setModel(mdl.data, mdx.data)
-            else:
-                self.ui.previewRenderer.clearModel()
+            self._update_model()
         else:
             self.setFixedSize(374, 457)
+
+    def _update_model(self):
+        self.setFixedSize(674, 457)
+
+        data, _ = self.build()
+        modelname = door.get_model(read_utd(data), self._installation, genericdoors=self._genericdoors2DA)
+        mdl = self._installation.resource(modelname, ResourceType.MDL)
+        mdx = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl and mdx:
+            self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+        else:
+            self.ui.previewRenderer.clearModel()

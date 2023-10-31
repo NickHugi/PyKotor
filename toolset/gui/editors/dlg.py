@@ -163,7 +163,7 @@ class DLGEditor(Editor):
         self.ui.conversationSelect.setCurrentIndex(dlg.conversation_type.value)
         self.ui.computerSelect.setCurrentIndex(dlg.computer_type.value)
         self.ui.skippableCheckbox.setChecked(dlg.skippable)
-        self.ui.animatedCutCheckbox.setChecked(dlg.animated_cut)
+        self.ui.animatedCutCheckbox.setChecked(bool(dlg.animated_cut))
         self.ui.oldHitCheckbox.setChecked(dlg.old_hit_check)
         self.ui.unequipHandsCheckbox.setChecked(dlg.unequip_hands)
         self.ui.unequipAllCheckbox.setChecked(dlg.unequip_items)

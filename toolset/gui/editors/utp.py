@@ -1,29 +1,27 @@
 from contextlib import suppress
 from typing import Optional, Tuple
 
-from PyQt5.QtWidgets import QWidget, QMessageBox
-
+from data.installation import HTInstallation
 from gui.dialogs.edit.locstring import LocalizedStringDialog
+from gui.dialogs.inventory import InventoryEditor
+from gui.editor import Editor
+from PyQt5.QtWidgets import QMessageBox, QWidget
+from utils.window import openResourceEditor
+
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.common.stream import BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.dlg import dismantle_dlg, DLG
+from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
-
-from data.installation import HTInstallation
-from gui.editor import Editor
-from gui.dialogs.inventory import InventoryEditor
-from utils.window import openResourceEditor
-
-from toolset.gui.widgets.settings.installations import GlobalSettings
 from pykotor.tools import placeable
+from toolset.gui.widgets.settings.installations import GlobalSettings
 
 
 class UTPEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
 
@@ -195,14 +193,14 @@ class UTPEditor(Editor):
         gff = dismantle_utp(utp)
         write_gff(gff, data)
 
-        return data, b''
+        return data, b""
 
     def new(self) -> None:
         super().new()
         self._loadUTP(UTP())
 
     def updateItemCount(self) -> None:
-        self.ui.inventoryCountLabel.setText("Total Items: {}".format(len(self._utp.inventory)))
+        self.ui.inventoryCountLabel.setText(f"Total Items: {len(self._utp.inventory)}")
 
     def changeName(self) -> None:
         dialog = LocalizedStringDialog(self, self._installation, self.ui.nameEdit.locstring)
@@ -239,7 +237,7 @@ class UTPEditor(Editor):
                 data = bytearray()
 
                 write_gff(dismantle_dlg(DLG()), data)
-                filepath = self._installation.override_path() + resname + ".dlg"
+                filepath = self._installation.override_path() / f"{resname}.dlg"
                 writer = BinaryWriter.to_file(filepath)
                 writer.write_bytes(data)
                 writer.close()
@@ -248,7 +246,7 @@ class UTPEditor(Editor):
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
-            self._installation.reload_override("")
+            self._installation.load_override()
 
     def openInventory(self) -> None:
         capsules = []
@@ -257,7 +255,7 @@ class UTPEditor(Editor):
             root = Module.get_root(self._filepath)
             capsulesPaths = [path for path in self._installation.module_names() if
                              root in path and path != self._filepath]
-            capsules.extend([Capsule(self._installation.module_path() + path) for path in capsulesPaths])
+            capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utp.inventory, {}, False, True)
         if inventoryEditor.exec_():
@@ -273,15 +271,18 @@ class UTPEditor(Editor):
         self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
 
         if self.globalSettings.showPreviewUTP:
-            self.setFixedSize(674, 457)
-
-            data, _ = self.build()
-            modelname = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
-            mdl = self._installation.resource(modelname, ResourceType.MDL)
-            mdx = self._installation.resource(modelname, ResourceType.MDX)
-            if mdl and mdx:
-                self.ui.previewRenderer.setModel(mdl.data, mdx.data)
-            else:
-                self.ui.previewRenderer.clearModel()
+            self._update_model()
         else:
             self.setFixedSize(374, 457)
+
+    def _update_model(self):
+        self.setFixedSize(674, 457)
+
+        data, _ = self.build()
+        modelname = placeable.get_model(read_utp(data), self._installation, placeables=self._placeables2DA)
+        mdl = self._installation.resource(modelname, ResourceType.MDL)
+        mdx = self._installation.resource(modelname, ResourceType.MDX)
+        if mdl and mdx:
+            self.ui.previewRenderer.setModel(mdl.data, mdx.data)
+        else:
+            self.ui.previewRenderer.clearModel()

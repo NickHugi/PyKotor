@@ -1,9 +1,12 @@
 from contextlib import suppress
 from typing import Optional, Tuple
 
+from data.installation import HTInstallation
+from gui.dialogs.edit.locstring import LocalizedStringDialog
+from gui.dialogs.inventory import InventoryEditor
+from gui.editor import Editor
 from PyQt5.QtWidgets import QWidget
 
-from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
@@ -11,13 +14,9 @@ from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utm import UTM, dismantle_utm, read_utm
 from pykotor.resource.type import ResourceType
 
-from data.installation import HTInstallation
-from gui.editor import Editor
-from gui.dialogs.inventory import InventoryEditor
-
 
 class UTMEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
         supported = [ResourceType.UTM]
         super().__init__(parent, "Merchant Editor", "merchant", supported, supported, installation)
 
@@ -112,7 +111,7 @@ class UTMEditor(Editor):
         with suppress(Exception):
             root = Module.get_root(self._filepath)
             capsulesPaths = [path for path in self._installation.module_names() if root in path and path != self._filepath]
-            capsules.extend([Capsule(self._installation.module_path() + path) for path in capsulesPaths])
+            capsules.extend([Capsule(self._installation.module_path() / path) for path in capsulesPaths])
 
         inventoryEditor = InventoryEditor(self, self._installation, capsules, [], self._utm.inventory, {}, False, True, True)
         if inventoryEditor.exec_():
