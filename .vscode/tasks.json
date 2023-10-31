@@ -123,6 +123,7 @@
     {
       "label": "Build HoloPatcher",
       "type": "shell",
+      "dependsOn": "install_requirements",
       "command": "pyinstaller",
       "args": [
         "--noconsole",
@@ -138,6 +139,7 @@
     {
       "label": "Build Toolset (Windows)",
       "type": "shell",
+      "dependsOn": "install_requirements",
       "command": "pyinstaller",
       "args": [
         "--noconsole",
@@ -153,6 +155,7 @@
     {
       "label": "Build Toolset (Unix)",
       "type": "shell",
+      "dependsOn": "install_requirements",
       "command": "pyinstaller",
       "args": [
         "--noconsole",
@@ -168,6 +171,7 @@
     {
       "label": "Build KotorDiff",
       "type": "shell",
+      "dependsOn": "install_requirements",
       "command": "pyinstaller",
       "args": [
         "--console",
@@ -182,6 +186,7 @@
     {
       "label": "Build GUI Creator",
       "type": "shell",
+      "dependsOn": "install_requirements",
       "command": "pyinstaller",
       "args": [
         "--console",
