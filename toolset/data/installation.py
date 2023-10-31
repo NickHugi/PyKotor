@@ -1,8 +1,9 @@
 from contextlib import suppress
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
-from PyQt5.QtGui import QStandardItemModel, QPixmap, QImage, QTransform
+from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QTransform
 from PyQt5.QtWidgets import QWidget
+
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
@@ -129,8 +130,7 @@ class HTInstallation(Installation):
             if texture is not None:
                 width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
                 image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-                return pixmap
+                return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         return pixmap
 
@@ -147,7 +147,6 @@ class HTInstallation(Installation):
             if texture is not None:
                 width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
                 image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-                return pixmap
+                return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
 
         return pixmap
