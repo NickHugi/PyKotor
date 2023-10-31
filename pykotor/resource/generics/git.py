@@ -511,6 +511,7 @@ class GITPlaceable(GITInstance):
         self.resref: ResRef = ResRef.from_blank()
         self.bearing: float = 0.0
         self.tweak_color: Color | None = None
+        self.tag: str = ""
 
     def move(
         self,
@@ -562,6 +563,7 @@ class GITSound(GITInstance):
     ):
         super().__init__(x, y, z)
         self.resref: ResRef = ResRef.from_blank()
+        self.tag: str = ""
 
     def move(
         self,
