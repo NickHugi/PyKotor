@@ -55,7 +55,7 @@ class InstallationsWidget(QWidget):
 
     def addNewInstallation(self) -> None:
         item = QStandardItem("New")
-        item.setData({"path": '', "tsl": False})
+        item.setData({"path": "", "tsl": False})
         self.installationsModel.appendRow(item)
         self.edited.emit()
 
@@ -176,7 +176,7 @@ class GlobalSettings(Settings):
     # region Strings
     extractPath = Settings._addSetting(
         "extractPath",
-        ""
+        "",
     )
     nssCompilerPath = Settings._addSetting(
         "nssCompilerPath",
@@ -184,42 +184,42 @@ class GlobalSettings(Settings):
     )
     ncsDecompilerPath = Settings._addSetting(
         "ncsDecompilerPath",
-        ""
+        "",
     )
     # endregion
 
     # region Bools
     disableRIMSaving = Settings._addSetting(
         "disableRIMSaving",
-        True
+        True,
     )
     firstTime = Settings._addSetting(
         "firstTime",
-        True
+        True,
     )
     gff_specializedEditors = Settings._addSetting(
         "gff_specializedEditors",
-        True
+        True,
     )
     joinRIMsTogether = Settings._addSetting(
         "joinRIMsTogether",
-        False
+        False,
     )
     greyRIMText = Settings._addSetting(
         "greyRIMText",
-        True
+        True,
     )
     showPreviewUTC = Settings._addSetting(
         "showPreviewUTC",
-        True
+        True,
     )
     showPreviewUTP = Settings._addSetting(
         "showPreviewUTP",
-        True
+        True,
     )
     showPreviewUTD = Settings._addSetting(
         "showPreviewUTD",
-        True
+        True,
     )
     # endregion
 

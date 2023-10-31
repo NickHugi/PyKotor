@@ -170,7 +170,7 @@ class NSSEditor(Editor):
             ).exec_()
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to compile", str(e)).exec_()
-        except IOError as e:
+        except OSError as e:
             QMessageBox(QMessageBox.Critical, "Failed to save file", str(e)).exec_()
 
     def changeDescription(self) -> None:

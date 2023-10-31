@@ -399,7 +399,7 @@ class ToolWindow(QMainWindow):
     def reloadSettings(self) -> None:
         self.reloadInstallations()
 
-    def getActiveResourceWidget(self) -> ResourceList:
+    def getActiveResourceWidget(self) -> ResourceList | None:
         if self.ui.resourceTabs.currentWidget() is self.ui.coreTab:
             return self.ui.coreWidget
         if self.ui.resourceTabs.currentWidget() is self.ui.modulesTab:
