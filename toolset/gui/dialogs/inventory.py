@@ -1,26 +1,46 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Dict, List, NamedTuple, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple, Union
 
+from data.installation import HTInstallation
 from PyQt5 import QtCore
-from PyQt5.QtCore import QThread, QSortFilterProxyModel, QPoint, QSize
-from PyQt5.QtGui import QImage, QPixmap, QStandardItemModel, QStandardItem, QDropEvent, QDragEnterEvent, QDragMoveEvent, \
-    QIcon, QTransform
-from PyQt5.QtWidgets import QDialog, QWidget, QLabel, QProgressBar, QVBoxLayout, QFrame, QTreeView, QMenu, QAction, \
-    QTableWidget, QTableWidgetItem
-from pykotor.common.misc import InventoryItem, EquipmentSlot, ResRef
+from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
+from PyQt5.QtGui import (
+    QDragEnterEvent,
+    QDragMoveEvent,
+    QDropEvent,
+    QIcon,
+    QPixmap,
+    QStandardItem,
+    QStandardItemModel,
+)
+from PyQt5.QtWidgets import (
+    QAction,
+    QDialog,
+    QFrame,
+    QLabel,
+    QMenu,
+    QProgressBar,
+    QTableWidget,
+    QTableWidgetItem,
+    QTreeView,
+    QVBoxLayout,
+    QWidget,
+)
+
+from pykotor.common.misc import EquipmentSlot, InventoryItem, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tlk import TLK, read_tlk
-from pykotor.resource.formats.tpc import TPCTextureFormat
 from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath
 
-from data.installation import HTInstallation
-
+if TYPE_CHECKING:
+    import os
 
 _RESNAME_ROLE = QtCore.Qt.UserRole + 1
 _FILEPATH_ROLE = QtCore.Qt.UserRole + 2
@@ -149,7 +169,7 @@ class InventoryEditor(QDialog):
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():
             # Very hacky, but isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
-            if 'DropFrame' in str(type(widget)) and widget.resname:
+            if "DropFrame" in str(type(widget)) and widget.resname:
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
 
     def buildItems(self) -> None:
@@ -173,13 +193,13 @@ class InventoryEditor(QDialog):
     def getItem(self, resname: str, filepath: str) -> Tuple[str, str, UTI]:
         uti = None
         name = ""
-        if filepath == "":
+        if not filepath:
             result = self._installation.resource(resname, ResourceType.UTI)
             if result is not None:
                 uti = read_uti(result.data)
-                filepath = result.filepath
+                filepath = str(result.filepath)
                 name = self._installation.string(uti.name, "[No Name]")
-        elif filepath.endswith(".rim") or filepath.endswith(".mod") or filepath.endswith(".erf"):
+        elif filepath.endswith((".rim", ".mod", ".erf")):
             uti = read_uti(Capsule(filepath).resource(resname, ResourceType.UTI))
             name = self._installation.string(uti.name, "[No Name]")
         elif filepath.endswith(".bif"):
@@ -191,13 +211,13 @@ class InventoryEditor(QDialog):
 
     def setEquipment(self, slot: EquipmentSlot, resname: str, filepath: str = "", name: str = "") -> None:
         slotPicture = self._slotMap[slot].label
-        slotFrame = self._slotMap[slot].frame
-
-        if resname != "":
+        if resname:
             filepath, name, uti = self.getItem(resname, filepath)
 
-            slotPicture.setToolTip("{}\n{}\n{}".format(resname, filepath, name))
+            slotPicture.setToolTip(f"{resname}\n{filepath}\n{name}")
             slotPicture.setPixmap(self.getItemImage(uti))
+            slotFrame = self._slotMap[slot].frame
+
             slotFrame.setItem(resname, filepath, name, False, False)
         else:
             image = self._slotMap[slot].emptyImage.format("droid" if self._droid else "human")
@@ -348,16 +368,11 @@ class InventoryTable(QTableWidget):
         rowID = self.rowCount()
         self.insertRow(rowID)
         filepath, name, uti = self.window().getItem(resname, "")
-        pixmap = self.window().getItemImage(uti)
-        iconItem = QTableWidgetItem(QIcon(pixmap), "")
-        iconItem.setSizeHint(QSize(48, 48))
-        iconItem.setFlags(iconItem.flags() ^ QtCore.Qt.ItemIsEditable)
+        iconItem = self._set_uti(uti)
         nameItem = QTableWidgetItem(name)
         nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
         resnameItem = InventoryTableResnameItem(resname, filepath, name, droppable, infinite)
-        self.setItem(rowID, 0, iconItem)
-        self.setItem(rowID, 1, resnameItem)
-        self.setItem(rowID, 2, nameItem)
+        self._set_row(rowID, iconItem, resnameItem, nameItem)
 
     def dropEvent(self, e: QDropEvent) -> None:
         if isinstance(e.source(), QTreeView):
@@ -372,16 +387,23 @@ class InventoryTable(QTableWidget):
             rowID = self.rowCount()
             self.insertRow(rowID)
             filepath, name, uti = self.window().getItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE))
-            pixmap = self.window().getItemImage(uti)
-            iconItem = QTableWidgetItem(QIcon(pixmap), "")
-            iconItem.setSizeHint(QSize(48, 48))
-            iconItem.setFlags(iconItem.flags() ^ QtCore.Qt.ItemIsEditable)
+            iconItem = self._set_uti(uti)
             nameItem = QTableWidgetItem(item.text())
             nameItem.setFlags(nameItem.flags() ^ QtCore.Qt.ItemIsEditable)
             resnameItem = InventoryTableResnameItem(item.data(_RESNAME_ROLE), item.data(_FILEPATH_ROLE), item.text(), False, False)
-            self.setItem(rowID, 0, iconItem)
-            self.setItem(rowID, 1, resnameItem)
-            self.setItem(rowID, 2, nameItem)
+            self._set_row(rowID, iconItem, resnameItem, nameItem)
+
+    def _set_row(self, rowID, iconItem, resnameItem, nameItem):
+        self.setItem(rowID, 0, iconItem)
+        self.setItem(rowID, 1, resnameItem)
+        self.setItem(rowID, 2, nameItem)
+
+    def _set_uti(self, uti):
+        pixmap = self.window().getItemImage(uti)
+        result = QTableWidgetItem(QIcon(pixmap), "")
+        result.setSizeHint(QSize(48, 48))
+        result.setFlags(result.flags() ^ QtCore.Qt.ItemIsEditable)
+        return result
 
     def resnameChanged(self, tableItem: QTableWidgetItem):
         if isinstance(tableItem, InventoryTableResnameItem):
@@ -434,9 +456,7 @@ class InventoryTableResnameItem(ItemContainer, QTableWidgetItem):
 
 
 class ItemBuilderDialog(QDialog):
-    """
-    Popup dialog responsible for extracting a list of resources from the game files.
-    """
+    """Popup dialog responsible for extracting a list of resources from the game files."""
 
     def __init__(self, parent: QWidget, installation: HTInstallation, capsules: List[Capsule]):
         super().__init__(parent)
@@ -455,7 +475,7 @@ class ItemBuilderDialog(QDialog):
         self.coreModel = ItemModel(installation.mainWindow)
         self.modulesModel = ItemModel(self.parent())
         self.overrideModel = ItemModel(self.parent())
-        self._tlk: TLK = read_tlk(installation.path() + "dialog.tlk")
+        self._tlk: TLK = read_tlk(CaseAwarePath(installation.path(), "dialog.tlk"))
         self._installation: HTInstallation = installation
         self._capsules: List[Capsule] = capsules
 
@@ -476,9 +496,9 @@ class ItemBuilderDialog(QDialog):
         slots = baseitems.get_row(uti.base_item).get_integer("equipableslots", 0) if uti is not None else 0
         category = self.getCategory(uti)
 
-        if result.filepath.endswith(".bif") or result.filepath.endswith(".key"):
+        if result.filepath.endswith((".bif", ".key")):
             self.coreModel.addItem(result.resname, category, result.filepath, name, slots)
-        elif result.filepath.endswith(".rim") or result.filepath.endswith(".mod") or result.filepath.endswith(".erf"):
+        elif result.filepath.endswith((".rim", ".mod", ".erf")):
             self.modulesModel.addItem(result.resname, category, result.filepath, name, slots)
         else:
             self.overrideModel.addItem(result.resname, category, result.filepath, name, slots)
@@ -493,30 +513,29 @@ class ItemBuilderDialog(QDialog):
 
         if slots & (EquipmentSlot.CLAW1.value | EquipmentSlot.CLAW2.value | EquipmentSlot.CLAW3.value):
             return "Creature Claw"
-        elif slots & EquipmentSlot.HEAD.value:
+        if slots & EquipmentSlot.HEAD.value:
             return "Droid Sensors" if droid else "Headgear"
-        elif slots & EquipmentSlot.IMPLANT.value and not droid:
+        if slots & EquipmentSlot.IMPLANT.value and not droid:
             return "Implants"
-        elif slots & EquipmentSlot.GAUNTLET.value and not droid:
+        if slots & EquipmentSlot.GAUNTLET.value and not droid:
             return "Gauntlets"
-        elif slots & EquipmentSlot.IMPLANT.value and droid:
+        if slots & EquipmentSlot.IMPLANT.value and droid:
             return "Droid Utilities"
-        elif slots & EquipmentSlot.LEFT_ARM.value:
+        if slots & EquipmentSlot.LEFT_ARM.value:
             return "Droid Special Weapons" if droid else "Shields"
-        elif slots & EquipmentSlot.ARMOR.value:
+        if slots & EquipmentSlot.ARMOR.value:
             return "Droid Plating" if droid else "Armor"
-        elif slots & EquipmentSlot.LEFT_HAND.value:
+        if slots & EquipmentSlot.LEFT_HAND.value:
             return "Weapons (Single)"
-        elif slots & EquipmentSlot.RIGHT_HAND.value:
+        if slots & EquipmentSlot.RIGHT_HAND.value:
             return "Weapons (Double)"
-        elif slots & EquipmentSlot.BELT.value:
+        if slots & EquipmentSlot.BELT.value:
             return "Droid Shields" if droid else "Belts"
-        elif slots & EquipmentSlot.HIDE.value:
+        if slots & EquipmentSlot.HIDE.value:
             return "Creature Hide"
-        elif slots == 0:
+        if slots == 0:
             return "Miscellaneous"
-        else:
-            return "Unknown"
+        return "Unknown"
 
 
 class ItemBuilderWorker(QThread):
@@ -534,14 +553,17 @@ class ItemBuilderWorker(QThread):
             queries.extend([ResourceIdentifier(resource.resname(), resource.restype())
                             for resource in self._installation.chitin_resources()
                             if resource.restype() == ResourceType.UTI])
-        for resource in self._installation.override_resources(""):
-            if resource.restype() == ResourceType.UTI:
-                queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
+        queries.extend(
+            ResourceIdentifier(resource.resname(), resource.restype())
+            for resource in self._installation.override_resources("")
+            if resource.restype() == ResourceType.UTI
+        )
         for capsule in self._capsules:
-            for resource in capsule:
-                if resource.restype() == ResourceType.UTI:
-                    queries.append(ResourceIdentifier(resource.resname(), resource.restype()))
-
+            queries.extend(
+                ResourceIdentifier(resource.resname(), resource.restype())
+                for resource in capsule
+                if resource.restype() == ResourceType.UTI
+            )
         results = self._installation.resources(queries, [SearchLocation.OVERRIDE, SearchLocation.CHITIN, SearchLocation.CUSTOM_MODULES],
                                                capsules=self._capsules)
         for result in results.values():
@@ -575,9 +597,9 @@ class ItemModel(QStandardItemModel):
             self.appendRow(categoryItem)
         return self._categoryItems[category]
 
-    def addItem(self, resname: str, category: str, filepath: str, name: str, slots: int) -> None:
+    def addItem(self, resname: str, category: str, filepath: os.PathLike | str, name: str, slots: int) -> None:
         item = QStandardItem(name if name != "" else resname)
-        item.setToolTip("{}\n{}\n{}".format(resname, filepath, name))
+        item.setToolTip(f"{resname}\n{filepath}\n{name}")
         item.setData(filepath, _FILEPATH_ROLE)
         item.setData(resname, _RESNAME_ROLE)
         item.setData(slots, _SLOTS_ROLE)
@@ -585,7 +607,7 @@ class ItemModel(QStandardItemModel):
 
 
 class SetItemResRefDialog(QDialog):
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
 
         from editors import ui_setitemresref
