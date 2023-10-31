@@ -1,6 +1,6 @@
 import json
 import os
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ElemTree
 import zipfile
 from contextlib import suppress
 from pathlib import Path
@@ -45,7 +45,7 @@ class HelpWindow(QMainWindow):
         self.ui.contentsTree.clear()
 
         with suppress(Exception):
-            tree = ET.parse("./help/contents.xml")
+            tree = ElemTree.parse("./help/contents.xml")
             root = tree.getroot()
 
             self.version = root.get("version")
@@ -67,7 +67,7 @@ class HelpWindow(QMainWindow):
                 add(item)
                 self._setupContentsRecJSON(item, data["structure"][title])
 
-    def _setupContentsRecXML(self, parent: Optional[QTreeWidgetItem], element: ET.Element) -> None:
+    def _setupContentsRecXML(self, parent: Optional[QTreeWidgetItem], element: ElemTree.Element) -> None:
         add = self.ui.contentsTree.addTopLevelItem if parent is None else parent.addChild
 
         for child in element:
@@ -109,13 +109,17 @@ class HelpWindow(QMainWindow):
             text = BinaryReader.load_file(filepath).decode()
             html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.lower().endswith(".md") else text
             self.ui.textDisplay.setHtml(html)
-        except (OSError, FileNotFoundError):
-            QMessageBox(QMessageBox.Critical, "Failed to open help file", "Could not access '{}'.".format(filepath)).exec_()
+        except OSError:
+            QMessageBox(
+                QMessageBox.Critical,
+                "Failed to open help file",
+                f"Could not access '{filepath}'.",
+            ).exec_()
 
     def onContentsClicked(self) -> None:
         if self.ui.contentsTree.selectedItems():
             item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)
             if filename:
-                self.ui.textDisplay.setSearchPaths(["./help", "./help/{}".format(os.path.dirname(filename))])
+                self.ui.textDisplay.setSearchPaths(["./help", f"./help/{os.path.dirname(filename)}"])
                 self.displayFile(f"./help/{filename}")
