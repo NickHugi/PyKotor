@@ -58,18 +58,18 @@ class BWMBinaryReader(ResourceReader):
         face_count = self._reader.read_uint32()
         indices_offset = self._reader.read_uint32()
         materials_offset = self._reader.read_uint32()
-        self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # normals_offset
+        self._reader.read_uint32()  # planar_distances_offset
 
-        self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # aabb_count
+        self._reader.read_uint32()  # aabb_offset
         self._reader.skip(4)
-        self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # adjacencies_count
+        self._reader.read_uint32()  # adjacencies_offset
         edges_count = self._reader.read_uint32()
         edges_offset = self._reader.read_uint32()
-        self._reader.read_uint32()
-        self._reader.read_uint32()
+        self._reader.read_uint32()  # perimeters_count
+        self._reader.read_uint32()  # perimeters_offset
 
         self._reader.seek(vertices_offset)
         vertices = [self._reader.read_vector3() for _i in range(vertices_count)]
