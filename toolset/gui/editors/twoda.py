@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
-import pyperclip as pyperclip
+import pyperclip
+from gui.editor import Editor
 from PyQt5.QtCore import QSortFilterProxyModel
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QMessageBox, QWidget, QAction
-from pykotor.resource.formats.twoda import TwoDA, write_2da, read_2da
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5.QtWidgets import QAction, QMessageBox, QWidget
+
+from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
 
-from data.installation import HTInstallation
-from gui.editor import Editor
+if TYPE_CHECKING:
+    from data.installation import HTInstallation
 
 
 class TwoDAEditor(Editor):
@@ -56,57 +58,60 @@ class TwoDAEditor(Editor):
         self.proxyModel = SortFilterProxyModel(self)
 
         try:
-            twoda = read_2da(data)
-
-            headers = [""] + list(twoda.get_headers())
-            self.model.setColumnCount(len(headers))
-            self.model.setHorizontalHeaderLabels(headers)
-
-            for i, row in enumerate(twoda):
-                self.model.insertRow(i)
-                for j, header in enumerate(headers):
-                    if j == 0:
-                        self.model.setItem(i, 0, QStandardItem(str(twoda.get_label(i))))
-                        font = self.model.item(i, 0).font()
-                        font.setBold(True)
-                        self.model.item(i, 0).setFont(font)
-                        self.model.item(i, 0).setBackground(self.palette().midlight())
-                    else:
-                        self.model.setItem(i, j, QStandardItem(row.get_string(header)))
-
-            self.resetVerticalHeaders()
-            self.ui.twodaTable.setModel(self.proxyModel)
-
-            # region Menu: Set Row Header
-            self.ui.menuSetRowHeader.clear()
-
-            action = QAction("None", self)
-            action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.NONE))
-            self.ui.menuSetRowHeader.addAction(action)
-
-            action = QAction("Row Index", self)
-            action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_INDEX))
-            self.ui.menuSetRowHeader.addAction(action)
-
-            action = QAction("Row Label", self)
-            action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_LABEL))
-            self.ui.menuSetRowHeader.addAction(action)
-
-            self.ui.menuSetRowHeader.addSeparator()
-
-            for header in headers[1:]:
-                action = QAction(header, self)
-                action.triggered.connect(lambda _, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
-                self.ui.menuSetRowHeader.addAction(action)
-            # endregion
-
-            self.proxyModel.setSourceModel(self.model)
-            for i in range(twoda.get_height()):
-                self.ui.twodaTable.resizeColumnToContents(i)
+            self._load_main(data)
         except ValueError as e:
             QMessageBox(QMessageBox.Critical, "Failed to load file.", "Failed to open or load file data.").exec_()
             self.proxyModel.setSourceModel(self.model)
             self.new()
+
+    def _load_main(self, data):
+        twoda = read_2da(data)
+
+        headers = ["", *list(twoda.get_headers())]
+        self.model.setColumnCount(len(headers))
+        self.model.setHorizontalHeaderLabels(headers)
+
+        for i, row in enumerate(twoda):
+            self.model.insertRow(i)
+            for j, header in enumerate(headers):
+                if j == 0:
+                    self.model.setItem(i, 0, QStandardItem(str(twoda.get_label(i))))
+                    font = self.model.item(i, 0).font()
+                    font.setBold(True)
+                    self.model.item(i, 0).setFont(font)
+                    self.model.item(i, 0).setBackground(self.palette().midlight())
+                else:
+                    self.model.setItem(i, j, QStandardItem(row.get_string(header)))
+
+        self.resetVerticalHeaders()
+        self.ui.twodaTable.setModel(self.proxyModel)
+
+        # region Menu: Set Row Header
+        self.ui.menuSetRowHeader.clear()
+
+        action = QAction("None", self)
+        action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.NONE))
+        self.ui.menuSetRowHeader.addAction(action)
+
+        action = QAction("Row Index", self)
+        action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_INDEX))
+        self.ui.menuSetRowHeader.addAction(action)
+
+        action = QAction("Row Label", self)
+        action.triggered.connect(lambda: self.setVerticalHeaderOption(VerticalHeaderOption.ROW_LABEL))
+        self.ui.menuSetRowHeader.addAction(action)
+
+        self.ui.menuSetRowHeader.addSeparator()
+
+        for header in headers[1:]:
+            action = QAction(header, self)
+            action.triggered.connect(lambda _, header=header: self.setVerticalHeaderOption(VerticalHeaderOption.CELL_VALUE, header))
+            self.ui.menuSetRowHeader.addAction(action)
+        # endregion
+
+        self.proxyModel.setSourceModel(self.model)
+        for i in range(twoda.get_height()):
+            self.ui.twodaTable.resizeColumnToContents(i)
 
     def build(self) -> Tuple[bytes, bytes]:
         twoda = TwoDA()
@@ -148,12 +153,12 @@ class TwoDAEditor(Editor):
         right = -1
 
         for index in self.ui.twodaTable.selectedIndexes():
-            index = self.proxyModel.mapToSource(index)
+            mapped_index = self.proxyModel.mapToSource(index)
 
-            top = min([top, index.row()])
-            bottom = max([bottom, index.row()])
-            left = min([left, index.column()])
-            right = max([right, index.column()])
+            top = min([top, mapped_index.row()])
+            bottom = max([bottom, mapped_index.row()])
+            left = min([left, mapped_index.column()])
+            right = max([right, mapped_index.column()])
 
         clipboard = ""
         for j in range(top, bottom + 1):
@@ -172,7 +177,7 @@ class TwoDAEditor(Editor):
         topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
         topLeftItem = self.model.itemFromIndex(topLeftIndex)
 
-        top, left = y, x = topLeftItem.row(), topLeftItem.column()
+        _top, left = y, x = topLeftItem.row(), topLeftItem.column()
 
         for row in rows:
             for cell in row.split("\t"):
@@ -184,9 +189,7 @@ class TwoDAEditor(Editor):
             y += 1
 
     def insertRow(self) -> None:
-        """
-        Inserts a new row at the end of the table.
-        """
+        """Inserts a new row at the end of the table."""
         rowIndex = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for i in range(self.model.columnCount())])
         self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
@@ -197,9 +200,7 @@ class TwoDAEditor(Editor):
         self.resetVerticalHeaders()
 
     def duplicateRow(self) -> None:
-        """
-        Inserts a new row, copying values of the selected row, at the end of the table.
-        """
+        """Inserts a new row, copying values of the selected row, at the end of the table."""
         if self.ui.twodaTable.selectedIndexes():
             copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
 
@@ -213,21 +214,13 @@ class TwoDAEditor(Editor):
             self.resetVerticalHeaders()
 
     def removeSelectedRows(self) -> None:
-        """
-        Removes the rows the user has selected.
-        """
-        rows = set()
-
-        for index in self.ui.twodaTable.selectedIndexes():
-            rows.add(index.row())
-
+        """Removes the rows the user has selected."""
+        rows = {index.row() for index in self.ui.twodaTable.selectedIndexes()}
         for row in sorted(rows, reverse=True):
             self.model.removeRow(row)
 
     def redoRowLabels(self) -> None:
-        """
-        Iterates through every row setting the row label to match the row index.
-        """
+        """Iterates through every row setting the row label to match the row index."""
         for i in range(self.model.rowCount()):
             self.model.item(i, 0).setText(str(i))
 
