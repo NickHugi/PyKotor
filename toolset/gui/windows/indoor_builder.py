@@ -1,9 +1,9 @@
 import json
 import math
-import os
 import zipfile
 from contextlib import suppress
 from copy import copy, deepcopy
+from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 import requests
@@ -111,7 +111,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def _refreshWindowTitle(self) -> None:
         if self._filepath == "":
-            self.setWindowTitle("{} - Map Builder".format(self._installation.name))
+            self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
             self.setWindowTitle("{} - {} - Map Builder".format(self._filepath, self._installation.name))
 
@@ -162,13 +162,14 @@ class IndoorMapBuilder(QMainWindow):
         self._setupKits()
 
     def buildMap(self) -> None:
-        path = "{}{}.mod".format(self._installation.module_path(), self._map.moduleId)
-        task = lambda: self._map.build(self._installation, self._kits, path)
+        path = f"{self._installation.module_path()}{self._map.moduleId}.mod"
+        def task():
+            return self._map.build(self._installation, self._kits, path)
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
 
         if loader.exec_():
             msg = "You can warp to the game using the code 'warp {}'. ".format(self._map.moduleId)
-            msg += "Map files can be found in:\n{}".format(path)
+            msg += f"Map files can be found in:\n{path}"
             QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
 
     def deleteSelected(self) -> None:
@@ -332,9 +333,7 @@ class IndoorMapRenderer(QWidget):
         self._loop()
 
     def _loop(self) -> None:
-        """
-        The render loop.
-        """
+        """The render loop."""
         self.repaint()
         QTimer.singleShot(33, self._loop)
 
@@ -361,15 +360,16 @@ class IndoorMapRenderer(QWidget):
         self._selectedRooms.clear()
 
     def toRenderCoords(self, x, y) -> Vector2:
-        """
-        Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
+        """Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
         screen-space coordinates is the top-left of the WalkmeshRenderer widget.
 
         Args:
+        ----
             x: The world-space X value.
             y: The world-space Y value.
 
         Returns:
+        -------
             A vector representing a point on the widget.
         """
         cos = math.cos(self._camRotation)
@@ -381,16 +381,17 @@ class IndoorMapRenderer(QWidget):
         return Vector2(x2, y2)
 
     def toWorldCoords(self, x, y) -> Vector3:
-        """
-        Returns the world-space coordinates converted from the specified screen-space coordinates. The Z component
+        """Returns the world-space coordinates converted from the specified screen-space coordinates. The Z component
         is calculated using the X/Y components and the walkmesh face the mouse is over. If there is no face underneath
         the mouse, the Z component is set to zero.
 
         Args:
+        ----
             x: The screen-space X value.
             y: The screen-space Y value.
 
         Returns:
+        -------
             A vector representing a point in the world.
         """
         cos = math.cos(-self._camRotation)
@@ -402,15 +403,16 @@ class IndoorMapRenderer(QWidget):
         return Vector3(x2, y2, 0)
 
     def toWorldDelta(self, x, y) -> Vector2:
-        """
-        Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
+        """Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
         a change in screen-space, such as the delta paramater given in a mouseMove event.
 
         Args:
+        ----
             x: The screen-space X value.
             y: The screen-space Y value.
 
         Returns:
+        -------
             A vector representing a change in position in the world.
         """
         cos = math.cos(-self._camRotation)
@@ -449,48 +451,48 @@ class IndoorMapRenderer(QWidget):
 
     # region Camera Transformations
     def cameraZoom(self) -> float:
-        """
-        Returns the current zoom value of the camera.
+        """Returns the current zoom value of the camera.
 
-        Returns:
+        Returns
+        -------
             The camera zoom value.
         """
         return self._camScale
 
     def setCameraZoom(self, zoom: float) -> None:
-        """
-        Sets the camera zoom to the specified value. Values smaller than 1.0 are clamped.
+        """Sets the camera zoom to the specified value. Values smaller than 1.0 are clamped.
 
         Args:
+        ----
             zoom: Zoom-in value.
         """
         self._camScale = max(zoom, 1.0)
 
     def zoomInCamera(self, zoom: float) -> None:
-        """
-        Changes the camera zoom value by the specified amount.
+        """Changes the camera zoom value by the specified amount.
 
         This method is a wrapper for setCameraZoom().
 
         Args:
+        ----
             zoom: The value to increase by.
         """
         self.setCameraZoom(self._camScale + zoom)
 
     def cameraPosition(self) -> Vector2:
-        """
-        Returns the position of the camera.
+        """Returns the position of the camera.
 
-        Returns:
+        Returns
+        -------
             The camera position vector.
         """
         return copy(self._camPosition)
 
     def setCameraPosition(self, x: float, y: float) -> None:
-        """
-        Sets the camera position to the specified values.
+        """Sets the camera position to the specified values.
 
         Args:
+        ----
             x: The new X value.
             y: The new Y value.
         """
@@ -498,11 +500,11 @@ class IndoorMapRenderer(QWidget):
         self._camPosition.y = y
 
     def panCamera(self, x: float, y: float) -> None:
-        """
-        Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
+        """Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
         camera.
 
         Args:
+        ----
             x: Units to move the x coordinate.
             y: Units to move the y coordinate.
         """
@@ -510,28 +512,28 @@ class IndoorMapRenderer(QWidget):
         self._camPosition.y += y
 
     def cameraRotation(self) -> float:
-        """
-        Returns the current angle of the camera in radians.
+        """Returns the current angle of the camera in radians.
 
-        Returns:
+        Returns
+        -------
             The camera angle in radians.
         """
         return self._camRotation
 
     def setCameraRotation(self, radians: float) -> None:
-        """
-        Sets the camera rotation to the specified angle.
+        """Sets the camera rotation to the specified angle.
 
         Args:
+        ----
             radians: The new camera angle.
         """
         self._camRotation = radians
 
     def rotateCamera(self, radians: float) -> None:
-        """
-        Rotates the camera by the angle specified.
+        """Rotates the camera by the angle specified.
 
         Args:
+        ----
             radians: The angle of rotation to apply to the camera.
         """
         self._camRotation += radians
@@ -586,13 +588,14 @@ class IndoorMapRenderer(QWidget):
         painter.drawLine(QPointF(coords.x-1.0, coords.y), QPointF(coords.x+1.0, coords.y))
 
     def _buildFace(self, face: BWMFace) -> QPainterPath:
-        """
-        Returns a QPainterPath for the specified face.
+        """Returns a QPainterPath for the specified face.
 
         Args:
+        ----
             face: A face used in a walkmesh.
 
         Returns:
+        -------
             A QPainterPath object representing a BWMFace.
         """
         v1 = Vector2(face.v1.x, face.v1.y)
@@ -727,8 +730,8 @@ class KitDownloader(QDialog):
 
         for kitName, kitDict in updateInfoData["kits"].items():
             kitId = kitDict["id"]
-            kitPath = "./kits/{}.json".format(kitId)
-            if os.path.exists(kitPath):
+            kitPath = Path(f"kits/{kitId}.json")
+            if kitPath.exists():
                 button = QPushButton("Already Downloaded")
                 button.setEnabled(False)
                 with suppress(Exception):
@@ -748,7 +751,8 @@ class KitDownloader(QDialog):
         button.setText("Downloading")
         button.setEnabled(False)
 
-        task = lambda: self._downloadKit(infoDict["id"], infoDict["directDownload"])
+        def task():
+            return self._downloadKit(infoDict["id"], infoDict["directDownload"])
         loader = AsyncLoader(self, "Downloading Kit...", task, "Failed to download.")
         if loader.exec_():
             button.setText("Download Complete")
@@ -758,8 +762,8 @@ class KitDownloader(QDialog):
 
     def _downloadKit(self, kitId: str, link: str) -> None:
         response = requests.get(link, stream=True)
-        filepath = "./kits/{}.zip".format(kitId)
-        with open(filepath, 'wb') as f:
+        filepath = Path(f"kits/{kitId}.zip")
+        with filepath.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)

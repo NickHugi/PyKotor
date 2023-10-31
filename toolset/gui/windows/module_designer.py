@@ -1,15 +1,14 @@
+from __future__ import annotations
+
 import math
 import os
 from copy import deepcopy
-from typing import Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
-from data.installation import HTInstallation
 from data.misc import ControlItem
 from gui.dialogs.insert_instance import InsertInstanceDialog
 from gui.dialogs.select_module import SelectModuleDialog
 from gui.editors.git import openInstanceDialog
-from gui.widgets.renderer.module import ModuleRenderer
-from gui.widgets.renderer.walkmesh import WalkmeshRenderer
 from gui.widgets.settings.installations import GlobalSettings
 from gui.widgets.settings.module_designer import ModuleDesignerSettings
 from gui.windows.help import HelpWindow
@@ -52,6 +51,11 @@ from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
+
+if TYPE_CHECKING:
+    from data.installation import HTInstallation
+    from gui.widgets.renderer.module import ModuleRenderer
+    from gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
 
 class ModuleDesigner(QMainWindow):
@@ -167,9 +171,9 @@ class ModuleDesigner(QMainWindow):
 
     def _refreshWindowTitle(self) -> None:
         if self._module is None:
-            title = "No Module - {} - Module Designer".format(self._installation.name)
+            title = f"No Module - {self._installation.name} - Module Designer"
         else:
-            title = "{} - {} - Module Designer".format(self._module._id, self._installation.name)
+            title = f"{self._module._id} - {self._installation.name} - Module Designer"
         self.setWindowTitle(title)
 
     def openModule(self) -> None:
@@ -178,8 +182,8 @@ class ModuleDesigner(QMainWindow):
         if dialog.exec_():
             self.unloadModule()
 
-            mod_filepath = self._installation.module_path() + dialog.module + ".mod"
-            if not os.path.exists(mod_filepath) and GlobalSettings().disableRIMSaving:
+            mod_filepath = self._installation.module_path().joinpath(dialog.module + ".mod")
+            if not mod_filepath.exists() and GlobalSettings().disableRIMSaving:
                 module.rim_to_mod(mod_filepath)
                 self._installation.load_modules()
 
@@ -310,7 +314,7 @@ class ModuleDesigner(QMainWindow):
             GITSound: self.hideSounds,
             GITStore: self.hideStores,
             GITCamera: self.hideCameras,
-            GITInstance: False
+            GITInstance: False,
         }
         iconMapping = {
             GITCreature: QPixmap(":/images/icons/k1/creature.png"),
@@ -322,7 +326,7 @@ class ModuleDesigner(QMainWindow):
             GITWaypoint: QPixmap(":/images/icons/k1/waypoint.png"),
             GITCamera: QPixmap(":/images/icons/k1/camera.png"),
             GITStore: QPixmap(":/images/icons/k1/merchant.png"),
-            GITInstance: QPixmap(32, 32)
+            GITInstance: QPixmap(32, 32),
         }
 
         self.ui.instanceList.clear()
@@ -339,9 +343,9 @@ class ModuleDesigner(QMainWindow):
             font = item.font()
 
             if isinstance(instance, GITCamera):
-                item.setText("Camera #{}".format(instance.camera_id))
+                item.setText(f"Camera #{instance.camera_id}")
                 item.setToolTip("Struct Index: {}\nCamera ID: {}\nFOV: {}".format(
-                    struct_index, instance.camera_id, instance.fov
+                    struct_index, instance.camera_id, instance.fov,
                 ))
                 item.setData(QtCore.Qt.UserRole+1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
@@ -499,7 +503,7 @@ class ModuleDesigner(QMainWindow):
         self.ui.flatRenderer.instanceSelection.clear()
         self.rebuildInstanceList()
 
-    def moveSelected(self, x: float, y: float, z: float = None) -> None:
+    def moveSelected(self, x: float, y: float, z: float | None = None) -> None:
         if self.ui.lockInstancesCheck.isChecked():
             return
 
@@ -947,14 +951,13 @@ class ModuleDesignerControls2d:
             else:
                 self.editor.setSelection([])
 
-        if self.duplicateSelected.satisfied(buttons, keys):
-            if self.editor.selectedInstances:
-                instance = deepcopy(self.editor.selectedInstances[-1])
-                screen = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
-                instance.position = self.renderer.toWorldCoords(screen.x(), screen.y())
-                self.editor.git().add(instance)
-                self.editor.rebuildInstanceList()
-                self.editor.setSelection([instance])
+        if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
+            instance = deepcopy(self.editor.selectedInstances[-1])
+            screen = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
+            instance.position = self.renderer.toWorldCoords(screen.x(), screen.y())
+            self.editor.git().add(instance)
+            self.editor.rebuildInstanceList()
+            self.editor.setSelection([instance])
 
         if self.openContextMenu.satisfied(buttons, keys):
             world = self.renderer.toWorldCoords(screen.x, screen.y)
