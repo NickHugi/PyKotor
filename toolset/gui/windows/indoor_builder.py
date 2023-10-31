@@ -545,12 +545,7 @@ class IndoorMapRenderer(QWidget):
         trueWidth, trueHeight = image.width(), image.height()
         width, height = image.width() / 10, image.height() / 10
 
-        transform = QTransform()
-        transform.translate(self.width() / 2, self.height() / 2)
-        transform.rotate(math.degrees(self._camRotation))
-        transform.scale(self._camScale, self._camScale)
-        transform.translate(-self._camPosition.x, -self._camPosition.y)
-
+        transform = self._apply_transformation()
         transform.translate(coords.x, coords.y)
         transform.rotate(rotation)
         transform.scale(-1.0 if flip_x else 1.0, -1.0 if flip_y else 1.0)
@@ -616,12 +611,7 @@ class IndoorMapRenderer(QWidget):
         screen = self.mapFromGlobal(self.cursor().pos())
         world = self.toWorldCoords(screen.x(), screen.y())
 
-        transform = QTransform()
-        transform.translate(self.width() / 2, self.height() / 2)
-        transform.rotate(math.degrees(self._camRotation))
-        transform.scale(self._camScale, self._camScale)
-        transform.translate(-self._camPosition.x, -self._camPosition.y)
-
+        transform = self._apply_transformation()
         painter = QPainter(self)
         painter.setBrush(QColor(0))
         painter.drawRect(0, 0, self.width(), self.height())
@@ -634,7 +624,7 @@ class IndoorMapRenderer(QWidget):
         for room in self._map.rooms:
             self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y)
 
-            for hook in room.component.hooks if not self.hideMagnets else []:
+            for hook in [] if self.hideMagnets else room.component.hooks:
                 hookIndex = room.component.hooks.index(hook)
                 if room.hooks[hookIndex] is not None:
                     continue
@@ -664,6 +654,14 @@ class IndoorMapRenderer(QWidget):
             self._drawRoomHighlight(painter, room, 100)
 
         self._drawSpawnPoint(painter, self._map.warpPoint)
+
+    def _apply_transformation(self):
+        result = QTransform()
+        result.translate(self.width() / 2, self.height() / 2)
+        result.rotate(math.degrees(self._camRotation))
+        result.scale(self._camScale, self._camScale)
+        result.translate(-self._camPosition.x, -self._camPosition.y)
+        return result
 
     def wheelEvent(self, e: QWheelEvent) -> None:
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
@@ -725,7 +723,7 @@ class KitDownloader(QDialog):
         self._setupDownloads()
 
     def _setupDownloads(self) -> None:
-        req = requests.get(UPDATE_INFO_LINK)
+        req = requests.get(UPDATE_INFO_LINK, timeout=15)
         updateInfoData = json.loads(req.text)
 
         for kitName, kitDict in updateInfoData["kits"].items():
@@ -739,10 +737,10 @@ class KitDownloader(QDialog):
                     if localKitDict["version"] < kitDict["version"]:
                         button.setText("Update Available")
                         button.setEnabled(True)
-                        button.clicked.connect(lambda _, button=button: self._downloadButtonPressed(button, kitDict))
+                        button.clicked.connect(lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict))
             else:
                 button = QPushButton("Download")
-                button.clicked.connect(lambda _, button=button, kitDict=kitDict: self._downloadButtonPressed(button, kitDict))
+                button.clicked.connect(lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict))
 
             layout: QFormLayout = self.ui.groupBox.layout()
             layout.addRow(kitName, button)
@@ -761,11 +759,11 @@ class KitDownloader(QDialog):
             button.setEnabled(True)
 
     def _downloadKit(self, kitId: str, link: str) -> None:
-        response = requests.get(link, stream=True)
+        response = requests.get(link, stream=True, timeout=15)
         filepath = Path(f"kits/{kitId}.zip")
         with filepath.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
-        with zipfile.ZipFile(filepath, 'r') as zip_ref:
+        with zipfile.ZipFile(filepath, "r") as zip_ref:
             zip_ref.extractall("./kits")

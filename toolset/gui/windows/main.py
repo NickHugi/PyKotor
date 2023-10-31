@@ -1,10 +1,22 @@
 from __future__ import annotations
 
 import json
+import os
 import traceback
 from contextlib import suppress
-from datetime import datetime, timedelta
-from distutils.version import StrictVersion
+from datetime import datetime, timedelta, timezone
+
+try:
+    from distutils.version import StrictVersion
+except ImportError:
+    try:
+        from setuptools.version import StrictVersion
+    except ImportError:
+        try:
+            from packaging.version import Version as StrictVersion
+        except ImportError as e3:
+            msg = "Could not import StrictVersion from any known library"
+            raise ImportError(msg) from e3
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, ClassVar
@@ -207,7 +219,7 @@ class ToolWindow(QMainWindow):
     def onExtractResources(self, resources: list[FileResource]) -> None:
         if len(resources) == 1:
             # Player saves resource with a specific name
-            default = resources[0].resname() + "." + resources[0].restype().extension
+            default = f"{resources[0].resname()}.{resources[0].restype().extension}"
             filepath = QFileDialog.getSaveFileName(self, "Save resource", default)[0]
 
             if filepath:
@@ -222,7 +234,7 @@ class ToolWindow(QMainWindow):
                 loader = AsyncBatchLoader(self, "Extracting Resources", [], "Failed to Extract Resources")
 
                 for resource in resources:
-                    filename = resource.resname() + "." + resource.restype().extension
+                    filename = f"{resource.resname()}.{resource.restype().extension}"
                     filepath = str(Path(folderpath, filename))
                     loader.addTask(lambda a=resource, b=filepath: self._extractResource(a, b, loader))
 
@@ -376,19 +388,28 @@ class ToolWindow(QMainWindow):
             silent: If true, only shows popup if an update is available.
         """
         try:
-            req = requests.get(UPDATE_INFO_LINK)
+            req = requests.get(UPDATE_INFO_LINK, timeout=15)
             data = json.loads(req.text)
 
             latestVersion = data["latestVersion"]
             downloadLink = data["downloadLink"]
 
             if StrictVersion(latestVersion) > StrictVersion(PROGRAM_VERSION):
-                QMessageBox(QMessageBox.Information, "New version is available.",
-                            "New version available for <a href='{}'>download</a>.".format(downloadLink),
-                            QMessageBox.Ok, self).exec_()
+                QMessageBox(
+                    QMessageBox.Information,
+                    "New version is available.",
+                    f"New version available for <a href='{downloadLink}'>download</a>.",
+                    QMessageBox.Ok,
+                    self,
+                ).exec_()
             elif not silent:
-                QMessageBox(QMessageBox.Information, "Version is up to date",
-                            "You are running the latest version (" + latestVersion + ").", QMessageBox.Ok, self).exec_()
+                QMessageBox(
+                    QMessageBox.Information,
+                    "Version is up to date",
+                    f"You are running the latest version ({latestVersion}).",
+                    QMessageBox.Ok,
+                    self,
+                ).exec_()
         except Exception:
             if not silent:
                 QMessageBox(QMessageBox.Information, "Unable to fetch latest version.",
@@ -537,7 +558,7 @@ class ToolWindow(QMainWindow):
 
         # If the user has not set a path for the particular game yet, ask them too.
         if not path:
-            path = QFileDialog.getExistingDirectory(self, "Select the game directory for {}".format(name))
+            path = QFileDialog.getExistingDirectory(self, f"Select the game directory for {name}")
 
         # If the user still has not set a path, then return them to the [None] option.
         if not path:
@@ -571,66 +592,75 @@ class ToolWindow(QMainWindow):
             else:
                 self.ui.gameCombo.setCurrentIndex(0)
 
-    def _extractResource(self, resource: FileResource, filepath: str, loader: AsyncBatchLoader) -> None:
+    def _extractResource(self, resource: FileResource, filepath: os.PathLike | str, loader: AsyncBatchLoader) -> None:
+
+        r_filepath = filepath if isinstance(filepath, Path) else Path(filepath)
+        folderpath = r_filepath.parent
+
         try:
-            r_filepath = Path(filepath)
             data = resource.data()
-            folderpath = r_filepath.parent
 
-            decompileTPC = self.ui.tpcDecompileCheckbox.isChecked()
-            extractTXI = self.ui.tpcTxiCheckbox.isChecked()
-            decompileMDL = self.ui.mdlDecompileCheckbox.isChecked()
-            extractTexturesMDL = self.ui.mdlTexturesCheckbox.isChecked()
-
-            manipulateTPC = decompileTPC or extractTXI
-            manipulateMDL = decompileMDL or extractTexturesMDL
-
-            if resource.restype() == ResourceType.MDX and decompileMDL:
+            if resource.restype() == ResourceType.MDX and self.ui.mdlDecompileCheckbox.isChecked():
                 # Ignore extracting MDX files if decompiling MDLs
                 return
 
-            if resource.restype() == ResourceType.TPC and manipulateTPC:
+            if resource.restype() == ResourceType.TPC:
                 tpc = read_tpc(data)
 
-                if extractTXI:
-                    with r_filepath.with_suffix(".txi").open("wb") as file:
-                        file.write(tpc.txi.encode("ascii"))
+                if self.ui.tpcTxiCheckbox.isChecked():
+                    self._extractTxi(tpc, r_filepath)
 
-                if decompileTPC:
-                    data = bytearray()
-                    write_tpc(tpc, data, ResourceType.TGA)
-                    filepath = filepath.replace(".tpc", ".tga")
+                if self.ui.tpcDecompileCheckbox.isChecked():
+                    data = self._decompileTpc(tpc)
+                    r_filepath = r_filepath.with_suffix(".tga")
 
-            if resource.restype() == ResourceType.MDL and manipulateMDL:
-                if decompileMDL:
-                    mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
-                    mdl = read_mdl(data, 0, 0, mdxData, 0, 0)
+            if resource.restype() == ResourceType.MDL:
+                if self.ui.mdlDecompileCheckbox.isChecked():
+                    data = self._decompileMdl(resource, data)
+                    r_filepath = r_filepath.with_suffix(".ascii.mdl")
 
-                    data = bytearray()
-                    write_mdl(mdl, data, ResourceType.MDL_ASCII)
-                    filepath = filepath.replace(".mdl", ".ascii.mdl")
-
-                if extractTexturesMDL:
-                    try:
-                        for texture in model.list_textures(data):
-                            try:
-                                tpc = self.active.texture(texture)
-                                if extractTXI:
-                                    with folderpath.joinpath(f"{texture}.txi").open("wb") as file:
-                                        file.write(tpc.txi.encode("ascii"))
-                                file_format = ResourceType.TGA if decompileTPC else ResourceType.TPC
-                                extension = "tga" if file_format == ResourceType.TGA else "tpc"
-                                write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
-                            except Exception:
-                                loader.errors.append(ValueError("Could not find or extract tpc: " + texture))
-                    except:
-                        loader.errors.append(ValueError("Could not determine textures used in model: " + resource.resname()))
+                if self.ui.mdlTexturesCheckbox.isChecked():
+                    self._extractMdlTextures(resource, folderpath, loader, data)
 
             with r_filepath.open("wb") as file:
                 file.write(data)
-        except Exception as e:  # noqa: BLE001
+
+        except Exception as e:
             traceback.print_exc()
-            raise Exception("Failed to extract resource: " + resource.resname() + "." + resource.restype().extension) from e
+            raise Exception(f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}") from e
+
+    def _extractTxi(self, tpc, filepath: Path):
+        with filepath.with_suffix(".txi").open("wb") as file:
+            file.write(tpc.txi.encode("ascii"))
+
+    def _decompileTpc(self, tpc):
+        data = bytearray()
+        write_tpc(tpc, data, ResourceType.TGA)
+        return data
+
+    def _decompileMdl(self, resource, data):
+        mdxData = self.active.resource(resource.resname(), ResourceType.MDX).data
+        mdl = read_mdl(data, 0, 0, mdxData, 0, 0)
+
+        data = bytearray()
+        write_mdl(mdl, data, ResourceType.MDL_ASCII)
+        return data
+
+    def _extractMdlTextures(self, resource, folderpath: Path, loader: AsyncBatchLoader, data: bytes):
+        try:
+            for texture in model.list_textures(data):
+                try:
+                    tpc = self.active.texture(texture)
+                    if self.ui.tpcTxiCheckbox.isChecked():
+                        self._extractTxi(tpc, folderpath.joinpath(f"{texture}.txi")) 
+                    file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
+                    extension = "tga" if file_format == ResourceType.TGA else "tpc"
+                    write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)
+                except Exception:
+                    loader.errors.append(ValueError(f"Could not find or extract tpc: '{texture}'"))
+        except Exception:
+            loader.errors.append(ValueError(f"Could not determine textures used in model: '{resource.resname()}'"))
+
 
     def openFromFile(self) -> None:
         filepaths = QFileDialog.getOpenFileNames(self, "Select files to open")[:-1][0]
@@ -651,13 +681,14 @@ class ToolWindow(QMainWindow):
 class FolderObserver(FileSystemEventHandler):
     def __init__(self, window: ToolWindow):
         self.window = window
-        self.lastModified = datetime.now()
+        self.lastModified = datetime.now(tz=timezone.utc).astimezone()
 
     def on_any_event(self, event):
-        if datetime.now() - self.lastModified < timedelta(seconds=1):
+        rightnow = datetime.now(tz=timezone.utc).astimezone()
+        if rightnow - self.lastModified < timedelta(seconds=1):
             return
 
-        self.lastModified = datetime.now()
+        self.lastModified = rightnow
 
         modulePath = Path(self.window.active.module_path())
         overridePath = Path(self.window.active.override_path())

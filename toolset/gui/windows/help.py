@@ -78,7 +78,7 @@ class HelpWindow(QMainWindow):
 
     def checkForUpdates(self) -> None:
         with suppress(Exception):
-            req = requests.get(UPDATE_INFO_LINK)
+            req = requests.get(UPDATE_INFO_LINK, timeout=15)
             updateInfoData = json.loads(req.text)
 
             if self.version is None or updateInfoData["help"]["version"] > self.version:
