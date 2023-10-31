@@ -174,7 +174,7 @@ class UTDEditor(Editor):
         gff = dismantle_utd(utd)
         write_gff(gff, data)
 
-        return data, b''
+        return data, b""
 
     def new(self) -> None:
         super().new()

@@ -127,7 +127,7 @@ class TwoDAEditor(Editor):
 
         data = bytearray()
         write_2da(twoda, data, self._restype)
-        return data, b''
+        return data, b""
 
     def new(self) -> None:
         super().new()
