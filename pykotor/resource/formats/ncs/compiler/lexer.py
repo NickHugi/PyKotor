@@ -117,7 +117,7 @@ class NssLexer:
         t.lexer.lineno += t.value.count("\n")
 
     def t_INCLUDE(self, t):
-        "\#include"
+        r"\#include"
         return t
 
     def t_OBJECTSELF_VALUE(self, t):
