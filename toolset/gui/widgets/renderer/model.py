@@ -1,27 +1,32 @@
-import math
-from typing import Set
+from __future__ import annotations
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QResizeEvent, QWheelEvent, QMouseEvent, QKeyEvent
-from PyQt5.QtWidgets import QOpenGLWidget, QWidget
+import math
+from typing import TYPE_CHECKING, Set
 
 from data.misc import ControlItem
 from gui.widgets.settings.module_designer import ModuleDesignerSettings
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QOpenGLWidget, QWidget
+
 from pykotor.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
-from pykotor.extract.installation import Installation
 from pykotor.gl.models.read_mdl import gl_load_mdl
-from pykotor.gl.scene import Scene, RenderObject
+from pykotor.gl.scene import RenderObject, Scene
 from pykotor.resource.generics.git import GIT, GITCreature
-from pykotor.resource.generics.utc import UTC
+
+if TYPE_CHECKING:
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+
+    from pykotor.extract.installation import Installation
+    from pykotor.resource.generics.utc import UTC
 
 
 class ModelRenderer(QOpenGLWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self.scene: Scene = None
-        self.installation: Installation = None
+        self.scene: Scene | None = None
+        self.installation: Installation | None = None
         self._modelToLoad = None
         self._creatureToLoad = None
 

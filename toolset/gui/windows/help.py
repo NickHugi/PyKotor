@@ -95,7 +95,7 @@ class HelpWindow(QMainWindow):
         help_path = Path("help")
         if not help_path.exists():
             help_path.mkdir(parents=True)
-        response = requests.get(link, stream=True)
+        response = requests.get(link, stream=True, timeout=15)
         help_zip_path = help_path / "help.zip"
         with help_zip_path.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):

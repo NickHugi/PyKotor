@@ -1,11 +1,11 @@
-from typing import List, Dict, NamedTuple
-
-from PyQt5.QtWidgets import QDialog, QWidget, QMessageBox
-from pykotor.common.module import Module
-from pykotor.tools import module
+from typing import Dict, List, NamedTuple
 
 from data.installation import HTInstallation
 from gui.dialogs.asyncloader import AsyncLoader
+from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
+
+from pykotor.common.module import Module
+from pykotor.tools import module
 
 _ROOT_INDEX = 0
 _INSTALLATION_INDEX = 1
@@ -60,7 +60,7 @@ class CloneModuleDialog(QDialog):
 
         if AsyncLoader(self, "Creating module", l, "Failed to create module").exec_():
             QMessageBox(QMessageBox.Information, "Clone Successful",
-                        "You can now warp to the cloned module '{}'.".format(identifier)).exec_()
+                        f"You can now warp to the cloned module '{identifier}'.").exec_()
 
     def loadModules(self) -> None:
         options: Dict[str, ModuleOption] = {}

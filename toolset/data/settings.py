@@ -9,8 +9,7 @@ class Settings:
 
     @staticmethod
     def _addSetting(name: str, default: Any):
-        prop = property(
+        return property(
             lambda this: this.settings.value(name, default, type(default)),
-            lambda this, val: this.settings.setValue(name, val)
+            lambda this, val: this.settings.setValue(name, val),
         )
-        return prop

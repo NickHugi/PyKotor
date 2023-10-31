@@ -1,15 +1,20 @@
 from typing import Optional, Tuple
 
-from PyQt5.QtWidgets import QWidget, QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem
-
+from data.installation import HTInstallation
 from gui.dialogs.edit.locstring import LocalizedStringDialog
+from gui.editor import Editor
+from PyQt5.QtWidgets import (
+    QCheckBox,
+    QDoubleSpinBox,
+    QSpinBox,
+    QTableWidgetItem,
+    QWidget,
+)
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.ute import UTE, dismantle_ute, UTECreature, read_ute
+from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
 from pykotor.resource.type import ResourceType
-
-from data.installation import HTInstallation
-from gui.editor import Editor
 
 
 class UTEEditor(Editor):
@@ -139,7 +144,7 @@ class UTEEditor(Editor):
         gff = dismantle_ute(ute)
         write_gff(gff, data)
 
-        return data, b''
+        return data, b""
 
     def new(self) -> None:
         super().new()

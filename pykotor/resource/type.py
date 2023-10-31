@@ -4,7 +4,7 @@ games.
 from __future__ import annotations
 
 import os
-from typing import Union, overload
+from typing import Union
 from xml.etree.ElementTree import ParseError
 
 from pykotor.common.stream import BinaryReader, BinaryWriter

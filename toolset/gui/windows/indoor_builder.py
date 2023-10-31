@@ -168,7 +168,7 @@ class IndoorMapBuilder(QMainWindow):
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
 
         if loader.exec_():
-            msg = "You can warp to the game using the code 'warp {}'. ".format(self._map.moduleId)
+            msg = f"You can warp to the game using the code 'warp {self._map.moduleId}'. "
             msg += f"Map files can be found in:\n{path}"
             QMessageBox(QMessageBox.Information, "Map built", msg).exec_()
 
@@ -231,19 +231,12 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rebuildRoomConnections()
 
     def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
-        if QtCore.Qt.LeftButton in buttons and not QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
 
             if self.ui.mapRenderer._cursorComponent is not None:
                 component = self.selectedComponent()
                 if component is not None:
-                    room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint,
-                                         self.ui.mapRenderer._cursorRotation,
-                                         self.ui.mapRenderer._cursorFlipX, self.ui.mapRenderer._cursorFlipY)
-                    self._map.rooms.append(room)
-                    self._map.rebuildRoomConnections()
-                    self.ui.mapRenderer._cursorRotation = 0.0
-                    self.ui.mapRenderer._cursorFlipX = False
-                    self.ui.mapRenderer._cursorFlipY = False
+                    self._build_indoor_map_room_and_refresh(component)
                 if QtCore.Qt.Key_Shift not in keys:
                     self.ui.mapRenderer.setCursorComponent(None)
                     self.ui.componentList.clearSelection()
@@ -256,8 +249,18 @@ class IndoorMapBuilder(QMainWindow):
                 else:
                     self.ui.mapRenderer.clearSelectedRooms()
 
-        if QtCore.Qt.MiddleButton in buttons and not QtCore.Qt.Key_Control in keys:
+        if QtCore.Qt.MiddleButton in buttons and QtCore.Qt.Key_Control not in keys:
             self.ui.mapRenderer.toggleCursorFlip()
+
+    def _build_indoor_map_room_and_refresh(self, component):
+        room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint,
+                             self.ui.mapRenderer._cursorRotation,
+                             self.ui.mapRenderer._cursorFlipX, self.ui.mapRenderer._cursorFlipY)
+        self._map.rooms.append(room)
+        self._map.rebuildRoomConnections()
+        self.ui.mapRenderer._cursorRotation = 0.0
+        self.ui.mapRenderer._cursorFlipX = False
+        self.ui.mapRenderer._cursorFlipY = False
 
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
@@ -286,7 +289,7 @@ class IndoorMapBuilder(QMainWindow):
 
     def addConnectedToSelection(self, room):
         self.ui.mapRenderer.selectRoom(room, False)
-        for hookIndex, hook in enumerate(room.component.hooks):
+        for hookIndex, _hook in enumerate(room.component.hooks):
             if room.hooks[hookIndex] is not None and room.hooks[hookIndex] not in self.ui.mapRenderer.selectedRooms():
                 self.addConnectedToSelection(room.hooks[hookIndex])
 

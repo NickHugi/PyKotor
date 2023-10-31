@@ -127,7 +127,7 @@ class JRLEditor(Editor):
         ----
             entryItem: The item to refresh.
         """
-        text = "[{}] {}".format(entryItem.data().entry_id, self._installation.string(entryItem.data().text))
+        text = f"[{entryItem.data().entry_id}] {self._installation.string(entryItem.data().text)}"
         entryItem.setForeground(QColor(0x880000 if entryItem.data().end else 0x000000))
         entryItem.setText(text)
 

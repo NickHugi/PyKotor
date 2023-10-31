@@ -1,19 +1,18 @@
 from __future__ import annotations
 
 import json
-import os
 import traceback
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 
 try:
-    from distutils.version import StrictVersion
+    from packaging.version import Version as StrictVersion
 except ImportError:
     try:
         from setuptools.version import StrictVersion
     except ImportError:
         try:
-            from packaging.version import Version as StrictVersion
+            from distutils.version import StrictVersion
         except ImportError as e3:
             msg = "Could not import StrictVersion from any known library"
             raise ImportError(msg) from e3
@@ -66,6 +65,8 @@ from pykotor.tools import model
 from pykotor.tools.path import CaseAwarePath
 
 if TYPE_CHECKING:
+    import os
+
     from gui.widgets.main_widgets import ResourceList
 
 
@@ -255,10 +256,11 @@ class ToolWindow(QMainWindow):
         if e.mimeData().hasUrls():
             for url in e.mimeData().urls():
                 filepath = url.toLocalFile()
-                with open(filepath, "rb") as file:
+                r_filepath = Path(filepath)
+                with r_filepath.open("rb") as file:
                     resref, restype = ResourceIdentifier.from_path(filepath)
                     data = file.read()
-                    openResourceEditor(filepath, resref, restype, data, self.active, self)
+                    openResourceEditor(r_filepath, resref, restype, data, self.active, self)
 
     def dragEnterEvent(self, e: QtGui.QDragEnterEvent) -> None:
         if e.mimeData().hasUrls():
@@ -652,7 +654,7 @@ class ToolWindow(QMainWindow):
                 try:
                     tpc = self.active.texture(texture)
                     if self.ui.tpcTxiCheckbox.isChecked():
-                        self._extractTxi(tpc, folderpath.joinpath(f"{texture}.txi")) 
+                        self._extractTxi(tpc, folderpath.joinpath(f"{texture}.txi"))
                     file_format = ResourceType.TGA if self.ui.tpcDecompileCheckbox.isChecked() else ResourceType.TPC
                     extension = "tga" if file_format == ResourceType.TGA else "tpc"
                     write_tpc(tpc, folderpath.joinpath(f"{texture}.{extension}"), file_format)

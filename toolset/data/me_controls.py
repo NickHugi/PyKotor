@@ -3,24 +3,28 @@ from __future__ import annotations
 import json
 import math
 from abc import ABC, abstractmethod
-from typing import Set, List, Union, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Set, Union
 
 from jsmin import jsmin
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
+
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.gl.scene import Camera
-from pykotor.resource.generics.git import GITInstance
+from pykotor.tools.path import Path
 
-from gui.widgets.renderer.module import ModuleRenderer
+if TYPE_CHECKING:
+    from gui.widgets.renderer.module import ModuleRenderer
+
+    from pykotor.resource.generics.git import GITInstance
 
 
 def getMouseCode(string: str):
     MOUSE_MAP = {
         "LEFT": QtCore.Qt.LeftButton,
         "MIDDLE": QtCore.Qt.MiddleButton,
-        "RIGHT": QtCore.Qt.RightButton
+        "RIGHT": QtCore.Qt.RightButton,
     }
 
     return MOUSE_MAP[string]
@@ -30,13 +34,12 @@ def getKeyCode(string: str):
     KEY_MAP = {
         "CTRL": QtCore.Qt.Key_Control,
         "ALT": QtCore.Qt.Key_Alt,
-        "SHIFT": QtCore.Qt.Key_Shift
+        "SHIFT": QtCore.Qt.Key_Shift,
     }
 
     if string in KEY_MAP:
         return KEY_MAP[string]
-    else:
-        return QKeySequence(string)[0]
+    return QKeySequence(string)[0]
 
 
 class ModuleEditorControls(ABC):
@@ -70,16 +73,24 @@ class ModuleEditorControls(ABC):
         ...
 
     def getValue(self, name: str) -> Any:
-        for variable in self.variables:
-            if variable.name() == name:
-                return variable.get()
-        return None
+        return next(
+            (
+                variable.get()
+                for variable in self.variables
+                if variable.name() == name
+            ),
+            None,
+        )
 
     def setValue(self, name: str, value: Any) -> Any:
-        for variable in self.variables:
-            if variable.name() == name:
-                return variable.set(value)
-        return None
+        return next(
+            (
+                variable.set(value)
+                for variable in self.variables
+                if variable.name() == name
+            ),
+            None,
+        )
 
     def wz(self, x: float, y: float, z: float) -> float:
         point = self.renderer.walkmeshPoint(x, y, z)
@@ -139,7 +150,7 @@ class ModuleEditorControls(ABC):
 
 class DynamicModuleEditorControls(ModuleEditorControls):
 
-    def __init__(self, renderer: ModuleRenderer, filepath: str = None):
+    def __init__(self, renderer: ModuleRenderer, filepath: str | None = None):
         super().__init__(renderer)
 
         self.name: str = ""
@@ -164,7 +175,8 @@ class DynamicModuleEditorControls(ModuleEditorControls):
         self.keyPressEvents = []
         self.keyReleaseEvents = []
 
-        f = open(filepath, "rb")
+        r_filepath = Path(filepath)
+        f = r_filepath.open("rb")
         rootJSON = json.loads(jsmin(f.read().decode()))
 
         self.name = rootJSON["name"]
@@ -184,7 +196,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             elif data_type == "BOOL":
                 var = DCVariableBool(name, default)
             else:
-                ValueError("Unknown data type '{}'.".format(data_type))
+                ValueError(f"Unknown data type '{data_type}'.")
 
             self.variables.append(var)
 
@@ -202,7 +214,8 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             elif controlJSON["event"] == "KEY_RELEASE":
                 array = self.keyReleaseEvents
             else:
-                raise ValueError("Unknown event '{}'.".format(controlJSON["event"]))
+                msg = "Unknown event '{}'.".format(controlJSON["event"])
+                raise ValueError(msg)
 
             if controlJSON["keys"] is None:
                 keys = None
@@ -225,13 +238,15 @@ class DynamicModuleEditorControls(ModuleEditorControls):
                 for effectJSON in effectsJSON:
                     args = effectsJSON[effectJSON]
 
-                    if effectJSON in DC_EFFECT_MAP.keys():
+                    if effectJSON in DC_EFFECT_MAP:
                         try:
                             effect = DC_EFFECT_MAP[effectJSON](*args)
-                        except TypeError:
-                            raise ValueError("Invalid number of arguments for '{}'.".format(effectJSON))
+                        except TypeError as e:
+                            msg = f"Invalid number of arguments for '{effectJSON}'."
+                            raise ValueError(msg) from e
                     else:
-                        raise ValueError("Unknown effect '{}'.".format(effectJSON))
+                        msg = f"Unknown effect '{effectJSON}'."
+                        raise ValueError(msg)
 
                     effects.append(effect)
 
@@ -286,22 +301,22 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
             DCVariableFloat("rotateCamSensitivity", 0.005),
             DCVariableFloat("raiseCamSensitivity", 0.025),
             DCVariableFloat("panObjSensitivity", 0.033),
-            DCVariableFloat("rotateObjSensitivity", 0.005)
+            DCVariableFloat("rotateObjSensitivity", 0.005),
         ]
 
         self.mouseMoveEvents: List[DCItem] = [
             DCItem({getKeyCode("CTRL")}, {getMouseCode("LEFT")}, [DCEffectAlterCameraPosition("panCamSensitivity", "cx", "cy", 0)]),
             DCItem({getKeyCode("CTRL")}, {getMouseCode("MIDDLE")}, [DCEffectAlterCameraRotation("rotateCamSensitivity", "dx", "dy")]),
             DCItem(set(),      {getMouseCode("LEFT")}, [DCEffectAlterObjectPosition("panObjSensitivity", True, "cx", "cy", 0)]),
-            DCItem(set(),      {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")])
+            DCItem(set(),      {getMouseCode("MIDDLE")}, [DCEffectAlterObjectRotation("rotateObjSensitivity", "dx")]),
         ]
         self.mousePressEvents: List[DCItem] = [
             DCItem(set(), {getMouseCode("LEFT")}, [DCEffectSelectObjectAtMouse()]),
-            DCItem(set(), {getMouseCode("RIGHT")}, [DCEffectOpenContextMenu()])
+            DCItem(set(), {getMouseCode("RIGHT")}, [DCEffectOpenContextMenu()]),
         ]
         self.mouseReleaseEvents: List[DCItem] = []
         self.mouseScrollEvents: List[DCItem] = [
-            DCItem({getKeyCode("CTRL")}, set(), [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")])
+            DCItem({getKeyCode("CTRL")}, set(), [DCEffectAlterCameraPosition("raiseCamSensitivity", 0, 0, "dy")]),
         ]
         self.keyPressEvents: List[DCItem] = [
             DCItem({getKeyCode("1")}, set(), [DCEffectSetCameraRotation(0, "crp")]),
@@ -316,7 +331,7 @@ class HolocronModuleEditorControls(DynamicModuleEditorControls):
             DCItem({getKeyCode("S")}, set(), [DCEffectAlterCameraRotation(None, 0, -math.pi/8)]),
             DCItem({getKeyCode("D")}, set(), [DCEffectAlterCameraRotation(None, -math.pi/8, 0)]),
             DCItem({getKeyCode("Q")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, 1)]),
-            DCItem({getKeyCode("Z")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, -1)])
+            DCItem({getKeyCode("Z")}, set(), [DCEffectAlterCameraPosition(None, 0, 0, -1)]),
         ]
         self.keyReleaseEvents: List[DCItem] = []
 
@@ -336,10 +351,10 @@ class DCVariable:
         return self._name
 
     def get(self) -> Any:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def set(self, value: Any):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 # region Variable Classes
@@ -465,10 +480,9 @@ class DCEffect(ABC):
                 output = controls.renderer.scene.camera.pitch
 
             return output * modifier
-        elif isinstance(value, float) or isinstance(value, int):
+        if isinstance(value, (float, int)):
             return value
-        else:
-            return 0
+        return 0
 # endregion
 
 
@@ -631,5 +645,5 @@ DC_EFFECT_MAP = {
     "openContextMenu": DCEffectOpenContextMenu,
     "setVariable": DCEffectSetVariable,
     "changeCameraFocus": DCEffectChangeCameraFocus,
-    "snapCameraToObject": DCEffectSnapCameraToObject
+    "snapCameraToObject": DCEffectSnapCameraToObject,
 }

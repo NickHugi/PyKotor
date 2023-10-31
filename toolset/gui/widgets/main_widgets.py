@@ -125,7 +125,7 @@ class ResourceList(MainWindowList):
             if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
                 parentIndex = model.proxyModel().mapFromSource(item.parent().index())
                 itemIndex = model.proxyModel().mapFromSource(item.index())
-                QTimer.singleShot(1, lambda: select(item.parent().index(), itemIndex))
+                QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
 
     def selectedResources(self) -> List[FileResource]:
         return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())
@@ -351,7 +351,7 @@ class TextureList(MainWindowList):
 
     def scan(self) -> None:
         while True:
-            for row, resname, width, height, data in iter(self._resultQueue.get, None):
+            for row, _resname, width, height, data in iter(self._resultQueue.get, None):
                 image = QImage(data, width, height, QImage.Format_RGB888)
                 pixmap = QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
                 item = self.texturesModel.item(row, 0)
@@ -376,7 +376,7 @@ class TextureList(MainWindowList):
         # Note: Avoid redundantly loading textures that have already been loaded
         textures = self._installation.textures(
             [item.text() for item in self.visibleItems() if item.text() not in self._scannedTextures],
-            [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA]
+            [SearchLocation.TEXTURES_GUI, SearchLocation.TEXTURES_TPA],
         )
 
         # Emit signals to load textures that have not had their icons assigned

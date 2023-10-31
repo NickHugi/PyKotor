@@ -1,19 +1,18 @@
 from typing import Optional, Tuple
 
+from data.installation import HTInstallation
+from gui.dialogs.edit.locstring import LocalizedStringDialog
+from gui.editor import Editor
 from PyQt5 import QtCore
-from PyQt5.QtCore import QIODevice, QBuffer
+from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtWidgets import QWidget, QMessageBox, QListWidgetItem
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 
-from gui.dialogs.edit.locstring import LocalizedStringDialog
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
-
-from data.installation import HTInstallation
-from gui.editor import Editor
 
 
 class UTSEditor(Editor):
@@ -78,7 +77,7 @@ class UTSEditor(Editor):
         self.ui.playRandomRadio.setChecked(False)
         self.ui.playSpecificRadio.setChecked(False)
         self.ui.playEverywhereRadio.setChecked(False)
-        if uts.random_range_y != 0 and uts.random_range_y != 0:
+        if uts.random_range_y != 0 and uts.random_range_y != 0:  # TODO: should be range_x and range_y aren't 0?
             self.ui.playRandomRadio.setChecked(True)
         elif uts.positional:
             self.ui.playSpecificRadio.setChecked(True)
@@ -162,7 +161,7 @@ class UTSEditor(Editor):
         gff = dismantle_uts(uts)
         write_gff(gff, data)
 
-        return data, b''
+        return data, b""
 
     def new(self) -> None:
         super().new()

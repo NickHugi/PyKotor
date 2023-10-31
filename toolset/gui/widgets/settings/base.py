@@ -1,9 +1,9 @@
 from typing import List
 
-from PyQt5.QtWidgets import QWidget
-
 from gui.widgets.edit.color import ColorEdit
 from gui.widgets.set_bind import SetBindWidget
+from PyQt5.QtWidgets import QWidget
+
 from pykotor.common.misc import Color
 
 

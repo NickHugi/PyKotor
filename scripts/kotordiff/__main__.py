@@ -302,7 +302,7 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
 
 def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool | None:
     c_dir1 = dir1 if isinstance(dir1, Path) else Path(dir1).resolve()
-    c_dir2 = dir1 if isinstance(dir1, Path) else Path(dir1).resolve()
+    c_dir2 = dir2 if isinstance(dir2, Path) else Path(dir2).resolve()
 
     log_output_with_separator(f"Finding differences in the '{c_dir1.name}' folders...", above=True)
 

@@ -1,5 +1,6 @@
-from PyQt5.QtGui import QColor, QPixmap, QImage
-from PyQt5.QtWidgets import QWidget, QColorDialog
+from PyQt5.QtGui import QColor, QImage, QPixmap
+from PyQt5.QtWidgets import QColorDialog, QWidget
+
 from pykotor.common.misc import Color
 
 

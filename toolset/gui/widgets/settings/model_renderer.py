@@ -8,13 +8,13 @@ class ModelRendererSettings(Settings):
     # region Bools
     utcShowByDefault = Settings._addSetting(
         "utcShowByDefault",
-        False
+        False,
     )
     # endregion
 
     # region Ints
     backgroundColour = Settings._addSetting(
         "backgroundColour",
-        0
+        0,
     )
     # endregion

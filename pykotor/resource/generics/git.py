@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import math
 from abc import ABC, abstractmethod
 from enum import IntEnum
@@ -189,7 +188,8 @@ class GIT:
                 ValueError("Store instance already exists inside the GIT object.")
             return self.stores.append(instance)
 
-        raise ValueError("Tried to add invalid instance.")
+        msg = "Tried to add invalid instance."
+        raise ValueError(msg)
 
 
 class GITInstance(ABC):

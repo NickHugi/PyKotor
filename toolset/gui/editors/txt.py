@@ -1,11 +1,11 @@
 from typing import Optional, Tuple
 
 import chardet
-from PyQt5.QtWidgets import QWidget, QPlainTextEdit
+from gui.editor import Editor
+from PyQt5.QtWidgets import QPlainTextEdit, QWidget
+
 from pykotor.extract.installation import Installation
 from pykotor.resource.type import ResourceType
-
-from gui.editor import Editor
 
 
 class TXTEditor(Editor):
@@ -32,13 +32,13 @@ class TXTEditor(Editor):
         try:
             # Try UTF-8 First - KotOR files typically do not use UTF8
             self.ui.textEdit.setPlainText(data.decode("windows-1252"))
-        except:
+        except Exception:
             # Slower, auto detect encoding
-            encoding = chardet.detect(data)['encoding']
+            encoding = chardet.detect(data)["encoding"]
             self.ui.textEdit.setPlainText(data.decode(encoding))
 
     def build(self) -> Tuple[bytes, bytes]:
-        return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode(), b''
+        return self.ui.textEdit.toPlainText().replace("\n", "\r\n").encode(), b""
 
     def new(self) -> None:
         super().new()

@@ -1,11 +1,9 @@
 from typing import Set
 
-from PyQt5 import QtCore
-from PyQt5.QtGui import QKeyEvent, QKeySequence
-from PyQt5.QtWidgets import QWidget
-
 from data.misc import Bind
-from pykotor.common.misc import Color
+from PyQt5 import QtCore
+from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtWidgets import QWidget
 from utils.misc import getStringFromKey
 
 
@@ -70,7 +68,7 @@ class SetBindWidget(QWidget):
 
     def updateKeybindText(self) -> None:
         text = ""
-        for i, key in enumerate(reversed(sorted(self.keybind))):
+        for i, key in enumerate(sorted(self.keybind, reverse=True)):
             text += getStringFromKey(key)
             if i != len(self.keybind) - 1:
                 text += "+"

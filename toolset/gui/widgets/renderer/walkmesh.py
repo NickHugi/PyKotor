@@ -1,20 +1,55 @@
+from __future__ import annotations
+
 import math
 from copy import copy
-from typing import List, Optional, Dict, Set, NamedTuple, Generic, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Generic,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    TypeVar,
+    Union,
+)
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QTimer, QPointF, QRectF
-from PyQt5.QtGui import QPixmap, QPaintEvent, QPainter, QWheelEvent, QMouseEvent, QColor, QPainterPath, QPen, \
-    QKeyEvent, QTransform
+from PyQt5.QtCore import QPointF, QRectF, QTimer
+from PyQt5.QtGui import (
+    QColor,
+    QKeyEvent,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPaintEvent,
+    QPen,
+    QPixmap,
+    QTransform,
+    QWheelEvent,
+)
 from PyQt5.QtWidgets import QWidget
-from pykotor.common.geometry import Vector3, Vector2, SurfaceMaterial
-from pykotor.resource.formats.bwm import BWM, BWMFace
-from pykotor.resource.generics.git import GIT, GITTrigger, GITInstance, GITEncounter, GITSound, GITCreature, GITDoor, \
-    GITPlaceable, GITCamera, GITWaypoint, GITStore
 from utils.misc import clamp
 
+from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
+from pykotor.resource.generics.git import (
+    GIT,
+    GITCamera,
+    GITCreature,
+    GITDoor,
+    GITEncounter,
+    GITInstance,
+    GITPlaceable,
+    GITSound,
+    GITStore,
+    GITTrigger,
+    GITWaypoint,
+)
 
-T = TypeVar('T')
+if TYPE_CHECKING:
+    from pykotor.resource.formats.bwm import BWM, BWMFace
+
+T = TypeVar("T")
 
 
 class GeomPoint(NamedTuple):
@@ -27,16 +62,16 @@ class WalkmeshCamera:
         self._position: Vector2 = Vector2.from_null()
         self._rotation: float = 0.0
         self._zoom: float = 1.0
-    
+
     def position(self) -> Vector2:
         return copy(self._position)
-    
+
     def rotation(self) -> float:
         return self._rotation
-    
+
     def zoom(self) -> float:
         return self._zoom
-    
+
     def setPosition(self, x: float, y: float) -> None:
         self._position.x = x
         self._position.y = y
@@ -44,16 +79,16 @@ class WalkmeshCamera:
     def nudgePosition(self, x: float, y: float) -> None:
         self._position.x += x
         self._position.y += y
-    
+
     def setRotation(self, rotation: float) -> None:
         self._rotation = rotation
-    
+
     def nudgeRotation(self, rotation: float) -> None:
         self._rotation += rotation
-    
+
     def setZoom(self, zoom: float) -> None:
         self._zoom = clamp(zoom, 0.1, 100)
-    
+
     def nudgeZoom(self, zoom: float) -> None:
         self._zoom = clamp(self._zoom + zoom, 0.1, 100)
 
@@ -120,7 +155,7 @@ class WalkmeshRenderer(QWidget):
         self._bbmin: Vector3 = Vector3.from_null()
         self._bbmax: Vector3 = Vector3.from_null()
         self._worldSize: Vector3 = Vector3.from_null()
-        
+
         self.camera: WalkmeshCamera = WalkmeshCamera()
         self.instanceSelection: WalkmeshSelection[GITInstance] = WalkmeshSelection()
         self.geometrySelection: WalkmeshSelection[GeomPoint] = WalkmeshSelection()
@@ -164,24 +199,22 @@ class WalkmeshRenderer(QWidget):
         self._loop()
 
     def _loop(self) -> None:
-        """
-        The render loop.
-        """
+        """The render loop."""
         self.repaint()
         QTimer.singleShot(33, self._loop)
 
     def setWalkmeshes(self, walkmeshes: List[BWM]) -> None:
-        """
-        Sets the list of walkmeshes to be rendered.
+        """Sets the list of walkmeshes to be rendered.
 
         Args:
+        ----
             walkmeshes: The list of walkmeshes.
         """
         self._walkmeshes = walkmeshes
 
         self._bbmin = Vector3(1000000, 1000000, 1000000)
         self._bbmax = Vector3(-1000000, -1000000, -1000000)
-        for i, walkmesh in enumerate(walkmeshes):
+        for walkmesh in walkmeshes:
             bbmin, bbmax = walkmesh.box()
             self._bbmin.x = min(bbmin.x, self._bbmin.x)
             self._bbmin.y = min(bbmin.y, self._bbmin.y)
@@ -201,10 +234,10 @@ class WalkmeshRenderer(QWidget):
         self._walkmeshFaceCache = None
 
     def setGit(self, git: GIT) -> None:
-        """
-        Sets the GIT object used by the render to draw icons for the various git instances.
+        """Sets the GIT object used by the render to draw icons for the various git instances.
 
         Args:
+        ----
             git: The GIT object.
         """
         self._git = git
@@ -214,15 +247,16 @@ class WalkmeshRenderer(QWidget):
         self.camera.setZoom(zoom)
 
     def toRenderCoords(self, x: float, y: float) -> Vector2:
-        """
-        Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
+        """Returns a screen-space coordinates coverted from the specified world-space coordinates. The origin of the
         screen-space coordinates is the top-left of the WalkmeshRenderer widget.
 
         Args:
+        ----
             x: The world-space X value.
             y: The world-space Y value.
 
         Returns:
+        -------
             A vector representing a point on the widget.
         """
         cos = math.cos(self.camera.rotation())
@@ -234,16 +268,17 @@ class WalkmeshRenderer(QWidget):
         return Vector2(x2, y2)
 
     def toWorldCoords(self, x: float, y: float) -> Vector3:
-        """
-        Returns the world-space coordinates converted from the specified screen-space coordinates. The Z component
+        """Returns the world-space coordinates converted from the specified screen-space coordinates. The Z component
         is calculated using the X/Y components and the walkmesh face the mouse is over. If there is no face underneath
         the mouse, the Z component is set to zero.
 
         Args:
+        ----
             x: The screen-space X value.
             y: The screen-space Y value.
 
         Returns:
+        -------
             A vector representing a point in the world.
         """
         y = self.height() - y
@@ -259,15 +294,16 @@ class WalkmeshRenderer(QWidget):
         return Vector3(x2, y2, z)
 
     def toWorldDelta(self, x: float, y: float) -> Vector2:
-        """
-        Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
+        """Returns the coordinates representing a change in world-space. This is convereted from coordinates representing
         a change in screen-space, such as the delta paramater given in a mouseMove event.
 
         Args:
+        ----
             x: The screen-space X value.
             y: The screen-space Y value.
 
         Returns:
+        -------
             A vector representing a change in position in the world.
         """
         cos = math.cos(-self.camera.rotation())
@@ -279,42 +315,43 @@ class WalkmeshRenderer(QWidget):
         return Vector2(x2, -y2)
 
     def getZCoord(self, x: float, y: float) -> float:
-        """
-        Returns the Z coordinate based of walkmesh data for the specified point. If there are overlapping faces, the
+        """Returns the Z coordinate based of walkmesh data for the specified point. If there are overlapping faces, the
         walkable face will take priority.
 
         Args:
+        ----
             x: The x coordinate.
             y: The y coordinate.
 
         Returns:
+        -------
             The z coordinate.
         """
         # We need to find a face in the walkmesh that is underneath the mouse to find the Z
         # We also want to prioritize walkable faces
-        # And if we cant find a face, then set the Z to 0.0
+        # And if we can't find a face, then set the Z to 0.0
         face: Optional[BWMFace] = None
         for walkmesh in self._walkmeshes:
-            if over := walkmesh.faceAt(x, y):
-                if face is None:
-                    face = over
-                elif not face.material.walkable() and over.material.walkable():
-                    face = over
-        z = 0.0 if face is None else face.determine_z(x, y)
-        return z
+            over = walkmesh.faceAt(x, y)
+            if over and (face is None or not face.material.walkable() and over.material.walkable()):
+                face = over
+
+        return 0.0 if face is None else face.determine_z(x, y)
 
     def materialColor(self, material: SurfaceMaterial) -> QColor:
-        """
-        Returns the color for the specified material.
+        """Returns the color for the specified material.
 
         The color returned is based off the dictionary stored within the renderer widget. The programmer can customize
         what color is returned for which material. If a material is missing from the dictionary this method will return
         a magenta color instead.
 
         Args:
-            material: The surface material.
+        ----
+            m
+        ----aterial: The surface material.
 
         Returns:
+        -------
             The color that represents a particular material.
         """
         return self.materialColors[material] if material in self.materialColors else QColor(255, 0, 255)
@@ -322,45 +359,47 @@ class WalkmeshRenderer(QWidget):
     def instancesUnderMouse(self) -> List[GITInstance]:
         return self._instancesUnderMouse
 
-    def isInstanceVisible(self, instance: GITInstance) -> bool:
+    def isInstanceVisible(self, instance: GITInstance) -> bool | None:
         if isinstance(instance, GITCreature):
             return not self.hideCreatures
-        elif isinstance(instance, GITDoor):
+        if isinstance(instance, GITDoor):
             return not self.hideDoors
-        elif isinstance(instance, GITPlaceable):
+        if isinstance(instance, GITPlaceable):
             return not self.hidePlaceables
-        elif isinstance(instance, GITTrigger):
+        if isinstance(instance, GITTrigger):
             return not self.hideTriggers
-        elif isinstance(instance, GITCamera):
+        if isinstance(instance, GITCamera):
             return not self.hideCameras
-        elif isinstance(instance, GITEncounter):
+        if isinstance(instance, GITEncounter):
             return not self.hideEncounters
-        elif isinstance(instance, GITSound):
+        if isinstance(instance, GITSound):
             return not self.hideSounds
-        elif isinstance(instance, GITWaypoint):
+        if isinstance(instance, GITWaypoint):
             return not self.hideWaypoints
-        elif isinstance(instance, GITStore):
+        if isinstance(instance, GITStore):
             return not self.hideStores
+        return None
 
-    def instancePixmap(self, instance: GITInstance) -> QPixmap:
+    def instancePixmap(self, instance: GITInstance) -> QPixmap | None:
         if isinstance(instance, GITCreature):
             return self._pixmapCreature
-        elif isinstance(instance, GITDoor):
+        if isinstance(instance, GITDoor):
             return self._pixmapDoor
-        elif isinstance(instance, GITPlaceable):
+        if isinstance(instance, GITPlaceable):
             return self._pixmapPlaceable
-        elif isinstance(instance, GITTrigger):
+        if isinstance(instance, GITTrigger):
             return self._pixmapTrigger
-        elif isinstance(instance, GITCamera):
+        if isinstance(instance, GITCamera):
             return self._pixmapCamera
-        elif isinstance(instance, GITEncounter):
+        if isinstance(instance, GITEncounter):
             return self._pixmapEncounter
-        elif isinstance(instance, GITSound):
+        if isinstance(instance, GITSound):
             return self._pixmapSound
-        elif isinstance(instance, GITWaypoint):
+        if isinstance(instance, GITWaypoint):
             return self._pixmapWaypoint
-        elif isinstance(instance, GITStore):
+        if isinstance(instance, GITStore):
             return self._pixmapMerchant
+        return None
 
     def geomPointsUnderMouse(self) -> List[GeomPoint]:
         return self._geomPointsUnderMouse
@@ -387,13 +426,14 @@ class WalkmeshRenderer(QWidget):
         self.camera.setRotation(0)
 
     def _buildFace(self, face: BWMFace) -> QPainterPath:
-        """
-        Returns a QPainterPath for the specified face.
+        """Returns a QPainterPath for the specified face.
 
         Args:
+        ----
             face: A face used in a walkmesh.
 
         Returns:
+        -------
             A QPainterPath object representing a BWMFace.
         """
         v1 = Vector2(face.v1.x, face.v1.y)
@@ -411,7 +451,7 @@ class WalkmeshRenderer(QWidget):
 
     def _buildInstanceBounds(self, instance: GITInstance) -> QPainterPath:
         path = QPainterPath()
-        if (isinstance(instance, GITTrigger) or isinstance(instance, GITEncounter)) and len(instance.geometry) > 0:
+        if (isinstance(instance, (GITEncounter, GITTrigger))) and len(instance.geometry) > 0:
             path.moveTo(instance.position.x + instance.geometry[0].x, instance.position.y + instance.geometry[0].y)
             for point in instance.geometry[1:]:
                 path.lineTo(instance.position.x + point.x, instance.position.y + point.y)
@@ -420,7 +460,7 @@ class WalkmeshRenderer(QWidget):
 
     def _buildInstanceBoundsPoints(self, instance: GITInstance) -> QPainterPath:
         path = QPainterPath()
-        if isinstance(instance, GITTrigger) or isinstance(instance, GITEncounter):
+        if isinstance(instance, (GITTrigger, GITEncounter)):
             for point in instance.geometry:
                 size = 4 / self.camera.zoom()
                 path.addEllipse(QPointF(instance.position.x + point.x, instance.position.y + point.y), size, size)

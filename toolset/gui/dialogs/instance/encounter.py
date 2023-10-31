@@ -1,6 +1,5 @@
-import math
 
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from pykotor.common.misc import ResRef

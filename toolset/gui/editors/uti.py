@@ -1,17 +1,22 @@
 from contextlib import suppress
 from typing import Optional, Tuple
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QListWidgetItem, QTreeWidgetItem, QDialog, QShortcut
-
+from data.installation import HTInstallation
 from gui.dialogs.edit.locstring import LocalizedStringDialog
+from gui.editor import Editor
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import (
+    QDialog,
+    QListWidgetItem,
+    QShortcut,
+    QTreeWidgetItem,
+    QWidget,
+)
+
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.uti import UTI, dismantle_uti, UTIProperty, read_uti
+from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_uti
 from pykotor.resource.type import ResourceType
-
-from data.installation import HTInstallation
-from gui.editor import Editor
 
 
 class UTIEditor(Editor):
@@ -138,11 +143,10 @@ class UTIEditor(Editor):
         uti.body_variation = self.ui.bodyVarSpin.value()
         uti.texture_variation = self.ui.textureVarSpin.value()
 
-        # Properties
-        uti.properties = []
-        for i in range(self.ui.assignedPropertiesList.count()):
-            uti.properties.append(self.ui.assignedPropertiesList.item(i).data(QtCore.Qt.UserRole))
-
+        uti.properties = [
+            self.ui.assignedPropertiesList.item(i).data(QtCore.Qt.UserRole)
+            for i in range(self.ui.assignedPropertiesList.count())
+        ]
         # Comments
         uti.comment = self.ui.commentsEdit.toPlainText()
 
@@ -186,27 +190,31 @@ class UTIEditor(Editor):
                 self.ui.assignedPropertiesList.selectedItems()[0].setText(self.propertySummary(dialog.utiProperty()))
 
     def addSelectedProperty(self) -> None:
-        if self.ui.availablePropertyList.selectedItems():
-            item = self.ui.availablePropertyList.selectedItems()[0]
-            propertyId = item.data(0, QtCore.Qt.UserRole)
-            subtypeId = item.data(0, QtCore.Qt.UserRole + 1)
+        if not self.ui.availablePropertyList.selectedItems():
+            return
+        item = self.ui.availablePropertyList.selectedItems()[0]
+        propertyId = item.data(0, QtCore.Qt.UserRole)
+        subtypeId = item.data(0, QtCore.Qt.UserRole + 1)
 
-            if propertyId is not None:
-                itemprops = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
+        if propertyId is not None:
+            self._add_property_main(propertyId, subtypeId)
 
-                utiProperty = UTIProperty()
-                utiProperty.property_name = propertyId
-                utiProperty.subtype = subtypeId
-                utiProperty.cost_table = itemprops.get_row(propertyId).get_integer("costtableresref", 255)
-                utiProperty.cost_value = 0
-                utiProperty.param1 = itemprops.get_row(propertyId).get_integer("param1resref", 255)
-                utiProperty.param1_value = 0
-                utiProperty.chance_appear = 100
+    def _add_property_main(self, propertyId, subtypeId):
+        itemprops = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
-                text = self.propertySummary(utiProperty)
-                item = QListWidgetItem(text)
-                item.setData(QtCore.Qt.UserRole, utiProperty)
-                self.ui.assignedPropertiesList.addItem(item)
+        utiProperty = UTIProperty()
+        utiProperty.property_name = propertyId
+        utiProperty.subtype = subtypeId
+        utiProperty.cost_table = itemprops.get_row(propertyId).get_integer("costtableresref", 255)
+        utiProperty.cost_value = 0
+        utiProperty.param1 = itemprops.get_row(propertyId).get_integer("param1resref", 255)
+        utiProperty.param1_value = 0
+        utiProperty.chance_appear = 100
+
+        text = self.propertySummary(utiProperty)
+        item = QListWidgetItem(text)
+        item.setData(QtCore.Qt.UserRole, utiProperty)
+        self.ui.assignedPropertiesList.addItem(item)
 
     def removeSelectedProperty(self) -> None:
         if self.ui.assignedPropertiesList.selectedItems():
@@ -219,15 +227,12 @@ class UTIEditor(Editor):
         costName = UTIEditor.costName(self._installation, utiProperty.cost_table, utiProperty.cost_value)
 
         if costName and subpropName:
-            text = "{}: {} [{}]".format(propName, subpropName, costName)
-        elif subpropName:
-            text = "{}: {}".format(propName, subpropName)
-        elif costName:
-            text = "{}: [{}]".format(propName, costName)
-        else:
-            text = "{}".format(propName)
-
-        return text
+            return f"{propName}: {subpropName} [{costName}]"
+        if subpropName:
+            return f"{propName}: {subpropName}"
+        if costName:
+            return f"{propName}: [{costName}]"
+        return f"{propName}"
 
     def onUpdateIcon(self) -> None:
         baseItem = self.ui.baseSelect.currentIndex()
@@ -251,8 +256,7 @@ class UTIEditor(Editor):
     def propertyName(installation: HTInstallation, prop: int):
         properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         stringref = properties.get_row(prop).get_integer("name")
-        name = installation.talktable().string(stringref)
-        return name
+        return installation.talktable().string(stringref)
 
     @staticmethod
     def subpropertyName(installation: HTInstallation, prop: int, subprop: int):
@@ -263,8 +267,11 @@ class UTIEditor(Editor):
         subproperties = installation.htGetCache2DA(subtypeResname)
         headerStrref = "name" if "name" in subproperties.get_headers() else "string_ref"
         nameStrref = subproperties.get_row(subprop).get_integer(headerStrref)
-        name = installation.talktable().string(nameStrref) if nameStrref is not None else subproperties.get_cell(subprop, "label")
-        return name
+        return (
+            installation.talktable().string(nameStrref)
+            if nameStrref is not None
+            else subproperties.get_cell(subprop, "label")
+        )
 
     @staticmethod
     def costName(installation: HTInstallation, cost: int, value: int):
@@ -272,8 +279,7 @@ class UTIEditor(Editor):
             costtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_COSTTABLE)
             costtable = installation.htGetCache2DA(costtableList.get_cell(cost, "name"))
             stringref = costtable.get_row(value).get_integer("name")
-            name = installation.talktable().string(stringref)
-            return name
+            return installation.talktable().string(stringref)
         return None
 
     @staticmethod
@@ -282,8 +288,7 @@ class UTIEditor(Editor):
             paramtableList = installation.htGetCache2DA(HTInstallation.TwoDA_IPRP_PARAMTABLE)
             paramtable = installation.htGetCache2DA(paramtableList.get_cell(paramtable, "tableresref"))
             stringref = paramtable.get_row(param).get_integer("name")
-            name = installation.talktable().string(stringref)
-            return name
+            return installation.talktable().string(stringref)
         return None
 
 

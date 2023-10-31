@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QDialog
+from PyQt5.QtWidgets import QDialog, QWidget
 
 
 class ModdedValueSpinboxDialog(QDialog):

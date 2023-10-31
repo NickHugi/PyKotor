@@ -51,7 +51,7 @@ def log(message: str):
     """Function to log messages both on console and to a file if logging is enabled."""
     print(message)
     if LOGGING_ENABLED:
-        with open(parser_args.output.joinpath("output.log"), "a") as log_file:
+        with parser_args.output.joinpath("output.log").open("a") as log_file:
             log_file.write(message + "\n")
 
 def scale_value(value, scale_factor):

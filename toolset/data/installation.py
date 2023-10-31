@@ -103,7 +103,7 @@ class HTInstallation(Installation):
 
     def htBatchCacheTPC(self, names: List[str], reload: bool = False):
         if reload:
-            queries = [name for name in names]
+            queries = list(names)
         else:
             queries = [name for name in names if name not in self._cache2da]
 

@@ -180,7 +180,7 @@ class GlobalSettings(Settings):
     )
     nssCompilerPath = Settings._addSetting(
         "nssCompilerPath",
-        "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp"
+        "ext/nwnnsscomp.exe" if os.name == "nt" else "ext/nwnnsscomp",
     )
     ncsDecompilerPath = Settings._addSetting(
         "ncsDecompilerPath",

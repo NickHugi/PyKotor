@@ -1,21 +1,25 @@
+from __future__ import annotations
+
 import math
 from copy import copy
-from datetime import datetime, timedelta
-from typing import Optional, Set
+from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QWheelEvent, QResizeEvent, QMouseEvent, QKeyEvent
 from PyQt5.QtWidgets import QOpenGLWidget, QWidget
+
 from pykotor.common.geometry import Vector2, Vector3
-from pykotor.common.module import Module
-from pykotor.gl.scene import Scene, Camera
-from pykotor.resource.formats.bwm import BWMFace
+from pykotor.gl.scene import Scene
 from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 
-from data.installation import HTInstallation
-from utils.misc import clamp
+if TYPE_CHECKING:
+    from data.installation import HTInstallation
+    from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
+
+    from pykotor.common.module import Module
+    from pykotor.resource.formats.bwm import BWMFace
 
 
 class ModuleRenderer(QOpenGLWidget):
@@ -53,10 +57,10 @@ class ModuleRenderer(QOpenGLWidget):
         self._init = False
 
         self._renderTime: int = 0
-        self._keysDown: Set[int] = set()
-        self._mouseDown: Set[int] = set()
+        self._keysDown: set[int] = set()
+        self._mouseDown: set[int] = set()
         self._mousePrev: Vector2 = Vector2(self.cursor().pos().x(), self.cursor().pos().y())
-        self._mousePressTime: datetime = datetime.now()
+        self._mousePressTime: datetime = datetime.now(tz=timezone.utc).astimezone()
 
         self.doSelect: bool = False  # Set to true to select object at mouse pointer
         self.freeCam: bool = False  # Changes how screenDelta is calculated in mouseMoveEvent
@@ -82,11 +86,9 @@ class ModuleRenderer(QOpenGLWidget):
                          res.restype() == ResourceType.WOK]:
             if walkmesh is None:
                 continue
-            if over := walkmesh.faceAt(x, y):
-                if face is None:
-                    face = over
-                elif not face.material.walkable() and over.material.walkable():
-                    face = over
+            over = walkmesh.faceAt(x, y)
+            if over and (face is None or not face.material.walkable() and over.material.walkable()):
+                face = over
         z = default_z if face is None else face.determine_z(x, y)
         return Vector3(x, y, z)
 
@@ -97,17 +99,9 @@ class ModuleRenderer(QOpenGLWidget):
         self._mouseDown.clear()
 
     def paintGL(self) -> None:
-        start = datetime.now()
+        start = datetime.now(tz=timezone.utc).astimezone()
         if not self._init:
-            self._init = True
-
-            self.scene = Scene(installation=self._installation, module=self._module)
-            self.scene.camera.fov = self.settings.fieldOfView
-            self.scene.camera.width = self.width()
-            self.scene.camera.height = self.height()
-
-            self.sceneInitalized.emit()
-
+            self._initialize_paintGL()
         if self.doSelect:
             self.doSelect = False
             obj = self.scene.pick(self._mousePrev.x, self.height() - self._mousePrev.y)
@@ -124,13 +118,23 @@ class ModuleRenderer(QOpenGLWidget):
             self.scene.cursor.set_position(worldCursor.x, worldCursor.y, worldCursor.z)
 
         self.scene.render()
-        self._renderTime = int((datetime.now() - start).total_seconds() * 1000)
+        self._renderTime = int((datetime.now(tz=timezone.utc).astimezone() - start).total_seconds() * 1000)
+
+    def _initialize_paintGL(self):
+        self._init = True
+
+        self.scene = Scene(installation=self._installation, module=self._module)
+        self.scene.camera.fov = self.settings.fieldOfView
+        self.scene.camera.width = self.width()
+        self.scene.camera.height = self.height()
+
+        self.sceneInitalized.emit()
 
     # region Accessors
-    def keysDown(self) -> Set[int]:
+    def keysDown(self) -> set[int]:
         return copy(self._keysDown)
 
-    def mouseDown(self) -> Set[int]:
+    def mouseDown(self) -> set[int]:
         return copy(self._mouseDown)
     # endregion
 
@@ -141,16 +145,16 @@ class ModuleRenderer(QOpenGLWidget):
         camera.distance = distance
 
     def panCamera(self, forward: float, right: float, up: float) -> None:
-        """
-        Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
+        """Moves the camera by the specified amount. The movement takes into account both the rotation and zoom of the
         camera on the x/y plane.
 
         Args:
+        ----
             forward: Units to move forwards.
             right: Units to move to the right.
             up: Units to move upwards.
         """
-        forward = forward * self.scene.camera.forward()
+        forward *= self.scene.camera.forward()
         sideward = right * self.scene.camera.sideward()
 
         self.scene.camera.x += (forward.x + sideward.x)
@@ -158,7 +162,7 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.z += up
 
     def moveCamera(self, forward: float, right: float, up: float) -> None:
-        forward = forward * self.scene.camera.forward(False)
+        forward *= self.scene.camera.forward(False)
         sideward = right * self.scene.camera.sideward(False)
         upward = -up * self.scene.camera.upward(False)
 
@@ -167,10 +171,10 @@ class ModuleRenderer(QOpenGLWidget):
         self.scene.camera.z += upward.z + sideward.z + forward.z
 
     def rotateCamera(self, yaw: float, pitch: float, snapRotations: bool = True) -> None:
-        """
-        Rotates the camera by the angles (radians) specified.
+        """Rotates the camera by the angles (radians) specified.
 
         Args:
+        ----
             yaw:
             pitch:
             snapRotations:
@@ -183,8 +187,7 @@ class ModuleRenderer(QOpenGLWidget):
 
     def zoomCamera(self, distance: float) -> None:
         self.scene.camera.distance -= distance
-        if self.scene.camera.distance < 0:
-            self.scene.camera.distance = 0
+        self.scene.camera.distance = max(self.scene.camera.distance, 0)
     # endregion
 
     # region Events
@@ -206,11 +209,11 @@ class ModuleRenderer(QOpenGLWidget):
 
         world = self.scene.cursor.position()
         self._mousePrev = screen
-        if datetime.now() - self._mousePressTime > timedelta(milliseconds=60):
+        if datetime.now(tz=timezone.utc).astimezone() - self._mousePressTime > timedelta(milliseconds=60):
             self.mouseMoved.emit(screen, screenDelta, world, self._mouseDown, self._keysDown)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
-        self._mousePressTime = datetime.now()
+        self._mousePressTime = datetime.now(tz=timezone.utc).astimezone()
         self._mouseDown.add(e.button())
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)

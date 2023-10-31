@@ -643,8 +643,8 @@ class _InstanceMode(_Mode):
 
     def getInstanceTooltip(self, instance: GITInstance) -> str:
         if isinstance(instance, GITCamera):
-            return "Struct Index: {}\nCamera ID: {}".format(self._git.index(instance), instance.camera_id)
-        return "Struct Index: {}\nResRef: {}".format(self._git.index(instance), instance.identifier().resname)
+            return f"Struct Index: {self._git.index(instance)}\nCamera ID: {instance.camera_id}"
+        return f"Struct Index: {self._git.index(instance)}\nResRef: {instance.identifier().resname}"
 
     # region Interface Methods
     def onFilterEdited(self, text: str) -> None:
@@ -661,7 +661,7 @@ class _InstanceMode(_Mode):
         if self._ui.renderArea.instancesUnderMouse() and self._ui.renderArea.instancesUnderMouse()[-1] is not None:
             instance = self._ui.renderArea.instancesUnderMouse()[-1]
             resname = "" if isinstance(instance, GITCamera) else instance.identifier().resname
-            self._editor.statusBar().showMessage("({:.1f}, {:.1f}) {}".format(world.x, world.y, resname))
+            self._editor.statusBar().showMessage(f"({world.x:.1f}, {world.y:.1f}) {resname}")
         else:
             self._editor.statusBar().showMessage(f"({world.x:.1f}, {world.y:.1f})")
 
@@ -838,7 +838,7 @@ class _GeometryMode(_Mode):
         instance = self._ui.renderArea.instanceSelection.last()
         if instance:
             self._editor.statusBar().showMessage(
-                "({:.1f}, {:.1f}) Editing Geometry of {}".format(world.x, world.y, instance.identifier().resname),
+                f"({world.x:.1f}, {world.y:.1f}) Editing Geometry of {instance.identifier().resname}",
             )
 
     def onRenderContextMenu(self, world: Vector2, screen: QPoint) -> None:

@@ -59,7 +59,7 @@ def setup_environment():
 
     # Check if pykotor can be imported
     try:
-        import pykotor  # noqa: F811, F401
+        import pykotor  # noqa: F401
     except ImportError as exc:
         msg = "No valid pykotor source found. Ensure local pykotor exists or set PYKOTOR_LIBRARY_LOOKUP appropriately."
         raise ImportError(msg) from exc

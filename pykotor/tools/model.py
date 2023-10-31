@@ -169,8 +169,8 @@ def change_textures(
                     else:
                         offsets[texture] = [node_offset + 168]
 
-        for texture, offsets in offsets.items():
-            for offset in offsets:
+        for texture, offsets_list in offsets.items():
+            for offset in offsets_list:
                 new_offset = offset + 12
                 data = (
                     data[:new_offset]

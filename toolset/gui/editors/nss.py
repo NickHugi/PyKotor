@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from operator import attrgetter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from gui.editor import Editor
 from gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
@@ -362,15 +362,15 @@ class CodeEditor(QPlainTextEdit):
 
 
 class SyntaxHighlighter(QSyntaxHighlighter):
-    KEYWORDS = ["return", "float", "int", "object", "location", "void", "effect", "action", "string", "vector",
+    KEYWORDS: ClassVar[list[str]] = ["return", "float", "int", "object", "location", "void", "effect", "action", "string", "vector",
                 "talent", "if", "for", "while", "#include", "TRUE", "FALSE"]
 
-    OPERATORS = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
+    OPERATORS: ClassVar[list[str]] = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
 
     COMMENT_BLOCK_START = QRegExp("/\\*")
     COMMENT_BLOCK_END = QRegExp("\\*/")
 
-    BRACES = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
+    BRACES: ClassVar[list[str]] = ["\\{", "\\}", "\\(", "\\)", "\\[", "\\]"]
 
     def __init__(self, parent: QTextDocument, installation: HTInstallation):
         super().__init__(parent)
@@ -383,7 +383,7 @@ class SyntaxHighlighter(QSyntaxHighlighter):
             "string": self.getCharFormat("darkMagenta"),
             "brace": self.getCharFormat("darkRed"),
             "function": self.getCharFormat("darkGreen"),
-            "constant": self.getCharFormat("darkBlue")
+            "constant": self.getCharFormat("darkBlue"),
         }
 
         functions = [function.name for function in (TSL_FUNCTIONS if installation.tsl else KOTOR_FUNCTIONS)]

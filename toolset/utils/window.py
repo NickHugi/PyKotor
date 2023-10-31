@@ -216,10 +216,11 @@ def openResourceEditor(
 
             addWindow(editor)
 
-            return filepath, editor
         except Exception as e:
             QMessageBox(QMessageBox.Critical, "An unknown error occured", str(e), QMessageBox.Ok, parentwindow).show()
             raise
+        else:
+            return filepath, editor
     else:
         QMessageBox(
             QMessageBox.Critical,

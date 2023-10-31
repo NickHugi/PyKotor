@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import os
 from copy import deepcopy
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
@@ -182,7 +181,7 @@ class ModuleDesigner(QMainWindow):
         if dialog.exec_():
             self.unloadModule()
 
-            mod_filepath = self._installation.module_path().joinpath(dialog.module + ".mod")
+            mod_filepath = self._installation.module_path().joinpath(f"{dialog.module}.mod")
             if not mod_filepath.exists() and GlobalSettings().disableRIMSaving:
                 module.rim_to_mod(mod_filepath)
                 self._installation.load_modules()
@@ -266,12 +265,12 @@ class ModuleDesigner(QMainWindow):
         if editor is None:
             QMessageBox(QMessageBox.Critical,
                         "Failed to open editor",
-                        "Failed to open editor for file: {}.{}".format(resource.resname(), resource.restype().extension))
+                        f"Failed to open editor for file: {resource.resname()}.{resource.restype().extension}")
         else:
             editor.savedFile.connect(lambda: self._onSavedResource(resource))
 
     def copyResourceToOverride(self, resource: ModuleResource) -> None:
-        location = "{}/{}.{}".format(self._installation.override_path(), resource.resname(), resource.restype().extension)
+        location = f"{self._installation.override_path()}/{resource.resname()}.{resource.restype().extension}"
         BinaryWriter.dump(location, resource.data())
         resource.add_locations([location])
         resource.activate(location)
@@ -558,23 +557,26 @@ class ModuleDesigner(QMainWindow):
 
         data = self.ui.resourceTree.currentItem().data(0, QtCore.Qt.UserRole)
         if isinstance(data, ModuleResource):
-            copyToOverrideAction = QAction("Copy To Override", self)
-            copyToOverrideAction.triggered.connect(lambda _, r=data: self.copyResourceToOverride(r))
-
-            menu.addAction("Edit Active File").triggered.connect(lambda _, r=data: self.openModuleResource(r))
-            menu.addAction("Reload Active File").triggered.connect(lambda _: data.reload())
-            menu.addAction(copyToOverrideAction)
-            menu.addSeparator()
-            for location in data.locations():
-                locationAciton = QAction(location, self)
-                locationAciton.triggered.connect(lambda _, l=location: self.activateResourceFile(data, l))
-                if location == data.active():
-                    locationAciton.setEnabled(False)
-                if "override" in location.lower():
-                    copyToOverrideAction.setEnabled(False)
-                menu.addAction(locationAciton)
-
+            self._build_active_override_menu(data, menu)
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
+
+    def _build_active_override_menu(self, data: ModuleResource, menu: QMenu):
+        copyToOverrideAction = QAction("Copy To Override", self)
+        copyToOverrideAction.triggered.connect(lambda _, r=data: self.copyResourceToOverride(r))
+
+        menu.addAction("Edit Active File").triggered.connect(lambda _, r=data: self.openModuleResource(r))
+        menu.addAction("Reload Active File").triggered.connect(lambda _: data.reload())
+        menu.addAction(copyToOverrideAction)
+        menu.addSeparator()
+        for location in data.locations():
+            locationAction = QAction(location, self)
+            locationAction.triggered.connect(lambda _, loc=location: self.activateResourceFile(data, loc))
+            if location == data.active():
+                locationAction.setEnabled(False)
+            lowercase_parts = [part.lower for part in location.parts]
+            if "override" in lowercase_parts:
+                copyToOverrideAction.setEnabled(False)
+            menu.addAction(locationAction)
 
     def on3dMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: Set[int], keys: Set[int]) -> None:
         self._controls3d.onMouseMoved(screen, screenDelta, world, buttons, keys)
@@ -769,13 +771,12 @@ class ModuleDesignerControls3d:
         if self.selectUnderneath.satisfied(buttons, keys):
             self.renderer.doSelect = True
 
-        if self.duplicateSelected.satisfied(buttons, keys):
-            if self.editor.selectedInstances:
-                instance = deepcopy(self.editor.selectedInstances[-1])
-                instance.position = self.renderer.scene.cursor.position()
-                self.editor.git().add(instance)
-                self.editor.rebuildInstanceList()
-                self.editor.setSelection([instance])
+        if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
+            instance = deepcopy(self.editor.selectedInstances[-1])
+            instance.position = self.renderer.scene.cursor.position()
+            self.editor.git().add(instance)
+            self.editor.rebuildInstanceList()
+            self.editor.setSelection([instance])
 
         if self.openContextMenu.satisfied(buttons, keys):
             world = Vector3(*self.renderer.scene.cursor.position())
@@ -798,7 +799,7 @@ class ModuleDesignerControls3d:
             camera.y = self.renderer.scene.cursor.position().y
             camera.z = self.renderer.scene.cursor.position().z
         if self.moveCameraToEntryPoint.satisfied(buttons, keys):
-            self.renderer.scene.jumpToEntryLocation()
+            self.renderer.scene.jumpToEntryLocation()  # TODO: undefined??
 
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()

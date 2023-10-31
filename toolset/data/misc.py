@@ -1,5 +1,4 @@
-from typing import Tuple, Set
-
+from typing import Set, Tuple
 
 Bind = Tuple[Set[int], Set[int]]
 

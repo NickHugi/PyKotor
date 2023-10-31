@@ -1,11 +1,7 @@
-import os
-from typing import Dict
-
-from PyQt5 import QtCore
-from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QWidget
 
 from gui.widgets.settings.installations import GlobalSettings
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QWidget
 
 
 class MiscWidget(QWidget):

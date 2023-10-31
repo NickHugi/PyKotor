@@ -283,7 +283,7 @@ def dismantle_utp(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_Posy", 0)
         if item.droppable:
-            item_struct.set_uint8("Dropable", True)
+            item_struct.set_uint8("Dropable", value=True)
 
     root.set_uint8("PaletteID", utp.palette_id)
 

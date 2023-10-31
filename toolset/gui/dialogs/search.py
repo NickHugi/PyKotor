@@ -1,13 +1,13 @@
 from typing import Dict, List, Optional
 
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QDialog, QListWidgetItem
-from pykotor.extract.file import FileResource
-from pykotor.resource.type import ResourceType
-
 from data.installation import HTInstallation
 from gui.dialogs.asyncloader import AsyncBatchLoader
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QDialog, QListWidgetItem, QWidget
 from utils.window import openResourceEditor
+
+from pykotor.extract.file import FileResource
+from pykotor.resource.type import ResourceType
 
 
 class FileSearcher(QDialog):
@@ -81,7 +81,7 @@ class FileSearcher(QDialog):
                 elif caseSensitive and text.lower() in resource.resname().lower():
                     results.append(resource)
                 elif not filenamesOnly:
-                    decoded = resource.data().decode(errors='ignore')
+                    decoded = resource.data().decode(errors="ignore")
                     if caseSensitive and text in decoded:
                         results.append(resource)
                     elif not caseSensitive and text.lower() in decoded.lower():

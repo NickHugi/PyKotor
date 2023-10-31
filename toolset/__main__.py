@@ -25,7 +25,7 @@ os.environ["QT_DEBUG_PLUGINS"] = "1"
 
 
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):
-    with open("errorlog.txt", "a") as file:
+    with Path("errorlog.txt").open("a") as file:
         file.writelines(traceback.format_exception(e, value, tback))
         file.write("\n----------------------\n")
     raise e

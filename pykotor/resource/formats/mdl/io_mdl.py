@@ -1894,7 +1894,7 @@ class MDLBinaryWriter:
 
     def _node_type(
         self,
-        node: MDLNode
+        node: MDLNode,
     ) -> int:
         type_id = 1
         if node.mesh: type_id = type_id | MDLNodeFlags.MESH
