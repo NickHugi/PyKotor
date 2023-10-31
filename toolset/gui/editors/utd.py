@@ -1,25 +1,23 @@
 from typing import Optional, Tuple
 
-from PyQt5.QtWidgets import QWidget, QMessageBox
-
+from data.installation import HTInstallation
 from gui.dialogs.edit.locstring import LocalizedStringDialog
+from gui.editor import Editor
+from PyQt5.QtWidgets import QMessageBox, QWidget
+from utils.window import openResourceEditor
+
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.dlg import dismantle_dlg, DLG
+from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
 from pykotor.resource.type import ResourceType
-
-from data.installation import HTInstallation
-from gui.editor import Editor
-from utils.window import openResourceEditor
-
-from toolset.gui.widgets.settings.installations import GlobalSettings
 from pykotor.tools import door
+from toolset.gui.widgets.settings.installations import GlobalSettings
 
 
 class UTDEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None, *, mainwindow=None):
+    def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
         supported = [ResourceType.UTD]
         super().__init__(parent, "Door Editor", "door", supported, supported, installation, mainwindow)
 
@@ -133,7 +131,7 @@ class UTDEditor(Editor):
 
         # Advanced
         utd.min1_hp = self.ui.min1HpCheckbox.isChecked()
-        utd.party_interact = self.ui.partyInteractCheckbox.isChecked()
+        utd.party_interact = self.ui.partyInteractCheckbox.isChecked()  # TODO: find out why this and the below line are undefined
         utd.useable = self.ui.useableCheckbox.isChecked()
         utd.plot = self.ui.plotCheckbox.isChecked()
         utd.static = self.ui.staticCheckbox.isChecked()
