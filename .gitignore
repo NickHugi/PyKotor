@@ -33,3 +33,4 @@ log_install_differ.log
 logs/*
 holopatcher
 scripts/holopatcher
+.vscode/PythonImportHelper-v2-Completion.json
