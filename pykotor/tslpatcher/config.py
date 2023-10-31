@@ -79,7 +79,8 @@ class PatcherConfig:
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
         ini.read_string(ini_text)
 
         ConfigReader(ini, mod_path, logger).load(self)

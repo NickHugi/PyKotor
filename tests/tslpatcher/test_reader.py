@@ -55,7 +55,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        self.ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        self.ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         self.test_tlk_data: TLK = self.create_test_tlk(
             {
@@ -488,7 +489,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -529,7 +531,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -574,7 +577,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -620,7 +624,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -669,7 +674,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -706,7 +712,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -747,7 +754,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -788,7 +796,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -833,7 +842,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -884,7 +894,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -925,7 +936,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -971,7 +983,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1014,7 +1027,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1056,7 +1070,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1102,7 +1117,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1158,7 +1174,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1199,7 +1216,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1245,7 +1263,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1289,7 +1308,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1323,7 +1343,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1351,7 +1372,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1384,7 +1406,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1417,7 +1440,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1476,7 +1500,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1561,7 +1586,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1589,7 +1615,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1619,7 +1646,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1649,7 +1677,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1679,7 +1708,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1711,7 +1741,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1759,7 +1790,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1796,7 +1828,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1876,7 +1909,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1941,7 +1975,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -1977,7 +2012,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2010,7 +2046,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2043,7 +2080,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2076,7 +2114,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2118,7 +2157,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2173,7 +2213,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 
@@ -2224,7 +2265,8 @@ class TestConfigReader(TestCase):
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini.read_string(ini_text)
 

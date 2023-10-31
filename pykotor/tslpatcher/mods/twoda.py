@@ -430,8 +430,8 @@ class AddColumn2DA(Modify2DA):
         for row in twoda:
             row.set_string(self.header, self.default)
 
-        for row_index, value in self.index_insert.items():
-            index_str: str = value.value(memory, twoda, None)
+        for row_index, row_value in self.index_insert.items():
+            index_str: str = row_value.value(memory, twoda, None)
             this_row = twoda.get_row(row_index)
             if this_row:
                 this_row.set_string(self.header, index_str)
@@ -439,8 +439,8 @@ class AddColumn2DA(Modify2DA):
                 msg = f"Could not find row {row_index} in {self.header}"
                 raise WarningError(msg)
 
-        for row_label, value in self.label_insert.items():
-            label_str: str = value.value(memory, twoda, None)
+        for row_label, row_value in self.label_insert.items():
+            label_str: str = row_value.value(memory, twoda, None)
             this_row = twoda.find_row(row_label)
             if this_row:
                 this_row.set_string(self.header, label_str)

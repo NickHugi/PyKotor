@@ -327,7 +327,7 @@ class CodeRoot:
         name: str,
         *args: Expression,
     ) -> DynamicDataType:
-        args = list(args)
+        args_list = list(args)
 
         func_map = self.function_map[name]
         definition = func_map.definition
@@ -361,17 +361,17 @@ class CodeRoot:
         required_params = [param for param in definition.parameters if param.default is None]
 
         # Make sure the minimal number of arguments were passed through
-        if len(required_params) > len(args):
+        if len(required_params) > len(args_list):
             msg = f"Required argument missing in call to '{name}'."
             raise CompileException(msg)
 
         # If some optional parameters were not specified, add the defaults to the arguments list
-        while len(definition.parameters) > len(args):
-            param_index = len(args)
-            args.append(definition.parameters[param_index].default)
+        while len(definition.parameters) > len(args_list):
+            param_index = len(args_list)
+            args_list.append(definition.parameters[param_index].default)
 
         offset = 0
-        for param, arg in zip(definition.parameters, args):
+        for param, arg in zip(definition.parameters, args_list):
             arg_datatype = arg.compile(ncs, self, block)
             offset += arg_datatype.size(self)
             block.temp_stack += arg_datatype.size(self)

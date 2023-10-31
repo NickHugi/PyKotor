@@ -189,7 +189,7 @@ def change_lightmaps(
     textures: dict[str, str],
 ) -> bytes:
     data = bytearray(data)
-    offsets = {}
+    offsets: dict[str, list[int]] = {}
 
     textures_ins = {old_texture.lower(): new_texture.lower() for old_texture, new_texture in textures.items()}
     textures = textures_ins
@@ -220,16 +220,16 @@ def change_lightmaps(
                     else:
                         offsets[texture] = [node_offset + 200]
 
-        for texture, offsets in offsets.items():
-            for offset in offsets:
-                offset += 12
+        for texture, offsets_list in offsets.items():
+            for offset in offsets_list:
+                actual_offset = offset + 12
                 data = (
-                    data[:offset]
+                    data[:actual_offset]
                     + struct.pack(
                         "32s",
                         textures[texture].ljust(32, "\0").encode("ascii"),
                     )
-                    + data[offset + 32 :]
+                    + data[actual_offset + 32 :]
                 )
 
     return bytes(data)

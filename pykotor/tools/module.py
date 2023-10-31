@@ -123,8 +123,8 @@ def clone_module(
     write_gff(dismantle_git(git), git_data)
     new_module.set_data(identifier, ResourceType.GIT, git_data)
 
-    new_lightmaps = {}
-    new_textures = {}
+    new_lightmaps: dict[str, str] = {}
+    new_textures: dict[str, str] = {}
     for room in lyt.rooms:
         old_model_name = room.model
         new_model_name = ireplace(old_model_name, old_identifier, identifier)
@@ -223,7 +223,9 @@ def rim_to_mod(filepath: os.PathLike | str) -> None:
     rim_s = read_rim(filepath_rim_s) if filepath_rim_s.exists() else RIM()
 
     mod = ERF(ERFType.MOD)
-    [mod.set_data(res.resref.get(), res.restype, res.data) for res in rim]
-    [mod.set_data(res.resref.get(), res.restype, res.data) for res in rim_s]
+    for res in rim:
+        mod.set_data(res.resref.get(), res.restype, res.data)
+    for res in rim_s:
+        mod.set_data(res.resref.get(), res.restype, res.data)
 
     write_erf(mod, filepath, ResourceType.ERF)

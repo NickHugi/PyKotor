@@ -80,7 +80,8 @@ class ConfigReader:
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
         ini_file_bytes = BinaryReader.load_file(resolved_file_path)
         encoding = "utf8"
@@ -882,7 +883,8 @@ class NamespaceReader:
             strict=False,
             interpolation=None,
         )
-        ini.optionxform = lambda optionstr: optionstr.lower()  # use case sensitive keys
+        # use case insensitive keys
+        ini.optionxform = lambda optionstr: optionstr.lower()  # type: ignore[method-assign]
 
         ini_file_bytes = BinaryReader.load_file(path)
         encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") if chardet else None

@@ -293,7 +293,7 @@ class Installation:
         files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())
         for file in files_list:
             if capsule_check and capsule_check(file.name):
-                resources[file.name] = list(Capsule(file))  # type: ignore[always a dict]
+                resources[file.name] = list(Capsule(file))  # type: ignore[assignment]
             else:
                 with suppress(Exception):
                     resource = FileResource(
@@ -302,7 +302,7 @@ class Installation:
                         0,
                         file,
                     )
-                    resources.append(resource)  # type: ignore[always a list]
+                    resources.append(resource)  # type: ignore[assignment]
         if not resources or not files_list:
             self.log.add_warning(f"No resources found at '{path!s}' when loading the installation, skipping...")
         return resources
@@ -319,11 +319,11 @@ class Installation:
         self,
     ) -> None:
         """Reloads the list of modules in the lips folder linked to the Installation."""
-        self._lips = self.load_resources(self.lips_path(), capsule_check=is_mod_file)  # type: ignore[always a dict]
+        self._lips = self.load_resources(self.lips_path(), capsule_check=is_mod_file)  # type: ignore[assignment]
 
     def load_modules(self) -> None:
         """Reloads the list of modules files in the modules folder linked to the Installation."""
-        self._modules = self.load_resources(self.module_path(), capsule_check=is_capsule_file)  # type: ignore[always a dict]
+        self._modules = self.load_resources(self.module_path(), capsule_check=is_capsule_file)  # type: ignore[assignment]
     def reload_module(self, module: str) -> None:
         """Reloads the list of resources in specified module in the modules folder linked to the Installation.
 
@@ -337,13 +337,13 @@ class Installation:
         self,
     ) -> None:
         """Reloads the list of module files in the rims folder linked to the Installation."""
-        self._rims = self.load_resources(self.rims_path(), capsule_check=is_rim_file)  # type: ignore[always a dict]
+        self._rims = self.load_resources(self.rims_path(), capsule_check=is_rim_file)  # type: ignore[assignment]
 
     def load_textures(
         self,
     ) -> None:
         """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
-        self._texturepacks = self.load_resources(self.texturepacks_path(), capsule_check=is_erf_file)  # type: ignore[always a dict]
+        self._texturepacks = self.load_resources(self.texturepacks_path(), capsule_check=is_erf_file)  # type: ignore[assignment]
 
 
     def load_override(self, directory: str | None = None) -> None:
@@ -372,19 +372,19 @@ class Installation:
 
         for folder in target_dirs:
             relative_folder = folder.relative_to(override_path).as_posix()  # '.' if folder is the same as override_path
-            self._override[relative_folder] = self.load_resources(folder)  # type: ignore[always a list]
+            self._override[relative_folder] = self.load_resources(folder)  # type: ignore[assignment]
 
     def load_streammusic(self) -> None:
         """Reloads the list of resources in the streammusic folder linked to the Installation."""
-        self._streammusic = self.load_resources(self.streammusic_path())  # type: ignore[always a list]
+        self._streammusic = self.load_resources(self.streammusic_path())  # type: ignore[assignment]
 
     def load_streamsounds(self) -> None:
         """Reloads the list of resources in the streamsounds folder linked to the Installation."""
-        self._streamsounds = self.load_resources(self.streamsounds_path())  # type: ignore[always a list]
+        self._streamsounds = self.load_resources(self.streamsounds_path())  # type: ignore[assignment]
 
     def load_streamwaves(self) -> None:
         """Reloads the list of resources in the streamvoice/streamwaves folder linked to the Installation."""
-        self._streamwaves = self.load_resources(self.streamwaves_path(), recurse=True)  # type: ignore[always a list]
+        self._streamwaves = self.load_resources(self.streamwaves_path(), recurse=True)  # type: ignore[assignment]
 
     # endregion
 
@@ -947,7 +947,7 @@ class Installation:
         order: list[SearchLocation] | None = None,
         *,
         capsules: list[Capsule] | None = None,
-        folders: list[str] | None = None,
+        folders: list[Path] | None = None,
     ) -> bytes | None:
         """Returns the bytes of a sound resource if it can be found, otherwise returns None.
 

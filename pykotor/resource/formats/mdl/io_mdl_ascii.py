@@ -138,13 +138,13 @@ class MDLAsciiWriter:
                 )
 
                 newline(indent + 1, f"verts {len(node.mesh.vertex_positions)}")
-                for vertex in node.mesh.vertex_positions:
-                    newline(indent + 2, f"{vertex.x} {vertex.y} {vertex.z}")
+                for vertex_v3 in node.mesh.vertex_positions:
+                    newline(indent + 2, f"{vertex_v3.x} {vertex_v3.y} {vertex_v3.z}")
 
                 if node.mesh.vertex_uv1:
                     newline(indent + 1, f"tverts {len(node.mesh.vertex_positions)}")
-                    for vertex in node.mesh.vertex_uv1:
-                        newline(indent + 2, f"{vertex.x} {vertex.y}")
+                    for vertex_v2 in node.mesh.vertex_uv1:
+                        newline(indent + 2, f"{vertex_v2.x} {vertex_v2.y}")
 
                 newline(indent + 1, f"faces {len(node.mesh.faces)}")
                 for face in node.mesh.faces:

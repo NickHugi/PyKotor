@@ -28,8 +28,8 @@ class ModificationsNSS:
         match = re.search(r"#2DAMEMORY\d+#", source)
         while match:
             token_id = int(source[match.start() + 10 : match.end() - 1])
-            value = memory.memory_2da[token_id]
-            source = source[: match.start()] + str(value) + source[match.end() :]
+            value_str: str = memory.memory_2da[token_id]
+            source = source[: match.start()] + value_str + source[match.end() :]
             match = re.search(r"#2DAMEMORY\d+#", source)
 
         match = re.search(r"#StrRef\d+#", source)

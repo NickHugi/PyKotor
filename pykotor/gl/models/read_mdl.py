@@ -218,8 +218,10 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
                 mdl.seek(offset_to_element_offsets)
                 offset_to_elements = mdl.read_uint32()
                 mdl.seek(offset_to_elements)
-                [elements.append(mdl.read_uint16() + last_element) for i in range(face_count * 3)]
-
+                elements.extend(
+                    mdl.read_uint16() + last_element
+                    for _ in range(face_count * 3)
+                )
             mdl.seek(offset + 80 + 304)
             vertex_count = mdl.read_uint16()
             if k2:

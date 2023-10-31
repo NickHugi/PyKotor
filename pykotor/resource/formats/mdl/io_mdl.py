@@ -233,7 +233,8 @@ class _Animation:
         self.header.write(writer)
         for event in self.events:
             event.write(writer)
-        [node.write(writer, game) for node in self.w_nodes]
+        for node in self.w_nodes:
+            node.write(writer, game)
 
     def events_offset(
         self,
@@ -1512,9 +1513,9 @@ class MDLBinaryWriter:
 
         self.game: Game = Game.K1
 
-        self._name_offsets = []
-        self._anim_offsets = []
-        self._node_offsets = []
+        self._name_offsets: list[int] = []
+        self._anim_offsets: list[int] = []
+        self._node_offsets: list[int] = []
 
         self._bin_anim_nodes: dict[str, _Node] = {}
         self._mdl_nodes: list[MDLNode] = []

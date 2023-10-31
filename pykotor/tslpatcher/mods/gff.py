@@ -147,7 +147,7 @@ class AddStructToListGFF(ModifyGFF):
 
     def apply(
         self,
-        root_struct: GFFStruct,
+        root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
@@ -215,7 +215,7 @@ class AddFieldGFF(ModifyGFF):
         if isinstance(navigated_container, GFFStruct):
             struct_container = navigated_container
         else:
-            reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
+            reason = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
             logger.add_error(f"Unable to add new Field '{self.label}'. Parent field at '{self.path}' {reason}")
             return
 
@@ -227,7 +227,7 @@ class AddFieldGFF(ModifyGFF):
             if from_path.parent.name:
                 from_container = self._navigate_containers(root_struct, from_path.parent)
                 if not isinstance(from_container, GFFStruct):
-                    reason: str = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
+                    reason = "does not exist!" if from_container is None else "is not an instance of a GFFStruct."
                     logger.add_error(f"Unable use !FieldPath from 2DAMEMORY. Parent field at '{from_path}' {reason}")
                     return
                 value = from_container.value(from_path.name)
@@ -265,7 +265,7 @@ class AddFieldGFF(ModifyGFF):
         func_map[self.field_type]()
 
         add_field: AddFieldGFF | AddStructToListGFF
-        for add_field in self.modifiers:  # type: ignore[ModifyFieldGFF never should be in modifiers]
+        for add_field in self.modifiers:  # type: ignore[assignment] ModifyFieldGFF never should be in modifiers
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part
@@ -299,13 +299,13 @@ class ModifyFieldGFF(ModifyGFF):
 
     def apply(
         self,
-        root_struct: GFFStruct,
+        root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
         label = self.path.name
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path.parent)
-        parent_struct_container: GFFStruct = navigated_container  # type: ignore[checked below]
+        parent_struct_container: GFFStruct = navigated_container  # type: ignore[assignment]  checked below
         if not isinstance(navigated_container, GFFStruct):
             reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
             logger.add_error(f"Unable to modify Field '{label}'. Parent field at '{self.path}' {reason}")

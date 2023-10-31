@@ -105,7 +105,7 @@ class BasePurePath:
     def __init__(self, *args, _called_from_pathlib=True):
         next_init_method_class = next(
             (cls for cls in self.__class__.mro() if "__init__" in cls.__dict__ and cls is not BasePurePath),
-            self.__class__,  # reminder: self.__class__ will never be BasePath
+            self.__class__,  # reminder: self.__class__ will never be BasePurePath
         )
         # Check if the class that defines the next __init__ is object
         if next_init_method_class is object:
@@ -256,7 +256,8 @@ class BasePurePath:
         return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
 
 class PurePath(BasePurePath, pathlib.PurePath):
-    _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore pylint: disable-all
+    # pylint: disable-all
+    _flavour = getattr(pathlib.PureWindowsPath, "_flavour", None) if os.name == "nt" else getattr(pathlib.PurePosixPath, "_flavour", None)  # type: ignore[attr-defined]
 
 
 class PurePosixPath(BasePurePath, pathlib.PurePosixPath):
@@ -269,53 +270,60 @@ class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):
 class BasePath(BasePurePath):
     # Safe rglob operation
     def safe_rglob(self, pattern: str):
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
         with contextlib.suppress(Exception):
-            yield from pathobj.rglob(pattern)
+            yield from self.rglob(pattern)
 
     # Safe iterdir operation
     def safe_iterdir(self):
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
         with contextlib.suppress(Exception):
-            yield from pathobj.iterdir()
+            yield from self.iterdir()
 
     # Safe is_dir operation
     def safe_isdir(self) -> bool:
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
         try:
-            return pathobj.is_dir()
+            return self.is_dir()
         except Exception:  # noqa: BLE001
             return False
 
     # Safe is_file operation
     def safe_isfile(self) -> bool:
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
         try:
-            return pathobj.is_file()
+            return self.is_file()
         except Exception:  # noqa: BLE001
             return False
 
     # Safe exists operation
     def safe_exists(self) -> bool:
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
         try:
-            return pathobj.exists()
+            return self.exists()
         except Exception:  # noqa: BLE001
             return False
 
     # Safe stat operation
     def safe_stat(self, *args, **kwargs):
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
         try:
-            return pathobj.stat(*args, **kwargs)
+            return self.stat(*args, **kwargs)
         except Exception:  # noqa: BLE001
             return None
 
     # Safe open operation
     def safe_open(self, *args, **kwargs):
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
         try:
-            return pathobj.open(*args, **kwargs)
+            return self.open(*args, **kwargs)
         except Exception:  # noqa: BLE001
             return None
 
@@ -324,6 +332,8 @@ class BasePath(BasePurePath):
         :param path: The pathlib.Path object to check (can be a file or a folder)
         :return: True if path can be modified, False otherwise.
         """
+        if not isinstance(self, Path):
+            return NotImplemented
         try:
             path_obj = Path(self)  # prevents usage of CaseAwarePath's wrappers
             if path_obj.is_dir():  # sourcery skip: extract-method
@@ -343,48 +353,51 @@ class BasePath(BasePurePath):
         return False
 
     def gain_access(self, mode=0o755, owner_uid=-1, owner_gid=-1, recurse=True):
-        pathobj: Path = super()  # type: ignore[]
+        if not isinstance(self, Path):
+            return NotImplemented
+        path_obj = Path(self)  # prevents usage of CaseAwarePath's wrappers
         # (Unix) Gain ownership of the folder
-        if os.name != "nt" and (owner_uid != -1 or owner_gid != -1) and not self.has_access():
+        if os.name != "nt" and (owner_uid != -1 or owner_gid != -1) and not path_obj.has_access():
             try:
-                os.chown(self, owner_uid, owner_gid)
+                os.chown(path_obj, owner_uid, owner_gid)
             except Exception as e:  # noqa: BLE001
-                print(f"Error during chown for {self!s}: {e}")
+                print(f"Error during chown for {path_obj!s}: {e}")
 
         # chmod the folder
-        if not self.has_access():
+        if not path_obj.has_access():
             try:
-                pathobj.chmod(mode)
+                path_obj.chmod(mode)
             except Exception as e:  # noqa: BLE001
-                print(f"Error during chmod for {self!s}: {e}")
+                print(f"Error during chmod for {path_obj!s}: {e}")
 
         # TODO: prompt the user and gain access with os-native methods.
-        if not self.has_access():
+        if not path_obj.has_access():
             try:
                 if platform.system() == "Darwin":
-                    self.request_mac_permission()
+                    path_obj.request_mac_permission()
                 elif sys.platform == "Linux":
-                    self.request_linux_permission()
+                    path_obj.request_linux_permission()
                 elif sys.platform == "Windows":
-                    self.request_windows_permission()
+                    path_obj.request_windows_permission()
 
             except Exception as e:  # noqa: BLE001
-                print(f"Error during platform-specific permission request for {self!s}: {e}")
+                print(f"Error during platform-specific permission request for {path_obj!s}: {e}")
 
-        success: bool = self.has_access()
+        success: bool = path_obj.has_access()
         try:
-            if recurse and pathobj.is_dir():
-                for child in pathobj.iterdir():
+            if recurse and path_obj.is_dir():
+                for child in path_obj.iterdir():
                     success &= child.gain_access(mode, owner_uid, owner_gid)
         except Exception as e:  # noqa: BLE001
-            print(f"Error gaining access for children of {self!s}: {e}")
+            print(f"Error gaining access for children of {path_obj!s}: {e}")
             success = False
 
         return success
 
 
 class Path(BasePath, pathlib.Path):
-    _flavour = PureWindowsPath._flavour if os.name == "nt" else PurePosixPath._flavour  # type: ignore pylint: disable-all
+    # pylint: disable-all
+    _flavour = getattr(pathlib.PureWindowsPath, "_flavour", None) if os.name == "nt" else getattr(pathlib.PurePosixPath, "_flavour", None)  # type: ignore[attr-defined]
 
 
 class PosixPath(BasePath, pathlib.PosixPath):

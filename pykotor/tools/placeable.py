@@ -31,6 +31,6 @@ def get_model(
         Returns the model name for the placeable.
     """
     if placeables is None:
-        placeables = installation.resource("genericdoors", ResourceType.TwoDA)
+        placeables = installation.resource("genericdoors", ResourceType.TwoDA)  # TODO: should be type TwoDA not ResourceResult
 
     return placeables.get_row(utp.appearance_id).get_string("modelname")

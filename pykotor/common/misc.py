@@ -572,7 +572,7 @@ class CaseInsensitiveDict(Generic[T]):
 
     def get(self, __key: str, __default: VT = None) -> VT | T:
         # sourcery skip: compare-via-equals
-        key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[ignore key_lookup]
+        key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]
         return __default if key_lookup is _unique_sentinel else self._dictionary.get(key_lookup, __default)
 
     def items(self):

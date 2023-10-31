@@ -535,13 +535,16 @@ class Scene:
             self.selection.clear()
 
         self.buildCache()
+        actual_target: RenderObject
         if isinstance(target, GITInstance):
             for obj in self.objects.values():
                 if obj.data is target:
-                    target = obj
+                    actual_target = obj
                     break
+        else:
+            actual_target = target
 
-        self.selection.append(target)
+        self.selection.append(actual_target)
 
     def screenToWorld(self, x: int, y: int) -> Vector3:
         glClearColor(0.5, 0.5, 1, 1.0)
