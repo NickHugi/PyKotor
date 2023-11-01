@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "install_requirements",
+      "label": "requirements.txt",
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -20,8 +20,76 @@
       "problemMatcher": []
     },
     {
+      "label": "install_pyinstaller",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pyinstaller",
+        "--upgrade"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_pylint",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "pylint",
+        "--upgrade"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_ruff",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "ruff",
+        "--upgrade"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "install_mypy",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "mypy",
+        "--upgrade"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "pylint: whole project",
-      "dependsOn": "install_requirements",
+      "dependsOn": ["requirements.txt", "install_pylint"],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -29,7 +97,7 @@
         "pylint",
         "--msg-template",
         "\"{path}:{line}:{column}:{category}:{symbol} - {msg}\"",
-        "${workspaceFolder}"
+        "${workspaceFolder}",
       ],
       "presentation": {
         "reveal": "never",
@@ -53,7 +121,7 @@
     },
     {
       "label": "Python: lint entire project with mypy",
-      "dependsOn": "install_requirements",
+      "dependsOn": ["requirements.txt", "install_mypy"],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
@@ -89,8 +157,8 @@
     },
     {
       "label": "Python: Ruff check entire project",
-      "dependsOn": "install_requirements",
       "type": "shell",
+      "dependsOn": ["requirements.txt", "install_ruff"],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -123,78 +191,77 @@
     {
       "label": "Build HoloPatcher",
       "type": "shell",
-      "dependsOn": "install_requirements",
-      "command": "pyinstaller",
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
       "args": [
         "--noconsole",
         "--onefile",
         "--clean",
         "--name=holopatcher",
         "--path=${workspaceFolder}",
-        "--icon=resources/icons/patcher_icon_v2.png",
-        "scripts/holopatcher/__main__.py"
+        "--icon=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.png",
+        "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
     {
-      "label": "Build Toolset (Windows)",
+      "label": "Build Toolset",
       "type": "shell",
-      "dependsOn": "install_requirements",
-      "command": "pyinstaller",
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
       "args": [
         "--noconsole",
         "--onefile",
         "--clean",
         "--name=HolocronToolset",
-        "--path=${workspaceFolder}`;${workspaceFolder}\\toolset",
-        "--icon=resources/icons/sith.ico",
-        "toolset/__main__.py"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Build Toolset (Unix)",
-      "type": "shell",
-      "dependsOn": "install_requirements",
-      "command": "pyinstaller",
-      "args": [
-        "--noconsole",
-        "--onefile",
-        "--clean",
-        "--name=HolocronToolset",
-        "--path=${workspaceFolder}:${workspaceFolder}/toolset",
-        "--icon=resources/icons/sith.ico",
-        "toolset/__main__.py"
+        "--path=${workspaceFolder}${pathSeparator}toolset",
+        "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
+        "toolset${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
     {
       "label": "Build KotorDiff",
       "type": "shell",
-      "dependsOn": "install_requirements",
-      "command": "pyinstaller",
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
       "args": [
         "--console",
         "--onefile",
         "--clean",
         "--name=kotordiff",
         "--path=${workspaceFolder}",
-        "scripts/kotordiff/__main__.py"
+        "scripts${pathSeparator}kotordiff${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
     {
       "label": "Build GUI Creator",
       "type": "shell",
-      "dependsOn": "install_requirements",
-      "command": "pyinstaller",
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
       "args": [
         "--console",
         "--onefile",
         "--clean",
         "--name=gui_creator",
         "--path=${workspaceFolder}",
-        "scripts/guicreator/__main__.py"
+        "scripts${pathSeparator}guicreator${pathSeparator}__main__.py"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Build Model ASCII Extractor",
+      "type": "shell",
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
+      "args": [
+        "--console",
+        "--onefile",
+        "--clean",
+        "--name=mdl_decompile",
+        "--path=${workspaceFolder}",
+        "scripts${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     }
