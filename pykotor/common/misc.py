@@ -44,11 +44,16 @@ class ResRef:
 
     def __eq__(
         self,
-        other: ResRef | str | object,
+        other,
     ):
         """A ResRef can be compared to another ResRef or a str."""
-        other_value = other.get().lower() if isinstance(other, ResRef) else other.lower() if isinstance(other, str) else None
-        return other_value == self._value.lower() if other_value is not None else NotImplemented
+        if isinstance(other, ResRef):
+            other_value = other.get().lower()
+        elif isinstance(other, str):
+            other_value = other.lower()
+        else:
+            return NotImplemented
+        return other_value == self._value.lower()
 
     def __repr__(
         self,
