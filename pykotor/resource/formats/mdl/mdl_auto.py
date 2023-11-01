@@ -63,7 +63,7 @@ def read_mdl(
     source_ext: SOURCE_TYPES | None = None,
     offset_ext: int = 0,
     size_ext: int = 0,
-) -> MDL:
+) -> MDL | None:
     """Returns an MDL instance from the source. The file format (MDL or MDL_ASCII) is automatically determined before
     parsing the data.
 
