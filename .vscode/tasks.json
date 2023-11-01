@@ -223,23 +223,24 @@
       }
     },
     {
-      "label": "Build HoloPatcher (from Windows)",
+      "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_pyinstaller"],
-      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
+      "command": "${command:python.interpreterPath}",
       "args": [
+        "-m",
+        "PyInstaller",
         "--noconsole",
         "--onefile",
         "--clean",
         "--name=HoloPatcher",
-        "--path=${workspaceFolder}",
         "--icon=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.png",
         "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
     },
     {
-      "label": "Build HoloPatcher with Nuitka (from Windows)",
+      "label": "Build HoloPatcher - Nuitka",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_nuitka"],
       "command": "${command:python.interpreterPath}",
@@ -258,30 +259,13 @@
       "problemMatcher": []
     },
     {
-      "label": "Build HoloPatcher (from Unix)",
-      "type": "shell",
-      "dependsOn": [
-        "requirements.txt",
-        "install_pyinstaller"
-      ],
-      "command": "pyinstaller",
-      "args": [
-        "--noconsole",
-        "--onefile",
-        "--clean",
-        "--name=HoloPatcher",
-        "--path=${workspaceFolder}",
-        "--icon=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.png",
-        "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Build Toolset (from Windows)",
+      "label": "Build Toolset",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_pyinstaller"],
-      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
+      "command": "${command:python.interpreterPath}",
       "args": [
+        "-m",
+        "PyInstaller",
         "--noconsole",
         "--onefile",
         "--clean",
@@ -293,30 +277,13 @@
       "problemMatcher": []
     },
     {
-      "label": "Build Toolset (from Unix)",
-      "type": "shell",
-      "dependsOn": [
-        "requirements.txt",
-        "install_pyinstaller"
-      ],
-      "command": "pyinstaller",
-      "args": [
-        "--noconsole",
-        "--onefile",
-        "--clean",
-        "--name=HolocronToolset",
-        "--path=${workspaceFolder}${pathSeparator}toolset",
-        "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
-        "toolset${pathSeparator}__main__.py"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Build KotorDiff (from Windows)",
+      "label": "Build KotorDiff",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_pyinstaller"],
-      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
+      "command": "${command:python.interpreterPath}",
       "args": [
+        "-m",
+        "PyInstaller",
         "--console",
         "--onefile",
         "--clean",
@@ -327,29 +294,13 @@
       "problemMatcher": []
     },
     {
-      "label": "Build KotorDiff (from Unix)",
-      "type": "shell",
-      "dependsOn": [
-        "requirements.txt",
-        "install_pyinstaller"
-      ],
-      "command": "pyinstaller.exe",
-      "args": [
-        "--console",
-        "--onefile",
-        "--clean",
-        "--name=kotordiff",
-        "--path=${workspaceFolder}",
-        "scripts${pathSeparator}kotordiff${pathSeparator}__main__.py"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Build GUI Creator (from Windows)",
+      "label": "Build GUI Creator",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_pyinstaller"],
-      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
+      "command": "${command:python.interpreterPath}",
       "args": [
+        "-m",
+        "PyInstaller",
         "--console",
         "--onefile",
         "--clean",
@@ -360,47 +311,13 @@
       "problemMatcher": []
     },
     {
-      "label": "Build GUI Creator (from Unix)",
-      "type": "shell",
-      "dependsOn": [
-        "requirements.txt",
-        "install_pyinstaller"
-      ],
-      "command": "pyinstaller",
-      "args": [
-        "--console",
-        "--onefile",
-        "--clean",
-        "--name=gui_creator",
-        "--path=${workspaceFolder}",
-        "scripts${pathSeparator}guicreator${pathSeparator}__main__.py"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Build Model ASCII Compiler (from Windows)",
+      "label": "Build Model ASCII Compiler",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_pyinstaller"],
-      "command": "${command:python.interpreterPath}${pathSeparator}..${pathSeparator}pyinstaller.exe",
+      "command": "${command:python.interpreterPath}",
       "args": [
-        "--console",
-        "--onefile",
-        "--clean",
-        "--name=mdl_decompile",
-        "--path=${workspaceFolder}",
-        "scripts${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "Build Model ASCII Compiler (from Unix)",
-      "type": "shell",
-      "dependsOn": [
-        "requirements.txt",
-        "install_pyinstaller"
-      ],
-      "command": "pyinstaller",
-      "args": [
+        "-m",
+        "PyInstaller",
         "--console",
         "--onefile",
         "--clean",
