@@ -32,11 +32,6 @@ if TYPE_CHECKING:
     from pykotor.resource.formats.gff import GFF
 
 
-def is_kotor_install_dir(path: os.PathLike | str) -> bool:
-    c_path: CaseAwarePath = CaseAwarePath(path)
-    return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
-
-
 # The SearchLocation class is an enumeration that represents different locations for searching.
 class SearchLocation(IntEnum):
     OVERRIDE = 0
@@ -153,10 +148,7 @@ class Installation:
         -------
             The path to the modules folder.
         """
-        return self._find_resource_folderpath(
-            ("Modules",),
-            "Could not find the 'modules' folder in '{}'.",
-        )
+        return self._find_resource_folderpath("Modules")
 
     def override_path(self) -> CaseAwarePath:
         """Returns the path to override folder of the Installation. This method maintains the case of the foldername.
@@ -165,11 +157,7 @@ class Installation:
         -------
             The path to the override folder.
         """
-        return self._find_resource_folderpath(
-            ("Override",),
-            "Could not find the 'override' folder in '{}'.",
-            optional=True,
-        )
+        return self._find_resource_folderpath("Override", optional=True)
 
     def lips_path(self) -> CaseAwarePath:
         """Returns the path to 'lips' folder of the Installation. This method maintains the case of the foldername.
@@ -178,10 +166,7 @@ class Installation:
         -------
             The path to the lips folder.
         """
-        return self._find_resource_folderpath(
-            ("lips",),
-            "Could not find the 'lips' folder in '{}'.",
-        )
+        return self._find_resource_folderpath("lips")
 
     def texturepacks_path(self) -> CaseAwarePath:
         """Returns the path to 'texturepacks' folder of the Installation. This method maintains the case of the foldername.
@@ -190,11 +175,7 @@ class Installation:
         -------
             The path to the texturepacks folder.
         """
-        return self._find_resource_folderpath(
-            ("texturepacks",),
-            "Could not find the 'texturepacks' folder in '{}'.",
-            optional=True,
-        )
+        return self._find_resource_folderpath("texturepacks", optional=True)
 
     def rims_path(self) -> CaseAwarePath:
         """Returns the path to 'rims' folder of the Installation. This method maintains the case of the foldername.
@@ -203,11 +184,7 @@ class Installation:
         -------
             The path to the rims folder.
         """
-        return self._find_resource_folderpath(
-            ("rims",),
-            "Could not find the 'rims' folder in '{}'.",
-            optional=True,
-        )
+        return self._find_resource_folderpath("rims", optional=True)
 
     def streammusic_path(self) -> CaseAwarePath:
         """Returns the path to 'streammusic' folder of the Installation. This method maintains the case of the foldername.
@@ -216,10 +193,7 @@ class Installation:
         -------
             The path to the streammusic folder.
         """
-        return self._find_resource_folderpath(
-            ("streammusic",),
-            "Could not find 'streammusic' folder in '{}'.",
-        )
+        return self._find_resource_folderpath("streammusic")
 
     def streamsounds_path(self) -> CaseAwarePath:
         """Returns the path to 'streamsounds' folder of the Installation. This method maintains the case of the foldername.
@@ -228,11 +202,7 @@ class Installation:
         -------
             The path to the streamsounds folder.
         """
-        return self._find_resource_folderpath(
-            ("streamsounds",),
-            "Could not find 'streamsounds' folder in '{}'.",
-            optional=True,
-        )
+        return self._find_resource_folderpath("streamsounds", optional=True)
 
     def streamwaves_path(self) -> CaseAwarePath:
         """Returns the path to 'streamwaves' folder of the Installation. This method maintains the case of the foldername.
@@ -243,28 +213,29 @@ class Installation:
         -------
             The path to the streamvoice folder.
         """
-        return self._find_resource_folderpath(
-            ("streamwaves", "streamvoice"),
-            "Could not find the 'streamwaves' or 'streamvoice' folder in '{}'.",
-        )
+        return self._find_resource_folderpath(("streamwaves", "streamvoice"))
 
     def _find_resource_folderpath(
         self,
-        folder_names: tuple[str, ...],
-        error_msg: str,
+        folder_names: tuple[str, ...] | str,
         optional: bool = False,
     ) -> CaseAwarePath:
         try:
             resource_path = self._path
+            if isinstance(folder_names, str):
+                folder_names = (folder_names,)
             for folder_name in folder_names:
                 resource_path = CaseAwarePath(self._path, folder_name)
-                if resource_path.safe_isdir():
+                if resource_path.is_dir():
                     return resource_path
             if optional:
                 return CaseAwarePath(self._path, folder_names[0])
         except Exception as e:  # noqa: BLE001
-            raise OSError(error_msg.format(self._path)) from e
-        raise FileNotFoundError(error_msg.format(self._path))
+            msg = f"An error occurred while finding the '{'or '.join(folder_names)}' folder in '{self._path}'."
+            raise OSError(msg) from e
+        errored_folder_names = "' or '".join(folder_names)
+        msg = f"Could not find the '{errored_folder_names}' folder in '{self._path}'."
+        raise FileNotFoundError(msg)
 
     # endregion
 
