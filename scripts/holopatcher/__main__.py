@@ -714,4 +714,5 @@ def main():
     app.mainloop()
 
 
-main()
+if __name__ == "__main__":
+    main()
