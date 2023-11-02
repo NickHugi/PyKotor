@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import os
-from typing import Any, Dict
+from typing import Any
 
 from data.settings import Settings
 from PyQt5 import QtCore
@@ -8,7 +10,7 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QWidget
 
 from pykotor.common.misc import Game
-from pykotor.tools.path import locate_game_path
+from pykotor.tools.path import Path, locate_game_paths
 
 
 class InstallationsWidget(QWidget):
@@ -142,36 +144,40 @@ class GlobalSettings(Settings):
     def __init__(self):
         super().__init__("Global")
 
-    def installations(self) -> Dict[str, InstallationConfig]:
-        if self.settings.value("installations", None) is None:
-            default_paths = locate_game_path()
-            entries = {}
-            k1_index = 0
-            k2_index = 0
-            for game, paths in default_paths.items():
-                for path in paths:
-                    if not path.exists():
-                        continue
-                    game_name = "KotOR" if game==Game.K1 else "TSL"
-                    if game==Game.K1:
-                        if k1_index:
-                            game_name += f" ({k1_index})"
-                            k1_index += 1
-                        k1_index += 1
-                    if k2_index and game==Game.K2:
-                        if k2_index:
-                            game_name += f" ({k2_index})"
-                            k2_index += 1
-                        k2_index += 1
-                    entry = {game_name: {"name": game_name, "path": str(path), "tsl": game==Game.K2}}
-                    entries.update(entry)
-            self.settings.setValue("installations", entries)
+    def installations(self) -> dict[str, InstallationConfig]:
+        installations = self.settings.value("installations")
+        if installations is None:
+            installations = {}
 
-        installations = {}
-        for name in self.settings.value("installations", {}):
-            installations[name] = InstallationConfig(name)
+        counters = {Game.K1: 0, Game.K2: 0}
+        existing_paths = {Path(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
 
-        return installations
+        for game, paths in locate_game_paths().items():
+            for path in filter(Path.exists, paths):
+                if path in existing_paths:  # If the path is already recorded, skip to the next one
+                    continue
+
+                game_name = "KotOR" if game == Game.K1 else "TSL"
+                base_game_name = game_name  # Save the base name for potential duplicates
+
+                # Increment the counter if the game name already exists, indicating a duplicate
+                while game_name in installations:
+                    counters[game] += 1
+                    game_name = f"{base_game_name} ({counters[game]})"
+
+                # Add the new installation under the unique game_name
+                installations[game_name] = {
+                    "name": game_name,
+                    "path": str(path),
+                    "tsl": game == Game.K2,
+                }
+                existing_paths.add(path)  # Add the new path to the set of existing paths
+
+        self.settings.setValue("installations", installations)
+
+        return {name: InstallationConfig(name) for name in installations}
+
+
 
     # region Strings
     extractPath = Settings._addSetting(
