@@ -7,7 +7,10 @@ import platform
 import re
 import sys
 import uuid
-from typing import Generator, List, Tuple, Union
+from typing import TYPE_CHECKING, Generator, List, Tuple, Union
+
+if TYPE_CHECKING:
+    from pykotor.common.misc import Game
 
 PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
@@ -595,27 +598,25 @@ def get_default_game_paths():
         },
     }
 
-def locate_game_path(game = None):
+def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
     from pykotor.common.misc import Game
 
     os_str = platform.system()
 
     # Build hardcoded default kotor locations
     raw_locations = get_default_game_paths()
-    locations: dict[Game, set[CaseAwarePath]] = {
-        game: {CaseAwarePath(path) for path in paths}
+    locations: dict[Game, list[CaseAwarePath]] = {
+        game: [case_path for case_path in (CaseAwarePath(path) for path in paths) if case_path.exists()]
         for game, paths in raw_locations.get(os_str, {}).items()
     }
 
     # Build kotor locations by registry (if on windows)
     if os_str == "Windows":
         for game_option, reg_options in ((Game.K1, KOTOR1RegOptions), (Game.K2, KOTOR2RegOptions)):
-            if game is not None and game != game_option:
-                continue
             for reg_key, reg_valname in reg_options:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
-                if path_str:
-                    locations[game_option].add(CaseAwarePath(path_str).resolve())
-
+                path = CaseAwarePath(path_str).resolve() if path_str else None
+                if path and path.exists():
+                    locations[game_option].append(path)
 
     return locations
