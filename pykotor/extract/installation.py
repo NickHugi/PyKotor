@@ -113,23 +113,16 @@ class Installation:
 
         self.log.add_note("Load chitin...")
         self.load_chitin()
-        self.log.add_note("Load lips...")
         self.load_lips()
-        self.log.add_note("Load modules...")
         self.load_modules()
-        self.log.add_note("Load override...")
         self.load_override()
-        self.log.add_note("Load rims...")
-        self.load_rims()
-        self.log.add_note("Load streammusic...")
+        if self.game() == Game.K1:
+            self.load_rims()
         self.load_streammusic()
-        self.log.add_note("Load streamsounds...")
         self.load_streamsounds()
-        self.log.add_note(f"Load {'streamvoice' if self.game() == Game.K2 else 'streamwaves'}...")
         self.load_streamwaves()
-        self.log.add_note("Load textures...")
         self.load_textures()
-        self.log.add_note("Finished loading the installation")
+        self.log.add_note(f"Finished loading the installation from {self._path!s}")
 
     # region Get Paths
     def path(self) -> Path:
@@ -259,7 +252,7 @@ class Installation:
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
         if not path.exists():
-            self.log.add_warning(f"The '{path.name}' folder did not exist at '{path!s}' when loading the installation, skipping...")
+            self.log.add_warning(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
             return resources
 
         files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())
@@ -276,7 +269,9 @@ class Installation:
                     )
                     resources.append(resource)  # type: ignore[assignment]
         if not resources or not files_list:
-            self.log.add_warning(f"No resources found at '{path!s}' when loading the installation, skipping...")
+            self.log.add_warning(f"No resources found at '{self.path()!s}' when loading the installation, skipping...")
+        else:
+            self.log.add_note(f"Loading '{path.name}' folder from installation...")
         return resources
 
     def load_chitin(self) -> None:

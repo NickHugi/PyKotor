@@ -465,9 +465,10 @@ class ToolWindow(QMainWindow):
 
         self.ui.modulesWidget.setSections(modules)
 
-    def refreshOverrideList(self) -> None:
+    def refreshOverrideList(self, reload=True) -> None:
         """Refreshes the list of override directories in the overrideFolderCombo combobox."""
-        self.active.load_override()
+        if reload:
+            self.active.load_override()
 
         sections = []
         for directory in self.active.override_list():
@@ -476,8 +477,9 @@ class ToolWindow(QMainWindow):
             sections.append(section)
         self.ui.overrideWidget.setSections(sections)
 
-    def refreshTexturePackList(self):
-        self.active.load_textures()
+    def refreshTexturePackList(self, reload=True):
+        if reload:
+            self.active.load_textures()
 
         sections = []
         for texturepack in self.active.texturepacks_list():
@@ -583,11 +585,13 @@ class ToolWindow(QMainWindow):
 
                 self.ui.coreWidget.setResources(self.active.chitin_resources())
 
-                self.refreshModuleList(False)
-                self.refreshOverrideList()
-                self.refreshTexturePackList()
+                print("Loading installation resources into UI...")
+                self.refreshModuleList(reload=False)
+                self.refreshOverrideList(reload=False)
+                self.refreshTexturePackList(reload=False)
                 self.ui.texturesWidget.setInstallation(self.active)
 
+                print("Updating menus...")
                 self.updateMenus()
                 self.dogObserver = Observer()
                 self.dogObserver.schedule(self.dogHandler, self.active.path(), recursive=True)

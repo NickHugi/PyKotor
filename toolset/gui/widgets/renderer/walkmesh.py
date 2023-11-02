@@ -329,13 +329,17 @@ class WalkmeshRenderer(QWidget):
         """
         # We need to find a face in the walkmesh that is underneath the mouse to find the Z
         # We also want to prioritize walkable faces
-        # And if we can't find a face, then set the Z to 0.0
+        # And if we cant find a face, then set the Z to 0.0
         face: Optional[BWMFace] = None
         for walkmesh in self._walkmeshes:
             over = walkmesh.faceAt(x, y)
-            if over and (face is None or not face.material.walkable() and over.material.walkable()):
+            if over and (
+                face is None or (
+                    not face.material.walkable()
+                    and over.material.walkable()
+                )
+            ):
                 face = over
-
         return 0.0 if face is None else face.determine_z(x, y)
 
     def materialColor(self, material: SurfaceMaterial) -> QColor:

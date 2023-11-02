@@ -124,14 +124,11 @@ class HTInstallation(Installation):
         with suppress(Exception):
             itemClass = baseitems.get_cell(uti.base_item, "itemclass")
             variation = uti.model_variation if uti.model_variation != 0 else uti.texture_variation
-            textureResname = "i{}_{}".format(itemClass, str(variation).rjust(3, "0"))
+            textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'
             texture = self.htGetCacheTPC(textureResname.lower())
 
             if texture is not None:
-                width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
-                image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-
+                return self._get_icon(texture)
         return pixmap
 
     def getItemIcon(self, baseItem: int, modelVariation: int, textureVariation: int) -> QPixmap:
@@ -141,12 +138,14 @@ class HTInstallation(Installation):
         with suppress(Exception):
             itemClass = baseitems.get_cell(baseItem, "itemclass")
             variation = modelVariation if modelVariation != 0 else textureVariation
-            textureResname = "i{}_{}".format(itemClass, str(variation).rjust(3, "0"))
+            textureResname = f'i{itemClass}_{str(variation).rjust(3, "0")}'
             texture = self.htGetCacheTPC(textureResname.lower())
 
             if texture is not None:
-                width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
-                image = QImage(rgba, width, height, QImage.Format_RGBA8888)
-                return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
-
+                return self._get_icon(texture)
         return pixmap
+
+    def _get_icon(self, texture):
+        width, height, rgba = texture.convert(TPCTextureFormat.RGBA, 0)
+        image = QImage(rgba, width, height, QImage.Format_RGBA8888)
+        return QPixmap.fromImage(image).transformed(QTransform().scale(1, -1))
