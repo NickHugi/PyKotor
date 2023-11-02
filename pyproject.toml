@@ -27,6 +27,7 @@ exclude = '''
 | build
 | __pycache__
 | dist
+| nuitka_dist
 | \.history
 | \.idea
 | \.chat
@@ -48,7 +49,7 @@ select = ["ALL"]
 
 ignore = [
     "ANN",
-    "ARG002",    # Unused method argument: `method`
+    "ARG002",   # Unused method argument: `method`
     "ANN101",   # Missing type annotation for {name} in method
     "ANN401",   # Dynamically typed expressions (typing.Any) are disallowed in {name}
     "D401",     # First line of docstring should be in imperative mood
@@ -61,14 +62,17 @@ ignore = [
     "D101",     # Missing docstring in public class
     "D102",     # Missing docstring in public method
     "D103",     # Missing docstring in public function
+    "D104",     # Missing docstring in public package
     "D105",     # Missing docstring in magic method
     "D107",     # Missing docstring in __init__
     "D205",     # 1 blank line required between summary line and description
     "D213",     # Multi-line docstring summary should start at the second line
-#     "D400",     # First line should end with a period
-#     "D403",     # First word of the first line should be capitalized: {} -> {}
-#     "D404",     # First word of the docstring should not be "This"
+#    "D400",     # First line should end with a period
+#    "D403",     # First word of the first line should be capitalized: {} -> {}
+#    "D404",     # First word of the docstring should not be "This"
     "D417",     # Missing argument description in the docstring for {definition}: {name}
+    "N802",      # Function name `screenToWorld` should be lowercase
+    "N806",       #Variable `jumpToOffset` in function should be lowercase
     "N815",     # Variable `var` in class scope should not be mixedCase
     # The following are currently violated by the codebase.
 #    "FIX004",   # Line contains HACK, consider resolving the issue
@@ -92,6 +96,7 @@ ignore = [
 "globalsettings.py" = ["I001", "F401"]
 "toolset/*.py" = ["FBT003", "N802", "N803", "N806", "A001"]
 "toolset/uic/*.py" = ["ALL"]
+"resources_rc.py" = ["ALL"]
 "pykotor/resource/formats/ncs/compiler/*.py" = ["ALL"]
 
 [tool.ruff.flake8-pytest-style]

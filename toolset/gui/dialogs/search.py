@@ -70,9 +70,11 @@ class FileSearcher(QDialog):
         if searchCore:
             searchIn.extend(installation.chitin_resources())
         if searchModules:
-            [searchIn.extend(installation.module_resources(module)) for module in installation.modules_list()]
+            for module in installation.modules_list():
+                searchIn.extend(installation.module_resources(module))
         if searchOverride:
-            [searchIn.extend(installation.override_resources(folder)) for folder in installation.override_list()]
+            for folder in installation.override_list():
+                searchIn.extend(installation.override_resources(folder))
 
         def search(resource):
             if resource.restype() in checkTypes:
@@ -108,10 +110,10 @@ class FileResults(QDialog):
         self.installation: HTInstallation = installation
 
         for result in results:
-            filename = "{}.{}".format(result.resname(), result.restype().extension)
+            filename = f"{result.resname()}.{result.restype().extension}"
             item = QListWidgetItem(filename)
             item.setData(QtCore.Qt.UserRole, result)
-            item.setToolTip(result.filepath())
+            item.setToolTip(str(result.filepath()))
             self.ui.resultList.addItem(item)
 
         self.ui.resultList.sortItems(QtCore.Qt.AscendingOrder)
@@ -121,7 +123,7 @@ class FileResults(QDialog):
         self.selection = item.data(QtCore.Qt.UserRole) if item is not None else None
         super().accept()
 
-    def open(self):
+    def open(self):  # noqa: A003
         item = self.ui.resultList.currentItem()
         if item:
             resource: FileResource = item.data(QtCore.Qt.UserRole)

@@ -1,11 +1,11 @@
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from data.installation import HTInstallation
+from typing import TYPE_CHECKING
+
 from gui.dialogs.edit.locstring import LocalizedStringDialog
 from gui.editor import Editor
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice
-from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
 
@@ -14,9 +14,13 @@ from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
 
+if TYPE_CHECKING:
+    from data.installation import HTInstallation
+    from PyQt5.QtGui import QCloseEvent
+
 
 class UTSEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: QWidget | None, installation: HTInstallation | None = None):
         supported = [ResourceType.UTS]
         super().__init__(parent, "Sound Editor", "sound", supported, supported, installation)
 
@@ -26,6 +30,7 @@ class UTSEditor(Editor):
         self.buffer = QBuffer(self)
 
         from toolset.uic.editors.uts import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -119,7 +124,7 @@ class UTSEditor(Editor):
         # Comments
         self.ui.commentsEdit.setPlainText(uts.comment)
 
-    def build(self) -> Tuple[bytes, bytes]:
+    def build(self) -> tuple[bytes, bytes]:
         uts = self._uts
 
         # Basic
@@ -184,24 +189,24 @@ class UTSEditor(Editor):
             self.ui.resrefEdit.setText("m00xx_trg_000")
 
     def changeStyle(self) -> None:
-        self.ui.intervalGroup.setEnabled(True)
-        self.ui.orderGroup.setEnabled(True)
-        self.ui.variationGroup.setEnabled(True)
-
+        def _set_ui_style_groups(boolean: bool):
+            self.ui.intervalGroup.setEnabled(boolean)
+            self.ui.orderGroup.setEnabled(boolean)
+            self.ui.variationGroup.setEnabled(boolean)
+        _set_ui_style_groups(True)
         if self.ui.styleSeamlessRadio.isChecked():
-            self.ui.intervalGroup.setEnabled(False)
-            self.ui.orderGroup.setEnabled(False)
-            self.ui.variationGroup.setEnabled(False)
+            _set_ui_style_groups(False)
         elif self.ui.styleRepeatRadio.isChecked():
             ...
         elif self.ui.styleOnceRadio.isChecked():
             self.ui.intervalGroup.setEnabled(False)
 
     def changePlay(self) -> None:
-        self.ui.rangeGroup.setEnabled(True)
-        self.ui.heightGroup.setEnabled(True)
-        self.ui.distanceGroup.setEnabled(True)
-
+        def _set_ui_play_groups(boolean: bool):
+            self.ui.rangeGroup.setEnabled(boolean)
+            self.ui.heightGroup.setEnabled(boolean)
+            self.ui.distanceGroup.setEnabled(boolean)
+        _set_ui_play_groups(True)
         if self.ui.playRandomRadio.isChecked():
             ...
         elif self.ui.playSpecificRadio.isChecked():
@@ -209,9 +214,7 @@ class UTSEditor(Editor):
             self.ui.northRandomSpin.setValue(0)
             self.ui.eastRandomSpin.setValue(0)
         elif self.ui.playEverywhereRadio.isChecked():
-            self.ui.rangeGroup.setEnabled(False)
-            self.ui.heightGroup.setEnabled(False)
-            self.ui.distanceGroup.setEnabled(False)
+            _set_ui_play_groups(False)
 
     def playSound(self) -> None:
         self.player.stop()
@@ -229,7 +232,7 @@ class UTSEditor(Editor):
             self.player.setMedia(QMediaContent(), self.buffer)
             QtCore.QTimer.singleShot(0, self.player.play)
         else:
-            QMessageBox(QMessageBox.Critical, "Could not find audio file", "Could not find audio resource '{}'.".format(resname))
+            QMessageBox(QMessageBox.Critical, "Could not find audio file", f"Could not find audio resource '{resname}'.")
 
     def addSound(self) -> None:
         item = QListWidgetItem("new sound")

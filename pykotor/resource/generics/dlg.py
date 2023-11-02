@@ -511,7 +511,7 @@ def construct_dlg(
         link.active2_param5 = gff_struct.acquire("Param5b", 0)
         link.active2_param6 = gff_struct.acquire("ParamStrB", "")
 
-    dlg = DLG(False)
+    dlg = DLG(blank_node=False)
 
     root = gff.root
 

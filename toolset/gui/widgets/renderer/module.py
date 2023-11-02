@@ -16,6 +16,7 @@ from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
     from data.installation import HTInstallation
+    from glm import vec3
     from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 
     from pykotor.common.module import Module
@@ -154,21 +155,21 @@ class ModuleRenderer(QOpenGLWidget):
             right: Units to move to the right.
             up: Units to move upwards.
         """
-        forward *= self.scene.camera.forward()
+        forward_vec: vec3 = forward * self.scene.camera.forward()
         sideward = right * self.scene.camera.sideward()
 
-        self.scene.camera.x += (forward.x + sideward.x)
-        self.scene.camera.y += (forward.y + sideward.y)
+        self.scene.camera.x += (forward_vec.x + sideward.x)
+        self.scene.camera.y += (forward_vec.y + sideward.y)
         self.scene.camera.z += up
 
     def moveCamera(self, forward: float, right: float, up: float) -> None:
-        forward *= self.scene.camera.forward(False)
+        forward_vec: vec3 = forward * self.scene.camera.forward(False)
         sideward = right * self.scene.camera.sideward(False)
         upward = -up * self.scene.camera.upward(False)
 
-        self.scene.camera.x += upward.x + sideward.x + forward.x
-        self.scene.camera.y += upward.y + sideward.y + forward.y
-        self.scene.camera.z += upward.z + sideward.z + forward.z
+        self.scene.camera.x += upward.x + sideward.x + forward_vec.x
+        self.scene.camera.y += upward.y + sideward.y + forward_vec.y
+        self.scene.camera.z += upward.z + sideward.z + forward_vec.z
 
     def rotateCamera(self, yaw: float, pitch: float, snapRotations: bool = True) -> None:
         """Rotates the camera by the angles (radians) specified.

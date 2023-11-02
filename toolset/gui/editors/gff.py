@@ -24,6 +24,8 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.extract.installation import Installation
 
 _VALUE_NODE_ROLE = QtCore.Qt.UserRole + 1
@@ -112,7 +114,7 @@ class GFFEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.removeSelectedNodes)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
         gff = read_gff(data)
 
@@ -148,17 +150,17 @@ class GFFEditor(Editor):
             node.appendRow(childNode)
 
     def _load_list(self, node: QStandardItem, gffList: GFFList) -> None:
-        for _i, gffSturct in enumerate(gffList):
+        for gffStruct in gffList:
             childNode = QStandardItem("")
             childNode.setForeground(QBrush(QColor(0x660000)))
-            childNode.setData(gffSturct.struct_id, _VALUE_NODE_ROLE)
+            childNode.setData(gffStruct.struct_id, _VALUE_NODE_ROLE)
             node.appendRow(childNode)
             self.refreshItemText(childNode)
-            self._load_struct(childNode, gffSturct)
+            self._load_struct(childNode, gffStruct)
 
     def build(self) -> tuple[bytes, bytes]:
         try:
-            content = GFFContent(self._restype.extension.upper() + " ")
+            content = GFFContent(f"{self._restype.extension.upper()} ")
         except ValueError:
             content = GFFContent.GFF
 
@@ -243,50 +245,39 @@ class GFFEditor(Editor):
         self.loadItem(item)
 
     def loadItem(self, item: QListWidgetItem):
+        def set_widget(arg0, arg1, item):
+            self.ui.pages.setCurrentWidget(self.ui.intPage)
+            self.ui.intSpin.setRange(arg0, arg1)
+            self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
         if item.data(_TYPE_NODE_ROLE) is None:  # Field-less struct (root or in list)
             self.ui.fieldBox.setEnabled(False)
 
-            self.ui.pages.setCurrentWidget(self.ui.intPage)
-            self.ui.intSpin.setRange(-1, 0xFFFFFFFF)
-            self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+            set_widget(-1, 0xFFFFFFFF, item)
         else:
             self.ui.fieldBox.setEnabled(True)
             self.ui.typeCombo.setCurrentText(item.data(_TYPE_NODE_ROLE).name)
             self.ui.labelEdit.setText(item.data(_LABEL_NODE_ROLE))
 
             if item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int8:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-0x80, 0x7F)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(-0x80, 0x7F, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int16:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-0x8000, 0x7FFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(-0x8000, 0x7FFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int32:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-0x80000000, 0x7FFFFFFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(-0x80000000, 0x7FFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Int64:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-0x8000000000000000, 0x7FFFFFFFFFFFFFFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(-0x8000000000000000, 0x7FFFFFFFFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt8:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 0xFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(0, 0xFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt16:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 0xFFFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(0, 0xFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt32:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 0xFFFFFFFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(0, 0xFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.UInt64:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(0, 0xFFFFFFFFFFFFFFFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
-            elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Double or item.data(_TYPE_NODE_ROLE) == GFFFieldType.Single:
+                set_widget(0, 0xFFFFFFFFFFFFFFFF, item)
+            elif item.data(_TYPE_NODE_ROLE) in [
+                GFFFieldType.Double,
+                GFFFieldType.Single,
+            ]:
                 self.ui.pages.setCurrentWidget(self.ui.floatPage)
                 self.ui.floatSpin.setValue(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.ResRef:
@@ -296,9 +287,7 @@ class GFFEditor(Editor):
                 self.ui.pages.setCurrentWidget(self.ui.textPage)
                 self.ui.textEdit.setPlainText(item.data(_VALUE_NODE_ROLE))
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Struct:
-                self.ui.pages.setCurrentWidget(self.ui.intPage)
-                self.ui.intSpin.setRange(-1, 0xFFFFFFFF)
-                self.ui.intSpin.setValue(item.data(_VALUE_NODE_ROLE))
+                set_widget(-1, 0xFFFFFFFF, item)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.List:
                 self.ui.pages.setCurrentWidget(self.ui.blankPage)
             elif item.data(_TYPE_NODE_ROLE) == GFFFieldType.Vector3:
@@ -324,7 +313,7 @@ class GFFEditor(Editor):
                 self.ui.stringrefSpin.setValue(locstring.stringref)
                 self.ui.substringList.clear()
                 for language, gender, text in locstring:
-                    item = QListWidgetItem(language.name.title() + ", " + gender.name.title())
+                    item = QListWidgetItem(f"{language.name.title()}, {gender.name.title()}")
                     item.setData(_TEXT_SUBSTRING_ROLE, text)
                     item.setData(_ID_SUBSTRING_ROLE, LocalizedString.substring_id(language, gender))
                     self.ui.substringList.addItem(item)
@@ -431,13 +420,13 @@ class GFFEditor(Editor):
         if ftype is None and item.parent() is None:
             text = "[ROOT]"
         elif ftype is None:
-            text = "{} {} = {}".format(str(item.row()).ljust(16), "[Struct]".ljust(17), str(value))
+            text = f'{str(item.row()).ljust(16)} {"[Struct]".ljust(17)} = {value!s}'
         elif ftype is GFFFieldType.Struct:
-            text = "{} {} = {}".format(label.ljust(16), "[Struct]".ljust(17), str(value))
+            text = f'{label.ljust(16)} {"[Struct]".ljust(17)} = {value!s}'
         elif ftype is GFFFieldType.List:
-            text = "{} {} = {}".format(label.ljust(16), "[List]".ljust(17), str(item.rowCount()))
+            text = f'{label.ljust(16)} {"[List]".ljust(17)} = {item.rowCount()!s}'
         else:
-            text = "{} {} = {}".format(label.ljust(16), ("[" + str(ftype.name) + "]").ljust(17), str(value))
+            text = f'{label.ljust(16)} {f"[{ftype.name!s}]".ljust(17)} = {value!s}'
 
         if ftype == GFFFieldType.Struct or ftype is None:
             item.setForeground(QBrush(QColor(0x660000)))
@@ -521,57 +510,7 @@ class GFFEditor(Editor):
                     lambda: self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct()),
                 )
             elif item.data(_TYPE_NODE_ROLE) in [GFFFieldType.Struct, None]:
-                menu.addAction("Add UInt8").triggered.connect(lambda: self.insertNode(item, "New UInt8", GFFFieldType.UInt8, 0))
-                menu.addAction("Add UInt16").triggered.connect(
-                    lambda: self.insertNode(item, "New UInt16", GFFFieldType.UInt16, 0),
-                )
-                menu.addAction("Add UInt32").triggered.connect(
-                    lambda: self.insertNode(item, "New UInt32", GFFFieldType.UInt32, 0),
-                )
-                menu.addAction("Add UInt64").triggered.connect(
-                    lambda: self.insertNode(item, "New UInt64", GFFFieldType.UInt64, 0),
-                )
-                menu.addAction("Add Int8").triggered.connect(lambda: self.insertNode(item, "New Int8", GFFFieldType.Int8, 0))
-                menu.addAction("Add Int16").triggered.connect(lambda: self.insertNode(item, "New Int16", GFFFieldType.Int16, 0))
-                menu.addAction("Add Int32").triggered.connect(lambda: self.insertNode(item, "New Int32", GFFFieldType.Int32, 0))
-                menu.addAction("Add Int64").triggered.connect(lambda: self.insertNode(item, "New Int64", GFFFieldType.Int64, 0))
-                menu.addAction("Add Single").triggered.connect(
-                    lambda: self.insertNode(item, "New Single", GFFFieldType.Single, 0.0),
-                )
-                menu.addAction("Add Double").triggered.connect(
-                    lambda: self.insertNode(item, "New Double", GFFFieldType.Double, 0.0),
-                )
-                menu.addAction("Add ResRef").triggered.connect(
-                    lambda: self.insertNode(item, "New ResRef", GFFFieldType.ResRef, 0),
-                )
-                menu.addAction("Add String").triggered.connect(
-                    lambda: self.insertNode(item, "New String", GFFFieldType.String, 0),
-                )
-                menu.addAction("Add LocalizedString").triggered.connect(
-                    lambda: self.insertNode(
-                        item,
-                        "New LocalizedString",
-                        GFFFieldType.LocalizedString,
-                        LocalizedString.from_invalid(),
-                    ),
-                )
-                menu.addAction("Add Binary").triggered.connect(
-                    lambda: self.insertNode(item, "New Binary", GFFFieldType.Binary, b""),
-                )
-                menu.addAction("Add Vector3").triggered.connect(
-                    lambda: self.insertNode(item, "New Vector3", GFFFieldType.Vector3, Vector3.from_null()),
-                )
-                menu.addAction("Add Vector4").triggered.connect(
-                    lambda: self.insertNode(item, "New Vector4", GFFFieldType.Vector4, Vector3.from_null()),
-                )
-                menu.addSeparator()
-                menu.addAction("Add Struct").triggered.connect(
-                    lambda: self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct()),
-                )
-                menu.addAction("Add List").triggered.connect(
-                    lambda: self.insertNode(item, "New List", GFFFieldType.List, GFFList()),
-                )
-                menu.addSeparator()
+                self._build_context_menu_gff_struct(menu, item)
             else:
                 ...
 
@@ -579,6 +518,59 @@ class GFFEditor(Editor):
                 menu.addAction("Remove").triggered.connect(lambda: self.removeNode(item))
 
             menu.popup(self.ui.treeView.viewport().mapToGlobal(point))
+
+    def _build_context_menu_gff_struct(self, menu: QMenu, item: QStandardItem):
+        menu.addAction("Add UInt8").triggered.connect(lambda: self.insertNode(item, "New UInt8", GFFFieldType.UInt8, 0))
+        menu.addAction("Add UInt16").triggered.connect(
+            lambda: self.insertNode(item, "New UInt16", GFFFieldType.UInt16, 0),
+        )
+        menu.addAction("Add UInt32").triggered.connect(
+            lambda: self.insertNode(item, "New UInt32", GFFFieldType.UInt32, 0),
+        )
+        menu.addAction("Add UInt64").triggered.connect(
+            lambda: self.insertNode(item, "New UInt64", GFFFieldType.UInt64, 0),
+        )
+        menu.addAction("Add Int8").triggered.connect(lambda: self.insertNode(item, "New Int8", GFFFieldType.Int8, 0))
+        menu.addAction("Add Int16").triggered.connect(lambda: self.insertNode(item, "New Int16", GFFFieldType.Int16, 0))
+        menu.addAction("Add Int32").triggered.connect(lambda: self.insertNode(item, "New Int32", GFFFieldType.Int32, 0))
+        menu.addAction("Add Int64").triggered.connect(lambda: self.insertNode(item, "New Int64", GFFFieldType.Int64, 0))
+        menu.addAction("Add Single").triggered.connect(
+            lambda: self.insertNode(item, "New Single", GFFFieldType.Single, 0.0),
+        )
+        menu.addAction("Add Double").triggered.connect(
+            lambda: self.insertNode(item, "New Double", GFFFieldType.Double, 0.0),
+        )
+        menu.addAction("Add ResRef").triggered.connect(
+            lambda: self.insertNode(item, "New ResRef", GFFFieldType.ResRef, 0),
+        )
+        menu.addAction("Add String").triggered.connect(
+            lambda: self.insertNode(item, "New String", GFFFieldType.String, 0),
+        )
+        menu.addAction("Add LocalizedString").triggered.connect(
+            lambda: self.insertNode(
+                item,
+                "New LocalizedString",
+                GFFFieldType.LocalizedString,
+                LocalizedString.from_invalid(),
+            ),
+        )
+        menu.addAction("Add Binary").triggered.connect(
+            lambda: self.insertNode(item, "New Binary", GFFFieldType.Binary, b""),
+        )
+        menu.addAction("Add Vector3").triggered.connect(
+            lambda: self.insertNode(item, "New Vector3", GFFFieldType.Vector3, Vector3.from_null()),
+        )
+        menu.addAction("Add Vector4").triggered.connect(
+            lambda: self.insertNode(item, "New Vector4", GFFFieldType.Vector4, Vector3.from_null()),
+        )
+        menu.addSeparator()
+        menu.addAction("Add Struct").triggered.connect(
+            lambda: self.insertNode(item, "New Struct", GFFFieldType.Struct, GFFStruct()),
+        )
+        menu.addAction("Add List").triggered.connect(
+            lambda: self.insertNode(item, "New List", GFFFieldType.List, GFFList()),
+        )
+        menu.addSeparator()
 
     def selectTalkTable(self) -> None:
         filepath, filter = QFileDialog.getOpenFileName(self, "Select a TLK file", "", "TalkTable (*.tlk)")
@@ -601,8 +593,8 @@ class GFFSortFilterProxyModel(QSortFilterProxyModel):
         leftText: str = self.sourceModel().itemFromIndex(left).data(_LABEL_NODE_ROLE)
         rightText: str = self.sourceModel().itemFromIndex(right).data(_LABEL_NODE_ROLE)
 
-        leftText = leftText if leftText else str(self.sourceModel().itemFromIndex(left).data(_VALUE_NODE_ROLE))
-        rightText = rightText if rightText else str(self.sourceModel().itemFromIndex(right).data(_VALUE_NODE_ROLE))
+        leftText = leftText or str(self.sourceModel().itemFromIndex(left).data(_VALUE_NODE_ROLE))
+        rightText = rightText or str(self.sourceModel().itemFromIndex(right).data(_VALUE_NODE_ROLE))
 
         if leftText.isdigit() and rightText.isdigit():
             leftInt = int(leftText)

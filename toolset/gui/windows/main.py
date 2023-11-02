@@ -69,6 +69,8 @@ if TYPE_CHECKING:
 
     from gui.widgets.main_widgets import ResourceList
 
+    from pykotor.resource.formats.tpc.tpc_data import TPC
+
 
 class ToolWindow(QMainWindow):
     moduleFilesUpdated = QtCore.pyqtSignal(object, object)
@@ -629,9 +631,10 @@ class ToolWindow(QMainWindow):
 
         except Exception as e:
             traceback.print_exc()
-            raise Exception(f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}") from e
+            msg = f"Failed to extract resource: {resource.resname()}.{resource.restype().extension}"
+            raise Exception(msg) from e
 
-    def _extractTxi(self, tpc, filepath: Path):
+    def _extractTxi(self, tpc: TPC, filepath: Path):
         with filepath.with_suffix(".txi").open("wb") as file:
             file.write(tpc.txi.encode("ascii"))
 

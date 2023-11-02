@@ -113,14 +113,14 @@ class IndoorMapBuilder(QMainWindow):
         if self._filepath == "":
             self.setWindowTitle(f"{self._installation.name} - Map Builder")
         else:
-            self.setWindowTitle("{} - {} - Map Builder".format(self._filepath, self._installation.name))
+            self.setWindowTitle(f"{self._filepath} - {self._installation.name} - Map Builder")
 
     def _refreshStatusBar(self) -> None:
         screen = self.ui.mapRenderer.mapFromGlobal(self.cursor().pos())
         world = self.ui.mapRenderer.toWorldCoords(screen.x(), screen.y())
         obj = self.ui.mapRenderer.roomUnderMouse()
 
-        self.statusBar().showMessage("X: {}, Y: {}, Object: {}".format(world.x, world.y, obj.component.name if obj else ""))
+        self.statusBar().showMessage(f'X: {world.x}, Y: {world.y}, Object: {obj.component.name if obj else ""}')
 
     def showHelpWindow(self) -> None:
         window = HelpWindow(self, "./help/tools/2-mapBuilder.md")

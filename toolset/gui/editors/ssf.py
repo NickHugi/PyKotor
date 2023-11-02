@@ -10,6 +10,8 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.extract.installation import Installation
 
 
@@ -61,7 +63,7 @@ class SSFEditor(Editor):
 
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
         ssf = read_ssf(data)
 

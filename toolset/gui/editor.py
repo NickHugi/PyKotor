@@ -275,7 +275,7 @@ class Editor(QMainWindow):
 
         self.savedFile.emit(self._filepath, self._resref, self._restype, data)
 
-    def open(self):
+    def open(self):  # noqa: A003
         filepath_str, filter = QFileDialog.getOpenFileName(self, "Open file", "", self._openFilter)
         if filepath_str != "":
             c_filepath = Path(filepath_str)
@@ -308,7 +308,7 @@ class Editor(QMainWindow):
         self.refreshWindowTitle()
         self.loadedFile.emit(str(self._filepath), self._resref, self._restype, data)
 
-    def exit(self) -> None:
+    def exit(self) -> None:  # noqa: A003
         self.close()
 
     def new(self) -> None:

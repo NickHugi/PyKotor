@@ -1,9 +1,13 @@
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
+
+if TYPE_CHECKING:
+    from PyQt5.QtCore import QPoint
 
 
 class ComboBox2DA(QComboBox):
@@ -15,7 +19,7 @@ class ComboBox2DA(QComboBox):
 
         self._sortAlphabetically = False
 
-    def addItem(self, text: str, row: int = None) -> None:
+    def addItem(self, text: str, row: int | None = None) -> None:
         """Adds the 2DA row into the combobox. If the row index is not specified, then the value will be set to the number
         of items in the combobox.
 
@@ -28,19 +32,20 @@ class ComboBox2DA(QComboBox):
             row = self.count()
         super().addItem(text, row)
 
-    def setItems(self, values: List[str], sortAlphabetically: bool = True, cleanupStrings: bool = True,
+    def setItems(self, values: list[str], sortAlphabetically: bool = True, cleanupStrings: bool = True,
                  ignoreBlanks: bool = False) -> None:
         self._sortAlphabetically = sortAlphabetically
         self.clear()
 
         for index, text in enumerate(values):
+            new_text = text
             if cleanupStrings:
-                text = text.replace("TRAP_", "")
-                text = text.replace("GENDER_", "")
-                text = text.replace("_", " ")
-            if ignoreBlanks and text == "":
+                new_text = text.replace("TRAP_", "")
+                new_text = text.replace("GENDER_", "")
+                new_text = text.replace("_", " ")
+            if ignoreBlanks and new_text == "":
                 continue
-            super().addItem(text, index)
+            super().addItem(new_text, index)
 
         self.enableSort() if self._sortAlphabetically else self.disableSort()
 

@@ -180,4 +180,9 @@
   ".",
 ],
 "python.testing.unittestEnabled": true,
+"python.missingPackage.severity": "Information",
+"python.analysis.diagnosticSeverityOverrides": {
+  "reportGeneralTypeIssues": "none",
+  "reportOptionalMemberAccess": "none"
+},
 }

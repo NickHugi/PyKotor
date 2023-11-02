@@ -45,7 +45,7 @@ class SelectModuleDialog(QDialog):
         filepath, _ = QFileDialog.getOpenFileName(
             self,
             "Select module to open",
-            self._installation.module_path(),
+            str(self._installation.module_path()),
             "Module File (*.mod *.rim *.erf)",
         )
 

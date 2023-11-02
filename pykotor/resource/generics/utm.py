@@ -100,7 +100,7 @@ def dismantle_utm(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_posy", 0)
         if item.infinite:
-            item_struct.set_uint8("Infinite", True)
+            item_struct.set_uint8("Infinite", value=True)
 
     if use_deprecated:
         root.set_uint8("ID", utm.id)

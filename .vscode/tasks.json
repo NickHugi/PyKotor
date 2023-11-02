@@ -122,39 +122,46 @@
       "problemMatcher": []
     },
     {
-      "label": "pylint: whole project",
-      "dependsOn": ["requirements.txt", "install_pylint"],
+      "label": "install_pylint",
       "type": "shell",
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
+        "pip",
+        "install",
         "pylint",
-        "--msg-template",
-        "\"{path}:{line}:{column}:{category}:{symbol} - {msg}\"",
-        "${workspaceFolder}",
+        "--upgrade"
       ],
       "presentation": {
-        "reveal": "never",
-        "panel": "shared"
+        "echo": true,
+        "reveal": "always"
       },
-      "problemMatcher": {
-        "owner": "python",
-        "fileLocation": [
-          "relative",
-          "${workspaceFolder}"
-        ],
-        "pattern": {
-          "regexp": "^(.+):(\\d+):(\\d+):(\\w+):(.*)$",
-          "file": 1,
-          "line": 2,
-          "column": 3,
-          "severity": 4,
-          "message": 5
-        }
-      }
+      "problemMatcher": []
     },
     {
-      "label": "Python: lint entire project with mypy",
+        "label": "pylint: toolset",
+        "dependsOn": ["requirements.txt", "install_pylint"],
+        "type": "shell",
+        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415,I1101 toolset",
+        "presentation": {
+            "reveal": "never",
+            "panel": "shared"
+        },
+        "problemMatcher": []
+    },
+    {
+        "label": "pylint: pykotor",
+        "dependsOn": ["requirements.txt", "install_pylint"],
+        "type": "shell",
+        "command": "${command:python.interpreterPath} -m pylint --disable=C0301,C0302,C0115,C0116,R0913,C0114,R0903,R0902,W0212,R0914,R0904,W0613,E0611,C0415 pykotor",
+        "presentation": {
+            "reveal": "never",
+            "panel": "shared"
+        },
+        "problemMatcher": []
+    },
+    {
+      "label": "Python: lint pykotor with mypy",
       "dependsOn": ["requirements.txt", "install_mypy"],
       "type": "shell",
       "command": "${command:python.interpreterPath}",
@@ -165,6 +172,42 @@
         "--show-column-numbers",
         "--package",
         "pykotor",
+        "--check-untyped-defs",
+        "--no-strict-optional"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": {
+        "owner": "python",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+): (\\w+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Python: lint toolset with mypy",
+      "dependsOn": ["install_mypy", "requirements.txt"],
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "mypy",
+        "--no-pretty",
+        "--show-column-numbers",
+        "--package",
+        "toolset",
         "--check-untyped-defs",
         "--no-strict-optional"
       ],
@@ -225,7 +268,7 @@
     {
       "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
-      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "dependsOn": ["requirements.txt"],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -248,6 +291,7 @@
         "-m",
         "nuitka",
         "--onefile",
+//        "--mingw64",
         "--windows-icon-from-ico=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "--output-dir=${workspaceFolder}${pathSeparator}nuitka_dist",
         "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py",

@@ -62,7 +62,7 @@ class ModuleDesigner(QMainWindow):
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
-        self._module: Optional[Module] = None
+        self.__module: Optional[Module] = None
 
         self.selectedInstances: List[GITInstance] = []
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
@@ -107,7 +107,7 @@ class ModuleDesigner(QMainWindow):
             SurfaceMaterial.DEEP_WATER: intColorToQColor(self.settings.deepWaterMaterialColour),
             SurfaceMaterial.DOOR: intColorToQColor(self.settings.doorMaterialColour),
             SurfaceMaterial.NON_WALK_GRASS: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
-            SurfaceMaterial.TRIGGER: intColorToQColor(self.settings.nonWalkGrassMaterialColour)
+            SurfaceMaterial.TRIGGER: intColorToQColor(self.settings.nonWalkGrassMaterialColour),
         }
 
         self.ui.flatRenderer.materialColors = self.materialColors
@@ -122,6 +122,13 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
         QTimer().singleShot(33, self.openModule)
+
+    @property
+    def _module(self) -> Module:
+        if self.__module is None:
+            msg = "_module cannot be None"
+            raise ValueError(msg)
+        return self.__module
 
     def _setupSignals(self) -> None:
         self.ui.actionOpen.triggered.connect(self.openModule)
@@ -233,7 +240,7 @@ class ModuleDesigner(QMainWindow):
             ResourceType.TGA: QTreeWidgetItem(["Textures"]),
             ResourceType.NCS: QTreeWidgetItem(["Scripts"]),
             ResourceType.IFO: QTreeWidgetItem(["Module Data"]),
-            ResourceType.INVALID: QTreeWidgetItem(["Other"])
+            ResourceType.INVALID: QTreeWidgetItem(["Other"]),
         }
         categories[ResourceType.MDX] = categories[ResourceType.MDL]
         categories[ResourceType.WOK] = categories[ResourceType.MDL]
@@ -246,13 +253,13 @@ class ModuleDesigner(QMainWindow):
         categories[ResourceType.PTH] = categories[ResourceType.IFO]
         categories[ResourceType.NSS] = categories[ResourceType.NCS]
 
-        for category in categories:
-            self.ui.resourceTree.addTopLevelItem(categories[category])
+        for value in categories.values():
+            self.ui.resourceTree.addTopLevelItem(value)
 
         for resource in self._module.resources.values():
-            item = QTreeWidgetItem([resource.resname() + "." + resource.restype().extension])
+            item = QTreeWidgetItem([f"{resource.resname()}.{resource.restype().extension}"])
             item.setData(0, QtCore.Qt.UserRole, resource)
-            category = categories[resource.restype()] if resource.restype() in categories else categories[ResourceType.INVALID]
+            category = categories.get(resource.restype(), categories[ResourceType.INVALID])
             category.addChild(item)
 
         self.ui.resourceTree.sortByColumn(0, QtCore.Qt.AscendingOrder)
@@ -270,7 +277,7 @@ class ModuleDesigner(QMainWindow):
             editor.savedFile.connect(lambda: self._onSavedResource(resource))
 
     def copyResourceToOverride(self, resource: ModuleResource) -> None:
-        location = f"{self._installation.override_path()}/{resource.resname()}.{resource.restype().extension}"
+        location = self._installation.override_path() / f"{resource.resname()}.{resource.restype().extension}"
         BinaryWriter.dump(location, resource.data())
         resource.add_locations([location])
         resource.activate(location)
@@ -343,9 +350,7 @@ class ModuleDesigner(QMainWindow):
 
             if isinstance(instance, GITCamera):
                 item.setText(f"Camera #{instance.camera_id}")
-                item.setToolTip("Struct Index: {}\nCamera ID: {}\nFOV: {}".format(
-                    struct_index, instance.camera_id, instance.fov,
-                ))
+                item.setToolTip(f"Struct Index: {struct_index}\nCamera ID: {instance.camera_id}\nFOV: {instance.fov}")
                 item.setData(QtCore.Qt.UserRole+1, "cam" + str(instance.camera_id).rjust(10, "0"))
             else:
                 resource = self._module.resource(instance.identifier().resname, instance.identifier().restype)
@@ -370,9 +375,7 @@ class ModuleDesigner(QMainWindow):
                     font.setItalic(True)
 
                 item.setText(name)
-                item.setToolTip("Struct Index: {}\nResRef: {}\nName: {}\nTag: {}".format(
-                    struct_index, resref, name, tag
-                ))
+                item.setToolTip(f"Struct Index: {struct_index}\nResRef: {resref}\nName: {name}\nTag: {tag}")
                 item.setData(QtCore.Qt.UserRole+1, instance.identifier().restype.extension + name)
 
             item.setFont(font)
@@ -536,8 +539,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.flatRenderer.snapCameraToPoint(instance.position)
 
     def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox) -> None:
-        """
-        This method should be called whenever one of the instance visibility checkboxes have been double clicked. The
+        """This method should be called whenever one of the instance visibility checkboxes have been double clicked. The
         resulting affect should be that all checkboxes become unchecked except for the one that was pressed.
         """
         self.ui.viewCreatureCheck.setChecked(False)
@@ -569,7 +571,7 @@ class ModuleDesigner(QMainWindow):
         menu.addAction(copyToOverrideAction)
         menu.addSeparator()
         for location in data.locations():
-            locationAction = QAction(location, self)
+            locationAction = QAction(str(location), self)
             locationAction.triggered.connect(lambda _, loc=location: self.activateResourceFile(data, loc))
             if location == data.active():
                 locationAction.setEnabled(False)
@@ -608,7 +610,7 @@ class ModuleDesigner(QMainWindow):
     def onContextMenuSelectionNone(self, world: Vector3):
         menu = QMenu(self)
 
-        view = self.ui.mainRenderer.scene.camera.truePosition()
+        view = self.ui.mainRenderer.scene.camera.true_position()
         rot = self.ui.mainRenderer.scene.camera
         menu.addAction("Insert Camera").triggered.connect(lambda: self.addInstance(GITCamera(*world), False))
         menu.addAction("Insert Camera at View").triggered.connect(lambda: self.addInstance(GITCamera(view.x, view.y, view.z, rot.yaw, rot.pitch, 0, 0), False))
@@ -953,16 +955,21 @@ class ModuleDesignerControls2d:
                 self.editor.setSelection([])
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            instance = deepcopy(self.editor.selectedInstances[-1])
-            screen = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
-            instance.position = self.renderer.toWorldCoords(screen.x(), screen.y())
-            self.editor.git().add(instance)
-            self.editor.rebuildInstanceList()
-            self.editor.setSelection([instance])
-
+            screen = self._extracted_from_onMousePressed_9()
         if self.openContextMenu.satisfied(buttons, keys):
             world = self.renderer.toWorldCoords(screen.x, screen.y)
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
+
+    # TODO Rename this here and in `onMousePressed`
+    def _extracted_from_onMousePressed_9(self):
+        instance = deepcopy(self.editor.selectedInstances[-1])
+        result = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
+        instance.position = self.renderer.toWorldCoords(result.x(), result.y())
+        self.editor.git().add(instance)
+        self.editor.rebuildInstanceList()
+        self.editor.setSelection([instance])
+
+        return result
 
     def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...

@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import multiprocessing
 from abc import abstractmethod
 from contextlib import suppress
 from time import sleep
-from typing import Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
-from data.installation import HTInstallation
 from PyQt5 import QtCore
 from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
 from PyQt5.QtGui import (
@@ -18,10 +19,14 @@ from PyQt5.QtGui import (
 )
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 
-from pykotor.extract.file import FileResource
 from pykotor.extract.installation import SearchLocation
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from data.installation import HTInstallation
+
+    from pykotor.extract.file import FileResource
 
 GFF_TYPES = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
              ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,
@@ -37,7 +42,7 @@ class MainWindowList(QWidget):
     sectionChanged = QtCore.pyqtSignal(object)
 
     @abstractmethod
-    def selectedResources(self) -> List[FileResource]:
+    def selectedResources(self) -> list[FileResource]:
         ...
 
 
@@ -86,7 +91,7 @@ class ResourceList(MainWindowList):
             if section in self.ui.sectionCombo.itemText(i):
                 self.ui.sectionCombo.setCurrentIndex(i)
 
-    def setResources(self, resources: List[FileResource]) -> None:
+    def setResources(self, resources: list[FileResource]) -> None:
         allResources = self.modulesModel.allResourcesItems()
 
         # Add any missing resources to the list
@@ -108,7 +113,7 @@ class ResourceList(MainWindowList):
         # Remove unused categories
         self.modulesModel.removeUnusedCategories()
 
-    def setSections(self, sections: List[QStandardItem]) -> None:
+    def setSections(self, sections: list[QStandardItem]) -> None:
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
@@ -123,11 +128,11 @@ class ResourceList(MainWindowList):
 
         for item in model.allResourcesItems():
             if item.resource.resname() == resource.resname() and item.resource.restype() == resource.restype():
-                parentIndex = model.proxyModel().mapFromSource(item.parent().index())
+                _parentIndex = model.proxyModel().mapFromSource(item.parent().index())  # TODO: why is this unused
                 itemIndex = model.proxyModel().mapFromSource(item.index())
                 QTimer.singleShot(1, lambda index=itemIndex, item=item: select(item.parent().index(), index))
 
-    def selectedResources(self) -> List[FileResource]:
+    def selectedResources(self) -> list[FileResource]:
         return self.modulesModel.resourceFromIndexes(self.ui.resourceTree.selectedIndexes())
 
     def onFilterStringUpdated(self) -> None:
@@ -175,7 +180,7 @@ class ResourceModel(QStandardItemModel):
 
     def __init__(self):
         super().__init__()
-        self._categoryItems: Dict[str, QStandardItem] = {}
+        self._categoryItems: dict[str, QStandardItem] = {}
         self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
         self._proxyModel.setRecursiveFilteringEnabled(True)
@@ -207,23 +212,24 @@ class ResourceModel(QStandardItemModel):
         item2 = QStandardItem(resource.restype().extension.upper())
         self._getCategoryItem(resource.restype()).appendRow([item1, item2])
 
-    def resourceFromIndexes(self, indexes: List[QModelIndex], proxy: bool = True) -> List[FileResource]:
+    def resourceFromIndexes(self, indexes: list[QModelIndex], proxy: bool = True) -> list[FileResource]:
         items = []
         for index in indexes:
             sourceIndex = self._proxyModel.mapToSource(index) if proxy else index
             items.append(self.itemFromIndex(sourceIndex))
         return self.resourceFromItems(items)
 
-    def resourceFromItems(self, items: List[QStandardItem]) -> List[FileResource]:
+    def resourceFromItems(self, items: list[QStandardItem]) -> list[FileResource]:
         return [item.resource for item in items if hasattr(item, "resource")]
 
-    def allResourcesItems(self) -> List[QStandardItem]:
-        """Returns a list of all QStandardItem objects in the model that represents resource files."""
-        resources = []
-        for category in self._categoryItems.values():
-            for i in range(category.rowCount()):
-                resources.append(category.child(i, 0))
-        return resources
+    def allResourcesItems(self) -> list[QStandardItem]:
+        """Returns a list of all QStandardItem objects in the model that represent resource files."""
+        resources = [
+            category.child(i, 0)
+            for category in self._categoryItems.values()
+            for i in range(category.rowCount())
+        ]
+        return [item for item in resources if item is not None]
 
     def removeUnusedCategories(self):
         for row in range(self.rowCount())[::-1]:
@@ -245,7 +251,7 @@ class TextureList(MainWindowList):
         self.setupSignals()
 
         self._installation: Optional[HTInstallation] = None
-        self._scannedTextures: Set[str] = set()
+        self._scannedTextures: set[str] = set()
 
         self.texturesModel = QStandardItemModel()
         self.texturesProxyModel = QSortFilterProxyModel()
@@ -257,9 +263,10 @@ class TextureList(MainWindowList):
 
         self._taskQueue = multiprocessing.JoinableQueue()
         self._resultQueue = multiprocessing.Queue()
-        self._consumers: List[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for i in
+        self._consumers: list[TextureListConsumer] = [TextureListConsumer(self._taskQueue, self._resultQueue) for i in
                                                       range(multiprocessing.cpu_count())]
-        [consumer.start() for consumer in self._consumers]
+        for consumer in self._consumers:
+            consumer.start()
 
         self._scanner = QThread(self)
         self._scanner.run = self.scan
@@ -276,13 +283,14 @@ class TextureList(MainWindowList):
 
     def doTerminations(self) -> None:
         self._scanner.terminate()
-        [consumer.terminate() for consumer in self._consumers]
+        for consumer in self._consumers:
+            consumer.terminate()
 
     def setInstallation(self, installation: HTInstallation) -> None:
         self._installation = installation
 
-    def setResources(self, resources: List[FileResource]) -> None:
-        blankImage = QImage(bytes([0 for i in range(64 * 64 * 3)]), 64, 64, QImage.Format_RGB888)
+    def setResources(self, resources: list[FileResource]) -> None:
+        blankImage = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
         blankIcon = QIcon(QPixmap.fromImage(blankImage))
 
         self.texturesModel.clear()
@@ -296,12 +304,12 @@ class TextureList(MainWindowList):
         if self._installation is not None:
             self.onTextureListScrolled()
 
-    def setSections(self, sections: List[QStandardItem]) -> None:
+    def setSections(self, sections: list[QStandardItem]) -> None:
         self.sectionModel.clear()
         for section in sections:
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
-    def selectedResources(self) -> List[FileResource]:
+    def selectedResources(self) -> list[FileResource]:
         resources = []
         for proxyIndex in self.ui.resourceList.selectedIndexes():
             sourceIndex = self.texturesProxyModel.mapToSource(proxyIndex)
@@ -309,7 +317,7 @@ class TextureList(MainWindowList):
             resources.append(item.data(QtCore.Qt.UserRole + 1))
         return resources
 
-    def visibleItems(self) -> List[QStandardItem]:
+    def visibleItems(self) -> list[QStandardItem]:
         if self.texturesModel.rowCount() == 0:
             return []
 
@@ -335,7 +343,7 @@ class TextureList(MainWindowList):
         items = []
 
         if firstItem:
-            startRow = firstItem.row()
+            _startRow = firstItem.row()  # TODO: why is this unused
             widthCount = scanWidth // 92
             heightCount = scanHeight // 92 + 2
             numVisible = min(proxyModel.rowCount(), widthCount * heightCount)

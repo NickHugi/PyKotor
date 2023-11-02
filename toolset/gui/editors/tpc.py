@@ -11,6 +11,8 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from PyQt5.QtWidgets import QWidget
 
     from pykotor.extract.installation import Installation
@@ -29,14 +31,14 @@ class TPCEditor(Editor):
         self._setupSignals()
 
         self._tpc: TPC = TPC()
-        self._tpc.set_single(256, 256, bytes([0 for i in range(256 * 256 * 4)]), TPCTextureFormat.RGBA)
+        self._tpc.set_single(256, 256, bytes(0 for i in range(256 * 256 * 4)), TPCTextureFormat.RGBA)
 
         self.new()
 
     def _setupSignals(self) -> None:
         ...
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         if restype in [ResourceType.TPC, ResourceType.TGA]:

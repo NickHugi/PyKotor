@@ -20,6 +20,8 @@ from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from PyQt5.QtCore import QItemSelection, QPoint
 
 
@@ -92,7 +94,7 @@ class JRLEditor(Editor):
             text = row.get_string("label").replace("_", " ").title() if text == "" or text is None else text
             self.ui.categoryPlanetSelect.addItem(text)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         self._jrl = read_jrl(data)

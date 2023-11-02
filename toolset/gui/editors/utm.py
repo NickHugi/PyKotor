@@ -83,7 +83,7 @@ class UTMEditor(Editor):
         gff = dismantle_utm(utm)
         write_gff(gff, data)
 
-        return data, b''
+        return data, b""
 
     def new(self) -> None:
         super().new()

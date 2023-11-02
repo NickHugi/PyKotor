@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
     from toolset.data.installation import HTInstallation
 
-windows = []
+windows: list[QWidget] = []
 
 
 def addWindow(window: QWidget) -> None:

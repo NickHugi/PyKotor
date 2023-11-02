@@ -1814,10 +1814,10 @@ class MDLBinaryWriter:
                 node_offsets.append(node_offset)
                 node_offset += bin_node.calc_size(self.game)
 
-            for j, bin_node in enumerate(bin_anim.w_nodes):
+            for j, _bin_node in enumerate(bin_anim.w_nodes):
                 self._calc_node_offset(j, bin_anim.w_nodes, node_offsets)
 
-        for i, bin_node in enumerate(self._bin_nodes):
+        for i, _bin_node in enumerate(self._bin_nodes):
             self._calc_node_offset(i, self._bin_nodes, self._node_offsets)
 
     def _calc_node_offset(

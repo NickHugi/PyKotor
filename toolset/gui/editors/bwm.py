@@ -13,6 +13,8 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from toolset.data.installation import HTInstallation
 
 _TRANS_FACE_ROLE = QtCore.Qt.UserRole + 1
@@ -79,7 +81,7 @@ class BWMEditor(Editor):
             item.setData(QtCore.Qt.UserRole, material)
             self.ui.materialList.addItem(item)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         self._bwm = read_bwm(data)

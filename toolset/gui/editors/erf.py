@@ -17,6 +17,8 @@ from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
 
 if TYPE_CHECKING:
+    import os
+
     from toolset.data.installation import HTInstallation
 
 
@@ -54,7 +56,7 @@ class ERFEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.removeSelected)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         self.model.clear()

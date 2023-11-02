@@ -27,9 +27,9 @@ class LongSpinBox(QAbstractSpinBox):
     def text(self) -> str:
         return str(self._value)
 
-    def setRange(self, min: int, max: int) -> None:
-        self._min = min
-        self._max = max
+    def setRange(self, min_value: int, max_value: int) -> None:
+        self._min = min_value
+        self._max = max_value
 
     def _withinRange(self, value: int):
         return self._min <= value <= self._max

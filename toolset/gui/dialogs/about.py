@@ -1,6 +1,5 @@
-from PyQt5.QtWidgets import QDialog, QWidget
-
 from config import PROGRAM_VERSION
+from PyQt5.QtWidgets import QDialog, QWidget
 
 
 class About(QDialog):

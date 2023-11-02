@@ -14,6 +14,8 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from toolset.data.installation import HTInstallation
 
 
@@ -57,7 +59,7 @@ class TLKEditor(Editor):
         QShortcut("Ctrl+G", self).activated.connect(self.toggleGotoBox)
         QShortcut("Ctrl+I", self).activated.connect(self.insert)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
         self.model.clear()
         self.model.setColumnCount(2)

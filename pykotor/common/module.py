@@ -685,7 +685,7 @@ class ModuleResource(Generic[T]):
     ) -> list[Path]:
         return self._locations
 
-    def activate(self, filepath: Path | None = None) -> None:
+    def activate(self, filepath: os.PathLike | str | None = None) -> None:
         """Sets the active file to the specified path. Calling this method will reset the loaded resource.
 
         Raises:
@@ -699,11 +699,13 @@ class ModuleResource(Generic[T]):
         self._resource = None
         if filepath is None:
             self._active = self._locations[0] if len(self._locations) > 0 else None
-        elif filepath in self._locations:
-            self._active = filepath
         else:
-            msg = "The filepath '{self._active}' is not being tracked as a location for the resource."
-            raise ValueError(msg)
+            r_filepath = filepath if isinstance(filepath, Path) else Path(filepath)
+            if r_filepath in self._locations:
+                self._active = r_filepath
+            else:
+                msg = f"The filepath '{self._active}' is not being tracked as a location for the resource."
+                raise ValueError(msg)
 
     def unload(self) -> None:
         """Clears the cached resource object from memory."""

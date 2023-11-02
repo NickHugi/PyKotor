@@ -1,5 +1,4 @@
 import json
-import os
 import xml.etree.ElementTree as ElemTree
 import zipfile
 from contextlib import suppress
@@ -121,5 +120,5 @@ class HelpWindow(QMainWindow):
             item = self.ui.contentsTree.selectedItems()[0]
             filename = item.data(0, QtCore.Qt.UserRole)
             if filename:
-                self.ui.textDisplay.setSearchPaths(["./help", f"./help/{os.path.dirname(filename)}"])
+                self.ui.textDisplay.setSearchPaths(["./help", f"./help/{Path(filename).parent!s}"])
                 self.displayFile(f"./help/{filename}")

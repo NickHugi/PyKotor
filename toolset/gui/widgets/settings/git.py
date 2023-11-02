@@ -130,7 +130,7 @@ class GITSettings(Settings):
     )
     dirtMaterialColour = Settings._addSetting(
         "dirtMaterialColour",
-        4281084972
+        4281084972,
     )
     obscuringMaterialColour = Settings._addSetting(
         "obscuringMaterialColour",
