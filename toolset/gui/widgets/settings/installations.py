@@ -107,7 +107,7 @@ class InstallationConfig:
 
     @name.setter
     def name(self, value: str) -> None:
-        installations = self._settings.value("installations", {}, Dict[str, Any])
+        installations = self._settings.value("installations", {}, dict[str, Any])
         installation = installations[self._name]
 
         del installations[self._name]
