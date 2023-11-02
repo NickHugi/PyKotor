@@ -4,13 +4,6 @@ import math
 from copy import deepcopy
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
-from toolset.data.misc import ControlItem
-from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
-from toolset.gui.dialogs.select_module import SelectModuleDialog
-from toolset.gui.editors.git import openInstanceDialog
-from toolset.gui.widgets.settings.installations import GlobalSettings
-from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
-from toolset.gui.windows.help import HelpWindow
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
@@ -24,8 +17,6 @@ from PyQt5.QtWidgets import (
     QTreeWidgetItem,
     QWidget,
 )
-from toolset.utils.misc import QtMouse
-from toolset.utils.window import openResourceEditor
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -50,6 +41,15 @@ from pykotor.resource.generics.utt import read_utt
 from pykotor.resource.generics.utw import read_utw
 from pykotor.resource.type import ResourceType
 from pykotor.tools import module
+from toolset.data.misc import ControlItem
+from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
+from toolset.gui.dialogs.select_module import SelectModuleDialog
+from toolset.gui.editors.git import openInstanceDialog
+from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.gui.windows.help import HelpWindow
+from toolset.utils.misc import QtMouse
+from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
     from toolset.data.installation import HTInstallation
@@ -62,7 +62,7 @@ class ModuleDesigner(QMainWindow):
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
-        self.__module: Optional[Module] = None
+        self._module: Optional[Module] = None
 
         self.selectedInstances: List[GITInstance] = []
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
@@ -122,13 +122,6 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
         QTimer().singleShot(33, self.openModule)
-
-    @property
-    def _module(self) -> Module:
-        if self.__module is None:
-            msg = "_module cannot be None"
-            raise ValueError(msg)
-        return self.__module
 
     def _setupSignals(self) -> None:
         self.ui.actionOpen.triggered.connect(self.openModule)
