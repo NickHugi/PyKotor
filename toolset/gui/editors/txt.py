@@ -1,7 +1,7 @@
 from typing import Optional, Tuple
 
 import chardet
-from gui.editor import Editor
+from toolset.gui.editor import Editor
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
 from pykotor.extract.installation import Installation

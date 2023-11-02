@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from data.installation import HTInstallation
-from gui.dialogs.edit.locstring import LocalizedStringDialog
-from gui.editor import Editor
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff

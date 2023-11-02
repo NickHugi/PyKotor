@@ -129,4 +129,4 @@ class Ui_Dialog(object):
         self.mapNoteEnableCheck.setText(_translate("Dialog", "Map Note Enabled"))
         self.hasMapNoteCheck.setText(_translate("Dialog", "Has Map Note"))
         self.label_10.setText(_translate("Dialog", "Map Note:"))
-from gui.widgets.edit.locstring import LocalizedStringLineEdit
+from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit

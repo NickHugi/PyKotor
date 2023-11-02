@@ -8,7 +8,7 @@ from typing import Dict, Optional
 import markdown
 import requests
 from config import UPDATE_INFO_LINK
-from gui.dialogs.asyncloader import AsyncLoader
+from toolset.gui.dialogs.asyncloader import AsyncLoader
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
 

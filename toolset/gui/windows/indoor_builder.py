@@ -8,12 +8,6 @@ from typing import Dict, List, Optional, Set, Tuple
 
 import requests
 from config import UPDATE_INFO_LINK
-from data.indoorkit import Kit, KitComponent, load_kits
-from data.indoormap import IndoorMap, IndoorMapRoom
-from data.installation import HTInstallation
-from gui.dialogs.asyncloader import AsyncLoader
-from gui.dialogs.indoor_settings import IndoorMapSettings
-from gui.windows.help import HelpWindow
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QPointF, QRectF, QTimer
 from PyQt5.QtGui import (
@@ -45,6 +39,12 @@ from PyQt5.QtWidgets import (
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.bwm import BWMFace
+from toolset.data.indoorkit import Kit, KitComponent, load_kits
+from toolset.data.indoormap import IndoorMap, IndoorMapRoom
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.asyncloader import AsyncLoader
+from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
+from toolset.gui.windows.help import HelpWindow
 
 
 class IndoorMapBuilder(QMainWindow):

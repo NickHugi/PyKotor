@@ -3,11 +3,11 @@ from __future__ import annotations
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, Tuple
 
-from data.installation import HTInstallation
-from gui.dialogs.edit.dialog_animation import EditAnimationDialog
-from gui.dialogs.edit.dialog_model import CutsceneModelDialog
-from gui.dialogs.edit.locstring import LocalizedStringDialog
-from gui.editor import Editor
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
+from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel

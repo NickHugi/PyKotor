@@ -3,8 +3,8 @@ from __future__ import annotations
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
-from gui.editor import Editor
-from gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
+from toolset.gui.editor import Editor
+from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QWidget,
 )
-from utils.script import compileScript, decompileScript
+from toolset.utils.script import compileScript, decompileScript
 
 from pykotor.common.scriptdefs import (
     KOTOR_CONSTANTS,
@@ -42,7 +42,7 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
+    from toolset.data.installation import HTInstallation
 
     from pykotor.common.script import ScriptFunction
 

@@ -6,15 +6,15 @@ toolset_path = Path(__file__).parent
 if toolset_path.exists() and getattr(sys, "frozen", False) is False:
     sys.path.append(str(toolset_path))
     sys.path.append(str(toolset_path.parent))
-os.chdir(str(toolset_path))
 
 import multiprocessing
 import traceback
 from types import TracebackType
 
-from gui.windows.main import ToolWindow
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
+
+from toolset.gui.windows.main import ToolWindow
 
 os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
 os.environ["QT_DEBUG_PLUGINS"] = "1"

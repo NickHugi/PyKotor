@@ -1,4 +1,4 @@
-from data.installation import HTInstallation
+from toolset.data.installation import HTInstallation
 from PyQt5.QtWidgets import QDialog, QWidget
 
 from pykotor.resource.generics.dlg import DLGAnimation

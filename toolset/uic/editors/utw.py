@@ -158,4 +158,4 @@ class Ui_MainWindow(object):
         self.actionSaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionRevert.setText(_translate("MainWindow", "Revert"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))
-from gui.widgets.edit.locstring import LocalizedStringLineEdit
+from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit

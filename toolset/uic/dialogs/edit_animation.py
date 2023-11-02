@@ -48,4 +48,4 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "Edit Animation"))
         self.label.setText(_translate("Dialog", "Animation:"))
         self.label_2.setText(_translate("Dialog", "Participant:"))
-from gui.widgets.edit.combobox_2da import ComboBox2DA
+from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA

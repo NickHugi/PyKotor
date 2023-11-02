@@ -4,13 +4,13 @@ import math
 from copy import deepcopy
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
-from data.misc import ControlItem
-from gui.dialogs.insert_instance import InsertInstanceDialog
-from gui.dialogs.select_module import SelectModuleDialog
-from gui.editors.git import openInstanceDialog
-from gui.widgets.settings.installations import GlobalSettings
-from gui.widgets.settings.module_designer import ModuleDesignerSettings
-from gui.windows.help import HelpWindow
+from toolset.data.misc import ControlItem
+from toolset.gui.dialogs.insert_instance import InsertInstanceDialog
+from toolset.gui.dialogs.select_module import SelectModuleDialog
+from toolset.gui.editors.git import openInstanceDialog
+from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.gui.windows.help import HelpWindow
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
@@ -24,8 +24,8 @@ from PyQt5.QtWidgets import (
     QTreeWidgetItem,
     QWidget,
 )
-from utils.misc import QtMouse
-from utils.window import openResourceEditor
+from toolset.utils.misc import QtMouse
+from toolset.utils.window import openResourceEditor
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef
@@ -52,9 +52,9 @@ from pykotor.resource.type import ResourceType
 from pykotor.tools import module
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
-    from gui.widgets.renderer.module import ModuleRenderer
-    from gui.widgets.renderer.walkmesh import WalkmeshRenderer
+    from toolset.data.installation import HTInstallation
+    from toolset.gui.widgets.renderer.module import ModuleRenderer
+    from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 
 
 class ModuleDesigner(QMainWindow):

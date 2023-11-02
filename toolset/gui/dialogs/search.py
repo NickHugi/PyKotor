@@ -1,10 +1,10 @@
 from typing import Dict, List, Optional
 
-from data.installation import HTInstallation
-from gui.dialogs.asyncloader import AsyncBatchLoader
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem, QWidget
-from utils.window import openResourceEditor
+from toolset.utils.window import openResourceEditor
 
 from pykotor.extract.file import FileResource
 from pykotor.resource.type import ResourceType

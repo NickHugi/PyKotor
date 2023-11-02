@@ -15,7 +15,7 @@ from pykotor.gl.scene import Camera
 from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
-    from gui.widgets.renderer.module import ModuleRenderer
+    from toolset.gui.widgets.renderer.module import ModuleRenderer
 
     from pykotor.resource.generics.git import GITInstance
 

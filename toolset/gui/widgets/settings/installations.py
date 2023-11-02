@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from data.settings import Settings
+from toolset.data.settings import Settings
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QStandardItem, QStandardItemModel

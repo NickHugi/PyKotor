@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from gui.dialogs.edit.locstring import LocalizedStringDialog
-from gui.editor import Editor
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
@@ -15,7 +15,7 @@ from pykotor.resource.generics.uts import UTS, dismantle_uts, read_uts
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
+    from toolset.data.installation import HTInstallation
     from PyQt5.QtGui import QCloseEvent
 
 

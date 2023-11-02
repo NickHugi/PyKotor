@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple, Union
 
-from data.installation import HTInstallation
+from toolset.data.installation import HTInstallation
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
 from PyQt5.QtGui import (

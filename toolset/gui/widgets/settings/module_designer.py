@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from PyQt5 import QtCore
-from utils.misc import QtKey, QtMouse
+from toolset.utils.misc import QtKey, QtMouse
 
 from toolset.data.settings import Settings
 from toolset.gui.widgets.settings.base import SettingsWidget

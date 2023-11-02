@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Optional
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
 from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
-from utils.misc import getResourceFromFile
-from utils.window import openResourceEditor
+from toolset.utils.misc import getResourceFromFile
+from toolset.utils.window import openResourceEditor
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color

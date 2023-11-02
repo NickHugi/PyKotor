@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
+from toolset.gui.dialogs.edit.combo_2da import ModdedValueSpinboxDialog
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QComboBox, QMenu, QWidget
 

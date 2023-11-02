@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Set
 
-from data.misc import ControlItem
-from gui.widgets.settings.module_designer import ModuleDesignerSettings
+from toolset.data.misc import ControlItem
+from toolset.gui.widgets.settings.module_designer import ModuleDesignerSettings
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QOpenGLWidget, QWidget
 

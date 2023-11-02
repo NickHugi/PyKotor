@@ -15,7 +15,7 @@ from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
+    from toolset.data.installation import HTInstallation
     from glm import vec3
     from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 
@@ -49,7 +49,7 @@ class ModuleRenderer(QOpenGLWidget):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        from gui.windows.module_designer import ModuleDesignerSettings
+        from toolset.gui.windows.module_designer import ModuleDesignerSettings
 
         self.scene: Optional[Scene] = None
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()

@@ -4,16 +4,16 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, Optional, Tuple
 
 import pyperclip
-from gui.editor import Editor
 from PyQt5.QtCore import QSortFilterProxyModel
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QAction, QMessageBox, QWidget
 
 from pykotor.resource.formats.twoda import TwoDA, read_2da, write_2da
 from pykotor.resource.type import ResourceType
+from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
+    from toolset.data.installation import HTInstallation
 
 
 class TwoDAEditor(Editor):

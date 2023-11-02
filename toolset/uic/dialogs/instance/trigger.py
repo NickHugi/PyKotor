@@ -133,4 +133,4 @@ class Ui_Dialog(object):
         self.label_5.setText(_translate("Dialog", "Link To Module:"))
         self.label_6.setText(_translate("Dialog", "Link To Tag:"))
         self.label_7.setText(_translate("Dialog", "Transition Name:"))
-from gui.widgets.edit.locstring import LocalizedStringLineEdit
+from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit

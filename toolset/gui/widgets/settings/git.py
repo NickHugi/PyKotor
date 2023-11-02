@@ -1,8 +1,8 @@
-from data.settings import Settings
-from gui.widgets.settings.base import SettingsWidget
+from toolset.data.settings import Settings
+from toolset.gui.widgets.settings.base import SettingsWidget
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
-from utils.misc import QtKey, QtMouse
+from toolset.utils.misc import QtKey, QtMouse
 
 
 class GITWidget(SettingsWidget):

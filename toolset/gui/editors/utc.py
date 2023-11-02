@@ -1,14 +1,14 @@
 from contextlib import suppress
 from typing import Optional, Tuple
 
-from data.installation import HTInstallation
-from gui.dialogs.inventory import InventoryEditor
-from gui.editor import Editor
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.inventory import InventoryEditor
+from toolset.gui.editor import Editor
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
 from PyQt5.QtGui import QImage, QPixmap, QTransform
 from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QWidget
-from utils.window import openResourceEditor
+from toolset.utils.window import openResourceEditor
 
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import Game, ResRef

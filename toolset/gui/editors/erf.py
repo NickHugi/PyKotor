@@ -6,7 +6,7 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QShortcut, QTableView, QWidget
-from utils.window import openResourceEditor
+from toolset.utils.window import openResourceEditor
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.erf import ERF, ERFResource, ERFType, read_erf, write_erf

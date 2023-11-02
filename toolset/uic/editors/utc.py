@@ -885,6 +885,6 @@ class Ui_MainWindow(object):
         self.actionSaveUnusedFields.setText(_translate("MainWindow", "Save Unused Fields"))
         self.actionAlwaysSaveK2Fields.setText(_translate("MainWindow", "Always Save K2 Fields"))
         self.actionShowPreview.setText(_translate("MainWindow", "Show Preview"))
-from gui.widgets.edit.combobox_2da import ComboBox2DA
-from gui.widgets.edit.locstring import LocalizedStringLineEdit
+from toolset.gui.widgets.edit.combobox_2da import ComboBox2DA
+from toolset.gui.widgets.edit.locstring import LocalizedStringLineEdit
 from toolset.gui.widgets.renderer.model import ModelRenderer

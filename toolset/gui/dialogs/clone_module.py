@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, NamedTuple
 
-from gui.dialogs.asyncloader import AsyncLoader
+from toolset.gui.dialogs.asyncloader import AsyncLoader
 from PyQt5.QtWidgets import QDialog, QMessageBox, QWidget
 
 from pykotor.common.module import Module
 from pykotor.tools import module
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
+    from toolset.data.installation import HTInstallation
 
 _ROOT_INDEX = 0
 _INSTALLATION_INDEX = 1

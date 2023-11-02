@@ -29,7 +29,7 @@ from PyQt5.QtGui import (
     QWheelEvent,
 )
 from PyQt5.QtWidgets import QWidget
-from utils.misc import clamp
+from toolset.utils.misc import clamp
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.generics.git import (

@@ -1,5 +1,5 @@
 
-from gui.widgets.settings.installations import GlobalSettings
+from toolset.gui.widgets.settings.installations import GlobalSettings
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
 

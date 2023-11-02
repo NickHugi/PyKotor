@@ -1,9 +1,9 @@
 from contextlib import suppress
 from typing import Optional, Tuple
 
-from data.installation import HTInstallation
-from gui.dialogs.edit.locstring import LocalizedStringDialog
-from gui.editor import Editor
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
     QDialog,

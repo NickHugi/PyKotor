@@ -308,5 +308,5 @@ class Ui_Form(object):
         self.label_28.setText(_translate("Form", "Door:"))
         self.label_29.setText(_translate("Form", "Non-Walk Grass:"))
         self.coloursResetButton.setText(_translate("Form", "Reset"))
-from gui.widgets.edit.color import ColorEdit
+from toolset.gui.widgets.edit.color import ColorEdit
 from toolset.gui.widgets.set_bind import SetBindWidget

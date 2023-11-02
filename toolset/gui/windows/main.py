@@ -22,36 +22,9 @@ from typing import TYPE_CHECKING, ClassVar
 
 import requests
 from config import PROGRAM_VERSION, UPDATE_INFO_LINK
-from data.installation import HTInstallation
-from gui.dialogs.about import About
-from gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
-from gui.dialogs.clone_module import CloneModuleDialog
-from gui.dialogs.search import FileResults, FileSearcher
-from gui.dialogs.settings import SettingsDialog
-from gui.editors.dlg import DLGEditor
-from gui.editors.erf import ERFEditor
-from gui.editors.gff import GFFEditor
-from gui.editors.nss import NSSEditor
-from gui.editors.ssf import SSFEditor
-from gui.editors.txt import TXTEditor
-from gui.editors.utc import UTCEditor
-from gui.editors.utd import UTDEditor
-from gui.editors.ute import UTEEditor
-from gui.editors.uti import UTIEditor
-from gui.editors.utm import UTMEditor
-from gui.editors.utp import UTPEditor
-from gui.editors.uts import UTSEditor
-from gui.editors.utt import UTTEditor
-from gui.editors.utw import UTWEditor
-from gui.widgets.settings.misc import GlobalSettings
-from gui.windows.help import HelpWindow
-from gui.windows.indoor_builder import IndoorMapBuilder
-from gui.windows.module_designer import ModuleDesigner
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtGui import QCloseEvent, QIcon, QPixmap, QStandardItem
 from PyQt5.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QTreeView
-from utils.misc import openLink
-from utils.window import addWindow, openResourceEditor
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -63,13 +36,39 @@ from pykotor.resource.formats.tpc import read_tpc, write_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.path import CaseAwarePath
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.about import About
+from toolset.gui.dialogs.asyncloader import AsyncBatchLoader, AsyncLoader
+from toolset.gui.dialogs.clone_module import CloneModuleDialog
+from toolset.gui.dialogs.search import FileResults, FileSearcher
+from toolset.gui.dialogs.settings import SettingsDialog
+from toolset.gui.editors.dlg import DLGEditor
+from toolset.gui.editors.erf import ERFEditor
+from toolset.gui.editors.gff import GFFEditor
+from toolset.gui.editors.nss import NSSEditor
+from toolset.gui.editors.ssf import SSFEditor
+from toolset.gui.editors.txt import TXTEditor
+from toolset.gui.editors.utc import UTCEditor
+from toolset.gui.editors.utd import UTDEditor
+from toolset.gui.editors.ute import UTEEditor
+from toolset.gui.editors.uti import UTIEditor
+from toolset.gui.editors.utm import UTMEditor
+from toolset.gui.editors.utp import UTPEditor
+from toolset.gui.editors.uts import UTSEditor
+from toolset.gui.editors.utt import UTTEditor
+from toolset.gui.editors.utw import UTWEditor
+from toolset.gui.widgets.settings.misc import GlobalSettings
+from toolset.gui.windows.help import HelpWindow
+from toolset.gui.windows.indoor_builder import IndoorMapBuilder
+from toolset.gui.windows.module_designer import ModuleDesigner
+from toolset.utils.misc import openLink
+from toolset.utils.window import addWindow, openResourceEditor
 
 if TYPE_CHECKING:
     import os
 
-    from gui.widgets.main_widgets import ResourceList
-
     from pykotor.resource.formats.tpc.tpc_data import TPC
+    from toolset.gui.widgets.main_widgets import ResourceList
 
 
 class ToolWindow(QMainWindow):

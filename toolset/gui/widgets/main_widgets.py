@@ -24,7 +24,7 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from data.installation import HTInstallation
+    from toolset.data.installation import HTInstallation
 
     from pykotor.extract.file import FileResource
 

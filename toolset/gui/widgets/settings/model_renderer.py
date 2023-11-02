@@ -1,4 +1,4 @@
-from data.settings import Settings
+from toolset.data.settings import Settings
 
 
 class ModelRendererSettings(Settings):
