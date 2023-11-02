@@ -321,13 +321,13 @@ class App(tk.Tk):
         ):
             return
         deleted_count = 0
-        for file in existing_files:
-            if Path(file).exists():
-                Path(file).unlink()
-                self.write_log(f"Removed {file}...")
-                deleted_count += 1
 
         try:
+            for file in existing_files:
+                if Path(file).exists():
+                    Path(file).unlink()
+                    self.write_log(f"Removed {file}...")
+                    deleted_count += 1
             for file in files_in_backup:
                 destination_path = destination_folder / file.relative_to(most_recent_backup_folder)
                 destination_path.parent.mkdir(parents=True, exist_ok=True)

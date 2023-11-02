@@ -107,24 +107,18 @@ class ConfigReader:
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
 
-        self.log.add_note("Loading [Settings] from ini...")
         self.load_settings()
-        self.log.add_note("Loading [TLKList] patches from ini...")
         self.load_tlk_list()
-        self.log.add_note("Loading [InstallList] patches from ini...")
         self.load_filelist()
-        self.log.add_note("Loading [2DAList] patches from ini...")
         self.load_2da()
-        self.log.add_note("Loading [GFFList] patches from ini...")
         self.load_gff()
-        self.log.add_note("Loading [CompileList] patches from ini...")
         self.load_nss()
-        self.log.add_note("Loading [SSFList] patches from ini...")
         self.load_ssf()
 
         return self.config
 
     def load_settings(self) -> None:
+        self.log.add_note("Loading [Settings] from ini...")
         settings_section = next(
             (section for section in self.ini.sections() if section.lower() == "settings"),
             None,
@@ -132,22 +126,23 @@ class ConfigReader:
         if not settings_section:
             return
         settings_ini = CaseInsensitiveDict(dict(self.ini[settings_section].items()))
-        self.config.window_title = settings_ini.get("WindowCaption") or ""
-        self.config.confirm_message = settings_ini.get("ConfirmMessage") or ""
-        # Try to get the value and convert it to an integer
+        self.config.window_title = settings_ini.get("WindowCaption", "")
+        self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         lookup_game_number = settings_ini.get("LookupGameNumber")
         if lookup_game_number:
+            # Try to get the value and convert it to an integer
             try:
                 self.config.game_number = int(lookup_game_number)
             except ValueError as e:
-                msg = f"Invalid game number: '{lookup_game_number}' Could not determine the kotor game!"
+                msg = f"Invalid: 'LookupGameNumber={lookup_game_number}' - cannot start install."
                 raise ValueError(msg) from e
         else:
             self.config.game_number = None
         self.config.required_file = settings_ini.get("Required")
-        self.config.required_message = settings_ini.get("RequiredMsg") or ""
+        self.config.required_message = settings_ini.get("RequiredMsg", "")
 
     def load_filelist(self) -> None:
+        self.log.add_note("Loading [InstallList] patches from ini...")
         install_list_section = next(
             (section for section in self.ini.sections() if section.lower() == "installlist"),
             None,
@@ -174,6 +169,7 @@ class ConfigReader:
                 folder_install.files.append(file_install)
 
     def load_tlk_list(self) -> None:
+        self.log.add_note("Loading [TLKList] patches from ini...")
         tlk_list_section = next(
             (section for section in self.ini.sections() if section.lower() == "tlklist"),
             None,
@@ -327,6 +323,7 @@ class ConfigReader:
                 raise ValueError(msg) from e
 
     def load_2da(self) -> None:
+        self.log.add_note("Loading [2DAList] patches from ini...")
         twoda_list_section = next(
             (section for section in self.ini.sections() if section.lower() == "2dalist"),
             None,
@@ -356,6 +353,7 @@ class ConfigReader:
                 modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
+        self.log.add_note("Loading [SSFList] patches from ini...")
         ssf_list_section = next(
             (section for section in self.ini.sections() if section.lower() == "ssflist"),
             None,
@@ -421,6 +419,7 @@ class ConfigReader:
                 modifications.modifiers.append(modifier)
 
     def load_gff(self) -> None:
+        self.log.add_note("Loading [GFFList] patches from ini...")
         gff_list_section = next(
             (section for section in self.ini.sections() if section.lower() == "gfflist"),
             None,
@@ -476,6 +475,7 @@ class ConfigReader:
                     modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
+        self.log.add_note("Loading [CompileList] patches from ini...")
         compilelist_section = next(
             (section for section in self.ini.sections() if section.lower() == "compilelist"),
             None,
@@ -530,9 +530,7 @@ class ConfigReader:
             components = string_value.split("|")
             value = FieldValueConstant(Vector4(*[float(x) for x in components]))
         else:
-            value = FieldValueConstant(
-                string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"),
-            )
+            value = FieldValueConstant(string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
         if "(strref)" in key.lower():
             value = FieldValueConstant(LocalizedStringDelta(value))
             key = key[: key.lower().index("(strref)")]
@@ -545,7 +543,7 @@ class ConfigReader:
             key = key[: key.lower().index("(lang")]
         elif key.lower().startswith("2damemory"):
             if string_value_lower != "!fieldpath" and not string_value_lower.startswith("2damemory"):
-                msg = f"Cannot parse {key}={value}, GFFList only supports 2DAMEMORY#=!FieldPath assignments"
+                msg = f"Cannot parse '{key}={value}', GFFList only supports 2DAMEMORY#=!FieldPath assignments"
                 raise ValueError(msg)
             value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
@@ -628,9 +626,7 @@ class ConfigReader:
             # Replace comma with dot for decimal separator to match TSLPatcher syntax.
             value = FieldValueConstant(float(raw_value.replace(",", ".")))
         elif field_type.return_type() == str:
-            value = FieldValueConstant(
-                raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"),
-            )
+            value = FieldValueConstant(raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
         elif field_type.return_type() == ResRef:
             value = FieldValueConstant(ResRef(raw_value))
         elif field_type.return_type() == Vector3:

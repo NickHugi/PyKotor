@@ -299,7 +299,7 @@ class ModInstaller:
 
     def install(self) -> None:
         config = self.config()
-        self.game()
+        self.game()  # ensure the KOTOR directory is somewhat valid
         memory = PatcherMemory()
 
         # Move nwscript.nss to Override if there are any nss patches to do
