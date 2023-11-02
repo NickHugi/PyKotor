@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.tools.misc import striprtf, universal_simplify_exception
-from pykotor.tools.path import CaseAwarePath, Path, locate_game_path
+from pykotor.tools.path import CaseAwarePath, Path, locate_game_paths
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.reader import NamespaceReader
@@ -129,9 +129,9 @@ class App(tk.Tk):
         self.gamepaths = ttk.Combobox(self)
         self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.place(x=5, y=35, width=310, height=25)
-        self.default_game_paths = locate_game_path()
+        self.default_game_paths = locate_game_paths()
         self.gamepaths["values"] = [
-            str(path) for path in (*self.default_game_paths[Game.K1], *self.default_game_paths[Game.K2]) if path.exists()
+            str(path) for path in (*self.default_game_paths[Game.K1], *self.default_game_paths[Game.K2])
         ]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
         self.gamepaths_browse_button = ttk.Button(self, text="Browse", command=self.open_kotor)
