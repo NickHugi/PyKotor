@@ -686,9 +686,11 @@ class App(tk.Tk):
 
     def _handle_gamepaths_with_mod(self, game_number):
         game = Game(game_number)
-        gamepaths_list = [str(path) for path in locate_game_paths()[game] if path.exists()]
-        if game == Game.K2:
-            gamepaths_list.extend([str(path) for path in locate_game_paths()[Game.K1] if path.exists()])
+        gamepaths_list = [
+            str(path)
+            for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
+            for path in locate_game_paths()[game_key] if path.exists()
+        ]
         self.gamepaths["values"] = gamepaths_list
 
     def set_stripped_rtf_text(self, rtf: TextIOWrapper):
