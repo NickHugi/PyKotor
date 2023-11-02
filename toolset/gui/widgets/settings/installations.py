@@ -149,7 +149,7 @@ class GlobalSettings(Settings):
         if installations is None:
             installations = {}
 
-        counters = {Game.K1: 0, Game.K2: 0}
+        counters = {Game.K1: 1, Game.K2: 1}
         existing_paths = {Path(inst["path"]) for inst in installations.values()}  # Create a set of existing paths
 
         for game, paths in locate_game_paths().items():
