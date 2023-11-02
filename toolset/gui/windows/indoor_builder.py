@@ -102,8 +102,12 @@ class IndoorMapBuilder(QMainWindow):
 
         if len(self._kits) == 0:
             noKitPrompt = QMessageBox(QMessageBox.Warning, "No Kits Available",
-                                      "No kits were detected, would you like to open the Kit downloader?")
-            if noKitPrompt.exec_():
+                                    "No kits were detected, would you like to open the Kit downloader?")
+            noKitPrompt.addButton(QMessageBox.Yes)
+            noKitPrompt.addButton(QMessageBox.No)
+            noKitPrompt.setDefaultButton(QMessageBox.No)
+
+            if noKitPrompt.exec_() == QMessageBox.Yes:
                 self.openKitDownloader()
 
         for kit in self._kits:

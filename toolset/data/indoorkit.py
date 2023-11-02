@@ -4,7 +4,6 @@ import json
 from typing import TYPE_CHECKING, NamedTuple
 
 from PyQt5.QtGui import QImage
-from toolset.utils.misc import get_nums
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.misc import CaseInsensitiveDict
@@ -12,6 +11,7 @@ from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.bwm import BWM, read_bwm
 from pykotor.resource.generics.utd import UTD, read_utd
 from pykotor.tools.path import Path
+from toolset.utils.misc import get_nums
 
 if TYPE_CHECKING:
     import os
@@ -68,6 +68,8 @@ def load_kits(path: os.PathLike | str) -> list[Kit]:
     kits = []
 
     kits_path = Path(path)
+    if not kits_path.exists():
+        kits_path.mkdir(parents=True)
     for file in [file for file in kits_path.iterdir() if file.endswith(".json")]:
         kit_json = json.loads(BinaryReader.load_file(f"{kits_path}/{file}"))
         kit = Kit(kit_json["name"])
