@@ -214,7 +214,7 @@ class Scene:
                     head_obj.children.append(mask_obj)
 
         except Exception as e:
-            print(e)
+            print(e, "getCreatureRenderObject")
             # If failed to load creature models, use the unknown model instead
             obj = RenderObject("unknown", data=instance)
 
