@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.tools.path import Path
+
+if TYPE_CHECKING:
+    import os
 
 
 class StringResult(NamedTuple):
@@ -21,9 +24,9 @@ class TalkTable:
 
     def __init__(
         self,
-        path: Path,
+        path: os.PathLike | str,
     ):
-        self._path: Path = path
+        self._path: Path = path if isinstance(path, Path) else Path(path)
 
     def string(
         self,
