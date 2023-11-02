@@ -180,7 +180,7 @@ class BasePurePath:
         return self._create_instance(key, self)
 
     def __add__(self, key: PathElem):
-        """Appends a path part with the addition operator '+'.
+        """Implicitly converts the path to a str when used with the addition operator '+'.
         This method is called when the left side is self.
 
         Args:
@@ -188,10 +188,10 @@ class BasePurePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return self._create_instance(self, key)
+        return str(self) + key
 
     def __radd__(self, key: PathElem):
-        """Appends a path part with the addition operator '+'.
+        """Implicitly converts the path to a str when used with the addition operator '+'.
         This method is called when the right side is self.
 
         Args:
@@ -199,7 +199,7 @@ class BasePurePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return self._create_instance(key, self)
+        return key + str(self)
 
     def joinpath(self, *args: PATH_TYPES):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -212,6 +212,14 @@ class BasePurePath:
             key (path-like object or str path):
         """
         return self._create_instance(self, *args)
+
+    def add_suffix(self, extension: str):
+        """Initialize a new path object with the added extension. Similar to with_suffix, but doesn't replace existing extensions."""
+        if not isinstance(extension, str):
+            return NotImplemented
+        if not extension.startswith("."):
+            extension = f".{extension}"
+        return self.__class__(str(self) + extension)
 
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
         # If case sensitivity is not required, normalize the self string and the text to lower case
@@ -605,8 +613,8 @@ def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
 
     # Build hardcoded default kotor locations
     raw_locations = get_default_game_paths()
-    locations: dict[Game, list[CaseAwarePath]] = {
-        game: [case_path for case_path in (CaseAwarePath(path) for path in paths) if case_path.exists()]
+    locations: dict[Game, set[CaseAwarePath]] = {
+        game: {case_path for case_path in (CaseAwarePath(path) for path in paths) if case_path.exists()}
         for game, paths in raw_locations.get(os_str, {}).items()
     }
 
@@ -616,7 +624,9 @@ def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in reg_options:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.exists() and path not in locations[Game.K1] and path not in locations[Game.K2]:
-                    locations[game_option].append(path)
+                if path and path.exists():
+                    locations[game_option].add(path)
 
+    locations[Game.K1] = [*locations[Game.K1]]
+    locations[Game.K2] = [*locations[Game.K2]]
     return locations

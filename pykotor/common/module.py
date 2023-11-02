@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from pykotor.common.misc import CaseInsensitiveDict
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.file import LocationResult, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.formats.bwm import read_bwm
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
@@ -175,7 +175,7 @@ class Module:
                 )
         self.layout().activate(original)
 
-        search = self._installation.locations(
+        search: dict[ResourceIdentifier, list[LocationResult]] = self._installation.locations(
             look_for,
             [SearchLocation.OVERRIDE, SearchLocation.CHITIN],
         )

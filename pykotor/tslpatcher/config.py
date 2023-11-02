@@ -108,6 +108,28 @@ class PatcherNamespace:
     def __str__(self):
         return self.name
 
+    def changes_filepath(self) -> str:
+        ini_filename = self.ini_filename.strip() or "changes.ini"
+        if self.data_folderpath:
+            return str(
+                PurePath(
+                    self.data_folderpath,
+                    ini_filename,
+                ),
+            )
+        return ini_filename
+
+    def rtf_filepath(self):
+        info_filename = self.info_filename.strip() or "info.rtf"
+        if self.data_folderpath:
+            return str(
+                PurePath(
+                    self.data_folderpath,
+                    info_filename,
+                ),
+            )
+        return info_filename
+
 
 class ModInstaller:
     def __init__(
