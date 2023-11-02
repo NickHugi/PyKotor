@@ -1,25 +1,27 @@
 import os
-from pykotor.tools.path import CaseAwarePath
 from unittest import TestCase
 
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import Game
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import CaseAwarePath, Path, locate_game_paths
 
 
 class TestInstallation(TestCase):
     def setUp(self) -> None:
         path = os.environ.get("K1_PATH")
-        if path is not None and os.path.exists(path):
-            path = CaseAwarePath(path)
-        elif os.path.exists("C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor"):
-            path = CaseAwarePath("C:\\Program Files (x86)\\Steam\\steamapps\\common\\swkotor")
-        elif os.path.exists("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor"):
-            path = CaseAwarePath("/mnt/c/Program Files (x86)/Steam/steamapps/common/swkotor")
+        if path:
+            path = Path(path)
+            if not path.exists():
+                raise ValueError(f"The path specified in the environment variable K1_PATH: '{path}' does not exist on disk.")
         else:
-            raise ValueError("K1_PATH environment variable not set.")
+            default_paths = locate_game_paths()
+            if not default_paths[Game.K1]:
+                raise ValueError("K1_PATH environment variable not set, and no default paths found.")
+            path = default_paths[Game.K1][0]
         self.installation = Installation(path)
 
     def test_resource(self):
@@ -52,14 +54,14 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(installation.resource("PO_PCarth", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
         self.assertIsNone(installation.resource("xxx", ResourceType.TPC, [SearchLocation.TEXTURES_GUI]))
 
-        self.assertIsNotNone(
-            installation.resource(
-                "m13aa",
-                ResourceType.ARE,
-                [SearchLocation.CUSTOM_MODULES],
-                capsules=[Capsule(installation.module_path() / "danm13.rim")],
-            ).data
+        resource = installation.resource(
+            "m13aa",
+            ResourceType.ARE,
+            [SearchLocation.CUSTOM_MODULES],
+            capsules=[Capsule(installation.module_path() / "danm13.rim")],
         )
+        self.assertIsNotNone(resource)
+        self.assertIsNotNone(resource.data)  # type: ignore
 
     def test_resources(self):
         installation = self.installation
