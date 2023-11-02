@@ -616,7 +616,7 @@ def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in reg_options:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.exists():
+                if path and path.exists() and path not in locations[Game.K1] and path not in locations[Game.K2]:
                     locations[game_option].append(path)
 
     return locations
