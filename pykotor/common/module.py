@@ -615,10 +615,10 @@ class ModuleResource(Generic[T]):
                 self._resname,
                 self._restype,
                 [SearchLocation.CHITIN],
-            ).__dict__.get("data", None)
+            ).data
         return BinaryReader.load_file(self._active)
 
-    def resource(self) -> T:
+    def resource(self) -> T | None:
         """Returns the cached resource object. If no object has been cached, then it will load the object.
 
         Returns
@@ -674,9 +674,7 @@ class ModuleResource(Generic[T]):
         ----
             filepaths: A list of filepaths pointing to a location for the resource.
         """
-        self._locations.extend(
-            [filepath for filepath in filepaths if filepath not in self._locations],
-        )
+        self._locations.extend([filepath for filepath in filepaths if filepath not in self._locations])
         if self._active is None and self._locations:
             self.activate(self._locations[0])
 
@@ -698,7 +696,7 @@ class ModuleResource(Generic[T]):
         """
         self._resource = None
         if filepath is None:
-            self._active = self._locations[0] if len(self._locations) > 0 else None
+            self._active = self._locations[0] if self._locations else None
         else:
             r_filepath = filepath if isinstance(filepath, Path) else Path(filepath)
             if r_filepath in self._locations:
