@@ -222,17 +222,18 @@ class Installation:
     ) -> CaseAwarePath:
         try:
             resource_path = self._path
-            if isinstance(folder_names, str):
+            if isinstance(folder_names, str):  # make a tuple
                 folder_names = (folder_names,)
             for folder_name in folder_names:
                 resource_path = CaseAwarePath(self._path, folder_name)
                 if resource_path.is_dir():
                     return resource_path
+        except Exception as e:  # noqa: BLE001
+            msg = f"An error occurred while finding the '{' or '.join(folder_names)}' folder in '{self._path}'."
+            raise OSError(msg) from e
+        else:
             if optional:
                 return CaseAwarePath(self._path, folder_names[0])
-        except Exception as e:  # noqa: BLE001
-            msg = f"An error occurred while finding the '{'or '.join(folder_names)}' folder in '{self._path}'."
-            raise OSError(msg) from e
         errored_folder_names = "' or '".join(folder_names)
         msg = f"Could not find the '{errored_folder_names}' folder in '{self._path}'."
         raise FileNotFoundError(msg)
