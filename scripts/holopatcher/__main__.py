@@ -90,34 +90,15 @@ def parse_args():
 
 
 class App(tk.Tk):
-    def __init__(self, cmdline_args):
+    def __init__(self):
         super().__init__()
-        # Set window dimensions
-        window_width = 400
-        window_height = 520
-
-        # Get screen dimensions
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-
-        # Calculate position to center the window
-        x_position = int((screen_width / 2) - (window_width / 2))
-        y_position = int((screen_height / 2) - (window_height / 2))
-
-        # Set the dimensions and position
-        self.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
-        self.resizable(width=False, height=False)
         self.title("HoloPatcher")
 
         self.mod_path = ""
         self.namespaces = []
 
-        self.logger = PatchLogger()
-        self.logger.verbose_observable.subscribe(self.write_log)
-        self.logger.note_observable.subscribe(self.write_log)
-        self.logger.warning_observable.subscribe(self.write_log)
-        self.logger.error_observable.subscribe(self.write_log)
-
+        self.initialize_logger()
+        self.set_window(width=400, height=520)
         self.namespaces_combobox = ttk.Combobox(self, state="readonly")
         self.namespaces_combobox.set("Select the mod to install")
         self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
@@ -129,13 +110,24 @@ class App(tk.Tk):
         self.gamepaths = ttk.Combobox(self)
         self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.place(x=5, y=35, width=310, height=25)
-        self.default_game_paths = locate_game_paths()
-        self.gamepaths["values"] = [
-            str(path) for path in (*self.default_game_paths[Game.K1], *self.default_game_paths[Game.K2])
-        ]
+        self.gamepaths["values"] = [str(path) for game in locate_game_paths().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
+
         self.gamepaths_browse_button = ttk.Button(self, text="Browse", command=self.open_kotor)
         self.gamepaths_browse_button.place(x=320, y=35, width=75, height=25)
+
+        self.exit_button = ttk.Button(self, text="Exit", command=self.handle_exit_button)
+        self.exit_button.place(x=5, y=470, width=75, height=25)
+
+        self.progressbar = ttk.Progressbar(self)
+        self.progressbar.place(x=5, y=500, width=390, height=15)
+
+        self.install_button = ttk.Button(self, text="Install", command=self.begin_install)
+        self.install_button.place(x=320, y=470, width=75, height=25)
+
+        self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
+        self.uninstall_button.place(x=160, y=470, width=75, height=25)
+        self.uninstall_button.place_forget()
 
         # Create a Frame to hold the Text and Scrollbar widgets
         text_frame = tk.Frame(self)
@@ -158,17 +150,12 @@ class App(tk.Tk):
 
         self.install_running = False
         self.protocol("WM_DELETE_WINDOW", self.handle_exit_button)
-        self.exit_button = ttk.Button(self, text="Exit", command=self.handle_exit_button)
-        self.exit_button.place(x=5, y=470, width=75, height=25)
-        self.progressbar = ttk.Progressbar(self)
-        self.progressbar.place(x=5, y=500, width=390, height=15)
-        self.install_button = ttk.Button(self, text="Install", command=self.begin_install)
-        self.install_button.place(x=320, y=470, width=75, height=25)
-        self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
-        self.uninstall_button.place(x=160, y=470, width=75, height=25)
-        self.uninstall_button.place_forget()
 
+        cmdline_args = parse_args()
         self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
+        self.handle_commandline(cmdline_args)
+
+    def handle_commandline(self, cmdline_args):
         if cmdline_args.game_dir:
             self.open_kotor(cmdline_args.game_dir)
         if cmdline_args.namespace_option_index:
@@ -177,38 +164,7 @@ class App(tk.Tk):
             self.hide_console()
         if cmdline_args.install or cmdline_args.uninstall:
             self.withdraw()
-
-            class MessageboxOverride:
-                @staticmethod
-                def showinfo(title, message):
-                    print(f"[Note] - {title}: {message}")
-
-                @staticmethod
-                def showwarning(title, message):
-                    print(f"[Warning] - {title}: {message}")
-
-                @staticmethod
-                def showerror(title, message):
-                    print(f"[Error] - {title}: {message}")
-
-                @staticmethod
-                def askyesno(title, message):
-                    """Console-based replacement for messagebox.askyesno and similar."""
-                    print(f"{title}\n{message}")
-                    while True:
-                        response = input("(y/N)").lower().strip()
-                        if response in ["yes", "y"]:
-                            return True
-                        if response in ["no", "n"]:
-                            return False
-                        print("Invalid input. Please enter 'yes' or 'no'")
-
-            messagebox.showinfo = MessageboxOverride.showinfo
-            messagebox.showwarning = MessageboxOverride.showwarning
-            messagebox.showerror = MessageboxOverride.showerror
-            # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
-            # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
-            # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
+            self.handle_console_mode()
         self.one_shot: bool = False
         if cmdline_args.install:
             self.one_shot = True
@@ -218,6 +174,59 @@ class App(tk.Tk):
             self.one_shot = True
             self.uninstall_selected_mod()
             sys.exit()
+
+    def handle_console_mode(self):
+        class MessageboxOverride:
+            @staticmethod
+            def showinfo(title, message):
+                print(f"[Note] - {title}: {message}")
+
+            @staticmethod
+            def showwarning(title, message):
+                print(f"[Warning] - {title}: {message}")
+
+            @staticmethod
+            def showerror(title, message):
+                print(f"[Error] - {title}: {message}")
+
+            @staticmethod
+            def askyesno(title, message):
+                """Console-based replacement for messagebox.askyesno and similar."""
+                print(f"{title}\n{message}")
+                while True:
+                    response = input("(y/N)").lower().strip()
+                    if response in ["yes", "y"]:
+                        return True
+                    if response in ["no", "n"]:
+                        return False
+                    print("Invalid input. Please enter 'yes' or 'no'")
+
+        messagebox.showinfo = MessageboxOverride.showinfo
+        messagebox.showwarning = MessageboxOverride.showwarning
+        messagebox.showerror = MessageboxOverride.showerror
+        # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
+        # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
+        # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
+
+    def initialize_logger(self):
+        self.logger = PatchLogger()
+        self.logger.verbose_observable.subscribe(self.write_log)
+        self.logger.note_observable.subscribe(self.write_log)
+        self.logger.warning_observable.subscribe(self.write_log)
+        self.logger.error_observable.subscribe(self.write_log)
+
+    def set_window(self, width: int, height: int):
+        # Get screen dimensions
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        # Calculate position to center the window
+        x_position = int((screen_width / 2) - (width / 2))
+        y_position = int((screen_height / 2) - (height / 2))
+
+        # Set the dimensions and position
+        self.geometry(f"{width}x{height}+{x_position}+{y_position}")
+        self.resizable(width=False, height=False)
 
     def hide_console(self):
         """Hide the console window in GUI mode."""
@@ -442,11 +451,15 @@ class App(tk.Tk):
             )
             return False
         if not directory.has_access(recurse):
-            messagebox.showerror(
+            return messagebox.askyesno(
                 "Unauthorized",
-                f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep*2}Please fix this problem before attempting an installation. Ensure the folder is writeable or rerun holopatcher with elevated privileges.",
+                (
+                    f"HoloPatcher needs permissions to access this folder '{directory!s}'. {os.linesep}"
+                    f"{os.linesep}"
+                    f"Please ensure the folder is writeable or rerun holopatcher with elevated privileges.{os.linesep}"
+                    "Continue with an install anyway?"
+                ),
             )
-            return False
         return True
 
     def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
@@ -509,14 +522,34 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
             )
 
+    def preinstall_validate_chosen(self):
+        def _if_missing(title, message):
+            messagebox.showinfo(title, message)
+            if self.one_shot:
+                sys.exit(ExitCode.NUMBER_OF_ARGS)
+            return False
+
+        if self.install_running:
+            messagebox.showinfo(
+                "Install already running",
+                "Cannot start an install while the previous installation is still ongoing",
+            )
+            return False
+        if not self.mod_path or not CaseAwarePath(self.mod_path).exists():
+            return _if_missing(
+                "No mod chosen",
+                "Select your mod directory before starting an install",
+            )
+        game_path = self.gamepaths.get()
+        if not game_path or not CaseAwarePath(game_path).exists():
+            return _if_missing(
+                "No KOTOR directory chosen",
+                "Select your KOTOR install before starting an install.",
+            )
+        return self.check_access(Path(self.gamepaths.get()))
+
     def begin_install(self) -> None:
         try:
-            if self.install_running:
-                messagebox.showinfo(
-                    "Install already running",
-                    "Cannot start an install while the previous installation is still ongoing",
-                )
-                return
             self.install_thread = Thread(target=self.begin_install_thread)
             self.install_thread.start()
         except Exception as e:  # noqa: BLE001
@@ -528,36 +561,35 @@ class App(tk.Tk):
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
     def begin_install_thread(self):
-        if not self.mod_path or not CaseAwarePath(self.mod_path).exists():
-            messagebox.showinfo("No mod chosen", "Select your mod directory before starting an install")
-            if self.one_shot:
-                sys.exit(ExitCode.NUMBER_OF_ARGS)
+        if not self.preinstall_validate_chosen():
             return
-        game_path = self.gamepaths.get()
-        if not game_path or not CaseAwarePath(game_path).exists():
-            messagebox.showinfo("No KOTOR directory chosen", "Select your KOTOR install before starting an install.")
-            if self.one_shot:
-                sys.exit(ExitCode.NUMBER_OF_ARGS)
-            return
-        self.check_access(Path(self.gamepaths.get()))
-
         namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = self.get_changes_from_namespace_option(namespace_option)
         namespace_mod_path = ini_file_path.parent
 
         self._clear_description_textbox()
-        installer = ModInstaller(namespace_mod_path, game_path, ini_file_path, self.logger)
+        installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
         try:
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e, installer)
             if self.one_shot:
                 sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
-        self.install_running = False
-        self.install_button.config(state=tk.NORMAL)
-        self.uninstall_button.config(state=tk.NORMAL)
-        self.gamepaths_browse_button.config(state=tk.NORMAL)
-        self.browse_button.config(state=tk.NORMAL)
+        self.set_active_install(install_running=False)
+
+    def set_active_install(self, install_running: bool):
+        if install_running:
+            self.install_running = True
+            self.install_button.config(state=tk.DISABLED)
+            self.uninstall_button.config(state=tk.DISABLED)
+            self.gamepaths_browse_button.config(state=tk.DISABLED)
+            self.browse_button.config(state=tk.DISABLED)
+        else:
+            self.install_running = False
+            self.install_button.config(state=tk.NORMAL)
+            self.uninstall_button.config(state=tk.NORMAL)
+            self.gamepaths_browse_button.config(state=tk.NORMAL)
+            self.browse_button.config(state=tk.NORMAL)
 
     def _clear_description_textbox(self):
         self.description_text.config(state=tk.NORMAL)
@@ -565,11 +597,7 @@ class App(tk.Tk):
         self.description_text.config(state=tk.DISABLED)
 
     def _execute_mod_install(self, installer: ModInstaller):
-        self.install_running = True
-        self.install_button.config(state=tk.DISABLED)
-        self.uninstall_button.config(state=tk.DISABLED)
-        self.gamepaths_browse_button.config(state=tk.DISABLED)
-        self.browse_button.config(state=tk.DISABLED)
+        self.set_active_install(install_running=True)
         install_start_time = datetime.now(timezone.utc).astimezone()
         self.progressbar["value"] = 10
         installer.install()
@@ -621,11 +649,7 @@ class App(tk.Tk):
             error_name,
             f"An unexpected error occurred during the installation and the installation was forced to terminate.{os.linesep*2}{msg}",
         )
-        self.install_running = False
-        self.install_button.config(state=tk.NORMAL)
-        self.uninstall_button.config(state=tk.NORMAL)
-        self.gamepaths_browse_button.config(state=tk.NORMAL)
-        self.browse_button.config(state=tk.NORMAL)
+        self.set_active_install(install_running=False)
         raise
 
     def build_changes_as_namespace(self, filepath: CaseAwarePath) -> PatcherNamespace:
@@ -662,9 +686,9 @@ class App(tk.Tk):
 
     def _handle_gamepaths_with_mod(self, game_number):
         game = Game(game_number)
-        gamepaths_list = [str(path) for path in self.default_game_paths[game] if path.exists()]
+        gamepaths_list = [str(path) for path in locate_game_paths()[game] if path.exists()]
         if game == Game.K2:
-            gamepaths_list.extend([str(path) for path in self.default_game_paths[Game.K1] if path.exists()])
+            gamepaths_list.extend([str(path) for path in locate_game_paths()[Game.K1] if path.exists()])
         self.gamepaths["values"] = gamepaths_list
 
     def set_stripped_rtf_text(self, rtf: TextIOWrapper):
@@ -709,8 +733,7 @@ sys.excepthook = custom_excepthook
 
 
 def main():
-    args = parse_args()
-    app = App(args)
+    app = App()
     app.mainloop()
 
 
