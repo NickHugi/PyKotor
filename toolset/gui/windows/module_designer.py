@@ -190,7 +190,7 @@ class ModuleDesigner(QMainWindow):
             self.ui.mainRenderer.init(self._installation, self._module)
 
             self.ui.flatRenderer.setGit(self._module.git().resource())
-            self.ui.flatRenderer.setWalkmeshes([bwm.resource() for bwm in self._module.resources.values() if bwm.restype() == ResourceType.WOK])
+            self.ui.flatRenderer.setWalkmeshes([bwm.resource() for bwm in self._module.resources.values() if bwm.restype() == ResourceType.WOK and bwm.resource() is not None])
             self.ui.flatRenderer.centerCamera()
 
     def unloadModule(self) -> None:
@@ -369,7 +369,7 @@ class ModuleDesigner(QMainWindow):
 
                 item.setText(name)
                 item.setToolTip(f"Struct Index: {struct_index}\nResRef: {resref}\nName: {name}\nTag: {tag}")
-                item.setData(QtCore.Qt.UserRole+1, instance.identifier().restype.extension + name)
+                item.setData(QtCore.Qt.UserRole+1, instance.identifier().restype.extension + (name or resref))
 
             item.setFont(font)
             item.setData(QtCore.Qt.UserRole, instance)
