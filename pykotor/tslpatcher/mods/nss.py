@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 
 
 class ModificationsNSS:
-    def __init__(self, filename: str, replace_file: bool):
+    def __init__(self, filename: str, replace_file: bool, destination: str | None = None):
         self.filename: str = filename
-        self.destination: str = "Override"
+        self.destination: str = destination or "Override"
         self.action: str = "Compile"
         self.replace_file: bool = replace_file
 

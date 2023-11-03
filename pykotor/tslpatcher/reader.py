@@ -465,11 +465,7 @@ class ConfigReader:
 
         for identifier, file in files.items():
             replace = identifier.lower().startswith("replace")
-            modifications = ModificationsNSS(file, replace)
-            self.config.patches_nss.append(modifications)
-
-            if destination is not None:
-                modifications.destination = destination
+            self.config.patches_nss.append(ModificationsNSS(file, replace, destination))
 
     #################
 
