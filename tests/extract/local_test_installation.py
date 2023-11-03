@@ -7,7 +7,7 @@ from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import CaseAwarePath, Path, locate_game_paths
+from pykotor.tools.path import Path, locate_game_paths
 
 
 class TestInstallation(TestCase):
@@ -63,7 +63,7 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(resource)
         self.assertIsNotNone(resource.data)  # type: ignore
 
-    def test_resources(self):
+    def test_resources(self) -> None:
         installation = self.installation
 
         chitin_resources = [
