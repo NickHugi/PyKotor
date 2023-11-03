@@ -3,33 +3,31 @@ from __future__ import annotations
 from configparser import ConfigParser
 import shutil
 import tempfile
-from pykotor.tools.path import Path
-from unittest import TestCase
-
-from pykotor.common.language import Language, Gender
-
-from pykotor.common.misc import ResRef
-
 from pykotor.common.geometry import Vector3, Vector4
-
+from pykotor.common.language import Gender, Language
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, write_tlk
 from pykotor.resource.type import ResourceType
+from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
-    AddStructToListGFF,
-    ModifyFieldGFF,
     AddFieldGFF,
-    LocalizedStringDelta,
+    AddStructToListGFF,
+    FieldValue2DAMemory,
     FieldValueConstant,
     FieldValueTLKMemory,
-    FieldValue2DAMemory,
+    LocalizedStringDelta,
+    ModifyFieldGFF,
 )
 from pykotor.tslpatcher.mods.ssf import ModifySSF
-from pykotor.tslpatcher.mods.tlk import ModificationsTLK
+from pykotor.tslpatcher.mods.tlk import ModifyTLK, ModificationsTLK
 from pykotor.tslpatcher.mods.twoda import (
+    AddColumn2DA,
+    AddRow2DA,
     ChangeRow2DA,
+    CopyRow2DA,
     TargetType,
     RowValueRowIndex,
     RowValueRowLabel,
@@ -37,12 +35,9 @@ from pykotor.tslpatcher.mods.twoda import (
     RowValueConstant,
     RowValue2DAMemory,
     RowValueTLKMemory,
-    AddRow2DA,
-    CopyRow2DA,
-    AddColumn2DA,
 )
 from pykotor.tslpatcher.reader import ConfigReader
-from pykotor.tslpatcher.mods.tlk import ModifyTLK
+from unittest import TestCase
 
 
 class TestConfigReader(TestCase):
@@ -197,7 +192,7 @@ class TestConfigReader(TestCase):
     def test_tlk_strref_ignore_functionality(self):
         ini_text = """
             [TLKList]
-            StrRef0:4=2:6
+            StrRef0to4=2-6
             Ignore1:2=
         """
 
@@ -417,7 +412,7 @@ class TestConfigReader(TestCase):
             File0=tlk_modifications_file.tlk
 
             [tlk_modifications_file.tlk]
-            0:4=0:4
+            0-4=0:4
         """
         self.ini.read_string(ini_text)
         self.config_reader.load(self.config)
