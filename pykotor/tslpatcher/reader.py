@@ -115,17 +115,20 @@ class ConfigReader:
         self.load_nss()
         self.load_ssf()
 
-        return self.config
+    def get_section_name(self, section_name: str):
+        return next(
+            section
+            for section in self.ini.sections()
+            if section.lower() == section_name.lower()
+        )
 
     def load_settings(self) -> None:
         self.log.add_note("Loading [Settings] from ini...")
-        settings_section = next(
-            (section for section in self.ini.sections() if section.lower() == "settings"),
-            None,
-        )
         if not settings_section:
             return
+        settings_section = self.get_section_name("settings")
         settings_ini = CaseInsensitiveDict(dict(self.ini[settings_section].items()))
+
         self.config.window_title = settings_ini.get("WindowCaption", "")
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         lookup_game_number = settings_ini.get("LookupGameNumber")
@@ -143,21 +146,16 @@ class ConfigReader:
 
     def load_filelist(self) -> None:
         self.log.add_note("Loading [InstallList] patches from ini...")
-        install_list_section = next(
-            (section for section in self.ini.sections() if section.lower() == "installlist"),
-            None,
-        )
         if not install_list_section:
             return
 
+        install_list_section = self.get_section_name("installlist")
         folders_ini = CaseInsensitiveDict(dict(self.ini[install_list_section].items()))
+
         for key, foldername in folders_ini.items():
-            foldername_section = next(
-                (section for section in self.ini.sections() if section.lower() == key.lower()),
-                None,
-            )
+            foldername_section = self.get_section_name(key)
             if foldername_section is None:
-                msg = f"The section [{key}] was not found in the ini, referenced by {key}={foldername} in [InstallList]"
+                msg = f"The section [{key}] was not found in the ini, referenced by '{key}={foldername}' in [InstallList]"
                 raise KeyError(msg)
             folder_install = InstallFolder(foldername)
             self.config.install_list.append(folder_install)
@@ -170,21 +168,18 @@ class ConfigReader:
 
     def load_tlk_list(self) -> None:
         self.log.add_note("Loading [TLKList] patches from ini...")
-        tlk_list_section = next(
-            (section for section in self.ini.sections() if section.lower() == "tlklist"),
-            None,
-        )
         if not tlk_list_section:
             return
 
+        tlk_list_section = self.get_section_name("tlklist")
         tlk_list_edits = dict(self.ini[tlk_list_section].items())
+
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
+        range_delims = [":", "-", "to"]
         append_tlk_edits = None
 
         def load_tlk(tlk_path: CaseAwarePath) -> TLK:
             return read_tlk(tlk_path) if tlk_path.exists() else TLK()
-
-        range_delims = [":", "-", "to"]
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
             if range_str.lower().startswith("strref") or range_str.lower().startswith("ignore"):
@@ -241,22 +236,20 @@ class ConfigReader:
                             is_replacement,
                         )
                 except ValueError as e:
-                    msg = f"Could not parse {mod_key}={mod_value}"
+                    msg = f"Could not parse '{mod_key}={mod_value}'"
                     raise ValueError(msg) from e
 
         for i in tlk_list_edits:
             try:
                 if i.lower().startswith("ignore"):
-                    tlk_list_ignored_indices.update(
-                        parse_range(i[6:]),
-                    )
+                    tlk_list_ignored_indices.update(parse_range(i[6:]))
             except ValueError as e:  # noqa: PERF203
                 msg = f"Could not parse ignore index {i}"
                 raise ValueError(msg) from e
 
         for key, value in tlk_list_edits.items():
+            lowercase_key: str = key.lower()
             try:
-                lowercase_key: str = key.lower()
                 if lowercase_key.startswith("ignore"):
                     continue
                 if lowercase_key.startswith("strref"):
@@ -324,24 +317,19 @@ class ConfigReader:
 
     def load_2da(self) -> None:
         self.log.add_note("Loading [2DAList] patches from ini...")
-        twoda_list_section = next(
-            (section for section in self.ini.sections() if section.lower() == "2dalist"),
-            None,
-        )
         if not twoda_list_section:
             return
 
+        twoda_list_section = self.get_section_name("2dalist")
         files = CaseInsensitiveDict(dict(self.ini[twoda_list_section].items()))
 
         for identifier, file in files.items():
-            if file not in self.ini:
-                msg = f"The section [{file}] was not found in the ini, referenced by '{identifier}={file}' in [2DAList]"
                 raise KeyError(msg)
-            modification_ids = CaseInsensitiveDict(dict(self.ini[file].items()))
 
             modifications = Modifications2DA(file)
             self.config.patches_2da.append(modifications)
 
+            modification_ids = CaseInsensitiveDict(dict(self.ini[file].items()))
             for key, modification_id in modification_ids.items():
                 manipulation: Modify2DA | None = self.discern_2da(
                     key,
@@ -354,16 +342,10 @@ class ConfigReader:
 
     def load_ssf(self) -> None:
         self.log.add_note("Loading [SSFList] patches from ini...")
-        ssf_list_section = next(
-            (
-                section
-                for section in self.ini.sections()
-                if section.lower() == "ssflist"
-            ),
-            None,
-        )
         if not ssf_list_section:
             return
+        ssf_list_section = self.get_section_name("ssflist")
+        files = CaseInsensitiveDict(dict(self.ini[ssf_list_section].items()))
 
         configstr_to_ssfsound: dict[str, SSFSound] = {
             "Battlecry 1": SSFSound.BATTLE_CRY_1,
@@ -396,18 +378,15 @@ class ConfigReader:
             "Poisoned": SSFSound.POISONED,
         }
 
-        files = CaseInsensitiveDict(dict(self.ini[ssf_list_section].items()))
-
         for identifier, file in files.items():
-            if file not in self.ini:
-                msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [SSFList]"
+            ssf_file_section = self.get_section_name(file)
                 raise KeyError(msg)
-            modifications_ini = CaseInsensitiveDict(dict(self.ini[file].items()))
-            replace = identifier.lower().startswith("replace")
 
+            replace = identifier.lower().startswith("replace")
             modifications = ModificationsSSF(file, replace)
             self.config.patches_ssf.append(modifications)
 
+            modifications_ini = CaseInsensitiveDict(dict(self.ini[ssf_file_section].items()))
             for name, value in modifications_ini.items():
                 if value.lower().startswith("2damemory"):
                     token_id = int(value[9:])
@@ -424,34 +403,24 @@ class ConfigReader:
 
     def load_gff(self) -> None:
         self.log.add_note("Loading [GFFList] patches from ini...")
-        gff_list_section = next(
-            (
-                section
-                for section in self.ini.sections()
-                if section.lower() == "gfflist"
-            ),
-            None,
-        )
         if not gff_list_section:
             return
 
+        gff_list_section = self.get_section_name("gfflist")
         files = CaseInsensitiveDict(dict(self.ini[gff_list_section].items()))
 
         for identifier, file in files.items():
-            file_section = next(
-                (section for section in self.ini.sections() if section.lower() == file.lower()),
-                None,
-            )
+            file_section = self.get_section_name(file)
             if not file_section:
-                msg = f"The section [{file}] was not found in the ini, referenced by {identifier}={file} in [GFFList]"
+                msg = f"The section [{file}] was not found in the ini, referenced by '{identifier}={file}' in [{gff_list_section}]"
                 raise KeyError(msg)
-            modifications_ini = CaseInsensitiveDict(dict(self.ini[file_section].items()))
             replace = identifier.lower().startswith("replace")
 
             modifications = ModificationsGFF(file, replace)
             self.config.patches_gff.append(modifications)
 
             modifier: ModifyGFF | None = None
+            modifications_ini = CaseInsensitiveDict(dict(self.ini[file_section].items()))
             for key, value in modifications_ini.items():
                 lowercase_key = key.lower()
                 if lowercase_key == "!destination":
@@ -461,12 +430,9 @@ class ConfigReader:
                 elif lowercase_key in ["!filename", "!saveas"]:
                     modifications.filename = value
                 elif lowercase_key.startswith("addfield"):
-                    value_section = next(
-                        (section for section in self.ini.sections() if section.lower() == value.lower()),
-                        None,
-                    )
+                    value_section = self.get_section_name(value)
                     if not value_section:
-                        msg = f"The section [{value}] was not found in the ini, referenced by {key}={value} in [{file_section}]"
+                        msg = f"The section [{value}] was not found in the ini, referenced by '{key}={value}' in [{file_section}]"
                         raise KeyError(msg)
                     modifier = self.add_field_gff(value, CaseInsensitiveDict(dict(self.ini[value_section])))
                     if modifier:  # if None, then an error occurred
@@ -484,24 +450,13 @@ class ConfigReader:
 
     def load_nss(self) -> None:
         self.log.add_note("Loading [CompileList] patches from ini...")
-        compilelist_section = next(
-            (
-                section
-                for section in self.ini.sections()
-                if section.lower() == "compilelist"
-            ),
-            None,
-        )
         if not compilelist_section:
             return
 
+        compilelist_section = self.get_section_name("compilelist")
         files = CaseInsensitiveDict(dict(self.ini[compilelist_section].items()))
-        destination = None
-        for key, value in files.items():
-            if key.lower() == "!destination":
-                destination = value
-                del files[key]  # Remove the found item from the dictionary
-                break
+
+        destination = files.pop("!destination", None) if "!destination" in files else None
 
         for identifier, file in files.items():
             replace = identifier.lower().startswith("replace")
