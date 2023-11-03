@@ -66,7 +66,7 @@ if TYPE_CHECKING:
 class ConfigReader:
     def __init__(self, ini: ConfigParser, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
         self.ini = ini
-        self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
+        self.mod_path: CaseAwarePath = mod_path if isinstance(mod_path, CaseAwarePath) else CaseAwarePath(mod_path)
         self.config: PatcherConfig
         self.log = logger or PatchLogger()
 
@@ -494,13 +494,13 @@ class ConfigReader:
         elif is_int(string_value):
             value = FieldValueConstant(int(string_value))
         elif is_float(string_value):
-            value = FieldValueConstant(float(string_value))
+            value = FieldValueConstant(float(string_value.replace(",", ".")))
         elif string_value.count("|") == 2:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector3(*[float(x) for x in components]))
+            value = FieldValueConstant(Vector3(*[float(x.replace(",", ".")) for x in components]))
         elif string_value.count("|") == 3:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector4(*[float(x) for x in components]))
+            value = FieldValueConstant(Vector4(*[float(x.replace(",", ".")) for x in components]))
         else:
             value = FieldValueConstant(string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
         if "(strref)" in key.lower():
