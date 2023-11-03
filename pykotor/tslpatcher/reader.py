@@ -117,18 +117,21 @@ class ConfigReader:
 
     def get_section_name(self, section_name: str):
         return next(
-            section
-            for section in self.ini.sections()
-            if section.lower() == section_name.lower()
+            (
+                section
+                for section in self.ini.sections()
+                if section.lower() == section_name.lower()
+            ),
+            None,
         )
 
     def load_settings(self) -> None:
         self.log.add_note("Loading [Settings] from ini...")
+        settings_section = self.get_section_name("settings")
         if not settings_section:
             return
-        settings_section = self.get_section_name("settings")
-        settings_ini = CaseInsensitiveDict(dict(self.ini[settings_section].items()))
 
+        settings_ini = CaseInsensitiveDict(dict(self.ini[settings_section].items()))
         self.config.window_title = settings_ini.get("WindowCaption", "")
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         lookup_game_number = settings_ini.get("LookupGameNumber")
@@ -146,16 +149,15 @@ class ConfigReader:
 
     def load_filelist(self) -> None:
         self.log.add_note("Loading [InstallList] patches from ini...")
+        install_list_section = self.get_section_name("installlist")
         if not install_list_section:
             return
 
-        install_list_section = self.get_section_name("installlist")
         folders_ini = CaseInsensitiveDict(dict(self.ini[install_list_section].items()))
-
         for key, foldername in folders_ini.items():
             foldername_section = self.get_section_name(key)
             if foldername_section is None:
-                msg = f"The section [{key}] was not found in the ini, referenced by '{key}={foldername}' in [InstallList]"
+                msg = f"The section [{key}] was not found in the ini, referenced by '{key}={foldername}' in [{install_list_section}]"
                 raise KeyError(msg)
             folder_install = InstallFolder(foldername)
             self.config.install_list.append(folder_install)
@@ -168,10 +170,10 @@ class ConfigReader:
 
     def load_tlk_list(self) -> None:
         self.log.add_note("Loading [TLKList] patches from ini...")
+        tlk_list_section = self.get_section_name("tlklist")
         if not tlk_list_section:
             return
 
-        tlk_list_section = self.get_section_name("tlklist")
         tlk_list_edits = dict(self.ini[tlk_list_section].items())
 
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
@@ -317,19 +319,22 @@ class ConfigReader:
 
     def load_2da(self) -> None:
         self.log.add_note("Loading [2DAList] patches from ini...")
+        twoda_list_section = self.get_section_name("2dalist")
         if not twoda_list_section:
             return
 
-        twoda_list_section = self.get_section_name("2dalist")
         files = CaseInsensitiveDict(dict(self.ini[twoda_list_section].items()))
-
         for identifier, file in files.items():
+
+            file_section = self.get_section_name(file)
+            if not file_section:
+                msg = f"The section [{file}] was not found in the ini, referenced by '{identifier}={file}' in [{twoda_list_section}]"
                 raise KeyError(msg)
 
             modifications = Modifications2DA(file)
             self.config.patches_2da.append(modifications)
 
-            modification_ids = CaseInsensitiveDict(dict(self.ini[file].items()))
+            modification_ids = CaseInsensitiveDict(dict(self.ini[file_section].items()))
             for key, modification_id in modification_ids.items():
                 manipulation: Modify2DA | None = self.discern_2da(
                     key,
@@ -342,9 +347,9 @@ class ConfigReader:
 
     def load_ssf(self) -> None:
         self.log.add_note("Loading [SSFList] patches from ini...")
+        ssf_list_section = self.get_section_name("ssflist")
         if not ssf_list_section:
             return
-        ssf_list_section = self.get_section_name("ssflist")
         files = CaseInsensitiveDict(dict(self.ini[ssf_list_section].items()))
 
         configstr_to_ssfsound: dict[str, SSFSound] = {
@@ -380,6 +385,8 @@ class ConfigReader:
 
         for identifier, file in files.items():
             ssf_file_section = self.get_section_name(file)
+            if not ssf_file_section:
+                msg = f"The section [{file}] was not found in the ini, referenced by '{identifier}={file}' in [{ssf_list_section}]"
                 raise KeyError(msg)
 
             replace = identifier.lower().startswith("replace")
@@ -403,12 +410,11 @@ class ConfigReader:
 
     def load_gff(self) -> None:
         self.log.add_note("Loading [GFFList] patches from ini...")
+        gff_list_section = self.get_section_name("gfflist")
         if not gff_list_section:
             return
 
-        gff_list_section = self.get_section_name("gfflist")
         files = CaseInsensitiveDict(dict(self.ini[gff_list_section].items()))
-
         for identifier, file in files.items():
             file_section = self.get_section_name(file)
             if not file_section:
@@ -450,12 +456,11 @@ class ConfigReader:
 
     def load_nss(self) -> None:
         self.log.add_note("Loading [CompileList] patches from ini...")
+        compilelist_section = self.get_section_name("compilelist")
         if not compilelist_section:
             return
 
-        compilelist_section = self.get_section_name("compilelist")
         files = CaseInsensitiveDict(dict(self.ini[compilelist_section].items()))
-
         destination = files.pop("!destination", None) if "!destination" in files else None
 
         for identifier, file in files.items():
