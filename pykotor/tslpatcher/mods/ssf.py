@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.resource.formats.ssf import bytes_ssf, read_ssf
+from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.ssf import SSF, SSFSound
@@ -19,15 +20,14 @@ class ModifySSF:
         ssf.set_data(self.sound, int(self.stringref.value(memory)))
 
 
-class ModificationsSSF:
+class ModificationsSSF(PatcherModifications):
     def __init__(
         self,
         filename: str,
         replace_file: bool,
         modifiers: list[ModifySSF] | None = None,
     ):
-        self.filename: str = filename
-        self.destination = "Override"
+        super().__init__(filename)
         self.replace_file: bool = replace_file
         self.no_replacefile_check = True
         self.modifiers: list[ModifySSF] = modifiers if modifiers is not None else []

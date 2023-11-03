@@ -5,6 +5,7 @@ from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
 from pykotor.resource.formats.twoda import bytes_2da, read_2da
+from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.twoda import TwoDA, TwoDARow
@@ -53,10 +54,9 @@ class Target:
         return source_row
 
 
-class Modifications2DA:
+class Modifications2DA(PatcherModifications):
     def __init__(self, filename: str):
-        self.filename: str = filename
-        self.destination = "Override"
+        super().__init__(filename)
         self.modifiers: list[Modify2DA] = []
 
     def apply(self, source_2da: SOURCE_TYPES, memory: PatcherMemory, log=None, game=None) -> bytes:

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
     from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
+    from pykotor.tslpatcher.mods.template import PatcherModifications
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
@@ -46,7 +47,6 @@ class LogLevel(IntEnum):
     """Full feedback. On top of what is displayed at level 3, it also shows verbose progress
     information that may be useful for a Modder to see what is happening. Intended for
     Debugging."""
-
 
 class PatcherConfig:
     def __init__(self) -> None:
@@ -289,19 +289,19 @@ class ModInstaller:
         # Move nwscript.nss to Override if there are any nss patches to do
         # if len(config.patches_nss) > 0:
         #    folder_install = InstallFolder("Override")  # noqa: ERA001
-        #    if folder_install not in config.install_list:
-        #        config.install_list.append(folder_install)  # noqa: ERA001
+        #    config.install_list.append(folder_install)  # noqa: ERA001
         #    file_install = InstallFile("nwscript.nss", replace_existing=True)  # noqa: ERA001
         #    folder_install.files.append(file_install)  # noqa: ERA001
 
-        self.log.add_note(f"Applying {len(config.install_list)} patches from [InstallList]...")
-        for folder in config.install_list:
-            folder.apply(self.log, self.mod_path, self.game_path, *self.backup())
-            self.log.complete_patch()
+        if len(config.install_list) > 0:
+            self.log.add_note(f"Applying {len(config.install_list)} patches from [InstallList]...")
+            for folder in config.install_list:
+                folder.apply(self.log, self.mod_path, self.game_path, *self.backup())
+                self.log.complete_patch()
 
-        patches_list = [*config.patches_2da, *config.patches_gff, *config.patches_nss, *config.patches_ssf]
-        self.log.add_note(f"Applying {len(config.patches_tlk.modifiers)} patches from [TLKList]...")
+        patches_list: list[PatcherModifications] = [*config.patches_2da, *config.patches_gff, *config.patches_nss, *config.patches_ssf]
         if len(config.patches_tlk.modifiers) > 0:  # skip if no patches need to be made (faster)
+            self.log.add_note(f"Applying {len(config.patches_tlk.modifiers)} patches from [TLKList]...")
             patches_list.insert(0, config.patches_tlk)
 
         for patch in patches_list:
