@@ -526,10 +526,14 @@ class CaseInsensitiveDict(Generic[T]):
     def __repr__(self) -> str:
         return repr(self._dictionary)
 
-    def pop(self, key: str) -> T:
+    def pop(self, key: str, __default: VT = None) -> VT | T:
         lower_key = key.lower()
-        value = self._dictionary.pop(self._case_map[lower_key])
-        self._case_map.pop(lower_key)
+        try:
+            # Attempt to pop the value using the case-insensitive key.
+            value = self._dictionary.pop(self._case_map.pop(lower_key))
+        except KeyError:
+            # Return the default value if lower_key is not found in the case map.
+            return __default
         return value
 
     def get(self, __key: str, __default: VT = None) -> VT | T:

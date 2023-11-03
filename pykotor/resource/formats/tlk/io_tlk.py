@@ -40,8 +40,10 @@ class TLKBinaryReader(ResourceReader):
         self._reader.seek(0)
 
         self._load_file_header()
-        [self._load_entry(stringref) for stringref, entry in self._tlk]
-        [self._load_text(stringref) for stringref, entry in self._tlk]
+        for stringref, _entry in self._tlk:
+            self._load_entry(stringref)
+        for stringref, _entry in self._tlk:
+            self._load_text(stringref)
 
         return self._tlk
 
@@ -113,8 +115,10 @@ class TLKBinaryWriter(ResourceWriter):
         self._write_file_header()
 
         text_offset = WrappedInt(0)
-        [self._write_entry(entry, text_offset) for entry in self._tlk.entries]
-        [self._writer.write_string(entry.text) for entry in self._tlk.entries]
+        for entry in self._tlk.entries:
+            self._write_entry(entry, text_offset)
+        for entry in self._tlk.entries:
+            self._writer.write_string(entry.text)
 
     def _calculate_entries_offset(
         self,
