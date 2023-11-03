@@ -98,7 +98,7 @@ class App(tk.Tk):
         self.namespaces = []
 
         self.initialize_logger()
-        self.set_window(width=400, height=520)
+        self.set_window(width=400, height=500)
         self.namespaces_combobox = ttk.Combobox(self, state="readonly")
         self.namespaces_combobox.set("Select the mod to install")
         self.namespaces_combobox.place(x=5, y=5, width=310, height=25)
@@ -118,9 +118,6 @@ class App(tk.Tk):
 
         self.exit_button = ttk.Button(self, text="Exit", command=self.handle_exit_button)
         self.exit_button.place(x=5, y=470, width=75, height=25)
-
-        self.progressbar = ttk.Progressbar(self)
-        self.progressbar.place(x=5, y=500, width=390, height=15)
 
         self.install_button = ttk.Button(self, text="Install", command=self.begin_install)
         self.install_button.place(x=320, y=470, width=75, height=25)
@@ -599,7 +596,6 @@ class App(tk.Tk):
     def _execute_mod_install(self, installer: ModInstaller):
         self.set_active_install(install_running=True)
         install_start_time = datetime.now(timezone.utc).astimezone()
-        self.progressbar["value"] = 10
         installer.install()
         total_install_time = datetime.now(timezone.utc).astimezone() - install_start_time
 
@@ -618,7 +614,6 @@ class App(tk.Tk):
             f"The installation is complete with {len(installer.log.errors)} errors and {len(installer.log.warnings)} warnings. "
             f"Total install time: {time_str}",
         )
-        self.progressbar["value"] = 100
         log_file_path: Path = Path(self.mod_path, "installlog.txt")
         with log_file_path.open("w", encoding="utf-8") as log_file:
             for log in installer.log.all_logs:
