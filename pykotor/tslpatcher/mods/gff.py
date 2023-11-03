@@ -96,7 +96,7 @@ class ModifyGFF(ABC):
         root_container: GFFStruct,
         path: PureWindowsPath,
     ) -> GFFList | GFFStruct | None:
-        path = PureWindowsPath(path)
+        path = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
         if not path.name:
             return root_container
         container: GFFStruct | GFFList | None = root_container
@@ -113,7 +113,7 @@ class ModifyGFF(ABC):
         root_container: GFFStruct,
         path: PureWindowsPath | str,
     ) -> _GFFField | None:
-        path = PureWindowsPath(path)
+        path = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
         label: str = path.name
         container: GFFStruct | GFFList | None = root_container
         for step in path.parent.parts:
@@ -153,12 +153,9 @@ class AddStructToListGFF(ModifyGFF):
     ) -> None:
         list_container: GFFList | None = None
         if self.path.name == ">>##INDEXINLIST##<<":
-            self.path = self.path.parent  # idk
+            self.path = self.path.parent  # idk why conditional parenting is necessary but it works
         navigated_container: GFFList | GFFStruct | None = (
-            self._navigate_containers(
-                root_struct,
-                self.path,
-            )
+            self._navigate_containers(root_struct, self.path)
             if self.path.name
             else root_struct
         )
@@ -171,9 +168,7 @@ class AddStructToListGFF(ModifyGFF):
         new_struct = self.new_struct_location.value(memory, GFFFieldType.Struct)
 
         if not isinstance(new_struct, GFFStruct):
-            logger.add_error(
-                f"Failed to add a new struct with struct_id '{self.struct_id}' to list '{self.path}' in [{self.identifier}]. Skipping...",
-            )
+            logger.add_error(f"Failed to add a new struct with struct_id '{self.struct_id}' to list '{self.path}' in [{self.identifier}]. Skipping...")
             return
         new_struct.struct_id = self.struct_id
         list_container._structs.append(new_struct)
@@ -182,7 +177,6 @@ class AddStructToListGFF(ModifyGFF):
 
         add_field: AddFieldGFF | AddStructToListGFF
         for add_field in self.modifiers:  # type: ignore[ModifyFieldGFF never should be in modifiers]
-            # if add_field.path.name == ">>##INDEXINLIST##<<":  # noqa=ERA001 type: ignore[]
             add_field.path = self.path / str(len(list_container) - 1)
             add_field.apply(root_struct, memory, logger)
 
@@ -201,7 +195,7 @@ class AddFieldGFF(ModifyGFF):
         self.label: str = label
         self.field_type: GFFFieldType = field_type
         self.value: FieldValue = value
-        self.path: PureWindowsPath = PureWindowsPath(path)
+        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
 
@@ -269,11 +263,13 @@ class AddFieldGFF(ModifyGFF):
             newpath = PureWindowsPath("")
             for part, resolvedpart in zip_longest(add_field.path.parts, self.path.parts):
                 newpath /= resolvedpart or part
-            add_field.path = newpath  # resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though?
+            add_field.path = newpath  # resolves any >>##INDEXINLIST##<<, not sure why lengths aren't the same though (ziplongest)? Whatever, it works.
             add_field.apply(root_struct, memory, logger)
 
 
 class Memory2DAModifierGFF(ModifyGFF):
+    """A modifier class used for !FieldPath support."""
+
     def __init__(
         self,
         identifier: str,
@@ -282,7 +278,7 @@ class Memory2DAModifierGFF(ModifyGFF):
     ):
         self.identifier: str = identifier
         self.twoda_index: int = twoda_index
-        self.path: PureWindowsPath = PureWindowsPath(path)
+        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
 
     def apply(self, container, memory: PatcherMemory, logger: PatchLogger):
         memory.memory_2da[self.twoda_index] = str(self.path)
@@ -294,7 +290,7 @@ class ModifyFieldGFF(ModifyGFF):
         path: PureWindowsPath | str,
         value: FieldValue,
     ) -> None:
-        self.path: PureWindowsPath = PureWindowsPath(path)
+        self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
         self.value: FieldValue = value
 
     def apply(

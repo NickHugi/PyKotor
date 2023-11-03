@@ -298,9 +298,7 @@ class InstallFile:
             data = BinaryReader.load_file(source_folder / self.filename)
             destination.add(resname, restype, data)
         else:
-            log.add_warning(
-                f"A file named '{self.filename}' already exists in the '{destination.filename()}' archive. Skipping file...",
-            )
+            log.add_warning(f"A file named '{self.filename}' already exists in the '{destination.filename()}' archive. Skipping file...")
 
     def apply_file(
         self,
@@ -332,8 +330,10 @@ class InstallFile:
 
 
 class InstallFolder:
-    # The `InstallFolder` class represents a folder that can be installed, and it provides a method to
-    # apply the installation by copying files from a source path to a destination path.
+    """The `InstallFolder` class represents a folder that can be installed, and it provides a method to
+    apply the installation by copying files from a source path to a destination path.
+    """
+
     def __init__(
         self,
         foldername: str,
@@ -359,11 +359,4 @@ class InstallFolder:
                 file.apply_encapsulated(log, source_path, destination, local_folder, backup_dir, processed_files)
         else:
             for file in self.files:
-                file.apply_file(
-                    log,
-                    source_path,
-                    target,
-                    self.foldername,
-                    backup_dir,
-                    processed_files,
-                )
+                file.apply_file(log, source_path, target, self.foldername, backup_dir, processed_files)

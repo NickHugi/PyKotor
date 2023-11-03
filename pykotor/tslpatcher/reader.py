@@ -355,7 +355,11 @@ class ConfigReader:
     def load_ssf(self) -> None:
         self.log.add_note("Loading [SSFList] patches from ini...")
         ssf_list_section = next(
-            (section for section in self.ini.sections() if section.lower() == "ssflist"),
+            (
+                section
+                for section in self.ini.sections()
+                if section.lower() == "ssflist"
+            ),
             None,
         )
         if not ssf_list_section:
@@ -421,7 +425,11 @@ class ConfigReader:
     def load_gff(self) -> None:
         self.log.add_note("Loading [GFFList] patches from ini...")
         gff_list_section = next(
-            (section for section in self.ini.sections() if section.lower() == "gfflist"),
+            (
+                section
+                for section in self.ini.sections()
+                if section.lower() == "gfflist"
+            ),
             None,
         )
         if not gff_list_section:
@@ -477,7 +485,11 @@ class ConfigReader:
     def load_nss(self) -> None:
         self.log.add_note("Loading [CompileList] patches from ini...")
         compilelist_section = next(
-            (section for section in self.ini.sections() if section.lower() == "compilelist"),
+            (
+                section
+                for section in self.ini.sections()
+                if section.lower() == "compilelist"
+            ),
             None,
         )
         if not compilelist_section:
@@ -573,14 +585,18 @@ class ConfigReader:
             "Struct": GFFFieldType.Struct,
             "List": GFFFieldType.List,
         }
-
-        field_type: GFFFieldType = fieldname_to_fieldtype[ini_data["FieldType"]]
-        label: str = ini_data["Label"].strip()
-        raw_path: str = ini_data.get("Path", "").strip()  # type: ignore[never None]
-        raw_value: str | None = ini_data.get("Value")
         value: FieldValue | LocalizedStringDelta | None = None
         struct_id = 0
 
+        # required
+        field_type: GFFFieldType = fieldname_to_fieldtype[ini_data["FieldType"]]
+        label: str = ini_data["Label"].strip()
+
+        # situational/optional
+        raw_path: str = ini_data.get("Path", "").strip()  # type: ignore[never None]
+        raw_value: str | None = ini_data.get("Value")
+
+        # Handle current gff path
         path: PureWindowsPath = PureWindowsPath(raw_path)
         path = path if path.name else (current_path or PureWindowsPath(""))
 
@@ -609,9 +625,7 @@ class ConfigReader:
                 value = FieldValueConstant(GFFStruct(struct_id))
                 path /= ">>##INDEXINLIST##<<"
             else:
-                msg = (
-                    f"Could not find valid field return type in '{identifier}' matching field type '{field_type}' in this context"
-                )
+                msg = f"Could not find valid field return type in '[{identifier}]' matching field type '{field_type}' in this context"
                 raise ValueError(msg)
         elif raw_value.startswith("2DAMEMORY"):
             token_id = int(raw_value[9:])
@@ -667,7 +681,7 @@ class ConfigReader:
                     modifiers.append(nested_modifier)
 
         # If current field is a struct inside a list, check if no label defined.
-        if not label.strip() and field_type.return_type() is GFFStruct:
+        if not label and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
                 identifier,
                 struct_id,
