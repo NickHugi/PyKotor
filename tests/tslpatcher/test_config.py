@@ -1,8 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch
-from pykotor.common.stream import BinaryReader
 from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import ModInstaller
 
@@ -42,18 +40,14 @@ class TestConfig(unittest.TestCase):
         setattr(self.patch, "replace_file", False)
 
         with patch("pykotor.common.stream.BinaryReader.load_file") as mock_load_file:
-            self._do_main_test(
-                "BinaryReader.load_file result", mock_load_file, True, None
-            )
+            self._do_main_test("BinaryReader.load_file result", mock_load_file, True, None)
 
     def test_lookup_resource_no_capsule_exists_false(self):
         # Arrange
         setattr(self.patch, "replace_file", False)
 
         with patch("pykotor.common.stream.BinaryReader.load_file") as mock_load_file:
-            self._do_main_test(
-                "BinaryReader.load_file result", mock_load_file, False, None
-            )
+            self._do_main_test("BinaryReader.load_file result", mock_load_file, False, None)
 
     def test_lookup_resource_capsule_exists_false(self):
         self._do_capsule_test(
@@ -66,9 +60,7 @@ class TestConfig(unittest.TestCase):
         setattr(self.patch, "replace_file", False)
         capsule = Capsule("test.mod")
         with patch(arg0) as mock_resource:
-            self._do_main_test(
-                arg1, mock_resource, arg2, capsule
-            )
+            self._do_main_test(arg1, mock_resource, arg2, capsule)
 
     def _do_main_test(self, arg0, arg1, exists_at_output_location, capsule):
         arg1.return_value = arg0
