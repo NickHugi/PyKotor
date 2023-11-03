@@ -3,9 +3,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-import chardet
-
-from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
+from pykotor.common.misc import decode_bytes_with_fallbacks
+from pykotor.resource.formats.ncs import bytes_ncs, compile_nss
 from pykotor.tools.path import PurePath
 
 if TYPE_CHECKING:
@@ -22,8 +21,7 @@ class ModificationsNSS:
         self.replace_file: bool = replace_file
 
     def apply(self, nss_bytes: bytes, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
-        encoding: str = (chardet and chardet.detect(nss_bytes) or {}).get("encoding") or "utf8"
-        source = nss_bytes.decode(encoding=encoding, errors="replace")
+        source: str = decode_bytes_with_fallbacks(nss_bytes)
 
         match = re.search(r"#2DAMEMORY\d+#", source)
         while match:

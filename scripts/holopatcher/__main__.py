@@ -379,36 +379,14 @@ class App(tk.Tk):
         self.gamepaths.icursor(position)
         self.gamepaths.xview(position)
 
-    def get_changes_from_namespace_option(self, namespace_option: PatcherNamespace):
-        ini_filename = namespace_option.ini_filename.strip() or "changes.ini"
-        if namespace_option.data_folderpath:
-            return CaseAwarePath(
-                self.mod_path,
-                "tslpatchdata",
-                namespace_option.data_folderpath,
-                ini_filename,
-            )
-        return CaseAwarePath(self.mod_path, "tslpatchdata", ini_filename)
-
-    def get_rtf_from_namespace_option(self, namespace_option: PatcherNamespace):
-        info_filename = namespace_option.info_filename.strip() or "info.rtf"
-        if namespace_option.data_folderpath:
-            return CaseAwarePath(
-                self.mod_path,
-                "tslpatchdata",
-                namespace_option.data_folderpath,
-                info_filename,
-            )
-        return CaseAwarePath(self.mod_path, "tslpatchdata", info_filename)
-
     def on_namespace_option_chosen(self, event):
         try:
             namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
-            changes_ini_path = self.get_changes_from_namespace_option(namespace_option)
+            changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             game_number: int | None = self.extract_lookup_game_number(changes_ini_path)
             if game_number:
                 self._handle_gamepaths_with_mod(game_number)
-            info_rtf = self.get_rtf_from_namespace_option(namespace_option)
+            info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
             if not info_rtf.exists():
                 messagebox.showwarning("No info.rtf", "Could not load the rtf for this mod, file not found on disk.")
                 return
@@ -561,7 +539,7 @@ class App(tk.Tk):
         if not self.preinstall_validate_chosen():
             return
         namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
-        ini_file_path = self.get_changes_from_namespace_option(namespace_option)
+        ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
         namespace_mod_path = ini_file_path.parent
 
         self._clear_description_textbox()

@@ -6,13 +6,7 @@ from datetime import datetime, timezone
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
-
-try:
-    import chardet
-except ImportError:
-    chardet = None
-
+from pykotor.common.misc import Game, decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
@@ -55,7 +49,7 @@ class LogLevel(IntEnum):
 
 
 class PatcherConfig:
-    def __init__(self):
+    def __init__(self) -> None:
         self.window_title: str = ""
         self.confirm_message: str = ""
         self.game_number: int | None = None
@@ -97,7 +91,7 @@ class PatcherConfig:
 
 
 class PatcherNamespace:
-    def __init__(self):
+    def __init__(self) -> None:
         self.namespace_id: str = ""
         self.ini_filename: str = ""
         self.info_filename: str = ""
@@ -105,7 +99,7 @@ class PatcherNamespace:
         self.name: str = ""
         self.description: str = ""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     def changes_filepath(self) -> str:
@@ -148,7 +142,7 @@ class ModInstaller:
             if not self.changes_ini_path.exists():
                 self.changes_ini_path = self.mod_path / "tslpatchdata" / self.changes_ini_path.name
             if not self.changes_ini_path.exists():
-                msg = f"Could not find the changes ini file {self.changes_ini_path} on disk! Could not start install!"
+                msg = f"Could not find the changes ini file {self.changes_ini_path!s} on disk! Could not start install!"
                 raise FileNotFoundError(msg)
 
         self._config: PatcherConfig | None = None
@@ -164,28 +158,17 @@ class ModInstaller:
             return self._config
 
         ini_file_bytes = BinaryReader.load_file(self.changes_ini_path)
-        encoding = "utf8"
-        if chardet:
-            encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding") or encoding
-        ini_data: str | None = None
-        try:
-            ini_data = ini_file_bytes.decode(encoding)
-        except UnicodeDecodeError:
-            try:
-                ini_data = ini_file_bytes.decode("cp1252")
-            except UnicodeDecodeError:
-                try:
-                    ini_data = ini_file_bytes.decode("windows-1252")
-                except UnicodeDecodeError:
-                    self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
-                    ini_data = ini_file_bytes.decode(errors="replace")
-        ini_text = ini_data
+        ini_text = decode_bytes_with_fallbacks(ini_file_bytes)
+
+        if ini_text is None:
+            self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
+            ini_text = ini_file_bytes.decode(encoding="iso-8859-1", errors="replace")
 
         self._config = PatcherConfig()
         self._config.load(ini_text, self.mod_path, self.log)
 
         if self._config.required_file:
-            requiredfile_path = self.game_path / "Override" / self._config.required_file
+            requiredfile_path: CaseAwarePath = self.game_path / "Override" / self._config.required_file
             if not requiredfile_path.exists():
                 raise ImportError(self._config.required_message.strip() or "cannot install - missing a required mod")
         return self._config
@@ -194,8 +177,9 @@ class ModInstaller:
         if self._game:
             return self._game
         path = self.game_path
-        def check(x):
-            return path.joinpath(x).exists()
+        def check(x) -> bool:
+            file_path: CaseAwarePath = path.joinpath(x)
+            return file_path.exists()
 
         is_game1_stream = check("streamwaves") and not check("streamvoice")
         is_game1_exe = check("swkotor.exe") and not check("swkotor2.exe")
@@ -204,9 +188,9 @@ class ModInstaller:
         is_game2_stream = check("streamvoice") and not check("streamwaves")
         is_game2_exe = check("swkotor2.exe") and not check("swkotor.exe")
 
-        if any([is_game2_stream, is_game2_exe]):
+        if any((is_game2_stream, is_game2_exe)):  # check TSL first otherwise the 'rims' folder takes priority
             self._game = Game(2)
-        if any([is_game1_stream, is_game1_exe, is_game1_rims]):
+        if any((is_game1_stream, is_game1_exe, is_game1_rims)):
             self._game = Game(1)
         if self._game is not None:
             return self._game
@@ -257,7 +241,7 @@ class ModInstaller:
         exists_at_output_location: bool | None = None,
         capsule: Capsule | None = None,
     ) -> bytes | None:
-        if getattr(patch, "replace_file", False) or not exists_at_output_location:
+        if getattr(patch, "replace_file", None) or not exists_at_output_location:
             return BinaryReader.load_file(self.mod_path / patch.filename)
         if capsule is not None:
             return capsule.resource(*ResourceIdentifier.from_path(patch.filename))
@@ -323,7 +307,7 @@ class ModInstaller:
         for patch in patches_list:
             output_container_path = self.game_path / patch.destination
             exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
-            if not self.should_patch(patch, exists, capsule):
+            if not self.should_patch(patch, exists, capsule):  # only returns False for installlist (which currently doesn't use it - todo)
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
             if not data_to_patch_bytes:

@@ -1,8 +1,11 @@
 """This module holds various unrelated classes and methods."""
 
-
 from __future__ import annotations
 
+try:
+    import chardet
+except ImportError:
+    chardet = None
 from enum import Enum, IntEnum
 from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar
 
@@ -430,6 +433,39 @@ class EquipmentSlot(Enum):
     # TSL Only:
     RIGHT_HAND_2 = 2**18
     LEFT_HAND_2 = 2**19
+
+def decode_bytes_with_fallbacks(ini_file_bytes: bytes):
+    ini_data: str | None = None
+    encoding: str | None = None
+
+    if chardet:
+        encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding")
+
+    # A list of encodings to try
+    encodings_to_try: list[str | None] = [
+        encoding,       # chardet's best guess
+        "utf-8-sig",    # UTF-8 with BOM
+        "utf-8",        # Standard UTF-8
+        "utf-16-le",    # UTF-16 Little Endian
+        "utf-16-be",    # UTF-16 Big Endian
+        "utf-16",       # UTF-16 with BOM
+        "utf-32-le",    # UTF-32 Little Endian
+        "utf-32-be",    # UTF-32 Big Endian
+        "utf-32",       # UTF-32 with BOM
+        "ascii",        # ASCII
+        "windows-1252", # Windows-1252, a very generalized encoding that will not throw an exception, ensures we don't return None
+        "iso-8859-1",   # ISO-8859-1, a very generalized encoding that will not throw an exception, ensures we don't return None
+    ]
+
+    for enc in encodings_to_try:
+        if enc is None:  # ignore chardet failures
+            continue
+        try:
+            ini_data = ini_file_bytes.decode(enc, errors="strict")
+            break  # Stop at the first successful decoding
+        except UnicodeDecodeError:
+            continue
+    return ini_data
 
 
 class CaseInsensitiveHashSet(set, Generic[T]):
