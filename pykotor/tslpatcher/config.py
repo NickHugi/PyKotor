@@ -302,7 +302,7 @@ class ModInstaller:
         patches_list: list[PatcherModifications] = [*config.patches_2da, *config.patches_gff, *config.patches_nss, *config.patches_ssf]
         if len(config.patches_tlk.modifiers) > 0:  # skip if no patches need to be made (faster)
             self.log.add_note(f"Applying {len(config.patches_tlk.modifiers)} patches from [TLKList]...")
-            patches_list.insert(0, config.patches_tlk)
+            patches_list.insert(0, config.patches_tlk)  # patching these first is important as their StrRefs are used in other patch lists.
 
         for patch in patches_list:
             output_container_path = self.game_path / patch.destination

@@ -330,7 +330,7 @@ class InstallFile:
 
 
 class InstallFolder:
-    """The `InstallFolder` class represents a folder that can be installed, and it provides a method to
+    """The `InstallFolder` class represents a folder that can be installed to, and it provides a method to
     apply the installation by copying files from a source path to a destination path.
     """
 
