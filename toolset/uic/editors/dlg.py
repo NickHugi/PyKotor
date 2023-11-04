@@ -899,7 +899,7 @@ class Ui_MainWindow(object):
         self.label_36.setText(_translate("MainWindow", "Fade Type:"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.otherTab), _translate("MainWindow", "Other"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.commentsTab), _translate("MainWindow", "Comments"))
-        self.menuFIle.setTitle(_translate("MainWindow", "FIle"))
+        self.menuFIle.setTitle(_translate("MainWindow", "File"))
         self.menuTools.setTitle(_translate("MainWindow", "Tools"))
         self.actionNew.setText(_translate("MainWindow", "New"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))

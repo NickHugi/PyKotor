@@ -23,7 +23,7 @@ if not getattr(sys, "frozen", False):
     if project_root.joinpath("pykotor").exists():
         sys.path.append(str(project_root))
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.tools.misc import striprtf, universal_simplify_exception
@@ -152,7 +152,7 @@ class App(tk.Tk):
         self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
         self.handle_commandline(cmdline_args)
 
-    def handle_commandline(self, cmdline_args):
+    def handle_commandline(self, cmdline_args) -> None:
         if cmdline_args.game_dir:
             self.open_kotor(cmdline_args.game_dir)
         if cmdline_args.namespace_option_index:
@@ -366,7 +366,7 @@ class App(tk.Tk):
             self.install_thread._stop()  # type: ignore[hidden method]
             print("force terminate of install thread succeeded")
         with contextlib.suppress(Exception):
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[reportGeneralTypeIssues]
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
@@ -379,7 +379,7 @@ class App(tk.Tk):
         self.gamepaths.icursor(position)
         self.gamepaths.xview(position)
 
-    def on_namespace_option_chosen(self, event):
+    def on_namespace_option_chosen(self, event) -> None:
         try:
             namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
@@ -399,7 +399,7 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the namespace option.{os.linesep*2}{msg}",
             )
 
-    def extract_lookup_game_number(self, changes_path: Path):
+    def extract_lookup_game_number(self, changes_path: Path) -> int | None:
         if not changes_path.exists():
             return None
         pattern = r"LookupGameNumber=(\d+)"
@@ -410,7 +410,7 @@ class App(tk.Tk):
                     return int(match[1])
         return None
 
-    def check_access(self, directory: Path, recurse=False):
+    def check_access(self, directory: Path, recurse=False) -> bool:
         if directory.has_access(recurse):
             return True
         if (
@@ -497,7 +497,7 @@ class App(tk.Tk):
                 f"An unexpected error occurred while loading the game directory.{os.linesep*2}{msg}",
             )
 
-    def preinstall_validate_chosen(self):
+    def preinstall_validate_chosen(self) -> bool:
         def _if_missing(title, message):
             messagebox.showinfo(title, message)
             if self.one_shot:
@@ -535,7 +535,7 @@ class App(tk.Tk):
             )
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
-    def begin_install_thread(self):
+    def begin_install_thread(self) -> None:
         if not self.preinstall_validate_chosen():
             return
         namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
@@ -609,7 +609,7 @@ class App(tk.Tk):
                 f"Check the logs for details etc. Utilize the script in the 'uninstall' folder of the mod directory to revert these changes. Total install time: {time_str}",
             )
 
-    def _handle_exception_during_install(self, e: Exception, installer: ModInstaller):
+    def _handle_exception_during_install(self, e: Exception, installer: ModInstaller) -> NoReturn:
         error_name, msg = universal_simplify_exception(e)
         self.write_log(msg)
         installer.log.add_error("The installation was aborted with errors")
@@ -633,7 +633,8 @@ class App(tk.Tk):
                 strict=False,
                 interpolation=None,
             )
-            ini.optionxform = lambda optionstr: optionstr  # use case sensitive keys
+            # use case sensitive keys
+            ini.optionxform = lambda optionstr: optionstr  # type: ignore[method-assign]
             ini.read_string(file.read())
 
             namespace = PatcherNamespace()
@@ -646,7 +647,7 @@ class App(tk.Tk):
             if not settings_section:
                 namespace.name = "<< Untitled Mod Loaded >>"
                 return namespace
-            settings_ini = CaseInsensitiveDict(dict(ini[settings_section].items()))
+            settings_ini = CaseInsensitiveDict(ini[settings_section].items())
             namespace.name = settings_ini.get("WindowCaption", "<< Untitled Mod Loaded >>")
 
         return namespace
