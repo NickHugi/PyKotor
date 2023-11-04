@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.formats.ncs import bytes_ncs, compile_nss
 from pykotor.tools.path import PurePath
+from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -13,12 +14,11 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.memory import PatcherMemory
 
 
-class ModificationsNSS:
-    def __init__(self, filename: str, replace_file: bool, destination: str | None = None):
-        self.filename: str = filename
-        self.destination: str = destination or "Override"
-        self.action: str = "Compile"
+class ModificationsNSS(PatcherModifications):
+    def __init__(self, filename: str, replace_file: bool, destination: str | None = None) -> None:
+        super().__init__(filename, destination)
         self.replace_file: bool = replace_file
+        self.action: str = "Compile"
 
     def apply(self, nss_bytes: bytes, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
         source: str = decode_bytes_with_fallbacks(nss_bytes)

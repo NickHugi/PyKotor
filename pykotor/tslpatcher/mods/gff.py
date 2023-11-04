@@ -15,6 +15,7 @@ from pykotor.resource.formats.gff import (
     read_gff,
 )
 from pykotor.tools.path import PureWindowsPath
+from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.gff.gff_data import _GFFField
@@ -341,18 +342,17 @@ class ModifyFieldGFF(ModifyGFF):
 # endregion
 
 
-class ModificationsGFF:
+class ModificationsGFF(PatcherModifications):
     def __init__(
         self,
         filename: str,
         replace_file: bool,
         modifiers: list[ModifyGFF] | None = None,
-        destination: str | None = None,
+        destination: str | None = "Override",
     ) -> None:
-        self.filename: str = filename
+        super().__init__(filename, destination)
         self.replace_file: bool = replace_file
         self.no_replacefile_check = True
-        self.destination = destination or "Override"
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(
