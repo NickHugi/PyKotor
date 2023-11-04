@@ -7,7 +7,7 @@ import platform
 import re
 import sys
 import uuid
-from typing import TYPE_CHECKING, Generator, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Generator, List, Tuple, Union
 
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
@@ -16,14 +16,14 @@ PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
 
-def has_attr_excluding_object(cls, attr_name):
+def has_attr_excluding_object(cls, attr_name) -> bool:
     # Exclude the built-in 'object' class
     mro_classes = [c for c in cls.mro() if c != object]
 
     return any(attr_name in base_class.__dict__ for base_class in mro_classes)
 
 
-def is_class_or_subclass_but_not_instance(cls, target_cls):
+def is_class_or_subclass_but_not_instance(cls, target_cls) -> bool:
     if cls is target_cls:
         return True
     if not hasattr(cls, "__bases__"):
@@ -31,15 +31,15 @@ def is_class_or_subclass_but_not_instance(cls, target_cls):
     return any(is_class_or_subclass_but_not_instance(base, target_cls) for base in cls.__bases__)
 
 
-def is_instance_or_subinstance(instance, target_cls):
+def is_instance_or_subinstance(instance, target_cls) -> bool:
     if hasattr(instance, "__bases__"):  # instance is a class
         return False  # if instance is a class type, always return False
     # instance is not a class
     return type(instance) is target_cls or is_class_or_subclass_but_not_instance(type(instance), target_cls)
 
 
-def simple_wrapper(fn_name, wrapped_class_type):
-    def wrapped(self, *args, **kwargs):
+def simple_wrapper(fn_name, wrapped_class_type) -> Callable[..., Any]:
+    def wrapped(self, *args, **kwargs) -> Any:
         orig_fn = wrapped_class_type._original_methods[fn_name]
 
         def parse_arg(arg):
@@ -65,7 +65,7 @@ def simple_wrapper(fn_name, wrapped_class_type):
     return wrapped
 
 
-def create_case_insensitive_pathlib_class(cls):
+def create_case_insensitive_pathlib_class(cls) -> None:
     # Create a dictionary that'll hold the original methods for this class
     cls._original_methods = {}
     mro = cls.mro()  # Gets the method resolution order
@@ -188,7 +188,7 @@ class BasePurePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return str(self) + key
+        return str(self) + str(key)
 
     def __radd__(self, key: PathElem):
         """Implicitly converts the path to a str when used with the addition operator '+'.
@@ -199,7 +199,7 @@ class BasePurePath:
             self (CaseAwarePath):
             key (path-like object or str path):
         """
-        return key + str(self)
+        return str(key) + str(self)
 
     def joinpath(self, *args: PATH_TYPES):
         """Appends one or more path-like objects and/or relative paths to self.
@@ -232,7 +232,7 @@ class BasePurePath:
             else:
                 text = text.lower()
         else:
-            self_str = self
+            self_str = str(self)
 
         # Utilize Python's built-in endswith method
         return self_str.endswith(text)
@@ -441,10 +441,10 @@ class CaseAwarePath(Path):
         other = other.as_posix() if isinstance(other, pathlib.PurePath) else str(other)
         return self._fix_path_formatting(other).lower() == super().__str__().lower()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({super().__str__().lower()})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             super().__str__()
             if pathlib.Path(self).exists()
@@ -521,7 +521,7 @@ class CaseAwarePath(Path):
 if os.name == "posix":
     create_case_insensitive_pathlib_class(CaseAwarePath)
 elif os.name == "nt":
-    CaseAwarePath = Path  # type: ignore[misc]
+    CaseAwarePath = Path  # type: ignore[assignment]
 
 
 def resolve_reg_key_to_path(reg_key, keystr):
@@ -627,6 +627,6 @@ def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
                 if path and path.exists():
                     locations[game_option].add(path)
 
-    locations[Game.K1] = [*locations[Game.K1]]
-    locations[Game.K2] = [*locations[Game.K2]]
-    return locations
+    locations[Game.K1] = [*locations[Game.K1]]  # type: ignore[assignment]
+    locations[Game.K2] = [*locations[Game.K2]]  # type: ignore[assignment]
+    return locations  # type: ignore[return-value]

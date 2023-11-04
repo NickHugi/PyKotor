@@ -136,7 +136,7 @@ def universal_simplify_exception(e):
     return error_name, f"{error_name}: {','.join(e.args)}"
 
 
-def striprtf(text):  # noqa: C901, PLR0915, PLR0912
+def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
     """Strips RTF encoding utterly and completely."""
     pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
     # control words which specify a "destination".

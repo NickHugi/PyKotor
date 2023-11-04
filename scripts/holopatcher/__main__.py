@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import contextlib
 import ctypes
 import os
@@ -10,8 +9,9 @@ import shutil
 import sys
 import tkinter as tk
 import traceback
+from argparse import ArgumentParser, Namespace
 from configparser import ConfigParser
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
@@ -48,8 +48,8 @@ class ExitCode(IntEnum):
     INSTALL_COMPLETED_WITH_ERRORS = 8
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="HoloPatcher CLI")
+def parse_args() -> Namespace:
+    parser = ArgumentParser(description="HoloPatcher CLI")
 
     # Positional arguments for the old syntax
     parser.add_argument("--game-dir", type=str, help="Path to game directory")
@@ -124,7 +124,7 @@ class App(tk.Tk):
 
         self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
         self.uninstall_button.place(x=160, y=470, width=75, height=25)
-        self.uninstall_button.place_forget()
+        self.uninstall_button.place_forget()  # comment this to enable the uninstall button.
 
         # Create a Frame to hold the Text and Scrollbar widgets
         text_frame = tk.Frame(self)
@@ -152,7 +152,7 @@ class App(tk.Tk):
         self.open_mod(cmdline_args.tslpatchdata or CaseAwarePath.cwd())
         self.handle_commandline(cmdline_args)
 
-    def handle_commandline(self, cmdline_args) -> None:
+    def handle_commandline(self, cmdline_args: Namespace) -> None:
         if cmdline_args.game_dir:
             self.open_kotor(cmdline_args.game_dir)
         if cmdline_args.namespace_option_index:
@@ -172,7 +172,7 @@ class App(tk.Tk):
             self.uninstall_selected_mod()
             sys.exit()
 
-    def handle_console_mode(self):
+    def handle_console_mode(self) -> None:
         class MessageboxOverride:
             @staticmethod
             def showinfo(title, message):
@@ -198,9 +198,9 @@ class App(tk.Tk):
                         return False
                     print("Invalid input. Please enter 'yes' or 'no'")
 
-        messagebox.showinfo = MessageboxOverride.showinfo
-        messagebox.showwarning = MessageboxOverride.showwarning
-        messagebox.showerror = MessageboxOverride.showerror
+        messagebox.showinfo = MessageboxOverride.showinfo  # type: ignore[assignment]
+        messagebox.showwarning = MessageboxOverride.showwarning  # type: ignore[assignment]
+        messagebox.showerror = MessageboxOverride.showerror  # type: ignore[assignment]
         # messagebox.askyesno = MessageboxOverride.askyesno  # noqa: ERA001
         # messagebox.askyesnocancel = MessageboxOverride.askyesno  # noqa: ERA001
         # messagebox.askretrycancel = MessageboxOverride.askyesno  # noqa: ERA001
@@ -225,7 +225,7 @@ class App(tk.Tk):
         self.geometry(f"{width}x{height}+{x_position}+{y_position}")
         self.resizable(width=False, height=False)
 
-    def hide_console(self):
+    def hide_console(self) -> None:
         """Hide the console window in GUI mode."""
         # Windows
         if os.name == "nt":
@@ -233,7 +233,7 @@ class App(tk.Tk):
 
             ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
-    def uninstall_selected_mod(self):
+    def uninstall_selected_mod(self) -> None:
         if self.install_running:
             messagebox.showerror("An install is already running!", "Please wait for all operations to finish")
             return
@@ -254,7 +254,7 @@ class App(tk.Tk):
             return
 
         self._clear_description_textbox()
-        sorted_backup_folders = []
+        sorted_backup_folders: list[tuple[Path, datetime]] = []
         for folder in backup_parent_folder.iterdir():
             try:
                 dt = datetime.strptime(folder.name, "%Y-%m-%d_%H.%M.%S").astimezone()
@@ -271,7 +271,7 @@ class App(tk.Tk):
             )
             return
         sorted_backup_folders.sort(key=lambda x: x[1], reverse=True)
-        most_recent_backup_folder = backup_parent_folder / str(sorted_backup_folders[0][0])
+        most_recent_backup_folder: Path = backup_parent_folder / str(sorted_backup_folders[0][0])
         self.write_log(f"Using backup folder '{most_recent_backup_folder}'")
         delete_list_file = most_recent_backup_folder / "remove these files.txt"
         if not delete_list_file.exists():
@@ -282,6 +282,7 @@ class App(tk.Tk):
             # return  # noqa: ERA001, RUF100
             pass
         existing_files = set()
+        line: str
         if delete_list_file.exists():
             missing_files = False
             with delete_list_file.open("r") as f:
@@ -306,8 +307,8 @@ class App(tk.Tk):
                 )
                 return
         all_items_in_backup = list(Path(most_recent_backup_folder).safe_rglob("*"))
-        files_in_backup = [item for item in all_items_in_backup if item.safe_isfile()]
-        folder_count = len(all_items_in_backup) - len(files_in_backup)
+        files_in_backup: list[Path] = [item for item in all_items_in_backup if item.safe_isfile()]
+        folder_count: int = len(all_items_in_backup) - len(files_in_backup)
 
         if len(files_in_backup) < 6:  # noqa: PLR2004[6 represents a small number of files to display]
             for item in files_in_backup:
@@ -354,7 +355,7 @@ class App(tk.Tk):
                     "Unable to delete the restored backup due to permission issues. Please try again.",
                 )
 
-    def handle_exit_button(self):
+    def handle_exit_button(self) -> None:
         if not self.install_running:
             sys.exit(ExitCode.SUCCESS)
         if not messagebox.askyesno(
@@ -363,25 +364,25 @@ class App(tk.Tk):
         ):
             return
         with contextlib.suppress(Exception):
-            self.install_thread._stop()  # type: ignore[hidden method]
+            self.install_thread._stop()  # type: ignore[attr-defined]
             print("force terminate of install thread succeeded")
         with contextlib.suppress(Exception):
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[reportGeneralTypeIssues]
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(self.install_thread.ident), ctypes.py_object(SystemExit))  # type: ignore[reportGeneralTypeIssues, arg-type]
         self.destroy()
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
-    def on_gamepaths_chosen(self, event):
+    def on_gamepaths_chosen(self, event) -> None:
         self.after(10, self.move_cursor_to_end)
 
-    def move_cursor_to_end(self):
+    def move_cursor_to_end(self) -> None:
         self.gamepaths.focus_set()
-        position = len(self.gamepaths.get())
+        position: int = len(self.gamepaths.get())
         self.gamepaths.icursor(position)
         self.gamepaths.xview(position)
 
     def on_namespace_option_chosen(self, event) -> None:
         try:
-            namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+            namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
             game_number: int | None = self.extract_lookup_game_number(changes_ini_path)
             if game_number:
@@ -451,8 +452,8 @@ class App(tk.Tk):
                 tslpatchdata_path = tslpatchdata_path.parent
                 self.mod_path = str(tslpatchdata_path.parent)
 
-            namespace_path = tslpatchdata_path / "namespaces.ini"
-            changes_path = tslpatchdata_path / "changes.ini"
+            namespace_path: CaseAwarePath = tslpatchdata_path / "namespaces.ini"
+            changes_path: CaseAwarePath = tslpatchdata_path / "changes.ini"
 
             if namespace_path.exists():
                 namespaces = NamespaceReader.from_filepath(namespace_path)
@@ -538,9 +539,9 @@ class App(tk.Tk):
     def begin_install_thread(self) -> None:
         if not self.preinstall_validate_chosen():
             return
-        namespace_option = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
+        namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
         ini_file_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
-        namespace_mod_path = ini_file_path.parent
+        namespace_mod_path: CaseAwarePath = ini_file_path.parent
 
         self._clear_description_textbox()
         installer = ModInstaller(namespace_mod_path, self.gamepaths.get(), ini_file_path, self.logger)
@@ -548,11 +549,9 @@ class App(tk.Tk):
             self._execute_mod_install(installer)
         except Exception as e:  # noqa: BLE001
             self._handle_exception_during_install(e, installer)
-            if self.one_shot:
-                sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
         self.set_active_install(install_running=False)
 
-    def set_active_install(self, install_running: bool):
+    def set_active_install(self, install_running: bool) -> None:
         if install_running:
             self.install_running = True
             self.install_button.config(state=tk.DISABLED)
@@ -566,16 +565,16 @@ class App(tk.Tk):
             self.gamepaths_browse_button.config(state=tk.NORMAL)
             self.browse_button.config(state=tk.NORMAL)
 
-    def _clear_description_textbox(self):
+    def _clear_description_textbox(self) -> None:
         self.description_text.config(state=tk.NORMAL)
         self.description_text.delete(1.0, tk.END)
         self.description_text.config(state=tk.DISABLED)
 
-    def _execute_mod_install(self, installer: ModInstaller):
+    def _execute_mod_install(self, installer: ModInstaller) -> None:
         self.set_active_install(install_running=True)
-        install_start_time = datetime.now(timezone.utc).astimezone()
+        install_start_time: datetime = datetime.now(timezone.utc).astimezone()
         installer.install()
-        total_install_time = datetime.now(timezone.utc).astimezone() - install_start_time
+        total_install_time: timedelta = datetime.now(timezone.utc).astimezone() - install_start_time
 
         days, remainder = divmod(total_install_time.total_seconds(), 24 * 60 * 60)
         hours, remainder = divmod(remainder, 60 * 60)
@@ -658,17 +657,17 @@ class App(tk.Tk):
         self.namespaces = namespaces
         self.on_namespace_option_chosen(None)
 
-    def _handle_gamepaths_with_mod(self, game_number):
+    def _handle_gamepaths_with_mod(self, game_number) -> None:
         game = Game(game_number)
-        gamepaths_list = [
+        gamepaths_list: list[str] = [
             str(path)
             for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
-            for path in locate_game_paths()[game_key] if path.exists()
+            for path in locate_game_paths()[game_key]
         ]
         self.gamepaths["values"] = gamepaths_list
 
-    def set_stripped_rtf_text(self, rtf: TextIOWrapper):
-        stripped_content = striprtf(rtf.read())
+    def set_stripped_rtf_text(self, rtf: TextIOWrapper) -> None:
+        stripped_content: str = striprtf(rtf.read())
         self.description_text.config(state=tk.NORMAL)
         self.description_text.delete(1.0, tk.END)
         self.description_text.insert(tk.END, stripped_content)
@@ -697,7 +696,7 @@ class App(tk.Tk):
 
 
 # when pyinstaller compiled in console mode, this will match the same error message behavior of --noconsole.
-def custom_excepthook(exc_type, exc_value, exc_traceback):
+def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
     error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     root = tk.Tk()
     root.withdraw()  # Hide the main window
