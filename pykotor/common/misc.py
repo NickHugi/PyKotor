@@ -532,21 +532,43 @@ class CaseInsensitiveHashSet(set, Generic[T]):
 class CaseInsensitiveDict(Generic[T]):
     def __init__(
         self,
-        initial: dict[str, T] | None = None,
+        initial: Iterable[tuple[str, T]] | None = None,
     ):
         self._dictionary: dict[str, T] = {}
         self._case_map: dict[str, str] = {}
+
         if initial:
-            for key, value in initial.items():
+            # Iterate over initial items directly, avoiding the creation of an interim dict
+            for key, value in initial:
                 self[key] = value  # Utilize the __setitem__ method for setting items
+
+    @classmethod
+    def from_dict(cls, initial: dict[str, T]) -> CaseInsensitiveDict[T]:
+        """Class method to create a CaseInsensitiveDict instance from a dictionary.
+
+        Args:
+        ----
+            initial (dict[str, T]): A dictionary from which to create the CaseInsensitiveDict.
+
+        Returns:
+        -------
+            CaseInsensitiveDict[T]: A new instance of CaseInsensitiveDict.
+        """
+        # Create an empty instance of CaseInsensitiveDict
+        case_insensitive_dict = cls()
+
+        for key, value in initial.items():
+            case_insensitive_dict[key] = value  # Utilize the __setitem__ method for setting items
+
+        return case_insensitive_dict
 
     def __getitem__(self, key: str) -> T:
         return self._dictionary[self._case_map[key.lower()]]
 
     def __setitem__(self, key: str, value: T):
         lower_key = key.lower()
-        self._case_map[lower_key] = key  # Store the original form
-        self._dictionary[key] = value
+        self._case_map[lower_key] = key
+        self._dictionary[key] = value  # Store the original form
 
     def __delitem__(self, key: str):
         lower_key = key.lower()

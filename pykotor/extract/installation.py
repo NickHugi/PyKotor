@@ -255,10 +255,10 @@ class Installation:
             self.log.add_warning(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
             return resources
 
-        files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())
+        files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
         for file in files_list:
             if capsule_check and capsule_check(file.name):
-                resources[file.name] = list(Capsule(file))  # type: ignore[assignment]
+                resources[file.name] = list(Capsule(file))  # type: ignore[assignment, call-overload]
             else:
                 with suppress(Exception):
                     resource = FileResource(
@@ -267,7 +267,7 @@ class Installation:
                         0,
                         file,
                     )
-                    resources.append(resource)  # type: ignore[assignment]
+                    resources.append(resource)  # type: ignore[assignment, call-overload, union-attr]
         if not resources or not files_list:
             self.log.add_warning(f"No resources found at '{self.path()!s}' when loading the installation, skipping...")
         else:

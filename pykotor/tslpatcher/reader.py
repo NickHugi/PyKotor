@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from configparser import ConfigParser
 from itertools import tee
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterator
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -121,7 +121,7 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [Settings] section from ini...")
-        settings_ini = CaseInsensitiveDict(dict(self.ini[settings_section].items()))
+        settings_ini = CaseInsensitiveDict(self.ini[settings_section].items())
         self.config.window_title = settings_ini.get("WindowCaption", "")
         self.config.confirm_message = settings_ini.get("ConfirmMessage", "")
         lookup_game_number = settings_ini.get("LookupGameNumber")
@@ -168,9 +168,7 @@ class ConfigReader:
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         range_delims: list[str] = [":", "-", "to"]
         append_tlk_edits: TLK | None = None
-
-        def load_tlk(tlk_path: CaseAwarePath) -> TLK:
-            return read_tlk(tlk_path) if tlk_path.exists() else TLK()
+        syntax_error_caught = False
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
             if range_str.lower().startswith("strref") or range_str.lower().startswith("ignore"):
@@ -196,60 +194,51 @@ class ConfigReader:
 
         def process_tlk_entries(
             tlk_data: TLK,
-            modifications_ini_keys,
-            modifications_ini_values,
-            is_replacement,
-        ):
-            def append_modifier(token_id, text, voiceover, is_replacement):
-                modifier = ModifyTLK(token_id, text, voiceover, is_replacement)
-                self.config.patches_tlk.modifiers.append(modifier)
-
+            dialog_tlk_keys,
+            modifications_tlk_keys,
+            is_replacement: bool,
+        ) -> None:
             for mod_key, mod_value in zip(
-                modifications_ini_keys,
-                modifications_ini_values,
+                dialog_tlk_keys,
+                modifications_tlk_keys,
             ):
-                try:
-                    change_indices = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key))
-                    value_range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
+                change_indices: range = mod_key if isinstance(mod_key, range) else parse_range(str(mod_key))
+                value_range = parse_range(str(mod_value)) if not isinstance(mod_value, range) and mod_value != "" else mod_key
 
-                    change_iter, value_iter = tee(change_indices)
-                    value_iter = iter(value_range)
+                change_iter, value_iter = tee(change_indices)
+                value_iter = iter(value_range)
 
-                    for mod_index in change_iter:
-                        if mod_index in tlk_list_ignored_indices:
-                            continue
-                        token_id = next(value_iter)
-                        entry: TLKEntry = tlk_data[token_id]
-                        append_modifier(
-                            mod_index,
-                            entry.text,
-                            entry.voiceover,
-                            is_replacement,
-                        )
-                except ValueError as e:
-                    msg = f"Could not parse '{mod_key}={mod_value}'"
-                    raise ValueError(msg) from e
+                for mod_index in change_iter:
+                    if mod_index in tlk_list_ignored_indices:
+                        continue
+                    token_id: int = next(value_iter)
+                    entry: TLKEntry = tlk_data[token_id]
+                    modifier = ModifyTLK(mod_index, entry.text, entry.voiceover, is_replacement)
+                    self.config.patches_tlk.modifiers.append(modifier)
 
         for i in tlk_list_edits:
             try:
                 if i.lower().startswith("ignore"):
                     tlk_list_ignored_indices.update(parse_range(i[6:]))
             except ValueError as e:  # noqa: PERF203
-                msg = f"Could not parse ignore index {i}"
+                msg = f"Could not parse ignore index '{i}' for modifier '{i}={tlk_list_edits[i]}' in [TLKList]"
                 raise ValueError(msg) from e
 
         for key, value in tlk_list_edits.items():
             lowercase_key: str = key.lower()
+            replace_file = lowercase_key.startswith("replace")
+            append_file = lowercase_key.startswith("append")
             try:
                 if lowercase_key.startswith("ignore"):
                     continue
                 if lowercase_key.startswith("strref"):
                     # load append.tlk only if it's needed.
                     if append_tlk_edits is None:
-                        append_tlk_edits = load_tlk(self.mod_path / "append.tlk")
+                        append_tlk_edits = read_tlk(self.mod_path / "append.tlk")
                     if len(append_tlk_edits) == 0:
-                        msg = f"Could not find 'append.tlk' in mod directory on disk, required to perform modifier '{lowercase_key}={value}'"
-                        raise FileNotFoundError(msg)
+                        syntax_error_caught = True
+                        msg = f"'append.tlk' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
+                        raise ValueError(msg)  # noqa: TRY301
                     strref_range = parse_range(lowercase_key[6:])
                     token_id_range = parse_range(value)
                     process_tlk_entries(
@@ -258,23 +247,24 @@ class ConfigReader:
                         token_id_range,
                         is_replacement=False,
                     )
-                elif lowercase_key.startswith("file"):
+                elif replace_file or append_file:
                     next_section_name = self.get_section_name(value)
                     if not next_section_name:
+                        syntax_error_caught = True
                         raise ValueError(SECTION_NOT_FOUND_ERROR.format(value, key, value, tlk_list_section))  # noqa: TRY301
-                    tlk_ini_edits = CaseInsensitiveDict(dict(self.ini[next_section_name].items()))
 
                     tlk_modifications_path: CaseAwarePath = self.mod_path / value
-                    modifications_tlk_data: TLK = load_tlk(tlk_modifications_path)
-
+                    modifications_tlk_data: TLK = read_tlk(tlk_modifications_path)
                     if len(modifications_tlk_data) == 0:
-                        msg = f"Could not find '{value}.tlk' on disk to perform modifier '{lowercase_key}={value}'"
-                        raise FileNotFoundError(msg)
+                        syntax_error_caught = True
+                        msg = f"'{value}' file in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
+                        raise ValueError(msg)  # noqa: TRY301
+
                     process_tlk_entries(
                         modifications_tlk_data,
-                        tlk_ini_edits.keys(),
-                        tlk_ini_edits.values(),
-                        is_replacement=True,
+                        self.ini[next_section_name].keys(),
+                        self.ini[next_section_name].values(),
+                        is_replacement=replace_file,
                     )
                 elif "\\" in lowercase_key or "/" in lowercase_key:
                     delimiter = "\\" if "\\" in lowercase_key else "/"
@@ -292,7 +282,8 @@ class ConfigReader:
                     elif property_name == "sound":
                         modifier_dict[token_id]["voiceover"] = ResRef(value)
                     else:
-                        msg = f"Invalid [TLKList] syntax for key '{lowercase_key}' value '{value}', expected 'sound' or 'text'"
+                        syntax_error_caught = True
+                        msg = f"Invalid [TLKList] syntax: '{key}={value}'! Expected '{key}' to be one of ['Sound', 'Text']"
                         raise ValueError(msg)  # noqa: TRY301
 
                     text = modifier_dict[token_id].get("text")
@@ -302,9 +293,12 @@ class ConfigReader:
                         modifier = ModifyTLK(token_id, text, voiceover, is_replacement=True)
                         self.config.patches_tlk.modifiers.append(modifier)
                 else:
-                    msg = f"Invalid syntax found in [TLKList] '{key}={value}'"
+                    syntax_error_caught = True
+                    msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['File', 'StrRef']"
                     raise ValueError(msg)  # noqa: TRY301
             except ValueError as e:
+                if syntax_error_caught:
+                    raise
                 msg = f"Could not parse '{key}={value}' in [TLKList]"
                 raise ValueError(msg) from e
 
@@ -325,15 +319,15 @@ class ConfigReader:
             modifications = Modifications2DA(file)
             self.config.patches_2da.append(modifications)
 
-            modification_ids = CaseInsensitiveDict(dict(self.ini[file_section].items()))
+            modification_ids = CaseInsensitiveDict(self.ini[file_section].items())
             for key, modification_id in modification_ids.items():
-                ini_section_dict = CaseInsensitiveDict(dict(self.ini[modification_id].items()))
+                ini_section_dict = CaseInsensitiveDict(self.ini[modification_id].items())
                 manipulation: Modify2DA | None = self.discern_2da(
                     key,
                     modification_id,
                     ini_section_dict,
                 )
-                if not manipulation:  # an error occured
+                if not manipulation:  # TODO: Does this denote an error occurred? If so we should raise.
                     continue
                 modifications.modifiers.append(manipulation)
 
@@ -432,7 +426,7 @@ class ConfigReader:
                         if not next_gff_section:
                             raise KeyError(SECTION_NOT_FOUND_ERROR.format(value, key, value, file_section))
 
-                        next_section_dict = CaseInsensitiveDict(dict(self.ini[next_gff_section]))
+                        next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section].items())
                         modifier = self.add_field_gff(next_gff_section, next_section_dict)
                     elif lowercase_key.startswith("2damemory"):
                         modifier = Memory2DAModifierGFF(
@@ -452,7 +446,7 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [CompileList] patches from ini...")
-        files = CaseInsensitiveDict(dict(self.ini[compilelist_section].items()))
+        files = CaseInsensitiveDict(self.ini[compilelist_section].items())
         destination = files.pop("!Destination", None)
 
         for identifier, file in files.items():
@@ -625,7 +619,7 @@ class ConfigReader:
                 next_section_name: str | None = self.get_section_name(iterated_value)
                 if not next_section_name:
                     raise KeyError(SECTION_NOT_FOUND_ERROR.format(iterated_value, key, iterated_value, identifier))
-                nested_ini = CaseInsensitiveDict(dict(self.ini[next_section_name].items()))
+                nested_ini = CaseInsensitiveDict(self.ini[next_section_name].items())
                 nested_modifier: ModifyGFF = self.add_field_gff(
                     next_section_name,
                     nested_ini,
@@ -871,7 +865,7 @@ class NamespaceReader:
         if namespaces_section_name is None:
             msg = "The '[Namespaces]' section was not found in the 'namespaces.ini' file."
             raise KeyError(msg)
-        namespace_ids: CaseInsensitiveDict[str] = CaseInsensitiveDict(dict(self.ini[namespaces_section_name].items()))
+        namespace_ids: CaseInsensitiveDict[str] = CaseInsensitiveDict(self.ini[namespaces_section_name].items())
         namespaces: list[PatcherNamespace] = []
 
         for key, namespace_id in namespace_ids.items():
@@ -884,7 +878,7 @@ class NamespaceReader:
                 msg = f"The '[{namespace_id}]' section was not found in the 'namespaces.ini' file, referenced by '{key}={namespace_id}' in [{namespaces_section_name}]."
                 raise KeyError(msg)
 
-            this_namespace_section = CaseInsensitiveDict(dict(self.ini[namespace_section_key].items()))
+            this_namespace_section = CaseInsensitiveDict(self.ini[namespace_section_key].items())
             namespace = PatcherNamespace()
 
             # required
