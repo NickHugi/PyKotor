@@ -41,7 +41,7 @@ from unittest import TestCase
 
 
 class TestConfigReader(TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.config = PatcherConfig()
         self.ini = ConfigParser(
             delimiters=("="),
@@ -216,7 +216,7 @@ class TestConfigReader(TestCase):
             },
         )
 
-    def test_tlk_complex_changes(self):
+    def test_tlk_complex_changes(self) -> None:
         # sourcery skip: extract-duplicate-method, remove-dict-keys, use-dict-items
         ini_text = """
         [TLKList]

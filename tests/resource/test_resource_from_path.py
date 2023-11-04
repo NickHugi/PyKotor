@@ -1,7 +1,6 @@
 import unittest
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import Path, PurePath
 
 
 class TestResourceIdentifier(unittest.TestCase):
