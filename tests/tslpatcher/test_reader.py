@@ -1,63 +1,470 @@
+from __future__ import annotations
+
 from configparser import ConfigParser
-from unittest import TestCase
-
-from pykotor.common.language import LocalizedString, Language, Gender
-
-from pykotor.common.misc import ResRef
-
+import shutil
+import tempfile
 from pykotor.common.geometry import Vector3, Vector4
-from pykotor.resource.formats.gff import GFFStruct, GFFList
-
+from pykotor.common.language import Gender, Language
+from pykotor.common.misc import ResRef
 from pykotor.resource.formats.ssf import SSFSound
-from pykotor.resource.formats.tlk import TLK
+from pykotor.resource.formats.tlk import TLK, write_tlk
+from pykotor.resource.type import ResourceType
+from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
-from pykotor.tslpatcher.mods.gff import ModifyFieldGFF, AddFieldGFF, AddStructToListGFF, LocalizedStringDelta, \
-    FieldValueConstant, FieldValueTLKMemory, FieldValue2DAMemory
-from pykotor.tslpatcher.mods.twoda import ChangeRow2DA, TargetType, RowValueRowIndex, RowValueRowLabel, RowValueRowCell, \
-    RowValueConstant, RowValue2DAMemory, RowValueTLKMemory, AddRow2DA, CopyRow2DA, AddColumn2DA
+from pykotor.tslpatcher.mods.gff import (
+    AddFieldGFF,
+    AddStructToListGFF,
+    FieldValue2DAMemory,
+    FieldValueConstant,
+    FieldValueTLKMemory,
+    LocalizedStringDelta,
+    ModifyFieldGFF,
+)
+from pykotor.tslpatcher.mods.ssf import ModifySSF
+from pykotor.tslpatcher.mods.tlk import ModifyTLK, ModificationsTLK
+from pykotor.tslpatcher.mods.twoda import (
+    AddColumn2DA,
+    AddRow2DA,
+    ChangeRow2DA,
+    CopyRow2DA,
+    TargetType,
+    RowValueRowIndex,
+    RowValueRowLabel,
+    RowValueRowCell,
+    RowValueConstant,
+    RowValue2DAMemory,
+    RowValueTLKMemory,
+)
 from pykotor.tslpatcher.reader import ConfigReader
+from unittest import TestCase
 
 
 class TestConfigReader(TestCase):
-    def test(self):
-        ...
+    def setUp(self) -> None:
+        self.config = PatcherConfig()
+        self.ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        self.ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-    def test_tlk(self):
-        ini_text = \
-            """
-            [TLKList]
-            StrRef0=2
-            StrRef1=1
-            StrRef2=0
-            """
+        self.test_tlk_data: TLK = self.create_test_tlk(
+            {
+                0: {"text": "Entry 0", "voiceover": "vo_0"},
+                1: {"text": "Entry 1", "voiceover": "vo_1"},
+                2: {"text": "Entry 2", "voiceover": "vo_2"},
+                3: {"text": "Entry 3", "voiceover": "vo_3"},
+                4: {"text": "Entry 4", "voiceover": "vo_4"},
+                5: {"text": "Entry 5", "voiceover": "vo_5"},
+                6: {"text": "Entry 6", "voiceover": "vo_6"},
+                7: {"text": "Entry 7", "voiceover": "vo_7"},
+                8: {"text": "Entry 8", "voiceover": "vo_8"},
+                9: {"text": "Entry 9", "voiceover": "vo_9"},
+                10: {"text": "Entry 10", "voiceover": "vo_10"},
+            }
+        )
+        self.modified_tlk_data: TLK = self.create_test_tlk(
+            {
+                0: {"text": "Modified 0", "voiceover": "vo_mod_0"},
+                1: {"text": "Modified 1", "voiceover": "vo_mod_1"},
+                2: {"text": "Modified 2", "voiceover": "vo_mod_2"},
+                3: {"text": "Modified 3", "voiceover": "vo_mod_3"},
+                4: {"text": "Modified 4", "voiceover": "vo_mod_4"},
+                5: {"text": "Modified 5", "voiceover": "vo_mod_5"},
+                6: {"text": "Modified 6", "voiceover": "vo_mod_6"},
+                7: {"text": "Modified 7", "voiceover": "vo_mod_7"},
+                8: {"text": "Modified 8", "voiceover": "vo_mod_8"},
+                9: {"text": "Modified 9", "voiceover": "vo_mod_9"},
+                10: {"text": "Modified 10", "voiceover": "vo_mod_10"},
+            }
+        )
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            self.mod_path = Path(tmpdirname) / "tslpatchdata"
+        self.mod_path.mkdir(exist_ok=True, parents=True)
+        shutil.copy(Path("tests/files/complex.tlk").resolve(), self.mod_path / "complex.tlk")
+        shutil.copy(Path("tests/files/append.tlk").resolve(), self.mod_path / "append.tlk")
 
+        # write it to a real file
+        write_tlk(
+            self.test_tlk_data,
+            str(Path(self.mod_path, "tlk_test_file.tlk")),
+            ResourceType.TLK,
+        )
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path, "tlk_modifications_file.tlk")),
+            ResourceType.TLK,
+        )
+
+        # Load the INI file and the TLK file
+        self.config_reader = ConfigReader(self.ini, self.mod_path)  # type: ignore
+
+    def cleanUp(self):
+        self.mod_path.unlink()
+
+    def create_test_tlk(self, data: dict[int, dict[str, str]]) -> TLK:
         tlk = TLK()
-        tlk.add("Num1")
-        tlk.add("Num2")
-        tlk.add("Num3")
+        for v in data.values():
+            tlk.add(text=v["text"], sound_resref=v["voiceover"])
+        return tlk
 
-        ini = ConfigParser()
-        ini.read_string(ini_text)
-        ini.optionxform = str
+    def test_tlk_range_functionality(self):
+        ini_text = """
+            [TLKList]
+            AppendFile4=tlk_modifications_file.tlk
 
-        config = PatcherConfig()
+            [tlk_modifications_file.tlk]
+            0:2=4-6
+        """
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
 
-        ConfigReader(ini, tlk).load(config)
-        tlk_mod0 = config.patches_tlk.modifiers.pop(0)
-        tlk_mod1 = config.patches_tlk.modifiers.pop(0)
-        tlk_mod2 = config.patches_tlk.modifiers.pop(0)
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        self.maxDiff = None
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                0: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4"), "replace": False},
+                1: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5"), "replace": False},
+                2: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6"), "replace": False},
+            },
+        )
 
-        self.assertEqual(tlk_mod0.text, "Num3")
-        self.assertEqual(tlk_mod1.text, "Num2")
-        self.assertEqual(tlk_mod2.text, "Num1")
+    def test_tlk_strref_range_functionality(self):
+        ini_text = """
+            [TLKList]
+            StrRef4:6=0:2
+        """
+
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path, "append.tlk")),
+            ResourceType.TLK,
+        )
+
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                4: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0"), "replace": False},
+                5: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1"), "replace": False},
+                6: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2"), "replace": False},
+            },
+        )
+
+    def test_tlk_strref_default_functionality(self):
+        ini_text = """
+            [TLKList]
+            StrRef7=0
+            StrRef8=1
+            StrRef9=2
+        """
+
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path, "append.tlk")),
+            ResourceType.TLK,
+        )
+
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                7: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0"), "replace": False},
+                8: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1"), "replace": False},
+                9: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2"), "replace": False},
+            },
+        )
+
+    def test_tlk_strref_ignore_functionality(self):
+        ini_text = """
+            [TLKList]
+            StrRef0to4=2-6
+            Ignore1:2=
+        """
+
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path, "append.tlk")),
+            ResourceType.TLK,
+        )
+
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound, "replace": mod.is_replacement} for mod in self.config.patches_tlk.modifiers}
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2"), "replace": False},
+                3: {"text": "Modified 5", "voiceover": ResRef("vo_mod_5"), "replace": False},
+                4: {"text": "Modified 6", "voiceover": ResRef("vo_mod_6"), "replace": False},
+            },
+        )
+
+    def test_tlk_complex_changes(self) -> None:
+        # sourcery skip: extract-duplicate-method, remove-dict-keys, use-dict-items
+        ini_text = """
+        [TLKList]
+        ignore123719=
+        ignore123721=
+        ignore123723=
+        ignore123725=
+        ignore123727=
+        ignore123729=
+        Replace5=complex.tlk
+        StrRef0:13=0:13
+
+        [complex.tlk]
+        123716:123730=0:8
+        124112=9
+        125863=10
+        50302=11
+        """
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        modifiers1 = self.config.patches_tlk.modifiers.copy()
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
+
+        self.ini = ConfigParser()
+        self.config.patches_tlk = ModificationsTLK()
+
+        ini_text2 = """
+        [TLKList]
+        ReplaceFile10=complex.tlk
+        StrRef0=0
+        StrRef1=1
+        StrRef2=2
+        StrRef3=3
+        StrRef4=4
+        StrRef5=5
+        StrRef6=6
+        StrRef7=7
+        StrRef8=8
+        StrRef9=9
+        StrRef10=10
+        StrRef11=11
+        StrRef12=12
+        StrRef13=13
+
+        [complex.tlk]
+        123716=0
+        123717=1
+        123718=2
+        123720=3
+        123722=4
+        123724=5
+        123726=6
+        123728=7
+        123730=8
+        124112=9
+        125863=10
+        50302=11
+        """
+        self.ini.read_string(ini_text2)
+        self.config_reader.load(self.config)
+
+        modifiers2: list[ModifyTLK] = self.config.patches_tlk.modifiers.copy()
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 26)
+
+        modifiers_dict1: dict[int, dict[str, str | ResRef | bool]] = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers1
+        }
+        modifiers_dict2: dict[int, dict[str, str | ResRef | bool]] = {
+            mod.token_id: {"text": mod.text, "voiceover": mod.sound, "is_replacement": mod.is_replacement} for mod in modifiers2
+        }
+        self.assertDictEqual(modifiers_dict1, modifiers_dict2)
+
+        for i in range(12):
+            self.assertTrue(modifiers1[i].is_replacement, f"i={i}")
+        for j in range(12, 26):
+            self.assertFalse(modifiers1[j].is_replacement, f"j={j}")
+        for k in modifiers_dict1.keys():
+            modifiers_dict1[k].pop("is_replacement")
+            modifiers_dict2[k].pop("is_replacement")
+
+        self.maxDiff = None
+        self.assertDictEqual(
+            modifiers_dict1,
+            {
+                0: {"text": "Yavin", "voiceover": ResRef.from_blank()},
+                1: {
+                    "text": "Climate: Artificially Controled\n"
+                    "Terrain: Space Station\n"
+                    "Docking: Orbital Docking\n"
+                    "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                2: {"text": "Tatooine", "voiceover": ResRef.from_blank()},
+                3: {
+                    "text": "Climate: Arid\n" "Terrain: Desert\n" "Docking: Anchorhead Spaceport\n" "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                4: {"text": "Manaan", "voiceover": ResRef.from_blank()},
+                5: {
+                    "text": "Climate: Temperate\n"
+                    "Terrain: Ocean\n"
+                    "Docking: Ahto City Docking Bay\n"
+                    "Native Species: Selkath",
+                    "voiceover": ResRef.from_blank(),
+                },
+                6: {"text": "Kashyyyk", "voiceover": ResRef.from_blank()},
+                7: {
+                    "text": "Climate: Temperate\n" "Terrain: Forest\n" "Docking: Czerka Landing Pad\n" "Native Species: Wookies",
+                    "voiceover": ResRef.from_blank(),
+                },
+                8: {"text": "", "voiceover": ResRef.from_blank()},
+                9: {"text": "", "voiceover": ResRef.from_blank()},
+                10: {"text": "Sleheyron", "voiceover": ResRef.from_blank()},
+                11: {
+                    "text": "Climate: Unknown\nTerrain: Cityscape\nDocking: Unknown\nNative Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                12: {"text": "Coruscant", "voiceover": ResRef.from_blank()},
+                13: {
+                    "text": "Climate: Unknown\nTerrain: Unknown\nDocking: Unknown\nNative Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                50302: {
+                    "text": "Opo Chano, Czerka's contracted droid technician, can't give "
+                    "you his droid credentials unless you help relieve his 2,500 "
+                    "credit gambling debt to the Exchange. Without them, you "
+                    "can't take B-4D4.",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123716: {
+                    "text": "Climate: None\n" "Terrain: Asteroid\n" "Docking: Peragus Mining Station\n" "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123717: {"text": "Lehon", "voiceover": ResRef.from_blank()},
+                123718: {
+                    "text": "Climate: Tropical\n" "Terrain: Islands\n" "Docking: Beach Landing\n" "Native Species: Rakata",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123720: {
+                    "text": "Climate: Temperate\n"
+                    "Terrain: Decaying urban zones\n"
+                    "Docking: Refugee Landing Pad\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123722: {
+                    "text": "Climate: Tropical\n" "Terrain: Jungle\n" "Docking: Jungle Clearing\n" "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123724: {
+                    "text": "Climate: Temperate\n" "Terrain: Forest\n" "Docking: Iziz Spaceport\n" "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123726: {
+                    "text": "Climate: Temperate\n"
+                    "Terrain: Grasslands\n"
+                    "Docking: Khoonda Plains Settlement\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123728: {
+                    "text": "Climate: Tectonic-Generated Storms\n"
+                    "Terrain: Shattered Planetoid\n"
+                    "Docking: No Docking Facilities Present\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+                123730: {
+                    "text": "Climate: Arid\n" "Terrain: Volcanic\n" "Docking: Dreshae Settlement\n" "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                124112: {
+                    "text": "Climate: Artificially Maintained \n"
+                    "Terrain: Droid Cityscape\n"
+                    "Docking: Landing Arm\n"
+                    "Native Species: Unknown",
+                    "voiceover": ResRef.from_blank(),
+                },
+                125863: {
+                    "text": "Climate: Artificially Maintained\n"
+                    "Terrain: Space Station\n"
+                    "Docking: Landing Zone\n"
+                    "Native Species: None",
+                    "voiceover": ResRef.from_blank(),
+                },
+            },
+        )
+
+    def test_tlk_file_range_functionality(self):
+        ini_text = """
+            [TLKList]
+            Replacenothingafterreplaceischecked=tlk_modifications_file.tlk
+
+            [tlk_modifications_file.tlk]
+            0-4=0:4
+        """
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 5)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                0: {"text": "Modified 0", "voiceover": ResRef("vo_mod_0")},
+                1: {"text": "Modified 1", "voiceover": ResRef("vo_mod_1")},
+                2: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+                3: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
+                4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+            },
+        )
+
+    def test_tlk_file_ignore_functionality(self):
+        ini_text = """
+            [TLKList]
+            ReplaceFile0=tlk_modifications_file.tlk
+            Ignore1:2=
+
+            [tlk_modifications_file.tlk]
+            0:4=2:6
+        """
+
+        write_tlk(
+            self.modified_tlk_data,
+            str(Path(self.mod_path, "append.tlk")),
+            ResourceType.TLK,
+        )
+
+        self.ini.read_string(ini_text)
+        self.config_reader.load(self.config)
+
+        self.assertEqual(len(self.config.patches_tlk.modifiers), 3)
+        modifiers_dict = {mod.token_id: {"text": mod.text, "voiceover": mod.sound} for mod in self.config.patches_tlk.modifiers}
+        self.assertDictEqual(
+            modifiers_dict,
+            {
+                0: {"text": "Modified 2", "voiceover": ResRef("vo_mod_2")},
+                3: {"text": "Modified 3", "voiceover": ResRef("vo_mod_3")},
+                4: {"text": "Modified 4", "voiceover": ResRef("vo_mod_4")},
+            },
+        )
 
     # region 2DA: Change Row
     def test_2da_changerow_identifier(self):
         """Test that identifier is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -71,36 +478,40 @@ class TestConfigReader(TestCase):
             RowLabel=1
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("change_row_0", mod_0.identifier)
 
         # noinspection PyTypeChecker
-        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("change_row_1", mod_0.identifier)
 
     def test_2da_changerow_targets(self):
         """Test that target values (line to modify) are loading correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
-            
+
             [test.2da]
             ChangeRow0=change_row_0
             ChangeRow1=change_row_1
             ChangeRow2=change_row_2
-            
+
             [change_row_0]
             RowIndex=1
             [change_row_1]
@@ -109,35 +520,39 @@ class TestConfigReader(TestCase):
             LabelIndex=3
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_INDEX, mod_2da_0.target.target_type)
         self.assertEqual(1, mod_2da_0.target.value)
 
         # noinspection PyTypeChecker
-        mod_2da_1: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_1: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_LABEL, mod_2da_1.target.target_type)
         self.assertEqual("2", mod_2da_1.target.value)
 
         # noinspection PyTypeChecker
-        mod_2da_2: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_2: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.LABEL_COLUMN, mod_2da_2.target.target_type)
         self.assertEqual("3", mod_2da_2.target.value)
 
     def test_2da_changerow_store2da(self):
         """Test that 2DAMEMORY values are set to be stored correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -151,36 +566,40 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        store_2da_0a: RowValueRowIndex = mod_2da_0.store_2da[0]
+        store_2da_0a: RowValueRowIndex = mod_2da_0.store_2da[0]  # type: ignore
         self.assertIsInstance(store_2da_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
-        store_2da_0b: RowValueRowLabel = mod_2da_0.store_2da[1]
+        store_2da_0b: RowValueRowLabel = mod_2da_0.store_2da[1]  # type: ignore
         self.assertIsInstance(store_2da_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
-        store_2da_0c: RowValueRowCell = mod_2da_0.store_2da[2]
+        store_2da_0c: RowValueRowCell = mod_2da_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_2da_0c, RowValueRowCell)
         self.assertEqual("label", store_2da_0c.column)
 
     def test_2da_changerow_cells(self):
         """Test that cells are set to be modified correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -194,40 +613,45 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2da_0: ChangeRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        cell_0_label: RowValueConstant = mod_2da_0.cells["label"]
+        cell_0_label: RowValueConstant = mod_2da_0.cells["label"]  # type: ignore
         self.assertIsInstance(cell_0_label, RowValueConstant)
         self.assertEqual("Test123", cell_0_label.string)
 
         # noinspection PyTypeChecker
-        cell_0_dialog: RowValueTLKMemory = mod_2da_0.cells["dialog"]
+        cell_0_dialog: RowValueTLKMemory = mod_2da_0.cells["dialog"]  # type: ignore
         self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
         self.assertEqual(4, cell_0_dialog.token_id)
 
         # noinspection PyTypeChecker
-        cell_0_appearance: RowValue2DAMemory = mod_2da_0.cells["appearance"]
+        cell_0_appearance: RowValue2DAMemory = mod_2da_0.cells["appearance"]  # type: ignore
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
+
     # endregion
 
     # region 2DA: Add Row
     def test_2da_addrow_identifier(self):
         """Test that identifier is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -239,28 +663,32 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("add_row_0", mod_0.identifier)
 
         # noinspection PyTypeChecker
-        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("add_row_1", mod_1.identifier)
 
     def test_2da_addrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -273,23 +701,28 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, AddRow2DA)
         self.assertEqual("add_row_0", mod_0.identifier)
         self.assertEqual("label", mod_0.exclusive_column)
 
         # noinspection PyTypeChecker
-        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, AddRow2DA)
         self.assertEqual("add_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.exclusive_column)
@@ -297,8 +730,7 @@ class TestConfigReader(TestCase):
     def test_2da_addrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -311,23 +743,28 @@ class TestConfigReader(TestCase):
             [add_row_1]
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, AddRow2DA)
         self.assertEqual("add_row_0", mod_0.identifier)
         self.assertEqual("123", mod_0.row_label)
 
         # noinspection PyTypeChecker
-        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, AddRow2DA)
         self.assertEqual("add_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.row_label)
@@ -335,8 +772,7 @@ class TestConfigReader(TestCase):
     def test_2da_addrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -349,36 +785,40 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        store_0a: RowValueRowIndex = mod_0.store_2da[0]
+        store_0a: RowValueRowIndex = mod_0.store_2da[0]  # type: ignore
         self.assertIsInstance(store_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
-        store_0b: RowValueRowLabel = mod_0.store_2da[1]
+        store_0b: RowValueRowLabel = mod_0.store_2da[1]  # type: ignore
         self.assertIsInstance(store_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
-        store_0c: RowValueRowCell = mod_0.store_2da[2]
+        store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_0c, RowValueRowCell)
         self.assertEqual("label", store_0c.column)
 
     def test_2da_addrow_cells(self):
         """Test that cells will be assigned properly correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -391,40 +831,45 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        cell_0_label: RowValueConstant = mod_0.cells["label"]
+        cell_0_label: RowValueConstant = mod_0.cells["label"]  # type: ignore
         self.assertIsInstance(cell_0_label, RowValueConstant)
         self.assertEqual("Test123", cell_0_label.string)
 
         # noinspection PyTypeChecker
-        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]
+        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]  # type: ignore
         self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
         self.assertEqual(4, cell_0_dialog.token_id)
 
         # noinspection PyTypeChecker
-        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
+        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]  # type: ignore
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
+
     # endregion Add Row
 
     # region 2DA: Copy Row
     def test_2da_copyrow_identifier(self):
         """Test that identifier is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -438,28 +883,32 @@ class TestConfigReader(TestCase):
             RowLabel=1
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_0", mod_0.identifier)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("copy_row_1", mod_1.identifier)
 
     def test_2da_copyrow_target(self):
         """Test that target values (line to modify) are loading correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -476,35 +925,39 @@ class TestConfigReader(TestCase):
             LabelIndex=3
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_INDEX, mod_0.target.target_type)
         self.assertEqual(1, mod_0.target.value)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.ROW_LABEL, mod_1.target.target_type)
         self.assertEqual("2", mod_1.target.value)
 
         # noinspection PyTypeChecker
-        mod_2: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_2: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual(TargetType.LABEL_COLUMN, mod_2.target.target_type)
         self.assertEqual("3", mod_2.target.value)
 
     def test_2da_copyrow_exclusivecolumn(self):
         """Test that exclusive column property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -519,23 +972,28 @@ class TestConfigReader(TestCase):
             RowIndex=0
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, CopyRow2DA)
         self.assertEqual("copy_row_0", mod_0.identifier)
         self.assertEqual("label", mod_0.exclusive_column)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, CopyRow2DA)
         self.assertEqual("copy_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.exclusive_column)
@@ -543,8 +1001,7 @@ class TestConfigReader(TestCase):
     def test_2da_copyrow_rowlabel(self):
         """Test that row label property is being loaded correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -559,23 +1016,28 @@ class TestConfigReader(TestCase):
             RowIndex=0
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_0, CopyRow2DA)
         self.assertEqual("copy_row_0", mod_0.identifier)
         self.assertEqual("123", mod_0.row_label)
 
         # noinspection PyTypeChecker
-        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertIsInstance(mod_1, CopyRow2DA)
         self.assertEqual("copy_row_1", mod_1.identifier)
         self.assertIsNone(mod_1.row_label)
@@ -583,8 +1045,7 @@ class TestConfigReader(TestCase):
     def test_2da_copyrow_store2da(self):
         """Test that 2DAMEMORY# data will be saved correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -598,36 +1059,40 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=label
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        store_0a: RowValueRowIndex = mod_0.store_2da[0]
+        store_0a: RowValueRowIndex = mod_0.store_2da[0]  # type: ignore
         self.assertIsInstance(store_0a, RowValueRowIndex)
 
         # noinspection PyTypeChecker
-        store_0b: RowValueRowLabel = mod_0.store_2da[1]
+        store_0b: RowValueRowLabel = mod_0.store_2da[1]  # type: ignore
         self.assertIsInstance(store_0b, RowValueRowLabel)
 
         # noinspection PyTypeChecker
-        store_0c: RowValueRowCell = mod_0.store_2da[2]
+        store_0c: RowValueRowCell = mod_0.store_2da[2]  # type: ignore
         self.assertIsInstance(store_0c, RowValueRowCell)
         self.assertEqual("label", store_0c.column)
 
     def test_2da_copyrow_cells(self):
         """Test that cells will be assigned properly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -641,40 +1106,45 @@ class TestConfigReader(TestCase):
             appearance=2DAMEMORY5
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: CopyRow2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         # noinspection PyTypeChecker
-        cell_0_label: RowValueConstant = mod_0.cells["label"]
+        cell_0_label: RowValueConstant = mod_0.cells["label"]  # type: ignore
         self.assertIsInstance(cell_0_label, RowValueConstant)
         self.assertEqual("Test123", cell_0_label.string)
 
         # noinspection PyTypeChecker
-        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]
+        cell_0_dialog: RowValueTLKMemory = mod_0.cells["dialog"]  # type: ignore
         self.assertIsInstance(cell_0_dialog, RowValueTLKMemory)
         self.assertEqual(4, cell_0_dialog.token_id)
 
         # noinspection PyTypeChecker
-        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]
+        cell_0_appearance: RowValue2DAMemory = mod_0.cells["appearance"]  # type: ignore
         self.assertIsInstance(cell_0_appearance, RowValue2DAMemory)
         self.assertEqual(5, cell_0_appearance.token_id)
+
     # endregion
 
     # region 2DA: Add Column
     def test_2da_addcolumn_basic(self):
         """Test that column will be inserted with correct label and default values."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -686,37 +1156,41 @@ class TestConfigReader(TestCase):
             ColumnLabel=label
             DefaultValue=****
             2DAMEMORY2=I2
-            
+
             [add_column_1]
             ColumnLabel=someint
             DefaultValue=0
             2DAMEMORY2=I2
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("label", mod_0.header)
         self.assertEqual("", mod_0.default)
 
         # noinspection PyTypeChecker
-        mod_1: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_1: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
         self.assertEqual("someint", mod_1.header)
         self.assertEqual("0", mod_1.default)
 
     def test_2da_addcolumn_indexinsert(self):
         """Test that cells will be inserted to the new column at the given index correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -731,35 +1205,39 @@ class TestConfigReader(TestCase):
             I2=StrRef5
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.index_insert[0]
         self.assertIsInstance(value, RowValueConstant)
-        self.assertEqual("abc", value.string)
+        self.assertEqual("abc", value.string)  # type: ignore
 
         value = mod_0.index_insert[1]
         self.assertIsInstance(value, RowValue2DAMemory)
-        self.assertEqual(4, value.token_id)
+        self.assertEqual(4, value.token_id)  # type: ignore
 
         value = mod_0.index_insert[2]
         self.assertIsInstance(value, RowValueTLKMemory)
-        self.assertEqual(5, value.token_id)
+        self.assertEqual(5, value.token_id)  # type: ignore
 
     def test_2da_addcolumn_labelinsert(self):
         """Test that cells will be inserted to the new column at the given label correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -774,35 +1252,39 @@ class TestConfigReader(TestCase):
             L2=StrRef5
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.label_insert["0"]
         self.assertIsInstance(value, RowValueConstant)
-        self.assertEqual("abc", value.string)
+        self.assertEqual("abc", value.string)  # type: ignore
 
         value = mod_0.label_insert["1"]
         self.assertIsInstance(value, RowValue2DAMemory)
-        self.assertEqual(4, value.token_id)
+        self.assertEqual(4, value.token_id)  # type: ignore
 
         value = mod_0.label_insert["2"]
         self.assertIsInstance(value, RowValueTLKMemory)
-        self.assertEqual(5, value.token_id)
+        self.assertEqual(5, value.token_id)  # type: ignore
 
     def test_2da_addcolumn_2damemory(self):
         """Test that 2DAMEMORY will be stored correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [2DAList]
             Table0=test.2da
 
@@ -815,28 +1297,33 @@ class TestConfigReader(TestCase):
             2DAMEMORY2=I2
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         # noinspection PyTypeChecker
-        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)
+        mod_0: AddColumn2DA = config.patches_2da[0].modifiers.pop(0)  # type: ignore
 
         value = mod_0.store_2da[2]
         self.assertEqual("I2", value)
+
     # endregion
 
     # region SSF
     def test_ssf_replace(self):
         """Test that the replace file boolean is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test1.ssf
             Replace0=test2.ssf
@@ -845,14 +1332,19 @@ class TestConfigReader(TestCase):
             [test2.ssf]
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         self.assertFalse(config.patches_ssf[0].replace_file)
         self.assertTrue(config.patches_ssf[1].replace_file)
@@ -860,8 +1352,7 @@ class TestConfigReader(TestCase):
     def test_ssf_stored_constant(self):
         """Test that the set sound as constant stringref is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -870,28 +1361,32 @@ class TestConfigReader(TestCase):
             Battlecry 2=456
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, NoTokenUsage)
-        self.assertEqual("123", mod_0.stringref.stored)
+        self.assertEqual("123", mod_0.stringref.stored)  # type: ignore
 
-        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, NoTokenUsage)
-        self.assertEqual("456", mod_1.stringref.stored)
+        self.assertEqual("456", mod_1.stringref.stored)  # type: ignore
 
     def test_ssf_stored_2da(self):
         """Test that the set sound as 2DAMEMORY value is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -900,28 +1395,32 @@ class TestConfigReader(TestCase):
             Battlecry 2=2DAMEMORY6
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsage2DA)
-        self.assertEqual(5, mod_0.stringref.token_id)
+        self.assertEqual(5, mod_0.stringref.token_id)  # type: ignore
 
-        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, TokenUsage2DA)
-        self.assertEqual(6, mod_1.stringref.token_id)
+        self.assertEqual(6, mod_1.stringref.token_id)  # type: ignore
 
     def test_ssf_stored_tlk(self):
         """Test that the set sound as StrRef is registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -930,28 +1429,32 @@ class TestConfigReader(TestCase):
             Battlecry 2=StrRef6
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_ssf[0].modifiers.pop(0)
+        mod_0: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_0.stringref, TokenUsageTLK)
         self.assertEqual(5, mod_0.stringref.token_id)
 
-        mod_1 = config.patches_ssf[0].modifiers.pop(0)
+        mod_1: ModifySSF = config.patches_ssf[0].modifiers.pop(0)
         self.assertIsInstance(mod_1.stringref, TokenUsageTLK)
         self.assertEqual(6, mod_1.stringref.token_id)
 
     def test_ssf_set(self):
         """Test that each sound is mapped and will register correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [SSFList]
             File0=test.ssf
 
@@ -986,14 +1489,19 @@ class TestConfigReader(TestCase):
             Poisoned=28
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_battlecry1 = config.patches_ssf[0].modifiers.pop(0)
         mod_battlecry2 = config.patches_ssf[0].modifiers.pop(0)
@@ -1052,14 +1560,14 @@ class TestConfigReader(TestCase):
         self.assertEqual(SSFSound.SEPARATED_FROM_PARTY, mod_leaveparty.sound)
         self.assertEqual(SSFSound.REJOINED_PARTY, mod_rejoinparty.sound)
         self.assertEqual(SSFSound.POISONED, mod_poisoned.sound)
+
     # endregion
 
     # region GFF: Modify
     def test_gff_modify_pathing(self):
         """Test that the modify path for the field registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1067,24 +1575,28 @@ class TestConfigReader(TestCase):
             ClassList\\0\\Class=123
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertEqual("ClassList\\0\\Class", mod_0.path)
+        self.assertEqual("ClassList\\0\\Class", str(mod_0.path))
 
     def test_gff_modify_type_int(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1092,26 +1604,30 @@ class TestConfigReader(TestCase):
             SomeInt=123
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeInt", mod_0.path)
+        self.assertEqual("SomeInt", str(mod_0.path))
         self.assertEqual(123, mod_0.value.stored)
 
     def test_gff_modify_type_string(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1119,26 +1635,30 @@ class TestConfigReader(TestCase):
             SomeString=abc
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeString", mod_0.path)
+        self.assertEqual("SomeString", str(mod_0.path))
         self.assertEqual("abc", mod_0.value.stored)
 
     def test_gff_modify_type_vector3(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1146,26 +1666,30 @@ class TestConfigReader(TestCase):
             SomeVector=1|2|3
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeVector", mod_0.path)
+        self.assertEqual("SomeVector", str(mod_0.path))
         self.assertEqual(Vector3(1, 2, 3), mod_0.value.stored)
 
     def test_gff_modify_type_vector4(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1173,26 +1697,30 @@ class TestConfigReader(TestCase):
             SomeVector=1|2|3|4
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeVector", mod_0.path)
+        self.assertEqual("SomeVector", str(mod_0.path))
         self.assertEqual(Vector4(1, 2, 3, 4), mod_0.value.stored)
 
     def test_gff_modify_type_locstring(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1202,47 +1730,47 @@ class TestConfigReader(TestCase):
             LocString(lang3)=world
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
-        mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, ModifyFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_0.path)
+        mod_0 = self._assert_types_and_path(config)
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
         self.assertEqual(5, mod_0.value.stored.stringref.stored)
         self.assertEqual(0, len(mod_0.value.stored))
 
-        mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, ModifyFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_1.path)
+        mod_1 = self._assert_types_and_path(config)
         self.assertIsNone(mod_1.value.stored.stringref)
         self.assertEqual("hello", mod_1.value.stored.get(Language.ENGLISH, Gender.MALE))
         self.assertEqual(1, len(mod_1.value.stored))
 
-        mod_2 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_2, ModifyFieldGFF)
-        self.assertIsInstance(mod_2.value, FieldValueConstant)
-        self.assertIsInstance(mod_2.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_2.path)
+        mod_2 = self._assert_types_and_path(config)
         self.assertEqual("world", mod_2.value.stored.get(Language.FRENCH, Gender.FEMALE))
         self.assertIsNone(mod_2.value.stored.stringref)
         self.assertEqual(1, len(mod_2.value.stored))
 
+    def _assert_types_and_path(self, config):
+        result = config.patches_gff[0].modifiers.pop(0)
+        self.assertIsInstance(result, ModifyFieldGFF)
+        self.assertIsInstance(result.value, FieldValueConstant)
+        self.assertIsInstance(result.value.stored, LocalizedStringDelta)
+        self.assertEqual("LocString", str(result.path))
+        return result
+
     def test_gff_modify_2damemory(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1251,20 +1779,25 @@ class TestConfigReader(TestCase):
             SomeField=StrRef2
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        self.assertEqual("LocString", mod_0.path)
+        self.assertEqual("LocString", str(mod_0.path))
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueTLKMemory)
         self.assertEqual(5, mod_0.value.stored.stringref.token_id)
 
@@ -1272,12 +1805,11 @@ class TestConfigReader(TestCase):
         self.assertIsInstance(mod_1, ModifyFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueTLKMemory)
         self.assertEqual(2, mod_1.value.token_id)
-    
+
     def test_gff_modify_tlkmemory(self):
         """Test that the modify field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1285,27 +1817,32 @@ class TestConfigReader(TestCase):
             SomeField=2DAMEMORY12
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, ModifyFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValue2DAMemory)
         self.assertEqual(12, mod_0.value.token_id)
+
     # endregion
 
     # region GFF: Add
     def test_gff_add_ints(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1317,43 +1854,43 @@ class TestConfigReader(TestCase):
             AddField4=add_uint32
             AddField5=add_int32
             AddField7=add_int64
-            
+
             [add_uint8]
             FieldType=Byte
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int8]
             FieldType=Char
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_uint16]
             FieldType=Word
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int16]
             FieldType=Short
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_uint32]
-            FieldType=DWord
+            FieldType=DWORD
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int32]
             FieldType=Int
             Path=SomeList
             Label=SomeField
             Value=123
-            
+
             [add_int64]
             FieldType=Int64
             Path=SomeList
@@ -1361,69 +1898,52 @@ class TestConfigReader(TestCase):
             Value=123
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_0.path)
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(123, mod_0.value.stored)
+        self._assert_batch(mod_0, 123)
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, AddFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_1.path)
-        self.assertEqual("SomeField", mod_1.label)
-        self.assertEqual(123, mod_1.value.stored)
+        self._assert_batch(mod_1, 123)
 
         mod_2 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_2, AddFieldGFF)
-        self.assertIsInstance(mod_2.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_2.path)
-        self.assertEqual("SomeField", mod_2.label)
-        self.assertEqual(123, mod_2.value.stored)
+        self._assert_batch(mod_2, 123)
 
         mod_3 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_3, AddFieldGFF)
-        self.assertIsInstance(mod_3.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_3.path)
-        self.assertEqual("SomeField", mod_3.label)
-        self.assertEqual(123, mod_3.value.stored)
+        self._assert_batch(mod_3, 123)
 
         mod_4 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_4, AddFieldGFF)
-        self.assertIsInstance(mod_4.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_4.path)
-        self.assertEqual("SomeField", mod_4.label)
-        self.assertEqual(123, mod_4.value.stored)
+        self._assert_batch(mod_4, 123)
 
         mod_5 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_5, AddFieldGFF)
-        self.assertIsInstance(mod_5.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_5.path)
-        self.assertEqual("SomeField", mod_5.label)
-        self.assertEqual(123, mod_5.value.stored)
+        self._assert_batch(mod_5, 123)
 
         mod_6 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_6, AddFieldGFF)
-        self.assertIsInstance(mod_6.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_6.path)
-        self.assertEqual("SomeField", mod_6.label)
-        self.assertEqual(123, mod_6.value.stored)
+        self._assert_batch(mod_6, 123)
+
+    def _assert_batch(self, this_mod, stored):
+        self.assertIsInstance(this_mod, AddFieldGFF)
+        self.assertIsInstance(this_mod.value, FieldValueConstant)
+        self.assertEqual("SomeList", str(this_mod.path))
+        self.assertEqual("SomeField", this_mod.label)
+        self.assertEqual(stored, this_mod.value.stored)
 
     def test_gff_add_floats(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1444,34 +1964,30 @@ class TestConfigReader(TestCase):
             Value=1.23
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_0.path)
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(1.23, mod_0.value.stored)
+        self._assert_batch(mod_0, 1.23)
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_1, AddFieldGFF)
-        self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_1.path)
-        self.assertEqual("SomeField", mod_1.label)
-        self.assertEqual(1.23, mod_1.value.stored)
+        self._assert_batch(mod_1, 1.23)
 
     def test_gff_add_string(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1485,27 +2001,27 @@ class TestConfigReader(TestCase):
             Value=abc
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_0.path)
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual("abc", mod_0.value.stored)
+        self._assert_batch(mod_0, "abc")
 
     def test_gff_add_vector3(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1519,27 +2035,27 @@ class TestConfigReader(TestCase):
             Value=1|2|3
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_0.path)
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(Vector3(1, 2, 3), mod_0.value.stored)
+        self._assert_batch(mod_0, Vector3(1, 2, 3))
 
     def test_gff_add_vector4(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1553,27 +2069,27 @@ class TestConfigReader(TestCase):
             Value=1|2|3|4
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_0.path)
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(Vector4(1, 2, 3, 4), mod_0.value.stored)
+        self._assert_batch(mod_0, Vector4(1, 2, 3, 4))
 
     def test_gff_add_resref(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1587,27 +2103,27 @@ class TestConfigReader(TestCase):
             Value=abc
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
-        self.assertIsInstance(mod_0, AddFieldGFF)
-        self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("SomeList", mod_0.path)
-        self.assertEqual("SomeField", mod_0.label)
-        self.assertEqual(ResRef("abc"), mod_0.value.stored)
+        self._assert_batch(mod_0, ResRef("abc"))
 
     def test_gff_add_locstring(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1622,7 +2138,7 @@ class TestConfigReader(TestCase):
             StrRef=123
             lang0=abc
             lang3=lmnop
-            
+
             [add_locstring2]
             FieldType=ExoLocString
             Path=
@@ -1630,20 +2146,25 @@ class TestConfigReader(TestCase):
             StrRef=StrRef8
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
-        self.assertEqual("SomeList", mod_0.path)
+        self.assertEqual("SomeList", str(mod_0.path))
         self.assertEqual("SomeField", mod_0.label)
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
         self.assertEqual(123, mod_0.value.stored.stringref.stored)
@@ -1660,14 +2181,13 @@ class TestConfigReader(TestCase):
     def test_gff_add_inside_struct(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
             [test.gff]
             AddField0=add_struct
-            
+
             [add_struct]
             FieldType=Struct
             Path=
@@ -1682,34 +2202,38 @@ class TestConfigReader(TestCase):
             Value=123
             """
 
-        tlk = TLK()
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
 
-        ini = ConfigParser()
-        ini.optionxform = str
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("", mod_0.path)
+        self.assertEqual(mod_0.path.name, ">>##INDEXINLIST##<<")
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
-        self.assertEqual("", mod_1.path)
+        self.assertEqual(mod_1.path.name, "SomeStruct")
         self.assertEqual("InsideStruct", mod_1.label)
         self.assertEqual(123, mod_1.value.stored)
 
     def test_gff_add_inside_list(self):
         """Test that the add field modifiers are registered correctly."""
 
-        ini_text = \
-            """
+        ini_text = """
             [GFFList]
             File0=test.gff
 
@@ -1729,23 +2253,30 @@ class TestConfigReader(TestCase):
             2DAMEMORY5=ListIndex
             """
         # TODO: Add field to struct
-        tlk = TLK()
 
-        ini = ConfigParser()
-        ini.optionxform = str
+        ini = ConfigParser(
+            delimiters=("="),
+            allow_no_value=True,
+            strict=False,
+            interpolation=None,
+        )
+        # use case-sensitive keys
+        ini.optionxform = lambda optionstr: optionstr  #  type: ignore[method-assign]
+
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        ConfigReader(ini, tlk).load(config)
+        ConfigReader(ini, "").load(config)
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
         self.assertIsInstance(mod_0.value, FieldValueConstant)
-        self.assertEqual("", mod_0.path)
+        self.assertFalse(mod_0.path.name)
         self.assertEqual("SomeList", mod_0.label)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddStructToListGFF)
         self.assertEqual(111, mod_1.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
+
     # endregion

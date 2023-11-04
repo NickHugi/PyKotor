@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import List, Dict, Union
 
 
 class PatcherMemory:
     def __init__(self):
-        self.memory_2da: Dict[int, str] = {}
-        self.memory_str: Dict[int, int] = {}  # StrRef# (token) -> dialog.tlk index
+        self.memory_2da: dict[int, str] = {}
+        self.memory_gff: dict = {}
+        self.memory_str: dict[int, int] = {}  # StrRef# (token) -> dialog.tlk index
 
 
 class TokenUsage(ABC):
@@ -15,7 +17,7 @@ class TokenUsage(ABC):
 
 
 class NoTokenUsage(TokenUsage):
-    def __init__(self, stored: Union[str, int]):
+    def __init__(self, stored: str | int):
         self.stored = str(stored)
 
     def value(self, memory: PatcherMemory) -> str:

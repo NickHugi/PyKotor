@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 import struct
 from enum import IntEnum
-from typing import Optional
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
-from pykotor.resource.type import ResourceWriter, TARGET_TYPES, ResourceReader, SOURCE_TYPES, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class _DataTypes(IntEnum):
@@ -21,29 +28,29 @@ class _DataTypes(IntEnum):
 
 class TPCTGAReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._tpc: Optional[TPC] = None
+        self._tpc: TPC | None = None
 
-    #@autoclose
+    # @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> TPC:
         self._tpc = TPC()
 
         id_length = self._reader.read_uint8()
-        colormap_type = self._reader.read_uint8()
+        self._reader.read_uint8()
         datatype_code = self._reader.read_uint8()
-        colormap_origin = self._reader.read_uint16()
+        self._reader.read_uint16()
         colormap_length = self._reader.read_uint16()
         colormap_depth = self._reader.read_uint8()
-        x_origin = self._reader.read_uint16()
-        y_origin = self._reader.read_uint16()
+        self._reader.read_uint16()
+        self._reader.read_uint16()
         width = self._reader.read_uint16()
         height = self._reader.read_uint16()
         bits_per_pixel = self._reader.read_uint8()
@@ -52,7 +59,6 @@ class TPCTGAReader(ResourceReader):
 
         y_flipped = bool(image_descriptor & 0b00100000)
         interleaving_id = (image_descriptor & 0b11000000) >> 6
-
         if interleaving_id:
             ValueError("The image data must not be interleaved.")
 
@@ -60,23 +66,29 @@ class TPCTGAReader(ResourceReader):
             self._reader.skip(colormap_length * colormap_depth // 8)
             data = bytearray()
 
-            if bits_per_pixel != 24 and bits_per_pixel != 32:
+            if bits_per_pixel not in [24, 32]:
                 ValueError("The image must store 24 or 32 bits per pixel.")
 
             pixel_rows = []
             for y in range(height):
                 pixel_rows.append(bytearray())
-                for x in range(width):
-                    b, g, r = self._reader.read_uint8(), self._reader.read_uint8(), self._reader.read_uint8()
+                for _x in range(width):
+                    b, g, r = (
+                        self._reader.read_uint8(),
+                        self._reader.read_uint8(),
+                        self._reader.read_uint8(),
+                    )
                     if bits_per_pixel == 32:
                         pixel_rows[y].extend([r, g, b, self._reader.read_uint8()])
                     else:
                         pixel_rows[y].extend([r, g, b])
 
             if y_flipped:
-                [data.extend(pixels) for pixels in reversed(pixel_rows)]
+                for pixels in reversed(pixel_rows):
+                    data.extend(pixels)
             else:
-                [data.extend(pixels) for pixels in pixel_rows]
+                for pixels in pixel_rows:
+                    data.extend(pixels)
         elif datatype_code == _DataTypes.RLE_RGB:
             data = bytearray()
             pixels = []
@@ -90,46 +102,55 @@ class TPCTGAReader(ResourceReader):
                 n += count
 
                 if raw:
-                    for i in range(count):
-                        b, g, r = self._reader.read_uint8(), self._reader.read_uint8(), self._reader.read_uint8()
+                    for _i in range(count):
+                        b, g, r = (
+                            self._reader.read_uint8(),
+                            self._reader.read_uint8(),
+                            self._reader.read_uint8(),
+                        )
                         if bits_per_pixel == 32:
                             pixels.extend([r, g, b, self._reader.read_uint8()])
                         else:
                             pixels.extend([r, g, b, 255])
                 else:
-                    b, g, r = self._reader.read_uint8(), self._reader.read_uint8(), self._reader.read_uint8()
+                    b, g, r = (
+                        self._reader.read_uint8(),
+                        self._reader.read_uint8(),
+                        self._reader.read_uint8(),
+                    )
                     pixel = [r, g, b]
                     if bits_per_pixel == 32:
                         pixel.append(self._reader.read_uint8())
                     else:
                         pixel.append(255)
-                    for i in range(count):
+                    for _i in range(count):
                         pixels.extend(pixel)
 
-                if n == width*height:
+                if n == width * height:
                     break
             data.extend(pixels)
         else:
-            raise ValueError("The image data must be RGB and not color-mapped.")
+            msg = "The image data must be RGB and not color-mapped."
+            raise ValueError(msg)
 
-        self._tpc.set(width, height, [bytes(data)], TPCTextureFormat.RGBA)
+        self._tpc.set_data(width, height, [bytes(data)], TPCTextureFormat.RGBA)
 
         return self._tpc
 
 
 class TPCTGAWriter(ResourceWriter):
     def __init__(
-            self,
-            tpc: TPC,
-            target: TARGET_TYPES
+        self,
+        tpc: TPC,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._tpc = tpc
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         width, height = self._tpc.dimensions()
 
@@ -147,19 +168,19 @@ class TPCTGAWriter(ResourceWriter):
             self._writer.write_uint8(0)
             data = self._tpc.convert(TPCTextureFormat.RGB, 0).data
             pixel_reader = BinaryReader.from_bytes(data)
-            for i in range(len(data) // 3):
+            for _i in range(len(data) // 3):
                 r = pixel_reader.read_uint8()
                 g = pixel_reader.read_uint8()
                 b = pixel_reader.read_uint8()
-                self._writer.write_bytes(struct.pack('BBBB', b, g, r, 255))
+                self._writer.write_bytes(struct.pack("BBBB", b, g, r, 255))
         else:
             self._writer.write_uint8(32)
             self._writer.write_uint8(0)
             width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
             pixel_reader = BinaryReader.from_bytes(data)
-            for i in range(len(data) // 4):
+            for _i in range(len(data) // 4):
                 r = pixel_reader.read_uint8()
                 g = pixel_reader.read_uint8()
                 b = pixel_reader.read_uint8()
                 a = pixel_reader.read_uint8()
-                self._writer.write_bytes(struct.pack('BBBB', b, g, r, a))
+                self._writer.write_bytes(struct.pack("BBBB", b, g, r, a))

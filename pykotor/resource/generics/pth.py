@@ -2,146 +2,134 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import List, Optional
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.misc import Game
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class PTH:
-    """
-    Stores the path data for a module.
-    """
+    """Stores the path data for a module."""
 
     BINARY_TYPE = ResourceType.PTH
 
     def __init__(
-            self
+        self,
     ):
-        self._points: List[Vector2] = []
-        self._connections: List[PTHEdge] = []
+        self._points: list[Vector2] = []
+        self._connections: list[PTHEdge] = []
 
     def __iter__(
-            self
+        self,
     ):
-        for point in self._points:
-            yield point
+        yield from self._points
 
     def __len__(
-            self
+        self,
     ):
         return len(self._points)
 
     def __getitem__(
-            self,
-            item: int
+        self,
+        item: int,
     ):
-        return self._points[int]
+        return self._points[item]
 
     def add(
-            self,
-            x: float,
-            y: float
+        self,
+        x: float,
+        y: float,
     ) -> int:
         self._points.append(Vector2(x, y))
         return len(self._points) - 1
 
     def remove(
-            self,
-            index: int
+        self,
+        index: int,
     ) -> None:
         self._points.pop(index)
 
-        self._connections = [x for x in self._connections if x.source != index and x.target != index]
+        self._connections = [x for x in self._connections if index not in (x.source, x.target)]
 
-        for i, connection in enumerate(self._connections):
+        for connection in self._connections:
             connection.source = connection.source - 1 if connection.source > index else connection.source
             connection.target = connection.target - 1 if connection.target > index else connection.target
 
     def get(
-            self,
-            index: int
-    ) -> Optional[Vector2]:
+        self,
+        index: int,
+    ) -> Vector2 | None:
         with suppress(Exception):
             return self._points[index]
         return None
 
     def find(
-            self,
-            point: Vector2
-    ) -> Optional[int]:
+        self,
+        point: Vector2,
+    ) -> int | None:
         return self._points.index(point)
 
     def connect(
-            self,
-            source: int,
-            target: int
+        self,
+        source: int,
+        target: int,
     ) -> None:
         self._connections.append(PTHEdge(source, target))
 
     def disconnect(
-            self,
-            source: int,
-            target: int
+        self,
+        source: int,
+        target: int,
     ) -> None:
         for edge in copy(self._connections):
-            hasSource = edge.source == source or edge.source == target
-            hasTarget = edge.target == source or edge.target == target
-            if hasSource and hasTarget:
+            has_source = edge.source in [source, target]
+            has_target = edge.target in [source, target]
+            if has_source and has_target:
                 self._connections.remove(edge)
 
     def is_connected(
-            self,
-            source: int,
-            target: int
+        self,
+        source: int,
+        target: int,
     ) -> bool:
         return any(x for x in self._connections if x == PTHEdge(source, target))
 
     def outgoing(
-            self,
-            source: int
-    ) -> List[PTHEdge]:
-        connections = []
-        for connection in self._connections:
-            if connection.source == source:
-                connections.append(connection)
-        return connections
+        self,
+        source: int,
+    ) -> list[PTHEdge]:
+        return [connection for connection in self._connections if connection.source == source]
 
     def incoming(
-            self,
-            target: int
-    ) -> List[PTHEdge]:
-        connections = []
-        for connection in self._connections:
-            if connection.target == target:
-                connections.append(connection)
-        return connections
+        self,
+        target: int,
+    ) -> list[PTHEdge]:
+        return [connection for connection in self._connections if connection.target == target]
 
 
 class PTHEdge:
     def __init__(
-            self,
-            source: int,
-            target: int
+        self,
+        source: int,
+        target: int,
     ):
         self.source = source
         self.target = target
 
     def __eq__(
-            self,
-            other: PTHEdge
+        self,
+        other,
     ):
         if not isinstance(other, PTHEdge):
-            raise NotImplemented
+            raise NotImplementedError
 
         return self.source == other.source and self.target == other.target
 
 
 def construct_pth(
-        gff: GFF
+    gff: GFF,
 ) -> PTH:
     pth = PTH()
 
@@ -163,10 +151,10 @@ def construct_pth(
 
 
 def dismantle_pth(
-        pth: PTH,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    pth: PTH,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.PTH)
 
@@ -190,33 +178,32 @@ def dismantle_pth(
 
 
 def read_pth(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> PTH:
     gff = read_gff(source, offset, size)
-    pth = construct_pth(gff)
-    return pth
+    return construct_pth(gff)
 
 
 def write_pth(
-        pth: PTH,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    pth: PTH,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_pth(
-        pth: PTH,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    pth: PTH,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
     gff = dismantle_pth(pth, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

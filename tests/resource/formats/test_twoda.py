@@ -1,18 +1,25 @@
-import platform
+import os
 from unittest import TestCase
 
-from pykotor.resource.formats.twoda import write_2da, TwoDABinaryReader, read_2da, detect_2da, TwoDACSVReader, TwoDA
+from pykotor.resource.formats.twoda import (
+    write_2da,
+    TwoDABinaryReader,
+    read_2da,
+    detect_2da,
+    TwoDACSVReader,
+    TwoDA,
+)
 from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader
 from pykotor.resource.type import ResourceType
 
 
-BINARY_TEST_FILE = "../../files/test.2da"
-CSV_TEST_FILE = "../../files/test.2da.csv"
-JSON_TEST_FILE = "../../files/test.2da.json"
+BINARY_TEST_FILE = "tests/files/test.2da"
+CSV_TEST_FILE = "tests/files/test.2da.csv"
+JSON_TEST_FILE = "tests/files/test.2da.json"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.2da"
-CORRUPT_CSV_TEST_FILE = "../../files/test_corrupted.2da.csv"
-CORRUPT_JSON_TEST_FILE = "../../files/test_corrupted.2da.json"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.2da"
+CORRUPT_CSV_TEST_FILE = "tests/files/test_corrupted.2da.csv"
+CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.2da.json"
 
 
 class TestTwoDA(TestCase):
@@ -62,7 +69,7 @@ class TestTwoDA(TestCase):
         self.assertEqual("abc", twoda.get_cell(2, "col3"))
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_2da, ".")
         else:
             self.assertRaises(IsADirectoryError, read_2da, ".")
@@ -72,7 +79,7 @@ class TestTwoDA(TestCase):
         self.assertRaises(ValueError, read_2da, CORRUPT_JSON_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_2da, TwoDA(), ".", ResourceType.TwoDA)
         else:
             self.assertRaises(IsADirectoryError, write_2da, TwoDA(), ".", ResourceType.TwoDA)
@@ -84,4 +91,4 @@ class TestTwoDA(TestCase):
         twoda.add_row("1")
         twoda.add_row("2")
 
-        self.assertEqual("3", twoda.label_max())
+        self.assertEqual(3, twoda.label_max())

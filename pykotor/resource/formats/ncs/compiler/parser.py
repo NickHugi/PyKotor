@@ -1,70 +1,122 @@
-from typing import List, Dict, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from ply import yacc
-from ply.lex import LexToken
-from ply.yacc import YaccProduction
 
-from pykotor.common.scriptdefs import KOTOR_FUNCTIONS, KOTOR_CONSTANTS
-
-from pykotor.common.script import ScriptFunction, ScriptConstant
-from pykotor.common.scriptlib import KOTOR_LIBRARY
-
-from pykotor.resource.formats.ncs import NCS
-from pykotor.resource.formats.ncs.compiler.classes import Identifier, IdentifierExpression, \
-    CodeBlock, \
-    Statement, ScopedValue, Assignment, EngineCallExpression, Expression, ConditionalBlock, \
-    FunctionDefinition, FunctionDefinitionParam, CodeRoot, UnaryOperatorExpression, BitwiseNotExpression, \
-    LogicalNotExpression, IncludeScript, ReturnStatement, AdditionAssignment, ExpressionStatement, \
-    SubtractionAssignment, MultiplicationAssignment, DivisionAssignment, EmptyStatement, WhileLoopBlock, \
-    DoWhileLoopBlock, ForLoopBlock, FunctionCallExpression, FunctionForwardDeclaration, GlobalVariableDeclaration, \
-    SwitchLabel, SwitchBlock, SwitchStatement, BreakStatement, ContinueStatement, ExpressionSwitchLabel, \
-    DefaultSwitchLabel, ConditionAndBlock, BinaryOperatorExpression, StructDefinition, DeclarationStatement, \
-    StructMember, DynamicDataType, FieldAccess, FieldAccessExpression, PrefixIncrementExpression, \
-    PostfixIncrementExpression, PostfixDecrementExpression, PrefixDecrementExpression, VectorExpression, \
-    GlobalVariableInitialization, VariableDeclarator, VariableInitializer, NopStatement, CompileException
+from pykotor.resource.formats.ncs.compiler.classes import (
+    AdditionAssignment,
+    Assignment,
+    BinaryOperatorExpression,
+    BreakStatement,
+    CodeBlock,
+    CodeRoot,
+    CompileException,
+    ConditionalBlock,
+    ConditionAndBlock,
+    ContinueStatement,
+    DeclarationStatement,
+    DefaultSwitchLabel,
+    DivisionAssignment,
+    DoWhileLoopBlock,
+    DynamicDataType,
+    EmptyStatement,
+    EngineCallExpression,
+    Expression,
+    ExpressionStatement,
+    ExpressionSwitchLabel,
+    FieldAccess,
+    FieldAccessExpression,
+    ForLoopBlock,
+    FunctionCallExpression,
+    FunctionDefinition,
+    FunctionDefinitionParam,
+    FunctionForwardDeclaration,
+    GlobalVariableDeclaration,
+    GlobalVariableInitialization,
+    Identifier,
+    IdentifierExpression,
+    IncludeScript,
+    MultiplicationAssignment,
+    NopStatement,
+    PostfixDecrementExpression,
+    PostfixIncrementExpression,
+    PrefixDecrementExpression,
+    PrefixIncrementExpression,
+    ReturnStatement,
+    StructDefinition,
+    StructMember,
+    SubtractionAssignment,
+    SwitchBlock,
+    SwitchStatement,
+    UnaryOperatorExpression,
+    VariableDeclarator,
+    VariableInitializer,
+    VectorExpression,
+    WhileLoopBlock,
+)
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer
+from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    from pykotor.common.script import ScriptConstant, ScriptFunction
+    from ply.lex import LexToken
 
 
 class NssParser:
     def __init__(
-            self,
-            functions: List[ScriptFunction],
-            constants: List[ScriptConstant],
-            library: Dict[str, bytes],
-            library_lookup: Optional[List[str]],
-            errorlog=yacc.NullLogger()
+        self,
+        functions: list[ScriptFunction],
+        constants: list[ScriptConstant],
+        library: dict[str, bytes],
+        library_lookup: list[str] | list[CaseAwarePath] | str | CaseAwarePath | None,
+        errorlog=yacc.NullLogger(),
     ):
-        self.parser = yacc.yacc(module=self,
-                                errorlog=errorlog,
-                                write_tables=False,
-                                debug=False,
-                                debuglog=yacc.NullLogger()
-                                )
-        self.functions: List[ScriptFunction] = functions
-        self.constants: List[ScriptConstant] = constants
-        self.library: Dict[str, bytes] = library
-        self.library_lookup: Optional[List[str]] = library_lookup
+        self.parser = yacc.yacc(
+            module=self,
+            errorlog=errorlog,
+            write_tables=False,
+            debug=False,
+            debuglog=yacc.NullLogger(),
+        )
+        self.functions: list[ScriptFunction] = functions
+        self.constants: list[ScriptConstant] = constants
+        self.library: dict[str, bytes] = library
+        self.library_lookup: list[CaseAwarePath] = []
+        if not library_lookup:
+            pass
+        elif isinstance(library_lookup, list):
+            for library_path in library_lookup:
+                if isinstance(library_path, CaseAwarePath):
+                    self.library_lookup.append(library_path)
+                elif library_path:
+                    self.library_lookup.append(CaseAwarePath(library_path))
+        elif isinstance(library_lookup, CaseAwarePath):
+            self.library_lookup = [library_lookup]
+        else:
+            self.library_lookup = [CaseAwarePath(library_lookup)]
 
-    tokens = NssLexer.tokens
-    literals = NssLexer.literals
+    tokens: list[str] = NssLexer.tokens
+    literals: list[str] = NssLexer.literals
 
     precedence = (
-        ('left', 'OR'),
-        ('left', 'AND'),
-        ('left', 'BITWISE_OR'),
-        ('left', 'BITWISE_XOR'),
-        ('left', 'BITWISE_AND'),
-        ('left', 'EQUALS', 'NOT_EQUALS'),
-        ('left', 'GREATER_THAN', 'LESS_THAN', 'GREATER_THAN_OR_EQUALS', 'LESS_THAN_OR_EQUALS'),
-        ('left', 'BITWISE_LEFT', 'BITWISE_RIGHT'),
-        ('left', 'ADD', 'MINUS'),
-        ('left', 'MULTIPLY', 'DIVIDE', 'MOD'),
-        ('right', 'BITWISE_NOT', 'NOT'),
-        ('left', 'INCREMENT', 'DECREMENT'),
+        ("left", "OR"),
+        ("left", "AND"),
+        ("left", "BITWISE_OR"),
+        ("left", "BITWISE_XOR"),
+        ("left", "BITWISE_AND"),
+        ("left", "EQUALS", "NOT_EQUALS"),
+        ("left", "GREATER_THAN", "LESS_THAN", "GREATER_THAN_OR_EQUALS", "LESS_THAN_OR_EQUALS"),
+        ("left", "BITWISE_LEFT", "BITWISE_RIGHT"),
+        ("left", "ADD", "MINUS"),
+        ("left", "MULTIPLY", "DIVIDE", "MOD"),
+        ("right", "BITWISE_NOT", "NOT"),
+        ("left", "INCREMENT", "DECREMENT"),
     )
 
     def p_error(self, p: LexToken):
-        raise CompileException(f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'")
+        msg = f"Syntax error at line {p.lineno}, position {p.lexpos}, token='{p.value}'"  # type: ignore
+        raise CompileException(msg)
 
     def p_code_root(self, p):
         """
@@ -75,8 +127,9 @@ class NssParser:
             p[1].objects.append(p[2])
             p[0] = p[1]
         else:
-            p[0] = CodeRoot(constants=self.constants, functions=self.functions, library_lookup=self.library_lookup,
-                            library=self.library)
+            p[0] = CodeRoot(
+                constants=self.constants, functions=self.functions, library_lookup=self.library_lookup, library=self.library
+            )
 
     def p_code_root_object(self, p):
         """
@@ -227,7 +280,6 @@ class NssParser:
             p[0] = EmptyStatement()
         else:
             p[0] = p[1]
-        #p[0].linenum = p.lineno(1)
 
     def p_nop_statement(self, p):
         """
@@ -319,7 +371,6 @@ class NssParser:
         """
         p[0] = ConditionalBlock(p[1], p[2], p[3])
         # IF_CONTROL '(' expression ')' '{' code_block '}'
-        # p[0] = ConditionalBlock(p[3], p[6])
 
     def p_if_statement(self, p):
         """
@@ -340,10 +391,7 @@ class NssParser:
         else_statement : ELSE_CONTROL '{' code_block '}'
                        |
         """
-        if len(p) == 1:
-            p[0] = None
-        else:
-            p[0] = p[3]
+        p[0] = None if len(p) == 1 else p[3]
 
     def p_else_statement_single(self, p):
         """
@@ -434,10 +482,7 @@ class NssParser:
                    | assignment
                    | constant_expression
         """
-        if isinstance(p[1], Identifier):
-            p[0] = IdentifierExpression(p[1])
-        else:
-            p[0] = p[1]
+        p[0] = IdentifierExpression(p[1]) if isinstance(p[1], Identifier) else p[1]
 
     def p_constant_expression(self, p):
         """
@@ -463,14 +508,15 @@ class NssParser:
         function_call : IDENTIFIER '(' function_call_params ')'
         """
         identifier = p[1]
-        args: List[Expression] = p[3]
+        args: list[Expression] = p[3]
 
-        if engine_function := next((x for x in self.functions if x.name == identifier), None):
+        engine_function = next((x for x in self.functions if x.name == identifier), None)
+        if engine_function:
             routine_id = self.functions.index(engine_function)
             data_type = engine_function.returntype
             p[0] = EngineCallExpression(engine_function, routine_id, data_type, args)
         else:
-            args: List[Expression] = p[3]
+            args = p[3]
             p[0] = FunctionCallExpression(identifier, args)
 
     def p_function_call_params(self, p):
@@ -609,4 +655,5 @@ class NssParser:
             p[0] = p[1]
         else:
             p[0] = []
+
     # endregion

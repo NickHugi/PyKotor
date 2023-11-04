@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from pykotor.common.geometry import Vector3, Vector2
+from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class IFO:
-    """
-    Stores module information.
+    """Stores module information.
 
-    Attributes:
+    Attributes
+    ----------
         mod_id: "Mod_ID" field.
         vo_id: "Mod_VO_ID" field.
         mod_name: "Mod_Name" field.
@@ -57,9 +57,9 @@ class IFO:
     BINARY_TYPE = ResourceType.IFO
 
     def __init__(
-            self
+        self,
     ):
-        self.mod_id: bytes = bytes()
+        self.mod_id: bytes = b""
         self.mod_name: LocalizedString = LocalizedString.from_invalid()
         self.area_name: ResRef = ResRef.from_blank()
 
@@ -102,12 +102,12 @@ class IFO:
 
 
 def construct_ifo(
-        gff: GFF
+    gff: GFF,
 ) -> IFO:
     ifo = IFO()
 
     root = gff.root
-    ifo.mod_id = root.acquire("Mod_ID", bytes())
+    ifo.mod_id = root.acquire("Mod_ID", b"")
     ifo.vo_id = root.acquire("Mod_VO_ID", "")
     ifo.mod_name = root.acquire("Mod_Name", LocalizedString.from_invalid())
     ifo.tag = root.acquire("Mod_Tag", "")
@@ -154,10 +154,10 @@ def construct_ifo(
 
 
 def dismantle_ifo(
-        ifo: IFO,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    ifo: IFO,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.IFO)
 
@@ -189,7 +189,10 @@ def dismantle_ifo(
     root.set_single("Mod_Entry_Dir_X", entry_direction.x)
     root.set_single("Mod_Entry_Dir_Y", entry_direction.y)
 
-    root.set_list("Mod_Area_list", GFFList()).add(6).set_resref("Area_Name", ifo.area_name)
+    root.set_list("Mod_Area_list", GFFList()).add(6).set_resref(
+        "Area_Name",
+        ifo.area_name,
+    )
 
     if use_deprecated:
         root.set_uint16("Expansion_Pack", ifo.expansion_id)
@@ -212,33 +215,32 @@ def dismantle_ifo(
 
 
 def read_ifo(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> IFO:
     gff = read_gff(source, offset, size)
-    ifo = construct_ifo(gff)
-    return ifo
+    return construct_ifo(gff)
 
 
 def write_ifo(
-        ifo: IFO,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    ifo: IFO,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_ifo(ifo, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_ifo(
-        ifo: IFO,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    ifo: IFO,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
     gff = dismantle_ifo(ifo, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

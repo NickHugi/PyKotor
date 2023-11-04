@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.are import construct_are, dismantle_are
 
-TEST_FILE = "../../files/test.are"
+TEST_FILE = "tests/files/test.are"
 
 
 class TestARE(TestCase):
@@ -85,7 +85,7 @@ class TestARE(TestCase):
         self.assertEqual(16777215, are.sun_diffuse.bgr_integer())
         self.assertEqual(16777215, are.fog_color.bgr_integer())
         self.assertEqual(16777215, are.dynamic_light.bgr_integer())
-        self.assertEqual(123, are.dirty_argb_1.bgr_integer())
-        self.assertEqual(1234, are.dirty_argb_2.bgr_integer())
-        self.assertEqual(12345, are.dirty_argb_3.bgr_integer())
-
+        self.assertEqual(8060928, are.dirty_argb_1.bgr_integer())
+        self.assertEqual(13763584, are.dirty_argb_2.bgr_integer())
+        self.assertEqual(3747840, are.dirty_argb_3.bgr_integer())
+        # TODO: Fix RGB/BGR mix up

@@ -1,9 +1,15 @@
+import sys
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parents[2]
+sys.path.append(str(project_root))
+
 from unittest import TestCase
 
 from pykotor.common.language import Language
 from pykotor.extract.talktable import TalkTable
 
-TEST_FILE = "../../tests/files/test.tlk"
+TEST_FILE = "tests/files/test.tlk"
 
 
 class TestTalkTable(TestCase):

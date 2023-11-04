@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm import BWMBinaryReader, BWM, write_bwm, read_bwm
 
-BINARY_TEST_FILE = "../../files/test.wok"
+BINARY_TEST_FILE = "tests/files/test.wok"
 
 
 class TestBWM(TestCase):
@@ -45,5 +45,3 @@ class TestBWM(TestCase):
         # still work ingame.
         self.assertEqual([59, 66, 73], [edges.index(edge) + 1 for edge in edges if edge.final])
         self.assertEqual(389, len(wok.aabbs()))
-
-

@@ -1,19 +1,16 @@
-"""
-This module handles classes relating to editing LIP files.
-"""
+"""This module handles classes relating to editing LIP files."""
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List, Optional
 
 from pykotor.resource.type import ResourceType
 
 
 class LIP:
-    """
-    Represents the data of a LIP file.
+    """Represents the data of a LIP file.
 
-    Attributes:
+    Attributes
+    ----------
         length: The total duration of lip animation.
         frames: The keyframes for the lip animation.
     """
@@ -21,73 +18,69 @@ class LIP:
     BINARY_TYPE = ResourceType.LIP
 
     def __init__(
-            self
+        self,
     ):
         self.length: float = 0.0
-        self.frames: List[LIPKeyFrame] = []
+        self.frames: list[LIPKeyFrame] = []
 
     def __iter__(
-            self
+        self,
     ):
-        """
-        Iterates through the stored list of keyframes yielding the LIPKeyFrame each iteration.
-        """
-        for frame in self.frames:
-            yield frame
+        """Iterates through the stored list of keyframes yielding the LIPKeyFrame each iteration."""
+        yield from self.frames
 
     def __len__(
-            self
+        self,
     ):
-        """
-        Returns the number of stored keyframes.
-        """
+        """Returns the number of stored keyframes."""
         return len(self.frames)
 
     def __getitem__(
-            self,
-            item
-    ):
-        """
-        Returns a keyframe from the specified index.
+        self,
+        item,
+    ) -> LIPKeyFrame:
+        """Returns a keyframe from the specified index.
 
         Args:
+        ----
             item: The index of the keyframe.
 
         Raises:
+        ------
             IndexError: If the index is out of bounds.
 
         Returns:
+        -------
             The corresponding LIPKeyFrame object.
         """
-        if not isinstance(item, int):
-            return NotImplemented
-        return self.frames[item]
+        return self.frames[item] if isinstance(item, int) else NotImplemented
 
     def add(
-            self,
-            time: float,
-            shape: LIPShape
+        self,
+        time: float,
+        shape: LIPShape,
     ) -> None:
-        """
-        Adds a new keyframe.
+        """Adds a new keyframe.
 
         Args:
+        ----
             time: The keyframe start time.
             shape: The mouth shape for the keyframe.
         """
         self.frames.append(LIPKeyFrame(time, shape))
 
     def get(
-            self,
-            index: int
-    ) -> Optional[LIPKeyFrame]:
-        """
-        Returns the keyframe at the specified index if it exists, otherwise returns None.
+        self,
+        index: int,
+    ) -> LIPKeyFrame | None:
+        """Returns the keyframe at the specified index if it exists, otherwise returns None.
 
         Args:
+        ----
             index: The index of the keyframe.
 
         Returns:
+        -------
             The corresponding LIPKeyFrame object or None.
         """
         return self.frames[index] if index < len(self.frames) else None
@@ -113,18 +106,18 @@ class LIPShape(IntEnum):
 
 
 class LIPKeyFrame:
-    """
-    A keyframe for a lip animation.
+    """A keyframe for a lip animation.
 
-    Attributes:
+    Attributes
+    ----------
         time: The time the keyframe animation occurs.
         shape: The mouth shape.
     """
 
     def __init__(
-            self,
-            time: float,
-            shape: LIPShape
+        self,
+        time: float,
+        shape: LIPShape,
     ):
         self.time: float = time
         self.shape: LIPShape = shape

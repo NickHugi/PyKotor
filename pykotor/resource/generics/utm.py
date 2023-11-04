@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-from typing import List
-
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef, Game, InventoryItem
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.common.misc import Game, InventoryItem, ResRef
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTM:
-    """
-    Stores merchant data.
+    """Stores merchant data.
 
-    Attributes:
+    Attributes
+    ----------
         resref: "ResRef" field.
         name: "LocName" field.
         tag: "Tag" field.
@@ -28,7 +26,7 @@ class UTM:
     BINARY_TYPE = ResourceType.UTM
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
@@ -44,14 +42,14 @@ class UTM:
 
         self.on_open: ResRef = ResRef.from_blank()
 
-        self.inventory: List[InventoryItem] = []
+        self.inventory: list[InventoryItem] = []
 
         # Deprecated:
         self.id: int = 5
 
 
 def construct_utm(
-        gff: GFF
+    gff: GFF,
 ) -> UTM:
     utm = UTM()
 
@@ -78,10 +76,10 @@ def construct_utm(
 
 
 def dismantle_utm(
-        utm: UTM,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    utm: UTM,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTM)
 
@@ -102,7 +100,7 @@ def dismantle_utm(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_posy", 0)
         if item.infinite:
-            item_struct.set_uint8("Infinite", True)
+            item_struct.set_uint8("Infinite", value=True)
 
     if use_deprecated:
         root.set_uint8("ID", utm.id)
@@ -111,33 +109,32 @@ def dismantle_utm(
 
 
 def read_utm(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTM:
     gff = read_gff(source, offset, size)
-    utm = construct_utm(gff)
-    return utm
+    return construct_utm(gff)
 
 
 def write_utm(
-        utm: UTM,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utm: UTM,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_utm(utm, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_utm(
-        utm: UTM,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utm: UTM,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
     gff = dismantle_utm(utm, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

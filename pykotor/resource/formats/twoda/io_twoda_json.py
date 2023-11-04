@@ -1,32 +1,37 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class TwoDAJSONReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
         self._json = {}
-        self._twoda: Optional[TwoDA] = None
+        self._twoda: TwoDA | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> TwoDA:
         self._twoda = TwoDA()
         self._json = json.loads(self._reader.read_bytes(self._reader.size()).decode())
 
-        for row in self._json['rows']:
+        for row in self._json["rows"]:
             row_label = row["_id"]
             del row["_id"]
 
@@ -41,9 +46,9 @@ class TwoDAJSONReader(ResourceReader):
 
 class TwoDAJSONWriter(ResourceWriter):
     def __init__(
-            self,
-            twoda: TwoDA,
-            target: TARGET_TYPES
+        self,
+        twoda: TwoDA,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._twoda: TwoDA = twoda
@@ -51,8 +56,8 @@ class TwoDAJSONWriter(ResourceWriter):
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         for row in self._twoda:
             json_row = {"_id": row.label()}

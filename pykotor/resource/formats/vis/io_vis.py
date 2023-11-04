@@ -1,27 +1,25 @@
 from __future__ import annotations
 
-from typing import Optional, List
+import os
 
 from pykotor.resource.formats.vis import VIS
-from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class VISAsciiReader(ResourceReader):
-    def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
-    ):
+    def __init__(self, source: SOURCE_TYPES, offset: int = 0, size: int = 0):
         super().__init__(source, offset, size)
-        self._vis: Optional[VIS] = None
-        self._lines: List[str] = []
+        self._vis: VIS | None = None
+        self._lines: list[str] = []
 
     @autoclose
-    def load(
-            self,
-            auto_close: bool = True
-    ) -> VIS:
+    def load(self, auto_close: bool = True) -> VIS:
         self._vis = VIS()
         self._lines = self._reader.read_string(self._reader.size()).splitlines()
 
@@ -35,7 +33,7 @@ class VISAsciiReader(ResourceReader):
             self._vis.add_room(when_inside)
 
             count = int(tokens[1])
-            for i in range(count):
+            for _i in range(count):
                 show = next(iterator).split()[0]
                 pairs.append((when_inside, show))
 
@@ -44,26 +42,19 @@ class VISAsciiReader(ResourceReader):
                 self._vis.add_room(when_inside)
             if show not in self._vis.all_rooms():
                 self._vis.add_room(show)
-            self._vis.set_visible(when_inside, show, True)
+            self._vis.set_visible(when_inside, show, visible=True)
 
         return self._vis
 
 
 class VISAsciiWriter(ResourceWriter):
-    def __init__(
-            self,
-            vis: VIS,
-            target: TARGET_TYPES
-    ):
+    def __init__(self, vis: VIS, target: TARGET_TYPES):
         super().__init__(target)
         self._vis: VIS = vis
 
     @autoclose
-    def write(
-            self,
-            auto_close: bool = True
-    ) -> None:
+    def write(self, auto_close: bool = True) -> None:
         for observer, observed in self._vis:
-            self._writer.write_string("{} {}\r\n".format(observer, str(len(observed))))
+            self._writer.write_string(f"{observer} {len(observed)}{os.linesep}")
             for room in observed:
-                self._writer.write_string("  {}\r\n".format(room))
+                self._writer.write_string(f"  {room}{os.linesep}")

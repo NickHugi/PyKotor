@@ -4,7 +4,7 @@ from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.dlg import construct_dlg, dismantle_dlg
 
-TEST_FILE = "../../files/test.dlg"
+TEST_FILE = "tests/files/test.dlg"
 
 
 class TestDLG(TestCase):

@@ -1,72 +1,64 @@
-"""
-This module handles classes relating to editing SSF files.
-"""
+"""This module handles classes relating to editing SSF files."""
 
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List, Optional
 
 from pykotor.resource.type import ResourceType
 
 
 class SSF:
-    """
-    Represents the data stored in a SSF file.
-    """
+    """Represents the data stored in a SSF file."""
 
     BINARY_TYPE = ResourceType.SSF
 
     def __init__(
-            self
+        self,
     ):
-        self._sounds: List[int] = [-1] * 28
+        self._sounds: list[int] = [-1] * 28
 
     def __getitem__(
-            self,
-            item
+        self,
+        item,
     ):
-        """
-        Returns the stringref for the specified sound.
-        """
+        """Returns the stringref for the specified sound."""
         if not isinstance(item, SSFSound):
             return NotImplemented
         return self._sounds[item]
 
     def reset(
-            self
+        self,
     ) -> None:
-        """
-        Sets all the sound stringrefs to -1.
-        """
+        """Sets all the sound stringrefs to -1."""
         for i in range(28):
             self._sounds[i] = -1
 
-    def set(
-            self,
-            sound: SSFSound,
-            stringref: int
+    def set_data(
+        self,
+        sound: SSFSound,
+        stringref: int,
     ) -> None:
-        """
-        Set the stringref for the specified sound.
+        """Set the stringref for the specified sound.
 
         Args:
+        ----
             sound: The sound.
             stringref: The new stringref for the sound.
         """
         self._sounds[sound] = stringref
 
     def get(
-            self,
-            sound: SSFSound
-    ) -> Optional[int]:
-        """
-        Returns the stringref for the specified sound.
+        self,
+        sound: SSFSound,
+    ) -> int | None:
+        """Returns the stringref for the specified sound.
 
         Args:
+        ----
             sound: The sound.
 
         Returns:
+        -------
             The corresponding stringref.
         """
         return self._sounds[sound]

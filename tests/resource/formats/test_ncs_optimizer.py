@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from unittest import TestCase
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
@@ -8,13 +11,21 @@ from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 
 
 class TestNCSOptimizers(TestCase):
-
-    def compile(self, script: str) -> NCS:
+    def compile(
+        self,
+        script: str,
+        library: dict[str, bytes] | None = None,
+        library_lookup: str | None = None,
+    ) -> NCS:
         nssLexer = NssLexer()
-        nssParser = NssParser()
-        lex = nssLexer.lexer
-        parser = nssParser.parser
+        nssParser = NssParser(
+            library=library,
+            constants=KOTOR_CONSTANTS,
+            functions=KOTOR_FUNCTIONS,
+            library_lookup=library_lookup,
+        )
 
+        parser = nssParser.parser
         t = parser.parse(script, tracking=True)
 
         ncs = NCS()
@@ -22,7 +33,8 @@ class TestNCSOptimizers(TestCase):
         return ncs
 
     def test_no_op_optimizer(self):
-        ncs = self.compile("""
+        ncs = self.compile(
+            """
             void main()
             {
                 int value = 3;
@@ -35,7 +47,8 @@ class TestNCSOptimizers(TestCase):
                     }
                 }
             }
-        """)
+        """
+        )
 
         ncs.optimize([RemoveNopOptimizer()])
         ncs.print()

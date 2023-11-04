@@ -1,4 +1,4 @@
-import platform
+import os
 from unittest import TestCase
 
 from pykotor.common.geometry import Vector4, Vector3
@@ -8,11 +8,11 @@ from pykotor.resource.formats.gff.gff_auto import write_gff, read_gff
 from pykotor.resource.type import ResourceType
 
 
-BINARY_TEST_FILE = "../../files/test.gff"
-XML_TEST_FILE = "../../files/test.gff.xml"
+BINARY_TEST_FILE = "tests/files/test.gff"
+XML_TEST_FILE = "tests/files/test.gff.xml"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
-CORRUPT_BINARY_TEST_FILE = "../../files/test_corrupted.gff"
-CORRUPT_XML_TEST_FILE = "../../files/test_corrupted.gff.xml"
+CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.gff"
+CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.gff.xml"
 
 
 class TestGFF(TestCase):
@@ -37,9 +37,9 @@ class TestGFF(TestCase):
     def validate_io(self, gff: GFF):
         self.assertEqual(gff.root.get_uint8("uint8"), 255)
         self.assertEqual(gff.root.get_int8("int8"), -127)
-        self.assertEqual(gff.root.get_uint16("uint16"), 65535)
+        self.assertEqual(gff.root.get_uint16("uint16"), 0xFFFF)
         self.assertEqual(gff.root.get_int16("int16"), -32768)
-        self.assertEqual(gff.root.get_uint32("uint32"), 4294967295)
+        self.assertEqual(gff.root.get_uint32("uint32"), 0xFFFFFFFF)
         self.assertEqual(gff.root.get_int32("int32"), -2147483648)
         # K-GFF does not seem to handle int64 correctly?
         self.assertEqual(gff.root.get_uint64("uint64"), 4294967296)
@@ -49,7 +49,7 @@ class TestGFF(TestCase):
 
         self.assertEqual("abcdefghij123456789", gff.root.get_string("string"))
         self.assertEqual("resref01", gff.root.get_resref("resref"))
-        self.assertEqual(b'binarydata', gff.root.get_binary("binary"))
+        self.assertEqual(b"binarydata", gff.root.get_binary("binary"))
 
         self.assertEqual(gff.root.get_vector4("orientation"), Vector4(1, 2, 3, 4))
         self.assertEqual(gff.root.get_vector3("position"), Vector3(11, 22, 33))
@@ -65,7 +65,7 @@ class TestGFF(TestCase):
         self.assertEqual(gff.root.get_list("list").at(1).struct_id, 2)
 
     def test_read_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, read_gff, ".")
         else:
             self.assertRaises(IsADirectoryError, read_gff, ".")
@@ -74,7 +74,7 @@ class TestGFF(TestCase):
         self.assertRaises(ValueError, read_gff, CORRUPT_XML_TEST_FILE)
 
     def test_write_raises(self):
-        if platform.system() == "Windows":
+        if os.name == "nt":
             self.assertRaises(PermissionError, write_gff, GFF(), ".", ResourceType.GFF)
         else:
             self.assertRaises(IsADirectoryError, write_gff, GFF(), ".", ResourceType.GFF)

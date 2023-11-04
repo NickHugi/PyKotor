@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ifo import construct_ifo, dismantle_ifo
 
-TEST_FILE = "../../files/test.ifo"
+TEST_FILE = "tests/files/test.ifo"
 
 
 class TestIFO(TestCase):
@@ -17,7 +17,7 @@ class TestIFO(TestCase):
         self.validate_io(ifo)
 
     def validate_io(self, ifo):
-        self.assertEqual(b'R:\xe5\x9e\xe3sq\x1d\x0f\xf0i\x9c\xb9a\x9f\xa7', ifo.mod_id)
+        self.assertEqual(b"R:\xe5\x9e\xe3sq\x1d\x0f\xf0i\x9c\xb9a\x9f\xa7", ifo.mod_id)
         self.assertEqual(2, ifo.creator_id)
         self.assertEqual(3, ifo.version)
         self.assertEqual("262", ifo.vo_id)
@@ -53,4 +53,4 @@ class TestIFO(TestCase):
         self.assertEqual("spawn", ifo.on_player_respawn)
         self.assertEqual("", ifo.on_player_rest)
         self.assertEqual("", ifo.start_movie)
-        self.assertAlmostEqual(-89.99999, ifo.entry_direction, 4)
+        self.assertAlmostEqual(-1.571, ifo.entry_direction, 3)

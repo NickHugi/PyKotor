@@ -1,16 +1,14 @@
 from __future__ import annotations
 
+import itertools
 import math
 from copy import copy
 from enum import IntEnum
-from typing import List, Optional, Tuple
 
 from pykotor.common.geometry import Face, Vector3
 
-
 # A lot of the code in this module was adapted from the KotorBlender fork by seedhartha:
 # https://github.com/seedhartha/kotorblender
-
 
 class BWMType(IntEnum):
     PlaceableOrDoor = 0
@@ -18,15 +16,13 @@ class BWMType(IntEnum):
 
 
 class BWM:
-    """
-    Represents the data of a RIM file.
-    """
+    """Represents the data of a RIM file."""
 
     def __init__(
-            self
-    ):
+        self,
+    ) -> None:
         self.walkmesh_type: BWMType = BWMType.AreaModel
-        self.faces: List[BWMFace] = []
+        self.faces: list[BWMFace] = []
 
         self.position: Vector3 = Vector3.from_null()
         self.relative_hook1: Vector3 = Vector3.from_null()
@@ -35,25 +31,25 @@ class BWM:
         self.absolute_hook2: Vector3 = Vector3.from_null()
 
     def walkable_faces(
-            self
-    ):
+        self,
+    ) -> list[BWMFace]:
         return [face for face in self.faces if face.material.walkable()]
 
     def unwalkable_faces(
-            self
-    ):
+        self,
+    ) -> list[BWMFace]:
         return [face for face in self.faces if not face.material.walkable()]
 
     def vertices(
-            self
-    ) -> List[Vector3]:
-        """
-        Returns a list of vectors stored in the faces of the walkmesh.
+        self,
+    ) -> list[Vector3]:
+        """Returns a list of vectors stored in the faces of the walkmesh.
 
-        Returns:
+        Returns
+        -------
             A list of Vector3 objects.
         """
-        vertices: List[Vector3] = []
+        vertices: list[Vector3] = []
         for face in self.faces:
             if not face.v1.within(vertices):
                 vertices.append(face.v1)
@@ -64,23 +60,25 @@ class BWM:
         return vertices
 
     def aabbs(
-            self
-    ) -> List[BWMNodeAABB]:
+        self,
+    ) -> list[BWMNodeAABB]:
         aabbs = []
         self._aabbs_rec(aabbs, copy(self.faces))
         return aabbs
 
     def _aabbs_rec(
-            self,
-            aabbs,
-            faces,
-            rlevel=0
+        self,
+        aabbs: list[BWMNodeAABB],
+        faces: list[BWMFace],
+        rlevel=0,
     ) -> None:
         if rlevel > 128:
-            raise ValueError("rlevel must not exceed 128, but is equal to {}".format(rlevel))
+            msg = f"rlevel must not exceed 128, but is equal to {rlevel}"
+            raise ValueError(msg)
 
         if not faces:
-            raise ValueError("face_list must not be empty")
+            msg = "face_list must not be empty"
+            raise ValueError(msg)
 
         # Calculate bounding box
         bbmin = Vector3(100000.0, 100000.0, 100000.0)
@@ -89,10 +87,8 @@ class BWM:
         for face in faces:
             for vertex in [face.v1, face.v2, face.v3]:
                 for axis in range(3):
-                    if bbmin[axis] > vertex[axis]:
-                        bbmin[axis] = vertex[axis]
-                    if bbmax[axis] < vertex[axis]:
-                        bbmax[axis] = vertex[axis]
+                    bbmin[axis] = min(bbmin[axis], vertex[axis])
+                    bbmax[axis] = max(bbmax[axis], vertex[axis])
             bbcentre += face.centre()
         bbcentre = bbcentre / len(faces)
 
@@ -103,7 +99,7 @@ class BWM:
 
         # Find longest axis
         split_axis = 0
-        bb_size = bbmax - bbmin
+        bb_size: Vector3 = bbmax - bbmin
         if bb_size.y > bb_size.x:
             split_axis = 1
         if bb_size.z > bb_size.y:
@@ -118,8 +114,8 @@ class BWM:
 
         # Put faces on the left and right side of the split plane into separate
         # lists. Try all axises to prevent tree degeneration.
-        faces_left = []
-        faces_right = []
+        faces_left: list[BWMFace] = []
+        faces_right: list[BWMFace] = []
         tested_axes = 1
         while True:
             faces_left = []
@@ -137,7 +133,8 @@ class BWM:
             split_axis = 0 if split_axis == 2 else split_axis + 1
             tested_axes += 1
             if tested_axes == 3:
-                raise RuntimeError("Generated tree is degenerate")
+                msg = "Generated tree is degenerate"
+                raise RuntimeError(msg)
 
         aabb = BWMNodeAABB(bbmin, bbmax, None, split_axis + 1, None, None)
         aabbs.append(aabb)
@@ -147,57 +144,58 @@ class BWM:
         self._aabbs_rec(aabbs, faces_right, rlevel + 1)
 
     def edges(
-            self
-    ) -> List[BWMEdge]:
+        self,
+    ) -> list[BWMEdge]:
         walkable = [face for face in self.faces if face.material.walkable()]
         adjacencies = [self.adjacencies(face) for face in walkable]
 
-        visited = set()
-        edges = []
-        perimeters = []
-        for i in range(len(walkable)):
-            for j in range(3):
-                if adjacencies[i][j] is not None:
-                    continue
-                edge_index = i * 3 + j
-                if edge_index in visited:
-                    continue
-                next_face = i
-                next_edge = j
-                while next_face != -1:
-                    adj_edge = adjacencies[next_face][next_edge]
-                    adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
-                    if adj_edge is None:
-                        edge_index = 3 * next_face + next_edge
-                        if edge_index not in visited:
-                            face_id = edge_index // 3
-                            edge_id = edge_index % 3
-                            transition = -1
-                            if edge_id == 0 and self.faces[face_id].trans1 is not None:
-                                transition = self.faces[face_id].trans1
-                            if edge_id == 1 and self.faces[face_id].trans2 is not None:
-                                transition = self.faces[face_id].trans2
-                            if edge_id == 2 and self.faces[face_id].trans3 is not None:
-                                transition = self.faces[face_id].trans3
+        visited: set[int] = set()
+        edges: list[BWMEdge] = []
+        perimeters: list[int] = []
+        for i, j in itertools.product(range(len(walkable)), range(3)):
+            if adjacencies[i][j] is not None:
+                continue
+            edge_index = i * 3 + j
+            if edge_index in visited:
+                continue
+            next_face = i
+            next_edge = j
+            while next_face != -1:
+                adj_edge = adjacencies[next_face][next_edge]
+                adj_edge_index = self.faces.index(adj_edge.face) * 3 + adj_edge.edge if adj_edge is not None else -1
+                if adj_edge is None:
+                    edge_index = 3 * next_face + next_edge
+                    if edge_index not in visited:
+                        face_id = edge_index // 3
+                        edge_id = edge_index % 3
+                        transition: int | None = -1
+                        if edge_id == 0 and self.faces[face_id].trans1 is not None:
+                            transition = self.faces[face_id].trans1
+                        if edge_id == 1 and self.faces[face_id].trans2 is not None:
+                            transition = self.faces[face_id].trans2
+                        if edge_id == 2 and self.faces[face_id].trans3 is not None:
+                            transition = self.faces[face_id].trans3
 
-                            edges.append(BWMEdge(self.faces[next_face], next_edge, transition))
+                        edges.append(
+                            BWMEdge(self.faces[next_face], next_edge, transition or -1),
+                        )
 
-                            visited.add(edge_index)
-                            next_edge = (next_edge + 1) % 3
-                        else:
-                            next_face = -1
-                            edges[-1].final = True
-                            perimeters.append(len(edges))
+                        visited.add(edge_index)
+                        next_edge = (next_edge + 1) % 3
                     else:
-                        next_face = adj_edge_index // 3
-                        next_edge = ((adj_edge_index % 3) + 1) % 3
+                        next_face = -1
+                        edges[-1].final = True
+                        perimeters.append(len(edges))
+                else:
+                    next_face = adj_edge_index // 3
+                    next_edge = ((adj_edge_index % 3) + 1) % 3
 
         return edges
 
     def adjacencies(
-            self,
-            face: BWMFace
-    ) -> Tuple[BWMAdjacency, BWMAdjacency, BWMAdjacency]:
+        self,
+        face: BWMFace,
+    ) -> tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]:
         walkable = self.walkable_faces()
 
         adj1 = [face.v1, face.v2]
@@ -209,8 +207,8 @@ class BWM:
         adj_index3 = None
 
         def matches(
-                face_index,
-                edges
+            face_index,
+            edges,
         ):
             flag = 0x00
             other_face = self.faces[face_index]
@@ -234,17 +232,26 @@ class BWM:
                 continue
             other_index = walkable.index(other)
             if matches(other_index, adj1) != -1:
-                adj_index1 = BWMAdjacency(walkable[other_index], matches(other_index, adj1))
+                adj_index1 = BWMAdjacency(
+                    walkable[other_index],
+                    matches(other_index, adj1),
+                )
             if matches(other_index, adj2) != -1:
-                adj_index2 = BWMAdjacency(walkable[other_index], matches(other_index, adj2))
+                adj_index2 = BWMAdjacency(
+                    walkable[other_index],
+                    matches(other_index, adj2),
+                )
             if matches(other_index, adj3) != -1:
-                adj_index3 = BWMAdjacency(walkable[other_index], matches(other_index, adj3))
+                adj_index3 = BWMAdjacency(
+                    walkable[other_index],
+                    matches(other_index, adj3),
+                )
 
         return adj_index1, adj_index2, adj_index3
 
     def box(
-            self
-    ) -> Tuple[Vector3, Vector3]:
+        self,
+    ) -> tuple[Vector3, Vector3]:
         bbmin = Vector3(1000000, 1000000, 1000000)
         bbmax = Vector3(-1000000, -1000000, -1000000)
         for vertex in self.vertices():
@@ -257,18 +264,19 @@ class BWM:
         return bbmin, bbmax
 
     def faceAt(
-            self,
-            x: float,
-            y: float
-    ) -> Optional[BWMFace]:
-        """
-        Returns the face at the given 2D coordinates if there si one otherwise returns None.
+        self,
+        x: float,
+        y: float,
+    ) -> BWMFace | None:
+        """Returns the face at the given 2D coordinates if there si one otherwise returns None.
 
         Args:
+        ----
             x: The x coordinate.
             y: The y coordinate.
 
         Returns:
+        -------
             BWMFace object or None.
         """
         for face in self.faces:
@@ -283,18 +291,18 @@ class BWM:
 
             if (c1 < 0 and c2 < 0 and c3 < 0) or (c1 > 0 and c2 > 0 and c3 > 0):
                 return face
-        return
+        return None
 
     def translate(
-            self,
-            x: float,
-            y: float,
-            z: float
+        self,
+        x: float,
+        y: float,
+        z: float,
     ) -> None:
-        """
-        Shifts the position of the walkmesh.
+        """Shifts the position of the walkmesh.
 
         Args:
+        ----
             x: How many units to shift on the X-axis.
             y: How many units to shift on the Y-axis.
             z: How many units to shift on the Z-axis.
@@ -305,13 +313,13 @@ class BWM:
             vertex.z += z
 
     def rotate(
-            self,
-            degrees: float
+        self,
+        degrees: float,
     ) -> None:
-        """
-        Rotates the walkmesh around the Z-axis counter-clockwise.
+        """Rotates the walkmesh around the Z-axis counter-clockwise.
 
         Args:
+        ----
             degrees: The angle to rotate in degrees.
         """
         radians = math.radians(degrees)
@@ -320,13 +328,13 @@ class BWM:
 
         for vertex in self.vertices():
             x, y = vertex.x, vertex.y
-            vertex.x = x*cos - y*sin
-            vertex.y = x*sin + y*cos
+            vertex.x = x * cos - y * sin
+            vertex.y = x * sin + y * cos
 
     def change_lyt_indexes(
-            self,
-            old: int,
-            new: Optional[int]
+        self,
+        old: int,
+        new: int | None,
     ) -> None:
         for face in self.faces:
             if face.trans1 == old:
@@ -336,14 +344,15 @@ class BWM:
             if face.trans2 == old:
                 face.trans2 = new
 
-    def flip(self,
-             x: bool,
-             y: bool
+    def flip(
+        self,
+        x: bool,
+        y: bool,
     ) -> None:
-        """
-        Flips the walkmesh around the specified axes.
+        """Flips the walkmesh around the specified axes.
 
         Args:
+        ----
             x: Flip around the X-axis.
             y: Flip around the Y-axis.
         """
@@ -364,20 +373,18 @@ class BWM:
 
 
 class BWMFace(Face):
-    """
-    An extension of the Face class with a transition index for each edge.
-    """
+    """An extension of the Face class with a transition index for each edge."""
 
     def __init__(
-            self,
-            v1: Vector3,
-            v2: Vector3,
-            v3: Vector3
+        self,
+        v1: Vector3,
+        v2: Vector3,
+        v3: Vector3,
     ):
         super().__init__(v1, v2, v3)
-        self.trans1: Optional[int] = None
-        self.trans2: Optional[int] = None
-        self.trans3: Optional[int] = None
+        self.trans1: int | None = None
+        self.trans2: int | None = None
+        self.trans3: int | None = None
 
 
 class BWMMostSignificantPlane(IntEnum):
@@ -391,50 +398,48 @@ class BWMMostSignificantPlane(IntEnum):
 
 
 class BWMNodeAABB:
-    """
-    A node in an AABB tree. Calculated with BWM.aabbs().
-    """
+    """A node in an AABB tree. Calculated with BWM.aabbs()."""
 
     def __init__(
-            self,
-            bb_min: Vector3,
-            bb_max: Vector3,
-            face: Optional[BWMFace],
-            sigplane: int,
-            left: Optional[BWMNodeAABB],
-            right: Optional[BWMNodeAABB]
+        self,
+        bb_min: Vector3,
+        bb_max: Vector3,
+        face: BWMFace | None,
+        sigplane: int,
+        left: BWMNodeAABB | None,
+        right: BWMNodeAABB | None,
     ):
         self.bb_min: Vector3 = bb_min
         self.bb_max: Vector3 = bb_max
-        self.face: Optional[BWMFace] = face
+        self.face: BWMFace | None = face
         self.sigplane: BWMMostSignificantPlane = BWMMostSignificantPlane(sigplane)
-        self.left: Optional[BWMNodeAABB] = left
-        self.right: Optional[BWMNodeAABB] = right
+        self.left: BWMNodeAABB | None = left
+        self.right: BWMNodeAABB | None = right
 
 
 class BWMAdjacency:
-    """
-    Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
+    """Maps a edge index (0 to 2 inclusive) to a target face from a source face. Calculated with BWM.adjacencies().
 
-    Attributes:
+    Attributes
+    ----------
         face: Target face.
         edge: Edge index of the source face (0 to 2 inclusive).
     """
 
     def __init__(
-            self,
-            face: BWMFace,
-            index: int
+        self,
+        face: BWMFace,
+        index: int,
     ):
         self.face: BWMFace = face
         self.edge: int = index
 
 
 class BWMEdge:
-    """
-    Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
+    """Represents an edge of a the face that is not adjacent to any other walkable face. Calculated with BWM.edges().
 
-    Attributes:
+    Attributes
+    ----------
         face: The face.
         index: Edge index on the face (0 to 2 inclusive).
         transition: Index into a LYT file.
@@ -442,11 +447,11 @@ class BWMEdge:
     """
 
     def __init__(
-            self,
-            face: BWMFace,
-            index: int,
-            transition: int,
-            final: bool = False
+        self,
+        face: BWMFace,
+        index: int,
+        transition: int,
+        final: bool = False,
     ):
         self.face: BWMFace = face
         self.index: int = index

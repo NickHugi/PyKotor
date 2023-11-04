@@ -1,25 +1,29 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
-from pykotor.resource.type import TARGET_TYPES, SOURCE_TYPES, ResourceReader, ResourceWriter, autoclose
+from pykotor.resource.type import (
+    SOURCE_TYPES,
+    TARGET_TYPES,
+    ResourceReader,
+    ResourceWriter,
+    autoclose,
+)
 
 
 class TwoDABinaryReader(ResourceReader):
     def __init__(
-            self,
-            source: SOURCE_TYPES,
-            offset: int = 0,
-            size: int = 0
+        self,
+        source: SOURCE_TYPES,
+        offset: int = 0,
+        size: int = 0,
     ):
         super().__init__(source, offset, size)
-        self._twoda: Optional[TwoDA] = None
+        self._twoda: TwoDA | None = None
 
     @autoclose
     def load(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> TwoDA:
         self._twoda = TwoDA()
 
@@ -27,15 +31,17 @@ class TwoDABinaryReader(ResourceReader):
         file_version = self._reader.read_string(4)
 
         if file_type != "2DA ":
-            raise TypeError("The file type that was loaded is invalid.")
+            msg = "The file type that was loaded is invalid."
+            raise TypeError(msg)
 
         if file_version != "V2.b":
-            raise TypeError("The 2DA version that was loaded is not supported.")
+            msg = "The 2DA version that was loaded is not supported."
+            raise TypeError(msg)
 
         self._reader.read_uint8()  # \n
 
         columns = []
-        while self._reader.peek() != b'\0':
+        while self._reader.peek() != b"\0":
             column_header = self._reader.read_terminated_string("\t")
             self._twoda.add_column(column_header)
             columns.append(column_header)
@@ -45,7 +51,7 @@ class TwoDABinaryReader(ResourceReader):
         row_count = self._reader.read_uint32()
         column_count = self._twoda.get_width()
         cell_count = row_count * column_count
-        for i in range(row_count):
+        for _i in range(row_count):
             row_header = self._reader.read_terminated_string("\t")
             row_label = row_header
             self._twoda.add_row(row_label)
@@ -54,7 +60,7 @@ class TwoDABinaryReader(ResourceReader):
         for i in range(cell_count):
             cell_offsets[i] = self._reader.read_uint16()
 
-        cell_data_size = self._reader.read_uint16()
+        self._reader.read_uint16()
         cell_data_offset = self._reader.position()
 
         for i in range(cell_count):
@@ -70,17 +76,17 @@ class TwoDABinaryReader(ResourceReader):
 
 class TwoDABinaryWriter(ResourceWriter):
     def __init__(
-            self,
-            twoda: TwoDA,
-            target: TARGET_TYPES
+        self,
+        twoda: TwoDA,
+        target: TARGET_TYPES,
     ):
         super().__init__(target)
         self._twoda: TwoDA = twoda
 
     @autoclose
     def write(
-            self,
-            auto_close: bool = True
+        self,
+        auto_close: bool = True,
     ) -> None:
         headers = self._twoda.get_headers()
 
@@ -96,16 +102,16 @@ class TwoDABinaryWriter(ResourceWriter):
         for row_label in self._twoda.get_labels():
             self._writer.write_string(str(row_label) + "\t")
 
-        values = []
-        value_offsets = []
-        cell_offsets = []
+        values: list[str] = []
+        value_offsets: list[int] = []
+        cell_offsets: list[int] = []
         data_size = 0
 
         for row in self._twoda:
             for header in self._twoda.get_headers():
                 value = row.get_string(header) + "\0"
                 if value not in values:
-                    value_offset = 0 if len(value_offsets) == 0 else len(values[-1]) + value_offsets[-1]
+                    value_offset = len(values[-1]) + value_offsets[-1] if value_offsets else 0
                     values.append(value)
                     value_offsets.append(value_offset)
                     data_size += len(value)

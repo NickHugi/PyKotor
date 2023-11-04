@@ -1,118 +1,116 @@
-"""
-This module handles classes relating to editing LYT files.
-"""
+"""This module handles classes relating to editing LYT files."""
 from __future__ import annotations
 
-from typing import List
+from typing import TYPE_CHECKING
 
-from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.type import ResourceType
+
+if TYPE_CHECKING:
+    from pykotor.common.geometry import Vector3, Vector4
 
 
 class LYT:
-    """
-    Represents a LYT file.
-    """
+    """Represents a LYT file."""
 
     BINARY_TYPE = ResourceType.LTR
 
     def __init__(
-            self
+        self,
     ):
-        self.rooms: List[LYTRoom] = []
-        self.tracks: List[LYTTrack] = []
-        self.obstacles: List[LYTObstacle] = []
-        self.doorhooks: List[LYTDoorHook] = []
+        self.rooms: list[LYTRoom] = []
+        self.tracks: list[LYTTrack] = []
+        self.obstacles: list[LYTObstacle] = []
+        self.doorhooks: list[LYTDoorHook] = []
 
 
 class LYTRoom:
-    """
-    An area model.
+    """An area model.
 
-    Attributes:
+    Attributes
+    ----------
         model: The filename of the area model.
         position: The position of the area model.
     """
 
     def __init__(
-            self,
-            model: str,
-            position: Vector3
+        self,
+        model: str,
+        position: Vector3,
     ):
         self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
-            self,
-            other
+        self,
+        other,
     ):
         return self.model == other.model and self.position == other.position
 
     def __hash__(
-            self
+        self,
     ):
         return hash(self.model)
 
 
 class LYTTrack:
-    """
-    A swoop track booster.
+    """A swoop track booster.
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
-    Attributes:
+    Attributes
+    ----------
         model: The corresponding model filename.
         position: The position.
     """
 
     def __init__(
-            self,
-            model: str,
-            position: Vector3
+        self,
+        model: str,
+        position: Vector3,
     ):
         self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
-            self,
-            other
+        self,
+        other,
     ):
         return self.model == other.model and self.position == other.position
 
 
 class LYTObstacle:
-    """
-    A swoop track obstacle.
+    """A swoop track obstacle.
 
     Unknown if this actually does anything in-game or is just to assist developers.
 
-    Attributes:
+    Attributes
+    ----------
         model: The corresponding model filename.
         position: The position.
     """
 
     def __init__(
-            self,
-            model: str,
-            position: Vector3
+        self,
+        model: str,
+        position: Vector3,
     ):
         self.model: str = model
         self.position: Vector3 = position
 
     def __eq__(
-            self,
-            other
+        self,
+        other,
     ):
         return self.model == other.model and self.position == other.position
 
 
 class LYTDoorHook:
-    """
-    A door hook.
+    """A door hook.
 
     This is just exists for modelers to assist module designers.
 
-    Attributes:
+    Attributes
+    ----------
         room: The corresponding room in the layout.
         door: The door name.
         position: The door position.
@@ -120,11 +118,11 @@ class LYTDoorHook:
     """
 
     def __init__(
-            self,
-            room: str,
-            door: str,
-            position: Vector3,
-            orientation: Vector4
+        self,
+        room: str,
+        door: str,
+        position: Vector3,
+        orientation: Vector4,
     ):
         self.room: str = room
         self.door: str = door
@@ -132,8 +130,12 @@ class LYTDoorHook:
         self.orientation: Vector4 = orientation
 
     def __eq__(
-            self,
-            other
+        self,
+        other,
     ):
-        return (self.room == other.room and self.door == other.door and self.position == other.position
-                and self.orientation == other.orientation)
+        return (
+            self.room == other.room
+            and self.door == other.door
+            and self.position == other.position
+            and self.orientation == other.orientation
+        )

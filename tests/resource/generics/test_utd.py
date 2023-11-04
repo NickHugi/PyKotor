@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utd import construct_utd, dismantle_utd
 
-TEST_FILE = "../../files/test.utd"
+TEST_FILE = "tests/files/test.utd"
 
 
 class TestUTD(TestCase):
@@ -72,4 +72,3 @@ class TestUTD(TestCase):
         self.assertEqual("onfailtoopen", utd.on_open_failed)
         self.assertEqual(1, utd.palette_id)
         self.assertEqual("abcdefg", utd.comment)
-

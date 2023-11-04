@@ -21,5 +21,22 @@ tex = inst.texture("C_Gammorean01")
 write_tpc(tex, os.getcwd() + "/C_Gammorean01.tga", ResourceType.TGA)
 ```
 
+## Accessing the GUI Designer
+
+Run the command from your terminal:
+
+```commandline
+pip install qt5-applications
+```
+
+You will then need to navigate to your Python's site-packages folder. You can determine its location through your terminal
+with the following commands:
+
+```commandline
+python -m site --user-site
+```
+
+Then navigate to ```./qt5_applications/Qt/bin``` and open the ```designer.exe``` file.
+
 ## License
 This repository falls under the [MIT License](https://github.com/NickHugi/PyKotor/blob/master/README.md).

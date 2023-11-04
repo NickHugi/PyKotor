@@ -1,21 +1,27 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List, Optional
 
 from pykotor.common.geometry import Vector3
-from pykotor.common.language import LocalizedString, Gender, Language
-from pykotor.common.misc import Game, ResRef, Color
-from pykotor.resource.formats.gff import GFF, GFFList, GFFStruct, GFFContent, read_gff, write_gff
+from pykotor.common.language import Gender, Language, LocalizedString
+from pykotor.common.misc import Color, Game, ResRef
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFContent,
+    GFFList,
+    GFFStruct,
+    read_gff,
+    write_gff,
+)
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class DLG:
-    """
-    Stores dialog data.
+    """Stores dialog data.
 
-    Attributes:
+    Attributes
+    ----------
         word_count: "NumWords" field.
         on_abort: "EndConverAbort" field.
         on_end: "EndConversation" field.
@@ -42,17 +48,17 @@ class DLG:
     BINARY_TYPE = ResourceType.DLG
 
     def __init__(
-            self,
-            blank_node: bool = True
+        self,
+        blank_node: bool = True,
     ):
-        self.starters: List[DLGLink] = []
-        self.stunts: List[DLGStunt] = []
+        self.starters: list[DLGLink] = []
+        self.stunts: list[DLGStunt] = []
 
         if blank_node:
             # Add bare minimum to be openable by DLGEditor
             starter = DLGLink()
             entry = DLGEntry()
-            entry.text.set(Language.ENGLISH, Gender.MALE, "")
+            entry.text.set_data(Language.ENGLISH, Gender.MALE, "")
             starter.node = entry
             self.starters.append(starter)
 
@@ -81,47 +87,50 @@ class DLG:
         self.delay_reply: int = 0
 
     def print_tree(
-            self
+        self,
     ) -> None:
-        """
-        Prints all the nodes (one per line) in the dialog tree with appropriate indentation.
-        """
+        """Prints all the nodes (one per line) in the dialog tree with appropriate indentation."""
         self._print_tree(self.starters, 0, [], [])
 
     def _print_tree(
-            self,
-            links: List[DLGLink],
-            indent: int,
-            seen_links: List[DLGLink],
-            seen_nodes: List[DLGNode]
+        self,
+        links: list[DLGLink],
+        indent: int,
+        seen_links: list[DLGLink],
+        seen_nodes: list[DLGNode],
     ):
         for link in links:
             if link.node not in seen_nodes:
-                print("{}-> {}".format(" " * indent, link.node.text))
+                print(f'{" " * indent}-> {link.node.text}')
                 seen_links.append(link)
 
                 if link.node not in seen_nodes:
                     seen_nodes.append(link.node)
-                    self._print_tree(link.node.links, indent + 3, seen_links, seen_nodes)
+                    self._print_tree(
+                        link.node.links,
+                        indent + 3,
+                        seen_links,
+                        seen_nodes,
+                    )
             else:
-                print("{}-> [LINK] {}".format(" " * indent, link.node.text))
+                print(f'{" " * indent}-> [LINK] {link.node.text}')
 
     def all_entries(
-            self
-    ) -> List[DLGEntry]:
-        """
-        Returns a flat list of all entries in the dialog.
+        self,
+    ) -> list[DLGEntry]:
+        """Returns a flat list of all entries in the dialog.
 
-        Returns:
+        Returns
+        -------
             A list of all stored entries.
         """
         return self._all_entries()
 
     def _all_entries(
-            self,
-            links: List[DLGLink] = None,
-            seen_entries: List = None
-    ) -> List[DLGEntry]:
+        self,
+        links: list[DLGLink] | None = None,
+        seen_entries: list | None = None,
+    ) -> list[DLGEntry]:
         entries = []
 
         links = self.starters if links is None else links
@@ -139,21 +148,21 @@ class DLG:
         return entries
 
     def all_replies(
-            self
-    ) -> List[DLGReply]:
-        """
-        Returns a flat list of all replies in the dialog.
+        self,
+    ) -> list[DLGReply]:
+        """Returns a flat list of all replies in the dialog.
 
-        Returns:
+        Returns
+        -------
             A list of all stored replies.
         """
         return self._all_replies()
 
     def _all_replies(
-            self,
-            links: List[DLGLink] = None,
-            seen_replies: List = None
-    ) -> List[DLGReply]:
+        self,
+        links: list[DLGLink] | None = None,
+        seen_replies: list | None = None,
+    ) -> list[DLGReply]:
         replies = []
 
         links = [_ for link in self.starters for _ in link.node.links] if links is None else links
@@ -183,10 +192,10 @@ class DLGConversationType(IntEnum):
 
 
 class DLGNode:
-    """
-    Represents a node in the dialog tree.
+    """Represents a node in the dialog tree.
 
-    Attributes:
+    Attributes
+    ----------
         text: "Text" field.
         listener: "Listener" field.
         vo_resref: "VO_ResRef" field.
@@ -239,10 +248,10 @@ class DLGNode:
     """
 
     def __init__(
-            self
+        self,
     ):
         self.comment: str = ""
-        self.links: List[DLGLink] = []
+        self.links: list[DLGLink] = []
 
         self.camera_angle: int = 0
         self.delay: int = -1
@@ -258,18 +267,18 @@ class DLGNode:
         self.vo_resref: ResRef = ResRef.from_blank()
         self.wait_flags: int = 0
 
-        self.animations: List[DLGAnimation] = []
+        self.animations: list[DLGAnimation] = []
 
-        self.quest_entry: Optional[int] = 0
-        self.fade_color: Optional[Color] = None
-        self.fade_delay: Optional[float] = None
-        self.fade_length: Optional[float] = None
-        self.camera_anim: Optional[int] = None
-        self.camera_id: Optional[int] = None
-        self.camera_fov: Optional[float] = None
-        self.camera_height: Optional[float] = None
-        self.camera_effect: Optional[int] = None
-        self.target_height: Optional[float] = None
+        self.quest_entry: int | None = 0
+        self.fade_color: Color | None = None
+        self.fade_delay: float | None = None
+        self.fade_length: float | None = None
+        self.camera_anim: int | None = None
+        self.camera_id: int | None = None
+        self.camera_fov: float | None = None
+        self.camera_height: float | None = None
+        self.camera_effect: int | None = None
+        self.target_height: float | None = None
 
         # KotOR 2:
         self.script1_param1: int = 0
@@ -299,51 +308,45 @@ class DLGNode:
         self.vo_text_changed: bool = False
 
     def __repr__(
-            self
+        self,
     ):
         return str(self.text.get(Language.ENGLISH, Gender.MALE))
 
 
 class DLGReply(DLGNode):
-    """
-    Replies are nodes that are responses by the player.
-    """
+    """Replies are nodes that are responses by the player."""
 
     def __init__(
-            self
+        self,
     ):
         super().__init__()
 
 
 class DLGEntry(DLGNode):
-    """
-    Entries are nodes that are responses by NPCs.
-    """
+    """Entries are nodes that are responses by NPCs."""
 
     def __init__(
-            self
+        self,
     ):
         super().__init__()
         self.speaker: str = ""
 
 
 class DLGAnimation:
-    """
-    Represents a unit of animation executed during a node.
-    """
+    """Represents a unit of animation executed during a node."""
 
     def __init__(
-            self
+        self,
     ):
         self.animation_id: int = 6
         self.participant: str = ""
 
 
 class DLGLink:
-    """
-    Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
+    """Points to a node. Links are stored either in other nodes or in the starting list of the DLG.
 
-    Attributes:
+    Attributes
+    ----------
         active1: "Active" field.
         comment: "LinkComment" field. Only used in links stored in nodes.
         is_child: "IsChild" field. Only used in links stored in nodes.
@@ -366,8 +369,8 @@ class DLGLink:
     """
 
     def __init__(
-            self,
-            node: DLGNode = DLGNode
+        self,
+        node: DLGNode | None = None,
     ):
         self.active1: ResRef = ResRef.from_blank()
         self.node: DLGNode = node
@@ -398,26 +401,25 @@ class DLGLink:
 
 
 class DLGStunt:
-    """
-
-    Attributes:
-        participant: "Participant" field.
-        stunt_model: "StuntModel" field.
+    """Attributes
+    ----------
+    participant: "Participant" field.
+    stunt_model: "StuntModel" field.
     """
 
     def __init__(
-            self
+        self,
     ):
         self.participant: str = ""
         self.stunt_model: ResRef = ResRef.from_blank()
 
 
 def construct_dlg(
-        gff: GFF
+    gff: GFF,
 ) -> DLG:
     def construct_node(
-            gff_struct: GFFStruct,
-            node: DLGNode
+        gff_struct: GFFStruct,
+        node: DLGNode,
     ):
         node.text = gff_struct.acquire("Text", LocalizedString.from_invalid())
         node.listener = gff_struct.acquire("Listener", "")
@@ -464,21 +466,32 @@ def construct_dlg(
         node.record_vo = gff_struct.acquire("RecordVO", 0)
         node.vo_text_changed = gff_struct.acquire("VOTextChanged", 0)
 
-        if gff_struct.exists("QuestEntry"): node.quest_entry = gff_struct.acquire("QuestEntry", 0)
-        if gff_struct.exists("FadeDelay"): node.fade_delay = gff_struct.acquire("FadeDelay", 0.0)
-        if gff_struct.exists("FadeLength"): node.fade_length = gff_struct.acquire("FadeLength", 0.0)
-        if gff_struct.exists("CameraAnimation"): node.camera_anim = gff_struct.acquire("CameraAnimation", 0)
-        if gff_struct.exists("CameraID"): node.camera_id = gff_struct.acquire("CameraID", 0)
-        if gff_struct.exists("CamFieldOfView"): node.camera_fov = gff_struct.acquire("CamFieldOfView", 0.0)
-        if gff_struct.exists("CamHeightOffset"): node.camera_height = gff_struct.acquire("CamHeightOffset", 0.0)
-        if gff_struct.exists("CamVidEffect"): node.camera_effect = gff_struct.acquire("CamVidEffect", 0)
-        if gff_struct.exists("TarHeightOffset"): node.target_height = gff_struct.acquire("TarHeightOffset", 0.0)
+        if gff_struct.exists("QuestEntry"):
+            node.quest_entry = gff_struct.acquire("QuestEntry", 0)
+        if gff_struct.exists("FadeDelay"):
+            node.fade_delay = gff_struct.acquire("FadeDelay", 0.0)
+        if gff_struct.exists("FadeLength"):
+            node.fade_length = gff_struct.acquire("FadeLength", 0.0)
+        if gff_struct.exists("CameraAnimation"):
+            node.camera_anim = gff_struct.acquire("CameraAnimation", 0)
+        if gff_struct.exists("CameraID"):
+            node.camera_id = gff_struct.acquire("CameraID", 0)
+        if gff_struct.exists("CamFieldOfView"):
+            node.camera_fov = gff_struct.acquire("CamFieldOfView", 0.0)
+        if gff_struct.exists("CamHeightOffset"):
+            node.camera_height = gff_struct.acquire("CamHeightOffset", 0.0)
+        if gff_struct.exists("CamVidEffect"):
+            node.camera_effect = gff_struct.acquire("CamVidEffect", 0)
+        if gff_struct.exists("TarHeightOffset"):
+            node.target_height = gff_struct.acquire("TarHeightOffset", 0.0)
         if gff_struct.exists("FadeColor"):
-            node.fade_color = Color.from_bgr_vector3(gff_struct.acquire("FadeColor", Vector3.from_null()))
+            node.fade_color = Color.from_bgr_vector3(
+                gff_struct.acquire("FadeColor", Vector3.from_null()),
+            )
 
     def construct_link(
-            gff_struct: GFFStruct,
-            link: DLGLink
+        gff_struct: GFFStruct,
+        link: DLGLink,
     ):
         link.active1 = gff_struct.acquire("Active", ResRef.from_blank())
         link.active2 = gff_struct.acquire("Active2", ResRef.from_blank())
@@ -498,7 +511,7 @@ def construct_dlg(
         link.active2_param5 = gff_struct.acquire("Param5b", 0)
         link.active2_param6 = gff_struct.acquire("ParamStrB", "")
 
-    dlg = DLG(False)
+    dlg = DLG(blank_node=False)
 
     root = gff.root
 
@@ -569,15 +582,15 @@ def construct_dlg(
 
 
 def dismantle_dlg(
-        dlg: DLG,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    dlg: DLG,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     def dismantle_link(
-            gff_struct: GFFStruct,
-            link: DLGLink,
-            nodes: List
+        gff_struct: GFFStruct,
+        link: DLGLink,
+        nodes: list,
     ):
         gff_struct.set_resref("Active", link.active1)
         gff_struct.set_uint32("Index", nodes.index(link.node))
@@ -600,10 +613,10 @@ def dismantle_dlg(
             gff_struct.set_string("ParamStrB", link.active2_param6)
 
     def dismantle_node(
-            gff_struct: GFFStruct,
-            node: DLGNode,
-            nodes: List,
-            list_name: str
+        gff_struct: GFFStruct,
+        node: DLGNode,
+        nodes: list,
+        list_name: str,
     ):
         gff_struct.set_locstring("Text", node.text)
         gff_struct.set_string("Listener", node.listener)
@@ -627,16 +640,26 @@ def dismantle_dlg(
             anim_struct.set_uint16("Animation", anim.animation_id)
             anim_struct.set_string("Participant", anim.participant)
 
-        if node.quest_entry is not None: gff_struct.set_uint32("QuestEntry", node.quest_entry)
-        if node.fade_delay is not None: gff_struct.set_single("FadeDelay", node.fade_delay)
-        if node.fade_length is not None: gff_struct.set_single("FadeLength", node.fade_length)
-        if node.camera_anim is not None: gff_struct.set_uint16("CameraAnimation", node.camera_anim)
-        if node.camera_id is not None: gff_struct.set_int32("CameraID", node.camera_id)
-        if node.camera_fov is not None: gff_struct.set_single("CamFieldOfView", node.camera_fov)
-        if node.camera_height is not None: gff_struct.set_single("CamHeightOffset", node.camera_height)
-        if node.camera_effect is not None: gff_struct.set_int32("CamVidEffect", node.camera_effect)
-        if node.target_height is not None: gff_struct.set_single("TarHeightOffset", node.target_height)
-        if node.fade_color is not None: gff_struct.set_vector3("FadeColor", node.fade_color.bgr_vector3())
+        if node.quest_entry is not None:
+            gff_struct.set_uint32("QuestEntry", node.quest_entry)
+        if node.fade_delay is not None:
+            gff_struct.set_single("FadeDelay", node.fade_delay)
+        if node.fade_length is not None:
+            gff_struct.set_single("FadeLength", node.fade_length)
+        if node.camera_anim is not None:
+            gff_struct.set_uint16("CameraAnimation", node.camera_anim)
+        if node.camera_id is not None:
+            gff_struct.set_int32("CameraID", node.camera_id)
+        if node.camera_fov is not None:
+            gff_struct.set_single("CamFieldOfView", node.camera_fov)
+        if node.camera_height is not None:
+            gff_struct.set_single("CamHeightOffset", node.camera_height)
+        if node.camera_effect is not None:
+            gff_struct.set_int32("CamVidEffect", node.camera_effect)
+        if node.target_height is not None:
+            gff_struct.set_single("TarHeightOffset", node.target_height)
+        if node.fade_color is not None:
+            gff_struct.set_vector3("FadeColor", node.fade_color.bgr_vector3())
 
         if game == Game.K2:
             gff_struct.set_int32("ActionParam1", node.script1_param1)
@@ -721,33 +744,32 @@ def dismantle_dlg(
 
 
 def read_dlg(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> DLG:
     gff = read_gff(source, offset, size)
-    dlg = construct_dlg(gff)
-    return dlg
+    return construct_dlg(gff)
 
 
 def write_dlg(
-        dlg: DLG,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    dlg: DLG,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_dlg(
-        dlg: DLG,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    dlg: DLG,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
     gff = dismantle_dlg(dlg, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

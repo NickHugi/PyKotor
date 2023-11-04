@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-from typing import List
-
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import ResRef, Game, InventoryItem
-from pykotor.resource.formats.gff import GFF, GFFList, GFFContent, read_gff, write_gff
+from pykotor.common.misc import Game, InventoryItem, ResRef
+from pykotor.resource.formats.gff import GFF, GFFContent, GFFList, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, TARGET_TYPES, SOURCE_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTP:
-    """
-    Stores placeable data.
+    """Stores placeable data.
 
-    Attributes:
+    Attributes
+    ----------
         tag: "Tag" field.
         name: "LocName" field.
         resref: "TemplateResRef" field.
@@ -81,7 +79,7 @@ class UTP:
     BINARY_TYPE = ResourceType.UTP
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.conversation: ResRef = ResRef.from_blank()
@@ -132,7 +130,7 @@ class UTP:
         self.on_user_defined: ResRef = ResRef.from_blank()
 
         self.has_inventory: bool = False
-        self.inventory: List[InventoryItem] = []
+        self.inventory: list[InventoryItem] = []
 
         # Deprecated:
         self.description: LocalizedString = LocalizedString.from_invalid()
@@ -156,7 +154,7 @@ class UTP:
 
 
 def construct_utp(
-        gff: GFF
+    gff: GFF,
 ) -> UTP:
     utp = UTP()
 
@@ -207,7 +205,7 @@ def construct_utp(
     item_list: GFFList = root.acquire("ItemList", GFFList())
     for item_struct in item_list:
         resref = item_struct.acquire("InventoryRes", ResRef.from_blank())
-        droppable = bool(item_struct.acquire("Droppable", 0))
+        droppable = bool(item_struct.acquire("Dropable", 0))
         utp.inventory.append(InventoryItem(resref, droppable))
 
     utp.description = root.acquire("Description", LocalizedString.from_invalid())
@@ -232,10 +230,10 @@ def construct_utp(
 
 
 def dismantle_utp(
-        utp: UTP,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    utp: UTP,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTP)
 
@@ -285,7 +283,7 @@ def dismantle_utp(
         item_struct.set_uint16("Repos_PosX", i)
         item_struct.set_uint16("Repos_Posy", 0)
         if item.droppable:
-            item_struct.set_uint8("Droppable", True)
+            item_struct.set_uint8("Dropable", value=True)
 
     root.set_uint8("PaletteID", utp.palette_id)
 
@@ -318,33 +316,32 @@ def dismantle_utp(
 
 
 def read_utp(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTP:
     gff = read_gff(source, offset, size)
-    utp = construct_utp(gff)
-    return utp
+    return construct_utp(gff)
 
 
 def write_utp(
-        utp: UTP,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utp: UTP,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_utp(utp, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_utp(
-        utp: UTP,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utp: UTP,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
     gff = dismantle_utp(utp, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

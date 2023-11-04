@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uts import construct_uts, dismantle_uts
 
-TEST_FILE = "../../files/test.uts"
+TEST_FILE = "tests/files/test.uts"
 
 
 class TestUTS(TestCase):
@@ -44,4 +44,3 @@ class TestUTS(TestCase):
 
         self.assertEqual(4, len(uts.sounds))
         self.assertEqual("c_drdastro_atk2", uts.sounds[3])
-

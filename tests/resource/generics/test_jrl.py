@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.jrl import construct_jrl, dismantle_jrl
 
-TEST_FILE = "../../files/test.jrl"
+TEST_FILE = "tests/files/test.jrl"
 
 
 class TestJRL(TestCase):
@@ -18,7 +18,10 @@ class TestJRL(TestCase):
 
     def validate_io(self, jrl):
         quest = jrl.quests[0]
-        self.assertEqual("Plot to be considered worthy to hear the Sand People history.", quest.comment)
+        self.assertEqual(
+            "Plot to be considered worthy to hear the Sand People history.",
+            quest.comment,
+        )
         self.assertEqual(33089, quest.name.stringref)
         self.assertEqual(4, quest.planet_id)
         self.assertEqual(72, quest.plot_index)

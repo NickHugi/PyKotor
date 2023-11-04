@@ -4,14 +4,14 @@ from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game, ResRef
 from pykotor.resource.formats.gff import GFF, GFFContent, read_gff, write_gff
 from pykotor.resource.formats.gff.gff_auto import bytes_gff
-from pykotor.resource.type import ResourceType, SOURCE_TYPES, TARGET_TYPES
+from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
 
 class UTT:
-    """
-    Stores trigger data.
+    """Stores trigger data.
 
-    Attributes:
+    Attributes
+    ----------
         tag: "Tag" field.
         resref: "TemplateResRef" field.
         auto_remove_key: "AutoRemoveKey" field.
@@ -46,7 +46,7 @@ class UTT:
     BINARY_TYPE = ResourceType.UTT
 
     def __init__(
-            self
+        self,
     ):
         self.resref: ResRef = ResRef.from_blank()
         self.comment: str = ""
@@ -87,7 +87,7 @@ class UTT:
 
 
 def construct_utt(
-        gff: GFF
+    gff: GFF,
 ) -> UTT:
     utt = UTT()
 
@@ -125,10 +125,10 @@ def construct_utt(
 
 
 def dismantle_utt(
-        utt: UTT,
-        game: Game = Game.K2,
-        *,
-        use_deprecated: bool = True
+    utt: UTT,
+    game: Game = Game.K2,
+    *,
+    use_deprecated: bool = True,
 ) -> GFF:
     gff = GFF(GFFContent.UTT)
 
@@ -168,33 +168,32 @@ def dismantle_utt(
 
 
 def read_utt(
-        source: SOURCE_TYPES,
-        offset: int = 0,
-        size: int = None
+    source: SOURCE_TYPES,
+    offset: int = 0,
+    size: int | None = None,
 ) -> UTT:
     gff = read_gff(source, offset, size)
-    utt = construct_utt(gff)
-    return utt
+    return construct_utt(gff)
 
 
 def write_utt(
-        utt: UTT,
-        target: TARGET_TYPES,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utt: UTT,
+    target: TARGET_TYPES,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> None:
     gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
     write_gff(gff, target, file_format)
 
 
 def bytes_utt(
-        utt: UTT,
-        game: Game = Game.K2,
-        file_format: ResourceType = ResourceType.GFF,
-        *,
-        use_deprecated: bool = True
+    utt: UTT,
+    game: Game = Game.K2,
+    file_format: ResourceType = ResourceType.GFF,
+    *,
+    use_deprecated: bool = True,
 ) -> bytes:
     gff = dismantle_utt(utt, game, use_deprecated=use_deprecated)
     return bytes_gff(gff, file_format)

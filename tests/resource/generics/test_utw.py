@@ -3,7 +3,7 @@ from unittest import TestCase
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utw import construct_utw, dismantle_utw
 
-TEST_FILE = "../../files/test.utw"
+TEST_FILE = "tests/files/test.utw"
 
 
 class TestUTW(TestCase):
