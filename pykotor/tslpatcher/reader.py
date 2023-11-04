@@ -435,7 +435,7 @@ class ConfigReader:
                             PureWindowsPath(""),
                         )
                     else:
-                        modifier = self.modify_field_gff(key, value)
+                        modifier = self.modify_field_gff(file_section, key, value)
 
                     modifications.modifiers.append(modifier)
 
@@ -464,7 +464,7 @@ class ConfigReader:
             return FieldValueTLKMemory(token_id)
         return FieldValueConstant(int(raw_value))
 
-    def modify_field_gff(self, key: str, string_value: str) -> ModifyFieldGFF:
+    def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
         value: FieldValue | None = None
         string_value_lower = string_value.lower()
         key_lower = key.lower()
@@ -498,7 +498,7 @@ class ConfigReader:
             key = key[: key_lower.index("(lang")]
         elif key_lower.startswith("2damemory"):
             if string_value_lower != "!fieldpath" and not string_value_lower.startswith("2damemory"):
-                msg = f"Cannot parse '{key}={value}', GFFList only supports 2DAMEMORY#=!FieldPath assignments"
+                msg = f"Cannot parse '{key}={value}' in [{identifier}]. GFFList only supports 2DAMEMORY#=!FieldPath assignments"
                 raise ValueError(msg)
             value = FieldValueConstant(PureWindowsPath(""))  # no path at the root
 
