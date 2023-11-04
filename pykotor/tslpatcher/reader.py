@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from configparser import ConfigParser
 from itertools import tee
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -574,7 +574,7 @@ class ConfigReader:
         elif raw_value.lower().startswith("2damemory"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
-        elif raw_value.lower().endswith("strref"):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'?
+        elif raw_value.lower().endswith("strref"):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'? Or is this already handled elsewhere?
             token_id = int(raw_value[6:])
             value = FieldValueTLKMemory(token_id)
         elif field_type.return_type() == int:
@@ -619,10 +619,10 @@ class ConfigReader:
                 next_section_name: str | None = self.get_section_name(iterated_value)
                 if not next_section_name:
                     raise KeyError(SECTION_NOT_FOUND_ERROR.format(iterated_value, key, iterated_value, identifier))
-                nested_ini = CaseInsensitiveDict(self.ini[next_section_name].items())
+                next_nested_section = CaseInsensitiveDict(self.ini[next_section_name].items())
                 nested_modifier: ModifyGFF = self.add_field_gff(
                     next_section_name,
-                    nested_ini,
+                    next_nested_section,
                     current_path=path / label,
                 )
                 modifiers.append(nested_modifier)
@@ -730,6 +730,7 @@ class ConfigReader:
             if is_int:
                 value = int(value)
             return Target(target_type, value)
+
         if "RowIndex" in modifiers:
             return get_target(TargetType.ROW_INDEX, "RowIndex", is_int=True)
         if "RowLabel" in modifiers: 
