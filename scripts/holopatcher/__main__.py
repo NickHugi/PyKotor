@@ -290,8 +290,7 @@ class App(tk.Tk):
                     line = line.strip()  # noqa: PLW2901
 
                     if line:
-                        this_filepath = Path(line)
-                        if this_filepath.safe_isfile():
+                        if Path(line).safe_isfile():
                             existing_files.add(line)
                         else:
                             missing_files = True
@@ -322,16 +321,17 @@ class App(tk.Tk):
 
         try:
             for file in existing_files:
-                if Path(file).exists():
-                    Path(file).unlink()
+                file_path = Path(file)
+                if file_path.exists():
+                    file_path.unlink()
                     self.write_log(f"Removed {file}...")
                     deleted_count += 1
-            for file in files_in_backup:
-                destination_path = destination_folder / file.relative_to(most_recent_backup_folder)
+            for file_path in files_in_backup:
+                destination_path = destination_folder / file_path.relative_to(most_recent_backup_folder)
                 destination_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy(file, destination_path)
+                shutil.copy(file_path, destination_path)
                 self.write_log(
-                    f"Restoring backup of '{file.name}' to '{destination_path.relative_to(destination_folder.parent)}'...",
+                    f"Restoring backup of '{file_path.name}' to '{destination_path.relative_to(destination_folder.parent)}'...",
                 )
         except Exception as e:  # noqa: BLE001
             error_name, msg = universal_simplify_exception(e)
