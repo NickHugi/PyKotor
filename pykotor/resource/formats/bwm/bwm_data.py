@@ -20,7 +20,7 @@ class BWM:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.walkmesh_type: BWMType = BWMType.AreaModel
         self.faces: list[BWMFace] = []
 
@@ -32,12 +32,12 @@ class BWM:
 
     def walkable_faces(
         self,
-    ):
+    ) -> list[BWMFace]:
         return [face for face in self.faces if face.material.walkable()]
 
     def unwalkable_faces(
         self,
-    ):
+    ) -> list[BWMFace]:
         return [face for face in self.faces if not face.material.walkable()]
 
     def vertices(
@@ -149,9 +149,9 @@ class BWM:
         walkable = [face for face in self.faces if face.material.walkable()]
         adjacencies = [self.adjacencies(face) for face in walkable]
 
-        visited = set()
-        edges = []
-        perimeters = []
+        visited: set[int] = set()
+        edges: list[BWMEdge] = []
+        perimeters: list[int] = []
         for i, j in itertools.product(range(len(walkable)), range(3)):
             if adjacencies[i][j] is not None:
                 continue
@@ -168,7 +168,7 @@ class BWM:
                     if edge_index not in visited:
                         face_id = edge_index // 3
                         edge_id = edge_index % 3
-                        transition = -1
+                        transition: int | None = -1
                         if edge_id == 0 and self.faces[face_id].trans1 is not None:
                             transition = self.faces[face_id].trans1
                         if edge_id == 1 and self.faces[face_id].trans2 is not None:
@@ -195,7 +195,7 @@ class BWM:
     def adjacencies(
         self,
         face: BWMFace,
-    ) -> tuple[BWMAdjacency, BWMAdjacency, BWMAdjacency]:
+    ) -> tuple[BWMAdjacency | None, BWMAdjacency | None, BWMAdjacency | None]:
         walkable = self.walkable_faces()
 
         adj1 = [face.v1, face.v2]
