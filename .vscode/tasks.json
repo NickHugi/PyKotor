@@ -11,7 +11,6 @@
         "install",
         "-r",
         "requirements.txt",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
@@ -28,7 +27,6 @@
         "pip",
         "install",
         "pyinstaller",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
@@ -45,7 +43,6 @@
         "pip",
         "install",
         "shiv",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
@@ -62,7 +59,6 @@
         "pip",
         "install",
         "nuitka",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
@@ -79,7 +75,6 @@
         "pip",
         "install",
         "pylint",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
@@ -96,7 +91,6 @@
         "pip",
         "install",
         "ruff",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
@@ -113,7 +107,6 @@
         "pip",
         "install",
         "mypy",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
@@ -130,7 +123,6 @@
         "pip",
         "install",
         "pylint",
-        "--upgrade"
       ],
       "presentation": {
         "echo": true,
