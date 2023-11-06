@@ -102,6 +102,12 @@ class ConfigReader:
         self.load_nss()
         self.load_ssf()
 
+        # check for unsupported [HACKList]
+        hacklist_found = self.get_section_name("HACKList")
+        if hacklist_found:
+            msg = "TSLPatcher's [HACKList] section is not currently supported."
+            raise NotImplementedError(msg)
+
         return self.config
 
     def get_section_name(self, section_name: str):
