@@ -7,12 +7,11 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import PurePath
+from pykotor.tools.path import CaseAwarePath, PurePath
 
 if TYPE_CHECKING:
     import os
 
-    from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
 
 
@@ -289,7 +288,10 @@ class InstallFile:
         resname, restype = ResourceIdentifier.from_path(self.filename)
 
         if self.replace_existing or destination.resource(resname, restype) is None:
-            create_backup(log, destination.path(), backup_dir, processed_files, local_folder)
+            destination_path = destination.path()
+            if not isinstance(destination_path, CaseAwarePath):
+                destination_path = CaseAwarePath(destination_path)
+            create_backup(log, destination_path, backup_dir, processed_files, local_folder)
             if self.replace_existing and destination.resource(resname, restype) is not None:
                 log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
             else:
