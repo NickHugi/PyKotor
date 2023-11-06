@@ -364,7 +364,7 @@ class TestInstallation(TestCase):
         self.assertIsNotNone(voice_results["n_gengamm_scrm"])
         self.assertIsNone(voice_results["x"])
 
-    def test_string(self):
+    def test_string(self):  # this test will fail on non-english versions of the game
         installation = self.installation
 
         locstring1 = LocalizedString.from_invalid()
@@ -378,7 +378,7 @@ class TestInstallation(TestCase):
             installation.string(locstring3, "default text"),
         )
 
-    def test_strings(self):
+    def test_strings(self):  # this test will fail on non-english versions of the game
         installation = self.installation
 
         locstring1 = LocalizedString.from_invalid()
