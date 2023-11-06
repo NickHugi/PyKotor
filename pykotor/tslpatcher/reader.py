@@ -422,7 +422,7 @@ class ConfigReader:
                     modifications.replace_file = bool(int(value))
                 elif lowercase_key == "!sourcefile":
                     modifications.sourcefile = value
-                elif lowercase_key == ["!filename", "!saveas"]:
+                elif lowercase_key in ["!filename", "!saveas"]:
                     modifications.saveas = value
                 elif lowercase_key == "!overridetype":
                     modifications.override_type = value.lower()
