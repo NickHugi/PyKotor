@@ -1,0 +1,368 @@
+from __future__ import annotations
+
+import argparse
+import cProfile
+import pathlib
+import sys
+from io import StringIO
+from typing import TYPE_CHECKING
+
+if not getattr(sys, "frozen", False):
+    thisfile_path = pathlib.Path(__file__).resolve()
+    sys.path.append(str(thisfile_path.parents[2]))
+
+
+from pykotor.common.language import Language, LocalizedString
+from pykotor.extract.capsule import Capsule
+from pykotor.resource.formats.gff import (
+    GFF,
+    GFFContent,
+    GFFFieldType,
+    GFFList,
+    GFFStruct,
+    read_gff,
+    write_gff,
+)
+from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
+from pykotor.tools.misc import is_capsule_file
+from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
+
+if TYPE_CHECKING:
+    import os
+
+
+OUTPUT_LOG: Path
+LOGGING_ENABLED: bool
+
+gff_types = [x.value.lower().strip() for x in GFFContent]
+fieldtype_to_fieldname: dict[GFFFieldType, str] = {
+    GFFFieldType.UInt8: "Byte",
+    GFFFieldType.Int8: "Char",
+    GFFFieldType.UInt16: "Word",
+    GFFFieldType.Int16: "Short",
+    GFFFieldType.UInt32: "DWORD",
+    GFFFieldType.Int32: "Int",
+    GFFFieldType.Int64: "Int64",
+    GFFFieldType.Single: "Float",
+    GFFFieldType.Double: "Double",
+    GFFFieldType.String: "ExoString",
+    GFFFieldType.ResRef: "ResRef",
+    GFFFieldType.LocalizedString: "ExoLocString",
+    GFFFieldType.Vector3: "Position",
+    GFFFieldType.Vector4: "Orientation",
+    GFFFieldType.Struct: "Struct",
+    GFFFieldType.List: "List",
+}
+
+def relative_path_from_to(src, dst) -> Path:
+    src_parts = list(src.parts)
+    dst_parts = list(dst.parts)
+
+    common_length = next(
+        (i for i, (src_part, dst_part) in enumerate(zip(src_parts, dst_parts)) if src_part != dst_part),
+        len(src_parts),
+    )
+    rel_parts = dst_parts[common_length:]
+    return Path(*rel_parts)
+
+def do_patch(
+    gff_struct: GFFStruct,
+    gff_content: GFFContent,
+    current_path: PureWindowsPath | os.PathLike | str | None = None,
+):
+    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
+    for label, ftype, value in gff_struct:
+        child_path = current_path / label
+
+        if ftype == GFFFieldType.Struct:
+            do_patch(value, gff_content, child_path)
+            continue
+
+        if ftype == GFFFieldType.List:
+            recurse_through_list(value, gff_content, child_path)
+            continue
+
+        if ftype == GFFFieldType.LocalizedString and gff_content.value == GFFContent.DLG and parser_args.translate:
+            assert isinstance(value, LocalizedString)  # noqa: S101
+            for lang, gender, text in value:
+                # do translation here
+                value.set_data(lang, gender, text)
+
+def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PureWindowsPath):
+    current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFListRoot")
+    for list_index, gff_struct in enumerate(gff_list):
+        do_patch(gff_struct, gff_content, current_path / str(list_index))
+        continue
+
+
+def log_output(*args, **kwargs) -> None:
+    # Create an in-memory text stream
+    buffer = StringIO()
+
+    # Print to the in-memory stream
+    print(*args, file=buffer, **kwargs)
+
+    # Retrieve the printed content
+    msg = buffer.getvalue()
+
+    # Write the captured output to the file
+    with OUTPUT_LOG.open("a") as f:
+        f.write(msg)
+
+    # Print the captured output to console
+    print(*args, **kwargs)  # noqa: T201
+
+def handle_restype_and_patch(
+    data: bytes | Path,
+    file_path: Path,
+    ext: str,
+    resname: str | None = None,
+) -> None:
+
+    if ext == "tlk":
+        tlk: TLK | None = None
+        try:
+            log_output(f"Loading TLK '{file_path}'")
+            tlk = read_tlk(data)
+        except Exception:  # noqa: BLE001
+            log_output(f"Error loading TLK {file_path}!")
+            return
+        if not tlk:
+            message = f"TLK resource missing in memory:\t'{file_path}'"
+            log_output(message)
+            return
+
+        parser_args.from_lang = "auto" if not parser_args.from_lang else tlk.language
+        for _strref, tlkentry in tlk:
+            text = tlkentry.text
+            # translate text
+            tlkentry.text = text
+        write_tlk(tlk, file_path)
+    if ext in gff_types:
+        gff: GFF | None = None
+        try:
+            gff = read_gff(data)
+        except Exception:  # noqa: BLE001
+            log_output(f"[Error] loading GFF {file_path}!")
+            return
+
+        if not gff:
+            log_output(f"GFF resource missing in memory:\t'{file_path}'")
+            return
+
+        do_patch(gff.root, gff.content, file_path.name)
+        write_gff(gff, file_path)
+        return
+
+    return
+
+def visual_length(s: str, tab_length=8) -> int:
+    if "\t" not in s:
+        return len(s)
+
+    # Split the string at tabs, sum the lengths of the substrings,
+    # and add the necessary spaces to account for the tab stops.
+    parts = s.split("\t")
+    vis_length = sum(len(part) for part in parts)
+    for part in parts[:-1]:  # all parts except the last one
+        vis_length += tab_length - (len(part) % tab_length)
+    return vis_length
+
+def log_output_with_separator(message, below=True, above=False, surround=False) -> None:
+    if above or surround:
+        log_output(visual_length(message) * "-")
+    log_output(message)
+    if below and not above or surround:
+        log_output(visual_length(message) * "-")
+
+
+def handle_capsule_and_patch(file: os.PathLike | str) -> None:
+    c_file = file if isinstance(file, Path) else Path(file).resolve()
+
+    if not c_file.exists():
+        log_output(f"Missing file:\t{c_file!s}")
+        return
+
+
+    if is_capsule_file(c_file.name):
+        try:
+            file_capsule = Capsule(file)
+        except ValueError as e:
+            log_output(f"Could not load '{c_file!s}'. Reason: {e!r}")
+            return
+
+        for resref in file_capsule:
+            ext = resref.restype().extension.lower()
+            handle_restype_and_patch(resref.data(), c_file, ext, resref.resname())
+    else:
+        handle_restype_and_patch(c_file, c_file, c_file.suffix.lower()[1:])
+
+
+def recurse_directories(folder_path: os.PathLike | str) -> None:
+    c_folderpath = folder_path if isinstance(folder_path, Path) else Path(folder_path).resolve()
+
+    log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
+
+    # Store relative paths instead of just filenames
+    file_paths = {f.relative_to(c_folderpath).as_posix().lower() for f in c_folderpath.safe_rglob("*") if f.safe_isfile()}
+
+    for rel_path in file_paths:
+        handle_capsule_and_patch(c_folderpath / rel_path)
+
+
+# TODO: Use the Installation class
+def patch_install(install_path: os.PathLike | str) -> None:
+    install_path = install_path if isinstance(install_path, Path) else Path(install_path).resolve()
+    log_output()
+    log_output_with_separator(f"Patching install dir:\t{install_path}", above=True)
+    log_output()
+
+    handle_capsule_and_patch(install_path.joinpath("dialog.tlk"))
+    modules_path: Path = install_path / "Modules"
+    recurse_directories(modules_path)
+
+    override_path: Path = install_path / "Override"
+    recurse_directories(override_path)
+
+    rims_path: Path = install_path / "rims"
+    recurse_directories(rims_path)
+
+
+def is_kotor_install_dir(path: os.PathLike | str) -> bool:
+    c_path: CaseAwarePath = CaseAwarePath(path)
+    return c_path.safe_isdir() and c_path.joinpath("chitin.key").exists()
+
+
+def run_patches(path: Path):
+    if not path.exists():
+        log_output(f"--path1='{path}' does not exist on disk, cannot diff")
+        return
+
+    if is_kotor_install_dir(path):
+        patch_install(path)
+        return
+
+    if path.is_dir():
+        recurse_directories(path)
+        return
+
+    if path.is_file():
+        handle_capsule_and_patch(path)
+
+
+parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
+parser.add_argument("--path", type=str, help="Path to the first K1/TSL install, file, or directory to patch.")
+parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
+parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
+parser.add_argument("--set-unskippable", type=str, help="Makes all dialog unskippable.")
+parser.add_argument("--translate", type=str, help="Should we ai translate the TLK and all GFF locstrings?")
+parser.add_argument("--to-lang", type=str, help="The language to translate the files to")
+parser.add_argument("--from-lang", type=str, help="The language the files are written in (defaults to auto if available)")
+parser.add_argument(
+    "--use-profiler",
+    type=bool,
+    default=False,
+    help="Use cProfile to find where most of the execution time is taking place in source code.",
+)
+
+parser_args, unknown = parser.parse_known_args()
+LOGGING_ENABLED = bool(parser_args.logging is None or parser_args.logging)
+while True:
+    parser_args.path = Path(
+        parser_args.path
+        or input("Path to the K1/TSL install, file, or directory to patch: ")
+        or "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Knights of the Old Republic II",
+    ).resolve()
+    if parser_args.path.exists():
+        break
+    print("Invalid path:", parser_args.path)
+    parser.print_help()
+    parser_args.path = None
+while True:
+    parser_args.set_unskippable = (
+        parser_args.set_unskippable
+        or input("Would you like to make all dialog unskippable? (y/N): ")
+    )
+    if parser_args.set_unskippable.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
+        parser_args.set_unskippable = True
+    elif parser_args.set_unskippable.lower() in ["n", "no"]:  # type: ignore[attr-defined]
+        parser_args.set_unskippable = False
+    if not isinstance(parser_args.set_unskippable, bool):
+        print("Invalid input, please enter yes or no")
+        parser_args.set_unskippable = None
+        parser.print_help()
+        continue
+    break
+while True:
+    parser_args.translate = (
+        parser_args.translate
+        or input("Would you like to translate your path to another language using AI? (y/N): ")
+    )
+    if parser_args.translate.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
+        parser_args.translate = True
+    elif parser_args.translate.lower() in ["n", "no"]:  # type: ignore[attr-defined]
+        parser_args.translate = False
+    if not isinstance(parser_args.translate, bool):
+        print("Invalid input, please enter yes or no")
+        parser_args.translate = None
+        parser.print_help()
+        continue
+    break
+if parser_args.translate:
+    while True:
+        parser_args.to_lang = (
+            parser_args.to_lang
+            or input("Choose a language to translate to: ")
+        )
+        try:
+            # Convert the string representation to the enum member, and then get its value
+            parser_args.to_lang = Language[parser_args.to_lang.upper()].value
+        except KeyError:
+            # Handle the case where the input is not a valid name in Language
+            msg = f"{parser_args.to_lang.upper()} is not a valid Language. Please choose one of [{Language.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
+            parser_args.to_lang = None
+            continue
+        break
+if LOGGING_ENABLED:
+    while True:
+        OUTPUT_LOG = Path(
+            parser_args.output_log
+            or "./log_batch_patcher.log"  # noqa: SIM222
+            or input("Filepath of the desired output logfile: "),
+        ).resolve()
+        if OUTPUT_LOG.parent.exists():
+            break
+        print("Invalid path:", OUTPUT_LOG)
+        parser.print_help()
+
+parser_args.use_profiler = bool(parser_args.use_profiler)
+input("Parameters have been set! Press [Enter] to start the patching process, or Ctrl+C to exit.")
+
+log_output()
+log_output(f"Using --path='{parser_args.path}'")
+log_output(f"Using --output-log='{parser_args.output_log}'")
+log_output(f"Using --use-profiler={parser_args.use_profiler!s}")
+
+profiler = None
+try:
+    if parser_args.use_profiler:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    comparison: bool | None = run_patches(parser_args.path)
+
+    if profiler is not None:
+        profiler.disable()
+        profiler_output_file = Path("profiler_output.pstat").resolve()
+        profiler.dump_stats(str(profiler_output_file))
+        log_output(f"Profiler output saved to: {profiler_output_file}")
+    if comparison is None:
+        log_output("Completed with errors found during comparison")
+        sys.exit(3)
+except KeyboardInterrupt:
+    if profiler is not None:
+        profiler.disable()
+        profiler_output_file = Path("profiler_output.pstat").resolve()
+        profiler.dump_stats(str(profiler_output_file))
+        log_output(f"Profiler output saved to: {profiler_output_file}")
+    raise
