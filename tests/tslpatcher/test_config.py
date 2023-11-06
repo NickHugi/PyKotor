@@ -24,7 +24,7 @@ class TestConfig(unittest.TestCase):
             mock_load_file.return_value = "BinaryReader.load_file result"
 
             # Act
-            result = self.config.lookup_resource(self.patch, self.output_container_path)
+            result = self.config.lookup_resource(self.patch, self.output_container_path)  # type: ignore[reportGeneralTypeIssues]
 
             # Assert
             self.assertEqual(result, "BinaryReader.load_file result")
@@ -67,7 +67,7 @@ class TestConfig(unittest.TestCase):
         arg1.return_value = arg0
         result = self.config.lookup_resource(
             self.patch,
-            self.output_container_path,
+            self.output_container_path,  # type: ignore[reportGeneralTypeIssues]
             exists_at_output_location,
             capsule,
         )
