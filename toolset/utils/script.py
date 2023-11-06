@@ -1,9 +1,13 @@
+from __future__ import annotations
+
+import os
 import subprocess
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
-from pykotor.common.misc import encode_bytes_with_fallback
+from pykotor.common.misc import Game, encode_bytes_with_fallback
 from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.tools.path import Path
 from toolset.gui.widgets.settings.installations import (
     GlobalSettings,
@@ -71,8 +75,8 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
 
 
 def compileScript(source: str, tsl: bool) -> bytes:
-    """Returns the NCS bytes of compiled source script. If no NSS Compiler is selected, prompts the user to find the
-    executable.
+    """Returns the NCS bytes of compiled source script using either nwnnsscomp.exe (Windows only) or our built-in compiler.
+    If no NSS Compiler is selected, prompts the user to find the executable.
 
     Current implementation copies the NSS to a temporary directory (configured in settings), compiles it there,
     then returns the bytes of the new file. If no temporary directory has been configured, the user is prompted to
@@ -102,34 +106,58 @@ def compileScript(source: str, tsl: bool) -> bytes:
             msg = "Temp directory has not been set or is invalid."
             raise NoConfigurationSetError(msg)
 
-    nss_compiler_path = Path(global_settings.nssCompilerPath)
-    if not nss_compiler_path.exists():
-        nss_compiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
-        nss_compiler_path = Path(nss_compiler_path)
+    if os.name == "nt":
+        # Create the message box
+        msgBox = QMessageBox()
+
+        # Set the message box properties
+        msgBox.setIcon(QMessageBox.Question)
+        msgBox.setWindowTitle("Choose a NCS compiler")
+        msgBox.setText("Would you like to use 'nwnnsscomp.exe' or Holocron Toolset's built-in compiler?")
+        msgBox.setInformativeText("Choose one of the options below:")
+        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msgBox.setDefaultButton(QMessageBox.Yes)
+
+        # Set the button text
+        msgBox.button(QMessageBox.Yes).setText("Built-In Compiler")  # type: ignore[union-attr]
+        msgBox.button(QMessageBox.No).setText("nwnnsscomp.exe")  # type: ignore[union-attr]
+
+        # Execute the message box and get the response
+        returnValue = msgBox.exec()
+    if os.name == "posix" or returnValue == QMessageBox.No:
+        nss_compiler_path = Path(global_settings.nssCompilerPath)
         if not nss_compiler_path.exists():
-            msg = "NCS Compiler has not been set or is invalid."
-            raise NoConfigurationSetError(msg)
+            nss_compiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
+            nss_compiler_path = Path(nss_compiler_path)
+            if not nss_compiler_path.exists():
+                msg = "NCS Compiler has not been set or is invalid."
+                raise NoConfigurationSetError(msg)
 
-    global_settings.extractPath = str(extract_path)
-    global_settings.nssCompilerPath = str(nss_compiler_path)
+        global_settings.extractPath = str(extract_path)
+        global_settings.nssCompilerPath = str(nss_compiler_path)
 
-    tempSourcePath = extract_path / "tempscript.nss"
-    tempCompiledPath = extract_path / "tempscript.ncs"
-    BinaryWriter.dump(tempSourcePath, encode_bytes_with_fallback(source))
+        tempSourcePath = extract_path / "tempscript.nss"
+        tempCompiledPath = extract_path / "tempscript.ncs"
+        BinaryWriter.dump(tempSourcePath, encode_bytes_with_fallback(source))
 
-    gameIndex = "2" if tsl else "1"
-    command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
+        gameIndex = "2" if tsl else "1"
+        command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
 
-    # TODO(Cortisol): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
-    # I do not think this version matches the versions used by Mac/Linux.
-    # Need to try unify this so each platform uses the same version and try
-    # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
+        # TODO(Cortisol): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
+        # I do not think this version matches the versions used by Mac/Linux.
+        # Need to try unify this so each platform uses the same version and try
+        # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
 
-    output = process.communicate()[0].decode()
-    error = "Compilation aborted with errors" in output
+        output = process.communicate()[0].decode()
+        error = "Compilation aborted with errors" in output
+        if error:
+            raise ValueError(output)
 
-    if error:
-        raise ValueError(output)
+        return BinaryReader.load_file(tempCompiledPath)
 
-    return BinaryReader.load_file(tempCompiledPath)
+    if os.name == "posix" or returnValue == QMessageBox.Yes:
+        return bytes_ncs(compile_nss(source, Game.K2 if tsl else Game.K1))
+
+    msg = "Could not get the NCS bytes."
+    raise ValueError(msg)
