@@ -11,7 +11,7 @@ from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Color, ResRef
+from pykotor.common.misc import Color, ResRef, encode_bytes_with_fallback
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
@@ -57,7 +57,7 @@ class MinimapData(NamedTuple):
 
 
 class IndoorMap:
-    def __init__(self):
+    def __init__(self) -> None:
         self.rooms: list[IndoorMapRoom] = []
         self.moduleId: str = "test01"
         self.name: LocalizedString = LocalizedString.from_english("New Module")
@@ -359,12 +359,12 @@ class IndoorMap:
         self.are = ARE()
         self.ifo = IFO()
         self.git = GIT()
-        self.roomNames = {}
-        self.texRenames = {}
+        self.roomNames: dict[IndoorMapRoom, str] = {}
+        self.texRenames: dict[str, str] = {}
         self.totalLm = 0
-        self.usedRooms = set()
-        self.usedKits = set()
-        self.scanMdls = set()
+        self.usedRooms: set[KitComponent] = set()
+        self.usedKits: set[Kit] = set()
+        self.scanMdls: set[bytes] = set()
 
         self.add_rooms()
         self.process_room_components()
@@ -380,12 +380,12 @@ class IndoorMap:
         self.finalize_module_data(output_path)
 
     def write(self) -> bytes:
-        data = {"moduleId": self.moduleId, "name": {}}
+        data: dict[str, str | dict | list] = {"moduleId": self.moduleId, "name": {}}
 
-        data["name"]["stringref"] = self.name.stringref
+        data["name"]["stringref"] = self.name.stringref  # type: ignore[call-overload, index]
         for language, gender, text in self.name:
             stringid = LocalizedString.substring_id(language, gender)
-            data["name"][stringid] = text
+            data["name"][stringid] = text  # type: ignore[index]
 
         data["lighting"] = [self.lighting.r, self.lighting.g, self.lighting.b]
         data["skybox"] = self.skybox
@@ -401,9 +401,9 @@ class IndoorMap:
                 "kit": room.component.kit.name,
                 "component": room.component.name,
             }
-            data["rooms"].append(roomData)
+            data["rooms"].append(roomData)  # type: ignore[union-attr]
 
-        return json.dumps(data).encode()
+        return encode_bytes_with_fallback(json.dumps(data))
 
     def load(self, raw: bytes, kits: list[Kit]) -> None:
         self.reset()
@@ -506,7 +506,7 @@ class IndoorMap:
         del painter
 
         # Minimaps are 512x256 so we need to appropriately scale down our image
-        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)
+        pixmap = pixmap.scaled(435, 256, QtCore.Qt.KeepAspectRatio)  # type: ignore[attr-defined, reportGeneralTypeIssues]
 
         pixmap2 = QPixmap(512, 256)
         pixmap2.fill(QColor(0))
