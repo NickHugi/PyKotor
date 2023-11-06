@@ -158,7 +158,11 @@ class ModInstaller:
             return self._config
 
         ini_file_bytes = BinaryReader.load_file(self.changes_ini_path)
-        ini_text = decode_bytes_with_fallbacks(ini_file_bytes)
+        try:
+            ini_text = decode_bytes_with_fallbacks(ini_file_bytes)
+        except UnicodeDecodeError:
+            self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
+            ini_text = ini_file_bytes.decode(encoding="utf-32", errors="replace")
 
         self._config = PatcherConfig()
         self._config.load(ini_text, self.mod_path, self.log)
