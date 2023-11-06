@@ -249,7 +249,7 @@ class ModInstaller:
             override_dir = self.game_path / "Override"
             override_resource_path = override_dir / patch.saveas
             if override_resource_path.exists():
-                shutil.move(self.game_path / patch.destination / patch.saveas, self.game_path / patch.destination / ("old_" + patch.saveas))
+                shutil.move(override_resource_path, override_dir / ("old_" + patch.saveas))
 
 
     def should_patch(
