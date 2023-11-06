@@ -117,7 +117,7 @@ class ConfigReader:
     def load_settings(self) -> None:
         settings_section = self.get_section_name("settings")
         if not settings_section:
-            self.log.add_error("[Settings] section missing from ini.")
+            self.log.add_warning("[Settings] section missing from ini.")
             return
 
         self.log.add_note("Loading [Settings] section from ini...")
@@ -140,7 +140,7 @@ class ConfigReader:
     def load_filelist(self) -> None:  # TODO: !SourceFile, !SaveAs, !Filename
         install_list_section = self.get_section_name("installlist")
         if not install_list_section:
-            self.log.add_error("[InstallList] section missing from ini.")
+            self.log.add_warning("[InstallList] section missing from ini.")
             return
 
         self.log.add_note("Loading [InstallList] patches from ini...")
@@ -159,7 +159,7 @@ class ConfigReader:
     def load_tlk_list(self) -> None:
         tlk_list_section = self.get_section_name("tlklist")
         if not tlk_list_section:
-            self.log.add_error("[TLKList] section missing from ini.")
+            self.log.add_warning("[TLKList] section missing from ini.")
             return
 
         self.log.add_note("Loading [TLKList] patches from ini...")
@@ -307,7 +307,7 @@ class ConfigReader:
     def load_2da(self) -> None:
         twoda_list_section = self.get_section_name("2dalist")
         if not twoda_list_section:
-            self.log.add_error("[2DAList] section missing from ini.")
+            self.log.add_warning("[2DAList] section missing from ini.")
             return
 
         self.log.add_note("Loading [2DAList] patches from ini...")
@@ -336,7 +336,7 @@ class ConfigReader:
     def load_ssf(self) -> None:
         ssf_list_section = self.get_section_name("ssflist")
         if not ssf_list_section:
-            self.log.add_error("[SSFList] section missing from ini.")
+            self.log.add_warning("[SSFList] section missing from ini.")
             return
 
         configstr_to_ssfsound: dict[str, SSFSound] = {
@@ -399,7 +399,7 @@ class ConfigReader:
     def load_gff(self) -> None:
         gff_list_section = self.get_section_name("gfflist")
         if not gff_list_section:
-            self.log.add_error("[GFFList] section missing from ini.")
+            self.log.add_warning("[GFFList] section missing from ini.")
             return
 
         self.log.add_note("Loading [GFFList] patches from ini...")
@@ -448,7 +448,7 @@ class ConfigReader:
     def load_nss(self) -> None:
         compilelist_section = self.get_section_name("compilelist")
         if not compilelist_section:
-            self.log.add_error("[CompileList] section missing from ini.")
+            self.log.add_warning("[CompileList] section missing from ini.")
             return
 
         self.log.add_note("Loading [CompileList] patches from ini...")
