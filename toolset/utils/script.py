@@ -30,7 +30,7 @@ def decompileScript(compiled: bytes, tsl: bool) -> str:
 
     Raises:
     ------
-        IOError: If an error occured writing or loading from the temp directory.
+        OSError: If an error occured writing or loading from the temp directory.
         ValueError: If the source script failed to compile.
         NoConfigurationSet: If no path has been set for the temp directory or NSS decompiler.
 
@@ -89,7 +89,7 @@ def compileScript(source: str, tsl: bool) -> bytes:
 
     Raises:
     ------
-        IOError: If an error occured writing or loading from the temp directory.
+        OSError: If an error occured writing or loading from the temp directory.
         ValueError: If the source script failed to compile.
         NoConfigurationSet: If no path has been set for the temp directory or NSS compiler.
 
@@ -127,8 +127,7 @@ def compileScript(source: str, tsl: bool) -> bytes:
     if os.name == "posix" or returnValue == QMessageBox.No:
         nss_compiler_path = Path(global_settings.nssCompilerPath)
         if not nss_compiler_path.exists():
-            nss_compiler_path, _ = QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable")
-            nss_compiler_path = Path(nss_compiler_path)
+            nss_compiler_path = Path(QFileDialog.getOpenFileName(None, "Select the NCS Compiler executable"))
             if not nss_compiler_path.exists():
                 msg = "NCS Compiler has not been set or is invalid."
                 raise NoConfigurationSetError(msg)

@@ -635,7 +635,7 @@ class BinaryReader:
 
         Raises:
         ------
-            IOError: Iset_datahe given number sex exceeds the number of remaining bytes.
+            OSError: Iset_datahe given number sex exceeds the number of remaining bytes.
         """
         if self.position() + num > self.size():
             msg = "This operation would exceed the streams boundaries."
