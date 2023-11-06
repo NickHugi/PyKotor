@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-import io
+from io import StringIO
 from typing import Any
 from xml.etree import ElementTree
 
@@ -37,7 +37,7 @@ class GFFXMLReader(ResourceReader):
         self._gff = GFF()
 
         data = self._reader.read_bytes(self._reader.size()).decode()
-        xml_root = ElementTree.parse(io.StringIO(data)).getroot().find("struct")
+        xml_root = ElementTree.parse(StringIO(data)).getroot().find("struct")
         self._load_struct(self._gff.root, xml_root)
 
         return self._gff
@@ -208,8 +208,9 @@ class GFFXMLWriter(ResourceWriter):
             xml_field.text = str(value)
         elif field_type == GFFFieldType.LocalizedString:
             xml_field.tag = "locstring"
-            xml_field.set("strref", str(value.stringref))
-            for language, gender, string in value:
+            locstring: LocalizedString = value
+            xml_field.set("strref", str(locstring.stringref))
+            for language, gender, string in locstring:
                 subelement = ElementTree.Element("string")
                 subelement.set(
                     "language",

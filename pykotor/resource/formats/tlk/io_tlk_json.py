@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import json
 
-from pykotor.common.misc import ResRef, decode_bytes_with_fallbacks, encode_bytes_with_fallback
+from pykotor.common.misc import (
+    ResRef,
+    decode_bytes_with_fallbacks,
+    encode_bytes_with_fallback,
+)
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.type import (
     SOURCE_TYPES,
