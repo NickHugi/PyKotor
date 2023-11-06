@@ -1,5 +1,14 @@
 import os
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if not getattr(sys, "frozen", False):
+    thisfile_path = pathlib.Path(__file__).resolve()
+    project_root = thisfile_path.parents[2]
+    if project_root.joinpath("pykotor").exists():
+        sys.path.append(str(project_root))
 
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import Game
@@ -8,7 +17,6 @@ from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import Path, locate_game_paths
-
 
 class TestInstallation(TestCase):
     def setUp(self) -> None:
@@ -381,3 +389,7 @@ class TestInstallation(TestCase):
         self.assertEqual("default text", results[locstring1])
         self.assertEqual("Some text.", results[locstring2])
         self.assertEqual("ERROR: FATAL COMPILER ERROR", results[locstring3])
+
+
+if __name__ == "__main__":
+    unittest.main()
