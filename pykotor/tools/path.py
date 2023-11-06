@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, List, Tuple, Union
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
 
-PathElem = Union[str, os.PathLike]
+PathElem = Union[str, os.PathLike[str]]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
 
@@ -179,7 +179,7 @@ class BasePurePath:
         """
         return self._create_instance(key, self)
 
-    def __add__(self, key: PathElem):
+    def __add__(self, key: PathElem) -> str:
         """Implicitly converts the path to a str when used with the addition operator '+'.
         This method is called when the left side is self.
 
@@ -190,7 +190,7 @@ class BasePurePath:
         """
         return str(self) + str(key)
 
-    def __radd__(self, key: PathElem):
+    def __radd__(self, key: PathElem) -> str:
         """Implicitly converts the path to a str when used with the addition operator '+'.
         This method is called when the right side is self.
 
@@ -243,10 +243,10 @@ class BasePurePath:
         if slash not in ("\\", "/"):
             msg = f"Invalid slash str: '{slash}'"
             raise ValueError(msg)
-        if not str_path.strip():
-            return str_path
 
         formatted_path: str = str_path.strip('"')
+        if not formatted_path.strip():
+            return formatted_path
 
         # For Windows paths
         if slash == "\\":
@@ -268,7 +268,7 @@ class BasePurePath:
 
 class PurePath(BasePurePath, pathlib.PurePath):
     # pylint: disable-all
-    _flavour = getattr(pathlib.PureWindowsPath, "_flavour", None) if os.name == "nt" else getattr(pathlib.PurePosixPath, "_flavour", None)  # type: ignore[attr-defined]
+    _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore[attr-defined]
 
 
 class PurePosixPath(BasePurePath, pathlib.PurePosixPath):
@@ -340,15 +340,21 @@ class BasePath(BasePurePath):
 
     def has_access(self, recurse=False) -> bool:
         """Check if we have access to the path.
-        :param path: The pathlib.Path object to check (can be a file or a folder)
-        :return: True if path can be modified, False otherwise.
+
+        Args:
+        ----
+            recurse (bool): check access for all files inside of self. Only valid if self is a folder (default is False)
+
+        Returns:
+        -------
+            True if path can be modified, False otherwise.
         """
         if not isinstance(self, Path):
             return NotImplemented
         try:
             path_obj = Path(self)  # prevents usage of CaseAwarePath's wrappers
             if path_obj.is_dir():  # sourcery skip: extract-method
-                test_path = path_obj / f"temp_test_file_{uuid.uuid4().hex}.tmp"
+                test_path: Path = path_obj / f"temp_test_file_{uuid.uuid4().hex}.tmp"
                 with test_path.open("w") as f:
                     f.write("test")
                 test_path.unlink()
@@ -363,7 +369,7 @@ class BasePath(BasePurePath):
             return False
         return False
 
-    def gain_access(self, mode=0o755, owner_uid=-1, owner_gid=-1, recurse=True):
+    def gain_access(self, mode=0o777, owner_uid=-1, owner_gid=-1, recurse=True):
         if not isinstance(self, Path):
             return NotImplemented
         path_obj = Path(self)  # prevents usage of CaseAwarePath's wrappers
@@ -435,7 +441,7 @@ class CaseAwarePath(Path):
         return hash((self.__class__.__name__, super().__str__().lower()))
 
     def __eq__(self, other: object):
-        """All pathlib classes that derive from PurePath are equal to this object if their paths are case-insensitive equivalents."""
+        """All pathlib classes that derive from PurePath are equal to this object if their str paths are case-insensitive equivalents."""
         if not isinstance(other, (os.PathLike, str)):
             return NotImplemented
         other = other.as_posix() if isinstance(other, pathlib.PurePath) else str(other)
@@ -478,7 +484,7 @@ class CaseAwarePath(Path):
             elif not next_path.safe_exists():
                 return CaseAwarePath._create_instance(base_path.joinpath(*parts[i:]))
 
-        # return a CaseAwarePath instance without infinitely recursing through the constructor
+        # return a CaseAwarePath instance
         return CaseAwarePath._create_instance(*parts)
 
     @classmethod
@@ -505,26 +511,21 @@ class CaseAwarePath(Path):
         return sum(a == b for a, b in zip(str1, str2)) if str1.lower() == str2.lower() else -1
 
     @staticmethod
-    def should_resolve_case(path) -> bool:
+    def should_resolve_case(path: os.PathLike | str) -> bool:
         if os.name == "nt":
             return False
-        if isinstance(path, os.PathLike):
-            path_obj = pathlib.Path(path)
-            return path_obj.is_absolute() and not path_obj.exists()
-        if isinstance(path, str):
-            path_obj = pathlib.Path(path)
-            return path_obj.is_absolute() and not path_obj.exists()
-        return False
+        path_obj = pathlib.Path(path)
+        return path_obj.is_absolute() and not path_obj.exists()
 
 
 # HACK: fix later
 if os.name == "posix":
     create_case_insensitive_pathlib_class(CaseAwarePath)
 elif os.name == "nt":
-    CaseAwarePath = Path  # type: ignore[assignment]
+    CaseAwarePath = Path  # type: ignore[assignment, misc]
 
 
-def resolve_reg_key_to_path(reg_key, keystr):
+def resolve_reg_key_to_path(reg_key: str, keystr: str):
     import winreg
 
     try:
@@ -612,8 +613,8 @@ def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
     os_str = platform.system()
 
     # Build hardcoded default kotor locations
-    raw_locations = get_default_game_paths()
-    locations: dict[Game, set[CaseAwarePath]] = {
+    raw_locations: dict[str, dict[Game, list[str]]] = get_default_game_paths()
+    locations = {
         game: {case_path for case_path in (CaseAwarePath(path) for path in paths) if case_path.exists()}
         for game, paths in raw_locations.get(os_str, {}).items()
     }
@@ -624,7 +625,7 @@ def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
             for reg_key, reg_valname in reg_options:
                 path_str = resolve_reg_key_to_path(reg_key, reg_valname)
                 path = CaseAwarePath(path_str).resolve() if path_str else None
-                if path and path.exists():
+                if path and path.name and path.exists():
                     locations[game_option].add(path)
 
     locations[Game.K1] = [*locations[Game.K1]]  # type: ignore[assignment]
