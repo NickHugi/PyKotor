@@ -1859,9 +1859,9 @@ class TestNSSCompiler(TestCase):
         interpreter.run()
 
     def test_include_lookup(self):
-        includetest_script_path = Path("./tests/files/")
+        includetest_script_path = Path("./tests/files/").resolve()
         if not includetest_script_path.exists():
-            raise FileNotFoundError("Could not find includetest.nss in the ../../files folder!")
+            raise FileNotFoundError(f"Could not find includetest.nss in the {includetest_script_path.parent!s} folder!")
         ncs = self.compile(
             """
             #include "includetest"

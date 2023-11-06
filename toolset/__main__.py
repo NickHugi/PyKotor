@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
     # app.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-    app.thread().setPriority(QThread.HighestPriority)
+    app.thread().setPriority(QThread.HighestPriority)  # type: ignore[reportGeneralTypeIssues]
 
     sys.excepthook = onAppCrash
     window = ToolWindow()

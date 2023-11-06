@@ -5,6 +5,7 @@ from pykotor.common.stream import BinaryReader
 
 from pykotor.resource.formats.ncs import NCSBinaryReader, NCS
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, write_ncs, read_ncs
+from pykotor.tools.path import Path
 
 BINARY_TEST_FILE = "tests/files/test.ncs"
 
@@ -15,7 +16,7 @@ class TestNCS(TestCase):
         self.validate_io(ncs)
 
         user_profile_path = os.environ.get("USERPROFILE")
-        file_path = os.path.join(user_profile_path, "Documents", "ext", "output.ncs")
+        file_path = Path(user_profile_path, "Documents", "ext", "output.ncs")
 
         write_ncs(ncs, file_path)
         data = bytes_ncs(ncs)
