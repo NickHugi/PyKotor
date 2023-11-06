@@ -245,11 +245,18 @@ class ModInstaller:
         return BinaryReader.load_file(output_container_path / patch.saveas)
 
     def handle_override_type(self, patch: PatcherModifications):
-        if getattr(patch, "override_type", None) == "rename":
-            override_dir = self.game_path / "Override"
-            override_resource_path = override_dir / patch.saveas
-            if override_resource_path.exists():
+        override_type = getattr(patch, "override_type", "").lower().strip()
+        if not override_type or override_type == "ignore":
+            return
+
+        override_dir = self.game_path / "Override"
+        override_resource_path = override_dir / patch.saveas
+        if override_resource_path.exists():
+            if override_type == "rename":
                 shutil.move(override_resource_path, override_dir / ("old_" + patch.saveas))
+            elif override_type == "warn":
+                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's ERF/RIM patch in {patch.destination}!")
+
 
 
     def should_patch(
@@ -278,7 +285,7 @@ class ModInstaller:
             self.log.add_warning(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
-        if capsule is not None and not capsule._path.exists():
+        if capsule is not None and not capsule.path().exists():
             self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")
             return False
 
@@ -312,7 +319,7 @@ class ModInstaller:
         for patch in patches_list:
             output_container_path = self.game_path / patch.destination
             exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
-            if not self.should_patch(patch, exists, capsule):  # only returns False for installlist (which currently doesn't use it - todo)
+            if not self.should_patch(patch, exists, capsule):  # only returns False for installlist I believe (which currently doesn't even use it - todo)
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
             if not data_to_patch_bytes:
