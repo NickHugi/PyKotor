@@ -105,12 +105,12 @@ class LocalizedString:
     def __hash__(self):
         return hash(self.stringref)
 
-    @staticmethod
-    def from_invalid() -> LocalizedString:
-        return LocalizedString(-1)
+    @classmethod
+    def from_invalid(cls):
+        return cls(-1)
 
-    @staticmethod
-    def from_english(text: str) -> LocalizedString:
+    @classmethod
+    def from_english(cls, text: str):
         """Returns a new localizedstring object with a english substring.
 
         Args:
@@ -121,7 +121,7 @@ class LocalizedString:
         -------
             a new localizedstring object.
         """
-        locstring = LocalizedString(-1)
+        locstring = cls(-1)
         locstring.set_data(Language.ENGLISH, Gender.MALE, text)
         return locstring
 
