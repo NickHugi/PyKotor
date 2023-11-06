@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename: str, replace_file: bool, destination: str | None = None) -> None:
-        super().__init__(filename, destination, saveas=str(PurePath(self.sourcefile).with_suffix(".ncs")))
+        super().__init__(filename, destination, saveas=str(PurePath(filename).with_suffix(".ncs")))
         self.replace_file: bool = replace_file
         self.action: str = "Compile"
 
