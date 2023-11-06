@@ -127,24 +127,26 @@ class GFF:
             root = self.root
 
         for label, field_type, value in root:
-            value_str = str(value)
+            length_or_id: int = -2
+            gff_struct: GFFStruct = value
+            gff_list: GFFList = value
             if field_type is GFFFieldType.Struct:
-                value_str = value.struct_id
+                length_or_id = gff_struct.struct_id
             if field_type is GFFFieldType.List:
-                value_str = len(value)
+                length_or_id = len(gff_list)
 
-            print(("  " * indent + label).ljust(column_len), " ", value_str)
+            print(("  " * indent + label).ljust(column_len), " ", length_or_id)
 
             if field_type is GFFFieldType.Struct:
                 self.print_tree(value, indent + 1)
             if field_type is GFFFieldType.List:
-                for i, child_struct in enumerate(value):
+                for i, gff_struct in enumerate(value):
                     print(
                         f'  {"  " * indent}[Struct {i}]'.ljust(column_len),
                         " ",
-                        child_struct.struct_id,
+                        gff_struct.struct_id,
                     )
-                    self.print_tree(child_struct, indent + 2)
+                    self.print_tree(gff_struct, indent + 2)
 
 
 class _GFFField:
