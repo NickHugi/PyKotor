@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import NamedTuple
+from pykotor.common.misc import decode_bytes_with_fallbacks
 
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
@@ -653,11 +654,11 @@ class IncludeScript(TopLevelObject):
         for folder in root.library_lookup:
             filepath = folder / f"{self.file.value}.nss"
             if filepath.exists():
-                source = BinaryReader.load_file(filepath).decode(errors="ignore")
+                source = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
                 break
         else:
             if self.file.value in self.library:
-                source = self.library[self.file.value].decode(errors="ignore")
+                source = decode_bytes_with_fallbacks(self.library[self.file.value])
             else:
                 msg = f"Could not find included script '{self.file.value}.nss'."
                 raise CompileException(msg)
@@ -731,7 +732,7 @@ class FieldAccess:
 
         is_global = scoped.is_global
         offset = scoped.offset
-        datatype = scoped.datatype
+        datatype: DynamicDataType = scoped.datatype
 
         for next_ident in self.identifiers[1:]:
             # Check previous datatype to see what members are accessible

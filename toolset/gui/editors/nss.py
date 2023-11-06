@@ -3,8 +3,6 @@ from __future__ import annotations
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
 
-from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
 from PyQt5.QtGui import (
@@ -27,8 +25,8 @@ from PyQt5.QtWidgets import (
     QTextEdit,
     QWidget,
 )
-from toolset.utils.script import compileScript, decompileScript
 
+from pykotor.common.misc import encode_bytes_with_fallback
 from pykotor.common.scriptdefs import (
     KOTOR_CONSTANTS,
     KOTOR_FUNCTIONS,
@@ -40,11 +38,16 @@ from pykotor.resource.formats.erf import ERF, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import Path
+from toolset.gui.editor import Editor
+from toolset.gui.widgets.settings.installations import (
+    GlobalSettings,
+    NoConfigurationSetError,
+)
+from toolset.utils.script import compileScript, decompileScript
 
 if TYPE_CHECKING:
-    from toolset.data.installation import HTInstallation
-
     from pykotor.common.script import ScriptFunction
+    from toolset.data.installation import HTInstallation
 
 
 class NSSEditor(Editor):
@@ -110,7 +113,7 @@ class NSSEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         if restype == ResourceType.NSS:
-            self.ui.codeEdit.setPlainText(data.decode("windows-1252"))
+            self.ui.codeEdit.setPlainText(data.decode("windows-1252"))  # TODO: should use windows-1250 for polish versions of KOTOR.
         elif restype == ResourceType.NCS:
             try:
                 source = decompileScript(data, self._installation.tsl)
@@ -124,7 +127,7 @@ class NSSEditor(Editor):
 
     def build(self) -> tuple[bytes, bytes] | None:
         if self._restype.NSS:
-            return self.ui.codeEdit.toPlainText().encode(), b""
+            return encode_bytes_with_fallback(self.ui.codeEdit.toPlainText()), b""
         if self._restype.NCS:
             compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
         return None

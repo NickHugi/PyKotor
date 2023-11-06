@@ -15,11 +15,39 @@ class Language(IntEnum):
     SPANISH = 4
     POLISH = 5
 
+    # The following languages are not used in any official KOTOR releases, however are supported in the TLK/GFF file formats.
+    KOREAN = 128
+    CHINESE_TRADITIONAL = 129
+    CHINESE_SIMPLIFIED = 130
+    JAPANESE = 131
+
+
     @staticmethod
-    def _missing_(value: int) -> IntEnum:
-        if value != 0x7FFFFFFF:  # unused?
-            print(f"Missing language int {value}")
+    def _missing_(value) -> IntEnum:
+        if not isinstance(value, int):
+            return NotImplemented
+
+        if value != 0x7FFFFFFF:  # unused? TODO: figure out what scenarios this'll happen in as it's happened on multiple occasions.
+            print(f"Language integer not found: {value}")
         return Language.ENGLISH
+
+    def get_encoding(self):
+        """Get the encoding for the specified language."""
+        if self in (Language.ENGLISH, Language.FRENCH, Language.GERMAN, Language.ITALIAN, Language.SPANISH):
+            return "windows-1252"
+        if self == Language.POLISH:
+            return "windows-1250"
+
+        if self == Language.KOREAN:
+            return "euc_kr"
+        if self == Language.CHINESE_TRADITIONAL:
+            return "big5"
+        if self == Language.CHINESE_SIMPLIFIED:
+            return "gb2312"  # TODO: This encoding might not be accurate, KOTOR could easily support "gb18030" or "GBK" but would need testing. "gb2312" is the safest option.
+        if self == Language.JAPANESE:
+            return "shift_jis"
+        msg = f"No encoding defined for language: {self.name}"
+        raise ValueError(msg)
 
 
 class Gender(IntEnum):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from pykotor.common.misc import decode_bytes_with_fallbacks, encode_bytes_with_fallback
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import (
     SOURCE_TYPES,
@@ -29,7 +30,7 @@ class TwoDAJSONReader(ResourceReader):
         auto_close: bool = True,
     ) -> TwoDA:
         self._twoda = TwoDA()
-        self._json = json.loads(self._reader.read_bytes(self._reader.size()).decode())
+        self._json = json.loads(decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size())))
 
         for row in self._json["rows"]:
             row_label = row["_id"]
@@ -66,4 +67,4 @@ class TwoDAJSONWriter(ResourceWriter):
                 json_row[header] = row.get_string(header)
 
         json_dump = json.dumps(self._json, indent=4)
-        self._writer.write_bytes(json_dump.encode())
+        self._writer.write_bytes(encode_bytes_with_fallback(json_dump))

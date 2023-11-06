@@ -2,6 +2,7 @@ import subprocess
 
 from PyQt5.QtWidgets import QFileDialog
 
+from pykotor.common.misc import encode_bytes_with_fallback
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.tools.path import Path
 from toolset.gui.widgets.settings.installations import (
@@ -114,15 +115,15 @@ def compileScript(source: str, tsl: bool) -> bytes:
 
     tempSourcePath = extract_path / "tempscript.nss"
     tempCompiledPath = extract_path / "tempscript.ncs"
-    BinaryWriter.dump(tempSourcePath, source.encode())
+    BinaryWriter.dump(tempSourcePath, encode_bytes_with_fallback(source))
 
     gameIndex = "2" if tsl else "1"
     command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
 
-    # TODO: Cortisol
-    # The version of nwnnsscomp bundled with the windows toolset uses registry key lookups. I do not think this version
-    # matches the versions used by Mac/Linux. Need to try unify this so each platform uses the same version and try
+    # TODO(Cortisol): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
+    # I do not think this version matches the versions used by Mac/Linux.
+    # Need to try unify this so each platform uses the same version and try
     # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
 
     output = process.communicate()[0].decode()

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import encode_bytes_with_fallback
 from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
@@ -603,9 +604,9 @@ class BinaryReader:
         string_count = self.read_uint32()
         for _i in range(string_count):
             string_id = self.read_uint32()
-            length = self.read_uint32()
-            string = self.read_string(length)
             language, gender = LocalizedString.substring_pair(string_id)
+            length = self.read_uint32()
+            string = self.read_string(length, encoding=language.get_encoding())
             locstring.set_data(language, gender, string)
         return locstring
 
@@ -1427,7 +1428,7 @@ class BinaryWriterFile(BinaryWriter):
             line += str(round(arg, 7)) if isinstance(arg, float) else str(arg)
             line += " "
         line += "\n"
-        self._stream.write(line.encode())
+        self._stream.write(encode_bytes_with_fallback(line))
 
     def write_locstring(
         self,
@@ -1450,7 +1451,7 @@ class BinaryWriterFile(BinaryWriter):
         for language, gender, substring in value:
             string_id = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            bw.write_string(substring, prefix_length=4)
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
         locstring_data = bw.data()
 
         self.write_uint32(len(locstring_data))
@@ -1929,7 +1930,7 @@ class BinaryWriterBytearray(BinaryWriter):
         for language, gender, substring in value:
             string_id = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            bw.write_string(substring, prefix_length=4)
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
         locstring_data = bw.data()
 
         self.write_uint32(len(locstring_data))

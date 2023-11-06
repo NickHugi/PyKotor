@@ -1,5 +1,15 @@
 import os
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+
+if not getattr(sys, "frozen", False):
+    thisfile_path = pathlib.Path(__file__).resolve()
+    project_root = thisfile_path.parents[3]
+    if project_root.joinpath("pykotor").exists():
+        sys.path.append(str(project_root))
 
 from pykotor.resource.formats.twoda import (
     write_2da,
@@ -75,8 +85,8 @@ class TestTwoDA(TestCase):
             self.assertRaises(IsADirectoryError, read_2da, ".")
         self.assertRaises(FileNotFoundError, read_2da, DOES_NOT_EXIST_FILE)
         self.assertRaises(ValueError, read_2da, CORRUPT_BINARY_TEST_FILE)
-        self.assertRaises(ValueError, read_2da, CORRUPT_CSV_TEST_FILE)
         self.assertRaises(ValueError, read_2da, CORRUPT_JSON_TEST_FILE)
+        self.assertRaises(ValueError, read_2da, CORRUPT_CSV_TEST_FILE)
 
     def test_write_raises(self):
         if os.name == "nt":
@@ -92,3 +102,6 @@ class TestTwoDA(TestCase):
         twoda.add_row("2")
 
         self.assertEqual(3, twoda.label_max())
+
+if __name__ == "__main__":
+    unittest.main()

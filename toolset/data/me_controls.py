@@ -11,13 +11,13 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QKeySequence
 
 from pykotor.common.geometry import Vector2, Vector3
+from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.gl.scene import Camera
 from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
-    from toolset.gui.widgets.renderer.module import ModuleRenderer
-
     from pykotor.resource.generics.git import GITInstance
+    from toolset.gui.widgets.renderer.module import ModuleRenderer
 
 
 def getMouseCode(string: str):
@@ -177,7 +177,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
 
         r_filepath = Path(filepath)
         f = r_filepath.open("rb")
-        rootJSON = json.loads(jsmin(f.read().decode()))
+        rootJSON = json.loads(jsmin(decode_bytes_with_fallbacks(f.read())))
 
         self.name = rootJSON["name"]
         self.cameraStyle = rootJSON["style"]

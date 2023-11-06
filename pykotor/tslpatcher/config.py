@@ -160,10 +160,6 @@ class ModInstaller:
         ini_file_bytes = BinaryReader.load_file(self.changes_ini_path)
         ini_text = decode_bytes_with_fallbacks(ini_file_bytes)
 
-        if ini_text is None:
-            self.log.add_warning(f"Could not determine encoding of '{self.changes_ini_path.name}'. Attempting to force load...")
-            ini_text = ini_file_bytes.decode(encoding="iso-8859-1", errors="replace")
-
         self._config = PatcherConfig()
         self._config.load(ini_text, self.mod_path, self.log)
 

@@ -4,7 +4,7 @@ import io
 from xml.etree import ElementTree
 
 from pykotor.common.language import Language
-from pykotor.common.misc import ResRef
+from pykotor.common.misc import ResRef, decode_bytes_with_fallbacks
 from pykotor.resource.formats.tlk.tlk_data import TLK
 from pykotor.resource.type import (
     SOURCE_TYPES,
@@ -33,7 +33,7 @@ class TLKXMLReader(ResourceReader):
     ) -> TLK:
         self._tlk = TLK()
 
-        data = self._reader.read_bytes(self._reader.size()).decode()
+        data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
         xml = ElementTree.parse(io.StringIO(data)).getroot()
 
         self._tlk.language = Language(int(xml.get("language")))
@@ -51,12 +51,10 @@ class TLKXMLWriter(ResourceWriter):
         self,
         tlk: TLK,
         target: TARGET_TYPES,
-        strip_soundlength = False,
     ):
         super().__init__(target)
         self._xml: ElementTree.Element = ElementTree.Element("xml")
         self._tlk: TLK = tlk
-        self._strip_soundlength = False
 
     @autoclose
     def write(

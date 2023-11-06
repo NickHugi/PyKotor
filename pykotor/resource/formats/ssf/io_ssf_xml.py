@@ -4,6 +4,7 @@ import io
 from contextlib import suppress
 from xml.etree import ElementTree
 
+from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.formats.ssf.ssf_data import SSF, SSFSound
 from pykotor.resource.type import (
     SOURCE_TYPES,
@@ -32,7 +33,7 @@ class SSFXMLReader(ResourceReader):
     ) -> SSF:
         self._ssf = SSF()
 
-        data = self._reader.read_bytes(self._reader.size()).decode()
+        data = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
         xml_root = ElementTree.parse(io.StringIO(data)).getroot()
 
         for child in xml_root:

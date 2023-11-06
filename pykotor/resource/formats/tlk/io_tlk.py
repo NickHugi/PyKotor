@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
@@ -101,11 +103,9 @@ class TLKBinaryWriter(ResourceWriter):
         self,
         tlk: TLK,
         target: TARGET_TYPES,
-        strip_soundlength=False,
     ):
         super().__init__(target)
         self._tlk = tlk
-        self._strip_soundlength = strip_soundlength
 
     @autoclose
     def write(
@@ -117,20 +117,22 @@ class TLKBinaryWriter(ResourceWriter):
         text_offset = WrappedInt(0)
         for entry in self._tlk.entries:
             self._write_entry(entry, text_offset)
+
+        encoding = self._tlk.language.get_encoding()
         for entry in self._tlk.entries:
-            self._writer.write_string(entry.text)
+            self._writer.write_string(entry.text, encoding)
 
     def _calculate_entries_offset(
         self,
-    ):
+    ) -> int:
         return _FILE_HEADER_SIZE + len(self._tlk) * _ENTRY_SIZE
 
     def _write_file_header(
         self,
     ) -> None:
         language_id = self._tlk.language.value
-        string_count = len(self._tlk)
-        entries_offset = self._calculate_entries_offset()
+        string_count: int = len(self._tlk)
+        entries_offset: int = self._calculate_entries_offset()
 
         self._writer.write_string("TLK ", string_length=4)
         self._writer.write_string("V3.0", string_length=4)
@@ -151,10 +153,10 @@ class TLKBinaryWriter(ResourceWriter):
         # Check for TEXT_PRESENT: As we're writing text, let's assume it's always present
         entry_flags |= 0x0001
 
-        # Check for SND_PRESENT: If sound_resref is not None, not an empty string, or not False
+        # Check for SND_PRESENT: If sound_resref is defined in this entry.
         if sound_resref:
             entry_flags |= 0x0002
-        entry_flags |= 0x0004  # both vanilla dialog.tlk files have this set.
+        entry_flags |= 0x0004  # SND_LENGTH: both vanilla dialog.tlk files have this set.
 
         self._writer.write_uint32(entry_flags)
         self._writer.write_string(sound_resref, string_length=16)

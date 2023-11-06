@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from pykotor.common.misc import ResRef
+from pykotor.common.misc import ResRef, decode_bytes_with_fallbacks, encode_bytes_with_fallback
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.type import (
     SOURCE_TYPES,
@@ -30,7 +30,7 @@ class TLKJSONReader(ResourceReader):
         auto_close: bool = True,
     ) -> TLK:
         self._tlk = TLK()
-        self._json = json.loads(self._reader.read_bytes(self._reader.size()).decode())
+        self._json = json.loads(decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size())))
 
         self._tlk.resize(len(self._json["strings"]))
         for string in self._json["strings"]:
@@ -46,12 +46,10 @@ class TLKJSONWriter(ResourceWriter):
         self,
         twoda: TLK,
         target: TARGET_TYPES,
-        strip_soundlength = False,
     ):
         super().__init__(target)
         self._tlk: TLK = twoda
         self._json = {"strings": []}
-        self._strip_soundlength = strip_soundlength
 
     @autoclose
     def write(
@@ -66,4 +64,4 @@ class TLKJSONWriter(ResourceWriter):
             string["soundResRef"] = entry.voiceover.get()
 
         json_dump = json.dumps(self._json, indent=4)
-        self._writer.write_bytes(json_dump.encode())
+        self._writer.write_bytes(encode_bytes_with_fallback(json_dump))

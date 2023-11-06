@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+from pykotor.common.misc import decode_bytes_with_fallbacks
 
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
@@ -76,14 +77,14 @@ class FileSearcher(QDialog):
             for folder in installation.override_list():
                 searchIn.extend(installation.override_resources(folder))
 
-        def search(resource):
+        def search(resource: FileResource) -> None:
             if resource.restype() in checkTypes:
                 if caseSensitive and text in resource.resname():
                     results.append(resource)
                 elif caseSensitive and text.lower() in resource.resname().lower():
                     results.append(resource)
                 elif not filenamesOnly:
-                    decoded = resource.data().decode(errors="ignore")
+                    decoded = decode_bytes_with_fallbacks(resource.data())
                     if caseSensitive and text in decoded:
                         results.append(resource)
                     elif not caseSensitive and text.lower() in decoded.lower():

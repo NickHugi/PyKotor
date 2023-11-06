@@ -8,6 +8,7 @@ from typing import Dict, Optional
 import markdown
 import requests
 from config import UPDATE_INFO_LINK
+from pykotor.common.misc import decode_bytes_with_fallbacks
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QTreeWidgetItem, QWidget
@@ -105,7 +106,7 @@ class HelpWindow(QMainWindow):
 
     def displayFile(self, filepath: str) -> None:
         try:
-            text = BinaryReader.load_file(filepath).decode()
+            text = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
             html = markdown.markdown(text, extensions=["tables", "fenced_code", "codehilite"]) if filepath.lower().endswith(".md") else text
             self.ui.textDisplay.setHtml(html)
         except OSError:

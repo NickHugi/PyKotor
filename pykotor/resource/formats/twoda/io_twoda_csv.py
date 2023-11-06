@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+from pykotor.common.misc import decode_bytes_with_fallbacks
 
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import (
@@ -29,17 +30,36 @@ class TwoDACSVReader(ResourceReader):
         auto_close: bool = True,
     ) -> TwoDA:
         self._twoda = TwoDA()
-        data = self._reader.read_bytes(self._reader.size()).decode()
+        data: str = decode_bytes_with_fallbacks(self._reader.read_bytes(self._reader.size()))
         _csv = csv.reader(io.StringIO(data))
 
-        headers = next(_csv)[1:]
-        for header in headers:
-            self._twoda.add_column(header)
+        try:
+            headers = next(_csv)[1:]
+            if not headers:
+                msg = "CSV header is missing or not formatted correctly."
+                raise ValueError(msg)
 
-        for row in _csv:
-            label = row[:1][0]
-            cells = dict(zip(headers, row[1:]))
-            self._twoda.add_row(label, cells)
+            for header in headers:
+                if not header.strip():
+                    msg = "Empty header detected, CSV is not valid."
+                    raise ValueError(msg)
+                self._twoda.add_column(header.strip())
+
+            for i, row in enumerate(_csv, start=1):
+                if len(row) != len(headers) + 1:
+                    msg = f"Row {i} does not have the correct number of columns."
+                    raise ValueError(msg)
+
+                label = row[0]
+                if not label.strip():
+                    msg = f"Row {i} does not have a valid label."
+                    raise ValueError(msg)
+
+                cells = dict(zip(headers, row[1:]))
+                self._twoda.add_row(label.strip(), cells)
+        except csv.Error as e:
+            msg = f"CSV reader error: {e!r}"
+            raise ValueError(msg) from e
 
         return self._twoda
 

@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
-try:
-    import chardet
-except ImportError:
-    chardet = None
+from copy import deepcopy
 from enum import Enum, IntEnum
+
+try:
+    from chardet import chardet_detect
+except ImportError:
+    chardet_detect = None
+try:
+    from cchardet import cchardet_detect
+except ImportError:
+    cchardet_detect = None
+try:
+    from charset_normalizer import from_bytes as chardet_from_bytes
+except ImportError:
+    chardet_from_bytes = None
 from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar
 
 from pykotor.common.geometry import Vector3
@@ -115,7 +125,7 @@ class ResRef:
             else:
                 msg = "ResRef cannot exceed 16 characters."  # sourcery skip: inline-variable
                 raise ResRef.ExceedsMaxLengthError(msg)
-        if len(text) != len(text.encode()):
+        if len(text) != len(text.encode(encoding="ascii", errors="strict")):
             msg = "ResRef must be in ASCII characters."  # sourcery skip: inline-variable
             raise ResRef.InvalidEncodingError(msg)
 
@@ -434,38 +444,100 @@ class EquipmentSlot(Enum):
     RIGHT_HAND_2 = 2**18
     LEFT_HAND_2 = 2**19
 
-def decode_bytes_with_fallbacks(ini_file_bytes: bytes):
-    ini_data: str | None = None
-    encoding: str | None = None
 
-    if chardet:
-        encoding = (chardet.detect(ini_file_bytes) or {}).get("encoding")
+FALLBACK_ENCODINGS = [
+    # "ascii",        # python's encode() and decode() defaults to utf-8 so we should match the behavior.  # noqa: ERA001
+    "utf_8",        # UTF-8: Extremely popular, variable-width, and likely to throw errors on invalid data.
+    "windows-1252", # Windows-1252: Common in Western languages, superset of ISO-8859-1, with well-defined error behavior.
+    "iso8859_15",   # ISO-8859-15: Similar to ISO-8859-1 but includes the euro sign and other characters.
+    "shift_jis",    # Shift_JIS: Popular in Japanese text, likely to throw errors on non-Japanese data.
+    "gbk",          # GBK: Superset of GB2312, popular for Simplified Chinese, distinct error behavior.
+    "euc_kr",       # EUC-KR: Common for Korean text, good error signaling.
+    "iso8859_2",    # ISO-8859-2: Latin alphabet for Central European languages, more specific than ISO-8859-1.
+    "iso8859_5",    # ISO-8859-5: Used for Cyrillic scripts, less common and likely to signal errors for non-Cyrillic text.
+    "iso8859_6",    # ISO-8859-6: Used for Arabic, strict error handling for non-Arabic text.
+    "iso8859_7",    # ISO-8859-7: Designed for Modern Greek, likely to produce errors for non-Greek text.
+    "iso8859_9",    # ISO-8859-9: Latin alphabet for Turkish, similar error behavior to other single-byte encodings.
+    "utf_16",       # UTF-16: Can encode all Unicode characters, with potential errors from improper surrogate handling.
+    "latin_1",      # ISO-8859-1: As a semi-last resort, can decode any byte stream to some character representation.
+    "utf_32",       # UTF-32: Can encode everything but is less common and has a clear error behavior for incorrect data.
+]
 
-    # A list of encodings to try
-    encodings_to_try: list[str | None] = [
-        encoding,       # chardet's best guess
-        "utf-8-sig",    # UTF-8 with BOM
-        "utf-8",        # Standard UTF-8
-        "utf-16-le",    # UTF-16 Little Endian
-        "utf-16-be",    # UTF-16 Big Endian
-        "utf-16",       # UTF-16 with BOM
-        "utf-32-le",    # UTF-32 Little Endian
-        "utf-32-be",    # UTF-32 Big Endian
-        "utf-32",       # UTF-32 with BOM
-        "ascii",        # ASCII
-        "windows-1252", # Windows-1252, a very generalized encoding that will not throw an exception, ensures we don't return None
-        "iso-8859-1",   # ISO-8859-1, a very generalized encoding that will not throw an exception, ensures we don't return None
-    ]
+
+def decode_bytes_with_fallbacks(byte_content: bytes, errors="strict", encoding: str | None = None) -> str:
+    if len(byte_content) == 0:
+        return ""
+    decoded_text: str | None = None
+    encodings_to_try = deepcopy(FALLBACK_ENCODINGS)
+    detected_encoding: str | None = None
+
+    # If a specific encoding is provided, try that first
+    if isinstance(encoding, str):
+        encodings_to_try.insert(0, encoding)  # user choice, insert after utf-8
+
+    # Detect encoding if one of our encoding detection libraries are available
+    if chardet_from_bytes is not None:
+        matches = chardet_from_bytes(byte_content).best()
+        if matches and matches.encoding:
+            detected_encoding = matches.encoding
+        if detected_encoding:
+            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # chardet_normalizer's best guess, insert after utf-8
+    if not detected_encoding and chardet_detect is not None:
+        detected_encoding = (chardet_detect(byte_content) or {}).get("encoding")
+        if detected_encoding:
+            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # chardet's best guess, insert after utf-8
+    if not detected_encoding and cchardet_detect is not None:
+        detected_encoding = (cchardet_detect(byte_content) or {}).get("encoding")
+        if detected_encoding:
+            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # cchardet's best guess, insert after utf-8
 
     for enc in encodings_to_try:
-        if enc is None:  # ignore chardet failures
-            continue
         try:
-            ini_data = ini_file_bytes.decode(enc, errors="strict")
+            decoded_text = byte_content.decode(enc, errors="strict")
             break  # Stop at the first successful decoding
         except UnicodeDecodeError:
             continue
-    return ini_data
+
+    return decoded_text or byte_content.decode("iso-8859-1", errors=errors)
+
+def encode_bytes_with_fallback(text_content: str, errors="strict", encoding: str | None = None) -> bytes:
+    if len(text_content) == 0:
+        return b""
+    encoded_bytes: bytes | None = None
+    encodings_to_try = deepcopy(FALLBACK_ENCODINGS)
+    detected_encoding: str | None = None
+
+    # If a specific encoding is provided, try that first
+    if isinstance(encoding, str):
+        encodings_to_try.insert(0, encoding)
+
+    # Detect encoding if one of our encoding detection libraries is available and no encoding is provided
+    # For encoding, we use chardet/cchardet/charset_normalizer to ensure the text is compatible with the encoding
+    if not detected_encoding and chardet_detect is not None:
+        try:
+            detected_encoding = (chardet_detect(text_content.encode()) or {}).get("encoding")
+        except UnicodeEncodeError:
+            detected_encoding = (chardet_detect(text_content.encode(encoding="utf-32", errors="ignore")))
+        if detected_encoding:
+            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # insert after utf-8
+    if not detected_encoding and cchardet_detect is not None:
+        try:
+            detected_encoding = (cchardet_detect(text_content.encode()) or {}).get("encoding")
+        except UnicodeEncodeError:
+            detected_encoding = (cchardet_detect(text_content.encode(encoding="utf-32", errors="ignore")))
+        if detected_encoding:
+            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # insert after utf-8
+    # charset_normalizer does not provide functionality for encoding detection from string to bytes
+
+    for enc in encodings_to_try:
+        try:
+            encoded_bytes = text_content.encode(enc, errors="strict")
+            break  # Stop at the first successful encoding
+        except UnicodeEncodeError:
+            continue
+
+    # As a last resort, fallback to ISO-8859-1 or another encoding that can encode any character
+    return encoded_bytes if encoded_bytes is not None else text_content.encode("iso-8859-1", errors=errors)
 
 
 class CaseInsensitiveHashSet(set, Generic[T]):

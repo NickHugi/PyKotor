@@ -96,7 +96,7 @@ def read_2da(
     file_format = detect_2da(source, offset)
 
     if file_format is ResourceType.INVALID:
-        msg = "Failed to determine the format of the GFF file."
+        msg = "Failed to determine the format of the 2DA file."
         raise ValueError(msg)
 
     if file_format == ResourceType.TwoDA:
