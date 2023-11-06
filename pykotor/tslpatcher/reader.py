@@ -172,6 +172,7 @@ class ConfigReader:
         tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section].items())
 
         sourcefile = tlk_list_edits.pop("!SourceFile", "append.tlk")
+        sourcefile_f = tlk_list_edits.pop("!SourceFileF", "appendf.tlk")  # Polish only?  # noqa: F841
 
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         range_delims: list[str] = [":", "-", "to"]
