@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import EquipmentSlot
+from pykotor.resource.formats.twoda import read_2da
 from pykotor.resource.generics.uti import read_uti
 from pykotor.resource.type import ResourceType
 
@@ -38,9 +39,9 @@ def get_body_model(
         Returns a tuple containing the name of the model and the texture to apply to the model.
     """
     if appearance is None:
-        installation.resource("appearance", ResourceType.TwoDA)
+        appearance = read_2da(installation.resource("appearance", ResourceType.TwoDA).data)
     if baseitems is None:
-        installation.resource("baseitems", ResourceType.TwoDA)
+        baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA).data)
 
     body_model = ""
     override_texture = None
@@ -55,9 +56,7 @@ def get_body_model(
 
         if EquipmentSlot.ARMOR in utc.equipment:
             armor_resref = utc.equipment[EquipmentSlot.ARMOR].resref.get()
-            armor_uti = read_uti(
-                installation.resource(armor_resref, ResourceType.UTI).data,
-            )
+            armor_uti = read_uti(installation.resource(armor_resref, ResourceType.UTI).data)
             armor_variation = baseitems.get_row(armor_uti.base_item).get_string("bodyvar").lower()
 
             normal_tex_column = f"tex{armor_variation}"
@@ -69,11 +68,10 @@ def get_body_model(
 
             model_column = f"model{armor_variation}"
             body_model = appearance.get_row(utc.appearance_id).get_string(model_column)
-            override_texture = appearance.get_row(utc.appearance_id).get_string(
-                tex_column,
-            ) + str(
-                armor_uti.texture_variation,
-            ).rjust(2, "0")
+            override_texture: str = (
+                appearance.get_row(utc.appearance_id).get_string(tex_column)
+                + str(armor_uti.texture_variation).rjust(2, "0")
+            )
 
     if body_model == "":
         body_model = appearance.get_row(utc.appearance_id).get_string("race")
@@ -107,9 +105,9 @@ def get_weapon_models(
         Returns a tuple containing right-hand and left-hand weapon model names.
     """
     if appearance is None:
-        installation.resource("appearance", ResourceType.TwoDA)
+        appearance = read_2da(installation.resource("appearance", ResourceType.TwoDA).data)
     if baseitems is None:
-        installation.resource("baseitems", ResourceType.TwoDA)
+        baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA).data)
 
     rhand_model = None
     lhand_model = None
@@ -171,9 +169,9 @@ def get_head_model(
         Returns a tuple containing the name of the model and the texture to apply to the model.
     """
     if appearance is None:
-        installation.resource("appearance", ResourceType.TwoDA)
+        appearance = read_2da(installation.resource("appearance", ResourceType.TwoDA).data)
     if heads is None:
-        installation.resource("heads", ResourceType.TwoDA)
+        heads = read_2da(installation.resource("heads", ResourceType.TwoDA).data)
 
     model = None
     texture = None
