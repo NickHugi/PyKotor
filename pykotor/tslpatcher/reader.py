@@ -411,8 +411,8 @@ class ConfigReader:
         self.log.add_note("Loading [GFFList] patches from ini...")
 
         for identifier, file in self.ini[gff_list_section].items():
-            file_section = self.get_section_name(file)
-            if not file_section:
+            file_section_name = self.get_section_name(file)
+            if not file_section_name:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, gff_list_section))
 
             replace = identifier.lower().startswith("replace")
@@ -420,7 +420,8 @@ class ConfigReader:
             self.config.patches_gff.append(modifications)
 
             modifier: ModifyGFF | None = None
-            for key, value in self.ini[file_section].items():
+            file_section = self.ini[file_section_name]
+            for key, value in file_section.items():
                 lowercase_key = key.lower()
                 if lowercase_key == "!destination":
                     modifications.destination = value
@@ -436,7 +437,7 @@ class ConfigReader:
                     if lowercase_key.startswith("addfield"):
                         next_gff_section = self.get_section_name(value)
                         if not next_gff_section:
-                            raise KeyError(SECTION_NOT_FOUND_ERROR.format(value, key, value, file_section))
+                            raise KeyError(SECTION_NOT_FOUND_ERROR.format(value, key, value, file_section_name))
 
                         next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section].items())
                         modifier = self.add_field_gff(next_gff_section, next_section_dict)
@@ -447,7 +448,7 @@ class ConfigReader:
                             PureWindowsPath(""),
                         )
                     else:
-                        modifier = self.modify_field_gff(file_section, key, value)
+                        modifier = self.modify_field_gff(file_section_name, key, value)
 
                     modifications.modifiers.append(modifier)
 
