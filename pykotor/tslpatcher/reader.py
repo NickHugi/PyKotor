@@ -137,7 +137,7 @@ class ConfigReader:
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
 
-    def load_filelist(self) -> None:
+    def load_filelist(self) -> None:  # TODO: !SourceFile, !SaveAs, !Filename
         install_list_section = self.get_section_name("installlist")
         if not install_list_section:
             self.log.add_error("[InstallList] section missing from ini.")
@@ -163,7 +163,9 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [TLKList] patches from ini...")
-        tlk_list_edits = self.ini[tlk_list_section]
+        tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section].items())
+
+        sourcefile = tlk_list_edits.pop("!SourceFile", "append.tlk")
 
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         range_delims: list[str] = [":", "-", "to"]
@@ -234,7 +236,7 @@ class ConfigReader:
                 if lowercase_key.startswith("strref"):
                     # load append.tlk only if it's needed.
                     if append_tlk_edits is None:
-                        append_tlk_edits = read_tlk(self.mod_path / "append.tlk")
+                        append_tlk_edits = read_tlk(self.mod_path / sourcefile)
                     if len(append_tlk_edits) == 0:
                         syntax_error_caught = True
                         msg = f"'append.tlk' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
@@ -418,8 +420,12 @@ class ConfigReader:
                     modifications.destination = value
                 elif lowercase_key == "!replacefile":
                     modifications.replace_file = bool(int(value))
-                elif lowercase_key in ["!filename", "!saveas"]:
-                    modifications.filename = value
+                elif lowercase_key == "!sourcefile":
+                    modifications.sourcefile = value
+                elif lowercase_key == ["!filename", "!saveas"]:
+                    modifications.saveas = value
+                elif lowercase_key == "!overridetype":
+                    modifications.override_type = value.lower()
                 else:
                     if lowercase_key.startswith("addfield"):
                         next_gff_section = self.get_section_name(value)
@@ -447,11 +453,20 @@ class ConfigReader:
 
         self.log.add_note("Loading [CompileList] patches from ini...")
         files = CaseInsensitiveDict(self.ini[compilelist_section].items())
-        destination = files.pop("!Destination", None)
+        default_destination: str = files.pop("!DefaultDestination", "Override")
 
         for identifier, file in files.items():
             replace = identifier.lower().startswith("replace")
-            self.config.patches_nss.append(ModificationsNSS(file, replace, destination))
+            optional_file_section_name = self.get_section_name(file)
+            modifications = ModificationsNSS(file, replace)
+            if optional_file_section_name is not None:
+                file_ini_section = CaseInsensitiveDict(self.ini[optional_file_section_name].items())
+                modifications.destination = file_ini_section.pop("!Destination", default_destination)
+                modifications.saveas = file_ini_section.pop("!SaveAs", file_ini_section.pop("!Filename", modifications.saveas))
+                modifications.replace_file = bool(file_ini_section.pop("!ReplaceFile", replace))
+                modifications.sourcefile = file_ini_section.pop("!SourceFile", modifications.sourcefile)
+                modifications.destination = file_ini_section.pop("!Destination", default_destination)
+            self.config.patches_nss.append(modifications)
 
     #################
 
@@ -569,7 +584,7 @@ class ConfigReader:
                 value = FieldValueConstant(GFFStruct(struct_id))
                 path /= ">>##INDEXINLIST##<<"  # see the check in mods/gff.py. Perhaps need to check if label is set, first?
             else:
-                msg = f"Could not find valid field return type in '[{identifier}]' matching field type '{field_type}' in this context"
+                msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type}' in this context"
                 raise ValueError(msg)
         elif raw_value.lower().startswith("2damemory"):
             token_id = int(raw_value[9:])

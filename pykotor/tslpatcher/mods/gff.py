@@ -349,10 +349,12 @@ class ModificationsGFF(PatcherModifications):
         replace_file: bool,
         modifiers: list[ModifyGFF] | None = None,
         destination: str | None = "Override",
+        saveas: str | None = None,
     ) -> None:
-        super().__init__(filename, destination)
+        super().__init__(filename, destination, saveas)
         self.replace_file: bool = replace_file
         self.no_replacefile_check = True
+        self.override_type: str | None = None
         self.modifiers: list[ModifyGFF] = modifiers if modifiers is not None else []
 
     def apply(

@@ -37,5 +37,5 @@ class ModificationsNSS(PatcherModifications):
             source = source[: match.start()] + str(value) + source[match.end() :]
             match = re.search(r"#StrRef\d+#", source)
 
-        self.filename = str(PurePath(self.filename).with_suffix(".ncs"))
+        self.sourcefile = str(PurePath(self.sourcefile).with_suffix(".ncs"))
         return bytes_ncs(compile_nss(source, game))

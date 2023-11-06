@@ -220,36 +220,41 @@ class ModInstaller:
         self._processed_backup_files = set()
         return (self._backup, self._processed_backup_files)
 
-    def handle_capsule_and_backup(self, patch, output_container_path: CaseAwarePath) -> tuple[bool, Capsule | None]:
+    def handle_capsule_and_backup(self, patch: PatcherModifications, output_container_path: CaseAwarePath) -> tuple[bool, Capsule | None]:
         capsule = None
-        filename = PurePath(patch.filename)
-        if filename.suffix.lower() == ".nss":
-            filename.with_suffix(".ncs")
         if is_capsule_file(patch.destination):
             capsule = Capsule(output_container_path)
             create_backup(self.log, output_container_path, *self.backup(), PurePath(patch.destination).parent)
-            exists = capsule.exists(*ResourceIdentifier.from_path(filename))
+            exists = capsule.exists(*ResourceIdentifier.from_path(patch.saveas))
         else:
-            create_backup(self.log, output_container_path.joinpath(patch.filename), *self.backup(), patch.destination)
-            exists = output_container_path.joinpath(filename).exists()
+            create_backup(self.log, output_container_path.joinpath(patch.saveas), *self.backup(), patch.destination)
+            exists = output_container_path.joinpath(patch.saveas).exists()
         return (exists, capsule)
 
     def lookup_resource(
         self,
-        patch,
+        patch: PatcherModifications,
         output_container_path: CaseAwarePath,
         exists_at_output_location: bool | None = None,
         capsule: Capsule | None = None,
     ) -> bytes | None:
         if getattr(patch, "replace_file", None) or not exists_at_output_location:
-            return BinaryReader.load_file(self.mod_path / patch.filename)
+            return BinaryReader.load_file(self.mod_path / patch.sourcefile)
         if capsule is not None:
-            return capsule.resource(*ResourceIdentifier.from_path(patch.filename))
-        return BinaryReader.load_file(output_container_path / patch.filename)
+            return capsule.resource(*ResourceIdentifier.from_path(patch.sourcefile))
+        return BinaryReader.load_file(output_container_path / patch.sourcefile)
+
+    def handle_override_type(self, patch: PatcherModifications):
+        if getattr(patch, "override_type", None) == "rename":
+            override_dir = self.game_path / "Override"
+            override_resource_path = override_dir / patch.saveas
+            if override_resource_path.exists():
+                shutil.move(self.game_path / patch.destination / patch.saveas, self.game_path / patch.destination / ("old_" + patch.saveas))
+
 
     def should_patch(
         self,
-        patch,
+        patch: PatcherModifications,
         exists: bool | None = False,
         capsule: Capsule | None = None,
     ) -> bool:
@@ -262,23 +267,23 @@ class ModInstaller:
         container_type = "folder" if capsule is None else "archive"
 
         if replace_file and exists:
-            self.log.add_note(f"{action[:-1]}ing '{patch.filename}' and replacing existing file in the '{local_folder}' {container_type}")
+            self.log.add_note(f"{action[:-1]}ing '{patch.saveas}' and replacing existing file in the '{local_folder}' {container_type}")
             return True
 
         if no_replacefile_check and exists:
-            self.log.add_note(f"{action[:-1]}ing existing file '{patch.filename}' in the '{local_folder}' {container_type}")
+            self.log.add_note(f"{action[:-1]}ing existing file '{patch.saveas}' in the '{local_folder}' {container_type}")
             return True
 
         if is_replaceable and exists:
-            self.log.add_warning(f"'{patch.filename}' already exists in the '{local_folder}' {container_type}. Skipping file...")
+            self.log.add_warning(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
         if capsule is not None and not capsule._path.exists():
-            self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {action.lower().rstrip()} '{patch.filename}'. Skipping file...")
+            self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")
             return False
 
         save_type: str = "adding" if capsule is not None else "saving"
-        self.log.add_note(f"{action[:-1]}ing '{patch.filename}' and {save_type} to the '{local_folder}' {container_type}")
+        self.log.add_note(f"{action[:-1]}ing '{patch.sourcefile}' and {save_type} to the '{local_folder}' {container_type}")
         return True
 
     def install(self) -> None:
@@ -311,13 +316,15 @@ class ModInstaller:
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
             if not data_to_patch_bytes:
-                self.log.add_error(f"Could not locate resource to patch: '{patch.filename}'")
+                self.log.add_error(f"Could not locate resource to patch: '{patch.sourcefile}'")
                 continue
+            if capsule:
+                self.handle_override_type(patch)
             patched_bytes_data = patch.apply(data_to_patch_bytes, memory, self.log, self.game())
             if capsule is not None:
-                capsule.add(*ResourceIdentifier.from_path(patch.filename), patched_bytes_data)
+                capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
             else:
-                BinaryWriter.dump(output_container_path / patch.filename, patched_bytes_data)
+                BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
             self.log.complete_patch()
 
         self.log.add_note(f"Successfully completed {self.log.patches_completed} total patches.")

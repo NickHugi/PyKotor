@@ -12,9 +12,10 @@ if TYPE_CHECKING:
 
 class PatcherModifications(ABC):
 
-    def __init__(self, filename: str, destination: str | None = None) -> None:
-        self.filename: str = filename
-        self.destination: str = destination or "Override"
+    def __init__(self, sourcefile: str, destination: str | None = None, saveas: str | None = None) -> None:
+        self.sourcefile: str = sourcefile
+        self.saveas = saveas if saveas is not None else sourcefile
+        self.destination: str = destination if destination is not None else "Override"
         self.action: str = "Patch" + " "
 
     @abstractmethod

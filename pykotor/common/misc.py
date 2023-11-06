@@ -17,7 +17,7 @@ try:
     from charset_normalizer import from_bytes as chardet_from_bytes
 except ImportError:
     chardet_from_bytes = None
-from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generator, Generic, Iterable, Optional, TypeVar
 
 from pykotor.common.geometry import Vector3
 from pykotor.tools.path import PurePath
@@ -633,6 +633,9 @@ class CaseInsensitiveDict(Generic[T]):
             case_insensitive_dict[key] = value  # Utilize the __setitem__ method for setting items
 
         return case_insensitive_dict
+
+    def __iter__(self):
+        yield from self._dictionary
 
     def __getitem__(self, key: str) -> T:
         return self._dictionary[self._case_map[key.lower()]]

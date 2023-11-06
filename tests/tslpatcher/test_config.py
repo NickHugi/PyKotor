@@ -7,7 +7,7 @@ from pykotor.tslpatcher.config import ModInstaller
 class TestConfig(unittest.TestCase):
     def setUp(self):
         self.patch = Mock()
-        setattr(self.patch, "filename", "test_filename")
+        setattr(self.patch, "sourcefile", "test_filename")
         self.config = ModInstaller("","","")
         setattr(self.config, "mod_path", Path("test_mod_path"))
         self.output_container_path = Path("test_output_container_path")
