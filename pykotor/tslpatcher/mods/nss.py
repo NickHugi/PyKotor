@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class ModificationsNSS(PatcherModifications):
     def __init__(self, filename: str, replace_file: bool, destination: str | None = None) -> None:
-        super().__init__(filename, destination)
+        super().__init__(filename, destination, saveas=str(PurePath(self.sourcefile).with_suffix(".ncs")))
         self.replace_file: bool = replace_file
         self.action: str = "Compile"
 
@@ -37,5 +37,4 @@ class ModificationsNSS(PatcherModifications):
             source = source[: match.start()] + str(value) + source[match.end() :]
             match = re.search(r"#StrRef\d+#", source)
 
-        self.sourcefile = str(PurePath(self.sourcefile).with_suffix(".ncs"))
         return bytes_ncs(compile_nss(source, game))
