@@ -245,7 +245,7 @@ class ModInstaller:
         return BinaryReader.load_file(output_container_path / patch.saveas)
 
     def handle_override_type(self, patch: PatcherModifications):
-        override_type = getattr(patch, "override_type", "").lower().strip()
+        override_type = (getattr(patch, "override_type", "") or "").lower().strip()
         if not override_type or override_type == "ignore":
             return
 
