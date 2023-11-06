@@ -654,11 +654,11 @@ class IncludeScript(TopLevelObject):
         for folder in root.library_lookup:
             filepath = folder / f"{self.file.value}.nss"
             if filepath.exists():
-                source = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath))
+                source = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath), errors="ignore")
                 break
         else:
             if self.file.value in self.library:
-                source = decode_bytes_with_fallbacks(self.library[self.file.value])
+                source = decode_bytes_with_fallbacks(self.library[self.file.value], errors="ignore")
             else:
                 msg = f"Could not find included script '{self.file.value}.nss'."
                 raise CompileException(msg)
