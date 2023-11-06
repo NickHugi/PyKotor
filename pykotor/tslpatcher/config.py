@@ -241,8 +241,8 @@ class ModInstaller:
         if getattr(patch, "replace_file", None) or not exists_at_output_location:
             return BinaryReader.load_file(self.mod_path / patch.sourcefile)
         if capsule is not None:
-            return capsule.resource(*ResourceIdentifier.from_path(patch.sourcefile))
-        return BinaryReader.load_file(output_container_path / patch.sourcefile)
+            return capsule.resource(*ResourceIdentifier.from_path(patch.saveas))
+        return BinaryReader.load_file(output_container_path / patch.saveas)
 
     def handle_override_type(self, patch: PatcherModifications):
         if getattr(patch, "override_type", None) == "rename":
