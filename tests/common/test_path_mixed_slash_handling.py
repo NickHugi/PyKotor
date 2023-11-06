@@ -32,8 +32,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\\\server\\\\folder")
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
                 self.assertEqual(
-                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
-                    "\\\\wsl.localhost\\path\\to\\file with space",
+                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space ")),
+                    "\\\\wsl.localhost\\path\\to\\file with space ",
                 )
 
                 # Special Characters
@@ -76,8 +76,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
                 self.assertEqual(
-                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
-                    "\\\\wsl.localhost\\path\\to\\file with space",
+                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space ")),
+                    "\\\\wsl.localhost\\path\\to\\file with space ",
                 )
 
                 # Special Characters
@@ -120,8 +120,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 # Network Paths
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
                 self.assertEqual(
-                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
-                    "\\\\wsl.localhost\\path\\to\\file with space",
+                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space ")),
+                    "\\\\wsl.localhost\\path\\to\\file with space ",
                 )
                 if os.name == "posix":
                     self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder")
@@ -131,11 +131,9 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder\\")
                     if sys.version_info < (3, 12):
                         self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\server\\folder")
-                    else:
-                        self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
-                    if sys.version_info < (3, 12):
                         self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\server\\folder")
                     else:
+                        self.assertEqual(str(PathType("\\\\\\\\server\\folder/")), "\\\\\\\\server\\folder")
                         self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\\\server\\folder")
 
                 # Special Characters
@@ -181,8 +179,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "/server/folder")
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "/wsl.localhost/path/to/file")
                 self.assertEqual(
-                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
-                    "/wsl.localhost/path/to/file with space",
+                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space ")),
+                    "/wsl.localhost/path/to/file with space ",
                 )
 
                 # Special Characters
@@ -220,8 +218,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                 self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\server\\folder")
                 self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
                 self.assertEqual(
-                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
-                    "\\\\wsl.localhost\\path\\to\\file with space",
+                    str(PathType("\\\\wsl.localhost\\path\\to\\file with space ")),
+                    "\\\\wsl.localhost\\path\\to\\file with space ",
                 )
 
                 # Special Characters
@@ -261,8 +259,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "/server/folder")
                     self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "/wsl.localhost/path/to/file")
                     self.assertEqual(
-                        str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
-                        "/wsl.localhost/path/to/file with space",
+                        str(PathType("\\\\wsl.localhost\\path\\to\\file with space ")),
+                        "/wsl.localhost/path/to/file with space ",
                     )
                 elif os.name == "nt":
                     self.assertEqual(str(PathType("\\\\server\\folder")), "\\\\server\\folder")
@@ -270,8 +268,8 @@ class TestPathlibMixedSlashes(unittest.TestCase):
                     self.assertEqual(str(PathType("\\\\\\server\\\\folder")), "\\\\server\\folder")
                     self.assertEqual(str(PathType("\\\\wsl.localhost\\path\\to\\file")), "\\\\wsl.localhost\\path\\to\\file")
                     self.assertEqual(
-                        str(PathType("\\\\wsl.localhost\\path\\to\\file with space")),
-                        "\\\\wsl.localhost\\path\\to\\file with space",
+                        str(PathType("\\\\wsl.localhost\\path\\to\\file with space ")),
+                        "\\\\wsl.localhost\\path\\to\\file with space ",
                     )
 
                 # Special Characters
