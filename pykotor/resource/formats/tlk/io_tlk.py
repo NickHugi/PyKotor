@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Literal
-
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef, WrappedInt
 from pykotor.common.stream import ArrayHead
