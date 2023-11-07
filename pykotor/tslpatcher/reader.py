@@ -65,6 +65,7 @@ if TYPE_CHECKING:
 
 SECTION_NOT_FOUND_ERROR: str = "The [{}] section was not found in the ini, referenced by '{}={}' in [{}]"
 
+
 class ConfigReader:
     def __init__(self, ini: ConfigParser, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
         self.ini = ini
@@ -683,7 +684,6 @@ class ConfigReader:
         identifier: str,
         modifiers: CaseInsensitiveDict,
     ) -> Modify2DA | None:
-
         exclusive_column: str | None
         modification: Modify2DA | None = None
         lowercase_key = key.lower()
@@ -762,7 +762,7 @@ class ConfigReader:
 
         if "RowIndex" in modifiers:
             return get_target(TargetType.ROW_INDEX, "RowIndex", is_int=True)
-        if "RowLabel" in modifiers: 
+        if "RowLabel" in modifiers:
             return get_target(TargetType.ROW_LABEL, "RowLabel")
         if "LabelIndex" in modifiers:
             return get_target(TargetType.LABEL_COLUMN, "LabelIndex")
@@ -775,7 +775,6 @@ class ConfigReader:
         identifier: str,
         modifiers: CaseInsensitiveDict[str],
     ) -> tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]]:
-
         cells: dict[str, RowValue] = {}
         store_2da: dict[int, RowValue] = {}
         store_tlk: dict[int, RowValue] = {}

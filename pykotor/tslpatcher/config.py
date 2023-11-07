@@ -15,6 +15,7 @@ from pykotor.tools.path import CaseAwarePath, PurePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFolder, create_backup
+from pykotor.tslpatcher.mods.template import OverrideType
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
 if TYPE_CHECKING:
@@ -47,6 +48,7 @@ class LogLevel(IntEnum):
     """Full feedback. On top of what is displayed at level 3, it also shows verbose progress
     information that may be useful for a Modder to see what is happening. Intended for
     Debugging."""
+
 
 class PatcherConfig:
     def __init__(self) -> None:
@@ -177,6 +179,7 @@ class ModInstaller:
         if self._game:
             return self._game
         path = self.game_path
+
         def check(x) -> bool:
             file_path: CaseAwarePath = path.joinpath(x)
             return file_path.exists()
@@ -246,14 +249,24 @@ class ModInstaller:
 
     def handle_override_type(self, patch: PatcherModifications):
         override_type = patch.override_type.lower().strip()
-        if not override_type or override_type == "ignore":
+        if not override_type or override_type == OverrideType.IGNORE:
             return
 
         override_dir = self.game_path / "Override"
         override_resource_path = override_dir / patch.saveas
         if override_resource_path.exists():
             if override_type == "rename":
-                shutil.move(override_resource_path, override_dir / ("old_" + patch.saveas))
+                new_filepath: CaseAwarePath = override_dir / ("old_" + patch.saveas)
+                i = 2
+                while new_filepath.exists():  # tslpatcher does not do this loop.
+                    stem = new_filepath.stem if i == 2 else (new_filepath.stem[4:] + f" ({i})")
+                    new_filepath = (new_filepath.parent / stem).with_suffix(new_filepath.suffix)
+                    i += 1
+                try:
+                    shutil.move(override_resource_path, new_filepath)
+                except Exception as e:  # noqa: BLE001
+                    # Handle exceptions such as permission errors or file in use.
+                    self.log.add_error(f"Could not rename file to {new_filepath.name}: {e!r}")
             elif override_type == "warn":
                 self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's ERF/RIM patch in {patch.destination}!")
 
@@ -267,15 +280,16 @@ class ModInstaller:
     ) -> bool:
         local_folder = self.game_path.name if patch.destination == "." else patch.destination
 
-        action = getattr(patch, "action", "Patch" + " ")
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
-            self.log.add_note(f"{action[:-1]}ing '{patch.sourcefile}' and replacing existing file '{patch.saveas}' in the '{local_folder}' {container_type}")
+            self.log.add_note(
+                f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file '{patch.saveas}' in the '{local_folder}' {container_type}"
+            )
             return True
 
         if not patch.skip_if_not_replace and exists:
-            self.log.add_note(f"{action[:-1]}ing existing file '{patch.saveas}' in the '{local_folder}' {container_type}")
+            self.log.add_note(f"{patch.action[:-1]}ing existing file '{patch.saveas}' in the '{local_folder}' {container_type}")
             return True
 
         if patch.skip_if_not_replace and (not patch.replace_file and exists):  # [InstallList] only?
@@ -283,13 +297,15 @@ class ModInstaller:
             return False
 
         if capsule is not None and not capsule.path().exists():
-            self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")
+            self.log.add_error(
+                f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
+            )
             return False
 
         # In capsules, I haven't seen any TSLPatcher mods reach this point. I know TSLPatcher at least supports this portion for non-capsules.
         # Most mods will use an [InstallList] to ensure the files exist in the game path before patching anyways, but not all.
         save_type: str = "adding" if capsule is not None else "saving"
-        self.log.add_note(f"{action[:-1]}ing '{patch.sourcefile}' and {save_type} to the '{local_folder}' {container_type}")
+        self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} to the '{local_folder}' {container_type}")
         return True
 
     def install(self) -> None:
@@ -318,7 +334,7 @@ class ModInstaller:
         for patch in patches_list:
             output_container_path = self.game_path / patch.destination
             exists, capsule = self.handle_capsule_and_backup(patch, output_container_path)
-            if not self.should_patch(patch, exists, capsule):  # only returns False for installlist I believe (which currently doesn't even use it - todo)
+            if not self.should_patch(patch, exists, capsule):
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
             if not data_to_patch_bytes:
