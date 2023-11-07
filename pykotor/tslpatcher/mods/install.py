@@ -275,5 +275,5 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def apply(self, output_file_path, log, game):
+    def apply(self, output_file_path, memory, log, game):
         pass
