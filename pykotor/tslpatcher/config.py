@@ -327,11 +327,10 @@ class ModInstaller:
             if data_to_patch_bytes is None:  # check None as sometimes mods will installlist empty files.
                 self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                 continue
-            if capsule:
-                self.handle_override_type(patch)
 
             patched_bytes_data = patch.apply(data_to_patch_bytes, memory, self.log, self.game())
             if capsule is not None:
+                self.handle_override_type(patch)
                 capsule.add(*ResourceIdentifier.from_path(patch.saveas), patched_bytes_data)
             else:
                 BinaryWriter.dump(output_container_path / patch.saveas, patched_bytes_data)
