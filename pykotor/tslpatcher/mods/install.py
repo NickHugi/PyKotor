@@ -3,11 +3,8 @@ from __future__ import annotations
 import shutil
 from typing import TYPE_CHECKING
 
-from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.extract.capsule import Capsule
-from pykotor.extract.file import ResourceIdentifier
-from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, PurePath
+from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
     import os
@@ -271,95 +268,14 @@ read -rp "Press enter to continue..."
         )
 
 
-class InstallFile:
+class InstallFile(PatcherModifications):
     def __init__(self, filename: str, replace_existing: bool) -> None:
         self.filename: str = filename
         self.replace_existing: bool = replace_existing
+        self.destination: str #= self.DEFAULT_DESTINATION
 
-    def apply_encapsulated(
-        self,
-        log: PatchLogger,
-        source_folder: CaseAwarePath,
-        destination: Capsule,
-        local_folder: os.PathLike | str,
-        backup_dir: CaseAwarePath,
-        processed_files: set,
-    ) -> None:
-        resname, restype = ResourceIdentifier.from_path(self.filename)
-
-        if self.replace_existing or destination.resource(resname, restype) is None:
-            destination_path = destination.path()
-            if not isinstance(destination_path, CaseAwarePath):
-                destination_path = CaseAwarePath(destination_path)
-            create_backup(log, destination_path, backup_dir, processed_files, local_folder)
-            if self.replace_existing and destination.resource(resname, restype) is not None:
-                log.add_note(f"Replacing file '{self.filename}' in the '{destination.filename()}' archive...")
-            else:
-                log.add_note(f"Adding file '{self.filename}' to the '{destination.filename()}' archive...")
-
-            data = BinaryReader.load_file(source_folder / self.filename)
-            destination.add(resname, restype, data)
-        else:
-            log.add_warning(f"A file named '{self.filename}' already exists in the '{destination.filename()}' archive. Skipping file...")
-
-    def apply_file(
-        self,
-        log: PatchLogger,
-        source_folder: CaseAwarePath,
-        destination: CaseAwarePath,
-        local_folder: os.PathLike | str,
-        backup_dir: CaseAwarePath,
-        processed_files: set,
-    ) -> None:
-        data = BinaryReader.load_file(source_folder / self.filename)
-        save_file_to = destination / self.filename
-        file_exists: bool = save_file_to.exists()
-        if self.replace_existing or not file_exists:
-            # reduce io work from destination.exists() by first using our file exists check.
-            if not file_exists and not destination.exists():
-                log.add_note(f"Folder '{destination}' did not exist, creating it...")
-                destination.mkdir(parents=True)
-
-            create_backup(log, save_file_to, backup_dir, processed_files, local_folder)
-            if file_exists:
-                log.add_note(f"Replacing file '{self.filename}' in the '{local_folder}' folder...")
-            else:
-                log.add_note(f"Copying file '{self.filename}' to the '{local_folder}' folder...")
-
-            BinaryWriter.dump(save_file_to, data)
-        else:
-            log.add_warning(f"A file named '{self.filename}' already exists in the '{local_folder}' folder. Skipping file...")
-
-
-class InstallFolder:
-    """The `InstallFolder` class represents a folder that can be installed to, and it provides a method to
-    apply the installation by copying files from a source path to a destination path.
-    """
-
-    def __init__(
-        self,
-        foldername: str,
-        files: list[InstallFile] | None = None,
-    ) -> None:
+        self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
-        self.foldername: str = foldername
-        self.files: list[InstallFile] = files or []
 
-    def apply(
-        self,
-        log: PatchLogger,
-        source_path: CaseAwarePath,
-        destination_path: CaseAwarePath,
-        backup_dir: CaseAwarePath,
-        processed_files: set,
-    ):
-        target: CaseAwarePath = destination_path / self.foldername
-
-        if is_capsule_file(self.foldername):
-            destination = Capsule(target, create_nonexisting=True)
-            local_folder = PurePath(self.foldername).parent
-            for file in self.files:
-                file.apply_encapsulated(log, source_path, destination, local_folder, backup_dir, processed_files)
-        else:
-            for file in self.files:
-                file.apply_file(log, source_path, target, self.foldername, backup_dir, processed_files)
+    def apply(self, output_file_path, log, game):
+        pass

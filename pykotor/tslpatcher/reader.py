@@ -114,11 +114,7 @@ class ConfigReader:
 
     def get_section_name(self, section_name: str):
         return next(
-            (
-                section
-                for section in self.ini.sections()
-                if section.lower() == section_name.lower()
-            ),
+            (section for section in self.ini.sections() if section.lower() == section_name.lower()),
             None,
         )
 
@@ -145,7 +141,7 @@ class ConfigReader:
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
 
-    def load_filelist(self) -> None:  # TODO: !SourceFile, !SaveAs, !Filename
+    def load_filelist(self) -> None:
         install_list_section = self.get_section_name("installlist")
         if not install_list_section:
             self.log.add_warning("[InstallList] section missing from ini.")
@@ -156,13 +152,18 @@ class ConfigReader:
             foldername_section = self.get_section_name(key)
             if foldername_section is None:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(foldername, key, foldername, install_list_section))
-            folder_install = InstallFolder(foldername)
-            self.config.install_list.append(folder_install)
 
             for key2, filename in self.ini[foldername_section].items():
                 replace_existing = key2.lower().startswith("replace")
                 file_install = InstallFile(filename, replace_existing)
-                folder_install.files.append(file_install)
+                file_install.destination = foldername
+                self.config.install_list.append(file_install)
+
+                # optional according to tslpatcher readme
+                file_section_name = self.get_section_name(filename)
+                if file_section_name:
+                    file_section_dict = CaseInsensitiveDict(self.ini[file_section_name].items())
+                    file_install.pop_tslpatcher_vars(file_section_dict)
 
     def load_tlk_list(self) -> None:
         tlk_list_section = self.get_section_name("tlklist")
@@ -324,7 +325,6 @@ class ConfigReader:
         twoda_section_dict = CaseInsensitiveDict(self.ini[twoda_section_name].items())
         default_destination = twoda_section_dict.pop("!DefaultDestination", Modifications2DA.DEFAULT_DESTINATION)
         for identifier, file in twoda_section_dict.items():
-
             file_section = self.get_section_name(file)
             if not file_section:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, twoda_section_name))
@@ -599,12 +599,16 @@ class ConfigReader:
                 value = FieldValueConstant(GFFStruct(struct_id))
                 path /= ">>##INDEXINLIST##<<"  # see the check in mods/gff.py. Perhaps need to check if label is set, first?
             else:
-                msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type}' in this context"
+                msg = (
+                    f"Could not find valid field return type in [{identifier}] matching field type '{field_type}' in this context"
+                )
                 raise ValueError(msg)
         elif raw_value.lower().startswith("2damemory"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
-        elif raw_value.lower().endswith("strref"):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'? Or is this already handled elsewhere?
+        elif raw_value.lower().endswith(
+            "strref"
+        ):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'? Or is this already handled elsewhere?
             token_id = int(raw_value[6:])
             value = FieldValueTLKMemory(token_id)
         elif field_type.return_type() == int:
@@ -745,7 +749,9 @@ class ConfigReader:
                 store_2da,  # type: ignore[arg-type]
             )
         else:
-            msg = f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']"
+            msg = (
+                f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']"
+            )
             raise KeyError(msg)
 
         return modification
