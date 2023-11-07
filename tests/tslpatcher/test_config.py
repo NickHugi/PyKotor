@@ -5,7 +5,7 @@ from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import ModInstaller
 
 
-class TestConfig(unittest.TestCase):
+class TestLookupResourceFunction(unittest.TestCase):
     def setUp(self):
         self.patch = Mock()
         setattr(self.patch, "sourcefile", "test_filename")
@@ -93,9 +93,7 @@ class TestConfig(unittest.TestCase):
             mock_resource.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertIsNone(
-                self.config.lookup_resource(self.patch, self.output_container_path, exists_at_output_location=True, capsule=capsule)
-            )
+            self.assertIsNone(self.config.lookup_resource(self.patch, self.output_container_path, exists_at_output_location=True, capsule=capsule))
 
     def test_lookup_resource_no_capsule_exists_true_no_file(self):
         # Arrange
