@@ -27,7 +27,7 @@ class PatcherModifications(ABC):
         self.destination: str = self.DEFAULT_DESTINATION
 
         self.action: str = "Patch" + " "
-        self.override_type: str = OverrideType.IGNORE
+        self.override_type: str = OverrideType.WARN
         self.skip_if_not_replace = False  # [InstallList] only?
 
     @abstractmethod
