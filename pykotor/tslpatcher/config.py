@@ -288,7 +288,7 @@ class ModInstaller:
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
-            saveas_str = f"'{patch.saveas}' to" if patch.saveas != patch.sourcefile else "in"
+            saveas_str = f"'{patch.saveas}' in" if patch.saveas != patch.sourcefile else "in"
             self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file {saveas_str} the '{local_folder}' {container_type}")
             return True
 
@@ -306,9 +306,9 @@ class ModInstaller:
 
         # In capsules, I haven't seen any TSLPatcher mods reach this point. I know TSLPatcher at least supports this portion for non-capsules.
         # Most mods will use an [InstallList] to ensure the files exist before patching anyways, but not all.
-        save_type: str = "adding" if capsule is not None else "saving"
-        saving_as_str = f"as '{patch.saveas}' " if patch.saveas != patch.sourcefile else ""
-        self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str}to the '{local_folder}' {container_type}")
+        save_type: str = "adding" if capsule is not None and patch.saveas == patch.sourcefile else "saving"
+        saving_as_str = f"as '{patch.saveas}' in" if patch.saveas != patch.sourcefile else "to"
+        self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str} the '{local_folder}' {container_type}")
         return True
 
     def install(self) -> None:
