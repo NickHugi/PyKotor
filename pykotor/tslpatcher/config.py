@@ -267,7 +267,7 @@ class ModInstaller:
                 new_filepath: CaseAwarePath = override_dir / ("old_" + patch.saveas)
                 i = 2
                 while new_filepath.exists():  # tslpatcher does not do this loop.
-                    stem = new_filepath.stem if i == 2 else (new_filepath.stem[4:] + f" ({i})")  # noqa: PLR2004
+                    stem = new_filepath.stem if i == 2 else (new_filepath.stem[:-4] + f" ({i})")  # noqa: PLR2004
                     new_filepath = (new_filepath.parent / stem).with_suffix(new_filepath.suffix)
                     i += 1
                 try:
