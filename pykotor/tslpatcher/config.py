@@ -224,7 +224,9 @@ class ModInstaller:
         return (self._backup, self._processed_backup_files)
 
     def handle_capsule_and_backup(
-        self, patch: PatcherModifications, output_container_path: CaseAwarePath
+        self,
+        patch: PatcherModifications,
+        output_container_path: CaseAwarePath,
     ) -> tuple[bool, Capsule | None]:
         capsule = None
         if is_capsule_file(patch.destination):
@@ -304,7 +306,8 @@ class ModInstaller:
         # In capsules, I haven't seen any TSLPatcher mods reach this point. I know TSLPatcher at least supports this portion for non-capsules.
         # Most mods will use an [InstallList] to ensure the files exist in the game path before patching anyways, but not all.
         save_type: str = "adding" if capsule is not None else "saving"
-        self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} as '{patch.saveas}' to the '{local_folder}' {container_type}")
+        saving_as_str = f"as '{patch.saveas}' " if patch.saveas != patch.sourcefile else ""
+        self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str}to the '{local_folder}' {container_type}")
         return True
 
     def install(self) -> None:
@@ -327,7 +330,7 @@ class ModInstaller:
             if not self.should_patch(patch, exists, capsule):
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
-            if data_to_patch_bytes is None:  # check None instead of `not data_do_patch_bytes` as sometimes mods will installlist empty files.
+            if data_to_patch_bytes is None:  # check None instead of `not data_to_patch_bytes` as sometimes mods will installlist empty files.
                 self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                 continue
 
