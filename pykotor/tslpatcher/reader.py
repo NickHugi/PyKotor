@@ -33,10 +33,9 @@ from pykotor.tslpatcher.mods.gff import (
     ModificationsGFF,
     ModifyFieldGFF,
 )
-from pykotor.tslpatcher.mods.install import InstallFile, InstallFolder
+from pykotor.tslpatcher.mods.install import InstallFile
 from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
-from pykotor.tslpatcher.mods.template import PatcherModifications
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (
     AddColumn2DA,
