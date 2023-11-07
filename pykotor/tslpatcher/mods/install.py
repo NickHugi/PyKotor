@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 from typing import TYPE_CHECKING
+from pykotor.common.stream import BinaryReader
 
 from pykotor.tools.path import CaseAwarePath, PurePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
@@ -275,5 +276,5 @@ class InstallFile(PatcherModifications):
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
 
-    def apply(self, output_file_path, memory, log, game):
-        pass
+    def apply(self, source, memory, log, game):
+        return source
