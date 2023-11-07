@@ -139,7 +139,7 @@ class TestConfig(unittest.TestCase):
 
 class TestShouldPatchFunction(unittest.TestCase):
     def setUp(self):
-        self.patcher = MagicMock()
+        self.patcher = ModInstaller("", "", "")
         self.patcher.game_path = MagicMock()
         self.patcher.game_path.name = "swkotor"
         self.patcher.log = MagicMock()
