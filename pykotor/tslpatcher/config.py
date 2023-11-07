@@ -243,11 +243,15 @@ class ModInstaller:
         exists_at_output_location: bool | None = None,
         capsule: Capsule | None = None,
     ) -> bytes | None:
-        if patch.replace_file or not exists_at_output_location:
-            return BinaryReader.load_file(self.mod_path / patch.sourcefile)
-        if capsule is not None:
+        try:
+            if patch.replace_file or not exists_at_output_location:
+                return BinaryReader.load_file(self.mod_path / patch.sourcefile)
+            if capsule is None:
+                return BinaryReader.load_file(output_container_path / patch.saveas)
             return capsule.resource(*ResourceIdentifier.from_path(patch.saveas))
-        return BinaryReader.load_file(output_container_path / patch.saveas)
+        except OSError as e:
+            self.log.add_error(repr(e))
+            return None
 
     def handle_override_type(self, patch: PatcherModifications):
         override_type = patch.override_type.lower().strip()
@@ -257,7 +261,7 @@ class ModInstaller:
         override_dir = self.game_path / "Override"
         override_resource_path = override_dir / patch.saveas
         if override_resource_path.exists():
-            if override_type == "rename":
+            if override_type == OverrideType.RENAME:
                 new_filepath: CaseAwarePath = override_dir / ("old_" + patch.saveas)
                 i = 2
                 while new_filepath.exists():  # tslpatcher does not do this loop.
@@ -269,7 +273,7 @@ class ModInstaller:
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
                     self.log.add_error(f"Could not rename file to {new_filepath.name}: {e!r}")
-            elif override_type == "warn":
+            elif override_type == OverrideType.WARN:
                 self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
 
     def should_patch(
@@ -279,7 +283,6 @@ class ModInstaller:
         capsule: Capsule | None = None,
     ) -> bool:
         local_folder = self.game_path.name if patch.destination == "." else patch.destination
-
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
@@ -301,7 +304,7 @@ class ModInstaller:
         # In capsules, I haven't seen any TSLPatcher mods reach this point. I know TSLPatcher at least supports this portion for non-capsules.
         # Most mods will use an [InstallList] to ensure the files exist in the game path before patching anyways, but not all.
         save_type: str = "adding" if capsule is not None else "saving"
-        self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} to the '{local_folder}' {container_type}")
+        self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} as '{patch.saveas}' to the '{local_folder}' {container_type}")
         return True
 
     def install(self) -> None:
@@ -324,7 +327,7 @@ class ModInstaller:
             if not self.should_patch(patch, exists, capsule):
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
-            if data_to_patch_bytes is None:  # check None as sometimes mods will installlist empty files.
+            if data_to_patch_bytes is None:  # check None instead of `not data_do_patch_bytes` as sometimes mods will installlist empty files.
                 self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                 continue
 
