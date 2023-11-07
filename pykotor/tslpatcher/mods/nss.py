@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 
 
 class ModificationsNSS(PatcherModifications):
-    def __init__(self, filename: str, replace_file: bool, destination: str | None = None) -> None:
-        super().__init__(filename, destination, saveas=str(PurePath(filename).with_suffix(".ncs")))
-        self.replace_file: bool = replace_file
+    def __init__(self, filename, replace=None, modifiers=None) -> None:
+        super().__init__(filename, replace, modifiers)
+        self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
 
     def apply(self, nss_bytes: bytes, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
@@ -38,3 +38,7 @@ class ModificationsNSS(PatcherModifications):
             match = re.search(r"#StrRef\d+#", source)
 
         return bytes_ncs(compile_nss(source, game))
+
+    def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
+        super().pop_tslpatcher_vars(file_section_dict, default_destination)
+        # TODO: Need to handle HACKList here and in apply.

@@ -14,12 +14,17 @@ if TYPE_CHECKING:
 
 
 class ModificationsTLK(PatcherModifications):
-    def __init__(self, filename: str = "dialog.tlk", destination: str = "."):
-        super().__init__(filename, destination)
-        self.modifiers: list[ModifyTLK] = []
+    DEFAULT_DESTINATION = "."
+    DEFAULT_SOURCEFILE  = "append.tlk"
+    DEFAULT_SAVEAS_FILE = "dialog.tlk"
+    def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None) -> None:
+        super().__init__(filename)
+        self.destination = self.DEFAULT_DESTINATION
+        self.saveas = self.saveas if self.saveas is not None else self.DEFAULT_SAVEAS_FILE
+        self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
 
     def apply(self, source_tlk: SOURCE_TYPES, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> bytes:
-        dialog = read_tlk(source_tlk)
+        dialog: TLK = read_tlk(source_tlk)
         for modifier in self.modifiers:
             if modifier.is_replacement:
                 modifier.replace(dialog, memory)
@@ -28,6 +33,14 @@ class ModificationsTLK(PatcherModifications):
             if log:
                 log.complete_patch()
         return bytes_tlk(dialog)
+
+    def pop_tslpatcher_vars(self, file_section_dict, default_destination=DEFAULT_DESTINATION):
+        if "!ReplaceFile" in file_section_dict:
+            msg = "!ReplaceFile is not supported in [TLKList]"
+            raise ValueError(msg)
+
+        self.sourcefile_f = file_section_dict.pop("!SourceFileF", "appendf.tlk")  # Polish only?
+        super().pop_tslpatcher_vars(file_section_dict, default_destination)
 
 
 class ModifyTLK:

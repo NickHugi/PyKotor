@@ -341,6 +341,7 @@ class InstallFolder:
         foldername: str,
         files: list[InstallFile] | None = None,
     ) -> None:
+        self.skip_if_not_replace: bool = True
         self.foldername: str = foldername
         self.files: list[InstallFile] = files or []
 

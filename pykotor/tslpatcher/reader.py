@@ -36,7 +36,8 @@ from pykotor.tslpatcher.mods.gff import (
 from pykotor.tslpatcher.mods.install import InstallFile, InstallFolder
 from pykotor.tslpatcher.mods.nss import ModificationsNSS
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
-from pykotor.tslpatcher.mods.tlk import ModifyTLK
+from pykotor.tslpatcher.mods.template import PatcherModifications
+from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (
     AddColumn2DA,
     AddRow2DA,
@@ -171,8 +172,8 @@ class ConfigReader:
         self.log.add_note("Loading [TLKList] patches from ini...")
         tlk_list_edits = CaseInsensitiveDict(self.ini[tlk_list_section].items())
 
-        sourcefile = tlk_list_edits.pop("!SourceFile", "append.tlk")
-        sourcefile_f = tlk_list_edits.pop("!SourceFileF", "appendf.tlk")  # Polish only?  # noqa: F841
+        default_destination = tlk_list_edits.pop("!DefaultDestination", ModificationsTLK.DEFAULT_DESTINATION)
+        self.config.patches_tlk.pop_tslpatcher_vars(tlk_list_edits, default_destination)
 
         modifier_dict: dict[int, dict[str, str | ResRef]] = {}
         range_delims: list[str] = [":", "-", "to"]
@@ -243,7 +244,7 @@ class ConfigReader:
                 if lowercase_key.startswith("strref"):
                     # load append.tlk only if it's needed.
                     if append_tlk_edits is None:
-                        append_tlk_edits = read_tlk(self.mod_path / sourcefile)
+                        append_tlk_edits = read_tlk(self.mod_path / self.config.patches_tlk.sourcefile)
                     if len(append_tlk_edits) == 0:
                         syntax_error_caught = True
                         msg = f"'append.tlk' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
@@ -312,29 +313,37 @@ class ConfigReader:
                 raise ValueError(msg) from e
 
     def load_2da(self) -> None:
-        twoda_list_section = self.get_section_name("2dalist")
-        if not twoda_list_section:
+        twoda_section_name = self.get_section_name("2dalist")
+        if not twoda_section_name:
             self.log.add_warning("[2DAList] section missing from ini.")
             return
 
         self.log.add_note("Loading [2DAList] patches from ini...")
 
-        for identifier, file in self.ini[twoda_list_section].items():
+        twoda_section_dict = CaseInsensitiveDict(self.ini[twoda_section_name].items())
+        default_destination = twoda_section_dict.pop("!DefaultDestination", Modifications2DA.DEFAULT_DESTINATION)
+        for identifier, file in twoda_section_dict.items():
 
             file_section = self.get_section_name(file)
             if not file_section:
-                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, twoda_list_section))
+                raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, twoda_section_name))
 
             modifications = Modifications2DA(file)
+            file_section_dict = CaseInsensitiveDict(self.ini[file_section].items())
+            modifications.pop_tslpatcher_vars(file_section_dict)
+            if modifications.destination == modifications.DEFAULT_DESTINATION:
+                modifications.destination = default_destination
             self.config.patches_2da.append(modifications)
 
-            modification_ids = CaseInsensitiveDict(self.ini[file_section].items())
-            for key, modification_id in modification_ids.items():
-                ini_section_dict = CaseInsensitiveDict(self.ini[modification_id].items())
+            for key, modification_id in file_section_dict.items():
+                next_section_name = self.get_section_name(modification_id)
+                if not next_section_name:
+                    raise KeyError(SECTION_NOT_FOUND_ERROR.format(modification_id, key, modification_id, file_section))
+                modification_ids_dict = CaseInsensitiveDict(self.ini[modification_id].items())
                 manipulation: Modify2DA | None = self.discern_2da(
                     key,
                     modification_id,
-                    ini_section_dict,
+                    modification_ids_dict,
                 )
                 if not manipulation:  # TODO: Does this denote an error occurred? If so we should raise.
                     continue
@@ -379,7 +388,10 @@ class ConfigReader:
 
         self.log.add_note("Loading [SSFList] patches from ini...")
 
-        for identifier, file in self.ini[ssf_list_section].items():
+        ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section].items())
+        default_destination = ssf_section_dict.pop("!DefaultDestination", ModificationsSSF.DEFAULT_DESTINATION)
+
+        for identifier, file in ssf_section_dict.items():
             ssf_file_section = self.get_section_name(file)
             if not ssf_file_section:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, ssf_list_section))
@@ -388,7 +400,10 @@ class ConfigReader:
             modifications = ModificationsSSF(file, replace)
             self.config.patches_ssf.append(modifications)
 
-            for name, value in self.ini[ssf_file_section].items():
+            file_section_dict = CaseInsensitiveDict(self.ini[ssf_file_section].items())
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+
+            for name, value in file_section_dict.items():
                 new_value: TokenUsage
                 if value.lower().startswith("2damemory"):
                     token_id = int(value[9:])
@@ -410,8 +425,12 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [GFFList] patches from ini...")
+        modifier: ModifyGFF | None = None
 
-        for identifier, file in self.ini[gff_list_section].items():
+        gff_section_dict = CaseInsensitiveDict(self.ini[gff_list_section].items())
+
+        default_destination = gff_section_dict.pop("!DefaultDestination", ModificationsGFF.DEFAULT_DESTINATION)
+        for identifier, file in gff_section_dict.items():
             file_section_name = self.get_section_name(file)
             if not file_section_name:
                 raise KeyError(SECTION_NOT_FOUND_ERROR.format(file, identifier, file, gff_list_section))
@@ -420,38 +439,28 @@ class ConfigReader:
             modifications = ModificationsGFF(file, replace)
             self.config.patches_gff.append(modifications)
 
-            modifier: ModifyGFF | None = None
-            file_section = self.ini[file_section_name]
-            for key, value in file_section.items():
+            file_section_dict = CaseInsensitiveDict(self.ini[file_section_name].items())
+            modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
+
+            for key, value in file_section_dict.items():
                 lowercase_key = key.lower()
-                if lowercase_key == "!destination":
-                    modifications.destination = value
-                elif lowercase_key == "!replacefile":
-                    modifications.replace_file = bool(int(value))
-                elif lowercase_key == "!sourcefile":
-                    modifications.sourcefile = value
-                elif lowercase_key in ["!filename", "!saveas"]:
-                    modifications.saveas = value
-                elif lowercase_key == "!overridetype":
-                    modifications.override_type = value.lower()
+                if lowercase_key.startswith("addfield"):
+                    next_gff_section = self.get_section_name(value)
+                    if not next_gff_section:
+                        raise KeyError(SECTION_NOT_FOUND_ERROR.format(value, key, value, file_section_name))
+
+                    next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section].items())
+                    modifier = self.add_field_gff(next_gff_section, next_section_dict)
+                elif lowercase_key.startswith("2damemory"):
+                    modifier = Memory2DAModifierGFF(
+                        file,
+                        int(key[9:]),
+                        PureWindowsPath(""),
+                    )
                 else:
-                    if lowercase_key.startswith("addfield"):
-                        next_gff_section = self.get_section_name(value)
-                        if not next_gff_section:
-                            raise KeyError(SECTION_NOT_FOUND_ERROR.format(value, key, value, file_section_name))
+                    modifier = self.modify_field_gff(file_section_name, key, value)
 
-                        next_section_dict = CaseInsensitiveDict(self.ini[next_gff_section].items())
-                        modifier = self.add_field_gff(next_gff_section, next_section_dict)
-                    elif lowercase_key.startswith("2damemory"):
-                        modifier = Memory2DAModifierGFF(
-                            file,
-                            int(key[9:]),
-                            PureWindowsPath(""),
-                        )
-                    else:
-                        modifier = self.modify_field_gff(file_section_name, key, value)
-
-                    modifications.modifiers.append(modifier)
+                modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
         compilelist_section = self.get_section_name("compilelist")
@@ -460,20 +469,17 @@ class ConfigReader:
             return
 
         self.log.add_note("Loading [CompileList] patches from ini...")
-        files = CaseInsensitiveDict(self.ini[compilelist_section].items())
-        default_destination: str = files.pop("!DefaultDestination", "Override")
+        compilelist_section_dict = CaseInsensitiveDict(self.ini[compilelist_section].items())
+        default_destination = compilelist_section_dict.pop("!DefaultDestination", ModificationsNSS.DEFAULT_DESTINATION)
 
-        for identifier, file in files.items():
+        for identifier, file in compilelist_section_dict.items():
             replace = identifier.lower().startswith("replace")
-            optional_file_section_name = self.get_section_name(file)
             modifications = ModificationsNSS(file, replace)
+
+            optional_file_section_name = self.get_section_name(file)
             if optional_file_section_name is not None:
-                file_ini_section = CaseInsensitiveDict(self.ini[optional_file_section_name].items())
-                modifications.destination = file_ini_section.pop("!Destination", default_destination)
-                modifications.saveas = file_ini_section.pop("!SaveAs", file_ini_section.pop("!Filename", modifications.saveas))
-                modifications.replace_file = bool(file_ini_section.pop("!ReplaceFile", replace))
-                modifications.sourcefile = file_ini_section.pop("!SourceFile", modifications.sourcefile)
-                modifications.destination = file_ini_section.pop("!Destination", default_destination)
+                file_section_dict = CaseInsensitiveDict(self.ini[optional_file_section_name].items())
+                modifications.pop_tslpatcher_vars(file_section_dict, default_destination)
             self.config.patches_nss.append(modifications)
 
     #################
