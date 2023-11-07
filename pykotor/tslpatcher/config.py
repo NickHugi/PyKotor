@@ -324,7 +324,7 @@ class ModInstaller:
             if not self.should_patch(patch, exists, capsule):
                 continue
             data_to_patch_bytes = self.lookup_resource(patch, output_container_path, exists, capsule)
-            if not data_to_patch_bytes:
+            if data_to_patch_bytes is None:  # check None as sometimes mods will installlist empty files.
                 self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                 continue
             if capsule:
