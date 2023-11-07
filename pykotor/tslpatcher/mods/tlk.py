@@ -20,7 +20,7 @@ class ModificationsTLK(PatcherModifications):
     def __init__(self, filename=DEFAULT_SOURCEFILE, replace=None, modifiers=None) -> None:
         super().__init__(filename)
         self.destination = self.DEFAULT_DESTINATION
-        self.saveas = self.saveas if self.saveas is not None else self.DEFAULT_SAVEAS_FILE
+        self.saveas = self.saveas if self.saveas != self.sourcefile else self.DEFAULT_SAVEAS_FILE
         self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
 
     def apply(self, source_tlk: SOURCE_TYPES, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> bytes:
