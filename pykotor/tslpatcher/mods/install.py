@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import shutil
 from typing import TYPE_CHECKING
-from pykotor.common.stream import BinaryReader
 
 from pykotor.tools.path import CaseAwarePath, PurePath
 from pykotor.tslpatcher.mods.template import PatcherModifications

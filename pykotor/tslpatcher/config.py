@@ -252,7 +252,7 @@ class ModInstaller:
                 return BinaryReader.load_file(output_container_path / patch.saveas)
             return capsule.resource(*ResourceIdentifier.from_path(patch.saveas))
         except OSError as e:
-            self.log.add_error(repr(e))
+            self.log.add_error(f"Could not load source file to {patch.action.lower().strip()}: {e!r}")
             return None
 
     def handle_override_type(self, patch: PatcherModifications):
@@ -274,7 +274,7 @@ class ModInstaller:
                     shutil.move(override_resource_path, new_filepath)
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
-                    self.log.add_error(f"Could not rename file to {new_filepath.name}: {e!r}")
+                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{new_filepath.name}' in the Override folder: {e!r}")
             elif override_type == OverrideType.WARN:
                 self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
 
@@ -288,14 +288,15 @@ class ModInstaller:
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
-            self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file '{patch.saveas}' in the '{local_folder}' {container_type}")
+            saveas = f"'{patch.saveas}' " if patch.saveas != patch.sourcefile else ""
+            self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file {saveas}in the '{local_folder}' {container_type}")
             return True
 
         if not patch.skip_if_not_replace and not patch.replace_file and exists:
             self.log.add_note(f"{patch.action[:-1]}ing existing file '{patch.saveas}' in the '{local_folder}' {container_type}")
             return True
 
-        if patch.skip_if_not_replace and not patch.replace_file and exists:  # [InstallList] only?
+        if patch.skip_if_not_replace and not patch.replace_file and exists:  # [InstallList] only
             self.log.add_warning(f"'{patch.saveas}' already exists in the '{local_folder}' {container_type}. Skipping file...")
             return False
 
@@ -304,7 +305,7 @@ class ModInstaller:
             return False
 
         # In capsules, I haven't seen any TSLPatcher mods reach this point. I know TSLPatcher at least supports this portion for non-capsules.
-        # Most mods will use an [InstallList] to ensure the files exist in the game path before patching anyways, but not all.
+        # Most mods will use an [InstallList] to ensure the files exist before patching anyways, but not all.
         save_type: str = "adding" if capsule is not None else "saving"
         saving_as_str = f"as '{patch.saveas}' " if patch.saveas != patch.sourcefile else ""
         self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and {save_type} {saving_as_str}to the '{local_folder}' {container_type}")
@@ -333,6 +334,8 @@ class ModInstaller:
             if data_to_patch_bytes is None:  # check None instead of `not data_to_patch_bytes` as sometimes mods will installlist empty files.
                 self.log.add_error(f"Could not locate resource to {patch.action.lower().strip()}: '{patch.sourcefile}'")
                 continue
+            if not data_to_patch_bytes:
+                self.log.add_warning(f"'{patch.sourcefile}' has no content/data and is completely empty.")
 
             patched_bytes_data = patch.apply(data_to_patch_bytes, memory, self.log, self.game())
             if capsule is not None:
