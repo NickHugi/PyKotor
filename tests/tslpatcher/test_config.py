@@ -1,15 +1,16 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 from pykotor.extract.capsule import Capsule
 from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import ModInstaller
+
 
 class TestConfig(unittest.TestCase):
     def setUp(self):
         self.patch = Mock()
         setattr(self.patch, "sourcefile", "test_filename")
         setattr(self.patch, "saveas", "test_filename")
-        self.config = ModInstaller("","","")
+        self.config = ModInstaller("", "", "")
         setattr(self.config, "mod_path", Path("test_mod_path"))
         self.output_container_path = Path("test_output_container_path")
 
@@ -81,7 +82,7 @@ class TestConfig(unittest.TestCase):
             mock_load_file.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertRaises(FileNotFoundError, self.config.lookup_resource, self.patch, self.output_container_path)
+            self.assertIsNone(self.config.lookup_resource(self.patch, self.output_container_path))
 
     def test_lookup_resource_capsule_exists_true_no_file(self):
         # Arrange
@@ -92,7 +93,14 @@ class TestConfig(unittest.TestCase):
             mock_resource.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertRaises(FileNotFoundError, self.config.lookup_resource, self.patch, self.output_container_path, exists_at_output_location=True, capsule=capsule)
+            self.assertIsNone(
+                self.config.lookup_resource(
+                    self.patch,
+                    self.output_container_path,
+                    exists_at_output_location=True,
+                    capsule=capsule
+                )
+            )
 
     def test_lookup_resource_no_capsule_exists_true_no_file(self):
         # Arrange
@@ -102,7 +110,14 @@ class TestConfig(unittest.TestCase):
             mock_load_file.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertRaises(FileNotFoundError, self.config.lookup_resource, self.patch, self.output_container_path, exists_at_output_location=True, capsule=None)
+            self.assertIsNone(
+                self.config.lookup_resource(
+                    self.patch,
+                    self.output_container_path,
+                    exists_at_output_location=True,
+                    capsule=None
+                )
+            )
 
     def test_lookup_resource_no_capsule_exists_false_no_file(self):
         # Arrange
@@ -112,7 +127,71 @@ class TestConfig(unittest.TestCase):
             mock_load_file.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertRaises(FileNotFoundError, self.config.lookup_resource, self.patch, self.output_container_path, exists_at_output_location=False, capsule=None)
+            self.assertIsNone(
+                self.config.lookup_resource(
+                    self.patch,
+                    self.output_container_path,
+                    exists_at_output_location=False,
+                    capsule=None
+                )
+            )
+
+
+class TestShouldPatchFunction(unittest.TestCase):
+    def setUp(self):
+        self.patcher = MagicMock()
+        self.patcher.game_path = MagicMock()
+        self.patcher.game_path.name = "swkotor"
+        self.patcher.log = MagicMock()
+
+    def test_replace_file_exists(self):
+        patch = MagicMock(destination=".", replace_file=True, saveas="file2", sourcefile="file1", action="Patching")
+        result = self.patcher.should_patch(patch, exists=True)
+        self.assertTrue(result)
+
+    def test_not_replace_file_exists_skip_false(self):
+        patch = MagicMock(
+            destination="other",
+            replace_file=False,
+            saveas="file3",
+            sourcefile="file1",
+            action="Patching",
+            skip_if_not_replace=False,
+        )
+        result = self.patcher.should_patch(patch, exists=True)
+        self.assertTrue(result)
+
+    def test_skip_if_not_replace_not_replace_file_exists(self):
+        patch = MagicMock(
+            destination="other",
+            replace_file=False,
+            saveas="file3",
+            sourcefile="file1",
+            action="Patching",
+            skip_if_not_replace=True,
+        )
+        result = self.patcher.should_patch(patch, exists=True)
+        self.assertFalse(result)
+
+    def test_capsule_not_exist(self):
+        patch = MagicMock(destination="capsule", action="Patching", sourcefile="file1")
+        capsule = MagicMock()
+        capsule.path().exists.return_value = False
+        result = self.patcher.should_patch(patch, capsule=capsule)
+        self.assertFalse(result)
+
+    def test_default_behavior(self):
+        patch = MagicMock(
+            destination="other",
+            saveas="file3",
+            sourcefile="file1",
+            action="Patching",
+            skip_if_not_replace=False,
+            replace_file=False,
+        )
+        result = self.patcher.should_patch(patch, exists=False)
+        self.assertTrue(result)
+
 
 if __name__ == "__main__":
     unittest.main()

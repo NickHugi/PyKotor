@@ -288,8 +288,8 @@ class ModInstaller:
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
-            saveas = f"'{patch.saveas}' " if patch.saveas != patch.sourcefile else ""
-            self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file {saveas}in the '{local_folder}' {container_type}")
+            saveas_str = f"'{patch.saveas}' to" if patch.saveas != patch.sourcefile else "in"
+            self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file {saveas_str} the '{local_folder}' {container_type}")
             return True
 
         if not patch.skip_if_not_replace and not patch.replace_file and exists:
