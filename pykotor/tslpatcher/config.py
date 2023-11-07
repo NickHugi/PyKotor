@@ -212,12 +212,12 @@ class ModInstaller:
             if uninstall_dir.exists():
                 shutil.rmtree(uninstall_dir)
         except PermissionError as e:
-            self.log.add_warning(f"Could not initialize backup folder: {e}")
+            self.log.add_warning(f"Could not initialize backup folder: {e!r}")
         backup_dir = backup_dir / "backup" / timestamp
         try:
             backup_dir.mkdir(parents=True, exist_ok=True)
         except PermissionError as e:
-            self.log.add_warning(f"Could not create backup folder: {e}")
+            self.log.add_warning(f"Could not create backup folder: {e!r}")
         self.log.add_note(f"Using backup directory: '{backup_dir}'")
         self._backup = backup_dir
         self._processed_backup_files = set()
@@ -270,9 +270,7 @@ class ModInstaller:
                     # Handle exceptions such as permission errors or file in use.
                     self.log.add_error(f"Could not rename file to {new_filepath.name}: {e!r}")
             elif override_type == "warn":
-                self.log.add_warning(
-                    f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!"
-                )
+                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
 
     def should_patch(
         self,
@@ -285,9 +283,7 @@ class ModInstaller:
         container_type = "folder" if capsule is None else "archive"
 
         if patch.replace_file and exists:
-            self.log.add_note(
-                f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file '{patch.saveas}' in the '{local_folder}' {container_type}"
-            )
+            self.log.add_note(f"{patch.action[:-1]}ing '{patch.sourcefile}' and replacing existing file '{patch.saveas}' in the '{local_folder}' {container_type}")
             return True
 
         if not patch.skip_if_not_replace and not patch.replace_file and exists:
@@ -299,9 +295,7 @@ class ModInstaller:
             return False
 
         if capsule is not None and not capsule.path().exists():
-            self.log.add_error(
-                f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file..."
-            )
+            self.log.add_error(f"The capsule '{patch.destination}' did not exist when attempting to {patch.action.lower().rstrip()} '{patch.sourcefile}'. Skipping file...")
             return False
 
         # In capsules, I haven't seen any TSLPatcher mods reach this point. I know TSLPatcher at least supports this portion for non-capsules.
@@ -317,7 +311,7 @@ class ModInstaller:
 
         patches_list: list[PatcherModifications] = [
             *config.install_list,
-            *([config.patches_tlk] if config.patches_tlk.modifiers else []),  # type: ignore[misc]
+            *([config.patches_tlk] if config.patches_tlk.modifiers else []),
             *config.patches_2da,
             *config.patches_gff,
             *config.patches_nss,
