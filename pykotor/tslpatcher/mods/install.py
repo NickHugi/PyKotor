@@ -270,9 +270,7 @@ read -rp "Press enter to continue..."
 
 class InstallFile(PatcherModifications):
     def __init__(self, filename: str, replace_existing: bool) -> None:
-        self.filename: str = filename
-        self.replace_existing: bool = replace_existing
-        self.destination: str #= self.DEFAULT_DESTINATION
+        super().__init__(filename, replace_existing)
 
         self.action: str = "Copy "
         self.skip_if_not_replace: bool = True
