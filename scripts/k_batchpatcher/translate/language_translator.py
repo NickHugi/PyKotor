@@ -6,33 +6,133 @@ from enum import IntEnum
 import requests
 
 # from translate import Translator as TranslateTranslator  # noqa: ERA001
-from pykotor.common.language import Language
 from scripts.k_batchpatcher.translate.deepl_scraper import deepl_tr
 
 
-def get_language_code(lang: Language):
-    if lang == Language.ENGLISH:
-        return "en"
-    if lang == Language.FRENCH:
-        return "fr"
-    if lang == Language.GERMAN:
-        return "de"
-    if lang == Language.ITALIAN:
-        return "it"
-    if lang == Language.SPANISH:
-        return "es"
-    if lang == Language.POLISH:
-        return "pl"
-    if lang == Language.KOREAN:
-        return "ko"
-    if lang == Language.CHINESE_TRADITIONAL:
-        return "zh-TW"
-    if lang == Language.CHINESE_SIMPLIFIED:
-        return "zh-CN"
-    if lang == Language.JAPANESE:
-        return "ja"
+# Besides the ones KOTOR supports, these languages all use the cp-1252 encoding
+class SupportedLanguages(IntEnum):
+    ENGLISH = 0
+    FRENCH = 1
+    GERMAN = 2
+    ITALIAN = 3
+    SPANISH = 4
+    POLISH = 5
 
-    return None  # or raise an error
+    DUTCH = 6
+    DANISH = 7
+    SWEDISH = 8
+    NORWEGIAN = 9
+    FINNISH = 10
+    PORTUGUESE = 11
+    TURKISH = 12
+    HUNGARIAN = 13
+    CZECH = 14
+    SLOVAK = 15
+    SLOVENIAN = 16
+    CROATIAN = 17
+    SERBIAN_LATIN = 18
+    BOSNIAN = 19
+    MONTENEGRIN = 20
+    MACEDONIAN_LATIN = 21
+    ROMANIAN = 22
+    BULGARIAN_LATIN = 23
+    ALBANIAN = 24
+    ESTONIAN = 25
+    LATVIAN = 26
+    LITHUANIAN = 27
+    ICELANDIC = 28
+    MALTESE = 29
+    WELSH = 30
+    IRISH = 31
+    SCOTTISH_GAELIC = 32
+    CATALAN = 33
+    BASQUE = 34
+    GALICIAN = 35
+    AFRIKAANS = 36
+    SWAHILI = 37
+    INDONESIAN = 38
+    FILIPINO = 39
+    LUXEMBOURGISH = 40
+    MALAY = 41
+    BRETON = 42
+    CORSICAN = 43
+    FAROESE = 44
+    FRISIAN = 45
+    LEONESE = 46
+    MANX = 47
+    OCCITAN = 48
+    RHAETO_ROMANIC = 49
+    TAGALOG = 50
+    WALLOON = 51
+
+    KOREAN = 128
+    CHINESE_TRADITIONAL = 129
+    CHINESE_SIMPLIFIED = 130
+    JAPANESE = 131
+
+    def get_encoding(self):
+        return "windows-1252"
+
+
+def get_language_code(lang: SupportedLanguages):
+    return {
+        SupportedLanguages.ENGLISH: "en",
+        SupportedLanguages.FRENCH: "fr",
+        SupportedLanguages.GERMAN: "de",
+        SupportedLanguages.ITALIAN: "it",
+        SupportedLanguages.SPANISH: "es",
+        SupportedLanguages.PORTUGUESE: "pt",
+        SupportedLanguages.DUTCH: "nl",
+        SupportedLanguages.DANISH: "da",
+        SupportedLanguages.SWEDISH: "sv",
+        SupportedLanguages.NORWEGIAN: "no",
+        SupportedLanguages.FINNISH: "fi",
+        SupportedLanguages.POLISH: "pl",
+        SupportedLanguages.TURKISH: "tr",
+        SupportedLanguages.HUNGARIAN: "hu",
+        SupportedLanguages.CZECH: "cs",
+        SupportedLanguages.SLOVAK: "sk",
+        SupportedLanguages.SLOVENIAN: "sl",
+        SupportedLanguages.CROATIAN: "hr",
+        SupportedLanguages.SERBIAN_LATIN: "sr-Latn",
+        SupportedLanguages.BOSNIAN: "bs",
+        SupportedLanguages.MONTENEGRIN: "cnr",
+        SupportedLanguages.MACEDONIAN_LATIN: "mk",
+        SupportedLanguages.ROMANIAN: "ro",
+        SupportedLanguages.BULGARIAN_LATIN: "bg",
+        SupportedLanguages.ALBANIAN: "sq",
+        SupportedLanguages.ESTONIAN: "et",
+        SupportedLanguages.LATVIAN: "lv",
+        SupportedLanguages.LITHUANIAN: "lt",
+        SupportedLanguages.ICELANDIC: "is",
+        SupportedLanguages.MALTESE: "mt",
+        SupportedLanguages.WELSH: "cy",
+        SupportedLanguages.IRISH: "ga",
+        SupportedLanguages.SCOTTISH_GAELIC: "gd",
+        SupportedLanguages.CATALAN: "ca",
+        SupportedLanguages.BASQUE: "eu",
+        SupportedLanguages.GALICIAN: "gl",
+        SupportedLanguages.AFRIKAANS: "af",
+        SupportedLanguages.SWAHILI: "sw",
+        SupportedLanguages.INDONESIAN: "id",
+        SupportedLanguages.FILIPINO: "tl",
+        SupportedLanguages.LUXEMBOURGISH: "lb",
+        SupportedLanguages.MALAY: "ms",
+        SupportedLanguages.BRETON: "br",
+        SupportedLanguages.CORSICAN: "co",
+        SupportedLanguages.FAROESE: "fo",
+        SupportedLanguages.FRISIAN: "fy",
+        SupportedLanguages.LEONESE: "ast",  # Asturian is often used for Leonese
+        SupportedLanguages.MANX: "gv",
+        SupportedLanguages.OCCITAN: "oc",
+        SupportedLanguages.RHAETO_ROMANIC: "rm",
+        SupportedLanguages.TAGALOG: "tl",
+        SupportedLanguages.WALLOON: "wa",
+        SupportedLanguages.KOREAN: "ko",
+        SupportedLanguages.CHINESE_TRADITIONAL: "zh-TW",
+        SupportedLanguages.CHINESE_SIMPLIFIED: "zh-CN",
+        SupportedLanguages.JAPANESE: "ja",
+    }.get(lang)
 
 
 # Function to convert numerals
@@ -64,7 +164,7 @@ def translate_numerals(num_string: str, source_lang: str, target_lang: str) -> s
 class TranslationOption(IntEnum):
     GOOGLETRANS = 0
     LIBRE = 1
-    DL_TRANSLATE = 2  # this translator is LARGE and SLOW, max text length 1024  # noqa: ERA001, RUF100
+    # DL_TRANSLATE = 2  # this translator is LARGE and SLOW, max text length 1024  # noqa: ERA001, RUF100
     LIBRE_FALLBACK = 3
     GOOGLE_TRANSLATE = 4
     PONS_TRANSLATOR = 5
@@ -74,10 +174,12 @@ class TranslationOption(IntEnum):
 
 
 class Translator:
-    def __init__(self, to_lang: Language, translation_option: TranslationOption = TranslationOption.GOOGLE_TRANSLATE) -> None:
-        self.from_lang: Language
+    def __init__(
+        self, to_lang: SupportedLanguages, translation_option: TranslationOption = TranslationOption.GOOGLE_TRANSLATE
+    ) -> None:
+        self.from_lang: SupportedLanguages
 
-        self.to_lang: Language = to_lang
+        self.to_lang: SupportedLanguages = to_lang
         self.translation_option: TranslationOption = translation_option
 
         self._translator = None
@@ -87,19 +189,24 @@ class Translator:
         # Google Translate
         if self.translation_option == TranslationOption.GOOGLETRANS:
             from googletrans import Translator as GoogleTranslator
+
             self._translator = GoogleTranslator()
         # LibreTranslate
         elif self.translation_option == TranslationOption.LIBRE:
             from libretranslatepy import LibreTranslateAPI
+
             self._translator = LibreTranslateAPI("https://translate.argosopentech.com/")
         elif self.translation_option == TranslationOption.GOOGLE_TRANSLATE:
             from deep_translator import GoogleTranslator as GoogleTranslatorDeep
+
             self._translator = GoogleTranslatorDeep
         elif self.translation_option == TranslationOption.PONS_TRANSLATOR:
             from deep_translator import PonsTranslator
+
             self._translator = PonsTranslator
         elif self.translation_option == TranslationOption.MY_MEMORY_TRANSLATOR:
             from deep_translator import MyMemoryTranslator
+
             self._translator = MyMemoryTranslator
         elif self.translation_option == TranslationOption.DEEPL:
 
@@ -124,16 +231,16 @@ class Translator:
                                 "target": target,
                             },
                         ),
-                        timeout=6,
+                        timeout=20000,
                     )
                     return response.json().get("translatedText", "")
 
             self._translator = LibreFallbackTranslator()  # type: ignore[assignment]
         # this translator is LARGE and SLOW
-        elif self.translation_option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
-            import dl_translate as dlt  # noqa: ERA001, RUF100
+        # elif self.translation_option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
+        # import dl_translate as dlt  # noqa: ERA001, RUF100
 
-            self._translator = dlt.TranslationModel()  # noqa: ERA001, RUF100
+        # self._translator = dlt.TranslationModel()  # noqa: ERA001, RUF100
         # has api limits
         #    self._translator = TranslateTranslator(to_lang=get_language_code(self.to_lang))  # noqa: ERA001
         else:
@@ -144,8 +251,8 @@ class Translator:
     def translate(
         self,
         text: str,
-        from_lang: Language | None = None,
-        to_lang: Language | None = None,
+        from_lang: SupportedLanguages | None = None,
+        to_lang: SupportedLanguages | None = None,
     ) -> str:
         if not self._initialized:
             self.initialize()
@@ -173,10 +280,14 @@ class Translator:
                 text = text[cut_off:].lstrip()  # Remove leading whitespace from next chunk
             return chunks
 
+        def fix_encoding(text: str, encoding: str):
+            return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore")
+
         def translate_main(chunk: str, option: TranslationOption) -> str:
             if chunk.strip().isdigit():
                 return translate_numerals(chunk.strip(), from_lang_code, to_lang_code)
             if len(chunk.strip()) <= 2:  # throws errors when there's not enough text to translate.
+                print(f"'{chunk}' is not enough text to translate!")
                 return chunk
             translated_chunk: str
             if option == TranslationOption.GOOGLETRANS:
@@ -193,16 +304,19 @@ class Translator:
             ):
                 translated_chunk = self._translator(source=from_lang_code, target=to_lang_code).translate(chunk.strip())  # type: ignore[misc, reportOptionalCall, reportGeneralTypeIssues, attr-defined]
             elif option == TranslationOption.DEEPL:
-                translated_chunk = self._translator.translate(chunk.strip(), from_lang.name, to_lang.name)  # type: ignore[attr-defined, reportOptionalCall, reportGeneralTypeIssues]
+                translated_chunk = self._translator.translate(chunk.strip(), from_lang_code, to_lang_code)  # type: ignore[attr-defined, reportOptionalCall, reportGeneralTypeIssues]
             # this translator is LARGE and SLOW
-            elif option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
-                translated_chunk = self._translator.translate(chunk, source=from_lang.name, target=to_lang.name)  # type: ignore[attr-defined, union-attr]  # noqa: ERA001, RUF100
+            # elif option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
+            #    translated_chunk = self._translator.translate(chunk, source=from_lang.name, target=to_lang.name)  # type: ignore[attr-defined, union-attr]  # noqa: ERA001, RUF100
             # has api limits
             # elif option == TranslationOption.TRANSLATE:  # noqa: ERA001, RUF100
             #    translated_text = self._translator.translate(chunk)  # type: ignore[attr-defined]  # noqa: ERA001
             else:
                 raise ValueError("Invalid translation option selected")  # noqa: TRY003, EM101
-            return translated_chunk
+            if not translated_chunk.strip():
+                msg = "No text returned."
+                raise ValueError(msg)
+            return fix_encoding(translated_chunk, to_lang.get_encoding())
 
         def adjust_cutoff(chunk: str, chunks: list[str]) -> str:
             if len(chunk) == max_chunk_length and not text[len(chunk)].isspace():
@@ -267,4 +381,4 @@ class Translator:
             msg = "All translation services failed."
             raise RuntimeError(msg)
 
-        return translated_text
+        return fix_encoding(translated_text, to_lang.get_encoding())

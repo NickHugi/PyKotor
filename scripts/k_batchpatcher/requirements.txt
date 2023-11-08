@@ -1,0 +1,13 @@
+# Pillow == 9.4.0
+# pystray==0.19.4
+deep_translator == 1.9.2
+deepl-cli == 0.3.0
+# pyperclip == 1.8.2
+requests == 2.28.2
+opencv-contrib-python == 4.7.0.68
+notify-py==0.3.42
+playwright==1.30.0
+pyquery==1.4.3
+# pyinstaller==5.7.0
+# tksheet==5.4.1
+arabic-reshaper==3.0.0

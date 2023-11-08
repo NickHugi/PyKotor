@@ -90,7 +90,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
         text_old = doc("#source-dummydiv").html()
 
         # selector = "div.lmt__translations_as_text"
-        if text.strip() == text_old.strip() and same_langs:  # type: ignore
+        if text_old and text.strip() == text_old.strip():  # type: ignore
             #print(" ** early result: ** ")
             #print("%s, %s", text, doc(".lmt__translations_as_text__text_btn").html())
             doc = pq(page.content())

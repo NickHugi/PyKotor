@@ -4,6 +4,7 @@ import argparse
 import cProfile
 import pathlib
 import sys
+import traceback
 from copy import deepcopy
 from io import StringIO
 from typing import TYPE_CHECKING
@@ -28,7 +29,11 @@ from pykotor.resource.formats.gff import (
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
-from scripts.k_batchpatcher.translate.language_translator import TranslationOption, Translator
+from scripts.k_batchpatcher.translate.language_translator import (
+    SupportedLanguages,
+    TranslationOption,
+    Translator,
+)
 
 if TYPE_CHECKING:
     import os
@@ -59,6 +64,10 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.Struct: "Struct",
     GFFFieldType.List: "List",
 }
+
+
+def get_kotor_language(lang: SupportedLanguages) -> Language:
+    return Language.__members__[lang.name] if any(lang.value == member.value for member in Language) else Language.ENGLISH
 
 
 def relative_path_from_to(src, dst) -> Path:
@@ -104,7 +113,7 @@ def do_patch(
                     log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
                     translated_text = pytranslator.translate(text, from_lang=lang)
                     log_output(f"Translated {text} --> {translated_text}")
-                    substring_id = LocalizedString.substring_id(parser_args.to_lang, gender)
+                    substring_id = LocalizedString.substring_id(get_kotor_language(parser_args.to_lang), gender)
                     new_substrings[substring_id] = translated_text
             value._substrings = new_substrings
 
@@ -126,7 +135,7 @@ def log_output(*args, **kwargs) -> None:
     msg = buffer.getvalue()
 
     # Write the captured output to the file
-    encoding = "utf-8" if not parser_args.to_lang else parser_args.to_lang.get_encoding()
+    encoding = "utf-8" if not parser_args.to_lang else get_kotor_language(parser_args.to_lang).get_encoding()
     with OUTPUT_LOG.open("a", encoding=encoding, errors="ignore") as f:
         f.write(msg)
 
@@ -158,6 +167,7 @@ def handle_restype_and_patch(
         from_lang = tlk.language
         if pytranslator is not None:
             new_entries = deepcopy(tlk.entries)
+            tlk.language = get_kotor_language(parser_args.to_lang)
             for strref, tlkentry in tlk:
                 text = tlkentry.text
                 if not text.strip() or text.isdigit():
@@ -166,7 +176,6 @@ def handle_restype_and_patch(
                 translated_text = pytranslator.translate(text, from_lang=from_lang)
                 log_output(f"Translated {text} --> {translated_text}")
                 new_entries[strref].text = translated_text
-            tlk.language = parser_args.to_lang
             tlk.entries = new_entries
             write_tlk(tlk, file_path)
     if ext in gff_types:
@@ -337,13 +346,14 @@ while True:
     break
 if parser_args.translate:
     while True:
+        print("Languages: ", *SupportedLanguages.__members__)
         parser_args.to_lang = parser_args.to_lang or input("Choose a language to translate to: ")
         try:
             # Convert the string representation to the enum member, and then get its value
-            parser_args.to_lang = Language[parser_args.to_lang.upper()]
+            parser_args.to_lang = SupportedLanguages[parser_args.to_lang.upper()]
         except KeyError:
-            # Handle the case where the input is not a valid name in Language
-            msg = f"{parser_args.to_lang.upper()} is not a valid Language. Please choose one of [{Language.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
+            # Handle the case where the input is not a valid name in SupportedLanguages
+            msg = f"{parser_args.to_lang.upper()} is not a valid Language."  # type: ignore[union-attr, reportGeneralTypeIssues]
             parser_args.to_lang = None
             continue
         break
@@ -403,3 +413,7 @@ except KeyboardInterrupt:
         profiler.dump_stats(str(profiler_output_file))
         log_output(f"Profiler output saved to: {profiler_output_file}")
     raise
+except Exception:
+    log_output("Unhandled exception during the batchpatch process.")
+    log_output(traceback.format_exc())
+    input("The program must shut down. Press Enter to close.")
