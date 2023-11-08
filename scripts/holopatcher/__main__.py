@@ -47,7 +47,7 @@ class ExitCode(IntEnum):
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
 
-
+# Please be careful modifying this functionality as 3rd parties depend on this syntax.
 def parse_args() -> Namespace:
     parser = ArgumentParser(description="HoloPatcher CLI")
 
