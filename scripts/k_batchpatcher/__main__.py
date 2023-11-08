@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
 pytranslator: Translator | None = None
+processed_files = set()
 
 gff_types = [x.value.lower().strip() for x in GFFContent]
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
@@ -186,6 +187,7 @@ def handle_restype_and_patch(
                 new_entries[strref].text = translated_text
             tlk.entries = new_entries
             write_tlk(tlk, new_file_path)
+            processed_files.add(new_file_path)
     if ext in gff_types:
         gff: GFF | None = None
         try:
@@ -207,6 +209,7 @@ def handle_restype_and_patch(
                 file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
             )
             write_gff(gff, new_file_path)
+            processed_files.add(new_file_path)
         return
 
     return
@@ -235,6 +238,8 @@ def log_output_with_separator(message, below=True, above=False, surround=False) 
 
 def handle_capsule_and_patch(file: os.PathLike | str) -> None:
     c_file = file if isinstance(file, Path) else Path(file).resolve()
+    if c_file in processed_files:
+        return
 
     if not c_file.exists():
         log_output(f"Missing file:\t{c_file!s}")
