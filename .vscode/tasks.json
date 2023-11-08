@@ -353,6 +353,23 @@
       "problemMatcher": []
     },
     {
+      "label": "Build K-BatchPatcher",
+      "type": "shell",
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "PyInstaller",
+        "--console",
+        "--onefile",
+        "--clean",
+        "--name=K_BatchPatcher",
+        "--path=${workspaceFolder}",
+        "scripts${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "Build GUI Creator",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_pyinstaller"],

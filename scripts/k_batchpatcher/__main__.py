@@ -157,12 +157,14 @@ def handle_restype_and_patch(
 
         from_lang = tlk.language
         if pytranslator is not None:
-            for _strref, tlkentry in tlk:
+            new_entries = deepcopy(tlk.entries)
+            for strref, tlkentry in tlk:
                 text = tlkentry.text
                 log_output_with_separator(f"Translating TLK text at {file_path!s}", above=True)
                 translated_text = pytranslator.translate(text, from_lang=from_lang)
                 log_output(f"Translated {text} --> {translated_text}")
-                tlkentry.text = text
+                new_entries[strref].text = text
+            tlk.entries = new_entries
             write_tlk(tlk, file_path)
     if ext in gff_types:
         gff: GFF | None = None
