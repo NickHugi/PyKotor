@@ -4,10 +4,6 @@ import json
 from enum import IntEnum
 
 import requests
-from deep_translator import GoogleTranslator as GoogleTranslatorDeep
-from deep_translator import MyMemoryTranslator, PonsTranslator
-from googletrans import Translator as GoogleTranslator
-from libretranslatepy import LibreTranslateAPI
 
 # from translate import Translator as TranslateTranslator  # noqa: ERA001
 from pykotor.common.language import Language
@@ -74,7 +70,7 @@ class TranslationOption(IntEnum):
     PONS_TRANSLATOR = 5
     MY_MEMORY_TRANSLATOR = 6
     DEEPL = 7
-    # TRANSLATE = 99  # has api limits max text length 500
+    # TRANSLATE = 99  # has api limits max text length 500  # noqa: ERA001, RUF100
 
 
 class Translator:
@@ -90,15 +86,20 @@ class Translator:
     def initialize(self) -> None:
         # Google Translate
         if self.translation_option == TranslationOption.GOOGLETRANS:
+            from googletrans import Translator as GoogleTranslator
             self._translator = GoogleTranslator()
         # LibreTranslate
         elif self.translation_option == TranslationOption.LIBRE:
+            from libretranslatepy import LibreTranslateAPI
             self._translator = LibreTranslateAPI("https://translate.argosopentech.com/")
         elif self.translation_option == TranslationOption.GOOGLE_TRANSLATE:
+            from deep_translator import GoogleTranslator as GoogleTranslatorDeep
             self._translator = GoogleTranslatorDeep
         elif self.translation_option == TranslationOption.PONS_TRANSLATOR:
+            from deep_translator import PonsTranslator
             self._translator = PonsTranslator
         elif self.translation_option == TranslationOption.MY_MEMORY_TRANSLATOR:
+            from deep_translator import MyMemoryTranslator
             self._translator = MyMemoryTranslator
         elif self.translation_option == TranslationOption.DEEPL:
 
@@ -238,7 +239,11 @@ class Translator:
             try:
                 # Select the appropriate translator based on the option
                 self.translation_option = option
-                self.initialize()
+                try:
+                    self.initialize()
+                except ImportError as e:
+                    print(f"{option.name} is not installed with {e!r}, falling back to another translator...")
+                    continue
                 translated_text = ""
 
                 # Break the text into appropriate chunks
