@@ -163,7 +163,7 @@ def handle_restype_and_patch(
                 log_output_with_separator(f"Translating TLK text at {file_path!s}", above=True)
                 translated_text = pytranslator.translate(text, from_lang=from_lang)
                 log_output(f"Translated {text} --> {translated_text}")
-                new_entries[strref].text = text
+                new_entries[strref].text = translated_text
             tlk.entries = new_entries
             write_tlk(tlk, file_path)
     if ext in gff_types:
