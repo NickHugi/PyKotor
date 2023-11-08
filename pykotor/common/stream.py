@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
-from pykotor.common.language import LocalizedString
+from pykotor.common.language import Language, LocalizedString
 from pykotor.common.misc import encode_bytes_with_fallback
 from pykotor.tools.path import Path
 
@@ -1408,8 +1408,8 @@ class BinaryWriterFile(BinaryWriter):
             while len(value) < string_length:
                 value += padding
             value = value[:string_length]
-
-        self._stream.write(value.encode(encoding))
+        errors = "ignore" if encoding in [Language.CHINESE_SIMPLIFIED.get_encoding(), Language.CHINESE_TRADITIONAL.get_encoding()] else "strict"
+        self._stream.write(value.encode(encoding, errors=errors))
 
     def write_line(
         self,
@@ -1904,7 +1904,8 @@ class BinaryWriterBytearray(BinaryWriter):
         self._encode_val_and_update_position(line, "ascii")
 
     def _encode_val_and_update_position(self, value: str, encoding: str):
-        encoded = value.encode(encoding)
+        errors = "ignore" if encoding in [Language.CHINESE_SIMPLIFIED.get_encoding(), Language.CHINESE_TRADITIONAL.get_encoding()] else "strict"
+        encoded = value.encode(encoding, errors=errors)
         self._ba[self._position : self._position + len(encoded)] = encoded
         self._position += len(encoded)
 

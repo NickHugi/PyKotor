@@ -91,7 +91,7 @@ class TLKBinaryReader(ResourceReader):
         text_header = self._text_headers[stringref]
 
         self._reader.seek(text_header.offset + self._texts_offset)
-        text = self._reader.read_string(text_header.length)
+        text = self._reader.read_string(text_header.length, encoding=self._tlk.language.get_encoding())
 
         self._tlk.entries[stringref].text = text
 
@@ -116,9 +116,8 @@ class TLKBinaryWriter(ResourceWriter):
         for entry in self._tlk.entries:
             self._write_entry(entry, text_offset)
 
-        encoding = self._tlk.language.get_encoding()
         for entry in self._tlk.entries:
-            self._writer.write_string(entry.text, encoding)
+            self._writer.write_string(entry.text, self._tlk.language.get_encoding())
 
     def _calculate_entries_offset(
         self,
