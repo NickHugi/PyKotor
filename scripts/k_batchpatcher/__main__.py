@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import argparse
 import cProfile
-from copy import deepcopy
 import pathlib
 import sys
+from copy import deepcopy
 from io import StringIO
 from typing import TYPE_CHECKING
 
@@ -147,8 +147,8 @@ def handle_restype_and_patch(
         try:
             log_output(f"Loading TLK '{file_path}'")
             tlk = read_tlk(data)
-        except Exception:  # noqa: BLE001
-            log_output(f"Error loading TLK {file_path}!")
+        except Exception as e:  # noqa: BLE001
+            log_output(f"Error loading TLK {file_path}! {e!r}")
             return
         if not tlk:
             message = f"TLK resource missing in memory:\t'{file_path}'"
@@ -160,18 +160,21 @@ def handle_restype_and_patch(
             new_entries = deepcopy(tlk.entries)
             for strref, tlkentry in tlk:
                 text = tlkentry.text
+                if not text.strip():
+                    continue
                 log_output_with_separator(f"Translating TLK text at {file_path!s}", above=True)
                 translated_text = pytranslator.translate(text, from_lang=from_lang)
                 log_output(f"Translated {text} --> {translated_text}")
                 new_entries[strref].text = translated_text
+            tlk.language = parser_args.to_lang
             tlk.entries = new_entries
             write_tlk(tlk, file_path)
     if ext in gff_types:
         gff: GFF | None = None
         try:
             gff = read_gff(data)
-        except Exception:  # noqa: BLE001
-            log_output(f"[Error] loading GFF {file_path}!")
+        except Exception as e:  # noqa: BLE001
+            log_output(f"[Error] loading GFF {file_path}! {e!r}")
             return
 
         if not gff:
