@@ -145,15 +145,11 @@ class TLKBinaryWriter(ResourceWriter):
         sound_resref = entry.voiceover.get()
         text_offset = previous_offset.get()
         text_length = len(entry.text)
+
         entry_flags = 0  # Initialize entry_flags as zero
-
-        # Check for TEXT_PRESENT: As we're writing text, let's assume it's always present
-        entry_flags |= 0x0001
-
-        # Check for SND_PRESENT: If sound_resref is defined in this entry.
-        if sound_resref:
-            entry_flags |= 0x0002
-        entry_flags |= 0x0004  # SND_LENGTH: both vanilla dialog.tlk files have this set.
+        entry_flags |= 0x0001  # TEXT_PRESENT: As we're writing text, let's assume it's always present
+        entry_flags |= 0x0002  # SND_PRESENT: If sound_resref is defined in this entry. This is set in both game's TLKs, regardless of whether it's used.
+        entry_flags |= 0x0004  # SND_LENGTH: Unused by KOTOR1 and 2. Determines whether the sound length field is utilized.
 
         self._writer.write_uint32(entry_flags)
         self._writer.write_string(sound_resref, string_length=16)
