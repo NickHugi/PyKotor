@@ -42,7 +42,7 @@ try:
 except ImportError:
     ApertiumLite = None
 try:
-    from transformers import T5ForConditionalGeneration, T5Tokenizer
+    from transformersDISABLED import T5ForConditionalGeneration, T5Tokenizer
 except ImportError:
     T5ForConditionalGeneration = None
     T5Tokenizer = None
@@ -96,7 +96,7 @@ class T5Translator:
         translated_text: str = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         # Strip out the task prompt from the model output, if it's included.
-        return translated_text[len(prompt_prefix) :].strip()
+        return translated_text.replace(prompt_prefix, "").replace(f"{source} to {target}:", "")
 
 
 class LibreFallbackTranslator:
@@ -205,7 +205,7 @@ def get_language_code(lang: SupportedLanguages) -> str:
         SupportedLanguages.SLOVAK: "sk",
         SupportedLanguages.SLOVENIAN: "sl",
         SupportedLanguages.CROATIAN: "hr",
-        SupportedLanguages.SERBIAN_LATIN: "sr-Latn",
+        SupportedLanguages.SERBIAN_LATIN: "sr",  # sr-Latn
         SupportedLanguages.BOSNIAN: "bs",
         SupportedLanguages.MONTENEGRIN: "cnr",
         SupportedLanguages.MACEDONIAN_LATIN: "mk",
@@ -437,6 +437,9 @@ class Translator:
                 raise ValueError(msg)
             if "YOU USED ALL AVAILABLE FREE TRANSLATIONS FOR TODAY" in translated_chunk.upper():
                 msg = "No text returned."
+                raise ValueError(msg)
+            if "Please select on of the supported languages:" in translated_chunk:
+                msg = "Language not found"
                 raise ValueError(msg)
             if chunk == translated_chunk.strip() and translated_chunk.count(" ") >= 2:
                 msg = "Same text was returned from translate function."

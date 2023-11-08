@@ -128,7 +128,7 @@ def deepl_tr(text: str, from_lang: str = "auto", to_lang: str = "zh", timeout: f
 
             try:
                 # page.wait_for_selector(".lmt__translations_as_text", timeout=20000)
-                page.wait_for_selector(".lmt__target_textarea", timeout=20000)
+                page.wait_for_selector(".lmt__target_textarea", timeout=2000)
             except Exception as exc:
                 print(exc)
                 raise

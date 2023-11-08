@@ -95,6 +95,8 @@ def do_patch(
 ):
     current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFRoot")
     for label, ftype, value in gff_struct:
+        if label.lower() == "mod_name":
+            continue
         child_path = current_path / label
 
         if ftype == GFFFieldType.Struct:
@@ -152,10 +154,10 @@ def log_output(*args, **kwargs) -> None:
 def handle_restype_and_patch(
     file_path: Path,
     bytes_data: bytes | None = None,
+    ext: str | None = None,
     resref: FileResource | None = None,
     capsule: Capsule | None = None,
 ) -> None:
-    ext = file_path.suffix.lower()[1:]
     data: bytes | Path = file_path if bytes_data is None else bytes_data
     if ext == "tlk":
         tlk: TLK | None = None
@@ -201,10 +203,17 @@ def handle_restype_and_patch(
             return
 
         # TODO: Don't write files that are unchanged.
-        do_patch(gff.root, gff.content, file_path.name)
         if capsule is not None and resref is not None:
-            capsule.add(resref.resname(), resref.restype(), bytes_gff(gff))
+            do_patch(gff.root, gff.content, Path(resref.filepath(), (resref.identifier().resname + "." + resref.identifier().restype.extension)))
+            new_capsule = Capsule(
+                file_path.parent
+                / (file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix),
+                create_nonexisting=True,
+            )
+            new_capsule._resources = deepcopy(capsule._resources)
+            new_capsule.add(resref.resname(), resref.restype(), bytes_gff(gff))
         else:
+            do_patch(gff.root, gff.content, file_path.name)
             new_file_path = file_path.parent / (
                 file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
             )
@@ -254,9 +263,10 @@ def handle_capsule_and_patch(file: os.PathLike | str) -> None:
 
         for resref in file_capsule:
             ext = resref.restype().extension.lower()
-            handle_restype_and_patch(c_file / (resref.resname() + ext), resref.data(), resref, file_capsule)
+            handle_restype_and_patch(c_file, resref.data(), ext, resref, file_capsule)
     else:
-        handle_restype_and_patch(c_file)
+        ext = c_file.suffix.lower()[1:]
+        handle_restype_and_patch(c_file, ext=ext)
 
 
 def recurse_directories(folder_path: os.PathLike | str) -> None:
