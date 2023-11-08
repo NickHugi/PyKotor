@@ -248,7 +248,7 @@ class ConfigReader:
                         append_tlk_edits = read_tlk(self.mod_path / self.config.patches_tlk.sourcefile)
                     if len(append_tlk_edits) == 0:
                         syntax_error_caught = True
-                        msg = f"'append.tlk' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
+                        msg = f"'{self.config.patches_tlk.sourcefile}' in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
                         raise ValueError(msg)  # noqa: TRY301
                     strref_range = parse_range(lowercase_key[6:])
                     token_id_range = parse_range(value)
