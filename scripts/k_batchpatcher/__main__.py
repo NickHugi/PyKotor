@@ -33,6 +33,7 @@ from scripts.k_batchpatcher.translate.language_translator import (
     SupportedLanguages,
     TranslationOption,
     Translator,
+    get_language_code,
 )
 
 if TYPE_CHECKING:
@@ -67,7 +68,11 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 
 
 def get_kotor_language(lang: SupportedLanguages) -> Language:
-    return Language.__members__[lang.name] if any(lang.value == member.value for member in Language) else Language.ENGLISH
+    return (
+        Language.__members__[lang.name]
+        if isinstance(lang, (SupportedLanguages, Language)) and any(lang.value == member.value for member in Language)
+        else Language.ENGLISH
+    )
 
 
 def relative_path_from_to(src, dst) -> Path:
@@ -95,7 +100,7 @@ def do_patch(
             assert isinstance(value, GFFStruct)  # noqa: S101
             if parser_args.set_unskippable and "Skippable" in value._fields:
                 log_output(f"Setting '{child_path}' as unskippable")
-                value._fields["Skippable"]._value = 1
+                value._fields["Skippable"]._value = 0
 
             do_patch(value, gff_content, child_path)
             continue
@@ -168,6 +173,9 @@ def handle_restype_and_patch(
         if pytranslator is not None:
             new_entries = deepcopy(tlk.entries)
             tlk.language = get_kotor_language(parser_args.to_lang)
+            new_file_path = file_path.parent / (
+                file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
+            )
             for strref, tlkentry in tlk:
                 text = tlkentry.text
                 if not text.strip() or text.isdigit():
@@ -177,7 +185,7 @@ def handle_restype_and_patch(
                 log_output(f"Translated {text} --> {translated_text}")
                 new_entries[strref].text = translated_text
             tlk.entries = new_entries
-            write_tlk(tlk, file_path)
+            write_tlk(tlk, new_file_path)
     if ext in gff_types:
         gff: GFF | None = None
         try:
@@ -195,7 +203,10 @@ def handle_restype_and_patch(
         if capsule is not None and resref is not None:
             capsule.add(resref.resname(), resref.restype(), bytes_gff(gff))
         else:
-            write_gff(gff, file_path)
+            new_file_path = file_path.parent / (
+                file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
+            )
+            write_gff(gff, new_file_path)
         return
 
     return
@@ -344,13 +355,27 @@ while True:
         parser.print_help()
         continue
     break
+if LOGGING_ENABLED:
+    while True:
+        OUTPUT_LOG = Path(
+            parser_args.output_log
+            or "./log_batch_patcher.log"  # noqa: SIM222
+            or input("Filepath of the desired output logfile: "),
+        ).resolve()
+        if OUTPUT_LOG.parent.exists():
+            break
+        print("Invalid path:", OUTPUT_LOG)
+        parser.print_help()
+translation_option: str = None
 if parser_args.translate:
     while True:
         print("Languages: ", *SupportedLanguages.__members__)
-        parser_args.to_lang = parser_args.to_lang or input("Choose a language to translate to: ")
+        parser_args.to_lang = parser_args.to_lang or input("Choose a language to translate to: ").upper()
         try:
+            if parser_args.to_lang == "ALL":
+                break
             # Convert the string representation to the enum member, and then get its value
-            parser_args.to_lang = SupportedLanguages[parser_args.to_lang.upper()]
+            parser_args.to_lang = SupportedLanguages[parser_args.to_lang]
         except KeyError:
             # Handle the case where the input is not a valid name in SupportedLanguages
             msg = f"{parser_args.to_lang.upper()} is not a valid Language."  # type: ignore[union-attr, reportGeneralTypeIssues]
@@ -368,35 +393,30 @@ if parser_args.translate:
             translation_option = None
             continue
         break
-    pytranslator = Translator(parser_args.to_lang)
-    pytranslator.translation_option = translation_option
-if LOGGING_ENABLED:
-    while True:
-        OUTPUT_LOG = Path(
-            parser_args.output_log
-            or "./log_batch_patcher.log"  # noqa: SIM222
-            or input("Filepath of the desired output logfile: "),
-        ).resolve()
-        if OUTPUT_LOG.parent.exists():
-            break
-        print("Invalid path:", OUTPUT_LOG)
-        parser.print_help()
 
 parser_args.use_profiler = bool(parser_args.use_profiler)
 input("Parameters have been set! Press [Enter] to start the patching process, or Ctrl+C to exit.")
-
-log_output()
-log_output(f"Using --path='{parser_args.path}'")
-log_output(f"Using --output-log='{parser_args.output_log}'")
-log_output(f"Using --use-profiler={parser_args.use_profiler!s}")
-
 profiler = None
+
+
+if translation_option is not None and parser_args.to_lang != "ALL":
+    pytranslator = Translator(parser_args.to_lang)
+    pytranslator.translation_option = translation_option
 try:
     if parser_args.use_profiler:
         profiler = cProfile.Profile()
         profiler.enable()
 
-    comparison: bool | None = run_patches(parser_args.path)
+    if parser_args.to_lang == "ALL":
+        for lang in SupportedLanguages.__members__:
+            print(f"Translating to {lang}...")
+            enum_member_lang = SupportedLanguages[lang]
+            parser_args.to_lang = enum_member_lang
+            pytranslator = Translator(parser_args.to_lang)
+            pytranslator.translation_option = translation_option
+            comparison = run_patches(parser_args.path)
+    else:
+        comparison: bool | None = run_patches(parser_args.path)
 
     if profiler is not None:
         profiler.disable()

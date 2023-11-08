@@ -167,7 +167,7 @@ class TranslationOption(IntEnum):
     # DL_TRANSLATE = 2  # this translator is LARGE and SLOW, max text length 1024  # noqa: ERA001, RUF100
     LIBRE_FALLBACK = 3
     GOOGLE_TRANSLATE = 4
-    PONS_TRANSLATOR = 5
+    PONS_TRANSLATOR = 5  # minimum chars 50
     MY_MEMORY_TRANSLATOR = 6
     DEEPL = 7
     # TRANSLATE = 99  # has api limits max text length 500  # noqa: ERA001, RUF100
@@ -340,8 +340,8 @@ class Translator:
                 chunk = adjust_cutoff(chunk, chunks)  # noqa: PLW2901
 
                 # Translate each chunk, and concatenate the results
-                translated_text += translate_main(chunk, self.translation_option)
-            return translated_text  # noqa: TRY300
+                translated_text += (translate_main(chunk, self.translation_option) + " ")
+            return translated_text.rstrip()  # noqa: TRY300, RUF100
         except Exception as e:  # noqa: BLE001
             # Log the exception, proceed to the next translation option
             print(f"Translation using preferred translator '{self.translation_option.name}' failed: {e!r}")
@@ -366,10 +366,11 @@ class Translator:
                     # Ensure not cutting off in the middle of a word
                     chunk = adjust_cutoff(chunk, chunks)  # noqa: PLW2901
 
-                    translated_text += translate_main(chunk, option)
+                    translated_text += (translate_main(chunk, option) + " ")
                     if not translated_text.strip() and chunk.strip():
                         msg = "No text returned."
                         raise ValueError(msg)  # noqa: TRY301
+                translated_text = translated_text.rstrip()
                 # If translation succeeds, break out of the loop
                 break
             except Exception as e:  # noqa: BLE001
