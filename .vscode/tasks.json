@@ -260,7 +260,7 @@
     {
       "label": "Build HoloPatcher - PyInstaller",
       "type": "shell",
-      "dependsOn": ["requirements.txt"],
+      "dependsOn": ["requirements.txt", "install_pyinstaller"],
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
