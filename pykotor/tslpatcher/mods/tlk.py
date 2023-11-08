@@ -22,7 +22,13 @@ class ModificationsTLK(PatcherModifications):
         self.destination = self.DEFAULT_DESTINATION
         self.modifiers: list[ModifyTLK] = modifiers if modifiers is not None else []
 
-    def apply(self, source_tlk: SOURCE_TYPES, memory: PatcherMemory, log: PatchLogger | None = None, game: Game | None = None) -> bytes:
+    def apply(
+        self,
+        source_tlk: SOURCE_TYPES,
+        memory: PatcherMemory,
+        log: PatchLogger | None = None,
+        game: Game | None = None,
+    ) -> bytes:
         dialog: TLK = read_tlk(source_tlk)
         for modifier in self.modifiers:
             if modifier.is_replacement:

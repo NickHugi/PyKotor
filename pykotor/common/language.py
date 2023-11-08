@@ -30,7 +30,7 @@ class Language(IntEnum):
         if not isinstance(value, int):
             return NotImplemented
 
-        if value != 0x7FFFFFFF:  # unused? TODO: figure out what scenarios this'll happen in as it's happened on multiple occasions.
+        if value != 0x7FFFFFFF:  # 0x7FFFFFFF is unset/disabled/unused
             print(f"Language integer not found: {value}")
         return Language.ENGLISH
 
