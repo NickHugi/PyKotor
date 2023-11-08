@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import cProfile
+from copy import deepcopy
 import pathlib
 import sys
 from io import StringIO
@@ -20,19 +21,24 @@ from pykotor.resource.formats.gff import (
     GFFFieldType,
     GFFList,
     GFFStruct,
+    bytes_gff,
     read_gff,
     write_gff,
 )
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
+from scripts.k_batchpatcher.translate.language_translator import Translator
 
 if TYPE_CHECKING:
     import os
 
+    from pykotor.extract.file import FileResource
+
 
 OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
+pytranslator: Translator | None = None
 
 gff_types = [x.value.lower().strip() for x in GFFContent]
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
@@ -54,6 +60,7 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.List: "List",
 }
 
+
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
@@ -65,6 +72,7 @@ def relative_path_from_to(src, dst) -> Path:
     rel_parts = dst_parts[common_length:]
     return Path(*rel_parts)
 
+
 def do_patch(
     gff_struct: GFFStruct,
     gff_content: GFFContent,
@@ -75,24 +83,36 @@ def do_patch(
         child_path = current_path / label
 
         if ftype == GFFFieldType.Struct:
+            assert isinstance(value, GFFStruct)  # noqa: S101
+            if parser_args.set_unskippable and "Skippable" in value._fields:
+                log_output(f"Setting '{child_path}' as unskippable")
+                value._fields["Skippable"]._value = 1
+
             do_patch(value, gff_content, child_path)
             continue
 
         if ftype == GFFFieldType.List:
+            assert isinstance(value, GFFList)  # noqa: S101
             recurse_through_list(value, gff_content, child_path)
             continue
 
-        if ftype == GFFFieldType.LocalizedString and gff_content.value == GFFContent.DLG and parser_args.translate:
+        if ftype == GFFFieldType.LocalizedString and parser_args.translate:  # and gff_content.value == GFFContent.DLG.value:
             assert isinstance(value, LocalizedString)  # noqa: S101
+            new_substrings = deepcopy(value._substrings)
             for lang, gender, text in value:
-                # do translation here
-                value.set_data(lang, gender, text)
+                if pytranslator is not None and text is not None and text.strip():
+                    log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
+                    translated_text = pytranslator.translate(text, from_lang=lang)
+                    log_output(f"Translated {text} --> {translated_text}")
+                    substring_id = LocalizedString.substring_id(parser_args.to_lang, gender)
+                    new_substrings[substring_id] = translated_text
+            value._substrings = new_substrings
+
 
 def recurse_through_list(gff_list: GFFList, gff_content: GFFContent, current_path: PureWindowsPath):
     current_path = current_path if isinstance(current_path, PureWindowsPath) else PureWindowsPath(current_path or "GFFListRoot")
     for list_index, gff_struct in enumerate(gff_list):
         do_patch(gff_struct, gff_content, current_path / str(list_index))
-        continue
 
 
 def log_output(*args, **kwargs) -> None:
@@ -106,19 +126,22 @@ def log_output(*args, **kwargs) -> None:
     msg = buffer.getvalue()
 
     # Write the captured output to the file
-    with OUTPUT_LOG.open("a") as f:
+    encoding = "utf-8" if not parser_args.to_lang else parser_args.to_lang.get_encoding()
+    with OUTPUT_LOG.open("a", encoding=encoding, errors="ignore") as f:
         f.write(msg)
 
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
 
-def handle_restype_and_patch(
-    data: bytes | Path,
-    file_path: Path,
-    ext: str,
-    resname: str | None = None,
-) -> None:
 
+def handle_restype_and_patch(
+    file_path: Path,
+    bytes_data: bytes | None = None,
+    resref: FileResource | None = None,
+    capsule: Capsule | None = None,
+) -> None:
+    ext = file_path.suffix.lower()[1:]
+    data: bytes | Path = file_path if bytes_data is None else bytes_data
     if ext == "tlk":
         tlk: TLK | None = None
         try:
@@ -132,12 +155,15 @@ def handle_restype_and_patch(
             log_output(message)
             return
 
-        parser_args.from_lang = "auto" if not parser_args.from_lang else tlk.language
-        for _strref, tlkentry in tlk:
-            text = tlkentry.text
-            # translate text
-            tlkentry.text = text
-        write_tlk(tlk, file_path)
+        from_lang = tlk.language
+        if pytranslator is not None:
+            for _strref, tlkentry in tlk:
+                text = tlkentry.text
+                log_output_with_separator(f"Translating TLK text at {file_path!s}", above=True)
+                translated_text = pytranslator.translate(text, from_lang=from_lang)
+                log_output(f"Translated {text} --> {translated_text}")
+                tlkentry.text = text
+            write_tlk(tlk, file_path)
     if ext in gff_types:
         gff: GFF | None = None
         try:
@@ -150,11 +176,16 @@ def handle_restype_and_patch(
             log_output(f"GFF resource missing in memory:\t'{file_path}'")
             return
 
+        # TODO: Don't write files that are unchanged.
         do_patch(gff.root, gff.content, file_path.name)
-        write_gff(gff, file_path)
+        if capsule is not None and resref is not None:
+            capsule.add(resref.resname(), resref.restype(), bytes_gff(gff))
+        else:
+            write_gff(gff, file_path)
         return
 
     return
+
 
 def visual_length(s: str, tab_length=8) -> int:
     if "\t" not in s:
@@ -167,6 +198,7 @@ def visual_length(s: str, tab_length=8) -> int:
     for part in parts[:-1]:  # all parts except the last one
         vis_length += tab_length - (len(part) % tab_length)
     return vis_length
+
 
 def log_output_with_separator(message, below=True, above=False, surround=False) -> None:
     if above or surround:
@@ -183,7 +215,6 @@ def handle_capsule_and_patch(file: os.PathLike | str) -> None:
         log_output(f"Missing file:\t{c_file!s}")
         return
 
-
     if is_capsule_file(c_file.name):
         try:
             file_capsule = Capsule(file)
@@ -193,21 +224,16 @@ def handle_capsule_and_patch(file: os.PathLike | str) -> None:
 
         for resref in file_capsule:
             ext = resref.restype().extension.lower()
-            handle_restype_and_patch(resref.data(), c_file, ext, resref.resname())
+            handle_restype_and_patch(c_file / (resref.resname() + ext), resref.data(), resref, file_capsule)
     else:
-        handle_restype_and_patch(c_file, c_file, c_file.suffix.lower()[1:])
+        handle_restype_and_patch(c_file)
 
 
 def recurse_directories(folder_path: os.PathLike | str) -> None:
     c_folderpath = folder_path if isinstance(folder_path, Path) else Path(folder_path).resolve()
-
     log_output_with_separator(f"Recursing through resources in the '{c_folderpath.name}' folder...", above=True)
-
-    # Store relative paths instead of just filenames
-    file_paths = {f.relative_to(c_folderpath).as_posix().lower() for f in c_folderpath.safe_rglob("*") if f.safe_isfile()}
-
-    for rel_path in file_paths:
-        handle_capsule_and_patch(c_folderpath / rel_path)
+    for file_path in c_folderpath.safe_rglob("*"):
+        handle_capsule_and_patch(file_path)
 
 
 # TODO: Use the Installation class
@@ -279,10 +305,7 @@ while True:
     parser.print_help()
     parser_args.path = None
 while True:
-    parser_args.set_unskippable = (
-        parser_args.set_unskippable
-        or input("Would you like to make all dialog unskippable? (y/N): ")
-    )
+    parser_args.set_unskippable = parser_args.set_unskippable or input("Would you like to make all dialog unskippable? (y/N): ")
     if parser_args.set_unskippable.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
         parser_args.set_unskippable = True
     elif parser_args.set_unskippable.lower() in ["n", "no"]:  # type: ignore[attr-defined]
@@ -294,9 +317,8 @@ while True:
         continue
     break
 while True:
-    parser_args.translate = (
-        parser_args.translate
-        or input("Would you like to translate your path to another language using AI? (y/N): ")
+    parser_args.translate = parser_args.translate or input(
+        "Would you like to translate all CExoLocStrings and TLK entries to another language? (y/N): ",
     )
     if parser_args.translate.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
         parser_args.translate = True
@@ -310,19 +332,17 @@ while True:
     break
 if parser_args.translate:
     while True:
-        parser_args.to_lang = (
-            parser_args.to_lang
-            or input("Choose a language to translate to: ")
-        )
+        parser_args.to_lang = parser_args.to_lang or input("Choose a language to translate to: ")
         try:
             # Convert the string representation to the enum member, and then get its value
-            parser_args.to_lang = Language[parser_args.to_lang.upper()].value
+            parser_args.to_lang = Language[parser_args.to_lang.upper()]
         except KeyError:
             # Handle the case where the input is not a valid name in Language
             msg = f"{parser_args.to_lang.upper()} is not a valid Language. Please choose one of [{Language.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
             parser_args.to_lang = None
             continue
         break
+    pytranslator = Translator(parser_args.to_lang)
 if LOGGING_ENABLED:
     while True:
         OUTPUT_LOG = Path(
@@ -356,9 +376,9 @@ try:
         profiler_output_file = Path("profiler_output.pstat").resolve()
         profiler.dump_stats(str(profiler_output_file))
         log_output(f"Profiler output saved to: {profiler_output_file}")
-    if comparison is None:
-        log_output("Completed with errors found during comparison")
-        sys.exit(3)
+
+    log_output(f"Completed batch patcher of {parser_args.path}")
+    sys.exit(0)
 except KeyboardInterrupt:
     if profiler is not None:
         profiler.disable()
