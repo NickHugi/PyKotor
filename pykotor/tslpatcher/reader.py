@@ -162,7 +162,7 @@ class ConfigReader:
                 file_section_name = self.get_section_name(filename)
                 if file_section_name:
                     file_section_dict = CaseInsensitiveDict(self.ini[file_section_name].items())
-                    file_install.pop_tslpatcher_vars(file_section_dict)
+                    file_install.pop_tslpatcher_vars(file_section_dict, foldername)
 
     def load_tlk_list(self) -> None:
         tlk_list_section = self.get_section_name("tlklist")
