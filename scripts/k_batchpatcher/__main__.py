@@ -28,7 +28,7 @@ from pykotor.resource.formats.gff import (
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
-from scripts.k_batchpatcher.translate.language_translator import Translator
+from scripts.k_batchpatcher.translate.language_translator import TranslationOption, Translator
 
 if TYPE_CHECKING:
     import os
@@ -160,7 +160,7 @@ def handle_restype_and_patch(
             new_entries = deepcopy(tlk.entries)
             for strref, tlkentry in tlk:
                 text = tlkentry.text
-                if not text.strip():
+                if not text.strip() or text.isdigit():
                     continue
                 log_output_with_separator(f"Translating TLK text at {file_path!s}", above=True)
                 translated_text = pytranslator.translate(text, from_lang=from_lang)
@@ -347,7 +347,19 @@ if parser_args.translate:
             parser_args.to_lang = None
             continue
         break
+    while True:
+        print(*TranslationOption.__members__)
+        translation_option = input("Choose a preferred translator library: ")
+        try:
+            # Convert the string representation to the enum member, and then get its value
+            translation_option = TranslationOption[translation_option]
+        except KeyError:
+            msg = f"{translation_option} is not a valid translation option. Please choose one of [{TranslationOption.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
+            translation_option = None
+            continue
+        break
     pytranslator = Translator(parser_args.to_lang)
+    pytranslator.translation_option = translation_option
 if LOGGING_ENABLED:
     while True:
         OUTPUT_LOG = Path(

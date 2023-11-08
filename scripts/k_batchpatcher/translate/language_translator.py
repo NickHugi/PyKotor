@@ -27,21 +27,54 @@ def get_language_code(lang: Language):
         return "es"
     if lang == Language.POLISH:
         return "pl"
+    if lang == Language.KOREAN:
+        return "ko"
+    if lang == Language.CHINESE_TRADITIONAL:
+        return "zh-TW"
+    if lang == Language.CHINESE_SIMPLIFIED:
+        return "zh-CN"
+    if lang == Language.JAPANESE:
+        return "ja"
 
     return None  # or raise an error
+
+
+# Function to convert numerals
+def translate_numerals(num_string: str, source_lang: str, target_lang: str) -> str:
+    # Dictionaries for each language's numerals
+    numeral_maps = {
+        "en": "0123456789",
+        "fr": "0123456789",
+        "de": "0123456789",
+        "it": "0123456789",
+        "es": "0123456789",
+        "pl": "0123456789",
+        "ko": "영일이삼사오육칠팔구",
+        "zh-TW": "零一二三四五六七八九",
+        "zh-CN": "零一二三四五六七八九",
+        "ja": "〇一二三四五六七八九",
+    }
+
+    # Mapping from each numeral to its index for the source language
+    index_map: dict[str, int] = {numeral: idx for idx, numeral in enumerate(numeral_maps[source_lang])}
+
+    # Translation by indexing the position in the target language
+    translated_numerals: str = "".join(numeral_maps[target_lang][index_map[num]] for num in num_string)
+
+    return translated_numerals
 
 
 # Supported Translators
 class TranslationOption(IntEnum):
     GOOGLETRANS = 0
     LIBRE = 1
-    # DL_TRANSLATE = 2  # this translator is LARGE and SLOW, max text length 1024  # noqa: ERA001
-    LIBRE_FALLBACK = 2
-    GOOGLE_TRANSLATE = 3
-    PONS_TRANSLATOR = 4
-    MY_MEMORY_TRANSLATOR = 5
-    DEEPL = 6
-    TRANSLATE = 99  # has api limits max text length 500
+    DL_TRANSLATE = 2  # this translator is LARGE and SLOW, max text length 1024  # noqa: ERA001, RUF100
+    LIBRE_FALLBACK = 3
+    GOOGLE_TRANSLATE = 4
+    PONS_TRANSLATOR = 5
+    MY_MEMORY_TRANSLATOR = 6
+    DEEPL = 7
+    # TRANSLATE = 99  # has api limits max text length 500
 
 
 class Translator:
@@ -96,9 +129,10 @@ class Translator:
 
             self._translator = LibreFallbackTranslator()  # type: ignore[assignment]
         # this translator is LARGE and SLOW
-        # elif self.translation_option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
-        #    import dl_translate as dlt  # noqa: ERA001
-        #    self._translator = dlt.TranslationModel()  # noqa: ERA001
+        elif self.translation_option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
+            import dl_translate as dlt  # noqa: ERA001, RUF100
+
+            self._translator = dlt.TranslationModel()  # noqa: ERA001, RUF100
         # has api limits
         #    self._translator = TranslateTranslator(to_lang=get_language_code(self.to_lang))  # noqa: ERA001
         else:
@@ -139,6 +173,10 @@ class Translator:
             return chunks
 
         def translate_main(chunk: str, option: TranslationOption) -> str:
+            if chunk.strip().isdigit():
+                return translate_numerals(chunk.strip(), from_lang_code, to_lang_code)
+            if len(chunk.strip()) <= 2:  # throws errors when there's not enough text to translate.
+                return chunk
             translated_chunk: str
             if option == TranslationOption.GOOGLETRANS:
                 translated_chunk = self._translator.translate(chunk, src=from_lang_code, dest=to_lang_code).text  # type: ignore[attr-defined]
@@ -156,8 +194,8 @@ class Translator:
             elif option == TranslationOption.DEEPL:
                 translated_chunk = self._translator.translate(chunk.strip(), from_lang.name, to_lang.name)  # type: ignore[attr-defined, reportOptionalCall, reportGeneralTypeIssues]
             # this translator is LARGE and SLOW
-            # elif option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
-            #    translated_chunk = self._translator.translate(chunk, source=from_lang.name, target=to_lang.name)  # type: ignore[attr-defined, union-attr]  # noqa: ERA001
+            elif option == TranslationOption.DL_TRANSLATE:  # noqa: ERA001, RUF100
+                translated_chunk = self._translator.translate(chunk, source=from_lang.name, target=to_lang.name)  # type: ignore[attr-defined, union-attr]  # noqa: ERA001, RUF100
             # has api limits
             # elif option == TranslationOption.TRANSLATE:  # noqa: ERA001, RUF100
             #    translated_text = self._translator.translate(chunk)  # type: ignore[attr-defined]  # noqa: ERA001
