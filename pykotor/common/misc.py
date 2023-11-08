@@ -129,7 +129,7 @@ class ResRef:
             msg = "ResRef must be in ASCII characters."  # sourcery skip: inline-variable
             raise ResRef.InvalidEncodingError(msg)
 
-        self._value = text.lower()
+        self._value = text
 
     def get(
         self,
