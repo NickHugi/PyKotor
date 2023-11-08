@@ -991,6 +991,7 @@ class BinaryWriter(ABC):
         self,
         value: str,
         encoding: str = "windows-1252",
+        errors: str = "errors",
         *,
         big: bool = False,
         prefix_length: int = 0,
@@ -1365,6 +1366,7 @@ class BinaryWriterFile(BinaryWriter):
         self,
         value: str,
         encoding: str = "windows-1252",
+        errors: str = "strict",
         *,
         big: bool = False,
         prefix_length: int = 0,
@@ -1408,7 +1410,6 @@ class BinaryWriterFile(BinaryWriter):
             while len(value) < string_length:
                 value += padding
             value = value[:string_length]
-        errors = "ignore" if encoding in [Language.CHINESE_SIMPLIFIED.get_encoding(), Language.CHINESE_TRADITIONAL.get_encoding()] else "strict"
         self._stream.write(value.encode(encoding, errors=errors))
 
     def write_line(
@@ -1451,7 +1452,8 @@ class BinaryWriterFile(BinaryWriter):
         for language, gender, substring in value:
             string_id = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
+            errors = "replace" if language in [Language.CHINESE_SIMPLIFIED, Language.CHINESE_TRADITIONAL] else "strict"
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding(), errors=errors)
         locstring_data = bw.data()
 
         self.write_uint32(len(locstring_data))
@@ -1838,6 +1840,7 @@ class BinaryWriterBytearray(BinaryWriter):
         self,
         value: str,
         encoding: str = "windows-1252",
+        errors: str = "strict",
         *,
         big: bool = False,
         prefix_length: int = 0,
@@ -1881,7 +1884,7 @@ class BinaryWriterBytearray(BinaryWriter):
                 value += padding
             value = value[:string_length]
 
-        self._encode_val_and_update_position(value, encoding)
+        self._encode_val_and_update_position(value, encoding, errors)
 
     def write_line(
         self,
@@ -1903,8 +1906,7 @@ class BinaryWriterBytearray(BinaryWriter):
 
         self._encode_val_and_update_position(line, "ascii")
 
-    def _encode_val_and_update_position(self, value: str, encoding: str):
-        errors = "ignore" if encoding in [Language.CHINESE_SIMPLIFIED.get_encoding(), Language.CHINESE_TRADITIONAL.get_encoding()] else "strict"
+    def _encode_val_and_update_position(self, value: str, encoding: str, errors: str = "strict"):
         encoded = value.encode(encoding, errors=errors)
         self._ba[self._position : self._position + len(encoded)] = encoded
         self._position += len(encoded)
@@ -1931,7 +1933,8 @@ class BinaryWriterBytearray(BinaryWriter):
         for language, gender, substring in value:
             string_id = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
+            errors = "replace" if language in [Language.CHINESE_SIMPLIFIED, Language.CHINESE_TRADITIONAL] else "strict"
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding(), errors=errors)
         locstring_data = bw.data()
 
         self.write_uint32(len(locstring_data))
