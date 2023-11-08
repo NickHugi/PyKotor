@@ -347,7 +347,6 @@
         "--onefile",
         "--clean",
         "--name=kotordiff",
-        "--path=${workspaceFolder}",
         "scripts${pathSeparator}kotordiff${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
@@ -364,7 +363,6 @@
         "--onefile",
         "--clean",
         "--name=K_BatchPatcher",
-        "--path=${workspaceFolder}",
         "scripts${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
@@ -381,7 +379,6 @@
         "--onefile",
         "--clean",
         "--name=gui_creator",
-        "--path=${workspaceFolder}",
         "scripts${pathSeparator}guicreator${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
@@ -398,7 +395,6 @@
         "--onefile",
         "--clean",
         "--name=mdl_decompile",
-        "--path=${workspaceFolder}",
         "scripts${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
       ],
       "problemMatcher": []
