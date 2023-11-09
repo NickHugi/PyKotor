@@ -204,14 +204,19 @@ def handle_restype_and_patch(
 
         # TODO: Don't write files that are unchanged.
         if capsule is not None and resref is not None:
-            do_patch(gff.root, gff.content, Path(resref.filepath(), (resref.identifier().resname + "." + resref.identifier().restype.extension)))
+            do_patch(
+                gff.root,
+                gff.content,
+                Path(resref.filepath(), (resref.identifier().resname + "." + resref.identifier().restype.extension)),
+            )
+            new_file_path = file_path.parent / (file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix)
             new_capsule = Capsule(
-                file_path.parent
-                / (file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix),
+                new_file_path,
                 create_nonexisting=True,
             )
             new_capsule._resources = deepcopy(capsule._resources)
             new_capsule.add(resref.resname(), resref.restype(), bytes_gff(gff))
+            processed_files.add(new_capsule.path())
         else:
             do_patch(gff.root, gff.content, file_path.name)
             new_file_path = file_path.parent / (

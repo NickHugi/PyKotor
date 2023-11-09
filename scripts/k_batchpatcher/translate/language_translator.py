@@ -207,7 +207,6 @@ def get_language_code(lang: SupportedLanguages) -> str:
         SupportedLanguages.CROATIAN: "hr",
         SupportedLanguages.SERBIAN_LATIN: "sr",  # sr-Latn
         SupportedLanguages.BOSNIAN: "bs",
-        SupportedLanguages.MONTENEGRIN: "cnr",
         SupportedLanguages.MACEDONIAN_LATIN: "mk",
         SupportedLanguages.ROMANIAN: "ro",
         SupportedLanguages.BULGARIAN_LATIN: "bg",
@@ -233,7 +232,7 @@ def get_language_code(lang: SupportedLanguages) -> str:
         SupportedLanguages.CORSICAN: "co",
         SupportedLanguages.FAROESE: "fo",
         SupportedLanguages.FRISIAN: "fy",
-        SupportedLanguages.LEONESE: "ast",  # Asturian is often used for Leonese
+        #SupportedLanguages.LEONESE: "ast",  # Asturian is often used for Leonese
         SupportedLanguages.MANX: "gv",
         SupportedLanguages.OCCITAN: "oc",
         SupportedLanguages.RHAETO_ROMANIC: "rm",
