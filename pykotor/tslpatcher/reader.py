@@ -305,7 +305,7 @@ class ConfigReader:
                         self.config.patches_tlk.modifiers.append(modifier)
                 else:
                     syntax_error_caught = True
-                    msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['File', 'StrRef']"
+                    msg = f"Invalid syntax found in [TLKList] '{key}={value}'! Expected '{key}' to be one of ['AppendFile', 'ReplaceFile', '!SourceFile', 'StrRef']"
                     raise ValueError(msg)  # noqa: TRY301
             except ValueError as e:
                 if syntax_error_caught:
@@ -598,16 +598,12 @@ class ConfigReader:
                 value = FieldValueConstant(GFFStruct(struct_id))
                 path /= ">>##INDEXINLIST##<<"  # see the check in mods/gff.py. Perhaps need to check if label is set, first?
             else:
-                msg = (
-                    f"Could not find valid field return type in [{identifier}] matching field type '{field_type}' in this context"
-                )
+                msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type}' in this context"
                 raise ValueError(msg)
         elif raw_value.lower().startswith("2damemory"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
-        elif raw_value.lower().endswith(
-            "strref"
-        ):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'? Or is this already handled elsewhere?
+        elif raw_value.lower().endswith("strref"):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'? Or is this already handled elsewhere?
             token_id = int(raw_value[6:])
             value = FieldValueTLKMemory(token_id)
         elif field_type.return_type() == int:

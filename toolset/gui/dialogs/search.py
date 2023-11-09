@@ -1,22 +1,23 @@
-from typing import Dict, List, Optional
-from pykotor.common.misc import decode_bytes_with_fallbacks
+from __future__ import annotations
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
+from typing import TYPE_CHECKING
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog, QListWidgetItem, QWidget
+
+from pykotor.common.misc import decode_bytes_with_fallbacks
+from pykotor.resource.type import ResourceType
+from toolset.gui.dialogs.asyncloader import AsyncBatchLoader
 from toolset.utils.window import openResourceEditor
 
-from pykotor.extract.file import FileResource
-from pykotor.resource.type import ResourceType
+if TYPE_CHECKING:
+    from pykotor.extract.file import FileResource
+    from toolset.data.installation import HTInstallation
 
 
 class FileSearcher(QDialog):
-    """
-    Searches through the
-    """
 
-    def __init__(self, parent: QWidget, installations: Dict[str, HTInstallation]):
+    def __init__(self, parent: QWidget, installations: dict[str, HTInstallation]):
         super().__init__(parent)
 
         from toolset.uic.dialogs import search
@@ -24,9 +25,9 @@ class FileSearcher(QDialog):
         self.ui.setupUi(self)
 
         self.results = []
-        self.installation: Optional[HTInstallation] = None
+        self.installation: HTInstallation | None = None
 
-        self._installations: Dict[str, HTInstallation] = installations
+        self._installations: dict[str, HTInstallation] = installations
         for name, installation in installations.items():
             self.ui.installationSelect.addItem(name, installation)
 
@@ -64,8 +65,8 @@ class FileSearcher(QDialog):
         super().accept()
 
     def search(self, installation: HTInstallation, caseSensitive: bool, filenamesOnly: bool, text: str,
-               searchCore: bool, searchModules: bool, searchOverride: bool, checkTypes: List[ResourceType]) -> None:
-        searchIn: List[FileResource] = []
+               searchCore: bool, searchModules: bool, searchOverride: bool, checkTypes: list[ResourceType]) -> None:
+        searchIn: list[FileResource] = []
         results = []
 
         if searchCore:
@@ -97,7 +98,7 @@ class FileSearcher(QDialog):
 
 
 class FileResults(QDialog):
-    def __init__(self, parent: QWidget, results: List[FileResource], installation: HTInstallation):
+    def __init__(self, parent: QWidget, results: list[FileResource], installation: HTInstallation):
         super().__init__(parent)
 
         from toolset.uic.dialogs.search_result import Ui_Dialog
@@ -107,7 +108,7 @@ class FileResults(QDialog):
         self.ui.openButton.clicked.connect(self.open)
         self.ui.okButton.clicked.connect(self.accept)
 
-        self.selection: Optional[FileResource] = None
+        self.selection: FileResource | None = None
         self.installation: HTInstallation = installation
 
         for result in results:

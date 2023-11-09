@@ -34,12 +34,7 @@ class TXTEditor(Editor):
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
-        try:
-            # Try UTF-8 First - KotOR files typically do not use UTF8
-            self.ui.textEdit.setPlainText(data.decode("windows-1252"))
-        except UnicodeDecodeError:
-            # Slower, auto detect encoding
-            self.ui.textEdit.setPlainText(decode_bytes_with_fallbacks(data))
+        self.ui.textEdit.setPlainText(decode_bytes_with_fallbacks(data))
 
     def build(self) -> Tuple[bytes, bytes]:
         return self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep).encode(), b""

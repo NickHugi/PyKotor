@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import NamedTuple
-from pykotor.common.misc import decode_bytes_with_fallbacks
 
 from pykotor.common.script import DataType, ScriptConstant, ScriptFunction
 from pykotor.common.stream import BinaryReader
@@ -654,11 +653,11 @@ class IncludeScript(TopLevelObject):
         for folder in root.library_lookup:
             filepath = folder / f"{self.file.value}.nss"
             if filepath.exists():
-                source = decode_bytes_with_fallbacks(BinaryReader.load_file(filepath), errors="ignore")
+                source = BinaryReader.load_file(filepath).decode(errors="ignore")
                 break
         else:
             if self.file.value in self.library:
-                source = decode_bytes_with_fallbacks(self.library[self.file.value], errors="ignore")
+                source = self.library[self.file.value].decode(errors="ignore")
             else:
                 msg = f"Could not find included script '{self.file.value}.nss'."
                 raise CompileException(msg)
