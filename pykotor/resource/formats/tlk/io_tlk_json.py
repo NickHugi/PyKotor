@@ -5,7 +5,6 @@ import json
 from pykotor.common.misc import (
     ResRef,
     decode_bytes_with_fallbacks,
-    encode_bytes_with_fallback,
 )
 from pykotor.resource.formats.tlk import TLK
 from pykotor.resource.type import (
@@ -68,4 +67,4 @@ class TLKJSONWriter(ResourceWriter):
             string["soundResRef"] = entry.voiceover.get()
 
         json_dump = json.dumps(self._json, indent=4)
-        self._writer.write_bytes(encode_bytes_with_fallback(json_dump))
+        self._writer.write_bytes(json_dump.encode())

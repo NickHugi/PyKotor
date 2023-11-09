@@ -26,7 +26,6 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from pykotor.common.misc import encode_bytes_with_fallback
 from pykotor.common.scriptdefs import (
     KOTOR_CONSTANTS,
     KOTOR_FUNCTIONS,
@@ -113,7 +112,7 @@ class NSSEditor(Editor):
         super().load(filepath, resref, restype, data)
 
         if restype == ResourceType.NSS:
-            self.ui.codeEdit.setPlainText(data.decode("windows-1252"))  # TODO: should use windows-1250 for polish versions of KOTOR.
+            self.ui.codeEdit.setPlainText(data.decode("windows-1252"))
         elif restype == ResourceType.NCS:
             try:
                 source = decompileScript(data, self._installation.tsl)
@@ -127,7 +126,7 @@ class NSSEditor(Editor):
 
     def build(self) -> tuple[bytes, bytes] | None:
         if self._restype.NSS:
-            return encode_bytes_with_fallback(self.ui.codeEdit.toPlainText()), b""
+            return self.ui.codeEdit.toPlainText().encode(), b""
         if self._restype.NCS:
             compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
         return None

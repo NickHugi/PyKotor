@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from pykotor.common.misc import decode_bytes_with_fallbacks, encode_bytes_with_fallback
+from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.formats.twoda.twoda_data import TwoDA
 from pykotor.resource.type import (
     SOURCE_TYPES,
@@ -67,4 +67,4 @@ class TwoDAJSONWriter(ResourceWriter):
                 json_row[header] = row.get_string(header)
 
         json_dump = json.dumps(self._json, indent=4)
-        self._writer.write_bytes(encode_bytes_with_fallback(json_dump))
+        self._writer.write_bytes(json_dump.encode())

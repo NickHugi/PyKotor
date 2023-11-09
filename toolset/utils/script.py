@@ -5,7 +5,7 @@ import subprocess
 
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
-from pykotor.common.misc import Game, encode_bytes_with_fallback
+from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from pykotor.tools.path import Path
@@ -137,7 +137,7 @@ def compileScript(source: str, tsl: bool) -> bytes:
 
         tempSourcePath = extract_path / "tempscript.nss"
         tempCompiledPath = extract_path / "tempscript.ncs"
-        BinaryWriter.dump(tempSourcePath, encode_bytes_with_fallback(source))
+        BinaryWriter.dump(tempSourcePath, source.encode())
 
         gameIndex = "2" if tsl else "1"
         command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]

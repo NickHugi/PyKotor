@@ -11,13 +11,13 @@ class TLK:
 
     def __init__(
         self,
-    ):
+    ) -> None:
         self.entries: list[TLKEntry] = []
-        self.language: Language = Language.ENGLISH
+        self.language: Language = Language.ENGLISH  # has no visible effect in the game
 
     def __len__(
         self,
-    ):
+    ) -> int:
         """Returns the number of stored entries."""
         return len(self.entries)
 

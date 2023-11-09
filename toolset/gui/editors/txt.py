@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, Tuple
 
 from PyQt5.QtWidgets import QPlainTextEdit, QWidget
 
-from pykotor.common.misc import decode_bytes_with_fallbacks, encode_bytes_with_fallback
+from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
@@ -42,7 +42,7 @@ class TXTEditor(Editor):
             self.ui.textEdit.setPlainText(decode_bytes_with_fallbacks(data))
 
     def build(self) -> Tuple[bytes, bytes]:
-        return encode_bytes_with_fallback(self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep)), b""
+        return self.ui.textEdit.toPlainText().replace("\r\n", os.linesep).replace("\n", os.linesep).encode(), b""
 
     def new(self) -> None:
         super().new()

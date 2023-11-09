@@ -8,8 +8,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
-from pykotor.common.language import Language, LocalizedString
-from pykotor.common.misc import encode_bytes_with_fallback
+from pykotor.common.language import LocalizedString
 from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
@@ -1429,7 +1428,7 @@ class BinaryWriterFile(BinaryWriter):
             line += str(round(arg, 7)) if isinstance(arg, float) else str(arg)
             line += " "
         line += "\n"
-        self._stream.write(encode_bytes_with_fallback(line))
+        self._stream.write(line.encode())
 
     def write_locstring(
         self,

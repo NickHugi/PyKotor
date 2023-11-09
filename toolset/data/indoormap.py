@@ -11,7 +11,7 @@ from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QTransform
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Color, ResRef, encode_bytes_with_fallback
+from pykotor.common.misc import Color, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
@@ -403,7 +403,7 @@ class IndoorMap:
             }
             data["rooms"].append(roomData)  # type: ignore[union-attr]
 
-        return encode_bytes_with_fallback(json.dumps(data))
+        return json.dumps(data).encode()
 
     def load(self, raw: bytes, kits: list[Kit]) -> None:
         self.reset()

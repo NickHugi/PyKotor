@@ -6,18 +6,18 @@ from copy import deepcopy
 from enum import Enum, IntEnum
 
 try:
-    from chardet import chardet_detect
+    import chardet
 except ImportError:
-    chardet_detect = None
+    chardet = None
 try:
-    from cchardet import cchardet_detect
+    import cchardet
 except ImportError:
-    cchardet_detect = None
+    cchardet = None
 try:
-    from charset_normalizer import from_bytes as chardet_from_bytes
+    import charset_normalizer
 except ImportError:
-    chardet_from_bytes = None
-from typing import TYPE_CHECKING, Any, Generator, Generic, Iterable, Optional, TypeVar
+    charset_normalizer = None
+from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar
 
 from pykotor.common.geometry import Vector3
 from pykotor.tools.path import PurePath
@@ -476,18 +476,18 @@ def decode_bytes_with_fallbacks(byte_content: bytes, errors="strict", encoding: 
         encodings_to_try.insert(0, encoding)  # user choice, insert after utf-8
 
     # Detect encoding if one of our encoding detection libraries are available
-    if chardet_from_bytes is not None:
-        matches = chardet_from_bytes(byte_content).best()
+    if charset_normalizer is not None:
+        matches = charset_normalizer.from_bytes(byte_content).best()
         if matches and matches.encoding:
             detected_encoding = matches.encoding
         if detected_encoding:
             encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # chardet_normalizer's best guess, insert after utf-8
-    if not detected_encoding and chardet_detect is not None:
-        detected_encoding = (chardet_detect(byte_content) or {}).get("encoding")
+    if not detected_encoding and chardet is not None:
+        detected_encoding = (chardet.detect(byte_content) or {}).get("encoding")
         if detected_encoding:
             encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # chardet's best guess, insert after utf-8
-    if not detected_encoding and cchardet_detect is not None:
-        detected_encoding = (cchardet_detect(byte_content) or {}).get("encoding")
+    if not detected_encoding and cchardet is not None:
+        detected_encoding = (cchardet.detect(byte_content) or {}).get("encoding")
         if detected_encoding:
             encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # cchardet's best guess, insert after utf-8
 
@@ -499,45 +499,6 @@ def decode_bytes_with_fallbacks(byte_content: bytes, errors="strict", encoding: 
             continue
 
     return decoded_text or byte_content.decode("iso-8859-1", errors=errors)
-
-def encode_bytes_with_fallback(text_content: str, errors="strict", encoding: str | None = None) -> bytes:
-    if len(text_content) == 0:
-        return b""
-    encoded_bytes: bytes | None = None
-    encodings_to_try = deepcopy(FALLBACK_ENCODINGS)
-    detected_encoding: str | None = None
-
-    # If a specific encoding is provided, try that first
-    if isinstance(encoding, str):
-        encodings_to_try.insert(0, encoding)
-
-    # Detect encoding if one of our encoding detection libraries is available and no encoding is provided
-    # For encoding, we use chardet/cchardet/charset_normalizer to ensure the text is compatible with the encoding
-    if not detected_encoding and chardet_detect is not None:
-        try:
-            detected_encoding = (chardet_detect(text_content.encode()) or {}).get("encoding")
-        except UnicodeEncodeError:
-            detected_encoding = (chardet_detect(text_content.encode(encoding="utf-32", errors="ignore")))
-        if detected_encoding:
-            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # insert after utf-8
-    if not detected_encoding and cchardet_detect is not None:
-        try:
-            detected_encoding = (cchardet_detect(text_content.encode()) or {}).get("encoding")
-        except UnicodeEncodeError:
-            detected_encoding = (cchardet_detect(text_content.encode(encoding="utf-32", errors="ignore")))
-        if detected_encoding:
-            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # insert after utf-8
-    # charset_normalizer does not provide functionality for encoding detection from string to bytes
-
-    for enc in encodings_to_try:
-        try:
-            encoded_bytes = text_content.encode(enc, errors="strict")
-            break  # Stop at the first successful encoding
-        except UnicodeEncodeError:
-            continue
-
-    # As a last resort, fallback to ISO-8859-1 or another encoding that can encode any character
-    return encoded_bytes if encoded_bytes is not None else text_content.encode("iso-8859-1", errors=errors)
 
 
 class CaseInsensitiveHashSet(set, Generic[T]):
