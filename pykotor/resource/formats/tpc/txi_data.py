@@ -59,16 +59,16 @@ class TXIFontInformation(TXIBaseInformation):
         super().__init__()
         self.numchars: int = 256
         self.upperleftcoords: int = 0
+        self.lowerrightcoords: int = 256
 
         self.fontheight: int
         self.baselineheight: int  # presumably sets where the text sits. Probably to account for stuff like French that has those accents that hang underneath characters.
         self.texturewidth: int  # Actual displayed width of the texture, allows stretching/compressing along the X axis.
+        self.fontwidth: int  # Actually stretches down somehow. Heavily distorts the text when modified. Perhaps this is the Y axis and texturewidth is the X axis?
         self.spacingR: int  # Do NOT exceed the maximum of 0.002600
         self.spacingB: int  # spacingB should be left alone.
         self.caretindent: int
         self.isdoublebyte: int
-        self.fontwidth: int
         # self.dbmapping:  # unused in KOTOR
         self.cols: Vector2
-        self.lowerrightcoords: int = 256
         self.rows: Vector2
