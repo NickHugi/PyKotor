@@ -1,3 +1,6 @@
+# From https://nwn.wiki/display/NWN1/TXI#TXI-TextureRelatedFields
+# From DarthParametric and Drazgar in the DeadlyStream Discord.
+
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
