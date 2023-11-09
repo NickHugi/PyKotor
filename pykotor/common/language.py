@@ -14,16 +14,15 @@ class Language(IntEnum):
     ITALIAN = 3
     SPANISH = 4
 
-    # Polish might require a different KOTOR executable. It is believed the games are hardcoded to the encoding 'cp-1252', but polish requires 'cp-1250'.
-    # The TSL Aspyr patch did not support the Polish language which further supports this theory.
+    # Polish requires different 'font' packages with the cp-1251 character set.
     POLISH = 5
 
-    # The following languages are not used in any official KOTOR releases, however are supported in the TLK/GFF file formats.
+    # The following languages are supported in the GFF/TLK file formats, but do not adhere to the 8-bit encoding requirement
+    # therefore are probably incompatible with KOTOR.
     KOREAN = 128
     CHINESE_TRADITIONAL = 129
     CHINESE_SIMPLIFIED = 130
     JAPANESE = 131
-
 
     @staticmethod
     def _missing_(value) -> IntEnum:
@@ -38,7 +37,6 @@ class Language(IntEnum):
         """Get the encoding for the specified language."""
         if self in (Language.ENGLISH, Language.FRENCH, Language.GERMAN, Language.ITALIAN, Language.SPANISH):
             return "windows-1252"
-
         if self == Language.POLISH:
             return "windows-1250"
 
@@ -47,7 +45,7 @@ class Language(IntEnum):
         if self == Language.CHINESE_TRADITIONAL:
             return "big5"
         if self == Language.CHINESE_SIMPLIFIED:
-            return "gb2312"  # This encoding might not be accurate. The TLK/GFF formats could easily support "gb18030" or "GBK" but would need testing. "gb2312" is the safest option when unknown.
+            return "gb18030"
         if self == Language.JAPANESE:
             return "shift_jis"
         msg = f"No encoding defined for language: {self.name}"

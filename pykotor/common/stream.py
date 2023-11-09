@@ -1452,8 +1452,7 @@ class BinaryWriterFile(BinaryWriter):
         for language, gender, substring in value:
             string_id = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            errors = "replace" if language in [Language.CHINESE_SIMPLIFIED, Language.CHINESE_TRADITIONAL] else "strict"
-            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding(), errors=errors)
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
         locstring_data = bw.data()
 
         self.write_uint32(len(locstring_data))
@@ -1933,8 +1932,7 @@ class BinaryWriterBytearray(BinaryWriter):
         for language, gender, substring in value:
             string_id = LocalizedString.substring_id(language, gender)
             bw.write_uint32(string_id, big=big)
-            errors = "replace" if language in [Language.CHINESE_SIMPLIFIED, Language.CHINESE_TRADITIONAL] else "strict"
-            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding(), errors=errors)
+            bw.write_string(substring, prefix_length=4, encoding=language.get_encoding())
         locstring_data = bw.data()
 
         self.write_uint32(len(locstring_data))
