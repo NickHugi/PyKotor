@@ -20,7 +20,6 @@ class TPCConvertResult(NamedTuple):
     height: int
     data: bytes | None
 
-
 class TPC:
     """Represents a TPC file.
 
