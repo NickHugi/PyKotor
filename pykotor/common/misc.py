@@ -1,29 +1,21 @@
 """This module holds various unrelated classes and methods."""
 
+
 from __future__ import annotations
 
-from copy import deepcopy
+import contextlib
 from enum import Enum, IntEnum
-
-try:
-    import chardet
-except ImportError:
-    chardet = None
-try:
-    import cchardet
-except ImportError:
-    cchardet = None
-try:
-    import charset_normalizer
-except ImportError:
-    charset_normalizer = None
 from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar
+
+import charset_normalizer
 
 from pykotor.common.geometry import Vector3
 from pykotor.tools.path import PurePath
 
 if TYPE_CHECKING:
     import os
+
+    from pykotor.common.language import Language
 
 T = TypeVar("T")
 VT = TypeVar("VT")
@@ -445,60 +437,49 @@ class EquipmentSlot(Enum):
     LEFT_HAND_2 = 2**19
 
 
-FALLBACK_ENCODINGS = [
-    # "ascii",        # python's encode() and decode() defaults to utf-8 so we should match the behavior.  # noqa: ERA001
-    "utf_8",        # UTF-8: Extremely popular, variable-width, and likely to throw errors on invalid data.
-    "windows-1252", # Windows-1252: Common in Western languages, superset of ISO-8859-1, with well-defined error behavior.
-    "iso8859_15",   # ISO-8859-15: Similar to ISO-8859-1 but includes the euro sign and other characters.
-    "shift_jis",    # Shift_JIS: Popular in Japanese text, likely to throw errors on non-Japanese data.
-    "gbk",          # GBK: Superset of GB2312, popular for Simplified Chinese, distinct error behavior.
-    "euc_kr",       # EUC-KR: Common for Korean text, good error signaling.
-    "iso8859_2",    # ISO-8859-2: Latin alphabet for Central European languages, more specific than ISO-8859-1.
-    "iso8859_5",    # ISO-8859-5: Used for Cyrillic scripts, less common and likely to signal errors for non-Cyrillic text.
-    "iso8859_6",    # ISO-8859-6: Used for Arabic, strict error handling for non-Arabic text.
-    "iso8859_7",    # ISO-8859-7: Designed for Modern Greek, likely to produce errors for non-Greek text.
-    "iso8859_9",    # ISO-8859-9: Latin alphabet for Turkish, similar error behavior to other single-byte encodings.
-    "utf_16",       # UTF-16: Can encode all Unicode characters, with potential errors from improper surrogate handling.
-    "latin_1",      # ISO-8859-1: As a semi-last resort, can decode any byte stream to some character representation.
-    "utf_32",       # UTF-32: Can encode everything but is less common and has a clear error behavior for incorrect data.
-]
+def decode_bytes_with_fallbacks(
+    byte_content: bytes,
+    errors="strict",
+    encoding: str | None = None,
+    lang: Language | None = None,
+) -> str:
+    """A well rounded decoding function used to decode byte content with provided language/encoding information. If an exact match cannot be
+    determined, it will use heuristics based on what is known, to determine what encoding to use. Utilizes the charset_normalizer library internally.
+
+    Args:
+    ----
+        byte_content (bytes): the bytes to decode
+        errors (str): When detection fails, this determines how to decode the ultimate fallback encoding. Same variable sent to the builtin decode() function.
+        lang (Language): The language of the bytes being decoded, if known.
+    """
+    provided_encoding = encoding or (lang.get_encoding() if lang else None)
+    if provided_encoding:
+        with contextlib.suppress(UnicodeDecodeError):
+            return byte_content.decode(provided_encoding, errors=errors)
+
+    detected_encoding = charset_normalizer.from_bytes(byte_content).best()
+    if detected_encoding:
+        return byte_content.decode(encoding=detected_encoding.encoding, errors=errors)
+    return byte_content.decode(errors=errors)
 
 
-def decode_bytes_with_fallbacks(byte_content: bytes, errors="strict", encoding: str | None = None) -> str:
-    if len(byte_content) == 0:
-        return ""
-    decoded_text: str | None = None
-    encodings_to_try = deepcopy(FALLBACK_ENCODINGS)
-    detected_encoding: str | None = None
+def find_best_8bit_encoding(s: str):
+    # First, we encode the string to UTF-8 bytes. Python str objects are inherently Unicode.
+    utf8_encoded = s.encode("utf-8")
 
-    # If a specific encoding is provided, try that first
-    if isinstance(encoding, str):
-        encodings_to_try.insert(0, encoding)  # user choice, insert after utf-8
+    # Then, we try to find the best match for this byte string
+    # assuming it was originally encoded with an unknown 8-bit charset
+    matches = charset_normalizer.CharsetNormalizerMatches.from_bytes(utf8_encoded)
 
-    # Detect encoding if one of our encoding detection libraries are available
-    if charset_normalizer is not None:
-        matches = charset_normalizer.from_bytes(byte_content).best()
-        if matches and matches.encoding:
-            detected_encoding = matches.encoding
-        if detected_encoding:
-            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # chardet_normalizer's best guess, insert after utf-8
-    if not detected_encoding and chardet is not None:
-        detected_encoding = (chardet.detect(byte_content) or {}).get("encoding")
-        if detected_encoding:
-            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # chardet's best guess, insert after utf-8
-    if not detected_encoding and cchardet is not None:
-        detected_encoding = (cchardet.detect(byte_content) or {}).get("encoding")
-        if detected_encoding:
-            encodings_to_try.insert(1 if isinstance(encoding, str) else 2, detected_encoding)  # cchardet's best guess, insert after utf-8
+    # We filter out non 8-bit encodings and Unicode encodings
+    eight_bit_encodings = [match for match in matches if match.encoding != "utf-8" and "iso" in match.encoding]
 
-    for enc in encodings_to_try:
-        try:
-            decoded_text = byte_content.decode(enc, errors="strict")
-            break  # Stop at the first successful decoding
-        except UnicodeDecodeError:
-            continue
+    # If we have 8-bit matches, we take the one with the highest confidence
+    if eight_bit_encodings:
+        best_match = max(eight_bit_encodings, key=lambda m: m.chaos)
+        return best_match.encoding
 
-    return decoded_text or byte_content.decode("iso-8859-1", errors=errors)
+    return None
 
 
 class CaseInsensitiveHashSet(set, Generic[T]):
