@@ -30,7 +30,6 @@ from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
 from scripts.k_batchpatcher.translate.language_translator import (
-    SupportedLanguages,
     TranslationOption,
     Translator,
     get_language_code,
@@ -45,7 +44,7 @@ if TYPE_CHECKING:
 OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
 pytranslator: Translator | None = None
-processed_files = set()
+processed_files: set[Path] = set()
 
 gff_types = [x.value.lower().strip() for x in GFFContent]
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
@@ -68,10 +67,10 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 }
 
 
-def get_kotor_language(lang: SupportedLanguages) -> Language:
+def get_kotor_language(lang: Language) -> Language:
     return (
         Language.__members__[lang.name]
-        if isinstance(lang, (SupportedLanguages, Language)) and any(lang.value == member.value for member in Language)
+        if isinstance(lang, (Language, Language)) and any(lang.value == member.value for member in Language)
         else Language.ENGLISH
     )
 
@@ -143,7 +142,7 @@ def log_output(*args, **kwargs) -> None:
     msg = buffer.getvalue()
 
     # Write the captured output to the file
-    encoding = "utf-8" if not parser_args.to_lang else get_kotor_language(parser_args.to_lang).get_encoding()
+    encoding = get_kotor_language(parser_args.to_lang).get_encoding() if parser_args.to_lang else "utf-8"
     with OUTPUT_LOG.open("a", encoding=encoding, errors="ignore") as f:
         f.write(msg)
 
@@ -158,6 +157,7 @@ def handle_restype_and_patch(
     resref: FileResource | None = None,
     capsule: Capsule | None = None,
 ) -> None:
+    # sourcery skip: extract-method
     data: bytes | Path = file_path if bytes_data is None else bytes_data
     if ext == "tlk":
         tlk: TLK | None = None
@@ -172,12 +172,14 @@ def handle_restype_and_patch(
             log_output(message)
             return
 
-        from_lang = tlk.language
         if pytranslator is not None:
             new_entries = deepcopy(tlk.entries)
+            from_lang = tlk.language
             tlk.language = get_kotor_language(parser_args.to_lang)
             new_file_path = file_path.parent / (
-                file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
+                f"{file_path.stem}_"
+                + (get_language_code(parser_args.to_lang) or "UNKNOWN")
+                + file_path.suffix
             )
             for strref, tlkentry in tlk:
                 text = tlkentry.text
@@ -207,9 +209,16 @@ def handle_restype_and_patch(
             do_patch(
                 gff.root,
                 gff.content,
-                Path(resref.filepath(), (resref.identifier().resname + "." + resref.identifier().restype.extension)),
+                Path(
+                    resref.filepath(),
+                    f"{resref.identifier().resname}.{resref.identifier().restype.extension}",
+                ),
             )
-            new_file_path = file_path.parent / (file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix)
+            new_file_path = file_path.parent / (
+                f"{file_path.stem}_"
+                + (get_language_code(parser_args.to_lang) or "UNKNOWN")
+                + file_path.suffix
+            )
             new_capsule = Capsule(
                 new_file_path,
                 create_nonexisting=True,
@@ -220,7 +229,9 @@ def handle_restype_and_patch(
         else:
             do_patch(gff.root, gff.content, file_path.name)
             new_file_path = file_path.parent / (
-                file_path.stem + "_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
+                f"{file_path.stem}_"
+                + (get_language_code(parser_args.to_lang) or "UNKNOWN")
+                + file_path.suffix
             )
             write_gff(gff, new_file_path)
             processed_files.add(new_file_path)
@@ -386,18 +397,18 @@ if LOGGING_ENABLED:
             break
         print("Invalid path:", OUTPUT_LOG)
         parser.print_help()
-translation_option: str = None
+translation_option: str = None  # type: ignore[assignment]
 if parser_args.translate:
     while True:
-        print("Languages: ", *SupportedLanguages.__members__)
+        print("Languages: ", *Language.__members__)
         parser_args.to_lang = parser_args.to_lang or input("Choose a language to translate to: ").upper()
         try:
             if parser_args.to_lang == "ALL":
                 break
             # Convert the string representation to the enum member, and then get its value
-            parser_args.to_lang = SupportedLanguages[parser_args.to_lang]
+            parser_args.to_lang = Language[parser_args.to_lang]
         except KeyError:
-            # Handle the case where the input is not a valid name in SupportedLanguages
+            # Handle the case where the input is not a valid name in Language
             msg = f"{parser_args.to_lang.upper()} is not a valid Language."  # type: ignore[union-attr, reportGeneralTypeIssues]
             parser_args.to_lang = None
             continue
@@ -407,10 +418,10 @@ if parser_args.translate:
         translation_option = input("Choose a preferred translator library: ")
         try:
             # Convert the string representation to the enum member, and then get its value
-            translation_option = TranslationOption[translation_option]
+            translation_option = TranslationOption[translation_option]  # type: ignore[assignment]
         except KeyError:
             msg = f"{translation_option} is not a valid translation option. Please choose one of [{TranslationOption.__members__}]"  # type: ignore[union-attr, reportGeneralTypeIssues]
-            translation_option = None
+            translation_option = None  # type: ignore[assignment]
             continue
         break
 
@@ -421,19 +432,19 @@ profiler = None
 
 if translation_option is not None and parser_args.to_lang != "ALL":
     pytranslator = Translator(parser_args.to_lang)
-    pytranslator.translation_option = translation_option
+    pytranslator.translation_option = translation_option  # type: ignore[assignment]
 try:
     if parser_args.use_profiler:
         profiler = cProfile.Profile()
         profiler.enable()
 
     if parser_args.to_lang == "ALL":
-        for lang in SupportedLanguages.__members__:
+        for lang in Language.__members__:
             print(f"Translating to {lang}...")
-            enum_member_lang = SupportedLanguages[lang]
+            enum_member_lang = Language[lang]
             parser_args.to_lang = enum_member_lang
             pytranslator = Translator(parser_args.to_lang)
-            pytranslator.translation_option = translation_option
+            pytranslator.translation_option = translation_option  # type: ignore[assignment]
             comparison = run_patches(parser_args.path)
     else:
         comparison: bool | None = run_patches(parser_args.path)
@@ -453,7 +464,7 @@ except KeyboardInterrupt:
         profiler.dump_stats(str(profiler_output_file))
         log_output(f"Profiler output saved to: {profiler_output_file}")
     raise
-except Exception:
+except Exception:  # noqa: BLE001
     log_output("Unhandled exception during the batchpatch process.")
     log_output(traceback.format_exc())
     input("The program must shut down. Press Enter to close.")

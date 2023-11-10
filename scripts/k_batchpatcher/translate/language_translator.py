@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from enum import Enum, IntEnum
+from enum import Enum
 
 import requests
 
@@ -120,141 +120,72 @@ class LibreFallbackTranslator:
         return
 
 
-# Besides the ones KOTOR supports, these languages all use the cp-1252 encoding
-class SupportedLanguages(IntEnum):
-    ENGLISH = Language.ENGLISH.value
-    FRENCH = Language.FRENCH.value
-    GERMAN = Language.GERMAN.value
-    ITALIAN = Language.ITALIAN.value
-    SPANISH = Language.SPANISH.value
-    POLISH = Language.POLISH.value
-
-    DUTCH = 6
-    DANISH = 7
-    SWEDISH = 8
-    NORWEGIAN = 9
-    FINNISH = 10
-    PORTUGUESE = 11
-    TURKISH = 12
-    HUNGARIAN = 13
-    CZECH = 14
-    SLOVAK = 15
-    SLOVENIAN = 16
-    CROATIAN = 17
-    SERBIAN_LATIN = 18
-    BOSNIAN = 19
-    MONTENEGRIN = 20
-    MACEDONIAN_LATIN = 21
-    ROMANIAN = 22
-    BULGARIAN_LATIN = 23
-    ALBANIAN = 24
-    ESTONIAN = 25
-    LATVIAN = 26
-    LITHUANIAN = 27
-    ICELANDIC = 28
-    MALTESE = 29
-    WELSH = 30
-    IRISH = 31
-    SCOTTISH_GAELIC = 32
-    CATALAN = 33
-    BASQUE = 34
-    GALICIAN = 35
-    AFRIKAANS = 36
-    SWAHILI = 37
-    INDONESIAN = 38
-    FILIPINO = 39
-    LUXEMBOURGISH = 40
-    MALAY = 41
-    BRETON = 42
-    CORSICAN = 43
-    FAROESE = 44
-    FRISIAN = 45
-    LEONESE = 46
-    MANX = 47
-    OCCITAN = 48
-    RHAETO_ROMANIC = 49
-    TAGALOG = 50
-    WALLOON = 51
-
-    KOREAN = Language.KOREAN.value
-    CHINESE_TRADITIONAL = Language.CHINESE_TRADITIONAL.value
-    CHINESE_SIMPLIFIED = Language.CHINESE_SIMPLIFIED.value
-    JAPANESE = Language.JAPANESE.value
-
-    def get_encoding(self):
-        return "windows-1252"
-
-
-def get_language_code(lang: SupportedLanguages) -> str:
+def get_language_code(lang: Language) -> str:
     return {
-        SupportedLanguages.ENGLISH: "en",
-        SupportedLanguages.FRENCH: "fr",
-        SupportedLanguages.GERMAN: "de",
-        SupportedLanguages.ITALIAN: "it",
-        SupportedLanguages.SPANISH: "es",
-        SupportedLanguages.PORTUGUESE: "pt",
-        SupportedLanguages.DUTCH: "nl",
-        SupportedLanguages.DANISH: "da",
-        SupportedLanguages.SWEDISH: "sv",
-        SupportedLanguages.NORWEGIAN: "no",
-        SupportedLanguages.FINNISH: "fi",
-        SupportedLanguages.POLISH: "pl",
-        SupportedLanguages.TURKISH: "tr",
-        SupportedLanguages.HUNGARIAN: "hu",
-        SupportedLanguages.CZECH: "cs",
-        SupportedLanguages.SLOVAK: "sk",
-        SupportedLanguages.SLOVENIAN: "sl",
-        SupportedLanguages.CROATIAN: "hr",
-        SupportedLanguages.SERBIAN_LATIN: "sr",  # sr-Latn
-        SupportedLanguages.BOSNIAN: "bs",
-        SupportedLanguages.MACEDONIAN_LATIN: "mk",
-        SupportedLanguages.ROMANIAN: "ro",
-        SupportedLanguages.BULGARIAN_LATIN: "bg",
-        SupportedLanguages.ALBANIAN: "sq",
-        SupportedLanguages.ESTONIAN: "et",
-        SupportedLanguages.LATVIAN: "lv",
-        SupportedLanguages.LITHUANIAN: "lt",
-        SupportedLanguages.ICELANDIC: "is",
-        SupportedLanguages.MALTESE: "mt",
-        SupportedLanguages.WELSH: "cy",
-        SupportedLanguages.IRISH: "ga",
-        SupportedLanguages.SCOTTISH_GAELIC: "gd",
-        SupportedLanguages.CATALAN: "ca",
-        SupportedLanguages.BASQUE: "eu",
-        SupportedLanguages.GALICIAN: "gl",
-        SupportedLanguages.AFRIKAANS: "af",
-        SupportedLanguages.SWAHILI: "sw",
-        SupportedLanguages.INDONESIAN: "id",
-        SupportedLanguages.FILIPINO: "tl",
-        SupportedLanguages.LUXEMBOURGISH: "lb",
-        SupportedLanguages.MALAY: "ms",
-        SupportedLanguages.BRETON: "br",
-        SupportedLanguages.CORSICAN: "co",
-        SupportedLanguages.FAROESE: "fo",
-        SupportedLanguages.FRISIAN: "fy",
-        #SupportedLanguages.LEONESE: "ast",  # Asturian is often used for Leonese
-        SupportedLanguages.MANX: "gv",
-        SupportedLanguages.OCCITAN: "oc",
-        SupportedLanguages.RHAETO_ROMANIC: "rm",
-        SupportedLanguages.TAGALOG: "tl",
-        SupportedLanguages.WALLOON: "wa",
-        SupportedLanguages.KOREAN: "ko",
-        SupportedLanguages.CHINESE_TRADITIONAL: "zh-TW",
-        SupportedLanguages.CHINESE_SIMPLIFIED: "zh-CN",
-        SupportedLanguages.JAPANESE: "ja",
+        Language.ENGLISH: "en",
+        Language.FRENCH: "fr",
+        Language.GERMAN: "de",
+        Language.ITALIAN: "it",
+        Language.SPANISH: "es",
+        Language.PORTUGUESE: "pt",
+        Language.DUTCH: "nl",
+        Language.DANISH: "da",
+        Language.SWEDISH: "sv",
+        Language.NORWEGIAN: "no",
+        Language.FINNISH: "fi",
+        Language.POLISH: "pl",
+        Language.TURKISH: "tr",
+        Language.HUNGARIAN: "hu",
+        Language.CZECH: "cs",
+        Language.SLOVAK: "sk",
+        Language.CROATIAN: "hr",
+        Language.SERBIAN_LATIN: "sr",  # sr-Latn
+        Language.ROMANIAN: "ro",
+        Language.ALBANIAN: "sq",
+        Language.ESTONIAN: "et",
+        Language.LATVIAN: "lv",
+        Language.LITHUANIAN: "lt",
+        Language.ICELANDIC: "is",
+        Language.MALTESE: "mt",
+        Language.WELSH: "cy",
+        Language.IRISH: "ga",
+        Language.SCOTTISH_GAELIC: "gd",
+        Language.CATALAN: "ca",
+        Language.BASQUE: "eu",
+        Language.GALICIAN: "gl",
+        Language.AFRIKAANS: "af",
+        Language.SWAHILI: "sw",
+        Language.INDONESIAN: "id",
+        Language.FILIPINO: "tl",
+        Language.LUXEMBOURGISH: "lb",
+        Language.BRETON: "br",
+        Language.CORSICAN: "co",
+        Language.FAROESE: "fo",
+        Language.FRISIAN: "fy",
+        Language.OCCITAN: "oc",
+        Language.TAGALOG: "tl",
+        Language.WALLOON: "wa",
+        Language.KOREAN: "ko",
+        Language.CHINESE_TRADITIONAL: "zh-TW",
+        Language.CHINESE_SIMPLIFIED: "zh-CN",
+        Language.JAPANESE: "ja",
     }.get(
         lang
     )  # type: ignore[return-value]
 
 
 # Function to convert numerals
-def translate_numerals(num_string: str, source_lang: str, target_lang: str) -> str:
+def translate_numerals(num_string: str, source_lang: Language, target_lang: Language) -> str:
     # Dictionaries for each language's numerals
     numeral_maps = {
-        "ko": "영일이삼사오육칠팔구",
-        "zh-TW": "零一二三四五六七八九",
-        "zh-CN": "零一二三四五六七八九",
-        "ja": "〇一二三四五六七八九",
+        Language.KOREAN: "영일이삼사오육칠팔구",
+        Language.CHINESE_SIMPLIFIED: "零一二三四五六七八九",
+        Language.CHINESE_TRADITIONAL: "零一二三四五六七八九",
+        Language.JAPANESE: "〇一二三四五六七八九",
+        Language.THAI: "๐๑๒๓๔๕๖๗๘๙",
+        Language.GREEK: "𐅀𐅁𐅂𐅃𐅄𐅅𐅆𐅇𐅈𐅉",
+        Language.HEBREW: "0אבגדהוזחט",  # noqa: RUF001
+        Language.ARABIC: "٠١٢٣٤٥٦٧٨٩",
     }
 
     # Mapping from each numeral to its index for the source language
@@ -298,7 +229,7 @@ class TranslationOption(Enum):
             return 50
         if self == TranslationOption.GOOGLE_TRANSLATE:
             return 5000
-        if self == TranslationOption.DL_TRANSLATE:
+        if self == TranslationOption.DL_TRANSLATE:  # sourcery skip: hoist-statement-from-if
             return 1024
         return 1024
 
@@ -314,12 +245,12 @@ class TranslationOption(Enum):
 class Translator:
     def __init__(
         self,
-        to_lang: SupportedLanguages,
+        to_lang: Language,
         translation_option: TranslationOption = TranslationOption.GOOGLE_TRANSLATE,
     ) -> None:
-        self.from_lang: SupportedLanguages
+        self.from_lang: Language
 
-        self.to_lang: SupportedLanguages = to_lang
+        self.to_lang: Language = to_lang
         self.translation_option: TranslationOption = translation_option
 
         self._translator = None
@@ -354,8 +285,8 @@ class Translator:
     def translate(
         self,
         text: str,
-        from_lang: SupportedLanguages | None = None,
-        to_lang: SupportedLanguages | None = None,
+        from_lang: Language | None = None,
+        to_lang: Language | None = None,
     ) -> str:
         translated_text: str = ""
         self.to_lang = to_lang if to_lang is not None else self.to_lang
@@ -390,7 +321,7 @@ class Translator:
 
         def translate_main(chunk: str, option: TranslationOption) -> str:
             if chunk.isdigit():
-                return translate_numerals(chunk, from_lang_code, to_lang_code)
+                return translate_numerals(chunk, self.from_lang, self.to_lang)
             # Throw errors when there's not enough text to translate.
             if len(chunk) < self.translation_option.min_chunk_length():
                 print(f"'{chunk}' is not enough text to translate!")
@@ -464,7 +395,7 @@ class Translator:
                 chunk = adjust_cutoff(chunk, chunks)  # noqa: PLW2901
 
                 # Translate each chunk, and concatenate the results
-                translated_text += translate_main(chunk.strip(), self.translation_option) + " "
+                translated_text += f"{translate_main(chunk.strip(), self.translation_option)} "
             return translated_text.rstrip()  # noqa: TRY300, RUF100
         except MinimumLengthError:
             print(
@@ -495,7 +426,7 @@ class Translator:
                     # Ensure not cutting off in the middle of a word
                     chunk = adjust_cutoff(chunk, chunks)  # noqa: PLW2901
 
-                    translated_text += translate_main(chunk.strip(), option) + " "
+                    translated_text += f"{translate_main(chunk.strip(), option)} "
                     if not translated_text.strip() and chunk.strip():
                         msg = "No text returned."
                         raise ValueError(msg)  # noqa: TRY301
