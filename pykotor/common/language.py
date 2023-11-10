@@ -2,25 +2,136 @@
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any
 
 
 class Language(IntEnum):
-    """Language IDs recognized by both the games."""
-    UNKNOWN = -1
+    """Language IDs recognized by both the games.
+    Found in the TalkTable header, and CExoLocStrings (LocalizedStrings) within GFFs.
+    """
 
+    # UNSET = 0x7FFFFFFF  # noqa: ERA001
+    UNKNOWN = 0x7FFFFFFE
 
+    # The following languages have official releases
+    # cp-1252
     ENGLISH = 0
     FRENCH = 1
     GERMAN = 2
     ITALIAN = 3
     SPANISH = 4
+    POLISH = 5  # cp-1250, only released for K1.
+    # The following custom languages have been added for additional localization support within PyKotor.
+    # cp-1252
+    AFRIKAANS = 6
+    BASQUE = 7
+    BISLAMA = 8
+    BRETON = 9
+    CATALAN = 10
+    CHAMORRO = 11
+    CHICHEWA = 12
+    CORSICAN = 13
+    DANISH = 14
+    DUTCH = 15
+    FAROESE = 16
+    FIJIAN = 17
+    FILIPINO = 18
+    FINNISH = 19
+    FLEMISH = 20
+    FRISIAN = 21
+    GALICIAN = 22
+    GANDA = 23
+    HAITIAN_CREOLE = 24
+    HAUSA_LATIN = 25
+    HAWAIIAN = 26
+    ICELANDIC = 27
+    IDO = 28
+    INDONESIAN = 29
+    IGBO = 30
+    IRISH = 31
+    INTERLINGUA = 32
+    JAVANESE_LATIN = 33
+    LATIN = 34
+    LUXEMBOURGISH = 35
+    MALTESE = 36
+    NORWEGIAN = 37
+    OCCITAN = 38
+    PORTUGUESE = 39
+    SCOTS = 40
+    SCOTTISH_GAELIC = 41
+    SHONA = 42
+    SOTO = 43
+    SUNDANESE_LATIN = 44
+    SWAHILI = 45
+    SWEDISH = 46
+    TAGALOG = 47
+    TAHITIAN = 48
+    TONGAN = 49
+    UZBEK_LATIN = 50
+    WALLOON = 51
+    XHOSA = 52
+    YORUBA = 53
+    WELSH = 54
+    ZULU = 55
+    # cp-1251
+    AZERBAIJANI_CYRILLIC = 56
+    BOSNIAN_CYRILLIC = 57
+    BULGARIAN = 58
+    BELARISIAN = 59
+    MACEDONIAN = 60
+    RUSSIAN = 61
+    SERBIAN_CYRILLIC = 62
+    TAJIK = 63
+    TATAR_CYRILLIC = 64
+    TURKMEN_CYRILLIC = 65
+    UKRAINIAN = 66
+    UZBEK = 67
+    # cp-1250
+    ALBANIAN = 68
+    BOSNIAN_LATIN = 69
+    CZECH = 70
+    SLOVAK = 71
+    SLOVENE = 72
+    CROATIAN = 73
+    SERBIAN_LATIN = 74
+    HUNGARIAN = 75
+    ROMANIAN = 76  # before 1993 reform
+    # cp-1253
+    GREEK = 77
+    # ISO-8859-3
+    ESPERANTO = 78  # loss of information if encoded to cp-1253
+    # cp-1254
+    AZERBAIJANI_LATIN = 79
+    TATAR_LATIN = 80
+    TURKISH = 81
+    TURKMEN_LATIN = 82
+    # cp-1255
+    HEBREW = 83
+    # cp-1256
+    ARABIC = 84
+    # cp-1257
+    ESTONIAN = 85
+    LATVIAN = 86
+    LITHUANIAN = 87
+    # cp-1258
+    VIETNAMESE = 88
+    # cp-874
+    THAI = 89
+    # The following languages aren't fully encodeable to 8-bit without loss of information:
+    # cp-1252
+    AYMARA = 90
+    KINYARWANDA = 91
+    KURDISH_LATIN = 92
+    MALAGASY = 93
+    MALAY_LATIN = 94
+    MAORI = 95
+    MARSHALLESE = 96
+    MOLDOVAN_LATIN = 97
+    PALAUAN = 98
+    SAMOAN = 99
+    SOMALI = 100
 
-    # Polish requires different 'font' packages with the cp-1251 character set.
-    POLISH = 5
-
-    # The following languages are supported in the GFF/TLK file formats, but do not adhere to the 8-bit encoding requirement
-    # therefore are probably incompatible with KOTOR.
+    # The following languages are supported in the GFF/TLK file formats, but are not encodable to 8-bit without significant loss of information
+    # therefore are incompatible with KOTOR.
     KOREAN = 128
     CHINESE_TRADITIONAL = 129
     CHINESE_SIMPLIFIED = 130
@@ -37,17 +148,126 @@ class Language(IntEnum):
 
     def get_encoding(self):
         """Get the encoding for the specified language."""
-        if self in (Language.ENGLISH, Language.FRENCH, Language.GERMAN, Language.ITALIAN, Language.SPANISH):
-            return "windows-1252"
-        if self == Language.POLISH:
-            return "windows-1250"
+        if self in (
+            Language.ENGLISH,
+            Language.FRENCH,
+            Language.GERMAN,
+            Language.ITALIAN,
+            Language.SPANISH,
+            Language.AFRIKAANS,
+            Language.BASQUE,
+            Language.BISLAMA,
+            Language.BRETON,
+            Language.CATALAN,
+            Language.CHAMORRO,
+            Language.CHICHEWA,
+            Language.CORSICAN,
+            Language.DANISH,
+            Language.DUTCH,
+            Language.FAROESE,
+            Language.FIJIAN,
+            Language.FILIPINO,
+            Language.FINNISH,
+            Language.FLEMISH,
+            Language.FRISIAN,
+            Language.GALICIAN,
+            Language.GANDA,
+            Language.HAITIAN_CREOLE,
+            Language.HAUSA_LATIN,
+            Language.HAWAIIAN,
+            Language.ICELANDIC,
+            Language.IDO,
+            Language.INDONESIAN,
+            Language.IGBO,
+            Language.IRISH,
+            Language.INTERLINGUA,
+            Language.JAVANESE_LATIN,
+            Language.LATIN,
+            Language.LUXEMBOURGISH,
+            Language.MALTESE,
+            Language.NORWEGIAN,
+            Language.OCCITAN,
+            Language.PORTUGUESE,
+            Language.SCOTS,
+            Language.SCOTTISH_GAELIC,
+            Language.SHONA,
+            Language.SOTO,
+            Language.SUNDANESE_LATIN,
+            Language.SWAHILI,
+            Language.SWEDISH,
+            Language.TAGALOG,
+            Language.TAHITIAN,
+            Language.TONGAN,
+            Language.UZBEK_LATIN,
+            Language.WALLOON,
+            Language.XHOSA,
+            Language.YORUBA,
+            Language.WELSH,
+            Language.ZULU,
+        ):
+            return "cp1252"
+        if self in (
+            Language.AZERBAIJANI_CYRILLIC,
+            Language.BOSNIAN_CYRILLIC,
+            Language.BULGARIAN,
+            Language.BELARISIAN,
+            Language.MACEDONIAN,
+            Language.RUSSIAN,
+            Language.SERBIAN_CYRILLIC,
+            Language.TAJIK,
+            Language.TATAR_CYRILLIC,
+            Language.TURKMEN_CYRILLIC,
+            Language.UKRAINIAN,
+            Language.UZBEK,
+        ):
+            return "cp1251"
 
+        if self in (
+            Language.POLISH,
+            Language.ALBANIAN,
+            Language.BOSNIAN_LATIN,
+            Language.CZECH,
+            Language.SLOVAK,
+            Language.SLOVENE,
+            Language.CROATIAN,
+            Language.SERBIAN_LATIN,
+            Language.HUNGARIAN,
+            Language.ROMANIAN,  # before 1993 reform
+        ):
+            return "cp1250"
+        if self == Language.GREEK:
+            return "cp1253"
+        if self == Language.ESPERANTO:
+            return "ISO-8859-3"
+        if self in (
+            Language.AZERBAIJANI_LATIN,
+            Language.TATAR_LATIN,
+            Language.TURKISH,
+            Language.TURKMEN_LATIN,
+        ):
+            return "cp1254"
+        if self == Language.HEBREW:
+            return "cp1255"
+        if self == Language.ARABIC:
+            return "cp1256"
+        if self in (
+            Language.ESTONIAN,
+            Language.LATVIAN,
+            Language.LITHUANIAN,
+        ):
+            return "cp1257"
+        if self == Language.VIETNAMESE:
+            return "cp1258"
+        if self == Language.THAI:
+            return "cp874"
+
+        # The following languages/encodings are not 8-bit and need additional information in order to be supported.
         if self == Language.KOREAN:
             return "euc_kr"
         if self == Language.CHINESE_TRADITIONAL:
             return "big5"
         if self == Language.CHINESE_SIMPLIFIED:
-            return "gb18030"
+            return "gb2312"
         if self == Language.JAPANESE:
             return "shift_jis"
         if self == Language.UNKNOWN:
@@ -101,7 +321,7 @@ class LocalizedString:
             return text
         return "-1"
 
-    def __eq__(self, other: str | Any) -> bool:
+    def __eq__(self, other) -> bool:
         if not isinstance(other, LocalizedString):
             return False
         if other.stringref != self.stringref:
