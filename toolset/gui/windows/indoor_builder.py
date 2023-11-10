@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import json
 import math
 import zipfile
 from contextlib import suppress
 from copy import copy, deepcopy
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING
 
 import requests
 from config import UPDATE_INFO_LINK
@@ -38,25 +39,29 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.resource.formats.bwm import BWMFace
+from pykotor.tools.path import Path
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
-from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.asyncloader import AsyncLoader
 from toolset.gui.dialogs.indoor_settings import IndoorMapSettings
 from toolset.gui.windows.help import HelpWindow
 
+if TYPE_CHECKING:
+    from pykotor.resource.formats.bwm import BWMFace
+    from toolset.data.installation import HTInstallation
+
 
 class IndoorMapBuilder(QMainWindow):
-    def __init__(self, parent: QWidget, installation: Optional[HTInstallation] = None):
+    def __init__(self, parent: QWidget, installation: HTInstallation | None = None):
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
-        self._kits: List[Kit] = []
+        self._kits: list[Kit] = []
         self._map: IndoorMap = IndoorMap()
         self._filepath: str = ""
 
         from toolset.uic.windows.indoor_builder import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupSignals()
@@ -75,7 +80,9 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionSave.triggered.connect(self.save)
         self.ui.actionSaveAs.triggered.connect(self.saveAs)
         self.ui.actionBuild.triggered.connect(self.buildMap)
-        self.ui.actionSettings.triggered.connect(lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_())
+        self.ui.actionSettings.triggered.connect(
+            lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_()
+        )
         self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
         self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
@@ -101,8 +108,9 @@ class IndoorMapBuilder(QMainWindow):
         self._kits = load_kits("./kits")
 
         if len(self._kits) == 0:
-            noKitPrompt = QMessageBox(QMessageBox.Warning, "No Kits Available",
-                                    "No kits were detected, would you like to open the Kit downloader?")
+            noKitPrompt = QMessageBox(
+                QMessageBox.Warning, "No Kits Available", "No kits were detected, would you like to open the Kit downloader?"
+            )
             noKitPrompt.addButton(QMessageBox.Yes)
             noKitPrompt.addButton(QMessageBox.No)
             noKitPrompt.setDefaultButton(QMessageBox.No)
@@ -158,7 +166,7 @@ class IndoorMapBuilder(QMainWindow):
                 self._map.rebuildRoomConnections()
                 self._filepath = filepath
                 self._refreshWindowTitle()
-            except Exception as e:
+            except OSError as e:
                 QMessageBox(QMessageBox.Critical, "Failed to load file", str(e)).exec_()
 
     def openKitDownloader(self) -> None:
@@ -167,8 +175,10 @@ class IndoorMapBuilder(QMainWindow):
 
     def buildMap(self) -> None:
         path = f"{self._installation.module_path()}{self._map.moduleId}.mod"
+
         def task():
             return self._map.build(self._installation, self._kits, path)
+
         loader = AsyncLoader(self, "Building Map...", task, "Failed to build map.")
 
         if loader.exec_():
@@ -181,7 +191,7 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rooms.remove(room)
         self.ui.mapRenderer.clearSelectedRooms()
 
-    def selectedComponent(self) -> Optional[KitComponent]:
+    def selectedComponent(self) -> KitComponent | None:
         currentItem = self.ui.componentList.currentItem()
         return None if currentItem is None else currentItem.data(QtCore.Qt.UserRole)
 
@@ -205,7 +215,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.componentImage.setPixmap(QPixmap.fromImage(component.image))
         self.ui.mapRenderer.setCursorComponent(component)
 
-    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         self._refreshStatusBar()
         worldDelta = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
@@ -227,16 +237,17 @@ class IndoorMapBuilder(QMainWindow):
             for room in [room for room in self._map.rooms if room not in rooms]:
                 hook1, hook2 = self.ui.mapRenderer.getConnectedHooks(active, room)
                 if hook1 is not None:
-                    shift = (room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)) - active.position
+                    shift = (
+                        room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
+                    ) - active.position
                     for snapping in rooms:
                         snapping.position = shift + snapping.position
-                        #snapping.position += shift
-                    #active.position = room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
+                        # snapping.position += shift
+                    # active.position = room.position - active.hookPosition(hook1, False) + room.hookPosition(hook2, False)
             self._map.rebuildRoomConnections()
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
-
             if self.ui.mapRenderer._cursorComponent is not None:
                 component = self.selectedComponent()
                 if component is not None:
@@ -257,22 +268,26 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.mapRenderer.toggleCursorFlip()
 
     def _build_indoor_map_room_and_refresh(self, component):
-        room = IndoorMapRoom(component, self.ui.mapRenderer._cursorPoint,
-                             self.ui.mapRenderer._cursorRotation,
-                             self.ui.mapRenderer._cursorFlipX, self.ui.mapRenderer._cursorFlipY)
+        room = IndoorMapRoom(
+            component,
+            self.ui.mapRenderer._cursorPoint,
+            self.ui.mapRenderer._cursorRotation,
+            self.ui.mapRenderer._cursorFlipX,
+            self.ui.mapRenderer._cursorFlipY,
+        )
         self._map.rooms.append(room)
         self._map.rebuildRoomConnections()
         self.ui.mapRenderer._cursorRotation = 0.0
         self.ui.mapRenderer._cursorFlipX = False
         self.ui.mapRenderer._cursorFlipY = False
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.Key_Control in keys:
             self.ui.mapRenderer.zoomInCamera(delta.y / 50)
         else:
             self.ui.mapRenderer._cursorRotation += math.copysign(5, delta.y)
 
-    def onMouseDoubleClicked(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseDoubleClicked(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
         if QtCore.Qt.LeftButton in buttons and self.ui.mapRenderer.roomUnderMouse():
             self.ui.mapRenderer.clearSelectedRooms()
             self.addConnectedToSelection(self.ui.mapRenderer.roomUnderMouse())
@@ -318,20 +333,20 @@ class IndoorMapRenderer(QWidget):
         super().__init__(parent)
 
         self._map: IndoorMap = IndoorMap()
-        self._underMouseRoom: Optional[IndoorMapRoom] = None
-        self._selectedRooms: List[IndoorMapRoom] = []
+        self._underMouseRoom: IndoorMapRoom | None = None
+        self._selectedRooms: list[IndoorMapRoom] = []
 
         self._camPosition: Vector2 = Vector2.from_null()
         self._camRotation: float = 0.0
         self._camScale = 1.0
-        self._cursorComponent: Optional[KitComponent] = None
+        self._cursorComponent: KitComponent | None = None
         self._cursorPoint: Vector3 = Vector3.from_null()
         self._cursorRotation: float = 0.0
         self._cursorFlipX: bool = False
         self._cursorFlipY: bool = False
 
-        self._keysDown: Set[int] = set()
-        self._mouseDown: Set[int] = set()
+        self._keysDown: set[int] = set()
+        self._mouseDown: set[int] = set()
         self._mousePrev: Vector2 = Vector2.from_null()
 
         self.hideMagnets: bool = False
@@ -347,7 +362,7 @@ class IndoorMapRenderer(QWidget):
     def setMap(self, indoorMap: IndoorMap) -> None:
         self._map = indoorMap
 
-    def setCursorComponent(self, component: Optional[KitComponent]) -> None:
+    def setCursorComponent(self, component: KitComponent | None) -> None:
         self._cursorComponent = component
 
     def selectRoom(self, room: IndoorMapRoom, clearExisting: bool) -> None:
@@ -357,10 +372,10 @@ class IndoorMapRenderer(QWidget):
             self._selectedRooms.remove(room)
         self._selectedRooms.append(room)
 
-    def roomUnderMouse(self) -> Optional[IndoorMapRoom]:
+    def roomUnderMouse(self) -> IndoorMapRoom | None:
         return self._underMouseRoom
 
-    def selectedRooms(self) -> List[IndoorMapRoom]:
+    def selectedRooms(self) -> list[IndoorMapRoom]:
         return self._selectedRooms
 
     def clearSelectedRooms(self) -> None:
@@ -383,8 +398,8 @@ class IndoorMapRenderer(QWidget):
         sin = math.sin(self._camRotation)
         x -= self._camPosition.x
         y -= self._camPosition.y
-        x2 = (x*cos - y*sin) * self._camScale + self.width() / 2
-        y2 = (x*sin + y*cos) * self._camScale + self.height() / 2
+        x2 = (x * cos - y * sin) * self._camScale + self.width() / 2
+        y2 = (x * sin + y * cos) * self._camScale + self.height() / 2
         return Vector2(x2, y2)
 
     def toWorldCoords(self, x, y) -> Vector3:
@@ -405,8 +420,8 @@ class IndoorMapRenderer(QWidget):
         sin = math.sin(-self._camRotation)
         x = (x - self.width() / 2) / self._camScale
         y = (y - self.height() / 2) / self._camScale
-        x2 = x*cos - y*sin + self._camPosition.x
-        y2 = x*sin + y*cos + self._camPosition.y
+        x2 = x * cos - y * sin + self._camPosition.x
+        y2 = x * sin + y * cos + self._camPosition.y
         return Vector3(x2, y2, 0)
 
     def toWorldDelta(self, x, y) -> Vector2:
@@ -426,11 +441,11 @@ class IndoorMapRenderer(QWidget):
         sin = math.sin(-self._camRotation)
         x = x / self._camScale
         y = y / self._camScale
-        x2 = x*cos - y*sin
-        y2 = x*sin + y*cos
+        x2 = x * cos - y * sin
+        y2 = x * sin + y * cos
         return Vector2(x2, y2)
 
-    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> Tuple:
+    def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> tuple:
         hook1 = None
         hook2 = None
 
@@ -544,6 +559,7 @@ class IndoorMapRenderer(QWidget):
             radians: The angle of rotation to apply to the camera.
         """
         self._camRotation += radians
+
     # endregion
 
     def _drawImage(self, painter: QPainter, image: QImage, coords: Vector2, rotation: float, flip_x: bool, flip_y: bool) -> None:
@@ -586,8 +602,8 @@ class IndoorMapRenderer(QWidget):
         painter.drawEllipse(QPointF(coords.x, coords.y), 1.0, 1.0)
 
         painter.setPen(QPen(QColor(0, 255, 0), 0.4))
-        painter.drawLine(QPointF(coords.x, coords.y-1.0), QPointF(coords.x, coords.y+1.0))
-        painter.drawLine(QPointF(coords.x-1.0, coords.y), QPointF(coords.x+1.0, coords.y))
+        painter.drawLine(QPointF(coords.x, coords.y - 1.0), QPointF(coords.x, coords.y + 1.0))
+        painter.drawLine(QPointF(coords.x - 1.0, coords.y), QPointF(coords.x + 1.0, coords.y))
 
     def _buildFace(self, face: BWMFace) -> QPainterPath:
         """Returns a QPainterPath for the specified face.
@@ -629,7 +645,9 @@ class IndoorMapRenderer(QWidget):
         painter.setRenderHint(QPainter.LosslessImageRendering, True)
 
         for room in self._map.rooms:
-            self._drawImage(painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y)
+            self._drawImage(
+                painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y
+            )
 
             for hook in [] if self.hideMagnets else room.component.hooks:
                 hookIndex = room.component.hooks.index(hook)
@@ -648,11 +666,18 @@ class IndoorMapRenderer(QWidget):
                     xd = math.cos(math.radians(hook.rotation + room.rotation)) * hook.door.width / 2
                     yd = math.sin(math.radians(hook.rotation + room.rotation)) * hook.door.width / 2
                     painter.setPen(QPen(QColor(0, 255, 0), 2 / self._camScale))
-                    painter.drawLine(QPointF(hookPos.x-xd, hookPos.y-yd), QPointF(hookPos.x+xd, hookPos.y+yd))
+                    painter.drawLine(QPointF(hookPos.x - xd, hookPos.y - yd), QPointF(hookPos.x + xd, hookPos.y + yd))
 
         if self._cursorComponent:
             painter.setOpacity(0.5)
-            self._drawImage(painter, self._cursorComponent.image, Vector2.from_vector3(self._cursorPoint), self._cursorRotation, self._cursorFlipX, self._cursorFlipY)
+            self._drawImage(
+                painter,
+                self._cursorComponent.image,
+                Vector2.from_vector3(self._cursorPoint),
+                self._cursorRotation,
+                self._cursorFlipX,
+                self._cursorFlipY,
+            )
 
         if self._underMouseRoom:
             self._drawRoomHighlight(painter, self._underMouseRoom, 50)
@@ -683,11 +708,15 @@ class IndoorMapRenderer(QWidget):
         self._cursorPoint = world
 
         if self._cursorComponent:
-            fakeCursorRoom = IndoorMapRoom(self._cursorComponent, self._cursorPoint, self._cursorRotation, self._cursorFlipX, self._cursorFlipY)
+            fakeCursorRoom = IndoorMapRoom(
+                self._cursorComponent, self._cursorPoint, self._cursorRotation, self._cursorFlipX, self._cursorFlipY
+            )
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
                 if hook1 is not None:
-                    self._cursorPoint = room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
+                    self._cursorPoint = (
+                        room.position - fakeCursorRoom.hookPosition(hook1, False) + room.hookPosition(hook2, False)
+                    )
 
         self._underMouseRoom = None
         for room in self._map.rooms:
@@ -696,27 +725,28 @@ class IndoorMapRenderer(QWidget):
                 self._underMouseRoom = room
                 break
 
-    def mousePressEvent(self, e: QMouseEvent) -> None:
+    def mousePressEvent(self, e: QMouseEvent | None) -> None:
         self._mouseDown.add(e.button())
         coords = Vector2(e.x(), e.y())
         self.mousePressed.emit(coords, self._mouseDown, self._keysDown)
 
-    def mouseReleaseEvent(self, e: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, e: QMouseEvent | None) -> None:
         self._mouseDown.discard(e.button())
 
         coords = Vector2(e.x(), e.y())
         self.mouseReleased.emit(coords, self._mouseDown, self._keysDown)
 
-    def mouseDoubleClickEvent(self, e: QMouseEvent) -> None:
+    def mouseDoubleClickEvent(self, e: QMouseEvent | None) -> None:
         mouseDown = copy(self._mouseDown)
         mouseDown.add(e.button())  # Called after release event so we need to manually include it
         self.mouseDoubleClicked.emit(Vector2(e.x(), e.y()), mouseDown, self._keysDown)
 
-    def keyPressEvent(self, e: QKeyEvent) -> None:
+    def keyPressEvent(self, e: QKeyEvent | None) -> None:
         self._keysDown.add(e.key())
 
-    def keyReleaseEvent(self, e: QKeyEvent) -> None:
+    def keyReleaseEvent(self, e: QKeyEvent | None) -> None:
         self._keysDown.discard(e.key())
+
     # endregion
 
 
@@ -725,6 +755,7 @@ class KitDownloader(QDialog):
         super().__init__(parent)
 
         from toolset.uic.dialogs.indoor_downloader import Ui_Dialog
+
         self.ui = Ui_Dialog()
         self.ui.setupUi(self)
         self._setupDownloads()
@@ -744,7 +775,9 @@ class KitDownloader(QDialog):
                     if localKitDict["version"] < kitDict["version"]:
                         button.setText("Update Available")
                         button.setEnabled(True)
-                        button.clicked.connect(lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict))
+                        button.clicked.connect(
+                            lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict)
+                        )
             else:
                 button = QPushButton("Download")
                 button.clicked.connect(lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict))
@@ -752,12 +785,13 @@ class KitDownloader(QDialog):
             layout: QFormLayout = self.ui.groupBox.layout()
             layout.addRow(kitName, button)
 
-    def _downloadButtonPressed(self, button: QPushButton, infoDict: Dict) -> None:
+    def _downloadButtonPressed(self, button: QPushButton, infoDict: dict) -> None:
         button.setText("Downloading")
         button.setEnabled(False)
 
         def task():
             return self._downloadKit(infoDict["id"], infoDict["directDownload"])
+
         loader = AsyncLoader(self, "Downloading Kit...", task, "Failed to download.")
         if loader.exec_():
             button.setText("Download Complete")
@@ -767,10 +801,10 @@ class KitDownloader(QDialog):
 
     def _downloadKit(self, kitId: str, link: str) -> None:
         response = requests.get(link, stream=True, timeout=15)
-        filepath = Path(f"kits/{kitId}.zip")
+        filepath: Path = Path.cwd().joinpath("kits", kitId).add_suffix(".zip")
         with filepath.open("wb") as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
         with zipfile.ZipFile(filepath, "r") as zip_ref:
-            zip_ref.extractall("./kits")
+            zip_ref.extractall(filepath.parent)
