@@ -315,8 +315,10 @@ class LocalizedString:
         """
         if self.stringref >= 0:
             return str(self.stringref)
+        # TODO: There's no reason we should default to english here, perhaps remove the __str__ overload and ensure relevant references call .get() with language information.
         if self.exists(Language.ENGLISH, Gender.MALE):
             return str(self.get(Language.ENGLISH, Gender.MALE))
+        # language either unset or not english.
         for _language, _gender, text in self:
             return text
         return "-1"
