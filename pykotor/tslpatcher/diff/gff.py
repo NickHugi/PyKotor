@@ -198,13 +198,3 @@ class DiffGFF:
                 is_same_result = False
 
         return is_same_result
-old_ftype_name = "test"
-child_path = "test/path/for/diff/test"
-
-old_value = "some long text string"
-new_value = "some long textt strings"
-
-formatted_old, formatted_new = compare_and_format(old_value, new_value)
-
-print("Old Value with Differences:\n" + formatted_old)
-print("New Value with Differences:\n" + formatted_new)
