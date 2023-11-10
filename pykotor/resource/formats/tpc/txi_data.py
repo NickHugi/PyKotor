@@ -13,9 +13,9 @@ class TXIBaseInformation:
         #  Mipmap and Filter settings (0/1) can apply different graphical "softening" on the fonts (not affecting spacing etc.). Don't use it though, in most case it would hurt your eyes.
         #  The engine has broken mip use implementation. It incorrectly mixes mip levels, even on objects filling the screen.
         self.mipmap: int = 0  # The mipmap 0 setting shouldn't be changed. That tells the engine to use mip 0, i.e. the highest resolution of the image
-        self.filter: int
-        self.downsamplemin: int
-        self.downsamplemax: int
+        self.filter: int = 0
+        self.downsamplemin: int = 0  # unused in KOTOR
+        self.downsamplemax: int = 0  # unused in KOTOR
 
 
 class TXIMaterialInformation(TXIBaseInformation):
@@ -58,18 +58,19 @@ class TXITextureInformation(TXIBaseInformation):
 class TXIFontInformation(TXIBaseInformation):
     def __init__(self) -> None:
         super().__init__()
+        # don't touch these defaults for any reason
         self.numchars: int = 256
-        self.upperleftcoords: int = 0
-        self.lowerrightcoords: int = 256
-        self.spacingB: float = 0 # spacingB should be left alone.
+        self.upperleftcoords: int = 256
+        self.lowerrightcoords: int = 0
+        self.spacingB: float = 0  # Float between 0 and 1. spacingB should be left alone.
 
-        self.fontheight: int
-        self.baselineheight: int  # presumably sets where the text sits. Probably to account for stuff like French that has those accents that hang underneath characters.
-        self.texturewidth: int  # Actual displayed width of the texture, allows stretching/compressing along the X axis.
-        self.fontwidth: int  # Actually stretches down somehow. Heavily distorts the text when modified. Perhaps this is the Y axis and texturewidth is the X axis?
-        self.spacingR: float  # Do NOT exceed the maximum of 0.002600
-        self.caretindent: int
-        self.isdoublebyte: int
+        self.fontheight: float  # Float between 0 and 1.
+        self.baselineheight: float  # presumably sets where the text sits. Probably to account for stuff like French that has those accents that hang underneath characters.
+        self.texturewidth: float  # Float between 0 and 1. Actual displayed width of the texture, allows stretching/compressing along the X axis.
+        self.fontwidth: float  # Float between 0 and 1. Actually stretches down somehow. Heavily distorts the text when modified. Perhaps this is the Y axis and texturewidth is the X axis?
+        self.spacingR: float  # Float between 0 and 1. Do NOT exceed the maximum of 0.002600
+        self.caretindent: float  # Float between 0 and 1.
+        self.isdoublebyte: int  # unused?
         # self.dbmapping:  # unused in KOTOR
         self.cols: list[Vector2]
         self.rows: list[Vector2]
