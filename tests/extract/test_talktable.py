@@ -1,8 +1,10 @@
 import sys
-from pathlib import Path
+import pathlib
 
-project_root = Path(__file__).resolve().parents[2]
-sys.path.append(str(project_root))
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from unittest import TestCase
 

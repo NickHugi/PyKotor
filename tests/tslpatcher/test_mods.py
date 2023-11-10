@@ -1,10 +1,17 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
 
-from pykotor.common.misc import ResRef
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
-from pykotor.resource.formats.gff import GFF, GFFList, GFFFieldType
+from pykotor.common.misc import ResRef
+from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList
 from pykotor.resource.formats.gff.gff_auto import bytes_gff, read_gff
 from pykotor.resource.formats.gff.gff_data import GFFStruct
 from pykotor.resource.formats.ssf import SSF, SSFSound
@@ -15,42 +22,36 @@ from pykotor.resource.formats.twoda import TwoDA
 from pykotor.resource.formats.twoda.twoda_auto import bytes_2da, read_2da
 from pykotor.tools.path import PureWindowsPath
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
+from pykotor.tslpatcher.memory import NoTokenUsage, PatcherMemory, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
+    AddFieldGFF,
     AddStructToListGFF,
+    FieldValue2DAMemory,
+    FieldValueConstant,
+    FieldValueTLKMemory,
+    LocalizedStringDelta,
     ModificationsGFF,
     ModifyFieldGFF,
-    AddFieldGFF,
-    LocalizedStringDelta,
-    FieldValueConstant,
-    FieldValue2DAMemory,
-    FieldValueTLKMemory,
     ModifyGFF,
 )
-from pykotor.tslpatcher.memory import (
-    PatcherMemory,
-    NoTokenUsage,
-    TokenUsage2DA,
-    TokenUsageTLK,
-)
 from pykotor.tslpatcher.mods.ssf import ModificationsSSF, ModifySSF
+from pykotor.tslpatcher.mods.tlk import ModificationsTLK, ModifyTLK
 from pykotor.tslpatcher.mods.twoda import (
-    Modifications2DA,
-    ChangeRow2DA,
-    Target,
-    TargetType,
-    AddRow2DA,
-    CopyRow2DA,
     AddColumn2DA,
-    RowValueConstant,
-    RowValueTLKMemory,
+    AddRow2DA,
+    ChangeRow2DA,
+    CopyRow2DA,
+    Modifications2DA,
     RowValue2DAMemory,
+    RowValueConstant,
     RowValueHigh,
+    RowValueRowCell,
     RowValueRowIndex,
     RowValueRowLabel,
-    RowValueRowCell,
+    RowValueTLKMemory,
+    Target,
+    TargetType,
 )
-
 
 # TODO Error, Warning tracking
 
@@ -1227,3 +1228,7 @@ class TestManipulateSSF(TestCase):
         ssf = read_ssf(config.apply(bytes_ssf(ssf), memory))
 
         self.assertEqual(321, ssf.get(SSFSound.BATTLE_CRY_3))
+
+
+if __name__ == "__main__":
+    unittest.main()

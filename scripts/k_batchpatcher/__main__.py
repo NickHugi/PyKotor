@@ -9,9 +9,10 @@ from copy import deepcopy
 from io import StringIO
 from typing import TYPE_CHECKING
 
-if not getattr(sys, "frozen", False):
-    thisfile_path = pathlib.Path(__file__).resolve()
-    sys.path.append(str(thisfile_path.parents[2]))
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 
 from pykotor.common.language import Language, LocalizedString
@@ -67,14 +68,6 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 }
 
 
-def get_kotor_language(lang: Language) -> Language:
-    return (
-        Language.__members__[lang.name]
-        if isinstance(lang, (Language, Language)) and any(lang.value == member.value for member in Language)
-        else Language.ENGLISH
-    )
-
-
 def relative_path_from_to(src, dst) -> Path:
     src_parts = list(src.parts)
     dst_parts = list(dst.parts)
@@ -120,7 +113,7 @@ def do_patch(
                     log_output_with_separator(f"Translating CExoLocString at {child_path}", above=True)
                     translated_text = pytranslator.translate(text, from_lang=lang)
                     log_output(f"Translated {text} --> {translated_text}")
-                    substring_id = LocalizedString.substring_id(get_kotor_language(parser_args.to_lang), gender)
+                    substring_id = LocalizedString.substring_id(parser_args.to_lang, gender)
                     new_substrings[substring_id] = translated_text
             value._substrings = new_substrings
 
@@ -142,7 +135,7 @@ def log_output(*args, **kwargs) -> None:
     msg = buffer.getvalue()
 
     # Write the captured output to the file
-    encoding = get_kotor_language(parser_args.to_lang).get_encoding() if parser_args.to_lang else "utf-8"
+    encoding = parser_args.to_lang.get_encoding() if parser_args.to_lang else "utf-8"
     with OUTPUT_LOG.open("a", encoding=encoding, errors="ignore") as f:
         f.write(msg)
 
@@ -175,11 +168,9 @@ def handle_restype_and_patch(
         if pytranslator is not None:
             new_entries = deepcopy(tlk.entries)
             from_lang = tlk.language
-            tlk.language = get_kotor_language(parser_args.to_lang)
+            tlk.language = parser_args.to_lang
             new_file_path = file_path.parent / (
-                f"{file_path.stem}_"
-                + (get_language_code(parser_args.to_lang) or "UNKNOWN")
-                + file_path.suffix
+                f"{file_path.stem}_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
             )
             for strref, tlkentry in tlk:
                 text = tlkentry.text
@@ -215,9 +206,7 @@ def handle_restype_and_patch(
                 ),
             )
             new_file_path = file_path.parent / (
-                f"{file_path.stem}_"
-                + (get_language_code(parser_args.to_lang) or "UNKNOWN")
-                + file_path.suffix
+                f"{file_path.stem}_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
             )
             new_capsule = Capsule(
                 new_file_path,
@@ -229,9 +218,7 @@ def handle_restype_and_patch(
         else:
             do_patch(gff.root, gff.content, file_path.name)
             new_file_path = file_path.parent / (
-                f"{file_path.stem}_"
-                + (get_language_code(parser_args.to_lang) or "UNKNOWN")
-                + file_path.suffix
+                f"{file_path.stem}_" + (get_language_code(parser_args.to_lang) or "UNKNOWN") + file_path.suffix
             )
             write_gff(gff, new_file_path)
             processed_files.add(new_file_path)

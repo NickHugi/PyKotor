@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.misc import Game
 from pykotor.resource.formats.gff import read_gff
@@ -99,3 +107,7 @@ class TestDLG(TestCase):
 
         self.assertEqual("bbb", dlg.stunts[1].participant)
         self.assertEqual("m01aa_c04_char01", dlg.stunts[1].stunt_model)
+
+
+if __name__ == "__main__":
+    unittest.main()

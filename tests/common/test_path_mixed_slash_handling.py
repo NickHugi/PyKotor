@@ -1,8 +1,15 @@
 # Rigorously test the string result of each pathlib module.
 # The goal isn't really to test pathlib.Path or pykotor\tools\path, the goal is to determine if there was a breaking change in a patch release.
 import os
+import pathlib
 import sys
 import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
+
 from pykotor.tools.path import PurePosixPath as CustomPurePosixPath
 from pykotor.tools.path import PureWindowsPath as CustomPureWindowsPath
 from pykotor.tools.path import WindowsPath as CustomWindowsPath

@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.gff import read_gff
@@ -106,3 +114,7 @@ class TestUTC(TestCase):
         self.assertEqual(6, utc.repair)
         self.assertEqual(7, utc.security)
         self.assertEqual(8, utc.treat_injury)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uti import construct_uti, dismantle_uti, UTI
@@ -45,3 +53,7 @@ class TestUTI(TestCase):
         self.assertEqual(45, uti.properties[1].property_name)
         self.assertEqual(6, uti.properties[1].subtype)
         self.assertEqual(24, uti.properties[1].upgrade_type)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,6 +1,14 @@
 from __future__ import annotations
+import pathlib
+import sys
 
-from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
+
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
 
 from pykotor.resource.formats.ncs import NCS
@@ -10,7 +18,7 @@ from pykotor.resource.formats.ncs.compiler.parser import NssParser
 from pykotor.resource.formats.ncs.optimizers import RemoveNopOptimizer
 
 
-class TestNCSOptimizers(TestCase):
+class TestNCSOptimizers(unittest.TestCase):
     def compile(
         self,
         script: str,
@@ -60,3 +68,7 @@ class TestNCSOptimizers(TestCase):
         self.assertEqual(3, interpreter.action_snapshots[0].arg_values[0])
         self.assertEqual(2, interpreter.action_snapshots[1].arg_values[0])
         self.assertEqual(1, interpreter.action_snapshots[2].arg_values[0])
+
+
+if __name__ == "__main__":
+    unittest.main()

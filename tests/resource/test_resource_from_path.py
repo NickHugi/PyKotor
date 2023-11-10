@@ -1,4 +1,12 @@
+import pathlib
+import sys
 import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
+
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.type import ResourceType
 
@@ -88,3 +96,7 @@ class TestResourceIdentifier(unittest.TestCase):
             # Assert
             self.assertEqual(result.resname, expected_resname)
             self.assertEqual(result.restype, expected_restype)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3
 from pykotor.common.script import DataType
@@ -76,3 +84,7 @@ class TestStack(TestCase):
         self.assertEqual(4, stack.peek(-24))
         self.assertEqual(5, stack.peek(-20))
         self.assertEqual(6, stack.peek(-16))
+
+
+if __name__ == "__main__":
+    unittest.main()

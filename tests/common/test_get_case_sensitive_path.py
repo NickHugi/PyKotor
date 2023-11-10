@@ -1,16 +1,23 @@
 import os
+import sys
 from unittest import TestCase
 import tempfile
 
-from pathlib import Path
+import pathlib
 import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
+
 from pykotor.tools.path import CaseAwarePath
 
 
 class TestCaseAwarePath(TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.temp_path = Path(str(self.temp_dir.name))
+        self.temp_path = pathlib.Path(str(self.temp_dir.name))
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -31,7 +38,7 @@ class TestCaseAwarePath(TestCase):
     @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_rtruediv(self):
         case_aware_file_path = str(self.temp_path) / CaseAwarePath("soMeDir", "someFile.TXT")
-        expected_path: Path = self.temp_path / "SOmeDir" / "SOMEFile.txT"
+        expected_path: pathlib.Path = self.temp_path / "SOmeDir" / "SOMEFile.txT"
         expected_path.mkdir(exist_ok=True, parents=True)
         expected_path.touch()
         self.assertTrue(expected_path.exists(), f"expected_path: {expected_path} should always exist on disk in this test.")
@@ -73,7 +80,7 @@ class TestCaseAwarePath(TestCase):
 
     @unittest.skipIf(os.name == "nt", "Test not available on Windows")
     def test_case_change_after_creation(self):
-        initial_path: Path = self.temp_path / "TestFile.txt"
+        initial_path: pathlib.Path = self.temp_path / "TestFile.txt"
         case_aware_path = CaseAwarePath(f"{str(self.temp_path)}/testfile.TXT")
         initial_path.touch()
 
@@ -87,7 +94,7 @@ class TestCaseAwarePath(TestCase):
         self.assertTrue(case_aware_path.exists())
 
     def test_complex_case_changes(self):
-        path: Path = self.temp_path / "Dir1"
+        path: pathlib.Path = self.temp_path / "Dir1"
         path.mkdir()
 
         # Changing directory case
@@ -101,7 +108,7 @@ class TestCaseAwarePath(TestCase):
 
     def test_mixed_case_creation_and_deletion(self):
         case_aware_path = CaseAwarePath(f"{str(self.temp_path)}/MixEDCase/File.TXT")
-        regular_path: Path = self.temp_path / "mixedcase" / "file.txt"
+        regular_path: pathlib.Path = self.temp_path / "mixedcase" / "file.txt"
 
         regular_path.parent.mkdir()
         regular_path.touch()
@@ -134,7 +141,7 @@ class TestCaseAwarePath(TestCase):
 
     def test_deep_directory_truediv(self):
         base_path = self.temp_path
-        deep_path: Path = base_path / "a" / "b" / "c" / "d" / "e"
+        deep_path: pathlib.Path = base_path / "a" / "b" / "c" / "d" / "e"
         deep_path.mkdir(parents=True)
 
         case_aware_deep_path = CaseAwarePath(f"{str(self.temp_path)}/A/B/C/D/E")
@@ -143,7 +150,7 @@ class TestCaseAwarePath(TestCase):
         self.assertTrue(case_aware_deep_path.exists())
 
     def test_recursive_directory_creation(self):
-        recursive_path: Path = self.temp_path / "x" / "y" / "z"
+        recursive_path: pathlib.Path = self.temp_path / "x" / "y" / "z"
         recursive_path.mkdir(parents=True)
         self.assertTrue(recursive_path.exists())
 
@@ -151,7 +158,7 @@ class TestCaseAwarePath(TestCase):
         self.assertTrue(actual_path.exists())
 
     def test_cascading_file_creation(self):
-        cascading_file: Path = self.temp_path / "dir" / "subdir" / "file.txt"
+        cascading_file: pathlib.Path = self.temp_path / "dir" / "subdir" / "file.txt"
         case_aware_cascading_file = CaseAwarePath(f"{str(self.temp_path)}/DIR/SUBDIR/FILE.TXT")
 
         cascading_file.parent.mkdir(parents=True)
@@ -162,7 +169,7 @@ class TestCaseAwarePath(TestCase):
     @unittest.skip("unfinished")
     def test_relative_to(self):
         dir_path = self.temp_path / "someDir"
-        file_path: Path = dir_path / "someFile.txt"
+        file_path: pathlib.Path = dir_path / "someFile.txt"
         case_aware_file_path = CaseAwarePath(dir_path, "SOMEfile.TXT")
 
         file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -179,7 +186,7 @@ class TestCaseAwarePath(TestCase):
 
     @unittest.skip("unfinished")
     def test_chmod(self):
-        file_path: Path = self.temp_path / "file.txt"
+        file_path: pathlib.Path = self.temp_path / "file.txt"
         case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
 
         file_path.mkdir(parents=True, exist_ok=True)
@@ -191,7 +198,7 @@ class TestCaseAwarePath(TestCase):
         self.assertNotEqual(original_permissions, modified_permissions)
 
     def test_open_read_write(self):
-        file_path: Path = self.temp_path / "file.txt"
+        file_path: pathlib.Path = self.temp_path / "file.txt"
         case_aware_file_path = CaseAwarePath(f"{str(self.temp_path)}/FILE.txt")
 
         with file_path.open("w") as f:
@@ -266,3 +273,7 @@ class TestCaseAwarePath(TestCase):
 
         self.assertTrue(hardlink_file.exists())
         self.assertTrue(os.path.samefile(str(hardlink_file), str(source_file)))
+
+
+if __name__ == "__main__":
+    unittest.main()

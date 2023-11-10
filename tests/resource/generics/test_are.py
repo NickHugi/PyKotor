@@ -1,4 +1,11 @@
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff, GFF
 from pykotor.resource.generics.are import ARE, construct_are, dismantle_are
@@ -6,7 +13,7 @@ from pykotor.resource.generics.are import ARE, construct_are, dismantle_are
 TEST_FILE = "tests/files/test.are"
 
 
-class TestARE(TestCase):
+class TestARE(unittest.TestCase):
     def test_io(self) -> None:
         gff: GFF = read_gff(TEST_FILE)
         are: ARE = construct_are(gff)
@@ -89,3 +96,7 @@ class TestARE(TestCase):
         self.assertEqual(13763584, are.dirty_argb_2.bgr_integer())
         self.assertEqual(3747840, are.dirty_argb_3.bgr_integer())
         # TODO: Fix RGB/BGR mix up
+
+
+if __name__ == "__main__":
+    unittest.main()

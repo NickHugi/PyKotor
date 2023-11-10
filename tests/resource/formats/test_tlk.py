@@ -1,5 +1,12 @@
 import os
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
@@ -25,7 +32,7 @@ CORRUPT_XML_TEST_FILE = "tests/files/test_corrupted.tlk.xml"
 CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.tlk.json"
 
 
-class TestTLK(TestCase):
+class TestTLK(unittest.TestCase):
     def test_resize(self):
         tlk: TLK = TLKBinaryReader(BINARY_TEST_FILE).load()
         self.assertEqual(len(tlk), 3)
@@ -94,3 +101,7 @@ class TestTLK(TestCase):
         else:
             self.assertRaises(IsADirectoryError, write_tlk, TLK(), ".", ResourceType.TLK)
         self.assertRaises(ValueError, write_tlk, TLK(), ".", ResourceType.INVALID)
+
+
+if __name__ == "__main__":
+    unittest.main()

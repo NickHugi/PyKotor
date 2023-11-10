@@ -257,6 +257,21 @@ class Translator:
         self._initialized = False
 
     def initialize(self) -> None:
+        """Initializes the translator.
+
+        Args:
+        ----
+            self: The Translator object.
+
+        Returns:
+        -------
+            None: This function does not return anything.
+
+        Processing Logic:
+        1. Checks if translation option is set and raises error if not installed
+        2. Sets the translator based on translation option value
+        3. Initializes the translator and sets _initialized flag to True
+        """
         if self.translation_option.value is None:
             msg = "not installed."
             raise ImportError(msg)
@@ -300,6 +315,21 @@ class Translator:
 
         # Function to chunk the text into segments with a maximum of 500 characters
         def chunk_text(text: str, size):
+            """Splits a text into chunks of given size.
+
+            Args:
+            ----
+                text: str - The text to split
+                size: int - The maximum size of each chunk
+            Returns:
+                chunks: list - A list of text chunks with each chunk <= size
+            Processing Logic:
+            - Initialize an empty list to hold chunks
+            - Loop through text while there is still text remaining
+            - Check if remaining text is <= size, if so add to chunks and break
+            - Otherwise find cut off point (last space or period within size limit)  
+            - Add chunk to list and remove processed text from original.
+            """
             chunks = []
             while text:
                 if len(text) <= size:
@@ -320,6 +350,22 @@ class Translator:
             return text.encode(encoding=encoding, errors="ignore").decode(encoding=encoding, errors="ignore")
 
         def translate_main(chunk: str, option: TranslationOption) -> str:
+            """Translate main text chunk.
+
+            Args:
+            ----
+                chunk (str): Text chunk to translate
+                option (TranslationOption): Translation service to use
+            Returns:
+                str: Translated text chunk
+            Processing Logic:
+                1. Check if chunk contains only numerals and translate accordingly
+                2. Throw error if chunk is too short to translate
+                3. Import translator module or throw error if not installed
+                4. Select appropriate translation method based on option
+                5. Check for errors in translation and throw errors
+                6. Return encoded translated chunk.
+            """
             if chunk.isdigit():
                 return translate_numerals(chunk, self.from_lang, self.to_lang)
             # Throw errors when there's not enough text to translate.
@@ -374,7 +420,7 @@ class Translator:
             if chunk == translated_chunk.strip() and translated_chunk.count(" ") >= 2:
                 msg = "Same text was returned from translate function."
                 raise ValueError(msg)
-            return fix_encoding(translated_chunk, self.to_lang.get_encoding())
+            return translated_chunk
 
         def adjust_cutoff(chunk: str, chunks: list[str]) -> str:
             if len(chunk) == self.translation_option.max_chunk_length() and not text[len(chunk)].isspace():

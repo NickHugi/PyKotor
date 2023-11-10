@@ -1,4 +1,11 @@
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.misc import Color
 from pykotor.resource.formats.gff import read_gff
@@ -7,7 +14,7 @@ from pykotor.resource.generics.git import construct_git, dismantle_git
 TEST_FILE = "tests/files/test.git"
 
 
-class TestGIT(TestCase):
+class TestGIT(unittest.TestCase):
     def test_io(self):
         gff = read_gff(TEST_FILE)
         git = construct_git(gff)
@@ -108,3 +115,7 @@ class TestGIT(TestCase):
         self.assertAlmostEqual(-16.065, git.waypoints[0].position.y, 2)
         self.assertAlmostEqual(1.0, git.waypoints[0].position.z, 2)
         self.assertAlmostEqual(0.000, git.waypoints[0].bearing, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

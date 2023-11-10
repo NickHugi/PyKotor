@@ -1,7 +1,14 @@
 import os
-from pathlib import Path
+import pathlib
+import sys
 import unittest
 from unittest.mock import patch
+
+if __name__ == "__main__" and not __package__:
+    this_script_file_path = pathlib.Path(__file__)
+    sys.path.append(str(this_script_file_path.parents[1]))
+    __init__ = __import__(str(this_script_file_path.parent.name)).__init__  # type: ignore[misc]
+
 from pykotor.tools.path import CaseAwarePath
 
 
@@ -29,15 +36,15 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual((CaseAwarePath("test").joinpath("data/something.test")).name, "something.test")
 
     def test_valid_name_property_on_pathlib_path(self):
-        self.assertEqual(CaseAwarePath(Path("data\\something.test")).name, "something.test")
-        self.assertEqual(CaseAwarePath(Path("data/something.test")).name, "something.test")
-        self.assertEqual((CaseAwarePath("test", Path("data\\something.test"))).name, "something.test")
-        self.assertEqual((CaseAwarePath("test") / Path("data/something.test")).name, "something.test")
+        self.assertEqual(CaseAwarePath(pathlib.Path("data\\something.test")).name, "something.test")
+        self.assertEqual(CaseAwarePath(pathlib.Path("data/something.test")).name, "something.test")
+        self.assertEqual((CaseAwarePath("test", pathlib.Path("data\\something.test"))).name, "something.test")
+        self.assertEqual((CaseAwarePath("test") / pathlib.Path("data/something.test")).name, "something.test")
 
     def test_new_invalid_argument(self):
         with self.assertRaises(TypeError):
             CaseAwarePath(123)  # type: ignore[test raise]
-            CaseAwarePath("path", "to", Path("nothing"), 123)  # type: ignore[test raise]
+            CaseAwarePath("path", "to", pathlib.Path("nothing"), 123)  # type: ignore[test raise]
 
     def test_endswith(self):
         path = CaseAwarePath("C:\\path\\to\\file.txt")
@@ -47,7 +54,7 @@ class TestCaseAwarePath(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_find_closest_match(self):
         items = [CaseAwarePath("test"), CaseAwarePath("TEST"), CaseAwarePath("TesT"), CaseAwarePath("teSt")]
-        self.assertEqual(str(CaseAwarePath._find_closest_match("teST", items)), "teSt") # type: ignore[generator vs list]
+        self.assertEqual(str(CaseAwarePath._find_closest_match("teST", items)), "teSt")  # type: ignore[generator vs list]
 
     @unittest.skipIf(os.name == "nt", "see the HACK in pykotor\\tools\\path.py")
     def test_get_matching_characters_count(self):
@@ -63,7 +70,7 @@ class TestCaseAwarePath(unittest.TestCase):
         self.assertEqual(CaseAwarePath._fix_path_formatting("/path//to/dir/", "/"), "/path/to/dir")
 
     @unittest.skipIf(os.name == "nt", "Test not available on Windows.")
-    @patch.object(Path, "exists", autospec=True)
+    @patch.object(pathlib.Path, "exists", autospec=True)
     def test_should_resolve_case(self, mock_exists):
         mock_exists.side_effect = lambda x: str(x) != "/path/to/dir"
         self.assertTrue(CaseAwarePath.should_resolve_case("/path/to/dir"))

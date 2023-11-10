@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3
 from pykotor.resource.formats.bwm import BWMBinaryReader, BWM, write_bwm, read_bwm
@@ -45,3 +53,7 @@ class TestBWM(TestCase):
         # still work ingame.
         self.assertEqual([59, 66, 73], [edges.index(edge) + 1 for edge in edges if edge.final])
         self.assertEqual(389, len(wok.aabbs()))
+
+
+if __name__ == "__main__":
+    unittest.main()

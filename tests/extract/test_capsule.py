@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.type import ResourceType
@@ -41,3 +49,7 @@ class TestCapsule(TestCase):
         self.assertTrue(rim_capsule.exists("module", ResourceType.IFO))
         self.assertEqual(1655, len(rim_capsule.resource("module", ResourceType.IFO)))
         self.assertEqual("IFO ", rim_capsule.resource("module", ResourceType.IFO)[:4].decode())
+
+
+if __name__ == "__main__":
+    unittest.main()

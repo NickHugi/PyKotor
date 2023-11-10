@@ -1,15 +1,13 @@
 import os
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
 
 
-if not getattr(sys, "frozen", False):
-    thisfile_path = pathlib.Path(__file__).resolve()
-    project_root = thisfile_path.parents[3]
-    if project_root.joinpath("pykotor").exists():
-        sys.path.append(str(project_root))
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.twoda import (
     write_2da,
@@ -32,7 +30,7 @@ CORRUPT_CSV_TEST_FILE = "tests/files/test_corrupted.2da.csv"
 CORRUPT_JSON_TEST_FILE = "tests/files/test_corrupted.2da.json"
 
 
-class TestTwoDA(TestCase):
+class TestTwoDA(unittest.TestCase):
     def test_binary_io(self):
         self.assertEqual(detect_2da(BINARY_TEST_FILE), ResourceType.TwoDA)
         twoda = TwoDABinaryReader(BINARY_TEST_FILE).load()

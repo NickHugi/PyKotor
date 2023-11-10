@@ -166,6 +166,17 @@ class BinaryReader:
     def offset(
         self,
     ) -> int:
+        """Returns the offset value.
+
+        Args:
+        ----
+            self: The class instance
+
+        Returns:
+        -------
+            int: The offset value
+        Retrieves and returns the internally stored offset value.
+        """
         return self._offset
 
     def set_offset(
@@ -258,9 +269,19 @@ class BinaryReader:
     def read_all(
         self,
     ) -> bytes:
-        """The `read_all` function reads and returns all the bytes from a stream starting from the current
-        offset.
-        :return: The `read_all` method returns a `bytes` object.
+        """Read all remaining bytes from the stream.
+        - Get the length of bytes remaining from current offset to end of stream
+        - Seek the stream to the current offset
+        - Read the bytes of the given length from the stream
+        - Return the bytes read.
+
+        Args:
+        ----
+            self: The stream object
+
+        Returns:
+        -------
+            bytes: The bytes read from the stream
         """
         length = self.size() - self._offset
         self._stream.seek(self._offset)

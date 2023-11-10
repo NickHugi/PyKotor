@@ -1,5 +1,12 @@
 import os
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.rim import RIM, RIMBinaryReader, write_rim, read_rim
 from pykotor.resource.type import ResourceType
@@ -10,7 +17,7 @@ DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"
 CORRUPT_BINARY_TEST_FILE = "tests/files/test_corrupted.rim"
 
 
-class TestRIM(TestCase):
+class TestRIM(unittest.TestCase):
     def test_binary_io(self):
         rim = RIMBinaryReader(BINARY_TEST_FILE).load()
         self.validate_io(rim)
@@ -40,3 +47,7 @@ class TestRIM(TestCase):
         else:
             self.assertRaises(IsADirectoryError, write_rim, RIM(), ".", ResourceType.RIM)
         self.assertRaises(ValueError, write_rim, RIM(), ".", ResourceType.INVALID)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,22 +1,31 @@
+import pathlib
+import sys
 from unittest import TestCase
 
+from pykotor.resource.formats.gff.gff_data import GFF
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
+
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utt import construct_utt, dismantle_utt
+from pykotor.resource.generics.utt import UTT, construct_utt, dismantle_utt
 
 TEST_FILE = "tests/files/test.utt"
 
 
 class TestUTT(TestCase):
     def test_io(self):
-        gff = read_gff(TEST_FILE)
-        utt = construct_utt(gff)
+        gff: GFF = read_gff(TEST_FILE)
+        utt: UTT = construct_utt(gff)
         self.validate_io(utt)
 
         gff = dismantle_utt(utt)
         utt = construct_utt(gff)
         self.validate_io(utt)
 
-    def validate_io(self, utt):
+    def validate_io(self, utt: UTT):
         self.assertEqual("GenericTrigger001", utt.tag)
         self.assertEqual("generictrigge001", utt.resref)
         self.assertEqual(42968, utt.name.stringref)

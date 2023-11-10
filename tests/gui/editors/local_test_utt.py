@@ -1,7 +1,16 @@
 import os
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
 
 from PyQt5.QtWidgets import QApplication
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    toolset_path = pathlib.Path(__file__).parents[3] / "toolset"
+    if pykotor_path.exists() or toolset_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from toolset.data.installation import HTInstallation
 from toolset.gui.editors.utt import UTTEditor
@@ -22,3 +31,7 @@ class UTTEditorTest(TestCase):
 
     def test_placeholder(self):
         ...
+
+
+if __name__ == "__main__":
+    unittest.main()

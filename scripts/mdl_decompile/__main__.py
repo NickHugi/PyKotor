@@ -3,11 +3,10 @@ import pathlib
 import sys
 import traceback
 
-if not getattr(sys, "frozen", False):
-    thisfile_path = pathlib.Path(__file__).resolve()
-    project_root = thisfile_path.parents[2]
-    if project_root.joinpath("pykotor").exists():
-        sys.path.append(str(project_root))
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.type import ResourceType
@@ -32,13 +31,11 @@ while True:
     parser_args.input = None
 while True:
     parser_args.output = Path(
-        parser_args.output
-        or (unknown[1] if len(unknown) > 1 else None)
-        or input("Output directory: "),
+        parser_args.output or (unknown[1] if len(unknown) > 1 else None) or input("Output directory: "),
     ).resolve()
     if parser_args.output.parent.exists():
-       parser_args.output.mkdir(exist_ok=True, parents=True)
-       break
+        parser_args.output.mkdir(exist_ok=True, parents=True)
+        break
     print("Invalid path:", parser_args.output)
     parser.print_help()
     parser_args.output = None
@@ -58,18 +55,19 @@ while True:
         print("Invalid input: enter 'compile' or 'decompile'")
         parser_args.compile = None
 
+
 def process_file(mdl_file: Path, output_path: Path, should_compile: bool):
     model = read_mdl(mdl_file)
     if should_compile:
         write_mdl(
-            model, # type: ignore[None]
+            model,  # type: ignore[None]
             output_path / f"{mdl_file.stem}.mdl",
             ResourceType.MDL,
         )
         print("Compiled some ascii model thing to: ", output_path / f"{mdl_file.stem}.mdl")
     else:
         write_mdl(
-            model, # type: ignore[None]
+            model,  # type: ignore[None]
             output_path / f"{mdl_file.stem}.ascii_output",
             ResourceType.MDL_ASCII,
         )
@@ -103,5 +101,6 @@ def main():
         print("Goodbye")
     except Exception:
         traceback.print_exc()
+
 
 main()

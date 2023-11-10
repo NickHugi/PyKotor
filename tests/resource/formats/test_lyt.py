@@ -1,5 +1,13 @@
 import os
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.resource.formats.lyt import (
@@ -69,3 +77,7 @@ class TestLYT(TestCase):
         else:
             self.assertRaises(IsADirectoryError, write_lyt, LYT(), ".", ResourceType.LYT)
         self.assertRaises(ValueError, write_lyt, LYT(), ".", ResourceType.INVALID)
+
+
+if __name__ == "__main__":
+    unittest.main()

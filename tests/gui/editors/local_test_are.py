@@ -1,17 +1,17 @@
 import os
+import pathlib
+import sys
+import unittest
 from unittest import TestCase
 
 from PyQt5.QtWidgets import QApplication
 
-import sys
-from pathlib import Path
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    toolset_path = pathlib.Path(__file__).parents[3] / "toolset"
+    if pykotor_path.exists() or toolset_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
-toolset_path = Path("./toolset").resolve()
-if toolset_path.exists() and getattr(sys, "frozen", False) is False:
-    sys.path.append(str(toolset_path))
-    toolset_parent_path = toolset_path.parent.resolve()
-    sys.path.append(str(toolset_parent_path))
-    os.chdir(toolset_parent_path)
 from toolset.data.installation import HTInstallation
 from toolset.gui.editors.are import AREEditor
 
@@ -31,3 +31,7 @@ class AREEditorTest(TestCase):
 
     def test_placeholder(self):
         ...
+
+
+if __name__ == "__main__":
+    unittest.main()

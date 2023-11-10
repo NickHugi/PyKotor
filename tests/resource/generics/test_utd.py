@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utd import construct_utd, dismantle_utd
@@ -72,3 +80,7 @@ class TestUTD(TestCase):
         self.assertEqual("onfailtoopen", utd.on_open_failed)
         self.assertEqual(1, utd.palette_id)
         self.assertEqual("abcdefg", utd.comment)
+
+
+if __name__ == "__main__":
+    unittest.main()

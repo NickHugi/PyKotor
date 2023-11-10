@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.stream import BinaryReader
 
@@ -120,3 +128,7 @@ class TestBinaryReader(TestCase):
         self.assertEqual(b"\x04", self.reader1b.peek(1))
 
         self.assertEqual(b"\x03", self.reader1c.peek(1))
+
+
+if __name__ == "__main__":
+    unittest.main()

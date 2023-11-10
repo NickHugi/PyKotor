@@ -16,14 +16,12 @@ from enum import IntEnum
 from threading import Thread
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-
-if not getattr(sys, "frozen", False):
-    thisfile_path = pathlib.Path(__file__).resolve()
-    project_root = thisfile_path.parents[2]
-    if project_root.joinpath("pykotor").exists():
-        sys.path.append(str(project_root))
-
 from typing import TYPE_CHECKING, NoReturn
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.tools.misc import striprtf, universal_simplify_exception

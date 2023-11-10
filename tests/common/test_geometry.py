@@ -1,5 +1,13 @@
 import math
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.geometry import Polygon2, Vector2, Vector3, Vector4, Face
 
@@ -177,3 +185,7 @@ class TestPolygon2(TestCase):
         )
 
         self.assertEqual(27.0, poly.area())
+
+
+if __name__ == "__main__":
+    unittest.main()

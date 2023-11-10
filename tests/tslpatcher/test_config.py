@@ -1,5 +1,13 @@
+import pathlib
+import sys
 import unittest
 from unittest.mock import MagicMock, Mock, patch
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
+
 from pykotor.extract.capsule import Capsule
 from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import ModInstaller
@@ -93,7 +101,11 @@ class TestLookupResourceFunction(unittest.TestCase):
             mock_resource.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertIsNone(self.config.lookup_resource(self.patch, self.output_container_path, exists_at_output_location=True, capsule=capsule))
+            self.assertIsNone(
+                self.config.lookup_resource(
+                    self.patch, self.output_container_path, exists_at_output_location=True, capsule=capsule
+                )
+            )
 
     def test_lookup_resource_no_capsule_exists_true_no_file(self):
         # Arrange
@@ -103,7 +115,9 @@ class TestLookupResourceFunction(unittest.TestCase):
             mock_load_file.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertIsNone(self.config.lookup_resource(self.patch, self.output_container_path, exists_at_output_location=True, capsule=None))
+            self.assertIsNone(
+                self.config.lookup_resource(self.patch, self.output_container_path, exists_at_output_location=True, capsule=None)
+            )
 
     def test_lookup_resource_no_capsule_exists_false_no_file(self):
         # Arrange
@@ -113,7 +127,9 @@ class TestLookupResourceFunction(unittest.TestCase):
             mock_load_file.side_effect = FileNotFoundError
 
             # Act & Assert
-            self.assertIsNone(self.config.lookup_resource(self.patch, self.output_container_path, exists_at_output_location=False, capsule=None))
+            self.assertIsNone(
+                self.config.lookup_resource(self.patch, self.output_container_path, exists_at_output_location=False, capsule=None)
+            )
 
 
 class TestShouldPatchFunction(unittest.TestCase):
@@ -132,53 +148,77 @@ class TestShouldPatchFunction(unittest.TestCase):
     def test_replace_file_exists_saveas_destination_dot(self):
         patch = MagicMock(name="patch", destination=".", replace_file=True, saveas="file2", sourcefile="file1", action="Patch ")
         result = self.patcher.should_patch(patch, exists=True)
-        self.patcher.log.add_note.assert_called_once_with("Patching 'file1' and replacing existing file 'file2' in the 'swkotor' folder")
+        self.patcher.log.add_note.assert_called_once_with(
+            "Patching 'file1' and replacing existing file 'file2' in the 'swkotor' folder"
+        )
         self.assertTrue(result)
 
     def test_replace_file_exists_destination_override(self):
-        patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file1", sourcefile="file1", action="Patch ")
+        patch = MagicMock(
+            name="patch", destination="Override", replace_file=True, saveas="file1", sourcefile="file1", action="Patch "
+        )
         result = self.patcher.should_patch(patch, exists=True)
         self.patcher.log.add_note.assert_called_once_with("Patching 'file1' and replacing existing file in the 'Override' folder")
         self.assertTrue(result)
 
     def test_replace_file_exists_saveas_destination_override(self):
-        patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file2", sourcefile="file1", action="Compile")
+        patch = MagicMock(
+            name="patch", destination="Override", replace_file=True, saveas="file2", sourcefile="file1", action="Compile"
+        )
         result = self.patcher.should_patch(patch, exists=True)
-        self.patcher.log.add_note.assert_called_once_with("Compiling 'file1' and replacing existing file 'file2' in the 'Override' folder")
+        self.patcher.log.add_note.assert_called_once_with(
+            "Compiling 'file1' and replacing existing file 'file2' in the 'Override' folder"
+        )
         self.assertTrue(result)
 
     def test_replace_file_not_exists_saveas_destination_override(self):
-        patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file2", sourcefile="file1", action="Copy ")
+        patch = MagicMock(
+            name="patch", destination="Override", replace_file=True, saveas="file2", sourcefile="file1", action="Copy "
+        )
         result = self.patcher.should_patch(patch, exists=False)
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and saving as 'file2' in the 'Override' folder")
         self.assertTrue(result)
 
     def test_replace_file_not_exists_destination_override(self):
-        patch = MagicMock(name="patch", destination="Override", replace_file=True, saveas="file1", sourcefile="file1", action="Copy ")
+        patch = MagicMock(
+            name="patch", destination="Override", replace_file=True, saveas="file1", sourcefile="file1", action="Copy "
+        )
         result = self.patcher.should_patch(patch, exists=False)
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and saving to the 'Override' folder")
         self.assertTrue(result)
 
     def test_replace_file_exists_destination_capsule(self):
-        patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file1", sourcefile="file1", action="Patch ")
+        patch = MagicMock(
+            name="patch", destination="capsule.mod", replace_file=True, saveas="file1", sourcefile="file1", action="Patch "
+        )
         result = self.patcher.should_patch(patch, exists=True, capsule=True)
-        self.patcher.log.add_note.assert_called_once_with("Patching 'file1' and replacing existing file in the 'capsule.mod' archive")
+        self.patcher.log.add_note.assert_called_once_with(
+            "Patching 'file1' and replacing existing file in the 'capsule.mod' archive"
+        )
         self.assertTrue(result)
 
     def test_replace_file_exists_saveas_destination_capsule(self):
-        patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file2", sourcefile="file1", action="Patch ")
+        patch = MagicMock(
+            name="patch", destination="capsule.mod", replace_file=True, saveas="file2", sourcefile="file1", action="Patch "
+        )
         result = self.patcher.should_patch(patch, exists=True, capsule=True)
-        self.patcher.log.add_note.assert_called_once_with("Patching 'file1' and replacing existing file 'file2' in the 'capsule.mod' archive")
+        self.patcher.log.add_note.assert_called_once_with(
+            "Patching 'file1' and replacing existing file 'file2' in the 'capsule.mod' archive"
+        )
         self.assertTrue(result)
 
     def test_replace_file_not_exists_saveas_destination_capsule(self):
-        patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file2", sourcefile="file1", action="Copy ")
+        patch = MagicMock(
+            name="patch", destination="capsule.mod", replace_file=True, saveas="file2", sourcefile="file1", action="Copy "
+        )
         result = self.patcher.should_patch(patch, exists=False, capsule=MagicMock(patch="some path"))
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and saving as 'file2' in the 'capsule.mod' archive")
         self.assertTrue(result)
 
     def test_replace_file_not_exists_destination_capsule(self):
-        patch = MagicMock(name="patch", destination="capsule.mod", replace_file=True, saveas="file1", sourcefile="file1", action="Copy ")
+        patch = MagicMock(
+            name="patch", destination="capsule.mod", replace_file=True, saveas="file1", sourcefile="file1", action="Copy "
+        )
         result = self.patcher.should_patch(patch, exists=False, capsule=MagicMock(patch="some path"))
         self.patcher.log.add_note.assert_called_once_with("Copying 'file1' and adding to the 'capsule.mod' archive")
         self.assertTrue(result)

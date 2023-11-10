@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ute import construct_ute, dismantle_ute
@@ -45,3 +53,7 @@ class TestUTE(TestCase):
         self.assertEqual("g_kataarn02", ute.creatures[1].resref)
         self.assertEqual(1, ute.creatures[1].guaranteed_count)
         self.assertTrue(ute.creatures[1].single_spawn)
+
+
+if __name__ == "__main__":
+    unittest.main()

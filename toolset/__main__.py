@@ -1,11 +1,12 @@
 import os
+import pathlib
 import sys
-from pathlib import Path
 
-toolset_path = Path(__file__).parent
-if toolset_path.exists() and getattr(sys, "frozen", False) is False:
-    sys.path.append(str(toolset_path))
-    sys.path.append(str(toolset_path.parent))
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[1] / "pykotor"
+    toolset_path = pathlib.Path(__file__).parents[1] / "toolset"
+    if pykotor_path.exists() or toolset_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 import multiprocessing
 import traceback
@@ -19,13 +20,13 @@ from toolset.gui.windows.main import ToolWindow
 os.environ["QT_MULTIMEDIA_PREFERRED_PLUGINS"] = "windowsmediafoundation"
 os.environ["QT_DEBUG_PLUGINS"] = "1"
 
-#os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+# os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 # os.environ["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
 # os.environ["QT_SCALE_FACTOR"] = "1"
 
 
 def onAppCrash(e: BaseException, value: str, tback: TracebackType):
-    with Path("errorlog.txt").open("a") as file:
+    with pathlib.Path("errorlog.txt").open("a") as file:
         file.writelines(traceback.format_exception(e, value, tback))
         file.write("\n----------------------\n")
     raise e

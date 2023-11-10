@@ -1,7 +1,14 @@
+import pathlib
+import sys
 import unittest
-import re
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.extract.installation import Installation
+
 
 class TestReplaceModuleExtensions(unittest.TestCase):
     def test_replace_module_extensions(self):
@@ -28,6 +35,7 @@ class TestReplaceModuleExtensions(unittest.TestCase):
         # Error cases
         self.assertRaises(TypeError, Installation._replace_module_extensions, None, None)
         self.assertRaises(TypeError, Installation._replace_module_extensions, None, 123)
+
 
 if __name__ == "__main__":
     unittest.main()

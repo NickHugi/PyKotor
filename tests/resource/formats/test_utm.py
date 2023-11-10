@@ -1,4 +1,11 @@
-from unittest import TestCase
+import pathlib
+import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utm import construct_utm, dismantle_utm
@@ -6,7 +13,7 @@ from pykotor.resource.generics.utm import construct_utm, dismantle_utm
 TEST_FILE = "tests/files/test.utm"
 
 
-class TestUTM(TestCase):
+class TestUTM(unittest.TestCase):
     def test_io(self):
         gff = read_gff(TEST_FILE)
         utm = construct_utm(gff)
@@ -32,3 +39,7 @@ class TestUTM(TestCase):
         self.assertFalse(utm.inventory[0].infinite)
         self.assertTrue(utm.inventory[1].infinite)
         self.assertEqual("g_i_drdltplat002", utm.inventory[1].resref)
+
+
+if __name__ == "__main__":
+    unittest.main()

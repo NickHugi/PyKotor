@@ -9,9 +9,10 @@ from hashlib import sha256
 from io import StringIO
 from typing import TYPE_CHECKING
 
-if not getattr(sys, "frozen", False):
-    thisfile_path = pathlib.Path(__file__).resolve()
-    sys.path.append(str(thisfile_path.parents[2]))
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 
 from pykotor.extract.capsule import Capsule
@@ -50,6 +51,8 @@ def log_output(*args, **kwargs) -> None:
 
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
+    return None  # noqa: RET501, PLR1711
+
 
 def compute_sha256(where: os.PathLike | str | bytes):
     """Compute the SHA-256 hash of the data."""
@@ -261,7 +264,6 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         log_output(f"Missing file:\t{c_file2_rel}")
         return False
 
-
     if is_capsule_file(c_file1_rel.name):
         try:
             file1_capsule = Capsule(file1)
@@ -282,11 +284,15 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         missing_in_capsule1 = capsule2_resources.keys() - capsule1_resources.keys()
         missing_in_capsule2 = capsule1_resources.keys() - capsule2_resources.keys()
         for resref in missing_in_capsule1:
-            message = (f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype().extension.upper()}")
+            message = (
+                f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype().extension.upper()}"
+            )
             log_output(message)
 
         for resref in missing_in_capsule2:
-            message = (f"Capsule2 resource missing\t{c_file2_rel}\t{resref}\t{capsule1_resources[resref].restype().extension.upper()}")
+            message = (
+                f"Capsule2 resource missing\t{c_file2_rel}\t{resref}\t{capsule1_resources[resref].restype().extension.upper()}"
+            )
             log_output(message)
 
         # Checking for differences

@@ -1,4 +1,12 @@
+import pathlib
+import sys
 from unittest import TestCase
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.ifo import construct_ifo, dismantle_ifo
@@ -54,3 +62,7 @@ class TestIFO(TestCase):
         self.assertEqual("", ifo.on_player_rest)
         self.assertEqual("", ifo.start_movie)
         self.assertAlmostEqual(-1.571, ifo.entry_direction, 3)
+
+
+if __name__ == "__main__":
+    unittest.main()

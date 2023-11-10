@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING, Optional
 from PyQt5 import QtCore
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QKeySequence
 from PyQt5.QtWidgets import QCheckBox, QDialog, QListWidgetItem, QMenu, QWidget
-from toolset.utils.misc import getResourceFromFile
-from toolset.utils.window import openResourceEditor
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.common.misc import Color
@@ -46,6 +44,8 @@ from toolset.gui.dialogs.instance.trigger import TriggerDialog
 from toolset.gui.dialogs.instance.waypoint import WaypointDialog
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.git import GITSettings
+from toolset.utils.misc import getResourceFromFile
+from toolset.utils.window import openResourceEditor
 
 if TYPE_CHECKING:
     import os

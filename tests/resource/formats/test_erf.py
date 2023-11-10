@@ -1,10 +1,15 @@
 import os
+import pathlib
 import sys
+import unittest
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists() and str(pykotor_path) not in sys.path:
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.tools.path import Path
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-sys.path.append(project_root)
 from unittest import TestCase
 
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
@@ -46,3 +51,7 @@ class TestERF(TestCase):
         else:
             self.assertRaises(IsADirectoryError, write_erf, ERF(), ".", ResourceType.ERF)
         self.assertRaises(ValueError, write_erf, ERF(), ".", ResourceType.INVALID)
+
+
+if __name__ == "__main__":
+    unittest.main()
