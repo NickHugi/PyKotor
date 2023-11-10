@@ -10,27 +10,21 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.language import LocalizedString
-from pykotor.common.misc import Game
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier, ResourceResult
 from pykotor.extract.installation import Installation, SearchLocation
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import Path, locate_game_paths
+
+K1_PATH = os.environ.get("K1_PATH")
 
 
+@unittest.skipIf(
+    not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+    "K1_PATH environment variable is not set or not found on disk.",
+)
 class TestInstallation(TestCase):
     def setUp(self) -> None:
-        path = os.environ.get("K1_PATH")
-        if path:
-            path = Path(path)
-            if not path.exists():
-                raise ValueError(f"The path specified in the environment variable K1_PATH: '{path}' does not exist on disk.")
-        else:
-            default_paths = locate_game_paths()
-            if not default_paths[Game.K1]:
-                raise ValueError("K1_PATH environment variable not set, and no default paths found.")
-            path = default_paths[Game.K1][0]
-        self.installation = Installation(path)
+        self.installation = Installation(K1_PATH)
 
     def test_resource(self):
         installation = self.installation
@@ -378,7 +372,7 @@ class TestInstallation(TestCase):
             installation.string(locstring3, "default text"),
         )
 
-    def test_strings(self):  # this test will fail on non-english versions of the game
+    def test_strings(self):
         installation = self.installation
 
         locstring1 = LocalizedString.from_invalid()
@@ -388,7 +382,9 @@ class TestInstallation(TestCase):
         results = installation.strings([locstring1, locstring2, locstring3], "default text")
         self.assertEqual("default text", results[locstring1])
         self.assertEqual("Some text.", results[locstring2])
-        self.assertEqual("ERROR: FATAL COMPILER ERROR", results[locstring3])
+        self.assertEqual(
+            "ERROR: FATAL COMPILER ERROR", results[locstring3]
+        )  # this test will fail on non-english versions of the game
 
 
 if __name__ == "__main__":

@@ -193,7 +193,7 @@ class TwoDAEditor(Editor):
     def insertRow(self) -> None:
         """Inserts a new row at the end of the table."""
         rowIndex = self.model.rowCount()
-        self.model.appendRow([QStandardItem("") for i in range(self.model.columnCount())])
+        self.model.appendRow([QStandardItem("") for _ in range(self.model.columnCount())])
         self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
         font = self.model.item(rowIndex, 0).font()
         font.setBold(True)

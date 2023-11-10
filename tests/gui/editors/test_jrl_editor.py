@@ -16,12 +16,18 @@ if getattr(sys, "frozen", False) is False:
 from toolset.data.installation import HTInstallation
 from toolset.gui.editors.jrl import JRLEditor
 
+K1_PATH = os.environ.get("K1_PATH")
 
+
+@unittest.skipIf(
+    not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+    "K1_PATH environment variable is not set or not found on disk.",
+)
 class JRLEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
-        cls.INSTALLATION = HTInstallation(os.environ.get("K1_PATH"), "", False, None)
+        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
         self.app = QApplication([])

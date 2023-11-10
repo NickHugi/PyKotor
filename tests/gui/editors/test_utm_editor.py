@@ -14,18 +14,24 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from toolset.data.installation import HTInstallation
-from toolset.gui.editors.gff import GFFEditor
+from toolset.gui.editors.utm import UTMEditor
+
+K1_PATH = os.environ.get("K1_PATH")
 
 
-class GFFEditorTest(TestCase):
+@unittest.skipIf(
+    not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+    "K1_PATH environment variable is not set or not found on disk.",
+)
+class UTMEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
-        cls.INSTALLATION = HTInstallation(os.environ.get("K1_PATH"), "", False, None)
+        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
         self.app = QApplication([])
-        self.ui = GFFEditor(None, self.INSTALLATION)
+        self.ui = UTMEditor(None, self.INSTALLATION)
 
     def tearDown(self) -> None:
         self.app.deleteLater()

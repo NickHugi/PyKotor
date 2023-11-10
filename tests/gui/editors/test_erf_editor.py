@@ -4,6 +4,7 @@ import sys
 from unittest import TestCase
 import unittest
 
+from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication
 
 if getattr(sys, "frozen", False) is False:
@@ -13,18 +14,24 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from toolset.data.installation import HTInstallation
-from toolset.gui.editors.utt import UTTEditor
+from toolset.gui.editors.erf import ERFEditor
+
+K1_PATH = os.environ.get("K1_PATH")
 
 
-class UTTEditorTest(TestCase):
+@unittest.skipIf(
+    not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
+    "K1_PATH environment variable is not set or not found on disk.",
+)
+class ERFEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
-        cls.INSTALLATION = HTInstallation(os.environ.get("K1_PATH"), "", False, None)
+        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
         self.app = QApplication([])
-        self.ui = UTTEditor(None, self.INSTALLATION)
+        self.ui = ERFEditor(None, self.INSTALLATION)
 
     def tearDown(self) -> None:
         self.app.deleteLater()
