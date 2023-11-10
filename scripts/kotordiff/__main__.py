@@ -432,12 +432,13 @@ while True:
     parser_args.path2 = None
 if LOGGING_ENABLED:
     while True:
-        OUTPUT_LOG = Path(
+        chosen_log_file_path = (
             parser_args.output_log
             or (unknown[2] if len(unknown) > 2 else None)
-            or input("Filepath of the desired output logfile: ")
-            or "log_install_differ.log",
-        ).resolve()
+            or input("Filepath of the desired output logfile: ").strip()
+            or "log_install_differ.log"
+        )
+        OUTPUT_LOG = Path(chosen_log_file_path).resolve()
         if OUTPUT_LOG.parent.exists():
             break
         print("Invalid path:", OUTPUT_LOG)

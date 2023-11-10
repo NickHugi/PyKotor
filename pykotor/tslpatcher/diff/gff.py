@@ -28,6 +28,16 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 }
 
 
+MAX_CHARS_BEFORE_NEWLINE_FORMAT = 50
+
+
+def format_text(value) -> str:
+    text = str(value)
+    if "\n" in text or len(text) > MAX_CHARS_BEFORE_NEWLINE_FORMAT:
+        return f'"""\n{text}\n"""'
+    return f"'{text}'"
+
+
 class DiffGFF:
     def __init__(self, old: GFF, new: GFF, log_func=print):
         self.old: GFF = old
@@ -72,13 +82,13 @@ class DiffGFF:
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
                 self.log(
-                    f"Extra '{new_ftype_name}' field found at '{child_path}': '{new_value}'",
+                    f"Extra '{new_ftype_name}' field found at '{child_path}': {format_text(new_value)}",
                 )
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
                 self.log(
-                    f"Missing '{old_ftype_name}' field at '{child_path}': '{old_value}'",
+                    f"Missing '{old_ftype_name}' field at '{child_path}': {format_text(old_value)}",
                 )
                 is_same_result = False
                 continue
@@ -86,7 +96,7 @@ class DiffGFF:
             # Check if field types have changed
             if old_ftype != new_ftype:
                 self.log(
-                    f"Field type has changed at '{child_path}': '{old_ftype_name}'-->'{new_ftype_name}'",
+                    f"Field type is different at '{child_path}': '{old_ftype_name}'-->'{new_ftype_name}'",
                 )
                 is_same_result = False
                 continue
@@ -94,7 +104,7 @@ class DiffGFF:
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
                 if old_value.struct_id != new_value.struct_id:
-                    self.log(f"Struct ID has changed at '{child_path}': '{old_value.struct_id}'-->'{new_value.struct_id}'")
+                    self.log(f"Struct ID is different at '{child_path}': '{old_value.struct_id}'-->'{new_value.struct_id}'")
                     is_same_result = False
 
                 if not self.is_same(old_value, new_value, child_path):
@@ -106,10 +116,8 @@ class DiffGFF:
                     is_same_result = False
                     continue
 
-            elif str(old_value) != str(new_value):
-                self.log(
-                    f"Field '{old_ftype_name}' value has changed at '{child_path}': '{old_value}'-->'{new_value}'",
-                )
+            elif old_value != new_value:
+                self.log(f"Field '{old_ftype_name}' is different at '{child_path}': {format_text(old_value)}-vvv->{format_text(new_value)}")
                 is_same_result = False
                 continue
 
@@ -134,7 +142,7 @@ class DiffGFF:
             self.log(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of old struct:")
             for label, field_type, field_value in struct:
-                self.log(fieldtype_to_fieldname.get(field_type, field_type), f"{label}='{field_value}'")
+                self.log(fieldtype_to_fieldname.get(field_type, field_type), f"{label}: {format_text(field_value)}")
             self.log()
             is_same_result = False
 
@@ -143,7 +151,7 @@ class DiffGFF:
             self.log(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of new struct:")
             for label, field_type, field_value in struct:
-                self.log(fieldtype_to_fieldname.get(field_type, field_type), f"{label}='{field_value}'")
+                self.log(fieldtype_to_fieldname.get(field_type, field_type), f"{label}: {format_text(field_value)}")
             self.log()
             is_same_result = False
 
@@ -156,69 +164,3 @@ class DiffGFF:
                 is_same_result = False
 
         return is_same_result
-
-
-class SearchGFF:
-    def __init__(self, gff: GFF):
-        self.gff: GFF = gff
-
-    def search_by_label(
-        self,
-        target_label: str,
-        struct: Optional[GFFStruct] = None,
-        current_path: Optional[Union[PureWindowsPath, os.PathLike, str]] = None,
-    ) -> Optional[str]:
-        """Search the GFF by label and return the full path if found."""
-        current_path = PureWindowsPath(current_path or "GFFRoot")
-        struct = struct or self.gff.root
-
-        for label, ftype, value in struct:
-            if label == target_label:
-                return str(current_path / label)
-
-            child_path = current_path / label
-            if ftype == GFFFieldType.Struct:
-                found_path = self.search_by_label(target_label, value, child_path)
-                if found_path:
-                    return found_path
-            elif ftype == GFFFieldType.List:
-                for idx, child_struct in enumerate(value):
-                    found_path = self.search_by_label(target_label, child_struct, child_path / str(idx))
-                    if found_path:
-                        return found_path
-        return None
-
-    def search_by_path(
-        self,
-        target_path: Union[PureWindowsPath, os.PathLike, str],
-        struct: Optional[GFFStruct] = None,
-        current_path: Optional[Union[PureWindowsPath, os.PathLike, str]] = None,
-    ) -> Optional[Union[str, int, GFFStruct]]:
-        """Search the GFF by path and return the value/struct/number of structs."""
-        current_path = PureWindowsPath(current_path or "GFFRoot")
-        struct = struct or self.gff.root
-        if current_path == target_path:
-            if isinstance(struct, GFFStruct):
-                return struct
-            if isinstance(struct, GFFList):
-                return len(struct)
-
-        for label, ftype, value in struct:
-            child_path = current_path / label
-            if child_path == target_path:
-                if ftype == GFFFieldType.Struct:
-                    return value
-                if ftype == GFFFieldType.List:
-                    return len(value)
-                return value
-
-            if ftype == GFFFieldType.Struct:
-                found_value = self.search_by_path(target_path, value, child_path)
-                if found_value:
-                    return found_value
-            elif ftype == GFFFieldType.List:
-                for idx, child_struct in enumerate(value):
-                    found_value = self.search_by_path(target_path, child_struct, child_path / str(idx))
-                    if found_value:
-                        return found_value
-        return None
