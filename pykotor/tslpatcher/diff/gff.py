@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+import os
+import pathlib
+import sys
+from typing import Any
+
+if getattr(sys, "frozen", False) is False:
+    pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
+    if pykotor_path.exists():
+        sys.path.append(str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
 from pykotor.tools.path import PureWindowsPath
-
-if TYPE_CHECKING:
-    import os
 
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.UInt8: "Byte",
@@ -28,14 +33,48 @@ fieldtype_to_fieldname: dict[GFFFieldType, str] = {
 }
 
 
-MAX_CHARS_BEFORE_NEWLINE_FORMAT = 50
+MAX_CHARS_BEFORE_NEWLINE_FORMAT = 20  # Adjust as needed
 
-
-def format_text(value) -> str:
-    text = str(value)
+def format_text(text):
     if "\n" in text or len(text) > MAX_CHARS_BEFORE_NEWLINE_FORMAT:
-        return f'"""\n{text}\n"""'
+        return f'"""{os.linesep}{text}{os.linesep}"""'
     return f"'{text}'"
+
+def first_char_diff_index(str1, str2):
+    """Find the index of the first differing character in two strings."""
+    min_length = min(len(str1), len(str2))
+    for i in range(min_length):
+        if str1[i] != str2[i]:
+            return i
+    if len(str1) != len(str2):
+        return min_length  # Difference due to length
+    return -1  # No difference
+
+def generate_diff_marker_line(index, length):
+    """Generate a line of spaces with a '^' at the specified index."""
+    if index == -1:
+        return ""
+    return " " * index + "^" + " " * (length - index - 1)
+
+def compare_and_format(old_value, new_value):
+    old_text = str(old_value)
+    new_text = str(new_value)
+    old_lines = old_text.split("\n")
+    new_lines = new_text.split("\n")
+    formatted_old = []
+    formatted_new = []
+
+    for old_line, new_line in zip(old_lines, new_lines):
+        diff_index = first_char_diff_index(old_line, new_line)
+        marker_line = generate_diff_marker_line(diff_index, max(len(old_line), len(new_line)))
+
+        formatted_old.append(old_line)
+        formatted_new.append(new_line)
+        if marker_line:
+            formatted_old.append(marker_line)
+            formatted_new.append(marker_line)
+
+    return os.linesep.join(formatted_old), os.linesep.join(formatted_new)
 
 
 class DiffGFF:
@@ -60,12 +99,8 @@ class DiffGFF:
             is_same_result = False
 
         # Create dictionaries for both old and new structures
-        old_dict: dict[str, tuple[GFFFieldType, Any]] = {
-            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(old_struct)
-        }
-        new_dict: dict[str, tuple[GFFFieldType, Any]] = {
-            label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(new_struct)
-        }
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(old_struct)}
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(new_struct)}
 
         # Union of labels from both old and new structures
         all_labels = set(old_dict.keys()) | set(new_dict.keys())
@@ -81,23 +116,17 @@ class DiffGFF:
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
-                self.log(
-                    f"Extra '{new_ftype_name}' field found at '{child_path}': {format_text(new_value)}",
-                )
+                self.log(f"Extra '{new_ftype_name}' field found at '{child_path}': {format_text(new_value)}" )
                 is_same_result = False
                 continue
             if new_value is None or new_ftype is None:
-                self.log(
-                    f"Missing '{old_ftype_name}' field at '{child_path}': {format_text(old_value)}",
-                )
+                self.log(f"Missing '{old_ftype_name}' field at '{child_path}': {format_text(old_value)}")
                 is_same_result = False
                 continue
 
             # Check if field types have changed
             if old_ftype != new_ftype:
-                self.log(
-                    f"Field type is different at '{child_path}': '{old_ftype_name}'-->'{new_ftype_name}'",
-                )
+                self.log(f"Field type is different at '{child_path}': '{old_ftype_name}'-->'{new_ftype_name}'")
                 is_same_result = False
                 continue
 
@@ -117,7 +146,12 @@ class DiffGFF:
                     continue
 
             elif old_value != new_value:
-                self.log(f"Field '{old_ftype_name}' is different at '{child_path}': {format_text(old_value)}-vvv->{format_text(new_value)}")
+                if str(old_value) == str(new_value):
+                    is_same_result = False
+                    self.log(f"Field '{old_ftype_name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
+                    continue
+                formatted_old_value, formatted_new_value = compare_and_format(old_value, new_value)
+                self.log(f"Field '{old_ftype_name}' is different at '{child_path}': {format_text(formatted_old_value)}{os.linesep}<-vvv->{os.linesep}{format_text(formatted_new_value)}\n")
                 is_same_result = False
                 continue
 
@@ -164,3 +198,13 @@ class DiffGFF:
                 is_same_result = False
 
         return is_same_result
+old_ftype_name = "test"
+child_path = "test/path/for/diff/test"
+
+old_value = "some long text string"
+new_value = "some long textt strings"
+
+formatted_old, formatted_new = compare_and_format(old_value, new_value)
+
+print("Old Value with Differences:\n" + formatted_old)
+print("New Value with Differences:\n" + formatted_new)

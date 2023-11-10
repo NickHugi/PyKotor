@@ -51,7 +51,6 @@ def log_output(*args, **kwargs) -> None:
 
     # Print the captured output to console
     print(*args, **kwargs)  # noqa: T201
-    return None  # noqa: RET501, PLR1711
 
 
 def compute_sha256(where: os.PathLike | str | bytes):
@@ -111,12 +110,12 @@ def diff_data(
     ext: str,
     resname: str | None = None,
 ) -> bool | None:
-    where = PureWindowsPath(file1_rel.name, f"{resname}.{ext}") if resname else file1_rel.name
+    where: PureWindowsPath | str = PureWindowsPath(file1_rel.name, f"{resname}.{ext}") if resname else file1_rel.name
 
     if not data1 and data2:
-        return log_output(f"[Error] Cannot determine data for '{where}' in '{file1_rel}'")
+        return log_output(f"[Error] Cannot determine data for '{where}' in '{file1_rel}'")  # type: ignore[func-returns-value]
     if data1 and not data2:
-        return log_output(f"[Error] Cannot determine data for '{where}' in '{file2_rel}'")
+        return log_output(f"[Error] Cannot determine data for '{where}' in '{file2_rel}'")  # type: ignore[func-returns-value]
     if not data1 and not data2:  # sourcery skip: extract-duplicate-method
         # message = f"No data for either resource: '{where}'"  # noqa: ERA001
         # log_output(message)  # noqa: ERA001
@@ -133,20 +132,20 @@ def diff_data(
         try:
             gff1 = read_gff(data1)
         except Exception:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!")
+            return log_output(f"[Error] loading GFF {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             gff2 = read_gff(data2)
         except Exception:  # noqa: BLE001
-            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!")
+            return log_output(f"[Error] loading GFF {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
-            return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")
+            return log_output(f"GFF resource missing in memory:\t'{file1_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and gff2:
-            return log_output(f"GFF resource missing in memory:\t'{file2_rel.parent / where}'")
+            return log_output(f"GFF resource missing in memory:\t'{file2_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and not gff2:
-            return log_output(f"Both GFF resources missing in memory:\t'{where}'")
+            return log_output(f"Both GFF resources missing in memory:\t'{where}'")  # type: ignore[func-returns-value]
         if gff1 and gff2:
-            diff = DiffGFF(gff1, gff2, log_output)
-            if not diff.is_same(current_path=where):
+            diff_gff = DiffGFF(gff1, gff2, log_output)
+            if not diff_gff.is_same(current_path=where):
                 log_output_with_separator(f"^ '{where}': GFF is different ^")
                 return False
         return True
@@ -157,23 +156,23 @@ def diff_data(
         try:
             twoda1 = read_2da(data1)
         except Exception:  # noqa: BLE001
-            return log_output(f"Error loading 2DA {file1_rel.parent / where}!")
+            return log_output(f"Error loading 2DA {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             twoda2 = read_2da(data2)
         except Exception:  # noqa: BLE001
-            return log_output(f"Error loading 2DA {file2_rel.parent / where}!")
+            return log_output(f"Error loading 2DA {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
             message = f"2DA resource missing in memory:\t'{file1_rel.parent / where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if not twoda1 and twoda2:
             message = f"2DA resource missing in memory:\t'{file2_rel.parent / where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if not twoda1 and not twoda2:
             message = f"Both 2DA resources missing in memory:\t'{where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if twoda1 and twoda2:
-            diff = Diff2DA(twoda2, twoda1, log_output)
-            if not diff.is_same():
+            diff_2da = Diff2DA(twoda2, twoda1, log_output)
+            if not diff_2da.is_same():
                 log_output_with_separator(f"^ '{where}': 2DA is different ^")
                 return False
         return True
@@ -185,21 +184,21 @@ def diff_data(
             log_output(f"Loading TLK '{file1_rel.parent / where}'")
             tlk1 = read_tlk(data1)
         except Exception:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file1_rel.parent / where}!")
+            return log_output(f"Error loading TLK {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             log_output(f"Loading TLK '{file2_rel.parent / where}'")
             tlk2 = read_tlk(data2)
         except Exception:  # noqa: BLE001
-            return log_output(f"Error loading TLK {file2_rel.parent / where}!")
+            return log_output(f"Error loading TLK {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if tlk1 and not tlk2:
             message = f"TLK resource missing in memory:\t'{file1_rel.parent / where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if not tlk1 and tlk2:
             message = f"TLK resource missing in memory:\t'{file2_rel.parent / where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if not tlk1 and not tlk2:
             message = f"Both TLK resources missing in memory:\t'{where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if tlk1 and tlk2:
             diff = DiffTLK(tlk1, tlk2, log_output)
             if not diff.is_same():
@@ -213,25 +212,25 @@ def diff_data(
         try:
             lip1 = read_lip(data1)
         except Exception:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file1_rel.parent / where}!")
+            return log_output(f"Error loading LIP {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             lip2 = read_lip(data2)
         except Exception:  # noqa: BLE001
-            return log_output(f"Error loading LIP {file2_rel.parent / where}!")
+            return log_output(f"Error loading LIP {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if lip1 and not lip2:
             message = f"LIP resource missing in memory:\t'{file1_rel.parent / where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if not lip1 and lip2:
             message = f"LIP resource missing in memory:\t'{file2_rel.parent / where}'"
-            return log_output(message)
+            return log_output(message)  # type: ignore[func-returns-value]
         if not lip1 and not lip2:
             message = f"Both LIP resources missing in memory:\t'{where}'"
             log_output(message)
             log_output(len(message) * "-")
             return True
         if lip1 and lip2:
-            diff = DiffLIP(lip1, lip2, log_output)
-            if not diff.is_same():
+            diff_lip = DiffLIP(lip1, lip2, log_output)
+            if not diff_lip.is_same():
                 message = f"^ '{where}': LIP is different ^"
                 return log_output_with_separator(message)
         return True
@@ -255,7 +254,7 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
     c_file2 = file2 if isinstance(file2, Path) else Path(file2).resolve()
     c_file1_rel: Path = relative_path_from_to(c_file2, c_file1)
     c_file2_rel: Path = relative_path_from_to(c_file1, c_file2)
-    is_same_result = True
+    is_same_result: bool | None = True
 
     if not c_file1.exists():
         log_output(f"Missing file:\t{c_file1_rel}")
@@ -281,8 +280,8 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
         capsule2_resources: dict[str, FileResource] = {res.resname(): res for res in file2_capsule}
 
         # Identifying missing resources
-        missing_in_capsule1 = capsule2_resources.keys() - capsule1_resources.keys()
-        missing_in_capsule2 = capsule1_resources.keys() - capsule2_resources.keys()
+        missing_in_capsule1: set[str] = capsule2_resources.keys() - capsule1_resources.keys()
+        missing_in_capsule2: set[str] = capsule1_resources.keys() - capsule2_resources.keys()
         for resref in missing_in_capsule1:
             message = (
                 f"Capsule1 resource missing\t{c_file1_rel}\t{resref}\t{capsule2_resources[resref].restype().extension.upper()}"
@@ -296,12 +295,13 @@ def diff_files(file1: os.PathLike | str, file2: os.PathLike | str) -> bool | Non
             log_output(message)
 
         # Checking for differences
-        common_resrefs = capsule1_resources.keys() & capsule2_resources.keys()  # Intersection of keys
+        common_resrefs: set[str] = capsule1_resources.keys() & capsule2_resources.keys()  # Intersection of keys
         for resref in common_resrefs:
             res1: FileResource = capsule1_resources[resref]
             res2: FileResource = capsule2_resources[resref]
-            ext = res1.restype().extension.lower()
-            is_same_result = diff_data(res1.data(), res2.data(), c_file1_rel, c_file2_rel, ext, resref) and is_same_result
+            ext: str = res1.restype().extension.lower()
+            result: bool | None = diff_data(res1.data(), res2.data(), c_file1_rel, c_file2_rel, ext, resref) and is_same_result
+            is_same_result = result and is_same_result if result is not None else None
         return is_same_result
     return diff_data(c_file1, c_file2, c_file1_rel, c_file2_rel, c_file1_rel.suffix.lower()[1:])
 
@@ -319,16 +319,17 @@ def diff_directories(dir1: os.PathLike | str, dir2: os.PathLike | str) -> bool |
     # Merge both sets to iterate over unique relative paths
     all_files = files_path1.union(files_path2)
 
-    is_same_result = True
+    is_same_result: bool | None = True
     for rel_path in all_files:
-        is_same_result = diff_files(c_dir1 / rel_path, c_dir2 / rel_path) and is_same_result
+        result: bool | None = diff_files(c_dir1 / rel_path, c_dir2 / rel_path)
+        is_same_result = result and is_same_result if result is not None else None
 
     return is_same_result
 
 
 def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike | str) -> bool | None:
-    install_path1 = install_path1 if isinstance(install_path1, Path) else Path(install_path1).resolve()
-    install_path2 = install_path2 if isinstance(install_path2, Path) else Path(install_path2).resolve()
+    install_path1 = install_path1 if isinstance(install_path1, CaseAwarePath) else CaseAwarePath(install_path1).resolve()
+    install_path2 = install_path2 if isinstance(install_path2, CaseAwarePath) else CaseAwarePath(install_path2).resolve()
     log_output()
     log_output((max(len(str(install_path1)) + 29, len(str(install_path2)) + 30)) * "-")
     log_output("Searching first install dir:", install_path1)
@@ -336,28 +337,28 @@ def diff_installs(install_path1: os.PathLike | str, install_path2: os.PathLike |
     log_output()
 
     is_same_result = diff_files(install_path1.joinpath("dialog.tlk"), install_path2 / "dialog.tlk")
-    modules_path1: Path = install_path1 / "Modules"
-    modules_path2: Path = install_path2 / "Modules"
+    modules_path1: CaseAwarePath = install_path1 / "Modules"
+    modules_path2: CaseAwarePath = install_path2 / "Modules"
     is_same_result = diff_directories(modules_path1, modules_path2) and is_same_result
 
-    override_path1: Path = install_path1 / "Override"
-    override_path2: Path = install_path2 / "Override"
+    override_path1: CaseAwarePath = install_path1 / "Override"
+    override_path2: CaseAwarePath = install_path2 / "Override"
     is_same_result = diff_directories(override_path1, override_path2) and is_same_result
 
-    rims_path1: Path = install_path1 / "rims"
-    rims_path2: Path = install_path2 / "rims"
+    rims_path1: CaseAwarePath = install_path1 / "rims"
+    rims_path2: CaseAwarePath = install_path2 / "rims"
     is_same_result = diff_directories(rims_path1, rims_path2) and is_same_result
 
-    lips_path1: Path = install_path1 / "Lips"
-    lips_path2: Path = install_path2 / "Lips"
+    lips_path1: CaseAwarePath = install_path1 / "Lips"
+    lips_path2: CaseAwarePath = install_path2 / "Lips"
     is_same_result = diff_directories(lips_path1, lips_path2) and is_same_result
 
-    streamwaves_path1: Path = (
+    streamwaves_path1: CaseAwarePath = (
         install_path1.joinpath("streamwaves")
         if install_path1.joinpath("streamwaves").exists()
         else install_path1.joinpath("streamvoice")
     )
-    streamwaves_path2: Path = (
+    streamwaves_path2: CaseAwarePath = (
         install_path2.joinpath("streamwaves")
         if install_path2.joinpath("streamwaves").exists()
         else install_path2.joinpath("streamvoice")
@@ -392,11 +393,11 @@ parser = argparse.ArgumentParser(description="Finds differences between two KOTO
 parser.add_argument("--path1", type=str, help="Path to the first K1/TSL install, file, or directory to diff.")
 parser.add_argument("--path2", type=str, help="Path to the second K1/TSL install, file, or directory to diff.")
 parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
-parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource")
-parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is ignored)")
-parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
-parser.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is not ignored)")
-parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
+parser.add_argument("--compare-hashes", type=bool, help="Compare hashes of any unsupported file/resource type")
+parser.add_argument("--ignore-rims", type=bool, help="Whether to compare RIMS (default is False)")
+parser.add_argument("--ignore-tlk", type=bool, help="Whether to compare dialog.TLK (default is False)")
+parser.add_argument("--ignore-lips", type=bool, help="Whether to compare dialog.TLK (default is False)")
+parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is True)")
 parser.add_argument(
     "--use-profiler",
     type=bool,
