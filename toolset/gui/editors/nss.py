@@ -17,34 +17,21 @@ from PyQt5.QtGui import (
     QTextDocument,
     QTextFormat,
 )
-from PyQt5.QtWidgets import (
-    QListWidgetItem,
-    QMessageBox,
-    QPlainTextEdit,
-    QShortcut,
-    QTextEdit,
-    QWidget,
-)
+from PyQt5.QtWidgets import QListWidgetItem, QMessageBox, QPlainTextEdit, QShortcut, QTextEdit, QWidget
 
-from pykotor.common.scriptdefs import (
-    KOTOR_CONSTANTS,
-    KOTOR_FUNCTIONS,
-    TSL_CONSTANTS,
-    TSL_FUNCTIONS,
-)
+from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS, TSL_CONSTANTS, TSL_FUNCTIONS
 from pykotor.common.stream import BinaryWriter
 from pykotor.resource.formats.erf import ERF, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import Path
 from toolset.gui.editor import Editor
-from toolset.gui.widgets.settings.installations import (
-    GlobalSettings,
-    NoConfigurationSetError,
-)
+from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.common.script import ScriptFunction
     from toolset.data.installation import HTInstallation
 
@@ -109,7 +96,7 @@ class NSSEditor(Editor):
             item.setData(QtCore.Qt.UserRole, constant)
             self.ui.constantList.addItem(item)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         if restype == ResourceType.NSS:
@@ -162,7 +149,7 @@ class NSSEditor(Editor):
                 write_rim(rim, filepath)
             else:
                 savePath = filepath.with_suffix(".ncs")
-                if not filepath or filepath.endswith(".bif"):
+                if not filepath or filepath.suffux.lower() == ".bif":
                     savePath = self._installation.override_path() / f"{self._resref}.ncs"
                 BinaryWriter.dump(savePath, data)
 
@@ -314,7 +301,12 @@ class CodeEditor(QPlainTextEdit):
                 number = str(blockNumber + 1)
                 painter.setPen(QColor(140, 140, 140))
                 painter.drawText(
-                    0, int(top), self._lineNumberArea.width(), self.fontMetrics().height(), QtCore.Qt.AlignCenter, number
+                    0,
+                    int(top),
+                    self._lineNumberArea.width(),
+                    self.fontMetrics().height(),
+                    QtCore.Qt.AlignCenter,
+                    number,
                 )
 
             block = block.next()
@@ -326,7 +318,7 @@ class CodeEditor(QPlainTextEdit):
         digits = 1
         maximum = max(1, self.blockCount())
         while maximum >= 10:
-            maximum /= 10
+            maximum /= 10  # type: ignore[assignment]
             digits += 1
         space = 10 + self.fontMetrics().width("9") * digits
         minSpace = 10 + self.fontMetrics().width("9") * 3
@@ -428,7 +420,10 @@ class SyntaxHighlighter(QSyntaxHighlighter):
 
         self.rules = [(QtCore.QRegExp(pat), index, fmt) for (pat, index, fmt) in rules]
 
-    def highlightBlock(self, text: str) -> None:
+    def highlightBlock(self, text: str | None) -> None:
+        if text is None:
+            print("text cannot be None", "highlightBlock")
+            return
         for expression, nth, format in self.rules:
             index = expression.indexIn(text, 0)
 

@@ -1,9 +1,8 @@
-from contextlib import suppress
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
+from contextlib import suppress
+from typing import TYPE_CHECKING, Optional, Tuple
+
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (
     QDialog,
@@ -17,6 +16,12 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.uti import UTI, UTIProperty, dismantle_uti, read_uti
 from pykotor.resource.type import ResourceType
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    import os
 
 
 class UTIEditor(Editor):
@@ -88,7 +93,7 @@ class UTIEditor(Editor):
                 child.setData(0, QtCore.Qt.UserRole + 1, j)
                 item.addChild(child)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         uti = read_uti(data)
@@ -106,7 +111,7 @@ class UTIEditor(Editor):
         self.ui.costSpin.setValue(uti.cost)
         self.ui.additionalCostSpin.setValue(uti.add_cost)
         self.ui.upgradeSpin.setValue(uti.upgrade_level)
-        self.ui.plotCheckbox.setChecked(uti.plot)
+        self.ui.plotCheckbox.setChecked(bool(uti.plot))  # TODO: incorrect type (bool v int)
         self.ui.chargesSpin.setValue(uti.charges)
         self.ui.stackSpin.setValue(uti.stack_size)
         self.ui.modelVarSpin.setValue(uti.model_variation)

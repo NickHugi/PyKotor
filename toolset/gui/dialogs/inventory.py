@@ -3,7 +3,6 @@ from __future__ import annotations
 from contextlib import suppress
 from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple, Union
 
-from toolset.data.installation import HTInstallation
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
 from PyQt5.QtGui import (
@@ -38,6 +37,7 @@ from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.resource.generics.uti import UTI, read_uti
 from pykotor.resource.type import ResourceType
 from pykotor.tools.path import CaseAwarePath
+from toolset.data.installation import HTInstallation
 
 if TYPE_CHECKING:
     import os
@@ -167,7 +167,7 @@ class InventoryEditor(QDialog):
 
         self.equipment = {}
         for widget in self.ui.standardEquipmentTab.children() + self.ui.naturalEquipmentTab.children():
-            # Very hacky, but isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
+            # HACK: isinstance is not working (possibly due to how DropFrame is imported in _ui.py file.
             # Also make sure there is an item in the slot otherwise the GFF will create a struct for each slot.
             if "DropFrame" in str(type(widget)) and widget.resname:
                 self.equipment[widget.slot] = InventoryItem(ResRef(widget.resname), widget.droppable, widget.infinite)
@@ -374,7 +374,7 @@ class InventoryTable(QTableWidget):
         resnameItem = InventoryTableResnameItem(resname, filepath, name, droppable, infinite)
         self._set_row(rowID, iconItem, resnameItem, nameItem)
 
-    def dropEvent(self, e: QDropEvent) -> None:
+    def dropEvent(self, e: QDropEvent | None) -> None:
         if isinstance(e.source(), QTreeView):
             e.setDropAction(QtCore.Qt.CopyAction)
 
@@ -578,11 +578,11 @@ class ItemModel(QStandardItemModel):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
 
-        self._categoryItems = {}
+        self._categoryItems: dict[str, QStandardItem] = {}
         self._proxyModel = QSortFilterProxyModel(self)
         self._proxyModel.setSourceModel(self)
         self._proxyModel.setRecursiveFilteringEnabled(True)
-        self._proxyModel.setFilterCaseSensitivity(False)
+        self._proxyModel.setFilterCaseSensitivity(False)  # type: ignore[reportGeneralTypeIssues]
         self._proxyModel.setRecursiveFilteringEnabled(True)
         self._proxyModel.setSourceModel(self)
 

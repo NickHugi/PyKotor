@@ -343,7 +343,7 @@ class IndoorMap:
         self.vis.set_all_visible()
         self.ifo.entry_position = self.warpPoint
 
-    def finalize_module_data(self, output_path):
+    def finalize_module_data(self, output_path: os.PathLike | str):
         self.mod.set_data(self.moduleId, ResourceType.LYT, bytes_lyt(self.lyt))
         self.mod.set_data(self.moduleId, ResourceType.VIS, bytes_vis(self.vis))
         self.mod.set_data(self.moduleId, ResourceType.ARE, bytes_are(self.are))
@@ -352,7 +352,7 @@ class IndoorMap:
 
         write_erf(self.mod, output_path)
 
-    def build(self, installation: HTInstallation, kits: list[Kit], output_path: os.PathLike) -> None:
+    def build(self, installation: HTInstallation, kits: list[Kit], output_path: os.PathLike | str) -> None:
         self.mod = ERF(ERFType.MOD)
         self.lyt = LYT()
         self.vis = VIS()

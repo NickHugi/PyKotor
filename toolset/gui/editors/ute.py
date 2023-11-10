@@ -1,8 +1,7 @@
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
+from typing import TYPE_CHECKING, Optional, Tuple
+
 from PyQt5.QtWidgets import (
     QCheckBox,
     QDoubleSpinBox,
@@ -15,6 +14,12 @@ from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.ute import UTE, UTECreature, dismantle_ute, read_ute
 from pykotor.resource.type import ResourceType
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    import os
 
 
 class UTEEditor(Editor):
@@ -54,7 +59,7 @@ class UTEEditor(Editor):
         self.ui.factionSelect.clear()
         self.ui.difficultySelect.setItems(factions.get_column("label"))
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         ute = read_ute(data)

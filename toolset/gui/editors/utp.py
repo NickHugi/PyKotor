@@ -1,12 +1,9 @@
-from contextlib import suppress
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.dialogs.inventory import InventoryEditor
-from toolset.gui.editor import Editor
+from contextlib import suppress
+from typing import TYPE_CHECKING, Optional, Tuple
+
 from PyQt5.QtWidgets import QMessageBox, QWidget
-from toolset.utils.window import openResourceEditor
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -17,7 +14,15 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utp import UTP, dismantle_utp, read_utp
 from pykotor.resource.type import ResourceType
 from pykotor.tools import placeable
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.dialogs.inventory import InventoryEditor
+from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.utils.window import openResourceEditor
+
+if TYPE_CHECKING:
+    import os
 
 
 class UTPEditor(Editor):
@@ -69,7 +74,7 @@ class UTPEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         utp = read_utp(data)

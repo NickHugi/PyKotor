@@ -3,11 +3,6 @@ from __future__ import annotations
 from copy import copy, deepcopy
 from typing import TYPE_CHECKING, Tuple
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
-from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
 from PyQt5 import QtCore
 from PyQt5.QtCore import QBuffer, QIODevice, QItemSelection, QItemSelectionModel, QPoint
 from PyQt5.QtGui import QBrush, QColor, QStandardItem, QStandardItemModel
@@ -36,8 +31,15 @@ from pykotor.resource.generics.dlg import (
     read_dlg,
 )
 from pykotor.resource.type import ResourceType
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.dialog_animation import EditAnimationDialog
+from toolset.gui.dialogs.edit.dialog_model import CutsceneModelDialog
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from pykotor.common.language import LocalizedString
 
 _LINK_ROLE = QtCore.Qt.UserRole + 1
@@ -148,7 +150,7 @@ class DLGEditor(Editor):
 
         QShortcut("Del", self).activated.connect(self.deleteSelectedNode)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         dlg = read_dlg(data)

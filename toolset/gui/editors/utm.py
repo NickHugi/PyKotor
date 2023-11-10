@@ -1,11 +1,7 @@
-from contextlib import suppress
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.dialogs.inventory import InventoryEditor
-from toolset.gui.editor import Editor
-from PyQt5.QtWidgets import QWidget
+from contextlib import suppress
+from typing import TYPE_CHECKING, Optional, Tuple
 
 from pykotor.common.misc import ResRef
 from pykotor.common.module import Module
@@ -13,6 +9,16 @@ from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.gff import write_gff
 from pykotor.resource.generics.utm import UTM, dismantle_utm, read_utm
 from pykotor.resource.type import ResourceType
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.dialogs.inventory import InventoryEditor
+from toolset.gui.editor import Editor
+
+if TYPE_CHECKING:
+    import os
+
+    from PyQt5.QtWidgets import QWidget
+
+    from toolset.data.installation import HTInstallation
 
 
 class UTMEditor(Editor):
@@ -40,7 +46,7 @@ class UTMEditor(Editor):
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         utm = read_utm(data)

@@ -214,7 +214,7 @@ class DynamicModuleEditorControls(ModuleEditorControls):
             elif controlJSON["event"] == "KEY_RELEASE":
                 array = self.keyReleaseEvents
             else:
-                msg = "Unknown event '{}'.".format(controlJSON["event"])
+                msg = f"""Unknown event '{controlJSON["event"]}'."""
                 raise ValueError(msg)
 
             if controlJSON["keys"] is None:

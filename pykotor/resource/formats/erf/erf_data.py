@@ -18,9 +18,9 @@ class ERFType(Enum):
 
     @staticmethod
     def from_extension(filepath: str) -> ERFType:
-        if is_erf_file(filepath.lower()):
+        if is_erf_file(filepath):
             return ERFType.ERF
-        if is_mod_file(filepath.lower()):
+        if is_mod_file(filepath):
             return ERFType.MOD
         msg = f"Invalid ERF extension in filepath '{filepath}'."
         raise ValueError(msg)

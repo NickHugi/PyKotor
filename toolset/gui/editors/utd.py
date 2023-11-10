@@ -1,10 +1,8 @@
-from typing import Optional, Tuple
+from __future__ import annotations
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
-from toolset.gui.editor import Editor
+from typing import TYPE_CHECKING, Optional, Tuple
+
 from PyQt5.QtWidgets import QMessageBox, QWidget
-from toolset.utils.window import openResourceEditor
 
 from pykotor.common.misc import ResRef
 from pykotor.common.stream import BinaryWriter
@@ -13,7 +11,14 @@ from pykotor.resource.generics.dlg import DLG, dismantle_dlg
 from pykotor.resource.generics.utd import UTD, dismantle_utd, read_utd
 from pykotor.resource.type import ResourceType
 from pykotor.tools import door
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
+from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings
+from toolset.utils.window import openResourceEditor
+
+if TYPE_CHECKING:
+    import os
 
 
 class UTDEditor(Editor):
@@ -64,7 +69,7 @@ class UTDEditor(Editor):
         self.ui.difficultyLabel.setVisible(installation.tsl)
         self.ui.difficultyModLabel.setVisible(installation.tsl)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
 
         utd = read_utd(data)
@@ -131,8 +136,8 @@ class UTDEditor(Editor):
 
         # Advanced
         utd.min1_hp = self.ui.min1HpCheckbox.isChecked()
-        utd.party_interact = self.ui.partyInteractCheckbox.isChecked()  # TODO: find out why this and the below line are undefined
-        utd.useable = self.ui.useableCheckbox.isChecked()
+        # utd.party_interact = self.ui.partyInteractCheckbox.isChecked()  # TODO: find out why this and the below line are undefined
+        # utd.useable = self.ui.useableCheckbox.isChecked()
         utd.plot = self.ui.plotCheckbox.isChecked()
         utd.static = self.ui.staticCheckbox.isChecked()
         utd.not_blastable = self.ui.notBlastableCheckbox.isChecked()

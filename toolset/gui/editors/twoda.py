@@ -13,6 +13,8 @@ from pykotor.resource.type import ResourceType
 from toolset.gui.editor import Editor
 
 if TYPE_CHECKING:
+    import os
+
     from toolset.data.installation import HTInstallation
 
 
@@ -52,7 +54,7 @@ class TwoDAEditor(Editor):
         self.ui.actionRemoveRows.triggered.connect(self.removeSelectedRows)
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
-    def load(self, filepath: str, resref: str, restype: ResourceType, data: bytes) -> None:
+    def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
         super().load(filepath, resref, restype, data)
         self.model = QStandardItemModel(self)
         self.proxyModel = SortFilterProxyModel(self)
