@@ -1,4 +1,10 @@
 from __future__ import annotations
+import os
+
+from typing import TYPE_CHECKING
+
+from PIL import Image, ImageDraw, ImageFont
+from pykotor.common.geometry import Vector2
 
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import (
@@ -10,7 +16,10 @@ from pykotor.resource.formats.tpc import (
     TPCTGAWriter,
 )
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CaseAwarePath
+from pykotor.tools.path import CaseAwarePath, Path
+
+if TYPE_CHECKING:
+    from pykotor.resource.formats.tpc.txi_data import TXIFontInformation
 
 
 def detect_tpc(
@@ -133,6 +142,82 @@ def write_tpc(
     else:
         msg = "Unsupported format specified; use TPC, TGA or BMP."
         raise ValueError(msg)
+
+
+def write_bitmap_font(target: os.PathLike | str, font_path: str, resolution: tuple[int, int]) -> None:
+    target_path = Path(target)
+    txi_font_info = TXIFontInformation()
+
+    # Set texturewidth and fontheight based on the resolution
+    txi_font_info.texturewidth, txi_font_info.fontheight = resolution
+
+    # Load the font and calculate font metrics
+    pil_font = ImageFont.truetype(font_path, txi_font_info.fontheight)
+    ascent, descent = pil_font.getmetrics()
+
+    # Set baselineheight and other font-related properties
+    txi_font_info.baselineheight = ascent
+    txi_font_info.spacingR = 0.002600
+    txi_font_info.caretindent = 0
+    txi_font_info.isdoublebyte = 0
+
+    # Calculate the font width based on the number of characters per row
+    characters_per_row = 16
+    txi_font_info.fontwidth = txi_font_info.texturewidth // characters_per_row
+
+    # Create charset image and calculate cols and rows
+    charset_image = Image.new("RGBA", (txi_font_info.texturewidth, txi_font_info.fontheight), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(charset_image)
+
+    cols = []
+    rows = []
+    x, y = 0, 0
+    for i in range(256):  # Standard ASCII set
+        char = chr(i)
+        draw.text((x, y), char, font=pil_font, fill=(255, 255, 255, 255))
+
+        # Update cols for each character
+        cols.append(Vector2(x / txi_font_info.texturewidth, y / txi_font_info.fontheight))
+
+        x += txi_font_info.fontwidth
+        if x >= txi_font_info.texturewidth:
+            x = 0
+            y += ascent + descent
+            # Update rows at the start of each new line
+            rows.append(Vector2(0, y / txi_font_info.fontheight))
+
+    # Set cols and rows in txi_font_info
+    txi_font_info.cols = cols
+    txi_font_info.rows = rows
+
+    # Save the charset image
+    charset_image.save(target_path, format="TGA")
+
+    # Generate and save the TXI data
+    txi_data = _generate_txi_data(txi_font_info)
+    txi_target = target_path.with_suffix(".txi")
+    with txi_target.open("w") as txi_file:
+        txi_file.write(txi_data)
+
+
+def _generate_txi_data(txi_font_info: TXIFontInformation) -> str:
+    return f"""mipmap {txi_font_info.mipmap}
+filter {txi_font_info.filter}
+downsamplemax {txi_font_info.downsamplemax}
+downsamplemin {txi_font_info.downsamplemin}
+numchars {txi_font_info.numchars}
+fontheight {txi_font_info.fontheight}
+baselineheight {txi_font_info.baselineheight}
+texturewidth {txi_font_info.texturewidth}
+fontwidth {txi_font_info.fontwidth}
+spacingR {txi_font_info.spacingR}
+spacingB {txi_font_info.spacingB}
+caretindent {txi_font_info.caretindent}
+isdoublebyte {txi_font_info.isdoublebyte}
+upperleftcoords {txi_font_info.upperleftcoords}
+cols {','.join(str(v) for v in txi_font_info.cols)}
+lowerrightcoords {txi_font_info.lowerrightcoords}
+rows {','.join(str(v) for v in txi_font_info.rows)}"""
 
 
 def bytes_tpc(

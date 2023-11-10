@@ -3,8 +3,6 @@ from __future__ import annotations
 import struct
 from enum import IntEnum
 
-from PIL import Image, ImageDraw, ImageFont
-
 from pykotor.common.stream import BinaryReader
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import (
@@ -139,6 +137,7 @@ class TPCTGAReader(ResourceReader):
 
         return self._tpc
 
+
 class TPCTGAWriter(ResourceWriter):
     def __init__(
         self,
@@ -147,31 +146,6 @@ class TPCTGAWriter(ResourceWriter):
     ):
         super().__init__(target)
         self._tpc = tpc
-
-    def write_charset(self, charset_info, font_path, auto_close=True) -> None:
-        # Load the TPC texture data into an image
-        width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
-        source_image = Image.frombytes("RGBA", (width, height), data)
-
-        # Create a new image for the charset with a transparent background
-        charset_width = charset_info["width"]
-        charset_height = charset_info["height"]
-        charset_image = Image.new("RGBA", (charset_width, charset_height), (0, 0, 0, 0))
-
-        draw = ImageDraw.Draw(charset_image)
-        font = ImageFont.truetype(font_path, charset_info["font_size"])
-
-        # Draw each character onto the charset image
-        x, y = 0, 0
-        for char in charset_info["characters"]:
-            draw.text((x, y), char, font=font, fill=(255, 255, 255, 255))
-            x += charset_info["char_width"]  # Increment x by the width of a character
-            if x >= charset_width - charset_info["char_width"]:
-                x = 0
-                y += charset_info["char_height"]  # Move to the next line
-
-        # Save the charset image as a TGA file
-        charset_image.save(self._target, format="TGA")
 
     @autoclose
     def write(
