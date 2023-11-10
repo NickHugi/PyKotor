@@ -8,6 +8,10 @@ Install from [PyPI](https://pypi.org/project/PyKotor/).
 pip install pykotor
 ```
 
+## Requirements
+PyKotor supports any Python version within 3.7 through 3.12. See requirements.txt for additional pip dependencies.
+PyKotor is supported on most operating systems, including many Mac OS's and Linux.
+
 ## Example Usage
 Simple example of loading data from a game directory, searching for a specific texture and exporting it to the TGA format.
 ```python
@@ -19,6 +23,20 @@ from pykotor.resource.formats.tpc import write_tpc
 inst = Installation("C:/Program Files (x86)/Steam/steamapps/common/swkotor")
 tex = inst.texture("C_Gammorean01")
 write_tpc(tex, os.getcwd() + "/C_Gammorean01.tga", ResourceType.TGA)
+```
+
+## Cloning the repo
+If you would like to work with the source files directly, run the following commands to get yourself setup:
+```bash
+git clone https://github.com/NickHugi/PyKotor
+cd PyKotor
+pip install -r requirements.txt
+```
+Then, you can run any entrypoint scripts, such as HoloPatcher and the Toolset, like this:
+```bash
+cd PyKotor
+python -m scripts.holopatcher
+python -m toolset
 ```
 
 ## Accessing the GUI Designer
