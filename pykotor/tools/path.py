@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, List, Tuple, Union
 if TYPE_CHECKING:
     from pykotor.common.misc import Game
 
-PathElem = Union[str, os.PathLike[str]]
+PathElem = Union[str, os.PathLike]
 PATH_TYPES = Union[PathElem, List[PathElem], Tuple[PathElem, ...]]
 
 
