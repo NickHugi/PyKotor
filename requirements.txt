@@ -1,5 +1,5 @@
 ply
-chardet~=4.0
+charset_normalizer
 numpy~=1.21
 PyOpenGL~=3.1
 setuptools>=57.4

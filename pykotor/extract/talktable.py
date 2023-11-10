@@ -55,7 +55,7 @@ class TalkTable:
                 stringref,
             )
             reader.seek(texts_offset + text_offset)
-            string = reader.read_string(text_length)
+            string = reader.read_string(text_length, encoding=None)
         reader.close()
         return string
 
@@ -146,7 +146,7 @@ class TalkTable:
             ) = self._extract_common_data(reader, stringref)
 
             reader.seek(texts_offset + text_offset)
-            string = reader.read_string(text_length)
+            string = reader.read_string(text_length, encoding=None)
             sound = ResRef(sound_resref)
 
             batch[stringref] = StringResult(string, sound)

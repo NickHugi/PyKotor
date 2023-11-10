@@ -151,7 +151,7 @@ class Capsule:
             return
         with BinaryReader.from_file(self._path) as reader:
             file_type = reader.read_string(4)
-            reader.read_string(4)
+            reader.skip(4)  # file version
 
             if file_type in ("ERF ", "MOD "):
                 self._load_erf(reader)

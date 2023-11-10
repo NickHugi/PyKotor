@@ -137,7 +137,7 @@ def compileScript(source: str, tsl: bool) -> bytes:
 
         tempSourcePath = extract_path / "tempscript.nss"
         tempCompiledPath = extract_path / "tempscript.ncs"
-        BinaryWriter.dump(tempSourcePath, source.encode())
+        BinaryWriter.dump(tempSourcePath, source.encode(encoding="windows-1252"))
 
         gameIndex = "2" if tsl else "1"
         command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]

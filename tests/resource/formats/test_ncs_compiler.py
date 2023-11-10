@@ -1841,7 +1841,9 @@ class TestNSSCompiler(TestCase):
             {
                 PrintInteger(123);
             }
-        """.encode()
+        """.encode(
+            encoding="windows-1252"
+        )
 
         ncs = self.compile(
             """
@@ -1885,11 +1887,15 @@ class TestNSSCompiler(TestCase):
             {
                 PrintInteger(value);
             }
-        """.encode()
+        """.encode(
+            encoding="windows-1252"
+        )
 
         second_script = """
             #include "first_script"
-        """.encode()
+        """.encode(
+            encoding="windows-1252"
+        )
 
         ncs = self.compile(
             """
@@ -2032,7 +2038,9 @@ class TestNSSCompiler(TestCase):
     def test_imported_global_variable(self):
         otherscript = """
             int iExperience = 55;
-        """.encode()
+        """.encode(
+            encoding="windows-1252"
+        )
 
         ncs = self.compile(
             """

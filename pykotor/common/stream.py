@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, BinaryIO
 
 from pykotor.common.geometry import Vector2, Vector3, Vector4
 from pykotor.common.language import LocalizedString
+from pykotor.common.misc import decode_bytes_with_fallbacks, find_best_8bit_encoding
 from pykotor.tools.path import Path
 
 if TYPE_CHECKING:
@@ -541,7 +542,7 @@ class BinaryReader:
     def read_string(
         self,
         length: int,
-        encoding: str = "windows-1252",
+        encoding: str | None = "windows-1252",
     ) -> str:
         """Reads a string from the stream with the specified length. Any null bytes and characters proceeding a null byte
         are trimmed from the final value and any unknown characters are ignored.
@@ -549,7 +550,7 @@ class BinaryReader:
         Args:
         ----
             length: Amount of character to read.
-            encoding: Encoding of string to read.  If not specified, will default to 'windows-1252'
+            encoding: Encoding of string to read.  If not specified, will default to 'windows-1252'. If set to None, will autodetect using charset_normalizer.
 
         Returns:
         -------
@@ -557,7 +558,7 @@ class BinaryReader:
         """
         self.exceed_check(length)
         string_byte_data = self._stream.read(length)
-        string = string_byte_data.decode(encoding, errors="ignore")
+        string = decode_bytes_with_fallbacks(string_byte_data, encoding=encoding, errors="ignore")
         if "\0" in string:
             string = string[: string.index("\0")].rstrip("\0")
             string = string.replace("\0", "")
@@ -989,7 +990,7 @@ class BinaryWriter(ABC):
     def write_string(
         self,
         value: str,
-        encoding: str = "windows-1252",
+        encoding: str | None = "windows-1252",
         errors: str = "errors",
         *,
         big: bool = False,
@@ -1003,7 +1004,7 @@ class BinaryWriter(ABC):
         Args:
         ----
             value: The string to be written.
-            encoding: The string encoding.
+            encoding: The string encoding. If not set, will use the default "windows-1252". If set to None, will autodetect using charset_normalizer.
             prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
             big: Write the prefix length integer as big endian.
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
@@ -1364,7 +1365,7 @@ class BinaryWriterFile(BinaryWriter):
     def write_string(
         self,
         value: str,
-        encoding: str = "windows-1252",
+        encoding: str | None = "windows-1252",
         errors: str = "strict",
         *,
         big: bool = False,
@@ -1378,7 +1379,7 @@ class BinaryWriterFile(BinaryWriter):
         Args:
         ----
             value: The string to be written.
-            encoding: The encoding of the string to be written.
+            encoding: The encoding of the string to be written. If not set, will default to "windows-1252". If set to None, will autodetect using charset_normalizer.
             prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
             big: Write the prefix length integer as big endian.
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
@@ -1409,7 +1410,10 @@ class BinaryWriterFile(BinaryWriter):
             while len(value) < string_length:
                 value += padding
             value = value[:string_length]
-        self._stream.write(value.encode(encoding, errors=errors))
+        if encoding is None:
+            self._stream.write(value.encode(find_best_8bit_encoding(value) or "windows-1252", errors=errors))
+        else:
+            self._stream.write(value.encode(encoding, errors=errors))
 
     def write_line(
         self,
@@ -1837,7 +1841,7 @@ class BinaryWriterBytearray(BinaryWriter):
     def write_string(
         self,
         value: str,
-        encoding: str = "windows-1252",
+        encoding: str | None = "windows-1252",
         errors: str = "strict",
         *,
         big: bool = False,
@@ -1851,6 +1855,7 @@ class BinaryWriterBytearray(BinaryWriter):
         Args:
         ----
             value: The string to be written.
+            encoding: The encoding to convert to bytes. Defaults to "windows-1252". If None, will autodetect the best 8-bit encoding.
             prefix_length: The number of bytes for the string length prefix. Valid options are 0, 1, 2 and 4.
             big: Write the prefix length integer as big endian.
             string_length: Fixes the string length to this size, truncating or padding where necessary. Ignores if -1.
@@ -1904,8 +1909,11 @@ class BinaryWriterBytearray(BinaryWriter):
 
         self._encode_val_and_update_position(line, "ascii")
 
-    def _encode_val_and_update_position(self, value: str, encoding: str, errors: str = "strict"):
-        encoded = value.encode(encoding, errors=errors)
+    def _encode_val_and_update_position(self, value: str, encoding: str | None, errors: str = "strict"):
+        if encoding is None:
+            encoded = value.encode(find_best_8bit_encoding(value) or "windows-1252", errors=errors)
+        else:
+            encoded = value.encode(encoding, errors=errors)
         self._ba[self._position : self._position + len(encoded)] = encoded
         self._position += len(encoded)
 

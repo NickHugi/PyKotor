@@ -1,22 +1,22 @@
 from unittest import TestCase
 
-from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.are import construct_are, dismantle_are
+from pykotor.resource.formats.gff import read_gff, GFF
+from pykotor.resource.generics.are import ARE, construct_are, dismantle_are
 
 TEST_FILE = "tests/files/test.are"
 
 
 class TestARE(TestCase):
-    def test_io(self):
-        gff = read_gff(TEST_FILE)
-        are = construct_are(gff)
+    def test_io(self) -> None:
+        gff: GFF = read_gff(TEST_FILE)
+        are: ARE = construct_are(gff)
         self.validate_io(are)
 
         gff = dismantle_are(are)
         are = construct_are(gff)
         self.validate_io(are)
 
-    def validate_io(self, are):
+    def validate_io(self, are: ARE) -> None:
         self.assertEqual(0, are.unused_id)
         self.assertEqual(0, are.creator_id)
         self.assertEqual("Untitled", are.tag)

@@ -58,6 +58,7 @@ class NSSEditor(Editor):
         super().__init__(parent, "Script Editor", "script", supported, supported, installation)
 
         from toolset.uic.editors.nss import Ui_MainWindow
+
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self._setupMenus()
@@ -126,7 +127,7 @@ class NSSEditor(Editor):
 
     def build(self) -> tuple[bytes, bytes] | None:
         if self._restype.NSS:
-            return self.ui.codeEdit.toPlainText().encode(), b""
+            return self.ui.codeEdit.toPlainText().encode(encoding="windows-1252"), b""
         if self._restype.NCS:
             compileScript(self.ui.codeEdit.toPlainText(), self._installation.tsl)
         return None
@@ -235,7 +236,7 @@ class NSSEditor(Editor):
 
         if insertion:
             index = self.ui.codeEdit.textCursor().position()
-            inserted = self.ui.codeEdit.toPlainText()[index-1:index]
+            inserted = self.ui.codeEdit.toPlainText()[index - 1 : index]
             text = self.ui.codeEdit.toPlainText()[:index]
 
             startBrace = text.count("{")
@@ -312,8 +313,9 @@ class CodeEditor(QPlainTextEdit):
             if block.isVisible() and bottom >= e.rect().top():
                 number = str(blockNumber + 1)
                 painter.setPen(QColor(140, 140, 140))
-                painter.drawText(0, int(top), self._lineNumberArea.width(), self.fontMetrics().height(),
-                                 QtCore.Qt.AlignCenter, number)
+                painter.drawText(
+                    0, int(top), self._lineNumberArea.width(), self.fontMetrics().height(), QtCore.Qt.AlignCenter, number
+                )
 
             block = block.next()
             top = bottom
@@ -364,8 +366,25 @@ class CodeEditor(QPlainTextEdit):
 
 
 class SyntaxHighlighter(QSyntaxHighlighter):
-    KEYWORDS: ClassVar[list[str]] = ["return", "float", "int", "object", "location", "void", "effect", "action", "string", "vector",
-                "talent", "if", "for", "while", "#include", "TRUE", "FALSE"]
+    KEYWORDS: ClassVar[list[str]] = [
+        "return",
+        "float",
+        "int",
+        "object",
+        "location",
+        "void",
+        "effect",
+        "action",
+        "string",
+        "vector",
+        "talent",
+        "if",
+        "for",
+        "while",
+        "#include",
+        "TRUE",
+        "FALSE",
+    ]
 
     OPERATORS: ClassVar[list[str]] = ["=", "==", "!=", "<", "<=", ">", ">=", "!", "\\+", "-", "/", "<<", ">>", "\\&", "\\|"]
 
