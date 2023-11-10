@@ -10,7 +10,7 @@ pip install pykotor
 
 ## Requirements
 PyKotor supports any Python version within 3.7 through 3.12. See requirements.txt for additional pip dependencies.
-PyKotor is supported on most operating systems, including many Mac OS's and Linux.
+PyKotor is supported on most operating systems, including Mac OS and Linux.
 
 ## Example Usage
 Simple example of loading data from a game directory, searching for a specific texture and exporting it to the TGA format.
