@@ -21,7 +21,7 @@ class BWMEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
-        cls.INSTALLATION = HTInstallation(os.environ.get("K1_PATH"), "", False, main_window=None)
+        cls.INSTALLATION = HTInstallation(os.environ.get("K1_PATH"), "", False, None)
 
     def setUp(self) -> None:
         self.app = QApplication([])
