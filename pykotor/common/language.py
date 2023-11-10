@@ -7,6 +7,8 @@ from typing import Any
 
 class Language(IntEnum):
     """Language IDs recognized by both the games."""
+    UNKNOWN = -1
+
 
     ENGLISH = 0
     FRENCH = 1
@@ -30,8 +32,8 @@ class Language(IntEnum):
             return NotImplemented
 
         if value != 0x7FFFFFFF:  # 0x7FFFFFFF is unset/disabled/unused
-            print(f"Language integer not found: {value}")
-        return Language.ENGLISH
+            print(f"Language integer not known: {value}")
+        return Language.UNKNOWN
 
     def get_encoding(self):
         """Get the encoding for the specified language."""
@@ -48,6 +50,8 @@ class Language(IntEnum):
             return "gb18030"
         if self == Language.JAPANESE:
             return "shift_jis"
+        if self == Language.UNKNOWN:
+            return None
         msg = f"No encoding defined for language: {self.name}"
         raise ValueError(msg)
 
