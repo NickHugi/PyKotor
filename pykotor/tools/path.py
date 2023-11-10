@@ -219,7 +219,7 @@ class BasePurePath:
             return NotImplemented
         if not extension.startswith("."):
             extension = f".{extension}"
-        return self.__class__(str(self) + extension)
+        return self._create_instance(str(self) + extension)
 
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
         # If case sensitivity is not required, normalize the self string and the text to lower case
@@ -236,7 +236,6 @@ class BasePurePath:
 
         # Utilize Python's built-in endswith method
         return self_str.endswith(text)
-
 
     @staticmethod
     def _fix_path_formatting(str_path: str, slash=os.sep) -> str:
@@ -266,6 +265,7 @@ class BasePurePath:
         # Strip any trailing slashes, don't call rstrip if the formatted path == "/"
         return formatted_path if len(formatted_path) == 1 else formatted_path.rstrip(slash)
 
+
 class PurePath(BasePurePath, pathlib.PurePath):
     # pylint: disable-all
     _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore[attr-defined]
@@ -277,6 +277,7 @@ class PurePosixPath(BasePurePath, pathlib.PurePosixPath):
 
 class PureWindowsPath(BasePurePath, pathlib.PureWindowsPath):
     pass
+
 
 class BasePath(BasePurePath):
     # Safe rglob operation
@@ -554,8 +555,10 @@ KOTOR2RegOptions = [
     (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2", "Path"),
 ]
 
+
 def get_default_game_paths():
     from pykotor.common.misc import Game
+
     return {
         "Windows": {
             Game.K1: [
@@ -606,6 +609,7 @@ def get_default_game_paths():
             ],
         },
     }
+
 
 def locate_game_paths() -> dict[Game, list[CaseAwarePath]]:
     from pykotor.common.misc import Game
