@@ -15,7 +15,7 @@ jobs:
         python-version: '3.7'
 
     - name: Install pykotor
-      run: pip install . -y --verbose
+      run: pip install . --verbose
 
     - name: Test pykotor installation
       run: python -c "import pykotor"
@@ -34,9 +34,6 @@ jobs:
 
     - name: Test pykotor toolkit dep
       run: python -c "import toolset"
-
-    - name: Uninstall toolkit
-      run: pip uninstall ./toolkit -y --verbose
 
     - name: Uninstall pykotor
       run: pip uninstall pykotor -y --verbose
