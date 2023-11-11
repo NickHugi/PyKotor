@@ -169,7 +169,7 @@ def diff_data(
             return log_output(message)  # type: ignore[func-returns-value]
         if twoda1 and twoda2:
             diff_2da = Diff2DA(twoda2, twoda1, log_output)
-            if not diff_2da.is_same():
+            if not diff_2da.compare_2da():
                 log_output_with_separator(f"^ '{where}': 2DA is different ^")
                 return False
         return True
@@ -198,7 +198,7 @@ def diff_data(
             return log_output(message)  # type: ignore[func-returns-value]
         if tlk1 and tlk2:
             diff = DiffTLK(tlk1, tlk2, log_output)
-            if not diff.is_same():
+            if not diff.compare_tlk():
                 log_output_with_separator(f"^ '{where}': TLK is different ^", surround=True)
                 return False
         return True
@@ -227,7 +227,7 @@ def diff_data(
             return True
         if lip1 and lip2:
             diff_lip = DiffLIP(lip1, lip2, log_output)
-            if not diff_lip.is_same():
+            if not diff_lip.compare_lip():
                 message = f"^ '{where}': LIP is different ^"
                 return log_output_with_separator(message)
         return True

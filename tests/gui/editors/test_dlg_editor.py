@@ -26,7 +26,7 @@ class DLGEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
-        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
+        cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)  # type: ignore[reportGeneralTypeIssues]
 
     def setUp(self) -> None:
         from toolset.gui.editors.dlg import DLGEditor

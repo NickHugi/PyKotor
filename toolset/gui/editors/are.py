@@ -22,6 +22,23 @@ if TYPE_CHECKING:
 
 class AREEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+        """Initialize the ARE Editor window
+        Args:
+            parent: {QWidget}: Parent widget
+            installation: {HTInstallation}: Installation object
+        Returns: 
+            None: Does not return anything
+        Processing Logic:
+            - Initialize superclass with supported types
+            - Set window size
+            - Create ARE object
+            - Load UI from designer file
+            - Set up menus
+            - Connect signals
+            - Set up installation
+            - Configure color editors
+            - Create new empty ARE.
+        """
         supported = [ResourceType.ARE]
         super().__init__(parent, "ARE Editor", "none", supported, supported, installation)
         self.resize(400, 250)
@@ -46,6 +63,16 @@ class AREEditor(Editor):
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
 
     def _setupInstallation(self, installation: HTInstallation) -> None:
+        """Set up installation details
+        Args:
+            installation: {HTInstallation object}: Installation details
+        Returns:
+            None: No return value
+        - Set installation object to internal variable
+        - Set installation name to name edit field
+        - Get camera styles from htinstallation and populate dropdown
+        - Show/hide dirt, grass, snow, rain, lightning UI elements.
+        """
         self._installation = installation
 
         self.ui.nameEdit.setInstallation(installation)
@@ -69,6 +96,17 @@ class AREEditor(Editor):
         self._loadARE(are)
 
     def _loadARE(self, are: ARE) -> None:
+        """Loads area data into UI widgets
+        Args:
+            are: ARE - Area object
+        Loads area data:
+        - Sets basic properties like name, tag, camera style
+        - Sets map properties like points, zoom, axis
+        - Sets weather properties like fog, lighting, wind
+        - Sets terrain properties like grass, dirt
+        - Sets script properties like onEnter, onExit
+        - Sets comment text.
+        """
         self._are = are
 
         # Basic
@@ -145,6 +183,19 @@ class AREEditor(Editor):
         self.ui.commentsEdit.setPlainText(are.comment)
 
     def build(self) -> tuple[bytes, bytes]:
+        """Builds the ARE data from UI controls.
+
+        Args:
+        ----
+            self: The ARE editor object
+        Returns:
+            tuple[bytes, bytes]: The ARE data and log
+        Processing Logic:
+            - Reads values from UI controls like name, tag, camera style etc
+            - Sets properties like fog, weather, terrain etc
+            - Writes ARE data to bytearray
+            - Returns ARE data and empty log
+        """
         are = self._are
 
         # Basic
@@ -225,6 +276,17 @@ class AREEditor(Editor):
         self._loadARE(ARE())
 
     def changeColor(self, colorSpin: LongSpinBox) -> None:
+        """Changes the color selection.
+
+        Args:
+        ----
+            colorSpin: LongSpinBox widget to update color value
+        Returns:
+            None: No value is returned
+        - Opens a QColorDialog to select a new color
+        - Converts the selected QColor to a Color object
+        - Sets the colorSpin value to the BGR integer of the selected color.
+        """
         qcolor = QColorDialog.getColor(QColor(colorSpin.value()))
         color = Color.from_bgr_integer(qcolor.rgb())
         colorSpin.setValue(color.bgr_integer())

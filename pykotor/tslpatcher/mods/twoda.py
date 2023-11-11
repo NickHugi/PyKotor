@@ -37,6 +37,21 @@ class Target:
             raise ValueError(msg)
 
     def search(self, twoda: TwoDA) -> TwoDARow | None:
+        """Searches a TwoDA for a row matching the target.
+
+        Args:
+        ----
+            twoda: TwoDA - The TwoDA to search
+            target_type: TargetType - The type of target to search for
+        Returns:
+            TwoDARow | None - The matching row if found, else None
+        Processing Logic:
+            - Checks target_type and searches twoda accordingly
+            - For row index, gets row directly
+            - For row label, finds row by label
+            - For label column, checks for label column, then iterates rows to find match
+            - Returns matching row or None.
+        """
         source_row: TwoDARow | None = None
         if self.target_type == TargetType.ROW_INDEX:
             source_row = twoda.get_row(int(self.value))
@@ -158,10 +173,21 @@ class Modify2DA(ABC):
         memory: PatcherMemory,
         twoda: TwoDA,
     ) -> tuple[dict[str, str], dict[int, str], str | None, str | None]:
-        """Split the modifiers dictionary into a tuple containing three values:
-        The dictionary mapping column headers to new values,
-        The 2DA memory values if not available,
-        The row label or None.
+        """Splits modifiers into categories
+        Args:
+            modifiers: Dict[str, str]: Modifiers dictionary
+            memory: PatcherMemory: Patcher memory object
+            twoda: TwoDA: TwoDA object
+        Returns:
+            new_values: Dict[str, str]: Split modifiers
+            memory_values: Dict[int, str]: 2DA memory values
+            row_label: str|None: Row label value
+            new_row_label: str|None: New row label value
+        - Updates special value references like StrRef and 2DAMEMORY
+        - Breaks apart values into new_values, memory_values, row_label, new_row_label categories
+        - new_values contains normal modifiers
+        - memory_values contains 2DA memory references 
+        - row_label and new_row_label contain those single values.
         """
         new_values: dict[str, str] = {}
         memory_values: dict[int, str] = {}
@@ -283,6 +309,22 @@ class AddRow2DA(Modify2DA):
         self._row: TwoDARow | None = None
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+        """Applies an AddRow patch to a TwoDA.
+
+        Args:
+        ----
+            twoda: TwoDA - The Two Dimensional Array to apply the patch to.
+            memory: PatcherMemory - The memory context.
+
+        Returns:
+        -------
+            None: No value is returned.
+        Processing Logic:
+            - Finds the target row to apply the patch to based on an optional exclusive column
+            - If no target row is found, a new row is added
+            - The cells are unpacked and applied to the target row
+            - Any stored values are updated in the memory context.
+        """
         target_row = None
 
         if self.exclusive_column is not None:
@@ -353,6 +395,20 @@ class CopyRow2DA(Modify2DA):
         self._row: TwoDARow | None = None
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+        """Applies a CopyRow patch to a TwoDA.
+
+        Args:
+        ----
+            twoda: TwoDA - The TwoDA to apply the patch to
+            memory: PatcherMemory - The memory context
+        Returns: 
+            None
+        Processing Logic:
+            1. Searches for the source row in the TwoDA
+            2. Determines if an existing target row should be used or a new row added
+            3. Unpacks the cell values and updates/adds the target row
+            4. Stores any 2DA or TLK values in the memory context.
+        """
         source_row = self.target.search(twoda)
         target_row = None
         row_label = str(twoda.get_height()) if self.row_label is None else self.row_label
@@ -426,6 +482,21 @@ class AddColumn2DA(Modify2DA):
         self.store_2da: dict[int, str] = {} if store_2da is None else store_2da
 
     def apply(self, twoda: TwoDA, memory: PatcherMemory) -> None:
+        """Applies a AddColumn patch to a TwoDA.
+
+        Args:
+        ----
+            twoda: TwoDA - The TwoDA to apply the patcher to
+            memory: PatcherMemory - The memory object to store values
+        Returns:
+            None
+        Processing Logic:
+            - Adds a column to the TwoDA with the patcher header
+            - Sets the default value for all rows in the new column
+            - Sets values in the new column based on index lookups
+            - Sets values in the new column based on label lookups 
+            - Stores values from the TwoDA in the memory based on token IDs.
+        """
         twoda.add_column(self.header)
         for row in twoda:
             row.set_string(self.header, self.default)

@@ -32,6 +32,28 @@ class FileSearcher(QDialog):
             self.ui.installationSelect.addItem(name, installation)
 
     def accept(self) -> None:
+        """Submits search parameters and starts search.
+
+        Implicit Args:
+        ----
+            installation: {Installation object selected by user}
+            caseSensitive: {True if case sensitive search is checked, False otherwise} 
+            filenamesOnly: {True if filenames only search is checked, False otherwise}
+            text: {Search text entered by user}
+            searchCore: {True if core search is checked, False otherwise}
+            searchModules: {True if modules search is checked, False otherwise} 
+            searchOverride: {True if override search is checked, False otherwise}
+            checkTypes: {List of selected resource types}.
+
+        Returns
+        -------
+            None
+        {Processes user search parameters by:
+            - Getting selected installation
+            - Getting search options from UI
+            - Mapping checked resource types to list
+            - Calling search function to start search}.
+        """
         installation = self.ui.installationSelect.currentData()
         caseSensitive = self.ui.caseSensitiveRadio.isChecked()
         filenamesOnly = self.ui.filenamesOnlyCheck.isChecked()
@@ -66,6 +88,24 @@ class FileSearcher(QDialog):
 
     def search(self, installation: HTInstallation, caseSensitive: bool, filenamesOnly: bool, text: str,
                searchCore: bool, searchModules: bool, searchOverride: bool, checkTypes: list[ResourceType]) -> None:
+        """Searches files and resources for text
+        Args:
+            installation: HTInstallation - Installation object
+            caseSensitive: bool - Case sensitivity flag
+            filenamesOnly: bool - Search filenames only flag
+            text: str - Search text
+            searchCore: bool - Search core flag
+            searchModules: bool - Search modules flag
+            searchOverride: bool - Search override flag
+            checkTypes: list[ResourceType] - Resource types to check
+        Returns: 
+            None - No return, updates results attribute
+        Processing Logic:
+            - Filters resources to search based on flags
+            - Defines search function to check resources
+            - Applies search function asynchronously to resources
+            - Stores results in self.results.
+        """
         searchIn: list[FileResource] = []
         results = []
 
@@ -99,6 +139,20 @@ class FileSearcher(QDialog):
 
 class FileResults(QDialog):
     def __init__(self, parent: QWidget, results: list[FileResource], installation: HTInstallation):
+        """Initialize the search results dialog.
+
+        Args:
+        ----
+            parent (QWidget): Parent widget
+            results (list[FileResource]): List of search results
+            installation (HTInstallation): HT installation object
+        Returns:
+            None: Does not return anything
+        - Populate the list widget with search results
+        - Connect button click signals to accept and open actions  
+        - Save search results and installation object as member variables
+        - Sort results alphabetically.
+        """
         super().__init__(parent)
 
         from toolset.uic.dialogs.search_result import Ui_Dialog
@@ -121,11 +175,40 @@ class FileResults(QDialog):
         self.ui.resultList.sortItems(QtCore.Qt.AscendingOrder)
 
     def accept(self) -> None:
+        """Accepts the current selection from the result list.
+
+        Args:
+        ----
+            self: The object instance.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        Processes the current selection:
+            - Gets the current item from the result list
+            - Gets the data associated with the item if it exists
+            - Sets the selection attribute to the data
+            - Calls the parent accept method.
+        """
         item = self.ui.resultList.currentItem()
         self.selection = item.data(QtCore.Qt.UserRole) if item is not None else None
         super().accept()
 
     def open(self):  # noqa: A003
+        """Opens the current item in the result list.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        - Gets the current item from the result list
+        - Checks if an item is selected
+        - Gets the FileResource object from the item's data
+        - Opens the resource editor window with the resource's details.
+        """
         item = self.ui.resultList.currentItem()
         if item:
             resource: FileResource = item.data(QtCore.Qt.UserRole)

@@ -23,6 +23,20 @@ _TRANS_EDGE_ROLE = QtCore.Qt.UserRole + 2
 
 class BWMEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+        """Initializes the walkmesh painter window
+        Args:
+            parent: Optional[QWidget]: The parent widget
+            installation: Optional[HTInstallation]: The installation
+        Returns:
+            None
+        Initializes UI components and connects signals:
+            - Sets up UI from designer file
+            - Sets up menus
+            - Sets up signal connections
+            - Initializes default material colors
+            - Rebuilds material dropdown
+            - Creates new empty walkmesh.
+        """
         supported = [ResourceType.WOK, ResourceType.DWK, ResourceType.PWK]
         super().__init__(parent, "Walkmesh Painter", "walkmesh", supported, supported, installation)
 
@@ -71,6 +85,18 @@ class BWMEditor(Editor):
         QShortcut("-", self).activated.connect(lambda: self.ui.renderArea.cameraZoom(-2))
 
     def rebuildMaterials(self) -> None:
+        """Rebuild the material list
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        - Clear existing items from the material list
+        - Loop through all material colors
+        - Create image from color and set as icon
+        - Format material name as title 
+        - Create list item with icon and text
+        - Add item to material list.
+        """
         self.ui.materialList.clear()
         for material in self.materialColors:
             color = self.materialColors[material]
@@ -82,6 +108,20 @@ class BWMEditor(Editor):
             self.ui.materialList.addItem(item)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+        """Loads a resource into the editor.
+
+        Args:
+        ----
+            filepath: The path to the resource file
+            resref: The resource reference
+            restype: The resource type
+            data: The raw resource data
+
+        - Reads the bwm data from the resource data
+        - Sets the loaded bwm on the render area
+        - Clears any existing transition items
+        - Loops through faces and adds a transition item for each transition
+        """
         super().load(filepath, resref, restype, data)
 
         self._bwm = read_bwm(data)
@@ -109,6 +149,19 @@ class BWMEditor(Editor):
         super().new()
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+        """Handles mouse movement events in the viewer
+        Args:
+            screen: Vector2 - Current mouse screen position
+            delta: Vector2 - Mouse movement since last event
+            buttons: set[int] - Currently pressed mouse buttons
+            keys: set[int] - Currently pressed keyboard keys
+        Returns: 
+            None
+        - Converts mouse position to world and render coordinates
+        - Pans/rotates camera if Ctrl + mouse buttons pressed
+        - Changes face material if left button pressed
+        - Displays coordinates, face index in status bar.
+        """
         world = self.ui.renderArea.toWorldCoords(screen.x, screen.y)
         worldData = self.ui.renderArea.toWorldDelta(delta.x, delta.y)
         face = self._bwm.faceAt(world.x, world.y)
@@ -133,6 +186,13 @@ class BWMEditor(Editor):
             self.ui.renderArea.zoomInCamera(delta.y / 50)
 
     def changeFaceMaterial(self, face: BWMFace):
+        """Change material of a face
+        Args:
+            face (BWMFace): The face object to change material
+        - Check if a face is provided. Perhaps this can be called from an ambiguous/generalized function/event somewhere.
+        - Check if the current face material is different than the selected material
+        - Assign the selected material to the provided face.
+        """
         newMaterial = self.ui.materialList.currentItem().data(QtCore.Qt.UserRole)
         if face and face.material != newMaterial:
             face.material = newMaterial

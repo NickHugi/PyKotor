@@ -13,6 +13,26 @@ if TYPE_CHECKING:
 
 
 def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader, offset: int, names: list[str]) -> Node:
+    """Loads a node from the binary model data.
+
+    Args:
+    ----
+        scene: {Scene}: The scene the node belongs to
+        node: {Node}: Optional parent node
+        mdl: {BinaryReader}: Reader for the model data
+        mdx: {BinaryReader}: Reader for the mesh data
+        offset: {int}: Offset to read node data from
+        names: {list}: List of node name strings
+    Returns:
+        node: {Node}: The loaded node
+
+    Processing Logic:
+        - Reads node data from the model file at the given offset
+        - Sets node properties like position, rotation, name
+        - Loads child nodes recursively
+        - Loads mesh data if node has a renderable mesh
+        - Returns the fully constructed node
+    """
     mdl.seek(offset)
     node_type = mdl.read_uint16()
     mdl.read_uint16()  # supernode id
@@ -103,6 +123,22 @@ def _load_node(scene, node: Optional[Node], mdl: BinaryReader, mdx: BinaryReader
 
 
 def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
+    """Loads a model from binary files into a scene graph node.
+
+    Args:
+    ----
+        scene: Scene - The scene to load the model into
+        mdl: BinaryReader - The binary reader for the .mdl file 
+        mdx: BinaryReader - The binary reader for the .mdx file
+    Returns:
+        Model - The loaded model
+    Processing Logic:
+        - Seeks to the offset table in the .mdl file
+        - Reads name count and offset to name offsets table
+        - Reads name offsets and extracts names
+        - Loads root node by calling _load_node recursively
+        - Returns constructed Model instance.
+    """
     mdl.seek(40)
     offset = mdl.read_uint32()
 
@@ -121,7 +157,22 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
 
 
 def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
-    """Returns a model instance that has meshes with the same textures merged together."""
+    """Returns a model instance that has meshes with the same textures merged together.
+    Loads and stitches together a gltf model from binary files
+    Args:
+        scene: {Scene}: The scene to add the model to
+        mdl: {BinaryReader}: Reader for the binary model file 
+        mdx: {BinaryReader}: Reader for the binary mesh data file
+    Returns:
+        {Model}: The loaded and stitched model
+    Processing Logic:
+        - Parses header data from mdl to get node names and offsets
+        - Builds a list of node offsets that contain renderable meshes
+        - Merges meshes that use the same materials
+        - Extracts vertex data from mdx and transforms based on node transforms
+        - Creates a single mesh for each unique material
+        - Assembles the full model hierarchy.
+    """
     root = Node(scene, None, "root")
 
     mdl.seek(40)

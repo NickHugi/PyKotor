@@ -135,6 +135,20 @@ def _load_hand_uti(
     hand_resref: str,
     baseitems: TwoDA | None,
 ):
+    """Loads the hand UTI model variation from the base item row.
+
+    Args:
+    ----
+        installation: Installation - The installation object
+        hand_resref: str - The resref of the hand UTI
+        baseitems: TwoDA | None - The base items table
+    Returns:
+        default_model: str - The default model string with model variation substituted
+    - The function reads the UTI data from the provided installation
+    - It looks up the default model string for the base item in the base items table  
+    - It replaces the "001" placeholder in the default model with the zero padded model variation from the UTI
+    - The formatted default model is returned.
+    """
     hand_uti = read_uti(installation.resource(hand_resref, ResourceType.UTI).data)
     default_model = baseitems.get_row(hand_uti.base_item).get_string("defaultmodel")
     return default_model.replace(

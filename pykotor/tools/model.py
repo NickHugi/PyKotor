@@ -106,6 +106,20 @@ def list_textures(
 def list_lightmaps(
     data: bytes,
 ) -> list[str]:
+    """Extracts lightmap names from a Unity lightmap data file.
+
+    Args:
+    ----
+        data: {Bytes containing lightmap data}.
+
+    Returns:
+    -------
+        lightmaps: {A list of unique lightmap names}
+    - The function reads the lightmap data file using a BinaryReader
+    - It parses the node tree to extract all lightmap names
+    - Duplicate and empty names are filtered out
+    - The unique lightmap names are returned as a list.
+    """
     lightmaps = []
 
     with BinaryReader.from_bytes(data, 12) as reader:

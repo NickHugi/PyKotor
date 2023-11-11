@@ -65,6 +65,18 @@ class MDLMDXTuple(NamedTuple):
 
 
 def load_kits(path: os.PathLike | str) -> list[Kit]:
+    """Loads kits from a given path
+    Args:
+        path: os.PathLike | str: The path to load kits from
+    Returns:
+        list[Kit]: A list of loaded Kit objects
+    Processing Logic:
+        - Loops through files in the path to load kit data
+        - Loads kit JSON and populates Kit object
+        - Loads always, textures, lightmaps, skyboxes, doors, components
+        - Populates KitComponent hooks from JSON
+        - Adds loaded Kit to return list.
+    """
     kits = []
 
     kits_path = Path(path)

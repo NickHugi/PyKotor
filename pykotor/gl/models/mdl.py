@@ -56,6 +56,19 @@ class Model:
         return all_nodes
 
     def box(self) -> tuple[vec3, vec3]:
+        """Calculates bounding box of the scene
+        Args:
+            self: {Node to calculate bounding box for}.
+
+        Returns
+        -------
+            tuple[vec3, vec3]: {Minimum and maximum points of bounding box}
+        Processing Logic:
+            - Initialize minimum and maximum points to extreme values
+            - Recursively calculate bounding box of each child node
+            - Expand bounding box by 0.1 units in each direction
+            - Return minimum and maximum points of final bounding box.
+        """
         min_point = vec3(100000, 100000, 100000)
         max_point = vec3(-100000, -100000, -100000)
         self._box_rec(self.root, mat4(), min_point, max_point)
@@ -70,6 +83,25 @@ class Model:
         return min_point, max_point
 
     def _box_rec(self, node: Node, transform: mat4, min_point: vec3, max_point: vec3) -> None:
+        """Calculates bounding box of node and its children recursively.
+        Call the 'box' function to get started here, don't call this directly.
+
+        Args:
+        ----
+            node: {Node object whose bounding box is calculated} 
+            transform: {Transformation matrix to apply on node}
+            min_point: {vec3 to store minimum point of bounding box}
+            max_point: {vec3 to store maximum point of bounding box}.
+
+        Returns:
+        -------
+            None: {No value is returned}
+        Processing Logic:
+            - Apply transformation on node position and rotation
+            - Iterate through vertices of node mesh if present
+            - Transform vertices and update bounding box points
+            - Recursively call function for each child node.
+        """
         transform = transform * glm.translate(node._position)
         transform = transform * glm.mat4_cast(node._rotation)
 
@@ -180,6 +212,29 @@ class Node:
 class Mesh:
     def __init__(self, scene, node, texture, lightmap, vertex_data, element_data, block_size, data_bitflags,
                  vertex_offset, normal_offset, texture_offset, lightmap_offset):
+        """Initializes a Mesh object
+        Args:
+            scene: Scene - The scene object
+            node: Node - The node object
+            texture: str - The texture path
+            lightmap: str - The lightmap path 
+            vertex_data: list - The vertex data
+            element_data: list - The element data
+            block_size: int - The block size
+            data_bitflags: int - The data bitflags
+            vertex_offset: int - The vertex offset
+            normal_offset: int - The normal offset 
+            texture_offset: int - The texture offset
+            lightmap_offset: int - The lightmap offset
+        Returns:
+            None
+        Processing Logic:
+            - Generates VAO and VBO
+            - Binds vertex and element data to VBO and EBO
+            - Enables vertex attributes based on bitflags
+            - Sets texture and lightmap if present
+            - Unbinds buffers.
+        """
         self._scene: Scene = scene
         self._node: Node = node
 
@@ -234,6 +289,21 @@ class Mesh:
 
 class Cube:
     def __init__(self, scene: Scene, min_point: vec3 | None = None, max_point: vec3 | None = None):
+        """Initializes a cube mesh
+        Args:
+            scene: Scene: The scene object
+            min_point: vec3 | None: The minimum point of the cube (default is (-1, -1, -1))  
+            max_point: vec3 | None: The maximum point of the cube (default is (1, 1, 1)).
+
+        Returns
+        -------
+            None: Does not return anything
+        Processing Logic:
+            - Sets default values for min_point and max_point if not provided
+            - Generates vertex and element arrays for the cube mesh
+            - Binds VAO, VBO and EBO buffers and uploads data
+            - Enables vertex attribute arrays.
+        """
         self._scene = scene
 
         min_point = vec3(-1.0, -1.0, -1.0) if min_point is None else min_point
@@ -294,6 +364,21 @@ class Cube:
 
 class Boundary:
     def __init__(self, scene: Scene, vertices: list[Vector3]):
+        """Initializes a mesh from vertices.
+
+        Args:
+        ----
+            scene: Scene - The scene to add this mesh to
+            vertices: list[Vector3] - The vertices of the mesh
+        Returns:
+            None
+        Processing Logic:
+            - Build normalized data from vertices
+            - Generate VAO, VBO, EBO OpenGL buffers
+            - Populate VBO with vertex data
+            - Populate EBO with element indices
+            - Configure vertex attributes.
+        """
         self._scene = scene
 
         vertices, elements = self._build_nd(vertices)
@@ -318,6 +403,18 @@ class Boundary:
 
     @classmethod
     def from_circle(cls, scene: Scene, radius: float, smoothness: int = 10) -> Boundary:
+        """Generates a circular boundary from a circle
+        Args:
+            scene: Scene - The scene to add the boundary to
+            radius: float - The radius of the circle
+            smoothness: int = 10 - The number of vertices used to approximate the circle
+        Returns:
+            Boundary - The generated circular boundary
+        Processing Logic:
+            - Calculate vertex positions around the circle at intervals of smoothness
+            - Add vertices rotating around the circle four times 
+            - Return a new Boundary instance with the calculated vertices.
+        """
         vertices = []
         for i in range(smoothness):
             x = math.cos(i/smoothness*math.pi/2)

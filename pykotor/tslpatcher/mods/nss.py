@@ -21,6 +21,24 @@ class ModificationsNSS(PatcherModifications):
         self.action: str = "Compile"
 
     def apply(self, nss_bytes: bytes, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+        """Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the relevant data.
+
+        Args:
+        ----
+            nss_bytes: bytes: The bytes to patch.
+            memory: PatcherMemory: Memory references for patching. 
+            logger: PatchLogger: Logger for logging messages.
+            game: Game: The game being patched.
+
+        Returns:
+        -------
+            bytes: The patched bytes.
+        Processing Logic:
+            1. Decodes bytes to a string
+            2. Replaces #2DAMEMORY# tokens with values from PatcherMemory
+            3. Replaces #StrRef# tokens with values from PatcherMemory 
+            4. Compiles the patched string and encodes to bytes.
+        """
         source: str = decode_bytes_with_fallbacks(nss_bytes)
 
         match = re.search(r"#2DAMEMORY\d+#", source)

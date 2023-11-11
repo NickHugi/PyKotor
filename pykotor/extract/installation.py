@@ -532,6 +532,16 @@ class Installation:
         return None
 
     def game(self) -> Game:
+        """Determines the game object for the given save file path
+        Args:
+            self: The class instance
+        Returns:
+            Game: The determined Game object
+        - Check if game is already determined and stored in _game
+        - Determine the game by calling determine_game() method with path
+        - If game is determined, store it in _game and return
+        - If game is not determined, raise ValueError with message.
+        """
         if self._game is not None:
             return self._game
 
@@ -681,7 +691,10 @@ class Installation:
 
         Returns:
         -------
-            A list of LocationResult objects.
+            A list of LocationResult objects where the matching resources can be found.
+        - Constructs a query from the resource name and type
+        - Searches locations based on the order, capsules and folders
+        - Returns the matching locations for the given resource from the results
         """
         capsules = [] if capsules is None else capsules
         folders = [] if folders is None else folders

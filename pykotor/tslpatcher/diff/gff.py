@@ -57,6 +57,20 @@ def generate_diff_marker_line(index, length):
     return " " * index + "^" + " " * (length - index - 1)
 
 def compare_and_format(old_value, new_value):
+    """Compares and formats two values for diff display
+    Args:
+        old_value: The old value to compare
+        new_value: The new value to compare
+    Returns:
+        A tuple of formatted old and new values for diff display
+    Processing Logic:
+        - Converts old_value and new_value to strings and splits into lines
+        - Zips the lines to iterate in parallel
+        - Finds index of first differing character between lines
+        - Generates a diff marker line based on index
+        - Appends lines and marker lines to formatted outputs
+        - Joins lines with line separators and returns a tuple.
+    """
     old_text = str(old_value)
     new_text = str(new_value)
     old_lines = old_text.split("\n")

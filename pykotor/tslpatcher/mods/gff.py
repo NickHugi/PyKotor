@@ -152,6 +152,24 @@ class AddStructToListGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
+        """Adds a new struct to a list.
+
+        Args:
+        ----
+            root_struct: The root struct to navigate and modify.
+            memory: The memory object to read/write values from. 
+            logger: The logger to log errors or warnings.
+
+        Returns:
+        -------
+            None
+
+        Processing Logic:
+        1. Navigates to the target list container using the provided path.
+        2. Checks if the navigated container is a list, otherwise logs an error.
+        3. Creates a new struct and adds it to the list.
+        4. Applies any additional field modifications specified in the modifiers.
+        """
         list_container: GFFList | None = None
         if self.path.name == ">>##INDEXINLIST##<<":
             self.path = self.path.parent  # idk why conditional parenting is necessary but it works
@@ -206,6 +224,24 @@ class AddFieldGFF(ModifyGFF):
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
+        """Adds a new field to a GFF struct.
+
+        Args:
+        ----
+            root_struct: GFFStruct - The root GFF struct to navigate and modify.
+            memory: PatcherMemory - The memory state to read values from. 
+            logger: PatchLogger - The logger to record errors to.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Navigates to the specified container using the provided path.
+            - Gets the value to set from the provided value expression.
+            - Maps the field type to the appropriate setter method.
+            - Sets the new field on the container.
+            - Applies any modifier fields recursively.
+        """
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path)
         if isinstance(navigated_container, GFFStruct):
             struct_container = navigated_container

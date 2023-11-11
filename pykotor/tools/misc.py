@@ -74,10 +74,6 @@ def is_storage_file(filename: str):
     return is_capsule_file(filename) or is_bif_file(filename)
 
 
-def case_insensitive_replace(s: str, old: str, new: str) -> str:
-    return re.sub(re.escape(old), new, s, flags=re.I)
-
-
 def universal_simplify_exception(e):
     error_name = type(e).__name__
     try:

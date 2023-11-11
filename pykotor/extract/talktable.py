@@ -67,11 +67,18 @@ class TalkTable:
 
         Args:
         ----
-            stringref: The entry id.
+            stringref: The entry id. The string reference to lookup the sound for
 
         Returns:
         -------
-            A ResRef.
+            ResRef: The sound resource reference
+        - Opens the binary file for reading
+        - Seeks to the sound entries offset
+        - Reads the number of sound entries
+        - Checks if the string reference is valid
+        - Extracts the sound resource reference if valid
+        - Closes the file reader
+        - Returns the sound resource reference
         """
         reader = BinaryReader.from_file(self._path)
         reader.seek(12)

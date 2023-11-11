@@ -7,7 +7,7 @@ class DiffLIP:
         self.new: LIP = new
         self.log = log_func
 
-    def is_same(self) -> bool:
+    def compare_lip(self) -> bool:
         ret = True
 
         # Check for differences in the length attribute

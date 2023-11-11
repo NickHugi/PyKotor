@@ -32,6 +32,19 @@ class JRLEditor(Editor):
     # the JRL object.
 
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+        """
+        Initializes the Journal Editor window
+        Args:
+            parent: {QWidget}: Parent widget
+            installation: {HTInstallation}: HTInstallation object
+        Returns: 
+            None: Does not return anything
+        - Sets up the UI from the designed form
+        - Initializes the JRL object and model  
+        - Connects menu and signal handlers
+        - Sets the installation if provided
+        - Displays an empty new journal by default
+        """
         supported = [ResourceType.JRL]
         super().__init__(parent, "Journal Editor", "journal", supported, supported, installation)
         self.resize(400, 250)
@@ -55,6 +68,19 @@ class JRLEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """
+        Setup signals for journal UI interactions
+        Args: 
+            self: {The class instance}: The class instance
+        Returns: 
+            None: No return value
+        Processing Logic:
+            - Connect selectionChanged signal on journal tree to onSelectionChanged handler
+            - Connect customContextMenuRequested signal on journal tree to onContextMenuRequested handler
+            - Connect doubleClicked signal on entry text edit to changeEntryText handler
+            - Connect various editingFinished and activated signals on category/entry fields to onValueUpdated handler to only trigger on user interaction
+            - Connect "Del" keyboard shortcut to onDeleteShortcut handler
+        """
         self.ui.journalTree.selectionChanged = self.onSelectionChanged
         self.ui.journalTree.customContextMenuRequested.connect(self.onContextMenuRequested)
 
@@ -88,6 +114,26 @@ class JRLEditor(Editor):
             self.ui.categoryPlanetSelect.addItem(text)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+        """
+        Load quest data from a file
+        Args:
+            filepath: Path or name of the file to load from
+            resref: Resource reference
+            restype: Resource type
+            data: Byte data of the file
+        Returns: 
+            None
+        - Read JRL data from byte data
+        - Clear existing model 
+        - Iterate through quests in JRL
+            - Create item for quest
+            - Refresh item with quest data
+            - Add to model
+        - Iterate through entries in quest
+           - Create item for entry
+           - Refresh item with entry data
+           - Add to quest item
+        """
         super().load(filepath, resref, restype, data)
 
         self._jrl = read_jrl(data)

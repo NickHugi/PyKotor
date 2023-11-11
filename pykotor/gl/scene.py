@@ -99,6 +99,19 @@ class Scene:
     SPECIAL_MODELS: ClassVar[list[str]] = ["waypoint", "store", "sound", "camera", "trigger", "encounter", "unknown"]
 
     def __init__(self, *, installation: Optional[Installation] = None, module: Optional[Module] = None):
+        """Initializes the renderer
+        Args:
+            installation: Installation: The installation to load resources from
+            module: Module: The active module
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Initializes OpenGL settings
+            - Sets up default textures, shaders, camera
+            - Loads 2DA tables from installation
+            - Hides certain object types by default
+            - Sets other renderer options.
+        """
         glEnable(GL_TEXTURE_2D)
         glEnable(GL_DEPTH_TEST)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -157,6 +170,17 @@ class Scene:
         self.table_baseitems = read_2da(installation.resource("baseitems", ResourceType.TwoDA, SEARCH_ORDER_2DA).data)
 
     def getCreatureRenderObject(self, instance: GITCreature, utc: Optional[UTC] = None) -> RenderObject:
+        """Generates a render object for a creature instance
+        Args:
+            instance: {Creature instance}: Creature instance to generate render object for
+            utc: {Optional timestamp}: Timestamp to use for generation or current time if None  
+        Returns:
+            RenderObject: Render object representing the creature
+        Processing Logic:
+        - Gets body, head, weapon and mask models/textures based on creature appearance
+        - Creates base render object and attaches head, hands and mask sub-objects  
+        - Catches exceptions and returns default "unknown" render object if model loading fails.
+        """
         try:
             if utc is None:
                 utc = self.module.creature(instance.resref.get()).resource()
@@ -226,6 +250,17 @@ class Scene:
         obj.children.append(rhand_obj)
 
     def buildCache(self, clear_cache: bool = False) -> None:
+        """Builds and caches game objects from the module
+        Args:
+            clear_cache (bool): Whether to clear the existing cache
+        Returns:
+            None
+        Processing Logic:
+            - Clear existing cache if clear_cache is True
+            - Delete objects matching identifiers in clearCacheBuffer
+            - Retrieve/update game objects from module
+            - Add/update objects in cache..
+        """
         if self.module is None:
             return
 
@@ -397,6 +432,22 @@ class Scene:
             del self.objects[obj]
 
     def render(self) -> None:
+        """Renders the scene
+        Args:
+            self: Renderer object containing scene data
+        Returns:
+            None: Does not return anything, renders directly to the framebuffer
+        Processing Logic:
+            - Clear color and depth buffers
+            - Enable/disable backface culling
+            - Set view and projection matrices
+            - Render opaque geometry with lighting
+            - Render instanced objects without lighting
+            - Render selection bounding boxes
+            - Render selection boundaries 
+            - Render non-selected boundaries
+            - Render cursor if shown.
+        """
         self.buildCache()
 
         glClearColor(0.5, 0.5, 1, 1.0)

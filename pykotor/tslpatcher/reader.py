@@ -108,6 +108,7 @@ class ConfigReader:
         return self.config
 
     def get_section_name(self, section_name: str):
+        """Resolves the case-insensitive section name string if found and returns the case-sensitive correct section name."""
         return next(
             (section for section in self.ini.sections() if section.lower() == section_name.lower()),
             None,
@@ -137,9 +138,26 @@ class ConfigReader:
         self.config.required_message = settings_ini.get("RequiredMsg", "")
 
     def load_filelist(self) -> None:
+        """Loads [InstallList] from ini configuration.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None: No value is returned.
+        Loading File List:
+        - Gets [InstallList] section from ini 
+        - Loops through section items getting foldername and filenames
+        - Gets section for each filename
+        - Creates InstallFile object for each filename
+        - Adds InstallFile to config install list
+        - Optionally loads additional vars from filename section
+        """
         install_list_section = self.get_section_name("installlist")
         if not install_list_section:
-            self.log.add_warning("[InstallList] section missing from ini.")
+            self.log.add_note("[InstallList] section missing from ini.")
             return
 
         self.log.add_note("Loading [InstallList] patches from ini...")
@@ -161,9 +179,17 @@ class ConfigReader:
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername)
 
     def load_tlk_list(self) -> None:
+        """Load TLK list patches from ini file.
+
+        Processing Logic:
+            - Get [TLKList] section from ini file
+            - Load TLK list edits into a dictionary
+            - Parse range strings and handle ignore indices
+            - Process TLK entries based on key syntax.
+        """
         tlk_list_section = self.get_section_name("tlklist")
         if not tlk_list_section:
-            self.log.add_warning("[TLKList] section missing from ini.")
+            self.log.add_note("[TLKList] section missing from ini.")
             return
 
         self.log.add_note("Loading [TLKList] patches from ini...")
@@ -178,6 +204,19 @@ class ConfigReader:
         syntax_error_caught = False
 
         def extract_range_parts(range_str: str) -> tuple[int, int | None]:
+            """Extracts start and end parts from a range string.
+
+            Args:
+            ----
+                range_str: String containing range in format start-end or start.
+
+            Returns:
+            -------
+                tuple[int, int | None]: Tuple containing start and end parts as integers or None.
+            - Splits the range string on delimiters like '-' or '.'
+            - Converts start and end parts to integers if present
+            - Returns start and end as a tuple of integers or integer and None
+            """
             if range_str.lower().startswith("strref") or range_str.lower().startswith("ignore"):
                 range_str = range_str[6:]
             for delim in range_delims:
@@ -189,6 +228,16 @@ class ConfigReader:
             return int(range_str), None
 
         def parse_range(range_str: str) -> range:
+            """Parses a string representing a range into a range object
+            Args:
+                range_str: String representing a range
+            Returns:
+                range: Parsed range object from the string
+            - Extracts the start and end parts from the range string
+            - If end is None, return a range from start to start+1 (meaning no range)
+            - Check invalid syntax i.e. if end is less than start, raise ValueError
+            - Return the range from start to end+1.
+            """
             start, end = extract_range_parts(range_str)
             if end is None:
                 return range(int(start), int(start) + 1)
@@ -205,6 +254,22 @@ class ConfigReader:
             modifications_tlk_keys,
             is_replacement: bool,
         ) -> None:
+            """Processes TLK entries based on provided modifications.
+
+            Args:
+            ----
+                tlk_data: TLK - TLK data object
+                dialog_tlk_keys - Keys for dialog entries to modify
+                modifications_tlk_keys - New values for the dialog entries
+                is_replacement: bool - Whether it is replacing or modifying text
+            Processing Logic:
+                - Zips the dialog keys and modification values
+                - Parses the keys and values to get the change indices and new values
+                - Iterates through the change indices
+                    - Skips ignored indices
+                    - Gets the TLK entry at the next value index
+                    - Creates a modifier object and adds it to the patches list
+            """
             for mod_key, mod_value in zip(
                 dialog_tlk_keys,
                 modifications_tlk_keys,
@@ -310,9 +375,24 @@ class ConfigReader:
                 raise ValueError(msg) from e
 
     def load_2da(self) -> None:
+        """Load 2D array patches from ini file
+        Processing Logic:
+            - Get the section name for the [2DAList] section
+            - Load the section into a dictionary
+            - Pop the default destination key
+            - Iterate through each identifier and file
+                - Get the section for the file
+                - Create a Modifications2DA object for the file
+                - Load the section into a dictionary and populate the object
+                - Append the object to the config patches list
+                - Iterate through each key and modification ID
+                    - Get the section for the ID
+                    - Load the section into a dictionary
+                    - Discern and add the modifier to the file object.
+        """
         twoda_section_name = self.get_section_name("2dalist")
         if not twoda_section_name:
-            self.log.add_warning("[2DAList] section missing from ini.")
+            self.log.add_note("[2DAList] section missing from ini.")
             return
 
         self.log.add_note("Loading [2DAList] patches from ini...")
@@ -346,9 +426,20 @@ class ConfigReader:
                 modifications.modifiers.append(manipulation)
 
     def load_ssf(self) -> None:
+        """Loads SSF patches from the ini file.
+
+        - Gets the [SSFList] section name from the ini file
+        - Checks for [SSFList] section, logs warning if missing  
+        - Maps sound names to enum values
+        - Loops through [SSFList] parsing patches
+            - Gets section for each SSF file
+            - Creates ModificationsSSF object
+            - Parses file section into modifiers
+        - Adds ModificationsSSF objects to config patches
+        """
         ssf_list_section = self.get_section_name("ssflist")
         if not ssf_list_section:
-            self.log.add_warning("[SSFList] section missing from ini.")
+            self.log.add_note("[SSFList] section missing from ini.")
             return
 
         configstr_to_ssfsound: dict[str, SSFSound] = {
@@ -415,9 +506,25 @@ class ConfigReader:
                 modifications.modifiers.append(modifier)
 
     def load_gff(self) -> None:
+        """Loads GFF patches from the ini file
+        Args:
+            self: The object instance
+        Returns:
+            None: No value is returned
+        Loading GFF Patches:
+        - Gets the "[GFFList]" section from the ini file
+        - Loops through each GFF patch defined
+            - Gets the section for the individual GFF file
+            - Creates a ModificationsGFF object for it
+            - Populates variables from the GFF section
+            - Loops through each modifier 
+                - Creates the appropriate modifier object
+                - Adds it to the modifications object
+        - Adds the fully configured modifications object to the config.
+        """
         gff_list_section = self.get_section_name("gfflist")
         if not gff_list_section:
-            self.log.add_warning("[GFFList] section missing from ini.")
+            self.log.add_note("[GFFList] section missing from ini.")
             return
 
         self.log.add_note("Loading [GFFList] patches from ini...")
@@ -459,9 +566,24 @@ class ConfigReader:
                 modifications.modifiers.append(modifier)
 
     def load_nss(self) -> None:
+        """Loads patches from the [CompileList] section of the ini file.
+
+        Args:
+        ----
+            self: The ModOrganizer instance
+        Returns:
+            None
+        - Parses the [CompileList] section of the ini file into a dictionary
+        - Sets a default destination from an optional key
+        - Loops through each identifier/file pair
+                - Creates a ModificationsNSS object
+                - Looks for an optional section for the file
+                - Passes any values to populate the patch
+        - Adds each patch to the config patches list
+        """
         compilelist_section = self.get_section_name("compilelist")
         if not compilelist_section:
-            self.log.add_warning("[CompileList] section missing from ini.")
+            self.log.add_note("[CompileList] section missing from ini.")
             return
 
         self.log.add_note("Loading [CompileList] patches from ini...")
@@ -481,6 +603,15 @@ class ConfigReader:
     #################
 
     def field_value_gff(self, raw_value: str) -> FieldValue:
+        """Parses a raw GFF value into a FieldValue object
+        Args:
+            raw_value: The raw GFF value from the ini as a string
+        Returns:
+            FieldValue: The parsed FieldValue object
+        - Check if raw_value starts with "strref" and parse as TLKMemory
+        - Check if raw_value starts with "2damemory" and parse as TLKMemory
+        - Otherwise parse as Constant.
+        """
         if raw_value.lower().startswith("strref"):
             token_id = int(raw_value[6:])
             return FieldValueTLKMemory(token_id)
@@ -490,6 +621,25 @@ class ConfigReader:
         return FieldValueConstant(int(raw_value))
 
     def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
+        """Modifies a field in a GFF based on its identifier, key and string value.
+
+        Args:
+        ----
+            identifier: str - The section name
+            key: str - The key of the field to modify (part before the =)
+            string_value: str - The raw string (after the =) to assign.
+
+        Returns:
+        -------
+            ModifyFieldGFF - A data class representing the modification
+
+        Processing Logic:
+        - Lowercases the key and value for comparisons only
+        - Parses value based on prefixes like "2DAMemory" or "strref"
+        - Handles localized strings with "(strref)" or "(lang)" in key
+        - Checks for valid assignments if key starts with "2DAMemory"
+        - Returns a ModifyFieldGFF instance
+        """
         value: FieldValue | None = None
         string_value_lower = string_value.lower()
         key_lower = key.lower()
@@ -535,6 +685,22 @@ class ConfigReader:
         ini_data: CaseInsensitiveDict,
         current_path: PureWindowsPath | None = None,
     ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
+        """Parse GFFList's AddField syntax from the ini to determine what fields/structs/lists to add.
+
+        Args:
+        ----
+            identifier: str - Identifier of the section in the ini file
+            ini_data: CaseInsensitiveDict - Data from the ini section
+            current_path: PureWindowsPath or None - Current path in the GFF
+        Returns:
+            ModifyGFF - Object containing the field modification
+        Processing Logic:
+            1. Determines the field type from the field type string
+            2. Gets the label and optional value, path from the ini data
+            3. Construct a current path from the gff root struct based on recursion level and path key.
+            3. Handles nested modifiers and structs in lists
+            4. Returns an AddFieldGFF or AddStructToListGFF object based on whether a label is provided.
+        """
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -679,6 +845,19 @@ class ConfigReader:
         identifier: str,
         modifiers: CaseInsensitiveDict,
     ) -> Modify2DA | None:
+        """Determines the type of 2DA modification based on the key
+        Args:
+            key: str - The key identifying the type of modification
+            identifier: str - The identifier of the 2DA (section name)
+            modifiers: CaseInsensitiveDict - Additional parameters for the modification
+        Returns:
+            Modify2DA | None - The 2DA modification object or None
+        Processing Logic:
+        - Parses the key to determine modification type
+        - Checks for required parameters
+        - Constructs the appropriate modification object
+        - Returns the modification object or None.
+        """
         exclusive_column: str | None
         modification: Modify2DA | None = None
         lowercase_key = key.lower()
@@ -718,36 +897,63 @@ class ConfigReader:
                 store_tlk,
             )
         elif lowercase_key.startswith("addcolumn"):
-            header = modifiers.pop("ColumnLabel")
-            if header is None:
-                msg = f"Missing 'ColumnLabel' in [{identifier}]"
-                raise KeyError(msg)
-            default = modifiers.pop("DefaultValue")
-            if default is None:
-                msg = f"Missing 'DefaultValue' in [{identifier}]"
-                raise KeyError(msg)
-            default = default if default != "****" else ""
-            index_insert, label_insert, store_2da = self.column_inserts_2da(  # type: ignore[assignment]
-                identifier,
-                modifiers,
-            )
-            modification = AddColumn2DA(
-                identifier,
-                header,
-                default,
-                index_insert,
-                label_insert,
-                store_2da,  # type: ignore[arg-type]
-            )
+            modification = self.add_2da_column(modifiers, identifier)
         else:
-            msg = (
-                f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']"
-            )
+            msg = f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']"
             raise KeyError(msg)
 
         return modification
 
+    def add_2da_column(self, modifiers: CaseInsensitiveDict, identifier: str):
+        """Adds a column to a 2DA table
+        Args:
+            modifiers: CaseInsensitiveDict - Contains column modifiers
+            identifier: str - Identifier of the 2DA table (section name).
+
+        Returns
+        -------
+            AddColumn2DA: Returns an AddColumn2DA object
+        Processing Logic:
+            1. Pops 'ColumnLabel' from modifiers and sets as header
+            2. Pops 'DefaultValue' from modifiers and sets as default
+            3. Calls column_inserts_2da to get insert indexes
+            4. Returns AddColumn2DA object.
+        """
+        header = modifiers.pop("ColumnLabel")
+        if header is None:
+            msg = f"Missing 'ColumnLabel' in [{identifier}]"
+            raise KeyError(msg)
+        default = modifiers.pop("DefaultValue")
+        if default is None:
+            msg = f"Missing 'DefaultValue' in [{identifier}]"
+            raise KeyError(msg)
+        default = default if default != "****" else ""
+        index_insert, label_insert, store_2da = self.column_inserts_2da(  # type: ignore[assignment]
+            identifier,
+            modifiers,
+        )
+        return AddColumn2DA(
+            identifier,
+            header,
+            default,
+            index_insert,
+            label_insert,
+            store_2da,  # type: ignore[arg-type]
+        )
+
     def target_2da(self, identifier: str, modifiers: CaseInsensitiveDict) -> Target | None:
+        """Gets or creates a 2D target from modifiers.
+
+        Args:
+        ----
+            identifier: Identifier for target
+            modifiers: Modifiers dictionary
+        Returns:
+            Target | None: Target object or None
+        - Checks for RowIndex, RowLabel or LabelIndex key
+        - Calls get_target() to create Target object
+        - Returns None if no valid key found with warning
+        """
         def get_target(target_type: TargetType, key: str, is_int: bool = False) -> Target:
             value = modifiers.pop(key)
             if value is None:
@@ -772,6 +978,23 @@ class ConfigReader:
         identifier: str,
         modifiers: CaseInsensitiveDict[str],
     ) -> tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]]:
+        """Parses modifiers to extract 2DA and TLK cell values and row labels.
+
+        Args:
+        ----
+            identifier: str - Section name for this 2DA
+            modifiers: CaseInsensitiveDict[str] - Modifiers dictionary
+
+        Returns:
+        -------
+            tuple[dict[str, RowValue], dict[int, RowValue], dict[int, RowValue]] - Tuple containing cells dictionary, 2DA store dictionary, TLK store dictionary
+
+        Processing Logic:
+        1. Loops through each modifier and value
+        2. Determines modifier type (cell, 2DA store, TLK store, row label) 
+        3. Creates appropriate RowValue for cell/store value
+        4. Adds cell/store value to return dictionaries
+        """
         cells: dict[str, RowValue] = {}
         store_2da: dict[int, RowValue] = {}
         store_tlk: dict[int, RowValue] = {}
@@ -828,6 +1051,18 @@ class ConfigReader:
         identifier: str,
         modifiers: CaseInsensitiveDict[str],
     ) -> tuple[dict[int, RowValue], dict[str, RowValue], dict[int, str]]:
+        """Extracts specific 2DA patch information from the ini
+        Args:
+            identifier: str - Section name being handled
+            modifiers: CaseInsensitiveDict[str] - Modifiers to insert values
+        Returns:
+            tuple[dict[int, RowValue], dict[str, RowValue], dict[int, str]] - Index inserts, label inserts, 2DA store
+        Processes Logic:
+        - Loops through modifiers and extracts value type
+        - Assigns row value based on value type
+        - Inserts into appropriate return dictionary based on modifier key
+        - Returns tuple of inserted values dictionaries.
+        """
         index_insert: dict[int, RowValue] = {}
         label_insert: dict[str, RowValue] = {}
         store_2da: dict[int, str] = {}
@@ -910,7 +1145,6 @@ class NamespaceReader:
             # required
             namespace.ini_filename = this_namespace_section["IniName"]
             namespace.info_filename = this_namespace_section["InfoName"]
-
             # optional
             namespace.data_folderpath = this_namespace_section.get("DataPath", "")
             namespace.name = this_namespace_section.get("Name", "")

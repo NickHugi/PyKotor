@@ -12,7 +12,7 @@ class Diff2DA:
         self.new: TwoDA = new
         self.log = log_func
 
-    def is_same(self) -> bool:
+    def compare_2da(self) -> bool:
         old_headers = set(self.old.get_headers())
         new_headers = set(self.new.get_headers())
         ret = True

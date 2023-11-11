@@ -41,6 +41,21 @@ def clone_module(
     keep_sounds: bool = False,
     keep_pathing: bool = False,
 ) -> None:
+    """Clones a module
+    Args:
+        root: str - The path to the module root
+        identifier: str - The identifier for the new module
+        prefix: str - Prefix for generated textures and lightmaps
+        name: str - Name for the new ARE file
+        installation: Installation - The installation context
+    Returns:
+        None
+    Processing Logic:
+        1. Load resources from old module
+        2. Rename resources and change identifiers 
+        3. Copy textures and lightmaps if specified
+        4. Write new module resources to file.
+    """
     old_module = Module(root, installation)
     new_module = ERF(ERFType.MOD)
 

@@ -41,6 +41,22 @@ _COPY_ROLE = QtCore.Qt.UserRole + 2
 
 class DLGEditor(Editor):
     def __init__(self, parent: QWidget | None = None, installation: HTInstallation | None = None):
+        """Initializes the Dialog Editor window
+        Args:
+            parent: QWidget | None = None: The parent widget
+            installation: HTInstallation | None = None: The installation
+        Returns:
+            None: Does not return anything
+        Initializes UI components:
+        - Sets up menus
+        - Connects signals
+        - Sets up installation
+        - Initializes model, tree view and selection model
+        - Sets buffer and media player
+        - Sets boolean to prevent events on programatic updates
+        - Sets splitter sizes
+        - Calls new() to start with empty dialog.
+        """
         supported = [ResourceType.DLG]
         super().__init__(parent, "Dialog Editor", "dialog", supported, supported, installation)
 
@@ -73,6 +89,16 @@ class DLGEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Connects UI signals to update node/link on change
+        Args:
+            self: {The class instance}: Connects UI signals to methods
+        Returns:
+            None: No return value
+        Processing Logic:
+            - Connects text/value changes of various UI elements to onNodeUpdate method
+            - Connects buttons to respective methods like play sound, load tree, add/remove anims
+            - Connects delete shortcut to delete node.
+        """
         # Events to update link/nodes connected to its respective tree view item
         self.ui.speakerEdit.textEdited.connect(self.onNodeUpdate)
         self.ui.listenerEdit.textEdited.connect(self.onNodeUpdate)
@@ -144,6 +170,20 @@ class DLGEditor(Editor):
         QShortcut("Del", self).activated.connect(self.deleteSelectedNode)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+        """Loads a dialogue file
+        Args:
+            filepath: The path to the dialogue file
+            resref: The resource reference of the dialogue
+            restype: The resource type of the dialogue
+            data: The raw data of the dialogue file
+        Returns: 
+            None
+        Loads dialogue data:
+            - Reads dialogue data from file
+            - Loads dialogue data into class
+            - Refreshes stunt list
+            - Sets UI fields from dialogue data.
+        """
         super().load(filepath, resref, restype, data)
 
         dlg = read_dlg(data)
@@ -166,6 +206,19 @@ class DLGEditor(Editor):
         self.ui.replyDelaySpin.setValue(dlg.delay_reply)
 
     def _loadDLG(self, dlg: DLG):
+        """Loads a dialog tree into the UI view.
+
+        Args:
+        ----
+            dlg: The dialog tree to load
+        Returns:
+            None: Loads the dialog tree into the UI view
+        - Clears any existing styling from the dialog tree widget
+        - Sets the focused flag to False
+        - Sets the internal dlg variable to the passed dlg
+        - Clears the model 
+        - Loops through the starter nodes and loads them recursively into the model.
+        """
         self.ui.dialogTree.setStyleSheet("")
         self._focused = False
 
@@ -179,6 +232,24 @@ class DLGEditor(Editor):
             self.model.appendRow(item)
 
     def _loadDLGRec(self, item: QStandardItem, link: DLGLink, seenLink: list[DLGLink], seenNode: list[DLGNode]):
+        """Don't call this function directly.
+        Loads a DLG node recursively into a tree model.
+
+        Args:
+        ----
+            item: QStandardItem - The item to load the node into
+            link: DLGLink - The link whose node to load
+            seenLink: list[DLGLink] - Links already loaded
+            seenNode: list[DLGNode] - Nodes already loaded
+        Returns: 
+            None: Loads the node recursively into the tree model
+        Processing Logic:
+            - Sets the link on the item
+            - Checks if link/node already loaded
+            - Marks item as already loaded
+            - Refreshes the item
+            - Loops through child links and loads recursively if not seen.
+        """
         node = link.node
         item.setData(link, _LINK_ROLE)
 
@@ -198,6 +269,20 @@ class DLGEditor(Editor):
                 item.appendRow(child_item)
 
     def build(self) -> Tuple[bytes, bytes]:
+        """Builds a dialogue from UI components.
+
+        Args:
+        ----
+            self: {The class instance}: The class instance whose build method is being called.
+
+        Returns:
+        -------
+            Tuple[bytes, bytes]: {A tuple containing the dialogue data and an empty string}
+        Processing Logic:
+            - Sets dialogue properties from UI components
+            - Encodes dialogue data into bytes
+            - Returns bytes containing dialogue data and empty string.
+        """
         self._dlg.on_abort = ResRef(self.ui.onAbortEdit.text())
         self._dlg.on_end = ResRef(self.ui.onEndEdit.text())
         self._dlg.vo_id = self.ui.voIdEdit.text()
@@ -222,6 +307,19 @@ class DLGEditor(Editor):
         self._loadDLG(DLG())
 
     def _setupInstallation(self, installation: HTInstallation):
+        """Sets up the installation for the UI.
+
+        Args:
+        ----
+            installation (HTInstallation): The installation object
+        Returns:
+            None
+        Processing Logic:
+            - Sets enabled states of UI elements based on installation.tsl
+            - Loads required 2da files if not already loaded
+            - Sets up additional definitions if installation.tsl is True
+            - Clears and populates camera effect dropdown.
+        """
         self._installation = installation
 
         self.ui.script1Param1Spin.setEnabled(installation.tsl)
@@ -280,6 +378,18 @@ class DLGEditor(Editor):
             self.ui.cameraEffectSelect.addItem(label.replace("VIDEO_EFFECT_", "").replace("_" , " ").title(), i)
 
     def _setup_tsl_install_defs(self, installation):
+        """Set up UI elements for TSL installation selection.
+        TSL has additional properties such as Emotions and Expressions
+        Args:
+            installation: {Installation object to get data from}.
+
+        Returns
+        -------
+            None
+        - Get expression and emotion data from installation object
+        - Clear existing items from emotion and expression dropdowns
+        - Populate dropdowns with labels from expression and emotion data.
+        """
         expressions = installation.htGetCache2DA(HTInstallation.TwoDA_EXPRESSIONS)
         emotions = installation.htGetCache2DA(HTInstallation.TwoDA_EMOTIONS)
 
@@ -290,6 +400,19 @@ class DLGEditor(Editor):
         [self.ui.expressionSelect.addItem(label) for label in expressions.get_column("label")]
 
     def editText(self, e) -> None:
+        """Edits the text of the selected dialog node.
+
+        Args:
+        ----
+            self: The class instance
+            e: The triggering event
+        Returns: 
+            None: No value is returned
+        1. Gets the selected dialog node item from the dialog tree view.
+        2. Gets the DLGLink and DLGNode data from the item.
+        3. Opens a localized string dialog with the node's text.
+        4. If dialog is accepted and item is not a copy, updates the node's text and item text.
+        """
         indexes = self.ui.dialogTree.selectionModel().selectedIndexes()
         if indexes:
             item = self.model.itemFromIndex(indexes[0])
@@ -303,6 +426,15 @@ class DLGEditor(Editor):
                 self._loadLocstring(self.ui.textEdit, node.text)
 
     def _loadLocstring(self, textbox: QPlainTextEdit, locstring: LocalizedString) -> None:
+        """Load a localized string into a text box.
+
+        Args:
+        ----
+            textbox (QPlainTextEdit): Text box to load string into
+            locstring (LocalizedString): Localized string object
+        Returns:
+            None: No return value.
+        """
         if locstring.stringref == -1:
             text = str(locstring)
             textbox.setPlainText(text if text != "-1" else "")
@@ -313,11 +445,43 @@ class DLGEditor(Editor):
             textbox.setStyleSheet("QPlainTextEdit {background-color: #fffded;}")
 
     def addNode(self, item: QStandardItem | None, node: DLGNode) -> None:
+        """Adds a node to the dialog tree.
+
+        Args:
+        ----
+            item: The item to add to the node.
+            node: The node to add the item to.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        Processing Logic:
+            - Creates a new DLGEntry or DLGReply node based on the type of node passed in
+            - Calls _add_node_main to add the new node to the dialog tree
+            - Sets the item on the new node
+            - Does not return anything, updates dialog tree in place.
+        """
         # Update DLG
         newNode = DLGEntry() if isinstance(node, DLGReply) else DLGReply()
         self._add_node_main(newNode, node, False, item)
 
     def addRootNode(self) -> None:
+        """Adds a root node to the dialog graph.
+
+        Args:
+        ----
+            self: The dialog manager object.
+
+        Returns:
+        -------
+            None: No value is returned.
+        - A new DLGEntry node is created to represent the root node
+        - A DLGLink is created linking the root node
+        - The link is appended to the starters list of the dialog graph
+        - A QStandardItem is created and associated with the link
+        - The item is added to the model with the link and marked as not a copy
+        - The item is refreshed in the view and appended to the model row
+        """
         newNode = DLGEntry()
         newLink = DLGLink(newNode)
         self._dlg.starters.append(newLink)
@@ -342,6 +506,20 @@ class DLGEditor(Editor):
         item.appendRow(newItem)
 
     def addCopy(self, item: QStandardItem, target: DLGNode, source: DLGNode):
+        """Adds a copy of a node to a target node.
+
+        Args:
+        ----
+            item: The item to add the new node to
+            target: The target node to add the copy to
+            source: The node to copy
+        Returns:
+            None: Does not return anything
+        - Makes a deep copy of the source node
+        - Creates a new link between the target and copy
+        - Creates a new item to hold the copied node
+        - Loads the copied node recursively into the new item.
+        """
         sourceCopy = deepcopy(source)
         newLink = DLGLink(sourceCopy)
         target.links.append(newLink)
@@ -354,6 +532,21 @@ class DLGEditor(Editor):
         self._copy = node
 
     def deleteNode(self, item: QStandardItem) -> None:
+        """Deletes a node from the diagram.
+
+        Args:
+        ----
+            item: QStandardItem - The item to delete
+            link: DLGLink - The link associated with the item
+            node: DLGNode - The node associated with the link
+        Returns: 
+            None
+        Processing Logic:
+            - Get the link and node associated with the item
+            - If item has no parent, remove link from starters list and row from model
+            - Else, get parent item and associated link/node
+            - Remove link from parent's links and row from parent.
+        """
         link: DLGLink = item.data(_LINK_ROLE)
         node: DLGNode = link.node
 
@@ -373,6 +566,20 @@ class DLGEditor(Editor):
             parentItem.removeRow(item.row())
 
     def deleteSelectedNode(self) -> None:
+        """Deletes the currently selected node from the tree.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None: No value is returned.
+        - Check if any node is selected in the tree
+        - Get the index of the selected node
+        - Get the item object from the model using the index
+        - Call the deleteNode method to remove the item from the model.
+        """
         if self.ui.dialogTree.selectedIndexes():
             index = self.ui.dialogTree.selectedIndexes()[0]
             item = self.model.itemFromIndex(index)
@@ -385,6 +592,22 @@ class DLGEditor(Editor):
             parent = parent.parent()
 
     def jumpToOriginal(self, sourceItem: QStandardItem):
+        """Jumps to the original node of a copied item.
+
+        Args:
+        ----
+            sourceItem: The copied item to find the original of.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Get the copied node from the source item
+            - Iterate through all items in the tree
+            - Check if the item's node matches the copied node and it is not a copy
+            - If a match is found, expand the tree to that item and select it
+            - If no match is found, print a failure message.
+        """
         copiedLink: DLGLink = sourceItem.data(_LINK_ROLE)
         copiedNode: DLGNode = copiedLink.node
 
@@ -402,6 +625,18 @@ class DLGEditor(Editor):
             print("Failed to find original")
 
     def refreshItem(self, item: QStandardItem):
+        """Refreshes the item text and formatting based on the node data.
+
+        Args:
+        ----
+            item: QStandardItem - The item to refresh
+        Returns:
+            None - Refreshes the item in-place
+        - Sets the item text to the node text translated by the installation
+        - Appends "[End Dialog]" if the node has no links
+        - Sets the item foreground color based on the node and copy type
+        - Blue for replies, red for entries, lighter if it is a copy.
+        """
         node: DLGNode = item.data(_LINK_ROLE).node
         isCopy: bool = item.data(_COPY_ROLE)
         text = self._installation.string(node.text, "(continue)")
@@ -418,6 +653,21 @@ class DLGEditor(Editor):
             item.setForeground(QBrush(color))
 
     def playSound(self, resname: str) -> None:
+        """Plays a sound resource.
+
+        Args:
+        ----
+            resname: The name of the sound resource to play.
+
+        Returns:
+        -------
+            None: No value is returned.
+        - Stops any currently playing sound.
+        - Searches for the sound resource in multiple locations and loads the data if found.
+        - Creates a buffer with the sound data and sets it as the media for a player.
+        - Starts playback of the sound using a single shot timer to avoid blocking.
+        - Displays an error message if the sound resource is not found.
+        """
         self.player.stop()
 
         data = self._installation.sound(resname, [SearchLocation.VOICE, SearchLocation.SOUND, SearchLocation.OVERRIDE,
@@ -437,6 +687,22 @@ class DLGEditor(Editor):
             )
 
     def focusOnNode(self, link: DLGLink) -> None:
+        """Focuses the dialog tree on a specific link node.
+
+        Args:
+        ----
+            link: The DLGLink to focus on.
+
+        Returns:
+        -------
+            None
+        Processes the link node:
+            - Sets the dialog tree style sheet to highlight the background
+            - Clears any existing model data
+            - Sets an internal flag to track the focused state
+            - Creates a root item for the new focused subtree
+            - Loads the DLG recursively from the given link into the item/model
+        """
         self.ui.dialogTree.setStyleSheet("QTreeView { background: #FFFFEE; }")
         self.model.clear()
         self._focused = True
@@ -446,6 +712,21 @@ class DLGEditor(Editor):
         self.model.appendRow(item)
 
     def shiftItem(self, item: QStandardItem, amount: int) -> None:
+        """Shifts an item in the tree by a given amount.
+
+        Args:
+        ----
+            item: The item to shift.
+            amount: The number of rows to shift by.
+
+        Returns:
+        -------
+            None
+        - It removes the item from its current row.
+        - It inserts the item into the new row calculated by adding the amount to the original row.
+        - It updates the selection in the tree view.
+        - It syncs the changes to the underlying DLG data structure by moving the corresponding link.
+        """
         oldRow = item.row()
         parent = self.model if item.parent() is None else item.parent()
         newRow = oldRow + amount
@@ -463,6 +744,16 @@ class DLGEditor(Editor):
         links.insert(newRow, link)
 
     def onTreeContextMenu(self, point: QPoint):
+        """Displays context menu for tree items
+        Args:
+            point (QPoint): Mouse position for context menu
+        Returns:
+            None: Does not return anything
+        - Checks if mouse position is over a tree item
+        - Gets the item from tree model if mouse is over an item
+        - Sets context menu actions based on the item
+        - Shows default add entry menu if mouse not over item.
+        """
         index = self.ui.dialogTree.indexAt(point)
         item = self.model.itemFromIndex(index)
 
@@ -476,6 +767,23 @@ class DLGEditor(Editor):
             menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def _set_context_menu_actions(self, item, point):
+        """Sets context menu actions for a dialog tree item
+        Args:
+            item: {The QTreeWidgetItem being right clicked}
+            point: {The position of the mouse click}.
+
+        Returns
+        -------
+            None
+        Processing Logic:
+            - Gets link and node data from item
+            - Creates a QMenu
+            - Adds actions like Focus, Move Up/Down
+            - Adds separator
+            - Adds additional actions based on node type
+            - Adds Copy/Delete actions if entry or reply
+            - Displays menu at mouse position.
+        """
         link: DLGLink = item.data(_LINK_ROLE)
         isCopy: bool = item.data(_COPY_ROLE)
         node: DLGNode = link.node
@@ -513,6 +821,18 @@ class DLGEditor(Editor):
         menu.popup(self.ui.dialogTree.viewport().mapToGlobal(point))
 
     def onSelectionChanged(self, selection: QItemSelection) -> None:
+        """Updates UI fields based on selected dialog node
+        Args:
+            selection: QItemSelection - The current selection
+        Returns:
+            None
+        Processing Logic:
+            - Disable updates to prevent recursion
+            - Get selected item and link/node data
+            - Populate various UI fields like text, scripts, conditions from node data
+            - Refresh anim list
+            - Enable updates.
+        """
         self.acceptUpdates = False
         if selection.indexes():
             item = self.model.itemFromIndex(selection.indexes()[0])
@@ -596,6 +916,17 @@ class DLGEditor(Editor):
         self.acceptUpdates = True
 
     def onNodeUpdate(self) -> None:
+        """Updates node properties based on UI selections
+        Args:
+            self: The class instance
+        Returns:
+            None
+        Updates node properties:
+        - Sets listener, speaker and scripts based on UI selections
+        - Sets conditions and parameters based on UI selections  
+        - Sets animations, journal, camera and other properties based on UI
+        - Sets comment text from UI text edit.
+        """
         if not self.ui.dialogTree.selectedIndexes() or not self.acceptUpdates:
             return
         index = self.ui.dialogTree.selectedIndexes()[0]
@@ -741,6 +1072,18 @@ class DLGEditor(Editor):
                 self.refreshAnimList()
 
     def refreshAnimList(self) -> None:
+        """Refreshes the animations list
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Clears the existing animations list
+            - Gets the selected dialog node from the tree view
+            - Loops through the animations on the node
+            - Looks up the animation name from the TwoDA cache
+            - Adds each animation as a item to the list with the name and participant.
+        """
         self.ui.animsList.clear()
 
         if self.ui.dialogTree.selectedIndexes():

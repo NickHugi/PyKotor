@@ -109,6 +109,18 @@ class Module:
         return copy(self._capsules)
 
     def reload_resources(self) -> None:
+        """Reload resources from modules, LYT/VIS and overrides.
+
+        Returns
+        -------
+            None: {Does not return anything}
+        - Look in module files for resources
+        - Look for LYT/VIS resources
+        - Look in override directories
+        - Look for resources linked in the GIT not present in module files
+        - Look for texture paths for models
+        - Add found locations to the resource registry.
+        """
         # Look in module files
         for capsule in self._capsules:
             for resource in capsule:
@@ -220,6 +232,23 @@ class Module:
         restype: ResourceType,
         locations: list[Path],
     ):
+        """Adds resource locations to a ModuleResource.
+
+        Args:
+        ----
+            resname: The resource name.
+            restype: The resource type.
+            locations: The locations of the resource files.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        Processing Logic:
+            - Checks if the resource already exists in the dictionary
+            - If it doesn't exist, creates a new ModuleResource object
+            - Adds the locations to the existing or newly created ModuleResource
+            - Does not return anything, modifies the dictionary in-place.
+        """
         # In order to store TGA resources in the same ModuleResource as their TPC counterpart, we use the .TPC extension
         # instead of the .TGA for the dictionary key.
         filename_ext = str(ResourceType.TPC if restype == ResourceType.TGA else restype)
@@ -244,6 +273,16 @@ class Module:
         return self.resources[filename] if filename in self.resources else None
 
     def layout(self) -> ModuleResource[LYT] | None:
+        """Returns the LYT layout resource with a matching ID if it exists
+        Args:
+            self: The Module instance
+            _id: The ID of the layout resource
+        Returns:
+            resource: The layout resource or None if not found
+        - Iterates through all resources in self.resources
+        - Checks if resource name matches self._id and type is LYT
+        - Returns first matching resource or None if not found.
+        """
         return next(
             (
                 resource
@@ -254,6 +293,20 @@ class Module:
         )
 
     def vis(self) -> ModuleResource[VIS] | None:
+        """Finds the VIS resource with matching ID.
+
+        Args:
+        ----
+            self: The Module object.
+
+        Returns:
+        -------
+            resource: The VIS resource object or None.
+        Finds the VIS resource object from the Module's resources:
+        - Iterates through the resources dictionary values
+        - Checks if the resource name matches self._id in lowercase and type is VIS
+        - Returns the first matching resource or None.
+        """
         return next(
             (
                 resource
@@ -266,9 +319,14 @@ class Module:
     def are(
         self,
     ) -> ModuleResource[ARE] | None:
-        """The function `are` returns a ModuleResource object from a dictionary of resources based on a
-        matching resource name and type.
-        :return: a ModuleResource object of type ARE.
+        """Returns the ARE resource with the given ID if it exists
+        Args:
+            self: The Module object
+        Returns:
+            resource: The ARE resource or None if not found
+        - Iterate through all resources in self.resources
+        - Check if resource name matches self._id in lowercase and resource type is ARE
+        - Return first matching resource or None if no match.
         """
         return next(
             (
@@ -282,10 +340,14 @@ class Module:
     def git(
         self,
     ) -> ModuleResource[GIT] | None:
-        """The function `git` returns a `ModuleResource` object of type `GIT` from a dictionary of
-        resources based on a given ID.
-        :return: The code is returning a resource of type GIT from the self.resources dictionary. The
-        resource is identified by its filename and is matched based on its resname and restype.
+        """Returns the git resource with matching id if found
+        Args:
+            self: The module object
+        Returns:
+            resource: The git resource or None
+        - Iterate through all resources in module
+        - Check if resource name matches id in lowercase and type is GIT
+        - Return matching resource or None if not found.
         """
         return next(
             (
@@ -299,8 +361,19 @@ class Module:
     def pth(
         self,
     ) -> ModuleResource[PTH] | None:
-        """The function `pth` returns a `ModuleResource` object with a specific resname and restype.
-        :return: a ModuleResource object of type PTH.
+        """Finds the PTH resource with matching ID.
+
+        Args:
+        ----
+            self: The Module object.
+
+        Returns:
+        -------
+            resource: The PTH resource or None if not found.
+        Finds the PTH resource:
+        - Iterates through all resources 
+        - Checks if resource name matches self._id and type is PTH
+        - Returns first matching resource or None.
         """
         return next(
             (
@@ -314,8 +387,15 @@ class Module:
     def info(
         self,
     ) -> ModuleResource[IFO] | None:
-        """The function returns the resource object with the name "module" and the type ResourceType.IFO.
-        :return: a ModuleResource object of type IFO.
+        """Returns the ModuleResource with type IFO if it exists
+        Args:
+            self: The object instance
+        Returns:
+            resource: The ModuleResource with type IFO or None
+        - Iterate through self.resources values
+        - Check if resource name is 'module' and type is IFO
+        - Return first matching resource
+        - Return None if no match found.
         """
         return next(
             (
@@ -330,6 +410,15 @@ class Module:
         self,
         resname: str,
     ) -> ModuleResource[UTC] | None:
+        """Returns a UTC resource by name if it exists
+        Args:
+            resname: Name of the resource to search for
+        Returns:
+            resource: The UTC resource or None if not found
+        - Iterate through self.resources dictionary values 
+        - Check if resname matches resource name and type is UTC
+        - Return matching resource or None if not found.
+        """
         return next(
             (
                 resource
@@ -342,12 +431,30 @@ class Module:
     def creatures(
         self,
     ) -> list[ModuleResource[UTC]]:
+        """Returns a list of UTC resources
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[UTC]]: A list of UTC resources
+        - Iterate through all resources in self.resources
+        - Check if each resource's type is UTC
+        - Add matching resources to the return list.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTC]
 
     def placeable(
         self,
         resname: str,
     ) -> ModuleResource[UTP] | None:
+        """Check if a placeable UTP resource with the given resname exists
+        Args:
+            resname (str): Name of the resource to check
+        Returns:
+            resource: Found resource or None
+        - Iterate through self.resources dictionary 
+        - Check if resource name matches given name and type is UTP
+        - Return matching resource if found, else return None.
+        """
         return next(
             (
                 resource
@@ -360,12 +467,30 @@ class Module:
     def placeables(
         self,
     ) -> list[ModuleResource[UTP]]:
+        """Returns a list of UTP resources for this module
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[UTP]]: List of UTP resources
+        - Iterate through self.resources dictionary
+        - Check if resource type is UTP
+        - Add matching resources to the return list.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTP]
 
     def door(
         self,
         resname: str,
     ) -> ModuleResource[UTD] | None:
+        """Returns a UTD resource matching the provided resname from this module
+        Args:
+            resname (str): The name of the resource
+        Returns:
+            resource: The UTD resource or None if not found
+        - Iterate through self.resources values
+        - Check if resname matches resource name and type is UTD
+        - Return matching resource or None if not found.
+        """
         return next(
             (
                 resource
@@ -378,12 +503,30 @@ class Module:
     def doors(
         self,
     ) -> list[ModuleResource[UTD]]:
+        """Returns a list of all UTD resources for this module
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[UTD]]: List of UTD resources
+        - Iterate through all resources stored in self.resources
+        - Check if each resource's type is UTD
+        - Add matching resources to the return list.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
 
     def item(
         self,
         resname: str,
     ) -> ModuleResource[UTI] | None:
+        """Returns a UTI resource matching the provided resname from this module if it exists
+        Args:
+            resname (str): Name of the resource to lookup
+        Returns:
+            ModuleResource[UTI] | None: The matching UTI resource or None
+        - Iterates through self.resources dictionary values
+        - Returns the first resource where resname matches resource.resname() and resource type is UTI
+        - Returns None if no matching resource found.
+        """
         return next(
             (
                 resource
@@ -396,12 +539,31 @@ class Module:
     def items(
         self,
     ) -> list[ModuleResource[UTI]]:
+        """Returns a list of UTI resources for this module
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[UTI]]: A list of UTI resources
+        - Iterate through self.resources which is a dictionary of all resources
+        - Check if each resource's restype is equal to ResourceType.UTD
+        - If equal, add it to the return list
+        - Return the list of UTI resources.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTD]
 
     def encounter(
         self,
         resname: str,
     ) -> ModuleResource[UTE] | None:
+        """Find UTE resource by the specified resname
+        Args:
+            resname: Resource name to search for
+        Returns:
+            resource: Found UTE resource or None
+        - Iterate through self.resources values
+        - Check if resname matches resource name and type is UTE
+        - Return first matching resource or None.
+        """
         return next(
             (
                 resource
@@ -414,9 +576,31 @@ class Module:
     def encounters(
         self,
     ) -> list[ModuleResource[UTE]]:
+        """Returns a list of UTE resources for this module
+        Args:
+            self: The class instance
+        Returns: 
+            list[ModuleResource[UTE]]: A list of UTE resources
+        - Iterate through all resources stored in self.resources
+        - Check if each resource's type is UTE
+        - If type matches, add it to the return list
+        - Return the list of UTE resources.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTE]
 
     def store(self, resname: str) -> ModuleResource[UTM] | None:
+        """Looks up a material (UTM) resource by the specified resname from this module and returns the resource data.
+
+        Args:
+        ----
+            resname: Name of the resource to look up
+        Returns:
+            resource: The looked up resource or None if not found
+        - Loops through all resources stored in self.resources
+        - Checks if the resource name matches the given name and type is UTM
+        - Returns the first matching resource
+        - Returns None if no match found.
+        """
         return next(
             (
                 resource
@@ -435,6 +619,16 @@ class Module:
         self,
         resname: str,
     ) -> ModuleResource[UTT] | None:
+        """Returns a trigger (UTT) resource by the specified resname if it exists
+        Args:
+            resname: Name of the resource to retrieve
+        Returns:
+            resource: The requested UTT resource or None
+        - Iterate through self.resources dictionary values
+        - Check if resname matches resource name and type is UTT
+        - Return first matching resource
+        - Return None if no match found.
+        """
         return next(
             (
                 resource
@@ -447,12 +641,32 @@ class Module:
     def triggers(
         self,
     ) -> list[ModuleResource[UTT]]:
+        """Returns a list of UTT resources for this module
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[UTT]]: A list of UTT resources
+        - Iterate through self.resources dictionary 
+        - Check if each resource's restype is UTT
+        - Add matching resources to a list
+        - Return the list of UTT resources.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTT]
 
     def waypoint(
         self,
         resname: str,
     ) -> ModuleResource[UTW] | None:
+        """Returns the UTW resource with the given name if it exists
+        Args:
+            resname: The name of the UTW resource
+        Returns:
+            resource: The UTW resource or None if not found
+        - Iterate through self.resources dictionary values
+        - Check if resname matches resource name and type is UTW
+        - Return first matching resource
+        - Return None if no match found.
+        """
         return next(
             (
                 resource
@@ -465,12 +679,35 @@ class Module:
     def waypoints(
         self,
     ) -> list[ModuleResource[UTW]]:
+        """Returns list of UTW resources from resources dict
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[UTW]]: List of UTW resources
+        - Iterate through self.resources dict values
+        - Check if resource type is UTW
+        - Add matching resources to return list
+        - Return list of UTW resources.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTW]
 
     def model(
         self,
         resname: str,
     ) -> ModuleResource[MDL] | None:
+        """Returns a ModuleResource object for the given resource name if it exists in this module.
+
+        Args:
+        ----
+            resname: The name of the resource to lookup.
+
+        Returns:
+        -------
+            resource: The ModuleResource object if found, None otherwise.
+        - Loops through all resources stored in self.resources
+        - Checks if the resource name matches the given name and the resource type is MDL
+        - Returns the matching resource if found, None otherwise.
+        """
         return next(
             (
                 resource
@@ -484,6 +721,20 @@ class Module:
         self,
         resname: str,
     ) -> ModuleResource | None:
+        """Finds a MDX module resource by name from this module.
+
+        Args:
+        ----
+            resname: The name of the resource to find.
+
+        Returns:
+        -------
+            ModuleResource|None: The matching resource or None if not found.
+        Processes the resources dictionary:
+        - Iterates through resources.values()
+        - Checks if resname matches resource.resname() and resource type is MDX
+        - Returns first matching resource or None.
+        """
         return next(
             (
                 resource
@@ -496,12 +747,36 @@ class Module:
     def models(
         self,
     ) -> list[ModuleResource[MDL]]:
+        """Returns a list of MDL model resources
+        Args:
+            self: The class instance
+        Returns: 
+            list[ModuleResource[MDL]]: A list of MDL model resources
+        Processes the resources dictionary:
+            - Loops through each value in the resources dictionary
+            - Checks if the resource type is MDL
+            - Adds matching resources to the return list.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.MDL]
 
     def texture(
         self,
         resname: str,
     ) -> ModuleResource[TPC] | None:
+        """Looks up a texture resource by resname from this module.
+
+        Args:
+        ----
+            resname: Name of the texture resource to look up.
+
+        Returns:
+        -------
+            resource: Found texture resource or None.
+        - Loops through all resources stored in self.resources
+        - Checks if resname matches the resource name in any case-insensitive way
+        - Checks if the resource type is a texture format like TPC or TGA
+        - Returns the first matching resource or None if not found.
+        """
         return next(
             (
                 resource
@@ -514,12 +789,30 @@ class Module:
     def textures(
         self,
     ) -> list[ModuleResource[MDL]]:
+        """Generates a list of texture resources from this module
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[MDL]]: List of texture resources
+        - Iterate through self.resources dictionary
+        - Check if resource type is TPC or TGA texture format
+        - Include the resource in return list if type matches.
+        """
         return [resource for resource in self.resources.values() if resource.restype() in [ResourceType.TPC, ResourceType.TGA]]
 
     def sound(
         self,
         resname: str,
     ) -> ModuleResource[UTS] | None:
+        """Returns the UTS resource with the given name if it exists
+        Args:
+            resname: The name of the UTS resource
+        Returns: 
+            resource: The UTS resource or None if not found
+        - Iterate through self.resources dictionary values
+        - Check if resname matches resource name and type is UTS
+        - Return matching resource or None if not found.
+        """
         return next(
             (
                 resource
@@ -532,6 +825,16 @@ class Module:
     def sounds(
         self,
     ) -> list[ModuleResource[UTS]]:
+        """Returns a list of UTS resources
+        Args:
+            self: The class instance
+        Returns:
+            list[ModuleResource[UTS]]: A list of UTS resources
+        - Iterate through self.resources dictionary 
+        - Check if each resource's type is UTS
+        - Add matching resources to a list
+        - Return the list of UTS resources.
+        """
         return [resource for resource in self.resources.values() if resource.restype() == ResourceType.UTS]
 
 
@@ -564,6 +867,17 @@ class ModuleResource(Generic[T]):
 
     def localized_name(self) -> str | None:
         # sourcery skip: assign-if-exp, reintroduce-else
+        """Returns a localized name for the resource
+        Args:
+            self: The object instance
+        Returns:
+            str | None: Localized name or None if not found
+        Processing Logic:
+            - Get the resource from self.resource()
+            - Check if resource is None and return None
+            - Check type of resource and return localized name by calling installation string method
+            - Return None if type is not matched.
+        """
         res = self.resource()
         if res is None:
             return None
@@ -721,7 +1035,16 @@ class ModuleResource(Generic[T]):
     def save(
         self,
     ) -> None:
-        """The `save` function saves a resource to a file based on its type and the active file."""
+        """Saves the resource to the active file
+        Args:
+            self: The resource object
+        Returns:
+            None: This function does not return anything
+        Processing Logic:
+            - Checks if an active file is selected
+            - Checks file type and writes resource data accordingly
+            - Writes resource data to ERF, RIM or binary file using appropriate conversion and writer.
+        """
         conversions = {
             ResourceType.UTC: (bytes_utc),
             ResourceType.UTP: (bytes_utp),

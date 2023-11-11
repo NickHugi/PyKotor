@@ -3,6 +3,17 @@ from pykotor.resource.formats.gff import GFFContent, read_gff
 
 
 def extract_name(data: bytes) -> LocalizedString:
+    """Extracts the name from GFF data.
+
+    Args:
+    ----
+        data: Bytes containing GFF data
+    Returns:
+        LocalizedString: Extracted name string
+    - Read GFF data from bytes
+    - Check content type and select appropriate name field
+    - Return localized name string.
+    """
     gff = read_gff(data)
     if gff.content in [GFFContent.UTC]:
         return gff.root.get_locstring("FirstName")

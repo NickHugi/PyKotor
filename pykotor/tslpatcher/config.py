@@ -321,7 +321,7 @@ class ModInstaller:
             return None
 
     def handle_override_type(self, patch: PatcherModifications):
-        """Handles the override type for a patch modification.
+        """Handles the desired behavior set by the !OverrideType tslpatcher var for the specified patch.
 
         Args:
         ----
@@ -415,6 +415,20 @@ class ModInstaller:
         return True
 
     def install(self) -> None:
+        """Install patches from the config file
+        Args:
+            self: The Patcher instance
+        Returns:
+            None: No return value
+        Processing Logic:
+        - Load config and determine game type
+        - Get list of patches from config
+        - For each patch:
+            - Get output path and check for existing file/capsule
+            - Apply patch if needed
+            - Save patched data to destination file or add to capsule
+        - Log completion.
+        """
         config = self.config()
         self._game = Installation.determine_game(self.game_path)
         if self._game is None:

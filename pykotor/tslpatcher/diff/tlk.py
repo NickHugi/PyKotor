@@ -57,7 +57,7 @@ class DiffTLK:
         self.new: TLK = new
         self.log = log_func
 
-    def is_same(self) -> bool:
+    def compare_tlk(self) -> bool:
         if len(self.old) != len(self.new):
             self.log(f"TLK row count mismatch. Old: {len(self.old)}, New: {len(self.new)}")
 

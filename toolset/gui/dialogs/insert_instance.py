@@ -64,6 +64,18 @@ class InsertInstanceDialog(QDialog):
         self.ui.locationSelect.setCurrentIndex(self.ui.locationSelect.count() - 1)
 
     def _setupResourceList(self) -> None:
+        """Populates a resource list widget with available resources.
+
+        Args:
+        ----
+            self: The class instance
+        Returns: 
+            None
+        Processing Logic:
+            - Loops through installation resources and adds matching type
+            - Loops through module capsules and nested resources, adding matching type
+            - Selects first item if list is populated.
+        """
         for resource in self._installation.chitin_resources():
             if resource.restype() == self._restype:
                 item = QListWidgetItem(resource.resname())
@@ -84,6 +96,17 @@ class InsertInstanceDialog(QDialog):
             self.ui.resourceList.item(0).setSelected(True)
 
     def accept(self) -> None:
+        """Accepts resource selection and updates module accordingly
+        Args:
+            self: Accepts the class instance
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Checks which radio button is selected for reuse, copy or create resource
+            - Sets resource name, file path and data based on selection
+            - Writes data to file if resource is new
+            - Adds resource location to module.
+        """
         super().accept()
 
         new = True

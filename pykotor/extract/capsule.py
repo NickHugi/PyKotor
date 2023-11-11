@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 
 
 class Capsule:
-    """Chitin object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
+    """Capsule object is used for loading the list of resources stored in the .erf/.rim/.mod files used by the game.
     Resource data is not actually stored in memory by default but is instead loaded up on demand with the
-    Capsule.resource() method.
+    Capsule.resource() method. Use the RIM or ERF classes if you want to solely work with capsules in memory.
     """
 
     def __init__(
@@ -82,6 +82,26 @@ class Capsule:
         queries: list[ResourceIdentifier],
         reload: bool = False,
     ) -> dict[ResourceIdentifier, ResourceResult | None]:
+        """Batches queries against a capsule.
+
+        Args:
+        ----
+            queries: list[ResourceIdentifier]: The queries to batch
+            reload: bool = False: Whether to reload the capsule metadata
+        Returns: 
+            dict[ResourceIdentifier, ResourceResult | None]: The results for each query keyed by query
+        Processing Logic:
+        - Reloads capsule metadata if reload is True
+        - Checks if capsule exists on disk, prints error and returns empty dict if not
+        - Initializes results dict to return
+        - Opens capsule file as binary reader
+        - Loops through queries
+            - Sets result to None
+            - Checks if resource exists in capsule
+            - If so, seeks to offset, reads bytes and sets result
+        - Closes reader
+        - Returns results dict.
+        """
         if reload:
             self.reload()
 
@@ -119,6 +139,18 @@ class Capsule:
         restype: ResourceType,
         reload: bool = False,
     ) -> bool:
+        """Check if a resource exists
+        Args:
+            resref: str: Resource reference
+            restype: ResourceType: Resource type
+            reload: bool: Reload resources cache
+        Returns: 
+            bool: True if resource exists, False otherwise
+        Checks if a resource exists:
+        - Constructs a ResourceIdentifier from resref and restype
+        - Searches self._resources for a matching resource
+        - Returns True if a match is found, False otherwise.
+        """
         if reload:
             self.reload()
 
@@ -144,8 +176,20 @@ class Capsule:
     def reload(
         self,
     ):
-        """Reload the list of resource info linked from the module file."""
         # nothing to reload if capsule doesn't exist on disk (from_file will error if not existing)
+        """Reload the list of resource info linked from the module file.
+
+        Args:
+        ----
+            self: Capsule object to reload
+        Returns:
+            None: Reloading is done in-place
+        Processing Logic:
+            - Check if capsule exists on disk and print error if not
+            - Open file and read header
+            - Call appropriate reload method based on file type
+            - Raise error if unknown file type.
+        """
         if not self._path.exists():
             print(f"Cannot reload '{self._path}'. Reason: Capsule doesn't exist on disk.")
             return
@@ -167,6 +211,22 @@ class Capsule:
         restype: ResourceType,
         resdata: bytes,
     ):
+        """Adds a resource to the capsule and writes the updated capsule to the disk.
+
+        Args:
+        ----
+            resname: Name of the resource to add in one line.
+            restype: Type of the resource to add in one line.
+            resdata: Data of the resource to add in one line.
+
+        Returns:
+        -------
+            None: No value is returned in one line.
+        - Checks if the file is RIM or ERF
+        - Reads the file as appropriate container
+        - Calls set_data to add the resource
+        - Writes the container back to the file.
+        """
         container: RIM | ERF
         if is_rim_file(self._path.name):
             container = read_rim(self._path)
