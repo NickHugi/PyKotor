@@ -7,7 +7,7 @@ from unittest import TestCase
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language

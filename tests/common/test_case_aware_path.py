@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 if __name__ == "__main__" and not __package__:
     this_script_file_path = pathlib.Path(__file__)
-    sys.path.append(str(this_script_file_path.parents[1]))
+    sys.path.insert(0, str(this_script_file_path.parents[1]))
     __init__ = __import__(str(this_script_file_path.parent.name)).__init__  # type: ignore[misc]
 
 from pykotor.tools.path import CaseAwarePath

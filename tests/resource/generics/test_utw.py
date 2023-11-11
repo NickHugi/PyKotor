@@ -8,7 +8,7 @@ from pykotor.resource.formats.gff.gff_data import GFF
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.utw import UTW, construct_utw, dismantle_utw

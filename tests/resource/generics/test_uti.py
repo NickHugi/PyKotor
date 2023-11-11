@@ -6,7 +6,7 @@ from unittest import TestCase
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.generics.uti import UTI, construct_uti, dismantle_uti

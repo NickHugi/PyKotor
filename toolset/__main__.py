@@ -6,7 +6,7 @@ if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[1] / "pykotor"
     toolset_path = pathlib.Path(__file__).parents[1] / "toolset"
     if pykotor_path.exists() or toolset_path.exists():
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 import multiprocessing
 import traceback

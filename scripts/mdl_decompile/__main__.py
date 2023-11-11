@@ -6,7 +6,7 @@ import traceback
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.helpers.path import Path
 from pykotor.resource.formats.mdl import read_mdl, write_mdl

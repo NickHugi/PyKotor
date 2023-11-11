@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, Mock, patch
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.extract.capsule import Capsule
 from pykotor.helpers.path import Path
