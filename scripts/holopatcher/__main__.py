@@ -14,8 +14,9 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from threading import Thread
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog
 from tkinter import font as tkfont
+from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:
@@ -24,8 +25,9 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
+from pykotor.helpers.path import Path
 from pykotor.tools.misc import striprtf, universal_simplify_exception
-from pykotor.tools.path import CaseAwarePath, Path, locate_game_paths
+from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.reader import NamespaceReader
@@ -45,8 +47,22 @@ class ExitCode(IntEnum):
     EXCEPTION_DURING_INSTALL = 7
     INSTALL_COMPLETED_WITH_ERRORS = 8
 
+
 # Please be careful modifying this functionality as 3rd parties depend on this syntax.
 def parse_args() -> Namespace:
+    """Parses command line arguments
+    Args:
+        parser: ArgumentParser - Argument parser object from the argparse library.
+        kwargs: dict - Keyword arguments dictionary
+        positional: list - Positional arguments list
+    Returns:
+        Namespace - Namespace containing parsed arguments
+    Parses command line arguments and returns Namespace:
+    - Creates ArgumentParser object to parse arguments
+    - Adds supported arguments to parser
+    - Parses arguments into kwargs and positional lists
+    - Unifies positional and keyword args into kwargs Namespace.
+    """
     parser = ArgumentParser(description="HoloPatcher CLI")
 
     # Positional arguments for the old syntax
@@ -108,7 +124,7 @@ class App(tk.Tk):
         self.gamepaths = ttk.Combobox(self)
         self.gamepaths.set("Select your KOTOR directory path")
         self.gamepaths.place(x=5, y=35, width=310, height=25)
-        self.gamepaths["values"] = [str(path) for game in locate_game_paths().values() for path in game]
+        self.gamepaths["values"] = [str(path) for game in find_kotor_paths_from_default().values() for path in game]
         self.gamepaths.bind("<<ComboboxSelected>>", self.on_gamepaths_chosen)
 
         self.gamepaths_browse_button = ttk.Button(self, text="Browse", command=self.open_kotor)
@@ -122,7 +138,7 @@ class App(tk.Tk):
 
         self.uninstall_button = ttk.Button(self, text="Uninstall", command=self.uninstall_selected_mod)
         self.uninstall_button.place(x=160, y=470, width=75, height=25)
-        self.uninstall_button.place_forget()  # comment this to enable the uninstall button.
+        # self.uninstall_button.place_forget()  # comment this to enable the uninstall button.
 
         # Create a Frame to hold the Text and Scrollbar widgets
         text_frame = tk.Frame(self)
@@ -151,6 +167,20 @@ class App(tk.Tk):
         self.handle_commandline(cmdline_args)
 
     def handle_commandline(self, cmdline_args: Namespace) -> None:
+        """Handle command line arguments passed to the application.
+
+        Args:
+        ----
+            cmdline_args: Namespace of command line arguments passed to the application.
+
+        Processing Logic:
+            - Open the specified game directory if provided
+            - Set the selected namespace if namespace index is provided
+            - Hide the console if not explicitly shown
+            - Handle install/uninstall in console mode and exit
+            - Set one_shot flag for install/uninstall operations
+            - Begin install thread or call uninstall method and exit
+        """
         if cmdline_args.game_dir:
             self.open_kotor(cmdline_args.game_dir)
         if cmdline_args.namespace_option_index:
@@ -171,6 +201,17 @@ class App(tk.Tk):
             sys.exit()
 
     def handle_console_mode(self) -> None:
+        """Overrides message box functions for console mode. This is done for true CLI support.
+
+        Args:
+        ----
+            self: The class instance.
+        Processing Logic:
+        - Replaces message box functions with print statements to display messages in the console.
+        - Prompts the user for input and returns True/False for yes/no questions instead of opening a message box.
+        - Allows message boxes to work as expected in console mode without GUI dependencies.
+        """
+
         class MessageboxOverride:
             @staticmethod
             def showinfo(title, message):
@@ -232,6 +273,21 @@ class App(tk.Tk):
             ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
 
     def uninstall_selected_mod(self) -> None:
+        """Uninstalls the selected mod using the most recent backup folder created during the last install.
+
+        Processing Logic:
+            - Check if an install is already running
+            - Get the selected namespace option
+            - Check for valid namespace and game path
+            - Get the backup folder path
+            - Sort backup folders by date
+            - Get the most recent backup folder
+            - Check for required files in backup
+            - Confirm uninstall with user
+            - Delete existing files
+            - Restore files from backup
+            - Offer to delete restored backup.
+        """
         if self.install_running:
             messagebox.showerror("An install is already running!", "Please wait for all operations to finish")
             return
@@ -354,6 +410,14 @@ class App(tk.Tk):
                 )
 
     def handle_exit_button(self) -> None:
+        """Handle exit button click during installation
+        Processing Logic:
+        - Check if installation is running
+        - Display confirmation dialog and check response
+        - Try stopping install thread gracefully
+        - If stopping fails, force terminate install thread
+        - Destroy window and exit with abort code.
+        """
         if not self.install_running:
             sys.exit(ExitCode.SUCCESS)
         if not messagebox.askyesno(
@@ -379,6 +443,17 @@ class App(tk.Tk):
         self.gamepaths.xview(position)
 
     def on_namespace_option_chosen(self, event) -> None:
+        """Handles the namespace option being chosen from the combobox
+        Args:
+            self: The PatcherWindow instance
+            event: The event object from the combobox
+        Processes the chosen namespace option by:
+            1. Finding the matching PatcherNamespace object
+            2. Loading the changes.ini file path
+            3. Extracting the game number if present
+            4. Handling game paths if a game number is found
+            5. Loading the info.rtf file as defined.
+        """
         try:
             namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
@@ -399,6 +474,7 @@ class App(tk.Tk):
             )
 
     def extract_lookup_game_number(self, changes_path: Path) -> int | None:
+        """Extracts the LookupGameNumber from the INI, for simple use with handling the gamepaths combobox."""
         if not changes_path.exists():
             return None
         pattern = r"LookupGameNumber=(\d+)"
@@ -410,6 +486,17 @@ class App(tk.Tk):
         return None
 
     def check_access(self, directory: Path, recurse=False) -> bool:
+        """Check access to a directory
+        Args:
+            directory (Path): Directory path to check access
+            recurse (bool): Check access recursively if True
+        Returns:
+            bool: True if access is granted, False otherwise
+        - Check if directory has access
+        - If no access, prompt user to automatically gain access
+        - If access cannot be gained, show error
+        - If no access after trying, prompt user to continue with an install anyway.
+        """
         if directory.has_access(recurse):
             return True
         if (
@@ -437,6 +524,21 @@ class App(tk.Tk):
         return True
 
     def open_mod(self, default_directory_path_str: os.PathLike | str | None = None) -> None:
+        """Opens a mod directory.
+
+        Args:
+        ----
+            default_directory_path_str: The default directory path to open as a string or None. This is
+                relevant when HoloPatcher is placed next to a 'tslpatchdata' folder containing the patcher files.
+                This is also relevant when using the CLI.
+
+        Processing Logic:
+        - Gets the directory path from the argument or opens a file dialog
+        - Loads namespaces from namespaces.ini or changes from changes.ini
+            - If a changes.ini was loaded, build it as a single entry in a namespace.
+        - Checks permissions of the mod folder
+        - Handles errors opening the mod.
+        """
         try:
             directory_path_str = default_directory_path_str or filedialog.askdirectory()
             if not directory_path_str:
@@ -478,6 +580,18 @@ class App(tk.Tk):
             )
 
     def open_kotor(self, default_kotor_dir_str=None) -> None:
+        """Opens the KOTOR directory.
+
+        Args:
+        ----
+            default_kotor_dir_str: The default KOTOR directory path as a string. This is only relevant when using the CLI.
+
+        Processing Logic:
+            - Try to get the directory path from the default or by opening a file dialog
+            - Check access permissions for the directory
+            - Set the gamepaths config value and add path to list if not already present
+            - Move cursor after a delay to end of dropdown
+        """
         try:
             directory_path_str = default_kotor_dir_str or filedialog.askdirectory()
             if not directory_path_str:
@@ -497,6 +611,22 @@ class App(tk.Tk):
             )
 
     def preinstall_validate_chosen(self) -> bool:
+        """Validates prerequisites for starting an install.
+
+        Args:
+        ----
+            self: The Installer object.
+
+        Returns:
+        -------
+            bool: True if validation passed, False otherwise
+        Processing Logic:
+            - Check if a previous install is still running
+            - Check if a mod path is selected
+            - Check if a KOTOR install path is selected
+            - Check write access to the KOTOR install directory.
+        """
+
         def _if_missing(title, message):
             messagebox.showinfo(title, message)
             if self.one_shot:
@@ -523,6 +653,13 @@ class App(tk.Tk):
         return self.check_access(Path(self.gamepaths.get()))
 
     def begin_install(self) -> None:
+        """Starts the installation process in a background thread
+            - Starts a new Thread to run the installation in the background
+            - Catches any exceptions during thread start and displays error message
+            - Exits program if exception occurs during installation thread start.
+
+        Note that this function is not called when utilizing the CLI due to the thread creation - for passthrough purposes.
+        """
         try:
             self.install_thread = Thread(target=self.begin_install_thread)
             self.install_thread.start()
@@ -535,6 +672,20 @@ class App(tk.Tk):
             sys.exit(ExitCode.EXCEPTION_DURING_INSTALL)
 
     def begin_install_thread(self) -> None:
+        """Starts the mod installation thread. This function is called directly when utilizing the CLI.
+
+        Args:
+        ----
+            self: The PatcherWindow instance
+        Processing Logic:
+            - Validate pre-install checks have passed
+            - Get the selected namespace option
+            - Get the path to the ini file
+            - Create a ModInstaller instance
+            - Try to execute the installation
+            - Handle any exceptions during installation
+            - Set the install status to not running.
+        """
         if not self.preinstall_validate_chosen():
             return
         namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
@@ -550,6 +701,14 @@ class App(tk.Tk):
         self.set_active_install(install_running=False)
 
     def set_active_install(self, install_running: bool) -> None:
+        """Sets the active install state
+        Args:
+            install_running: Whether the install is running or not
+        Processing Logic:
+        - Sets the install_running attribute based on the install_running argument
+        - Configures the state of relevant buttons to disabled if install is running, normal otherwise
+        - Handles enabling/disabling buttons during install process.
+        """
         if install_running:
             self.install_running = True
             self.install_button.config(state=tk.DISABLED)
@@ -569,6 +728,22 @@ class App(tk.Tk):
         self.description_text.config(state=tk.DISABLED)
 
     def _execute_mod_install(self, installer: ModInstaller) -> None:
+        """Executes the mod installation
+        Args:
+            installer: {ModInstaller object containing installation logic}.
+
+        Returns
+        -------
+            None: {Does not return anything, just executes installation}
+        Processing Logic:
+            1. Sets installation status to running
+            2. Gets start time of installation
+            3. Calls installer install method
+            4. Calculates total installation time
+            5. Logs installation details including errors, warnings and time
+            6. Writes full install log to file
+            7. Shows success or error message based on install result
+        """
         self.set_active_install(install_running=True)
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
         installer.install()
@@ -607,6 +782,19 @@ class App(tk.Tk):
             )
 
     def _handle_exception_during_install(self, e: Exception, installer: ModInstaller) -> NoReturn:
+        """Handles exceptions during installation
+        Args:
+            e: Exception - The exception raised
+            installer: ModInstaller - The installer object
+        Processing Logic:
+            - Simplifies the exception for error name and message
+            - Writes the error message to the log
+            - Adds an error to the installer log
+            - Writes the full installer log to a file
+            - Shows an error message box with the error name and message
+            - Sets the install flag to False
+            - Reraises the exception.
+        """
         error_name, msg = universal_simplify_exception(e)
         self.write_log(msg)
         installer.log.add_error("The installation was aborted with errors")
@@ -623,6 +811,21 @@ class App(tk.Tk):
         raise
 
     def build_changes_as_namespace(self, filepath: CaseAwarePath) -> PatcherNamespace:
+        """Parses a changes.ini file into a PatcherNamespace object.
+        When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with a single entry.
+
+        Args:
+        ----
+            filepath: CaseAwarePath - The path to the changes.ini file
+        Returns:
+            PatcherNamespace - The PatcherNamespace object representing the parsed changes.ini file
+        Processing Logic:
+        - Opens the changes.ini file and parses it using ConfigParser
+        - Sets the ini_filename and info_filename attributes on the PatcherNamespace
+        - Looks for a "settings" section and parses its values into a CaseInsensitiveDict
+        - Gets the "WindowCaption" value from the settings dict and sets it as the name attribute
+        - Returns the populated PatcherNamespace object.
+        """
         with filepath.open() as file:
             ini = ConfigParser(
                 delimiters=("="),
@@ -650,21 +853,29 @@ class App(tk.Tk):
         return namespace
 
     def load_namespace(self, namespaces: list[PatcherNamespace]) -> None:
+        """Load namespaces into the UI
+        Args:
+            namespaces: A list of PatcherNamespace objects
+        - Populate the namespaces combobox with the provided namespaces
+        - Set the first namespace as the selected option
+        - Store the namespaces on the class
+        - Trigger the callback for namespace selection.
+        """
         self.namespaces_combobox["values"] = namespaces
         self.namespaces_combobox.set(self.namespaces_combobox["values"][0])
         self.namespaces = namespaces
         self.on_namespace_option_chosen(None)
 
     def _handle_gamepaths_with_mod(self, game_number) -> None:
+        """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
         game = Game(game_number)
         gamepaths_list: list[str] = [
-            str(path)
-            for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
-            for path in locate_game_paths()[game_key]
+            str(path) for game_key in ([game] + ([Game.K1] if game == Game.K2 else [])) for path in find_kotor_paths_from_default()[game_key]
         ]
         self.gamepaths["values"] = gamepaths_list
 
     def set_stripped_rtf_text(self, rtf: TextIOWrapper) -> None:
+        """Strips the info.rtf of all RTF related text and displays it in the UI."""
         stripped_content: str = striprtf(rtf.read())
         self.description_text.config(state=tk.NORMAL)
         self.description_text.delete(1.0, tk.END)
@@ -693,8 +904,24 @@ class App(tk.Tk):
         self.description_text.config(state=tk.DISABLED)
 
 
-# when pyinstaller compiled in console mode, this will match the same error message behavior of --noconsole.
+#
 def custom_excepthook(exc_type, exc_value, exc_traceback) -> None:
+    """Custom exception hook to display errors in message box.
+    When pyinstaller compiled in --console mode, this will match the same error message behavior of --noconsole.
+
+    Args:
+    ----
+        exc_type: Exception type
+        exc_value: Exception value
+        exc_traceback: Exception traceback
+    Returns:
+        None
+    Processing Logic:
+        - Format the exception using traceback
+        - Create a hidden root Tk window
+        - Show error message in message box
+        - Destroy the root window.
+    """
     error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     root = tk.Tk()
     root.withdraw()  # Hide the main window
