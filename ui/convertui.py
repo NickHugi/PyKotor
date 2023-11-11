@@ -1,6 +1,6 @@
 import os
 
-from pykotor.tools.path import Path
+from pykotor.helpers.path import Path
 
 UI_TARGET_DIR = "../toolset/uic/"
 QRC_TARGET_DIR = "../toolset/"

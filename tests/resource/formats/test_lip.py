@@ -1,23 +1,15 @@
 import os
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.resource.formats.lip import (
-    LIP,
-    LIPShape,
-    LIPBinaryReader,
-    detect_lip,
-    write_lip,
-    LIPXMLReader,
-    read_lip,
-)
+from pykotor.resource.formats.lip import LIP, LIPBinaryReader, LIPShape, LIPXMLReader, detect_lip, read_lip, write_lip
 from pykotor.resource.type import ResourceType
 
 BINARY_TEST_FILE = "tests/files/test.lip"

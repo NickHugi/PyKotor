@@ -1,11 +1,11 @@
 from typing import Optional
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QWidget
 
 from pykotor.common.language import LocalizedString
+from toolset.data.installation import HTInstallation
+from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog
 
 
 class LocalizedStringLineEdit(QWidget):

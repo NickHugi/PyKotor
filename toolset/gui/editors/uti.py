@@ -4,13 +4,7 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Optional, Tuple
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import (
-    QDialog,
-    QListWidgetItem,
-    QShortcut,
-    QTreeWidgetItem,
-    QWidget,
-)
+from PyQt5.QtWidgets import QDialog, QListWidgetItem, QShortcut, QTreeWidgetItem, QWidget
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -25,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class UTIEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         supported = [ResourceType.UTI]
         super().__init__(parent, "Item Editor", "item", supported, supported, installation)
 

@@ -1,8 +1,8 @@
 import os
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 from PyQt5.QtTest import QTest
 from PyQt5.QtWidgets import QApplication

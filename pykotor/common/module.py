@@ -9,16 +9,14 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import LocationResult, ResourceIdentifier
 from pykotor.extract.installation import Installation, SearchLocation
-from pykotor.resource.formats.bwm import read_bwm
-from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
+from pykotor.helpers.path import Path, PurePath
+from pykotor.resource.formats.bwm import bytes_bwm, read_bwm
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.formats.lyt.lyt_auto import bytes_lyt, read_lyt
+from pykotor.resource.formats.lyt import bytes_lyt, read_lyt
 from pykotor.resource.formats.rim import read_rim, write_rim
-from pykotor.resource.formats.tpc import TPC, read_tpc
-from pykotor.resource.formats.tpc.tpc_auto import bytes_tpc
-from pykotor.resource.formats.vis import VIS, read_vis
-from pykotor.resource.formats.vis.vis_auto import bytes_vis
+from pykotor.resource.formats.tpc import TPC, bytes_tpc, read_tpc
+from pykotor.resource.formats.vis import VIS, bytes_vis, read_vis
 from pykotor.resource.generics.are import ARE, bytes_are, read_are
 from pykotor.resource.generics.dlg import bytes_dlg, read_dlg
 from pykotor.resource.generics.git import GIT, bytes_git, read_git
@@ -34,15 +32,8 @@ from pykotor.resource.generics.uts import UTS, bytes_uts, read_uts
 from pykotor.resource.generics.utt import UTT, bytes_utt, read_utt
 from pykotor.resource.generics.utw import UTW, bytes_utw, read_utw
 from pykotor.resource.type import ResourceType
-from pykotor.tools.misc import (
-    is_bif_file,
-    is_capsule_file,
-    is_erf_file,
-    is_erf_or_mod_file,
-    is_rim_file,
-)
+from pykotor.tools.misc import is_bif_file, is_capsule_file, is_erf_file, is_erf_or_mod_file, is_rim_file
 from pykotor.tools.model import list_lightmaps, list_textures
-from pykotor.tools.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os

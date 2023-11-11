@@ -582,5 +582,5 @@ class Ui_MainWindow(object):
         self.actionUseEncounterResRef.setText(_translate("MainWindow", "ResRef"))
         self.actionUseEncounterName.setText(_translate("MainWindow", "Name"))
         self.actionUseEncounterTag.setText(_translate("MainWindow", "Tag"))
-from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer
 import toolset.resources_rc
+from toolset.gui.widgets.renderer.walkmesh import WalkmeshRenderer

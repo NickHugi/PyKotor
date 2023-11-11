@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
 from PIL import Image, ImageDraw, ImageFont
 
 from pykotor.common.geometry import Vector2
 from pykotor.common.stream import BinaryReader
+from pykotor.helpers.path import Path
 from pykotor.resource.formats.tpc import (
     TPC,
     TPCBinaryReader,
@@ -17,7 +17,7 @@ from pykotor.resource.formats.tpc import (
 )
 from pykotor.resource.formats.tpc.txi_data import TXIFontInformation
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
-from pykotor.tools.path import CaseAwarePath, Path
+from pykotor.tools.path import CaseAwarePath
 
 
 def detect_tpc(

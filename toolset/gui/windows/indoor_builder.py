@@ -39,7 +39,7 @@ from PyQt5.QtWidgets import (
 
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.stream import BinaryReader, BinaryWriter
-from pykotor.tools.path import Path
+from pykotor.helpers.path import Path
 from toolset.data.indoorkit import Kit, KitComponent, load_kits
 from toolset.data.indoormap import IndoorMap, IndoorMapRoom
 from toolset.gui.dialogs.asyncloader import AsyncLoader

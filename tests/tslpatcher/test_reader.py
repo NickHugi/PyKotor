@@ -4,8 +4,8 @@ import pathlib
 import shutil
 import sys
 import tempfile
-from configparser import ConfigParser
 import unittest
+from configparser import ConfigParser
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
@@ -15,10 +15,10 @@ if getattr(sys, "frozen", False) is False:
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import Gender, Language
 from pykotor.common.misc import ResRef
+from pykotor.helpers.path import Path
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, write_tlk
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import Path
 from pykotor.tslpatcher.config import PatcherConfig
 from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (

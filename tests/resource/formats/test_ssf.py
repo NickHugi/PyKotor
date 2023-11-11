@@ -8,17 +8,8 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.resource.formats.ssf import (
-    SSF,
-    SSFSound,
-    SSFBinaryReader,
-    detect_ssf,
-    SSFXMLReader,
-    write_ssf,
-    read_ssf,
-)
+from pykotor.resource.formats.ssf import SSF, SSFBinaryReader, SSFSound, SSFXMLReader, detect_ssf, read_ssf, write_ssf
 from pykotor.resource.type import ResourceType
-
 
 BINARY_TEST_FILE = "tests/files/test.ssf"
 XML_TEST_FILE = "tests/files/test.ssf.xml"

@@ -10,8 +10,8 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists():
         sys.path.append(str(pykotor_path.parent))
 
+from pykotor.helpers.path import PureWindowsPath
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
-from pykotor.tools.path import PureWindowsPath
 
 fieldtype_to_fieldname: dict[GFFFieldType, str] = {
     GFFFieldType.UInt8: "Byte",

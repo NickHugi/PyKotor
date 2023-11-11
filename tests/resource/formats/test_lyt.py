@@ -1,8 +1,8 @@
 import os
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
@@ -10,17 +10,9 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3, Vector4
-from pykotor.resource.formats.lyt import (
-    LYTAsciiReader,
-    LYTRoom,
-    LYTTrack,
-    LYT,
-    LYTObstacle,
-    LYTDoorHook,
-)
-from pykotor.resource.formats.lyt.lyt_auto import write_lyt, read_lyt
+from pykotor.resource.formats.lyt import LYT, LYTAsciiReader, LYTDoorHook, LYTObstacle, LYTRoom, LYTTrack
+from pykotor.resource.formats.lyt.lyt_auto import read_lyt, write_lyt
 from pykotor.resource.type import ResourceType
-
 
 ASCII_TEST_FILE = "tests/files/test.lyt"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"

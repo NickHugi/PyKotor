@@ -1,10 +1,9 @@
 import os
-import sys
-from unittest import TestCase
-import tempfile
-
 import pathlib
+import sys
+import tempfile
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"

@@ -13,7 +13,7 @@ from PyQt5.QtGui import QKeySequence
 from pykotor.common.geometry import Vector2, Vector3
 from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.gl.scene import Camera
-from pykotor.tools.path import Path
+from pykotor.helpers.path import Path
 
 if TYPE_CHECKING:
     from pykotor.resource.generics.git import GITInstance

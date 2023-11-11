@@ -10,15 +10,15 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists():
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.tools.path import PurePosixPath as CustomPurePosixPath
-from pykotor.tools.path import PureWindowsPath as CustomPureWindowsPath
-from pykotor.tools.path import WindowsPath as CustomWindowsPath
-from pykotor.tools.path import PosixPath as CustomPosixPath
+from pathlib import Path, PosixPath, PurePath, PurePosixPath, PureWindowsPath, WindowsPath
 
-from pykotor.tools.path import PurePath as CustomPurePath
-from pykotor.tools.path import Path as CustomPath
+from pykotor.helpers.path import Path as CustomPath
+from pykotor.helpers.path import PosixPath as CustomPosixPath
+from pykotor.helpers.path import PurePath as CustomPurePath
+from pykotor.helpers.path import PurePosixPath as CustomPurePosixPath
+from pykotor.helpers.path import PureWindowsPath as CustomPureWindowsPath
+from pykotor.helpers.path import WindowsPath as CustomWindowsPath
 from pykotor.tools.path import CaseAwarePath
-from pathlib import PurePath, Path, PurePosixPath, PureWindowsPath, WindowsPath, PosixPath
 
 
 class TestPathlibMixedSlashes(unittest.TestCase):

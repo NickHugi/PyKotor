@@ -6,14 +6,7 @@ from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QMenu, QShortcut, QTreeView, QWidget
 
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.generics.jrl import (
-    JRL,
-    JRLEntry,
-    JRLQuest,
-    JRLQuestPriority,
-    dismantle_jrl,
-    read_jrl,
-)
+from pykotor.resource.generics.jrl import JRL, JRLEntry, JRLQuest, JRLQuestPriority, dismantle_jrl, read_jrl
 from pykotor.resource.type import ResourceType
 from toolset.data.installation import HTInstallation
 from toolset.gui.dialogs.edit.locstring import LocalizedStringDialog

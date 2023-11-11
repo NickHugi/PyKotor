@@ -8,9 +8,8 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.resource.formats.rim import RIM, RIMBinaryReader, write_rim, read_rim
+from pykotor.resource.formats.rim import RIM, RIMBinaryReader, read_rim, write_rim
 from pykotor.resource.type import ResourceType
-
 
 BINARY_TEST_FILE = "tests/files/test.rim"
 DOES_NOT_EXIST_FILE = "./thisfiledoesnotexist"

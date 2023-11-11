@@ -7,7 +7,7 @@ from pykotor.tools.misc import (
     is_bif_file,
     is_capsule_file,
 )
-from pykotor.tools.path import Path, PurePath
+from pykotor.helpers.path import Path, PurePath
 
 if TYPE_CHECKING:
     import os

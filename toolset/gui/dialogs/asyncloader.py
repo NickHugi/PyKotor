@@ -4,16 +4,9 @@ from typing import Any, Callable, List, Optional
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import (
-    QDialog,
-    QLabel,
-    QMessageBox,
-    QProgressBar,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt5.QtWidgets import QDialog, QLabel, QMessageBox, QProgressBar, QVBoxLayout, QWidget
 
-from pykotor.tools.path import Path
+from pykotor.helpers.path import Path
 
 
 class AsyncLoader(QDialog):

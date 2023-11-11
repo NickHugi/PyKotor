@@ -2,13 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
-from PyQt5.QtWidgets import (
-    QCheckBox,
-    QDoubleSpinBox,
-    QSpinBox,
-    QTableWidgetItem,
-    QWidget,
-)
+from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QSpinBox, QTableWidgetItem, QWidget
 
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.gff import write_gff
@@ -23,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class UTEEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         supported = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 

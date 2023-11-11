@@ -391,5 +391,5 @@ class Ui_MainWindow(object):
         self.actionDiscordKotOR.setText(_translate("MainWindow", "r/KotOR"))
         self.actionDiscordDeadlyStream.setText(_translate("MainWindow", "Deadly Stream"))
         self.actionModuleDesigner.setText(_translate("MainWindow", "Module Designer"))
-from toolset.gui.widgets.main_widgets import ResourceList, TextureList
 import toolset.resources_rc
+from toolset.gui.widgets.main_widgets import ResourceList, TextureList

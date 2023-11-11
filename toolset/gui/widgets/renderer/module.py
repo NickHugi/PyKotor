@@ -15,12 +15,12 @@ from pykotor.resource.generics.git import GITInstance
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from toolset.data.installation import HTInstallation
     from glm import vec3
     from PyQt5.QtGui import QKeyEvent, QMouseEvent, QResizeEvent, QWheelEvent
 
     from pykotor.common.module import Module
     from pykotor.resource.formats.bwm import BWMFace
+    from toolset.data.installation import HTInstallation
 
 
 class ModuleRenderer(QOpenGLWidget):

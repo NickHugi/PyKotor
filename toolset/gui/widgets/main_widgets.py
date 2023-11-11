@@ -8,15 +8,7 @@ from typing import TYPE_CHECKING, Optional
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QModelIndex, QPoint, QSortFilterProxyModel, QThread, QTimer
-from PyQt5.QtGui import (
-    QIcon,
-    QImage,
-    QPixmap,
-    QResizeEvent,
-    QStandardItem,
-    QStandardItemModel,
-    QTransform,
-)
+from PyQt5.QtGui import QIcon, QImage, QPixmap, QResizeEvent, QStandardItem, QStandardItemModel, QTransform
 from PyQt5.QtWidgets import QHeaderView, QMenu, QWidget
 
 from pykotor.extract.installation import SearchLocation
@@ -24,9 +16,8 @@ from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
 from pykotor.resource.type import ResourceType
 
 if TYPE_CHECKING:
-    from toolset.data.installation import HTInstallation
-
     from pykotor.extract.file import FileResource
+    from toolset.data.installation import HTInstallation
 
 GFF_TYPES = [ResourceType.GFF, ResourceType.UTC, ResourceType.UTP, ResourceType.UTD, ResourceType.UTI,
              ResourceType.UTM, ResourceType.UTE, ResourceType.UTT, ResourceType.UTW, ResourceType.UTS,

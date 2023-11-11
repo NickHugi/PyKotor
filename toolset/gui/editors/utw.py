@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class UTWEditor(Editor):
-    def __init__(self, parent: Optional[QWidget], installation: HTInstallation = None):
+    def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
         supported = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 

@@ -8,19 +8,15 @@ from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, ResRef, decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader
+from pykotor.helpers.path import Path, PureWindowsPath
 from pykotor.resource.formats.gff import GFFFieldType, GFFList, GFFStruct
 from pykotor.resource.formats.ssf import SSFSound
 from pykotor.resource.formats.tlk import TLK, read_tlk
 from pykotor.tools.misc import is_float, is_int
-from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.config import PatcherConfig, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.memory import (
-    NoTokenUsage,
-    TokenUsage,
-    TokenUsage2DA,
-    TokenUsageTLK,
-)
+from pykotor.tslpatcher.memory import NoTokenUsage, TokenUsage, TokenUsage2DA, TokenUsageTLK
 from pykotor.tslpatcher.mods.gff import (
     AddFieldGFF,
     AddStructToListGFF,

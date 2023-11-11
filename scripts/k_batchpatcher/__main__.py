@@ -14,9 +14,9 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists():
         sys.path.append(str(pykotor_path.parent))
 
-
 from pykotor.common.language import Language, LocalizedString
 from pykotor.extract.capsule import Capsule
+from pykotor.helpers.path import Path, PureWindowsPath
 from pykotor.resource.formats.gff import (
     GFF,
     GFFContent,
@@ -29,7 +29,7 @@ from pykotor.resource.formats.gff import (
 )
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
+from pykotor.tools.path import CaseAwarePath
 from scripts.k_batchpatcher.translate.language_translator import (
     TranslationOption,
     Translator,

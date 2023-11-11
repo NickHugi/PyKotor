@@ -1,15 +1,43 @@
+from __future__ import annotations
+
 import os
 import platform
 
 from pykotor.common.misc import Game
+from pykotor.helpers.misc import ProcessorArchitecture
+
+KOTOR_REG_PATHS = {
+    Game.K1: {
+        ProcessorArchitecture.BIT_32: [
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 32370", "InstallLocation"),
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1207666283", "PATH"),
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\BioWare\SW\KOTOR", "InternalPath"),
+        ],
+        ProcessorArchitecture.BIT_64: [
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1207666283", "PATH"),
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BioWare\SW\KOTOR", "InternalPath"),
+        ],
+    },
+    Game.K2: {
+        ProcessorArchitecture.BIT_32: [
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 208580", "InstallLocation"),
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\GOG.com\Games\1421404581", "PATH"),
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\LucasArts\KotOR2", "Path"),
+        ],
+        ProcessorArchitecture.BIT_64: [
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\GOG.com\Games\1421404581", "PATH"),
+            (r"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\LucasArts\KotOR2", "InternalPath"),
+        ],
+    },
+}
 
 
-def winreg_key(game: Game) -> str:
-    """Returns what the key path is in the Windows registry for the given game.
+def winreg_key(game: Game) -> list[tuple[str, str]]:
+    """Returns a list of registry keys that are utilized by KOTOR.
 
     Attributes
     ----------
-        game: Path for which game.
+        game: Game IntEnum - The game to lookup
         access: Access permissions for the key (see winreg module).
 
     Raises
@@ -22,25 +50,10 @@ def winreg_key(game: Game) -> str:
         Key object or None if no key exists.
     """
     if os.name != "nt":
-        msg = "Cannot set registry keys on a non-Windows OS."
+        msg = "Cannot get or set registry keys on a non-Windows OS."
         raise ValueError(msg)
 
-    is_64_bits = platform.machine().endswith("64")
-
-    regpaths = {
-        Game.K1: {
-            False: r"SOFTWARE\BioWare\SW\KOTOR",
-            True: r"SOFTWARE\WOW6432Node\Bioware\SW\KotOR",
-        },
-        Game.K2: {
-            False: r"SOFTWARE\LucasArts\KotOR2",
-            True: r"SOFTWARE\WOW6432Node\LucasArts\KotOR2",
-        },
-    }
-
-    return regpaths[game][is_64_bits]
-
-    #
+    return KOTOR_REG_PATHS[game][ProcessorArchitecture.from_os()]
 
 
 def get_winreg_path(game: Game):
@@ -48,30 +61,31 @@ def get_winreg_path(game: Game):
 
     Attributes
     ----------
-        game: Path for which game.
+        game: The game to lookup in the registry
 
     Raises
     ------
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
     """
-    key_path = winreg_key(game)
+    possible_kotor_reg_paths = winreg_key(game)
 
     try:
         import winreg
 
-        key = winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_READ)
-        return winreg.QueryValueEx(key, r"path")
-    except FileNotFoundError:
+        for key_path, subkey in possible_kotor_reg_paths:
+            key = winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, key_path, 0, winreg.KEY_READ)
+            return winreg.QueryValueEx(key, subkey)
+    except (FileNotFoundError, PermissionError):
         return ""
 
 
 def set_winreg_path(game: Game, path: str):
-    """Sets the specified path value in the windows registry for the given game.
+    """Sets the kotor install folder path value in the windows registry for the given game.
 
     Attributes
     ----------
-        game: Path for which game.
+        game: The game to set in the registry
         path: New path value for the game.
 
     Raises
@@ -79,31 +93,32 @@ def set_winreg_path(game: Game, path: str):
         ValueError: Not on a Windows OS.
         WinError: Most likely do not have sufficient permissions.
     """
-    key_path = winreg_key(game)
+    possible_kotor_reg_paths = winreg_key(game)
 
     import winreg
 
-    key = winreg.CreateKeyEx(
-        winreg.HKEY_LOCAL_MACHINE,
-        key_path,
-        0,
-        winreg.KEY_SET_VALUE,
-    )
-    winreg.SetValueEx(key, r"path", 1, winreg.REG_SZ, path)
-
-
-def remove_winreg_path(game: Game):
-    key_path = winreg_key(game)
-
-    try:
-        import winreg
-
-        key = winreg.OpenKeyEx(
+    for key_path, subkey in possible_kotor_reg_paths:
+        key = winreg.CreateKeyEx(
             winreg.HKEY_LOCAL_MACHINE,
             key_path,
             0,
             winreg.KEY_SET_VALUE,
         )
-        return winreg.DeleteValue(key, r"path")
+        winreg.SetValueEx(key, subkey, 1, winreg.REG_SZ, path)
+
+
+def remove_winreg_path(game: Game):
+    possible_kotor_reg_paths = winreg_key(game)
+
+    try:
+        import winreg
+        for key_path, subkey in possible_kotor_reg_paths:
+            key = winreg.OpenKeyEx(
+                winreg.HKEY_LOCAL_MACHINE,
+                key_path,
+                0,
+                winreg.KEY_SET_VALUE,
+            )
+            winreg.DeleteValue(key, subkey)
     except FileNotFoundError:
         ...

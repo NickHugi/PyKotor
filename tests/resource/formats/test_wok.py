@@ -1,7 +1,7 @@
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
@@ -9,7 +9,7 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.geometry import Vector3
-from pykotor.resource.formats.bwm import BWMBinaryReader, BWM, write_bwm, read_bwm
+from pykotor.resource.formats.bwm import BWM, BWMBinaryReader, read_bwm, write_bwm
 
 BINARY_TEST_FILE = "tests/files/test.wok"
 

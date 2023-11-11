@@ -5,15 +5,7 @@ from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QSize, QSortFilterProxyModel, QThread
-from PyQt5.QtGui import (
-    QDragEnterEvent,
-    QDragMoveEvent,
-    QDropEvent,
-    QIcon,
-    QPixmap,
-    QStandardItem,
-    QStandardItemModel,
-)
+from PyQt5.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent, QIcon, QPixmap, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import (
     QAction,
     QDialog,

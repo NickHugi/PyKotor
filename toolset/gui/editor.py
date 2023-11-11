@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from pykotor.helpers.path import Path
 from pykotor.common.module import Module
 from pykotor.extract.capsule import Capsule
 from pykotor.resource.formats.erf import ERFType, read_erf, write_erf
@@ -28,7 +29,6 @@ from pykotor.tools.misc import (
     is_erf_or_mod_file,
     is_rim_file,
 )
-from pykotor.tools.path import Path
 from toolset.gui.dialogs.load_from_module import LoadFromModuleDialog
 from toolset.gui.dialogs.save.to_bif import BifSaveDialog, BifSaveOption
 from toolset.gui.dialogs.save.to_module import SaveToModuleDialog

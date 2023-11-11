@@ -8,10 +8,9 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.tools.path import Path
-
 from unittest import TestCase
 
+from pykotor.helpers.path import Path
 from pykotor.resource.formats.erf import ERF, ERFBinaryReader, read_erf, write_erf
 from pykotor.resource.type import ResourceType
 

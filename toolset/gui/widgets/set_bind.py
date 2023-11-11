@@ -1,9 +1,10 @@
 from typing import Set
 
-from toolset.data.misc import Bind
 from PyQt5 import QtCore
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QWidget
+
+from toolset.data.misc import Bind
 from toolset.utils.misc import getStringFromKey
 
 

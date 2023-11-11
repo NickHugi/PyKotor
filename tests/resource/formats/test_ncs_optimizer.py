@@ -1,7 +1,7 @@
 from __future__ import annotations
+
 import pathlib
 import sys
-
 import unittest
 
 if getattr(sys, "frozen", False) is False:
@@ -10,7 +10,6 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.scriptdefs import KOTOR_CONSTANTS, KOTOR_FUNCTIONS
-
 from pykotor.resource.formats.ncs import NCS
 from pykotor.resource.formats.ncs.compiler.interpreter import Interpreter
 from pykotor.resource.formats.ncs.compiler.lexer import NssLexer

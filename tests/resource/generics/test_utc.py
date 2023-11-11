@@ -1,7 +1,7 @@
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
@@ -10,7 +10,7 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.common.misc import EquipmentSlot
 from pykotor.resource.formats.gff import read_gff
-from pykotor.resource.generics.utc import construct_utc, dismantle_utc, UTC
+from pykotor.resource.generics.utc import UTC, construct_utc, dismantle_utc
 
 TEST_FILE = "tests/files/test.utc"
 

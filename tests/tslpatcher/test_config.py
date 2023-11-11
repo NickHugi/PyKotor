@@ -9,7 +9,7 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from pykotor.extract.capsule import Capsule
-from pykotor.tools.path import Path
+from pykotor.helpers.path import Path
 from pykotor.tslpatcher.config import ModInstaller
 
 

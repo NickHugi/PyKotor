@@ -75,8 +75,3 @@ def assert_with_variable_trace(___condition___: bool, ___message___: str = "Asse
 
     # Raise an exception with the detailed message
     raise AssertionError(full_message)
-
-
-# Usage example
-myvar = 4
-assert_with_variable_trace(myvar, myvar == 5, "Wrong value")

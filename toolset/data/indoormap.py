@@ -15,7 +15,8 @@ from pykotor.common.misc import Color, ResRef
 from pykotor.common.stream import BinaryReader
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.resource.formats.bwm.bwm_auto import bytes_bwm
-from pykotor.resource.formats.erf import ERF, ERFType, write_erf
+from pykotor.resource.formats.erf import ERF, ERFType
+from pykotor.resource.formats.erf.erf_auto import write_erf
 from pykotor.resource.formats.lyt import LYT, LYTDoorHook, LYTRoom
 from pykotor.resource.formats.lyt.lyt_auto import bytes_lyt
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat

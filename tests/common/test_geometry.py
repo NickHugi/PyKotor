@@ -1,15 +1,15 @@
 import math
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.common.geometry import Polygon2, Vector2, Vector3, Vector4, Face
+from pykotor.common.geometry import Face, Polygon2, Vector2, Vector3, Vector4
 
 
 class TestVector2(TestCase):

@@ -3,12 +3,13 @@ from __future__ import annotations
 import shutil
 from typing import TYPE_CHECKING
 
-from pykotor.tools.path import CaseAwarePath, PurePath
+from pykotor.helpers.path import PurePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
     import os
 
+    from pykotor.tools.path import CaseAwarePath
     from pykotor.tslpatcher.logger import PatchLogger
 
 

@@ -1,10 +1,10 @@
 from typing import List
 
-from toolset.gui.widgets.edit.color import ColorEdit
-from toolset.gui.widgets.set_bind import SetBindWidget
 from PyQt5.QtWidgets import QWidget
 
 from pykotor.common.misc import Color
+from toolset.gui.widgets.edit.color import ColorEdit
+from toolset.gui.widgets.set_bind import SetBindWidget
 
 
 class SettingsWidget(QWidget):

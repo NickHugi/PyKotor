@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from pykotor.resource.formats.rim import RIM, RIMBinaryReader, RIMBinaryWriter
+from typing import TYPE_CHECKING
+
+from pykotor.resource.formats.rim.io_rim import RIMBinaryReader, RIMBinaryWriter
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 
+if TYPE_CHECKING:
+    from pykotor.resource.formats.rim.rim_data import RIM
 
 def read_rim(
     source: SOURCE_TYPES,

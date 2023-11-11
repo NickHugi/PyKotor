@@ -7,16 +7,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPoint, QTimer
 from PyQt5.QtGui import QColor, QIcon, QKeyEvent, QPixmap
-from PyQt5.QtWidgets import (
-    QAction,
-    QCheckBox,
-    QListWidgetItem,
-    QMainWindow,
-    QMenu,
-    QMessageBox,
-    QTreeWidgetItem,
-    QWidget,
-)
+from PyQt5.QtWidgets import QAction, QCheckBox, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QTreeWidgetItem, QWidget
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3, Vector4
 from pykotor.common.misc import Color, ResRef

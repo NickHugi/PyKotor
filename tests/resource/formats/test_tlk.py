@@ -12,16 +12,15 @@ from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.formats.tlk import (
     TLK,
-    TLKEntry,
-    detect_tlk,
     TLKBinaryReader,
-    write_tlk,
-    read_tlk,
-    TLKXMLReader,
+    TLKEntry,
     TLKJSONReader,
+    TLKXMLReader,
+    detect_tlk,
+    read_tlk,
+    write_tlk,
 )
 from pykotor.resource.type import ResourceType
-
 
 BINARY_TEST_FILE = "tests/files/test.tlk"
 XML_TEST_FILE = "tests/files/test.tlk.xml"

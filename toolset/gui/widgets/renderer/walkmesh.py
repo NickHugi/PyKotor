@@ -2,17 +2,7 @@ from __future__ import annotations
 
 import math
 from copy import copy
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    Generic,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Dict, Generic, List, NamedTuple, Optional, Set, TypeVar, Union
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QPointF, QRectF, QTimer
@@ -29,7 +19,6 @@ from PyQt5.QtGui import (
     QWheelEvent,
 )
 from PyQt5.QtWidgets import QWidget
-from toolset.utils.misc import clamp
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.generics.git import (
@@ -45,6 +34,7 @@ from pykotor.resource.generics.git import (
     GITTrigger,
     GITWaypoint,
 )
+from toolset.utils.misc import clamp
 
 if TYPE_CHECKING:
     from pykotor.resource.formats.bwm import BWM, BWMFace

@@ -7,7 +7,7 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.resource.formats.gff import read_gff, GFF
+from pykotor.resource.formats.gff import GFF, read_gff
 from pykotor.resource.generics.are import ARE, construct_are, dismantle_are
 
 TEST_FILE = "tests/files/test.are"

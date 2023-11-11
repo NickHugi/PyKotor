@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING
 from pykotor.common.language import LocalizedString
 from pykotor.common.module import Module
 from pykotor.extract.installation import Installation, SearchLocation
+from pykotor.helpers.string import ireplace
 from pykotor.resource.formats.erf import ERF, ERFType, write_erf
 from pykotor.resource.formats.gff import write_gff
-from pykotor.resource.formats.lyt.lyt_auto import write_lyt
+from pykotor.resource.formats.lyt import write_lyt
 from pykotor.resource.formats.rim import RIM, read_rim
 from pykotor.resource.formats.tpc import TPC, TPCTextureFormat, write_tpc
 from pykotor.resource.formats.vis import write_vis
@@ -21,7 +22,6 @@ from pykotor.resource.generics.uts import dismantle_uts
 from pykotor.resource.type import ResourceType
 from pykotor.tools import model
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tools.string import ireplace
 
 if TYPE_CHECKING:
     import os

@@ -8,9 +8,9 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists():
         sys.path.append(str(pykotor_path.parent))
 
+from pykotor.helpers.path import Path
 from pykotor.resource.formats.mdl import read_mdl, write_mdl
 from pykotor.resource.type import ResourceType
-from pykotor.tools.path import Path
 
 parser = argparse.ArgumentParser(description="Extracts MDL/MDX in ASCII format, whatever that means")
 parser.add_argument("--input", type=str, help="Path to the MDL/MDX file/folder of MDL files")

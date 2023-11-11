@@ -6,6 +6,7 @@ from copy import copy
 from enum import IntEnum
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, Optional
 
+from pykotor.helpers.path import Path
 from pykotor.common.language import Gender, Language, LocalizedString
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.common.stream import BinaryReader
@@ -22,7 +23,7 @@ from pykotor.resource.formats.gff import read_gff
 from pykotor.resource.formats.tpc import TPC, read_tpc
 from pykotor.resource.type import ResourceType
 from pykotor.tools.misc import is_capsule_file, is_erf_file, is_mod_file, is_rim_file
-from pykotor.tools.path import CaseAwarePath, Path
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tools.sound import fix_audio
 from pykotor.tslpatcher.logger import PatchLogger
 
@@ -95,7 +96,7 @@ class Installation:
     ]
 
     def __init__(self, path: os.PathLike | str, logger: PatchLogger | None = None):
-        self._path: Path = path if isinstance(path, Path) else Path(path)
+        self._path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
         self.log = logger or PatchLogger()
 
         self._talktable: TalkTable = TalkTable(CaseAwarePath(self._path, "dialog.tlk"))
@@ -125,7 +126,7 @@ class Installation:
         self.log.add_note(f"Finished loading the installation from {self._path!s}")
 
     # region Get Paths
-    def path(self) -> Path:
+    def path(self) -> CaseAwarePath:
         """Returns the path to root folder of the Installation.
 
         Returns
@@ -213,6 +214,22 @@ class Installation:
         folder_names: tuple[str, ...] | str,
         optional: bool = False,
     ) -> CaseAwarePath:
+        """Finds the path to a resource folder.
+
+        Args:
+        ----
+            folder_names: The name(s) of the folder(s) to search for.
+            optional: Whether to raise an error if the folder is not found.
+
+        Returns:
+        -------
+            CaseAwarePath: The path to the found folder.
+        Processing Logic:
+            - Iterates through the provided folder names
+            - Joins each name to the base path to check if the folder exists
+            - Returns the first existing path
+            - Raises FileNotFoundError if no path is found and optional is False.
+        """
         try:
             resource_path = self._path
             if isinstance(folder_names, str):  # make a tuple
@@ -235,7 +252,9 @@ class Installation:
 
     # region Load Data
 
-    def load_resources(self, path: CaseAwarePath, capsule_check=None, recurse=False) -> dict[str, list[FileResource]] | list[FileResource]:
+    def load_resources(
+        self, path: CaseAwarePath, capsule_check=None, recurse=False
+    ) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in the provided list.
 
         Args:
@@ -252,7 +271,9 @@ class Installation:
         resources: dict[str, list[FileResource]] | list[FileResource] = {} if capsule_check else []
 
         if not path.exists():
-            self.log.add_warning(f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...")
+            self.log.add_warning(
+                f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping..."
+            )
             return resources
 
         files_list: list[CaseAwarePath] = list(path.safe_rglob("*")) if recurse else list(path.safe_iterdir())  # type: ignore[reportGeneralTypeIssues]
@@ -278,7 +299,9 @@ class Installation:
         """Reloads the list of resources in the Chitin linked to the Installation."""
         c_path = CaseAwarePath(self._path)
         if not c_path.joinpath("chitin.key").exists():
-            self.log.add_warning(f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...")
+            self.log.add_warning(
+                f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping..."
+            )
             return
         self._chitin = list(Chitin(kotor_path=c_path))
 
@@ -291,6 +314,7 @@ class Installation:
     def load_modules(self) -> None:
         """Reloads the list of modules files in the modules folder linked to the Installation."""
         self._modules = self.load_resources(self.module_path(), capsule_check=is_capsule_file)  # type: ignore[assignment]
+
     def reload_module(self, module: str) -> None:
         """Reloads the list of resources in specified module in the modules folder linked to the Installation.
 
@@ -311,7 +335,6 @@ class Installation:
     ) -> None:
         """Reloads the list of modules files in the texturepacks folder linked to the Installation."""
         self._texturepacks = self.load_resources(self.texturepacks_path(), capsule_check=is_erf_file)  # type: ignore[assignment]
-
 
     def load_override(self, directory: str | None = None) -> None:
         """Loads the list of resources in a specific subdirectory of the override folder linked to the Installation.
@@ -471,12 +494,29 @@ class Installation:
 
     # endregion
 
-    def game(self) -> Game:
-        if self._game:
-            return self._game
-        path = self._path
-        def check(x):
-            return path.joinpath(x).exists()
+    @staticmethod
+    def determine_game(path: os.PathLike | str) -> Game | None:
+        """Determines the game based on known heuristics from the provided path.
+
+        Args:
+        ----
+            path (str or pathlike object): The path to the KOTOR directory
+
+        Returns:
+        -------
+            Game: The detected Game IntEnum, or None if not determined.
+
+        Processing Logic:
+        - Checks for files/folders specific to KOTOR 1 or KOTOR 2
+        - Checks KOTOR 1 first as a rims folder does not exist in KOTOR 2, which is an identifying characteristic.
+        - Returns Game object with game ID 1 for KOTOR 1 or 2 for KOTOR 2
+        - Raises a ValueError if the game cannot be determined
+        """
+        r_path: CaseAwarePath = path if isinstance(path, CaseAwarePath) else CaseAwarePath(path)
+
+        def check(x) -> bool:
+            file_path: CaseAwarePath = r_path.joinpath(x)
+            return file_path.exists()
 
         is_game1_stream = check("streamwaves") and not check("streamvoice")
         is_game1_exe = check("swkotor.exe") and not check("swkotor2.exe")
@@ -485,15 +525,23 @@ class Installation:
         is_game2_stream = check("streamvoice") and not check("streamwaves")
         is_game2_exe = check("swkotor2.exe") and not check("swkotor.exe")
 
-        if any([is_game2_stream, is_game2_exe]):  # check tsl before k1 because of the rims folder
-            self._game = Game(2)
-        if any([is_game1_stream, is_game1_exe, is_game1_rims]):
-            self._game = Game(1)
+        if any((is_game2_stream, is_game2_exe)):  # check TSL first otherwise the 'rims' folder takes priority
+            return Game(2)
+        if any((is_game1_stream, is_game1_exe, is_game1_rims)):
+            return Game(1)
+        return None
+
+    def game(self) -> Game:
         if self._game is not None:
             return self._game
-        msg = "Could not find the game executable!"
-        raise ValueError(msg)
 
+        game = self.__class__.determine_game(self.path())
+        if game is not None:
+            self._game = game
+            return game
+
+        msg = "Could not determine the KOTOR game version! Did you select the right installation folder?"
+        raise ValueError(msg)
 
     def talktable(self) -> TalkTable:
         """Returns the TalkTable linked to the Installation.

@@ -14,7 +14,7 @@ from pykotor.resource.formats.gff import (
     bytes_gff,
     read_gff,
 )
-from pykotor.tools.path import PureWindowsPath
+from pykotor.helpers.path import PureWindowsPath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:

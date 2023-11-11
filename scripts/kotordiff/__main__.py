@@ -14,14 +14,11 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists():
         sys.path.append(str(pykotor_path.parent))
 
-
 from pykotor.extract.capsule import Capsule
-from pykotor.resource.formats.gff import GFF, GFFContent, read_gff
-from pykotor.resource.formats.lip import LIP, read_lip
-from pykotor.resource.formats.tlk import TLK, read_tlk
-from pykotor.resource.formats.twoda import read_2da
+from pykotor.helpers.path import Path, PureWindowsPath
+from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import CaseAwarePath, Path, PureWindowsPath
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.diff.gff import DiffGFF
 from pykotor.tslpatcher.diff.lip import DiffLIP
 from pykotor.tslpatcher.diff.tlk import DiffTLK
@@ -99,7 +96,7 @@ def visual_length(s: str, tab_length=8) -> int:
     return vis_length
 
 
-gff_types = [x.value.lower().strip() for x in GFFContent]
+gff_types = [x.value.lower().strip() for x in gff.GFFContent]
 
 
 def diff_data(
@@ -127,14 +124,14 @@ def diff_data(
         return True
 
     if ext in gff_types:
-        gff1: GFF | None = None
-        gff2: GFF | None = None
+        gff1: gff.GFF | None = None
+        gff2: gff.GFF | None = None
         try:
-            gff1 = read_gff(data1)
+            gff1 = gff.read_gff(data1)
         except Exception:  # noqa: BLE001
             return log_output(f"[Error] loading GFF {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
-            gff2 = read_gff(data2)
+            gff2 = gff.read_gff(data2)
         except Exception:  # noqa: BLE001
             return log_output(f"[Error] loading GFF {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if gff1 and not gff2:
@@ -154,11 +151,11 @@ def diff_data(
         twoda1: TwoDA | None = None
         twoda2: TwoDA | None = None
         try:
-            twoda1 = read_2da(data1)
+            twoda1 = twoda.read_2da(data1)
         except Exception:  # noqa: BLE001
             return log_output(f"Error loading 2DA {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
-            twoda2 = read_2da(data2)
+            twoda2 = twoda.read_2da(data2)
         except Exception:  # noqa: BLE001
             return log_output(f"Error loading 2DA {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
@@ -178,16 +175,16 @@ def diff_data(
         return True
 
     if ext == "tlk":
-        tlk1: TLK | None = None
-        tlk2: TLK | None = None
+        tlk1: tlk.TLK | None = None
+        tlk2: tlk.TLK | None = None
         try:
             log_output(f"Loading TLK '{file1_rel.parent / where}'")
-            tlk1 = read_tlk(data1)
+            tlk1 = tlk.read_tlk(data1)
         except Exception:  # noqa: BLE001
             return log_output(f"Error loading TLK {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             log_output(f"Loading TLK '{file2_rel.parent / where}'")
-            tlk2 = read_tlk(data2)
+            tlk2 = tlk.read_tlk(data2)
         except Exception:  # noqa: BLE001
             return log_output(f"Error loading TLK {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if tlk1 and not tlk2:
@@ -207,14 +204,14 @@ def diff_data(
         return True
 
     if ext == "lip":
-        lip1: LIP | None = None
-        lip2: LIP | None = None
+        lip1: lip.LIP | None = None
+        lip2: lip.LIP | None = None
         try:
-            lip1 = read_lip(data1)
+            lip1 = lip.read_lip(data1)
         except Exception:  # noqa: BLE001
             return log_output(f"Error loading LIP {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
-            lip2 = read_lip(data2)
+            lip2 = lip.read_lip(data2)
         except Exception:  # noqa: BLE001
             return log_output(f"Error loading LIP {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if lip1 and not lip2:

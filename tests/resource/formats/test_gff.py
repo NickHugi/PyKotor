@@ -1,20 +1,18 @@
 import os
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.common.geometry import Vector4, Vector3
-from pykotor.common.language import Language, Gender
-from pykotor.resource.formats.gff import GFFBinaryReader, GFF, GFFXMLReader
-from pykotor.resource.formats.gff.gff_auto import write_gff, read_gff
+from pykotor.common.geometry import Vector3, Vector4
+from pykotor.common.language import Gender, Language
+from pykotor.resource.formats.gff import GFF, GFFBinaryReader, GFFXMLReader, read_gff, write_gff
 from pykotor.resource.type import ResourceType
-
 
 BINARY_TEST_FILE = "tests/files/test.gff"
 XML_TEST_FILE = "tests/files/test.gff.xml"

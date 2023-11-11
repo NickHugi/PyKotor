@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from pykotor.common.misc import decode_bytes_with_fallbacks
 from pykotor.resource.formats.ncs import bytes_ncs, compile_nss
-from pykotor.tools.path import PurePath
+from pykotor.helpers.path import PurePath
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:

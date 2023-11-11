@@ -1,8 +1,8 @@
 import os
 import pathlib
 import sys
-from unittest import TestCase
 import unittest
+from unittest import TestCase
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
@@ -10,10 +10,9 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from pykotor.common.stream import BinaryReader
-
-from pykotor.resource.formats.ncs import NCSBinaryReader, NCS
-from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, write_ncs, read_ncs
-from pykotor.tools.path import Path
+from pykotor.helpers.path import Path
+from pykotor.resource.formats.ncs import NCS, NCSBinaryReader
+from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, read_ncs, write_ncs
 
 BINARY_TEST_FILE = "tests/files/test.ncs"
 

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Generic, Iterable, Optional, TypeVar
 import charset_normalizer
 
 from pykotor.common.geometry import Vector3
-from pykotor.tools.path import PurePath
+from pykotor.helpers.path import PurePath
 
 if TYPE_CHECKING:
     import os

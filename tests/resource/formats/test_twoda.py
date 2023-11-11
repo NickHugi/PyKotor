@@ -3,23 +3,14 @@ import pathlib
 import sys
 import unittest
 
-
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.exists() and str(pykotor_path) not in sys.path:
         sys.path.append(str(pykotor_path.parent))
 
-from pykotor.resource.formats.twoda import (
-    write_2da,
-    TwoDABinaryReader,
-    read_2da,
-    detect_2da,
-    TwoDACSVReader,
-    TwoDA,
-)
+from pykotor.resource.formats.twoda import TwoDA, TwoDABinaryReader, TwoDACSVReader, detect_2da, read_2da, write_2da
 from pykotor.resource.formats.twoda.io_twoda_json import TwoDAJSONReader
 from pykotor.resource.type import ResourceType
-
 
 BINARY_TEST_FILE = "tests/files/test.2da"
 CSV_TEST_FILE = "tests/files/test.2da.csv"

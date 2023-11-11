@@ -10,8 +10,10 @@ from pykotor.common.misc import Game, decode_bytes_with_fallbacks
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
+from pykotor.extract.installation import Installation
+from pykotor.helpers.path import PurePath
 from pykotor.tools.misc import is_capsule_file
-from pykotor.tools.path import CaseAwarePath, PurePath
+from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
@@ -207,47 +209,6 @@ class ModInstaller:
             if not requiredfile_path.exists():
                 raise ImportError(self._config.required_message.strip() or "cannot install - missing a required mod")
         return self._config
-
-    def game(self) -> Game:
-        """Determines the game being patched.
-
-        Args:
-        ----
-            self: The class instance.
-
-        Returns:
-        -------
-            Game: The game being patched.
-
-        Processing Logic:
-        - Checks for files/folders specific to KOTOR 1 or KOTOR 2
-        - Checks KOTOR 1 first as a rims folder does not exist in KOTOR 2, which is an identifying characteristic.
-        - Returns Game object with game ID 1 for KOTOR 1 or 2 for KOTOR 2
-        - Raises a ValueError if the game cannot be determined
-        """
-        if self._game:
-            return self._game
-        path = self.game_path
-
-        def check(x) -> bool:
-            file_path: CaseAwarePath = path.joinpath(x)
-            return file_path.exists()
-
-        is_game1_stream = check("streamwaves") and not check("streamvoice")
-        is_game1_exe = check("swkotor.exe") and not check("swkotor2.exe")
-        is_game1_rims = check("rims")
-
-        is_game2_stream = check("streamvoice") and not check("streamwaves")
-        is_game2_exe = check("swkotor2.exe") and not check("swkotor.exe")
-
-        if any((is_game2_stream, is_game2_exe)):  # check TSL first otherwise the 'rims' folder takes priority
-            self._game = Game(2)
-        if any((is_game1_stream, is_game1_exe, is_game1_rims)):
-            self._game = Game(1)
-        if self._game is not None:
-            return self._game
-        msg = "Could not determine whether we're patching to a K1 install or a TSL install!"
-        raise ValueError(msg)
 
     def backup(self) -> tuple[CaseAwarePath, set]:
         """Creates a backup of the patch files.
@@ -455,7 +416,11 @@ class ModInstaller:
 
     def install(self) -> None:
         config = self.config()
-        self.game()  # ensure the KOTOR directory is somewhat valid
+        self._game = Installation.determine_game(self.game_path)
+        if self._game is None:
+            msg = "Chosen KOTOR directory is not a valid installation - cannot proceed. Aborting."
+            raise RuntimeError(msg)
+
         memory = PatcherMemory()
 
         patches_list: list[PatcherModifications] = [
