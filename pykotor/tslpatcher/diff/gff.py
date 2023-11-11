@@ -8,7 +8,7 @@ from typing import Any
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
     if pykotor_path.exists():
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.helpers.path import PureWindowsPath
 from pykotor.resource.formats.gff import GFF, GFFFieldType, GFFList, GFFStruct
