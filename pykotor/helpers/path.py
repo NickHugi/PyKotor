@@ -3,7 +3,10 @@ from __future__ import annotations
 import contextlib
 import os
 import pathlib
+import platform
 import re
+import sys
+import uuid
 from typing import List, Tuple, Union
 
 PathElem = Union[str, os.PathLike]
@@ -324,7 +327,7 @@ class BasePath(BasePurePath):
 
 class Path(BasePath, pathlib.Path):
     # pylint: disable-all
-    _flavour = getattr(pathlib.PureWindowsPath, "_flavour", None) if os.name == "nt" else getattr(pathlib.PurePosixPath, "_flavour", None)  # type: ignore[attr-defined]
+    _flavour = pathlib.PureWindowsPath._flavour if os.name == "nt" else pathlib.PurePosixPath._flavour  # type: ignore[attr-defined]
 
 
 class PosixPath(BasePath, pathlib.PosixPath):
