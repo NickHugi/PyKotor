@@ -1,0 +1,60 @@
+name: Test pip install on Python 3.7
+
+on: [push, pull_request]
+
+jobs:
+  install-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+
+    - name: Install pykotor
+      run: pip install . -y --verbose
+
+    - name: Test pykotor installation
+      run: python -c "import pykotor"
+
+    - name: Uninstall pykotor
+      run: pip uninstall pykotor -y --verbose
+
+    - name: Cleanup build
+      run: rm -rvf ./build
+
+    - name: Install toolkit
+      run: pip install -r ./toolkit/requirements.txt
+
+    - name: Test pykotor installation
+      run: python -c "import pykotor"
+
+    - name: Test pykotor toolkit dep
+      run: python -c "import toolset"
+
+    - name: Uninstall toolkit
+      run: pip uninstall ./toolkit -y --verbose
+
+    - name: Uninstall pykotor
+      run: pip uninstall pykotor -y --verbose
+
+    - name: Cleanup build
+      run: rm -rvf ./build
+
+    - name: Purge pip cache
+      run: pip cache purge
+  
+    - name: Test holopatcher
+      run: timeout 10 python -m scripts.holopatcher --install || if [ $? -eq 124 ]; then echo "Initialization check passed"; else exit 1; fi
+    
+    - name: Install k_batchpatcher
+      run: pip install -r ./scripts/k_batchpatcher/requirements.txt
+  
+    - name: Test pykotor k_batchpatcher
+      run: timeout 10 python -m scripts.k_batchpatcher || if [ $? -eq 124 ]; then echo "Initialization check passed"; else exit 1; fi
+  
+    - name: Test pykotor kotordiff
+      run: timeout 10 python -m scripts.kotordiff || if [ $? -eq 124 ]; then echo "Initialization check passed"; else exit 1; fi
