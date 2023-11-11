@@ -14,7 +14,6 @@ if getattr(sys, "frozen", False) is False:
         sys.path.append(str(pykotor_path.parent))
 
 from toolset.data.installation import HTInstallation
-from toolset.gui.editors.uts import UTSEditor
 
 K1_PATH = os.environ.get("K1_PATH")
 
@@ -30,6 +29,7 @@ class UTSEditorTest(TestCase):
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
+        from toolset.gui.editors.uts import UTSEditor
         self.app = QApplication([])
         self.ui = UTSEditor(None, self.INSTALLATION)
 

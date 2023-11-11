@@ -28,7 +28,7 @@ def compile_ui(ignore_timestamp: bool = False):
         # Only recompile if source file is newer than the existing target file or ignore_timestamp is set to True
         if source_timestamp > target_timestamp or ignore_timestamp:
             command = f"pyuic5 {ui_source} -o {ui_target}"
-            os.system(command)
+            os.system(command)  # noqa: S605
             print(command)
 
 
@@ -43,7 +43,7 @@ def compile_qrc(ignore_timestamp: bool = False):
     # Only recompile if source file is newer than the existing target file or ignore_timestamp is set to True
     if source_timestamp > target_timestamp or ignore_timestamp:
         command = f"pyrcc5 {qrc_source} -o {qrc_target}"
-        os.system(command)
+        os.system(command)  # noqa: S605
         print(command)
 
 
