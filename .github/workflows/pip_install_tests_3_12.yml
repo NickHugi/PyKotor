@@ -7,8 +7,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -25,6 +23,9 @@ jobs:
 
     - name: Cleanup build
       run: rm -rvf ./build
+
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
     - name: Install toolkit
       run: pip install -r ./toolkit/requirements.txt
@@ -43,6 +44,9 @@ jobs:
 
     - name: Purge pip cache
       run: pip cache purge
+
+    - name: Checkout repository
+      uses: actions/checkout@v2
   
     - name: Test holopatcher
       run: timeout 10 python -m scripts.holopatcher --install || if [ $? -eq 124 ]; then echo "Initialization check passed"; else exit 1; fi
