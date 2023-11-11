@@ -147,7 +147,21 @@ class Language(IntEnum):
         return Language.UNKNOWN
 
     def get_encoding(self):
-        """Get the encoding for the specified language."""
+        """Gets the encoding for a given language.
+
+        Args:
+        ----
+            self: {Language}: The language to get the encoding for
+
+        Returns:
+        -------
+            {String}: The encoding for the given language
+        Processing Logic:
+            - Check if language is in list of Latin-based languages and return "cp1252" encoding
+            - Check if language is in list of Cyrillic-based languages and return "cp1251" encoding 
+            - Check if language is in list of Central European languages and return "cp1250" encoding
+            - Check individual languages and return their specific encodings.
+        """
         if self in (
             Language.ENGLISH,
             Language.FRENCH,
@@ -370,15 +384,18 @@ class LocalizedString:
 
     @staticmethod
     def substring_pair(substring_id: int) -> tuple[Language, Gender]:
-        """Returns the language gender pair from a substring ID.
+        """Returns a tuple containing the Language and Gender for a given substring ID.
+        - Divide the substring_id by 2 to get the Language id
+        - Take the remainder of substring_id % 2 to get the Gender id
+        - Return a tuple with the Language and Gender enum instances.
 
         Args:
         ----
-            substring_id: The substring ID.
+            substring_id: The ID of the substring
 
         Returns:
         -------
-            A tuple organized as (language, gender).
+            tuple: A tuple containing (Language, Gender)
         """
         language = Language(substring_id // 2)
         gender = Gender(substring_id % 2)

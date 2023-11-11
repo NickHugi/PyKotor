@@ -15,7 +15,7 @@ from pykotor.tools.path import CaseAwarePath, PurePath
 from pykotor.tslpatcher.logger import PatchLogger
 from pykotor.tslpatcher.memory import PatcherMemory
 from pykotor.tslpatcher.mods.install import InstallFile, create_backup
-from pykotor.tslpatcher.mods.template import OverrideType
+from pykotor.tslpatcher.mods.template import OverrideType, PatcherModifications
 from pykotor.tslpatcher.mods.tlk import ModificationsTLK
 
 if TYPE_CHECKING:
@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     from pykotor.tslpatcher.mods.gff import ModificationsGFF
     from pykotor.tslpatcher.mods.nss import ModificationsNSS
     from pykotor.tslpatcher.mods.ssf import ModificationsSSF
-    from pykotor.tslpatcher.mods.template import PatcherModifications
     from pykotor.tslpatcher.mods.twoda import Modifications2DA
 
 
@@ -67,6 +66,22 @@ class PatcherConfig:
         self.patches_tlk: ModificationsTLK = ModificationsTLK()
 
     def load(self, ini_text: str, mod_path: os.PathLike | str, logger: PatchLogger | None = None) -> None:
+        """Loads configuration from a TSLPatcher changes ini text string.
+
+        Args:
+        ----
+            ini_text: The ini text string to load configuration from.
+            mod_path: The path to the mod being configured.
+            logger: Optional logger for logging messages.
+
+        Returns:
+        -------
+            None: No value is returned.
+        - Parse the ini text string into a ConfigParser object
+        - Initialize a ConfigReader with the ConfigParser and pass it the mod path and logger
+        - Set the ConfigParser to use case-insensitive keys. Ini is inherently case-insensitive by default.
+        - Call the load method on the ConfigReader, passing self to populate the configuration instance.
+        """
         from pykotor.tslpatcher.reader import ConfigReader
 
         ini = ConfigParser(
@@ -135,6 +150,24 @@ class ModInstaller:
         changes_ini_path: os.PathLike | str,
         logger: PatchLogger | None = None,
     ):
+        """Initialize a Patcher instance.
+
+        Args:
+        ----
+            mod_path: {Path to the mod directory} 
+            game_path: {Path to the game directory}
+            changes_ini_path: {Path to the changes ini file}
+            logger: {Optional logger instance}.
+
+        Returns:
+        -------
+            self: {Returns the Patcher instance}
+        Processing Logic:
+            - Initialize the logger if not already defined.
+            - Initialize parameters passed for game, mod and changes ini paths
+            - Handle legacy changes ini path syntax (before the merge of the fork)
+            - Initialize other attributes.
+        """
         self.log: PatchLogger = logger or PatchLogger()
         self.game_path: CaseAwarePath = CaseAwarePath(game_path)
         self.mod_path: CaseAwarePath = CaseAwarePath(mod_path)
@@ -176,6 +209,22 @@ class ModInstaller:
         return self._config
 
     def game(self) -> Game:
+        """Determines the game being patched.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            Game: The game being patched.
+
+        Processing Logic:
+        - Checks for files/folders specific to KOTOR 1 or KOTOR 2
+        - Checks KOTOR 1 first as a rims folder does not exist in KOTOR 2, which is an identifying characteristic.
+        - Returns Game object with game ID 1 for KOTOR 1 or 2 for KOTOR 2
+        - Raises a ValueError if the game cannot be determined
+        """
         if self._game:
             return self._game
         path = self.game_path
@@ -201,6 +250,24 @@ class ModInstaller:
         raise ValueError(msg)
 
     def backup(self) -> tuple[CaseAwarePath, set]:
+        """Creates a backup of the patch files.
+
+        Args:
+        ----
+            self: The Patcher object
+
+        Returns:
+        -------
+            tuple[CaseAwarePath, set]: Returns a tuple containing the backup directory path and a set of processed backup files
+
+        Processing Logic:
+        - Checks if a backup folder was already initialized and return that and the currently processed files if so
+        - Finds the mod path directory to backup from
+        - Generates a timestamped subdirectory name
+        - Removes any existing uninstall directories
+        - Creates the backup directory
+        - Returns the backup directory and new hashset that'll contain the processed files
+        """
         if self._backup:
             return (self._backup, self._processed_backup_files)
         backup_dir = self.mod_path
@@ -228,6 +295,23 @@ class ModInstaller:
         patch: PatcherModifications,
         output_container_path: CaseAwarePath,
     ) -> tuple[bool, Capsule | None]:
+        """Handle capsule file and create backup.
+
+        Args:
+        ----
+            patch: PatcherModifications: Patch details
+            output_container_path: CaseAwarePath: Output path.
+
+        Returns:
+        -------
+            tuple[bool, Capsule | None]: Exists flag and capsule object
+
+        Processing Logic:
+        - Check if patch destination is capsule file
+        - If yes, create Capsule object and backup file
+        - Else, backup file directly
+        - Return exists flag and capsule object.
+        """
         capsule = None
         if is_capsule_file(patch.destination):
             capsule = Capsule(output_container_path)
@@ -245,6 +329,26 @@ class ModInstaller:
         exists_at_output_location: bool | None = None,
         capsule: Capsule | None = None,
     ) -> bytes | None:
+        """Looks up the file/resource that is expected to be patched.
+
+        Args:
+        ----
+            patch: PatcherModifications - The desired patch information.
+            output_container_path: CaseAwarePath - Path to output container (capsule/folder)
+            exists_at_output_location: bool | None - Whether resource exists at destination location
+            capsule: Capsule | None - Capsule to be patched, if one
+
+        Returns:
+        -------
+            bytes | None - Loaded resource bytes or None
+
+        Processing Logic:
+            - Check if file should be replaced or doesn't exist at output, load from mod path
+            - Otherwise, load the file to be patched from the destination if it exists.
+                - If no capsule, it's a file and load it directly as a file.
+                - If destination is a capsule, pull the resource from the capsule.
+            - Return None and log error on failure (IO exceptions, permission issues, etc)
+        """
         try:
             if patch.replace_file or not exists_at_output_location:
                 return BinaryReader.load_file(self.mod_path / patch.sourcefile)
@@ -256,6 +360,23 @@ class ModInstaller:
             return None
 
     def handle_override_type(self, patch: PatcherModifications):
+        """Handles the override type for a patch modification.
+
+        Args:
+        ----
+            patch: PatcherModifications - The patch modification object.
+
+        Returns:
+        -------
+            None
+
+        Processes the override type:
+            - Checks if override type is empty or set to ignore and returns early.
+            - Gets the override resource path.
+            - If the path exists:
+                - For rename, renames the file with incrementing number if filename exists.
+                - For warn, logs a warning that the file is shadowing the mod's changes.
+        """
         override_type = patch.override_type.lower().strip()
         if not override_type or override_type == OverrideType.IGNORE:
             return
@@ -284,6 +405,27 @@ class ModInstaller:
         exists: bool | None = False,
         capsule: Capsule | None = None,
     ) -> bool:
+        """The name of this function is misleading, it only returns False if the capsule was not found (error)
+        or an InstallList patch already exists at the output location without the Replace#= prefix. Otherwise, it is
+        mostly used for logging purposes.
+
+        Args:
+        ----
+            patch: PatcherModifications - The patch details
+            exists: bool | None - Whether the target file already exists
+            capsule: Capsule | None - The target capsule if patching one
+
+        Returns:
+        -------
+            bool - Whether the patch should be applied
+        Processing Logic:
+        - Determines the local folder and container type from the patch details
+        - Checks if the patch replaces an existing file and logs the action
+        - Checks if the file already exists and the patch settings allow skipping
+        - Checks if the target capsule exists if patching one
+        - Logs the patching action
+        - Returns True if the patch should be applied.
+        """
         local_folder = self.game_path.name if patch.destination == "." else patch.destination
         container_type = "folder" if capsule is None else "archive"
 
