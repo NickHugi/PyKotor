@@ -83,7 +83,7 @@ class DiffGFF:
         self.new: GFF = new
         self.log = log_func
 
-    def is_same(
+    def compare_structs(
         self,
         old_struct: GFFStruct | None = None,
         new_struct: GFFStruct | None = None,
@@ -136,12 +136,12 @@ class DiffGFF:
                     self.log(f"Struct ID is different at '{child_path}': '{old_value.struct_id}'-->'{new_value.struct_id}'")
                     is_same_result = False
 
-                if not self.is_same(old_value, new_value, child_path):
+                if not self.compare_structs(old_value, new_value, child_path):
                     is_same_result = False
                     continue
 
             elif old_ftype == GFFFieldType.List:
-                if not self._output_diff_from_two_lists(old_value, new_value, child_path):
+                if not self.compare_lists(old_value, new_value, child_path):
                     is_same_result = False
                     continue
 
@@ -157,7 +157,24 @@ class DiffGFF:
 
         return is_same_result
 
-    def _output_diff_from_two_lists(self, old_gff_list: GFFList, new_gff_list: GFFList, current_path: PureWindowsPath) -> bool:
+    def compare_lists(self, old_gff_list: GFFList, new_gff_list: GFFList, current_path: PureWindowsPath) -> bool:
+        """Compare two GFFList objects and output differences.
+
+        Args:
+        ----
+            old_gff_list: GFFList - Original GFFList
+            new_gff_list: GFFList - New GFFList
+            current_path: PureWindowsPath - Path being compared
+
+        Returns:
+        -------
+            is_same_result: bool - Whether the lists are the same
+        Processing Logic:
+            - Compare list lengths and log differences
+            - Create dictionaries to index lists for comparison
+            - Detect unique items in each list and log differences
+            - Compare common items and log structural differences.
+        """
         is_same_result = True
 
         if len(old_gff_list) != len(new_gff_list):
@@ -165,14 +182,16 @@ class DiffGFF:
             self.log()
             is_same_result = False
 
-        old_set, new_set = dict(enumerate(old_gff_list)), dict(enumerate(new_gff_list))
+        # Use the indices in the original lists as keys
+        old_dict = dict(enumerate(old_gff_list))
+        new_dict = dict(enumerate(new_gff_list))
 
         # Detect unique items in both lists
-        unique_to_old: set[int] = old_set.keys() - new_set.keys()
-        unique_to_new: set[int] = new_set.keys() - old_set.keys()
+        unique_to_old = set(old_dict.keys()) - set(new_dict.keys())
+        unique_to_new = set(new_dict.keys()) - set(old_dict.keys())
 
         for list_index in unique_to_old:
-            struct = old_set[list_index]
+            struct = old_dict[list_index]
             self.log(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of old struct:")
             for label, field_type, field_value in struct:
@@ -181,7 +200,7 @@ class DiffGFF:
             is_same_result = False
 
         for list_index in unique_to_new:
-            struct = new_set[list_index]
+            struct = new_dict[list_index]
             self.log(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
             self.log("Contents of new struct:")
             for label, field_type, field_value in struct:
@@ -190,11 +209,11 @@ class DiffGFF:
             is_same_result = False
 
         # For items present in both lists
-        common_items = old_set.keys() & new_set.keys()
+        common_items = old_dict.keys() & new_dict.keys()
         for list_index in common_items:
-            old_child: GFFStruct = old_set[list_index]
-            new_child: GFFStruct = new_set[list_index]
-            if not self.is_same(old_child, new_child, current_path / str(list_index)):
+            old_child: GFFStruct = old_dict[list_index]
+            new_child: GFFStruct = new_dict[list_index]
+            if not self.compare_structs(old_child, new_child, current_path / str(list_index)):
                 is_same_result = False
 
         return is_same_result
