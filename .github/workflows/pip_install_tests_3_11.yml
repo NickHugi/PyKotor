@@ -12,6 +12,9 @@ jobs:
       with:
         python-version: '3.11'
 
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
     - name: Install pykotor
       run: pip install . --verbose
 
