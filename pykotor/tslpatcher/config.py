@@ -385,17 +385,17 @@ class ModInstaller:
         override_resource_path = override_dir / patch.saveas
         if override_resource_path.exists():
             if override_type == OverrideType.RENAME:
-                new_filepath: CaseAwarePath = override_dir / ("old_" + patch.saveas)
+                renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"
                 i = 2
-                while new_filepath.exists():  # tslpatcher does not do this loop.
-                    stem = new_filepath.stem if i == 2 else (new_filepath.stem[:-4] + f" ({i})")  # noqa: PLR2004
-                    new_filepath = (new_filepath.parent / stem).with_suffix(new_filepath.suffix)
+                while renamed_file_path.exists():  # tslpatcher does not do this loop.
+                    next_filename: str = f"{renamed_file_path.stem[4:]} ({i}){renamed_file_path.suffix}"
+                    renamed_file_path = renamed_file_path.parent / next_filename
                     i += 1
                 try:
-                    shutil.move(override_resource_path, new_filepath)
+                    shutil.move(override_resource_path, renamed_file_path)
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
-                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{new_filepath.name}' in the Override folder: {e!r}")
+                    self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e!r}")
             elif override_type == OverrideType.WARN:
                 self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
 

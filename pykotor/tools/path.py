@@ -217,8 +217,6 @@ class BasePurePath:
         """Initialize a new path object with the added extension. Similar to with_suffix, but doesn't replace existing extensions."""
         if not isinstance(extension, str):
             return NotImplemented
-        if not extension.startswith("."):
-            extension = f".{extension}"
         return self._create_instance(str(self) + extension)
 
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
