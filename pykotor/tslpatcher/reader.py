@@ -697,7 +697,7 @@ class ConfigReader:
         return FieldValueConstant(ConfigReader.normalize_tslpatcher_crlf(string_value))
 
     @staticmethod
-    def field_value_from_type(raw_value: str, field_type: GFFFieldType):
+    def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
         if value := ConfigReader.field_value_from_memory(raw_value):
             return value
         if field_type.return_type() == ResRef:
@@ -714,8 +714,7 @@ class ConfigReader:
         if field_type.return_type() == Vector4:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
             return FieldValueConstant(Vector4(*components))
-        msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
-        raise ValueError(msg)
+        return None
 
     def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
         """Modifies a field in a GFF based on the key(path) and string value
@@ -818,7 +817,10 @@ class ConfigReader:
                 msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type}' in this context"
                 raise ValueError(msg)
         else:
-            value = self.field_value_from_type(raw_value, field_type)
+            value = self.field_value_from_type(raw_value, field_type)  # type: ignore[assignment]
+            if value is None:
+                msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
+                raise ValueError(msg)
 
         modifiers: list[ModifyGFF] = []
         index_in_list_token = None
