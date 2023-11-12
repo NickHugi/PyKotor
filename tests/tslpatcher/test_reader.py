@@ -2170,20 +2170,28 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
+        assert(isinstance(mod_0, AddFieldGFF))
         self.assertIsInstance(mod_0.value, FieldValueConstant)
+        assert(isinstance(mod_0.value, FieldValueConstant))
         self.assertIsInstance(mod_0.value.stored, LocalizedStringDelta)
+        assert(isinstance(mod_0.value.stored, LocalizedStringDelta))
         self.assertEqual("SomeList", str(mod_0.path))
         self.assertEqual("SomeField", mod_0.label)
         self.assertIsInstance(mod_0.value.stored.stringref, FieldValueConstant)
+        assert(isinstance(mod_0.value.stored.stringref, FieldValueConstant))
         self.assertEqual(123, mod_0.value.stored.stringref.stored)
         self.assertEqual("abc", mod_0.value.stored.get(Language.ENGLISH, Gender.MALE))
         self.assertEqual("lmnop", mod_0.value.stored.get(Language.FRENCH, Gender.FEMALE))
 
         mod_1 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
+        assert(isinstance(mod_1, AddFieldGFF))
         self.assertIsInstance(mod_1.value, FieldValueConstant)
+        assert(isinstance(mod_1.value, FieldValueConstant))
         self.assertIsInstance(mod_1.value.stored, LocalizedStringDelta)
+        assert(isinstance(mod_1.value.stored, LocalizedStringDelta))
         self.assertIsInstance(mod_1.value.stored.stringref, FieldValueTLKMemory)
+        assert(isinstance(mod_1.value.stored.stringref, FieldValueTLKMemory))
         self.assertEqual(8, mod_1.value.stored.stringref.token_id)
 
     def test_gff_add_inside_struct(self):

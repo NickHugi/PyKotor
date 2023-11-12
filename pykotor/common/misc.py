@@ -601,18 +601,19 @@ class CaseInsensitiveDict(Generic[T]):
     def __repr__(self) -> str:
         return repr(self._dictionary)
 
-    def pop(self, key: str, __default: VT = None) -> VT | T:
-        lower_key = key.lower()
+    def pop(self, __key: str, __default: VT = _unique_sentinel) -> VT | T:  # type: ignore[assignment]
+        lower_key = __key.lower()
         try:
             # Attempt to pop the value using the case-insensitive key.
             value = self._dictionary.pop(self._case_map.pop(lower_key))
         except KeyError:
+            if __default is _unique_sentinel:
+                raise
             # Return the default value if lower_key is not found in the case map.
             return __default
         return value
 
-    def get(self, __key: str, __default: VT = None) -> VT | T:
-        # sourcery skip: compare-via-equals
+    def get(self, __key: str, __default: VT = None) -> VT | T:  # type: ignore[assignment]
         key_lookup: str = self._case_map.get(__key.lower(), _unique_sentinel)  # type: ignore[arg-type]
         return __default if key_lookup is _unique_sentinel else self._dictionary.get(key_lookup, __default)
 
