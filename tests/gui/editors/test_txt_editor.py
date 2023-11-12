@@ -7,6 +7,7 @@ from unittest import TestCase
 try:
     from PyQt5.QtTest import QTest
     from PyQt5.QtWidgets import QApplication
+    from toolset.data.installation import HTInstallation
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None
 
@@ -15,9 +16,6 @@ if getattr(sys, "frozen", False) is False:
     toolset_path = pathlib.Path(__file__).parents[3] / "toolset"
     if pykotor_path.exists() or toolset_path.exists():
         sys.path.insert(0, str(pykotor_path.parent))
-
-from toolset.data.installation import HTInstallation
-from toolset.gui.editors.txt import TXTEditor
 
 K1_PATH = os.environ.get("K1_PATH")
 
@@ -34,9 +32,11 @@ class TXTEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
+        from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
+        from toolset.gui.editors.txt import TXTEditor
         self.app = QApplication([])
         self.ui = TXTEditor(None, self.INSTALLATION)
 

@@ -16,8 +16,6 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() or toolset_path.exists():
         sys.path.insert(0, str(pykotor_path.parent))
 
-from toolset.data.installation import HTInstallation
-from toolset.gui.editors.utd import UTDEditor
 
 K1_PATH = os.environ.get("K1_PATH")
 
@@ -33,10 +31,12 @@ K1_PATH = os.environ.get("K1_PATH")
 class UTDEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        from toolset.data.installation import HTInstallation
         # Make sure to configure this environment path before testing!
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
+        from toolset.gui.editors.utd import UTDEditor
         self.app = QApplication([])
         self.ui = UTDEditor(None, self.INSTALLATION)
 

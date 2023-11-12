@@ -16,8 +16,6 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() or toolset_path.exists():
         sys.path.insert(0, str(pykotor_path.parent))
 
-from toolset.data.installation import HTInstallation
-
 K1_PATH = os.environ.get("K1_PATH")
 
 
@@ -33,6 +31,7 @@ class UTSEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
+        from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:

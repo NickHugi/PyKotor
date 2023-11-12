@@ -4,7 +4,11 @@ import sys
 import unittest
 from unittest import TestCase
 
-from PyQt5.QtWidgets import QApplication
+try:
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtWidgets import QApplication
+except (ImportError, ModuleNotFoundError):
+    QTest, QApplication = None, None
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
@@ -12,7 +16,6 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() or toolset_path.exists():
         sys.path.insert(0, str(pykotor_path.parent))
 
-from toolset.data.installation import HTInstallation
 from toolset.gui.editors.utt import UTTEditor
 
 K1_PATH = os.environ.get("K1_PATH")
@@ -30,6 +33,7 @@ class UTTEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
+        from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
