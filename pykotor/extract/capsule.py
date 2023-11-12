@@ -29,7 +29,7 @@ class Capsule:
         Args:
             path: Path to the capsule file
             create_nonexisting: Whether to create the file if it doesn't exist
-        Returns: 
+        Returns:
             self: The initialized Capsule object
         Processing Logic:
             - Check if the path points to a valid capsule file
@@ -102,7 +102,7 @@ class Capsule:
         ----
             queries: list[ResourceIdentifier]: The queries to batch
             reload: bool = False: Whether to reload the capsule metadata
-        Returns: 
+        Returns:
             dict[ResourceIdentifier, ResourceResult | None]: The results for each query keyed by query
         Processing Logic:
         - Reloads capsule metadata if reload is True
@@ -158,7 +158,7 @@ class Capsule:
             resref: str: Resource reference
             restype: ResourceType: Resource type
             reload: bool: Reload resources cache
-        Returns: 
+        Returns:
             bool: True if resource exists, False otherwise
         Checks if a resource exists:
         - Constructs a ResourceIdentifier from resref and restype
@@ -328,7 +328,7 @@ class Capsule:
         Processing Logic:
             - Skip the first 4 bytes of unknown data
             - Read the entry count from the next 4 bytes
-            - Read the offset to entries from the next 4 bytes 
+            - Read the offset to entries from the next 4 bytes
             - Seek to the offset to entries
             - Loop through each entry
                 - Read the 16 byte resref string

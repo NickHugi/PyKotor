@@ -145,7 +145,7 @@ class ModuleDesigner(QMainWindow):
             - Connect menu actions to methods like open, save
             - Connect toggles of instance visibility checks to update method
             - Connect double clicks on checks and instance list to methods
-            - Connect 3D renderer signals to mouse, key methods 
+            - Connect 3D renderer signals to mouse, key methods
             - Connect 2D renderer signals to mouse, key methods.
         """
         self.ui.actionOpen.triggered.connect(self.openModule)
@@ -503,7 +503,7 @@ class ModuleDesigner(QMainWindow):
         Processing Logic:
         1. Snaps the instance position to the walkmesh if walkmeshSnap is True
         2. Checks if the instance is a camera, and if not:
-        3. Opens an insert instance dialog 
+        3. Opens an insert instance dialog
         4. If accepted, rebuilds the resource tree and sets the instance resref and adds it
         5. Also sets tag/name if waypoint/trigger/door
         6. If a camera, just adds it
@@ -701,7 +701,7 @@ class ModuleDesigner(QMainWindow):
 
     def _build_active_override_menu(self, data: ModuleResource, menu: QMenu):
         """Builds an active override menu for a module resource
-        Args: 
+        Args:
             data: ModuleResource - The module resource data
             menu: QMenu - The menu to build actions on
         Returns:

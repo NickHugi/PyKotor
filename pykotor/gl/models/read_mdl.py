@@ -128,7 +128,7 @@ def gl_load_mdl(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model:
     Args:
     ----
         scene: Scene - The scene to load the model into
-        mdl: BinaryReader - The binary reader for the .mdl file 
+        mdl: BinaryReader - The binary reader for the .mdl file
         mdx: BinaryReader - The binary reader for the .mdx file
     Returns:
         Model - The loaded model
@@ -161,7 +161,7 @@ def gl_load_stitched_model(scene, mdl: BinaryReader, mdx: BinaryReader) -> Model
     Loads and stitches together a gltf model from binary files
     Args:
         scene: {Scene}: The scene to add the model to
-        mdl: {BinaryReader}: Reader for the binary model file 
+        mdl: {BinaryReader}: Reader for the binary model file
         mdx: {BinaryReader}: Reader for the binary mesh data file
     Returns:
         {Model}: The loaded and stitched model

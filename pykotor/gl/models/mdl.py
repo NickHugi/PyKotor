@@ -88,7 +88,7 @@ class Model:
 
         Args:
         ----
-            node: {Node object whose bounding box is calculated} 
+            node: {Node object whose bounding box is calculated}
             transform: {Transformation matrix to apply on node}
             min_point: {vec3 to store minimum point of bounding box}
             max_point: {vec3 to store maximum point of bounding box}.
@@ -217,13 +217,13 @@ class Mesh:
             scene: Scene - The scene object
             node: Node - The node object
             texture: str - The texture path
-            lightmap: str - The lightmap path 
+            lightmap: str - The lightmap path
             vertex_data: list - The vertex data
             element_data: list - The element data
             block_size: int - The block size
             data_bitflags: int - The data bitflags
             vertex_offset: int - The vertex offset
-            normal_offset: int - The normal offset 
+            normal_offset: int - The normal offset
             texture_offset: int - The texture offset
             lightmap_offset: int - The lightmap offset
         Returns:
@@ -292,7 +292,7 @@ class Cube:
         """Initializes a cube mesh
         Args:
             scene: Scene: The scene object
-            min_point: vec3 | None: The minimum point of the cube (default is (-1, -1, -1))  
+            min_point: vec3 | None: The minimum point of the cube (default is (-1, -1, -1))
             max_point: vec3 | None: The maximum point of the cube (default is (1, 1, 1)).
 
         Returns
@@ -412,7 +412,7 @@ class Boundary:
             Boundary - The generated circular boundary
         Processing Logic:
             - Calculate vertex positions around the circle at intervals of smoothness
-            - Add vertices rotating around the circle four times 
+            - Add vertices rotating around the circle four times
             - Return a new Boundary instance with the calculated vertices.
         """
         vertices = []

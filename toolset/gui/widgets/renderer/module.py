@@ -87,7 +87,7 @@ class ModuleRenderer(QOpenGLWidget):
         Args:
         ----
             x: float - The x coordinate of the point
-            y: float - The y coordinate of the point 
+            y: float - The y coordinate of the point
             default_z: float = 0.0 - The default z height if no face is found
         Returns:
             Vector3 - The (x, y, z) position on the walkmesh

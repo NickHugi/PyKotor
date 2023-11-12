@@ -304,7 +304,7 @@ class NSSEditor(Editor):
         line breaks so as to auto-indent the new line
         Args:
             self: The NSSEditor instance
-        Returns: 
+        Returns:
             None: Does not return anything
         Processing Logic:
             - Check if text was inserted not deleted
@@ -386,7 +386,7 @@ class CodeEditor(QPlainTextEdit):
         """Draws line numbers in the line number area
         Args:
             e (QPaintEvent): Paint event
-        Returns: 
+        Returns:
             None
         - Gets the painter object for the line number area
         - Fills the rect with a light gray color

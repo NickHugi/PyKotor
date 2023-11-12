@@ -135,17 +135,20 @@ class BasePurePath:
 
     def endswith(self, text: str | tuple[str, ...], case_sensitive: bool = False) -> bool:
         # If case sensitivity is not required, normalize the self string and the text to lower case
-        """
-        Checks if string ends with the specified suffix.
+        """Checks if string ends with the specified suffix.
+
         Args:
+        ----
             text: String or tuple of strings to check for suffix.
             case_sensitive: Whether comparison should be case sensitive.
-        Returns: 
+
+        Returns:
+        -------
             bool: True if string ends with the suffix, False otherwise.
         Processing Logic:
         - If case sensitivity is not required, normalize self and text to lower case
         - Normalize each string in the tuple if text is a tuple  
-        - Utilize Python's built-in endswith method to check for suffix
+        - Utilize Python's built-in endswith method to check for suffix.
         """
         if not case_sensitive:
             self_str = str(self).lower()
@@ -163,9 +166,10 @@ class BasePurePath:
 
     @staticmethod
     def _fix_path_formatting(str_path: str, slash=os.sep) -> str:
-        """
-        Formats a path string.
+        """Formats a path string.
+
         Args:
+        ----
             str_path (str): The path string to format
             slash (str): The path separator character
         Returns:
@@ -175,7 +179,7 @@ class BasePurePath:
             2. Strip quotes from the path
             3. Format Windows paths by replacing mixed slashes and normalizing slashes
             4. Format Unix paths by replacing mixed slashes and normalizing slashes
-            5. Strip trailing slashes from the formatted path
+            5. Strip trailing slashes from the formatted path.
         """
         if slash not in ("\\", "/"):
             msg = f"Invalid slash str: '{slash}'"

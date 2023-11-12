@@ -26,7 +26,7 @@ class UTMEditor(Editor):
         """Initialize the Merchant Editor window
         Args:
             parent: {Widget that is the parent of this window}
-            installation: {Optional HTInstallation object to load data from}
+            installation: {Optional HTInstallation object to load data from}.
 
         Returns
         -------
@@ -55,7 +55,7 @@ class UTMEditor(Editor):
         Args:
             self: The class instance
         Returns:
-            None: No return value
+            None: No return value.
         """
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
@@ -69,7 +69,7 @@ class UTMEditor(Editor):
             None: No return value
         - Sets the internal installation reference to the passed in installation
         - Sets the installation on the UI name edit to the passed installation
-        - Allows editing of the installation details in the UI
+        - Allows editing of the installation details in the UI.
         """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
@@ -89,7 +89,7 @@ class UTMEditor(Editor):
         Processing Logic:
             - Sets name, tag, resref, id, markups from UTM object
             - Sets can_buy, can_sell flags from UTM object
-            - Sets comment text from UTM object
+            - Sets comment text from UTM object.
         """
         self._utm = utm
 

@@ -29,7 +29,7 @@ class VIS:
         """Returns a copy of the set of rooms
         Args:
             self: The class instance
-        Returns: 
+        Returns:
             set[str]: A copy of the set of rooms
         - Creates a copy of the internal _rooms set to avoid direct manipulation of the original set
         - The copy() method is used to make a shallow copy of the set
@@ -83,7 +83,7 @@ class VIS:
         Args:
             old (str): Old room name
             new (str): New room name
-        Returns: 
+        Returns:
             None: Returns nothing
         Processing Logic:
             - Lowercase old and new room names
@@ -181,7 +181,7 @@ class VIS:
         """Sets all rooms visible from each other
         Args:
             self: The instance of the class
-        Returns: 
+        Returns:
             None: No value is returned
         - Loop through each room in self._rooms
         - For that room, loop through all other rooms

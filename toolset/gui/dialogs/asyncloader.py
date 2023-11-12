@@ -110,7 +110,7 @@ class AsyncBatchLoader(QDialog):
             title (str): Title of the progress dialog
             tasks (List[Callable]): List of tasks to run
             errorTitle (Optional[str]): Title for error dialog, if any
-        Returns: 
+        Returns:
             None: Does not return anything
         Processing Logic:
             - Sets up progress bar, info text and layout

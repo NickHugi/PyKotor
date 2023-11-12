@@ -667,7 +667,7 @@ def dismantle_dlg(
     """Dismantle a dialogue into a GFF structure
     Args:
         dlg: {DLG object}: The dialogue to dismantle
-        game: {Game enum}: The game type (default K2) 
+        game: {Game enum}: The game type (default K2)
         use_deprecated: {bool}: Use deprecated fields (default True).
 
     Returns
@@ -896,7 +896,7 @@ def write_dlg(
     Args:
     ----
         dlg: Dialogue to write
-        target: Target file or folder to write to 
+        target: Target file or folder to write to
         game: Game the dialogue is for (default K2)
         file_format: Format to write as (default GFF)
         use_deprecated: Use deprecated fields (default True)
@@ -925,7 +925,7 @@ def bytes_dlg(
         game: Game - Game the dialog is from
         file_format: ResourceType - Format to return bytes in
         use_deprecated: bool - Use deprecated fields if True
-    Returns: 
+    Returns:
         bytes: Byte representation of the dialog in the given format
     - Dismantle the DLG into a GFF structure
     - Encode the GFF into bytes in the requested format.

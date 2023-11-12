@@ -156,7 +156,7 @@ class ModInstaller:
 
         Args:
         ----
-            mod_path: {Path to the mod directory} 
+            mod_path: {Path to the mod directory}
             game_path: {Path to the game directory}
             changes_ini_path: {Path to the changes ini file}
             logger: {Optional logger instance}.

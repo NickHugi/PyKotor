@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import platform
 
 from pykotor.common.misc import Game
 from pykotor.helpers.misc import ProcessorArchitecture

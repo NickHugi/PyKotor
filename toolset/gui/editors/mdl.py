@@ -61,9 +61,9 @@ class MDLEditor(Editor):
 
         Args:
         ----
-            filepath: {Path to the resource file} 
+            filepath: {Path to the resource file}
             resref: {Resource reference string}
-            restype: {Resource type (MDL or MDX)} 
+            restype: {Resource type (MDL or MDX)}
             data: {Binary data of the resource}
 
         Returns:
@@ -71,7 +71,7 @@ class MDLEditor(Editor):
             None
 
         Loads associated MDL/MDX data:
-        - Checks file extension and loads associated data from file 
+        - Checks file extension and loads associated data from file
         - Loads associated data from Erf, Rim or Bif files if present
         - Sets model data on renderer if both MDL and MDX found
         - Displays error if unable to find associated data.

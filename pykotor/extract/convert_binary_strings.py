@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.absolute().parent.parent))
 
-from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY  # noqa: E402
+from pykotor.common.scriptlib import KOTOR_LIBRARY, TSL_LIBRARY
 
 
 def singlequote_byte_string_to_triplequote_byte_string(single_line_str: str) -> str:

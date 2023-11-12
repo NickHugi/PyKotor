@@ -142,7 +142,7 @@ class ToolWindow(QMainWindow):
         """Connects signals to slots for UI interactions
         Args:
             self: {The class instance}: Sets up connections for UI signals
-        Returns: 
+        Returns:
             None: No return value
         {Processing Logic}:
             - Connects game combo box index changed to change active installation

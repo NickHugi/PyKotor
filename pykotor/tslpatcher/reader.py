@@ -148,7 +148,7 @@ class ConfigReader:
         -------
             None: No value is returned.
         Loading File List:
-        - Gets [InstallList] section from ini 
+        - Gets [InstallList] section from ini
         - Loops through section items getting foldername and filenames
         - Gets section for each filename
         - Creates InstallFile object for each filename
@@ -429,7 +429,7 @@ class ConfigReader:
         """Loads SSF patches from the ini file.
 
         - Gets the [SSFList] section name from the ini file
-        - Checks for [SSFList] section, logs warning if missing  
+        - Checks for [SSFList] section, logs warning if missing
         - Maps sound names to enum values
         - Loops through [SSFList] parsing patches
             - Gets section for each SSF file
@@ -517,7 +517,7 @@ class ConfigReader:
             - Gets the section for the individual GFF file
             - Creates a ModificationsGFF object for it
             - Populates variables from the GFF section
-            - Loops through each modifier 
+            - Loops through each modifier
                 - Creates the appropriate modifier object
                 - Adds it to the modifications object
         - Adds the fully configured modifications object to the config.
@@ -991,7 +991,7 @@ class ConfigReader:
 
         Processing Logic:
         1. Loops through each modifier and value
-        2. Determines modifier type (cell, 2DA store, TLK store, row label) 
+        2. Determines modifier type (cell, 2DA store, TLK store, row label)
         3. Creates appropriate RowValue for cell/store value
         4. Adds cell/store value to return dictionaries
         """

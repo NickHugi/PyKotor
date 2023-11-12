@@ -75,7 +75,7 @@ class IndoorMap:
         Generates door insertions between rooms
         Args:
             self: The FloorPlan object
-        Returns: 
+        Returns:
             list[DoorInsertion]: List of door insertion objects
         1. Loops through each room and connection
         2. Determines door, rooms, hooks and positions
@@ -221,7 +221,7 @@ class IndoorMap:
             None: No value is returned.
         Processes static resources:
             - Loops through each static resource filename and data in the room's kit
-            - Extracts the resource name and type from the filename 
+            - Extracts the resource name and type from the filename
             - Adds the resource data to the mod with the extracted name and type.
         """
         for filename, data in room.component.kit.always.items():
@@ -232,8 +232,8 @@ class IndoorMap:
         """Processes a model based on room properties
         Args:
             room: IndoorMapRoom: The room object containing model properties
-            installation: Installation: The installation object containing target system properties  
-        Returns: 
+            installation: Installation: The installation object containing target system properties
+        Returns:
             mdl: str: The processed model string
             mdx: str: The processed material index string
         Processing Logic:
@@ -252,7 +252,7 @@ class IndoorMap:
         Args:
             room (IndoorMapRoom): The room to process lightmaps for
             mdl: The model to process lightmaps on
-        Returns: 
+        Returns:
             mdl: The model with renamed lightmaps
         Processing Logic:
             - Renames each lightmap to a unique name prefixed with the module ID
@@ -334,10 +334,10 @@ class IndoorMap:
 
     def _handle_door_insertions(self, installation):
         """Handle door insertions
-        Args: 
+        Args:
             self: The class instance
             installation: The installation details
-        Returns: 
+        Returns:
             None: No value is returned
         Processing Logic:
         1. Loops through each door insertion
@@ -562,7 +562,7 @@ class IndoorMap:
         Args:
         ----
             installation: HTInstallation - The installation object.
-            kits: list[Kit] - List of available kits. 
+            kits: list[Kit] - List of available kits.
             output_path: os.PathLike | str - Path to output the built indoor map.
 
         Returns:

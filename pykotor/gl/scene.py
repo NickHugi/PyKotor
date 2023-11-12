@@ -173,12 +173,12 @@ class Scene:
         """Generates a render object for a creature instance
         Args:
             instance: {Creature instance}: Creature instance to generate render object for
-            utc: {Optional timestamp}: Timestamp to use for generation or current time if None  
+            utc: {Optional timestamp}: Timestamp to use for generation or current time if None
         Returns:
             RenderObject: Render object representing the creature
         Processing Logic:
         - Gets body, head, weapon and mask models/textures based on creature appearance
-        - Creates base render object and attaches head, hands and mask sub-objects  
+        - Creates base render object and attaches head, hands and mask sub-objects
         - Catches exceptions and returns default "unknown" render object if model loading fails.
         """
         try:
@@ -444,7 +444,7 @@ class Scene:
             - Render opaque geometry with lighting
             - Render instanced objects without lighting
             - Render selection bounding boxes
-            - Render selection boundaries 
+            - Render selection boundaries
             - Render non-selected boundaries
             - Render cursor if shown.
         """

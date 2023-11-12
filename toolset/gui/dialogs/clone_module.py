@@ -72,7 +72,7 @@ class CloneModuleDialog(QDialog):
             None: No return value.
         Processing Logic:
         - Gets module cloning parameters from UI elements
-        - Defines cloning function 
+        - Defines cloning function
         - Warns user if copying textures selected due to longer wait time
         - Runs cloning asynchronously and displays status
         - Shows success message if clone completed.

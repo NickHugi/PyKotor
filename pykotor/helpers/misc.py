@@ -6,6 +6,8 @@ import sys
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from pykotor.helpers.path import Path
+
 if TYPE_CHECKING:
     import os
 

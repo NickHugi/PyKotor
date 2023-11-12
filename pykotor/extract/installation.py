@@ -252,9 +252,7 @@ class Installation:
 
     # region Load Data
 
-    def load_resources(
-        self, path: CaseAwarePath, capsule_check=None, recurse=False
-    ) -> dict[str, list[FileResource]] | list[FileResource]:
+    def load_resources(self, path: CaseAwarePath, capsule_check=None, recurse=False) -> dict[str, list[FileResource]] | list[FileResource]:
         """Load resources for a given path and store them in the provided list.
 
         Args:
@@ -272,7 +270,7 @@ class Installation:
 
         if not path.exists():
             self.log.add_warning(
-                f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping..."
+                f"The '{path.name}' folder did not exist at '{self.path()!s}' when loading the installation, skipping...",
             )
             return resources
 
@@ -300,7 +298,7 @@ class Installation:
         c_path = CaseAwarePath(self._path)
         if not c_path.joinpath("chitin.key").exists():
             self.log.add_warning(
-                f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping..."
+                f"The chitin.key file did not exist at '{self._path!s}' when loading the installation, skipping...",
             )
             return
         self._chitin = list(Chitin(kotor_path=c_path))

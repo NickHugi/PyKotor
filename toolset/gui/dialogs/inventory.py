@@ -61,7 +61,7 @@ class InventoryEditor(QDialog):
             droid (bool): True if droid inventory
             hide_equipment (bool): True if equipment tab hidden
             is_store (bool): True if store inventory
-        Returns: 
+        Returns:
             None
         Processes Logic:
             1. Sets up UI elements
@@ -260,7 +260,7 @@ class InventoryEditor(QDialog):
             resname (str): The resource name of the equipment
             filepath (str): The file path of the equipment image
             name (str): The name of the equipment
-        Returns: 
+        Returns:
             None: No value is returned
         Processing Logic:
             - Gets the label and frame for the given slot
@@ -562,7 +562,7 @@ class InventoryTable(QTableWidget):
         - Gets the filepath, name and UTI of the item from the window
         - Sets the new name, filepath and other properties of the item
         - Sets the icon of the item using the UTI
-        - Sets the non-editable name in the name column.  
+        - Sets the non-editable name in the name column.
         """
         if isinstance(tableItem, InventoryTableResnameItem):
             filepath, name, uti = self.window().getItem(tableItem.text(), "")
@@ -798,7 +798,7 @@ class ItemModel(QStandardItemModel):
         Args:
         ----
             resname: Name of the resource in one line.
-            category: Category of the item in one line. 
+            category: Category of the item in one line.
             filepath: Path to the resource file in one line.
             name: Optional display name in one line.
             slots: Number of slots the item uses in one line.
@@ -807,7 +807,7 @@ class ItemModel(QStandardItemModel):
         -------
             None: No value is returned in one line.
         - The function creates a QStandardItem with the name or resource name.
-        - Tooltip, filepath, resname, and slots are set as item data.  
+        - Tooltip, filepath, resname, and slots are set as item data.
         - The item is appended to the category item in the model.
         """
         item = QStandardItem(name if name != "" else resname)

@@ -20,14 +20,14 @@ def _get_size(
     Args:
     ----
         width: int - Width of the texture in pixels
-        height: int - Height of the texture in pixels 
+        height: int - Height of the texture in pixels
         tpc_format: TPCTextureFormat - Format of the texture
     Returns:
         int - Size of the texture in bytes
     Processing Logic:
         - Calculate size based on format:
             - Greyscale: width * height * 1 byte per pixel
-            - RGB: width * height * 3 bytes per pixel 
+            - RGB: width * height * 3 bytes per pixel
             - RGBA: width * height * 4 bytes per pixel
             - DXT1/DXT5: Compressed formats, size calculated differently
         - Return None if invalid format.

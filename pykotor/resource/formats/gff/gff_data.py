@@ -299,7 +299,7 @@ class GFFStruct:
             other_gff_struct: {GFFStruct}: GFFStruct to compare against
             log_func: {Callable}: Function to log differences. Defaults to print.
             current_path: {PureWindowsPath | os.PathLike | str | None}: Path of structure being compared
-        Returns: 
+        Returns:
             bool: True if structures are the same, False otherwise
         {Processing Logic:
         - Creates dictionaries of fields for each structure

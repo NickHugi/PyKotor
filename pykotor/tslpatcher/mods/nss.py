@@ -26,7 +26,7 @@ class ModificationsNSS(PatcherModifications):
         Args:
         ----
             nss_bytes: bytes: The bytes to patch.
-            memory: PatcherMemory: Memory references for patching. 
+            memory: PatcherMemory: Memory references for patching.
             logger: PatchLogger: Logger for logging messages.
             game: Game: The game being patched.
 
@@ -36,7 +36,7 @@ class ModificationsNSS(PatcherModifications):
         Processing Logic:
             1. Decodes bytes to a string
             2. Replaces #2DAMEMORY# tokens with values from PatcherMemory
-            3. Replaces #StrRef# tokens with values from PatcherMemory 
+            3. Replaces #StrRef# tokens with values from PatcherMemory
             4. Compiles the patched string and encodes to bytes.
         """
         source: str = decode_bytes_with_fallbacks(nss_bytes)

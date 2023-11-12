@@ -261,7 +261,7 @@ class Editor(QMainWindow):
         Args:
             data: bytes - Data to save
             data_ext: bytes - File extension
-        Returns: 
+        Returns:
             None - No return value
         Processing Logic:
             - Show save dialog to choose MOD or override save
@@ -288,7 +288,7 @@ class Editor(QMainWindow):
 
         Args:
         ----
-            data: {Bytes containing resource data} 
+            data: {Bytes containing resource data}
             data_ext: {Bytes containing additional resource data like MDX for MDL}.
 
         Returns:
@@ -342,7 +342,7 @@ class Editor(QMainWindow):
         -------
             None: {No value is returned}
         - Create the mod file if it does not exist
-        - Read the existing ERF file 
+        - Read the existing ERF file
         - Set the ERF type based on file extension
         - For MDL, also save the MDX file data
         - Save the provided data and file reference
@@ -421,7 +421,7 @@ class Editor(QMainWindow):
             resref (str): Resource reference
             restype: ResourceType
             data (bytes): Resource data
-        Returns: 
+        Returns:
             None: No return value
         Processing Logic:
             - Convert filepath to Path object if string
@@ -463,7 +463,7 @@ class Editor(QMainWindow):
         ----
             textbox: QLineEdit or QPlainTextEdit - Textbox to load string into
             locstring: LocalizedString - String to load
-        Returns: 
+        Returns:
             None
         - Determines if textbox is QLineEdit or QPlainTextEdit
         - Sets textbox's locstring property

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QTreeWidgetItem, QWidget
 class SettingsDialog(QDialog):
     def __init__(self, parent: QWidget):
         """Initialize Holocron Toolset settings dialog editor
-        Args: 
+        Args:
             parent: QWidget: The parent widget of this dialog
         Returns:
             None: Does not return anything

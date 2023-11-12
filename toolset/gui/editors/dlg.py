@@ -176,7 +176,7 @@ class DLGEditor(Editor):
             resref: The resource reference of the dialogue
             restype: The resource type of the dialogue
             data: The raw data of the dialogue file
-        Returns: 
+        Returns:
             None
         Loads dialogue data:
             - Reads dialogue data from file
@@ -216,7 +216,7 @@ class DLGEditor(Editor):
         - Clears any existing styling from the dialog tree widget
         - Sets the focused flag to False
         - Sets the internal dlg variable to the passed dlg
-        - Clears the model 
+        - Clears the model
         - Loops through the starter nodes and loads them recursively into the model.
         """
         self.ui.dialogTree.setStyleSheet("")
@@ -241,7 +241,7 @@ class DLGEditor(Editor):
             link: DLGLink - The link whose node to load
             seenLink: list[DLGLink] - Links already loaded
             seenNode: list[DLGNode] - Nodes already loaded
-        Returns: 
+        Returns:
             None: Loads the node recursively into the tree model
         Processing Logic:
             - Sets the link on the item
@@ -406,7 +406,7 @@ class DLGEditor(Editor):
         ----
             self: The class instance
             e: The triggering event
-        Returns: 
+        Returns:
             None: No value is returned
         1. Gets the selected dialog node item from the dialog tree view.
         2. Gets the DLGLink and DLGNode data from the item.
@@ -539,7 +539,7 @@ class DLGEditor(Editor):
             item: QStandardItem - The item to delete
             link: DLGLink - The link associated with the item
             node: DLGNode - The node associated with the link
-        Returns: 
+        Returns:
             None
         Processing Logic:
             - Get the link and node associated with the item
@@ -923,7 +923,7 @@ class DLGEditor(Editor):
             None
         Updates node properties:
         - Sets listener, speaker and scripts based on UI selections
-        - Sets conditions and parameters based on UI selections  
+        - Sets conditions and parameters based on UI selections
         - Sets animations, journal, camera and other properties based on UI
         - Sets comment text from UI text edit.
         """

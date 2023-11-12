@@ -26,7 +26,7 @@ class AREEditor(Editor):
         Args:
             parent: {QWidget}: Parent widget
             installation: {HTInstallation}: Installation object
-        Returns: 
+        Returns:
             None: Does not return anything
         Processing Logic:
             - Initialize superclass with supported types

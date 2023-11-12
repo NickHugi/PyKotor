@@ -109,7 +109,7 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.actionSaveAs.triggered.connect(self.saveAs)
         self.ui.actionBuild.triggered.connect(self.buildMap)
         self.ui.actionSettings.triggered.connect(
-            lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_()
+            lambda: IndoorMapSettings(self, self._installation, self._map, self._kits).exec_(),
         )
         self.ui.actionDeleteSelected.triggered.connect(self.deleteSelected)
         self.ui.actionDownloadKits.triggered.connect(self.openKitDownloader)
@@ -137,7 +137,7 @@ class IndoorMapBuilder(QMainWindow):
 
         if len(self._kits) == 0:
             noKitPrompt = QMessageBox(
-                QMessageBox.Warning, "No Kits Available", "No kits were detected, would you like to open the Kit downloader?"
+                QMessageBox.Warning, "No Kits Available", "No kits were detected, would you like to open the Kit downloader?",
             )
             noKitPrompt.addButton(QMessageBox.Yes)
             noKitPrompt.addButton(QMessageBox.No)
@@ -242,7 +242,7 @@ class IndoorMapBuilder(QMainWindow):
         """Selects a kit and populates component list
         Args:
             self: The class instance
-        Returns: 
+        Returns:
             None
         - Gets the selected kit from the UI kit selection widget
         - Checks if a kit is selected
@@ -695,7 +695,7 @@ class IndoorMapRenderer(QWidget):
             rotation: float - Rotation of image in radians
             flip_x: bool - Whether to flip image horizontally
             flip_y: bool - Whether to flip image vertically
-        Returns: 
+        Returns:
             None: Does not return anything
         - Applies transformations like translation, rotation and scaling to the painter based on parameters
         - Draws the image onto the painter using the transformed coordinates
@@ -779,7 +779,7 @@ class IndoorMapRenderer(QWidget):
             - Applies transformations
             - Draws background rectangle
             - Draws each room image
-            - Draws magnets for empty hooks 
+            - Draws magnets for empty hooks
             - Draws connections between hooked rooms
             - Draws cursor if present
             - Highlights rooms under mouse or selected.
@@ -799,7 +799,7 @@ class IndoorMapRenderer(QWidget):
 
         for room in self._map.rooms:
             self._drawImage(
-                painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y
+                painter, room.component.image, Vector2.from_vector3(room.position), room.rotation, room.flip_x, room.flip_y,
             )
 
             for hook in [] if self.hideMagnets else room.component.hooks:
@@ -875,7 +875,7 @@ class IndoorMapRenderer(QWidget):
 
         if self._cursorComponent:
             fakeCursorRoom = IndoorMapRoom(
-                self._cursorComponent, self._cursorPoint, self._cursorRotation, self._cursorFlipX, self._cursorFlipY
+                self._cursorComponent, self._cursorPoint, self._cursorRotation, self._cursorFlipX, self._cursorFlipY,
             )
             for room in self._map.rooms:
                 hook1, hook2 = self.getConnectedHooks(fakeCursorRoom, room)
@@ -958,7 +958,7 @@ class KitDownloader(QDialog):
                         button.setText("Update Available")
                         button.setEnabled(True)
                         button.clicked.connect(
-                            lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict)
+                            lambda _, kitDict=kitDict, button=button: self._downloadButtonPressed(button, kitDict),
                         )
             else:
                 button = QPushButton("Download")

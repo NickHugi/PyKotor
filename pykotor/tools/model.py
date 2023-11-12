@@ -169,7 +169,7 @@ def change_textures(
     Args:
         data: bytes - Game file data
         textures: dict[str, str] - Dictionary of old texture names keyed to new texture names
-    Returns: 
+    Returns:
         bytes - Game file data with textures replaced
     Processes Logic:
         1. Reads offsets of texture names from game file
@@ -238,7 +238,7 @@ def change_lightmaps(
 
     Processes Logic:
     1. Reads offsets of nodes containing texture names from the asset file
-    2. Gets list of texture names to replace from the textures dictionary  
+    2. Gets list of texture names to replace from the textures dictionary
     3. Loops through offsets lists to replace texture names in the asset file data
     4. Returns updated asset file data with lightmaps textures changed
     """

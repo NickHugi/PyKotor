@@ -208,7 +208,7 @@ class MDLAnimation:
             list[MDLNode]: A list containing all nodes in the tree
         - Initialize an empty list to store nodes and a scan list containing just the root node
         - Pop a node from scan and append it to nodes list
-        - Extend scan with children of the popped node 
+        - Extend scan with children of the popped node
         - Repeat until scan is empty
         - Return the nodes list containing all nodes.
         """
@@ -311,7 +311,7 @@ class MDLNode:
             list[MDLNode]: A list containing the node and all its descendants
         - Initialize an empty list to store ancestors
         - Loop through each child node of the current node
-        - Append the child to the ancestors list 
+        - Append the child to the ancestors list
         - Recursively call descendants on the child to get its descendants and extend the ancestors list
         - Return the final ancestors list containing the node and all its descendants.
         """

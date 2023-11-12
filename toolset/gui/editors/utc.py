@@ -37,7 +37,7 @@ class UTCEditor(Editor):
             parent: QWidget: The parent widget
             installation: HTInstallation: The installation object
             mainwindow: QMainWindow: The main window
-        Returns: 
+        Returns:
             None: Does not return anything
         Processing Logic:
             - Sets up supported resource types
@@ -74,7 +74,7 @@ class UTCEditor(Editor):
 
     def _setupSignals(self) -> None:
         """Connect signals to slots
-        Args: 
+        Args:
             self: {The class instance}.
 
         Returns
@@ -109,7 +109,7 @@ class UTCEditor(Editor):
         Returns:
             None: No return value
         - Loads required 2da files if not already loaded
-        - Sets items for dropdown menus from loaded 2da files  
+        - Sets items for dropdown menus from loaded 2da files
         - Clears and populates feat and power lists from loaded 2da files
         - Sets visibility of some checkboxes based on installation type.
         """

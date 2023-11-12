@@ -34,7 +34,7 @@ class InsertInstanceDialog(QDialog):
         Args:
             parent: QWidget - Parent widget
             installation: HTInstallation - HT installation object
-            module: Module - Module object 
+            module: Module - Module object
             restype: ResourceType - Resource type
         Returns:
             None - Does not return anything
@@ -83,7 +83,7 @@ class InsertInstanceDialog(QDialog):
         Args:
         ----
             self: The class instance
-        Returns: 
+        Returns:
             None
         Processing Logic:
             - Loops through installation resources and adds matching type

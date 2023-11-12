@@ -186,7 +186,7 @@ class Modify2DA(ABC):
         - Updates special value references like StrRef and 2DAMEMORY
         - Breaks apart values into new_values, memory_values, row_label, new_row_label categories
         - new_values contains normal modifiers
-        - memory_values contains 2DA memory references 
+        - memory_values contains 2DA memory references
         - row_label and new_row_label contain those single values.
         """
         new_values: dict[str, str] = {}
@@ -401,7 +401,7 @@ class CopyRow2DA(Modify2DA):
         ----
             twoda: TwoDA - The TwoDA to apply the patch to
             memory: PatcherMemory - The memory context
-        Returns: 
+        Returns:
             None
         Processing Logic:
             1. Searches for the source row in the TwoDA
@@ -494,7 +494,7 @@ class AddColumn2DA(Modify2DA):
             - Adds a column to the TwoDA with the patcher header
             - Sets the default value for all rows in the new column
             - Sets values in the new column based on index lookups
-            - Sets values in the new column based on label lookups 
+            - Sets values in the new column based on label lookups
             - Stores values from the TwoDA in the memory based on token IDs.
         """
         twoda.add_column(self.header)

@@ -97,7 +97,7 @@ class TLKEditor(Editor):
         ----
             filepath: The path to the file to load from.
             resref: The resource reference.
-            restype: The resource type. 
+            restype: The resource type.
             data: The raw data bytes.
 
         Returns:

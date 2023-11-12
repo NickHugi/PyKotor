@@ -145,7 +145,7 @@ def _load_hand_uti(
     Returns:
         default_model: str - The default model string with model variation substituted
     - The function reads the UTI data from the provided installation
-    - It looks up the default model string for the base item in the base items table  
+    - It looks up the default model string for the base item in the base items table
     - It replaces the "001" placeholder in the default model with the zero padded model variation from the UTI
     - The formatted default model is returned.
     """

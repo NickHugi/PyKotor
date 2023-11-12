@@ -169,9 +169,7 @@ def get_language_code(lang: Language) -> str:
         Language.CHINESE_TRADITIONAL: "zh-TW",
         Language.CHINESE_SIMPLIFIED: "zh-CN",
         Language.JAPANESE: "ja",
-    }.get(
-        lang
-    )  # type: ignore[return-value]
+    }.get(lang)  # type: ignore[return-value]
 
 
 # Function to convert numerals
@@ -327,7 +325,7 @@ class Translator:
             - Initialize an empty list to hold chunks
             - Loop through text while there is still text remaining
             - Check if remaining text is <= size, if so add to chunks and break
-            - Otherwise find cut off point (last space or period within size limit)  
+            - Otherwise find cut off point (last space or period within size limit)
             - Add chunk to list and remove processed text from original.
             """
             chunks = []
@@ -445,7 +443,7 @@ class Translator:
             return translated_text.rstrip()  # noqa: TRY300, RUF100
         except MinimumLengthError:
             print(
-                f"Using a fallback translator because {self.translation_option.name} requires a minimum of 50 characters to translate."
+                f"Using a fallback translator because {self.translation_option.name} requires a minimum of 50 characters to translate.",
             )
             minimum_length_failed_translate_option = self.translation_option
         except Exception as e:  # noqa: BLE001

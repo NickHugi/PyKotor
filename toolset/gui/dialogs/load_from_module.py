@@ -12,7 +12,7 @@ class LoadFromModuleDialog(QDialog):
         Args:
             capsule: Capsule - The capsule to load resources from
             supported: list - Supported resource types
-        Returns: 
+        Returns:
             None: Initializes UI elements
         - Loops through each resource in the capsule
         - Checks if the resource type is supported

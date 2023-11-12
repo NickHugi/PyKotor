@@ -145,7 +145,7 @@ class HTInstallation(Installation):
         Returns:
             None: No return value
         - Check if textures need reloading from source
-        - Filter names not already in cache 
+        - Filter names not already in cache
         - Loop through remaining names and cache textures from sources.
         """
         if reload:

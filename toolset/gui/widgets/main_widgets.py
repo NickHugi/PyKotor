@@ -43,9 +43,8 @@ class ResourceList(MainWindowList):
     requestRefresh = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
-        """
-        Initializes the ResourceList widget
-        Args: 
+        """Initializes the ResourceList widget
+        Args:
             parent (QWidget): The parent widget
         Returns:
             None: Does not return anything
@@ -54,7 +53,7 @@ class ResourceList(MainWindowList):
             - Sets up the signal connections
             - Creates a ResourceModel and sets it as the model for the tree view
             - Creates a QStandardItemModel for the section combo box
-            - Sets the section model as the model for the combo box
+            - Sets the section model as the model for the combo box.
         """
         super().__init__(parent)
 

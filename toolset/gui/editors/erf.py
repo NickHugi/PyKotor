@@ -70,7 +70,7 @@ class ERFEditor(Editor):
             None: No return value
         Processing Logic:
         - Connect extractButton clicked signal to extractSelected method
-        - Connect loadButton clicked signal to selectFilesToAdd method  
+        - Connect loadButton clicked signal to selectFilesToAdd method
         - Connect unloadButton clicked signal to removeSelected method
         - Connect openButton clicked signal to openSelected method
         - Connect refreshButton clicked signal to refresh method

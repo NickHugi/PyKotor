@@ -80,7 +80,7 @@ class ModelRenderer(QOpenGLWidget):
         Processing Logic:
             - Checks if scene is None and returns if so
             - Loads model if _modelToLoad is not None
-            - Loads creature if _creatureToLoad is not None 
+            - Loads creature if _creatureToLoad is not None
             - Renders the scene.
         """
         if self.scene is None:

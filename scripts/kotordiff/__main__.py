@@ -28,8 +28,6 @@ from pykotor.tslpatcher.diff.twoda import Diff2DA
 
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
-    from pykotor.resource.formats.twoda import TwoDA
-
 OUTPUT_LOG: Path
 LOGGING_ENABLED: bool
 
@@ -148,8 +146,8 @@ def diff_data(
         return True
 
     if ext == "2da":
-        twoda1: TwoDA | None = None
-        twoda2: TwoDA | None = None
+        twoda1: twoda.TwoDA | None = None
+        twoda2: twoda.TwoDA | None = None
         try:
             twoda1 = twoda.read_2da(data1)
         except Exception:  # noqa: BLE001

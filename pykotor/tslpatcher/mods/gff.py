@@ -157,7 +157,7 @@ class AddStructToListGFF(ModifyGFF):
         Args:
         ----
             root_struct: The root struct to navigate and modify.
-            memory: The memory object to read/write values from. 
+            memory: The memory object to read/write values from.
             logger: The logger to log errors or warnings.
 
         Returns:
@@ -229,7 +229,7 @@ class AddFieldGFF(ModifyGFF):
         Args:
         ----
             root_struct: GFFStruct - The root GFF struct to navigate and modify.
-            memory: PatcherMemory - The memory state to read values from. 
+            memory: PatcherMemory - The memory state to read values from.
             logger: PatchLogger - The logger to record errors to.
 
         Returns:

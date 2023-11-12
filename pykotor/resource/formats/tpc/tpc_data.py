@@ -311,7 +311,7 @@ class TPC:
             data: bytes - The compressed DXT1 texture data
             width: int - Width of the texture
             height: int - Height of the texture
-        Returns: 
+        Returns:
             bytearray - Uncompressed RGBA texture data
         Processing Logic:
             - Parse the DXT1 data using a BinaryReader

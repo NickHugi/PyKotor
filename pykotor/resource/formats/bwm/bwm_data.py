@@ -356,7 +356,7 @@ class BWM:
             bbmin: Vector3 - Bounding box minimum point
             vertex: Vector3 - Vertex position
             bbmax: Vector3 - Bounding box maximum point
-        Returns: 
+        Returns:
             None - Updates bbmin and bbmax in place
         Processing Logic:
             - Compare vertex x, y, z to bbmin x, y, z and update bbmin with minimum
@@ -446,7 +446,7 @@ class BWM:
         Args:
             old: Index to replace
             new: New index to set or None
-        Returns: 
+        Returns:
             None: No return value
         - Loops through all faces in the object
         - Checks if face's trans1 attribute equals old index

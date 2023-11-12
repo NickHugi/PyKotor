@@ -52,7 +52,7 @@ def clone_module(
         None
     Processing Logic:
         1. Load resources from old module
-        2. Rename resources and change identifiers 
+        2. Rename resources and change identifiers
         3. Copy textures and lightmaps if specified
         4. Write new module resources to file.
     """

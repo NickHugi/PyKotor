@@ -148,7 +148,7 @@ def write_bitmap_font(target: os.PathLike | str, font_path: str, resolution: tup
     Args:
     ----
         target: Path or filename to save the font files
-        font_path: Path to the TTF font file 
+        font_path: Path to the TTF font file
         resolution: Tuple of texture width and height in pixels
     Returns:
         None

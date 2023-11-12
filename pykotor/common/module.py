@@ -451,7 +451,7 @@ class Module:
             resname (str): Name of the resource to check
         Returns:
             resource: Found resource or None
-        - Iterate through self.resources dictionary 
+        - Iterate through self.resources dictionary
         - Check if resource name matches given name and type is UTP
         - Return matching resource if found, else return None.
         """
@@ -579,7 +579,7 @@ class Module:
         """Returns a list of UTE resources for this module
         Args:
             self: The class instance
-        Returns: 
+        Returns:
             list[ModuleResource[UTE]]: A list of UTE resources
         - Iterate through all resources stored in self.resources
         - Check if each resource's type is UTE
@@ -646,7 +646,7 @@ class Module:
             self: The class instance
         Returns:
             list[ModuleResource[UTT]]: A list of UTT resources
-        - Iterate through self.resources dictionary 
+        - Iterate through self.resources dictionary
         - Check if each resource's restype is UTT
         - Add matching resources to a list
         - Return the list of UTT resources.
@@ -750,7 +750,7 @@ class Module:
         """Returns a list of MDL model resources
         Args:
             self: The class instance
-        Returns: 
+        Returns:
             list[ModuleResource[MDL]]: A list of MDL model resources
         Processes the resources dictionary:
             - Loops through each value in the resources dictionary
@@ -807,7 +807,7 @@ class Module:
         """Returns the UTS resource with the given name if it exists
         Args:
             resname: The name of the UTS resource
-        Returns: 
+        Returns:
             resource: The UTS resource or None if not found
         - Iterate through self.resources dictionary values
         - Check if resname matches resource name and type is UTS
@@ -830,7 +830,7 @@ class Module:
             self: The class instance
         Returns:
             list[ModuleResource[UTS]]: A list of UTS resources
-        - Iterate through self.resources dictionary 
+        - Iterate through self.resources dictionary
         - Check if each resource's type is UTS
         - Add matching resources to a list
         - Return the list of UTS resources.

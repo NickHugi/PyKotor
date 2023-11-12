@@ -42,7 +42,7 @@ class SelectModuleDialog(QDialog):
         """Builds a list of installed modules
         Args:
             self: The class instance
-        Returns: 
+        Returns:
             None: No return value
         - Gets list of module names from installation object
         - Initializes empty set to track listed modules
@@ -81,7 +81,7 @@ class SelectModuleDialog(QDialog):
         """Confirms the selected module
         Args:
             self: The object instance
-        Returns: 
+        Returns:
             None: Does not return anything
         - Gets the currently selected module from the module list widget
         - Calls accept to close the dialog and apply changes.

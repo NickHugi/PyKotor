@@ -146,7 +146,7 @@ def dismantle_utt(
     Args:
     ----
         utt: UTT - The UTT object to dismantle
-        game: Game - The game the UTT is for (default K2) 
+        game: Game - The game the UTT is for (default K2)
         use_deprecated: bool - Whether to include deprecated fields (default True)
 
     Returns:

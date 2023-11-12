@@ -37,11 +37,11 @@ class FileSearcher(QDialog):
         Implicit Args:
         ----
             installation: {Installation object selected by user}
-            caseSensitive: {True if case sensitive search is checked, False otherwise} 
+            caseSensitive: {True if case sensitive search is checked, False otherwise}
             filenamesOnly: {True if filenames only search is checked, False otherwise}
             text: {Search text entered by user}
             searchCore: {True if core search is checked, False otherwise}
-            searchModules: {True if modules search is checked, False otherwise} 
+            searchModules: {True if modules search is checked, False otherwise}
             searchOverride: {True if override search is checked, False otherwise}
             checkTypes: {List of selected resource types}.
 
@@ -149,7 +149,7 @@ class FileResults(QDialog):
         Returns:
             None: Does not return anything
         - Populate the list widget with search results
-        - Connect button click signals to accept and open actions  
+        - Connect button click signals to accept and open actions
         - Save search results and installation object as member variables
         - Sort results alphabetically.
         """
