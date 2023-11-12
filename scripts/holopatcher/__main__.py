@@ -14,15 +14,14 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from threading import Thread
-from tkinter import filedialog
+from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
-from tkinter import messagebox, ttk
 from typing import TYPE_CHECKING, NoReturn
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
-        sys.path.append(str(pykotor_path.parent))
+        sys.path.insert(0, str(pykotor_path.parent))
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.helpers.path import Path
@@ -434,9 +433,11 @@ class App(tk.Tk):
         sys.exit(ExitCode.ABORT_INSTALL_UNSAFE)
 
     def on_gamepaths_chosen(self, event) -> None:
+        """Adjust the gamepaths combobox after a short delay."""
         self.after(10, self.move_cursor_to_end)
 
     def move_cursor_to_end(self) -> None:
+        """Shows the rightmost portion of the game paths combobox as that's the most relevant."""
         self.gamepaths.focus_set()
         position: int = len(self.gamepaths.get())
         self.gamepaths.icursor(position)
@@ -743,6 +744,7 @@ class App(tk.Tk):
             5. Logs installation details including errors, warnings and time
             6. Writes full install log to file
             7. Shows success or error message based on install result
+            8. If CLI, exit regardless of success or error.
         """
         self.set_active_install(install_running=True)
         install_start_time: datetime = datetime.now(timezone.utc).astimezone()
@@ -811,8 +813,8 @@ class App(tk.Tk):
         raise
 
     def build_changes_as_namespace(self, filepath: CaseAwarePath) -> PatcherNamespace:
-        """Parses a changes.ini file into a PatcherNamespace object.
-        When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with a single entry.
+        """Builds a changes.ini file as PatcherNamespace object.
+        When a changes.ini is loaded when no namespaces.ini is created, we create a namespace internally with this single entry.
 
         Args:
         ----
@@ -870,7 +872,9 @@ class App(tk.Tk):
         """Determines what shows up in the gamepaths combobox, based on the LookupGameNumber setting."""
         game = Game(game_number)
         gamepaths_list: list[str] = [
-            str(path) for game_key in ([game] + ([Game.K1] if game == Game.K2 else [])) for path in find_kotor_paths_from_default()[game_key]
+            str(path)
+            for game_key in ([game] + ([Game.K1] if game == Game.K2 else []))
+            for path in find_kotor_paths_from_default()[game_key]
         ]
         self.gamepaths["values"] = gamepaths_list
 
