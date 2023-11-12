@@ -25,6 +25,23 @@ class TwoDABinaryReader(ResourceReader):
         self,
         auto_close: bool = True,
     ) -> TwoDA:
+        """Loads a 2DA file from the provided reader.
+
+        Args:
+        ----
+            auto_close: {Whether to close the reader after loading - default True}
+
+        Returns:
+        -------
+            TwoDA: {The loaded TwoDA object}
+        {Processing Logic:
+        - Read file header and validate type and version
+        - Read column headers
+        - Read row count and populate rows
+        - Read cell offsets
+        - Seek to cell data and populate cells
+        }
+        """
         self._twoda = TwoDA()
 
         file_type = self._reader.read_string(4)
@@ -88,6 +105,21 @@ class TwoDABinaryWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ) -> None:
+        """Writes the 2DA data to a binary file.
+
+        Args:
+        ----
+            auto_close: {Whether to close the writer after writing is complete}
+
+        Returns:
+        -------
+            None: {Nothing is returned}
+        - It gets the headers and row labels from the 2DA
+        - Writes the header string and version
+        - Writes the headers and row labels
+        - Loops through each cell and writes the value offsets and data
+        - Closes the writer if auto_close is True
+        """
         headers = self._twoda.get_headers()
 
         self._writer.write_string("2DA ")
