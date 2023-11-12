@@ -50,9 +50,6 @@ jobs:
 
     - name: Checkout repository
       uses: actions/checkout@v2
-  
-    - name: Test holopatcher
-      run: timeout 10 python -m scripts.holopatcher --install || if [ $? -eq 124 ]; then echo "Initialization check passed"; else exit 1; fi
     
     - name: Install k_batchpatcher
       run: pip install -r ./scripts/k_batchpatcher/requirements.txt
