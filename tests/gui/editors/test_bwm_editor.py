@@ -16,8 +16,6 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() or toolset_path.exists():
         sys.path.insert(0, str(pykotor_path.parent))
 
-from toolset.gui.editors.bwm import BWMEditor
-
 K1_PATH = os.environ.get("K1_PATH")
 
 
@@ -30,6 +28,7 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class BWMEditorTest(TestCase):
+    from toolset.gui.editors.bwm import BWMEditor
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
@@ -38,7 +37,7 @@ class BWMEditorTest(TestCase):
 
     def setUp(self) -> None:
         self.app = QApplication([])
-        self.ui = BWMEditor(None, self.INSTALLATION)
+        self.ui = self.BWMEditor(None, self.INSTALLATION)
 
     def tearDown(self) -> None:
         self.app.deleteLater()

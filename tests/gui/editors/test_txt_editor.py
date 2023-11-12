@@ -7,7 +7,6 @@ from unittest import TestCase
 try:
     from PyQt5.QtTest import QTest
     from PyQt5.QtWidgets import QApplication
-    from toolset.data.installation import HTInstallation
 except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None
 

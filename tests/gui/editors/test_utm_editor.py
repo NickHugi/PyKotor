@@ -16,8 +16,6 @@ if getattr(sys, "frozen", False) is False:
     if pykotor_path.exists() or toolset_path.exists():
         sys.path.insert(0, str(pykotor_path.parent))
 
-from toolset.gui.editors.utm import UTMEditor
-
 K1_PATH = os.environ.get("K1_PATH")
 
 
@@ -30,6 +28,7 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTMEditorTest(TestCase):
+    from toolset.gui.editors.utm import UTMEditor
     @classmethod
     def setUpClass(cls) -> None:
         from toolset.data.installation import HTInstallation
@@ -38,7 +37,7 @@ class UTMEditorTest(TestCase):
 
     def setUp(self) -> None:
         self.app = QApplication([])
-        self.ui = UTMEditor(None, self.INSTALLATION)
+        self.ui = self.UTMEditor(None, self.INSTALLATION)
 
     def tearDown(self) -> None:
         self.app.deleteLater()
