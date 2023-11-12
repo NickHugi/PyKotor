@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import os
 from copy import copy, deepcopy
 from enum import Enum, IntEnum
-from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, TypeVar
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
 from pykotor.common.misc import ResRef
+from pykotor.helpers.path import PureWindowsPath
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import compare_and_format, format_text
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
@@ -148,6 +151,25 @@ class GFF:
                     )
                     self.print_tree(gff_struct, indent + 2)
 
+    def compare(self, other_gff: GFF, log_func: Callable = print, path: PureWindowsPath | None = None) -> bool:
+        """Compare two GFF objects
+        Args:
+            self: The GFF object to compare from
+            other_gff: The GFF object to compare to
+            log_func: Function used to log comparison messages (default print)
+            path: Optional path to write comparison report to
+        Returns:
+            bool: True if GFFs are identical, False otherwise
+        Processes:
+            - Compare root nodes of both GFFs
+            - Recursively compare child nodes
+            - Log any differences found
+            - Write comparison report to given path if provided
+            - Return True if no differences found, False otherwise.
+        """
+        return self.root.compare(other_gff.root, log_func, path)
+
+
 
 class _GFFField:
     """Read-only data structure for items stored in GFFStruct."""
@@ -265,6 +287,79 @@ class GFFStruct:
             A GFFFieldType value.
         """
         return label in self._fields
+
+    def compare(
+        self,
+        other_gff_struct: GFFStruct,
+        log_func: Callable = print,
+        current_path: PureWindowsPath | os.PathLike | str | None = None,
+    ) -> bool:
+        current_path = PureWindowsPath(current_path or "GFFRoot")
+        if len(self) != len(other_gff_struct):  # sourcery skip: class-extract-method
+            log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
+            log_func()
+            is_same_result = False
+
+        # Create dictionaries for both old and new structures
+        old_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(self)}
+        new_dict: dict[str, tuple[GFFFieldType, Any]] = {label or f"gffstruct({idx})": (ftype, value) for idx, (label, ftype, value) in enumerate(other_gff_struct)}
+
+        # Union of labels from both old and new structures
+        all_labels = set(old_dict.keys()) | set(new_dict.keys())
+
+        is_same_result = True
+
+        for label in all_labels:
+            child_path = current_path / str(label)
+            old_ftype, old_value = old_dict.get(label, (None, None))
+            new_ftype, new_value = new_dict.get(label, (None, None))
+            if not new_ftype:
+                raise
+
+            # Check for missing fields/values in either structure
+            if old_ftype is None or old_value is None:
+                log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
+                is_same_result = False
+                continue
+            if new_value is None or new_ftype is None:
+                log_func(f"Missing '{old_ftype.name}' field at '{child_path}': {format_text(old_value)}")
+                is_same_result = False
+                continue
+
+            # Check if field types have changed
+            if old_ftype != new_ftype:
+                log_func(f"Field type is different at '{child_path}': '{old_ftype.name}'-->'{new_ftype.name}'")
+                is_same_result = False
+                continue
+
+            # Compare values depending on their types
+            if old_ftype == GFFFieldType.Struct:
+                old_struct: GFFStruct = old_value
+                if old_struct.struct_id != old_struct.struct_id:
+                    log_func(f"Struct ID is different at '{child_path}': '{old_struct.struct_id}'-->'{old_struct.struct_id}'")
+                    is_same_result = False
+
+                if not self.compare(old_value, new_value, child_path):
+                    is_same_result = False
+                    continue
+
+            elif old_ftype == GFFFieldType.List:
+                gff_list: GFFList = old_value
+                if not gff_list.compare(new_value, child_path):
+                    is_same_result = False
+                    continue
+
+            elif old_value != new_value:
+                if str(old_value) == str(new_value):
+                    is_same_result = False
+                    log_func(f"Field '{old_ftype.name}' is different at '{child_path}': String representations match, but have other properties that don't (such as a lang id difference).")
+                    continue
+                formatted_old_value, formatted_new_value = compare_and_format(old_value, new_value)
+                log_func(f"Field '{old_ftype.name}' is different at '{child_path}': {format_text(formatted_old_value)}{os.linesep}<-vvv->{os.linesep}{format_text(formatted_new_value)}\n")
+                is_same_result = False
+                continue
+
+        return is_same_result
 
     def what_type(
         self,
@@ -1070,3 +1165,66 @@ class GFFList:
             index: The index of the desired struct.
         """
         self._structs.pop(index)
+
+
+    def compare(self, other_gff_list: GFFList, log_func=print, current_path: PureWindowsPath | None = None) -> bool:
+        """Compare two GFFList objects and output differences.
+
+        Args:
+        ----
+            old_gff_list: GFFList - Original GFFList
+            new_gff_list: GFFList - New GFFList
+            current_path: PureWindowsPath - Path being compared
+
+        Returns:
+        -------
+            is_same_result: bool - Whether the lists are the same
+        Processing Logic:
+            - Compare list lengths and log differences
+            - Create dictionaries to index lists for comparison
+            - Detect unique items in each list and log differences
+            - Compare common items and log structural differences.
+        """
+        current_path = current_path or PureWindowsPath("GFFList")
+        is_same_result = True
+
+        if len(self) != len(other_gff_list):
+            log_func(f"GFFList counts have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_list)}'")
+            log_func()
+            is_same_result = False
+
+        # Use the indices in the original lists as keys
+        old_dict = dict(enumerate(self))
+        new_dict = dict(enumerate(other_gff_list))
+
+        # Detect unique items in both lists
+        unique_to_old = set(old_dict.keys()) - set(new_dict.keys())
+        unique_to_new = set(new_dict.keys()) - set(old_dict.keys())
+
+        for list_index in unique_to_old:
+            struct = old_dict[list_index]
+            log_func(f"Missing GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
+            log_func("Contents of old struct:")
+            for label, field_type, field_value in struct:
+                log_func(field_type.name, f"{label}: {format_text(field_value)}")
+            log_func()
+            is_same_result = False
+
+        for list_index in unique_to_new:
+            struct = new_dict[list_index]
+            log_func(f"Extra GFFStruct at '{current_path / str(list_index)}' with struct ID '{struct.struct_id}'")
+            log_func("Contents of new struct:")
+            for label, field_type, field_value in struct:
+                log_func(field_type.name, f"{label}: {format_text(field_value)}")
+            log_func()
+            is_same_result = False
+
+        # For items present in both lists
+        common_items = old_dict.keys() & new_dict.keys()
+        for list_index in common_items:
+            old_child: GFFStruct = old_dict[list_index]
+            new_child: GFFStruct = new_dict[list_index]
+            if not old_child.compare(old_child, new_child, log_func, current_path / str(list_index)):
+                is_same_result = False
+
+        return is_same_result

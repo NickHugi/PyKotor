@@ -463,7 +463,7 @@ def decode_bytes_with_fallbacks(
     return byte_content.decode(errors=errors)
 
 
-def find_best_8bit_encoding(s: str):
+def find_best_8bit_encoding(s: str) -> str | None:
     # First, we encode the string to UTF-8 bytes. Python str objects are inherently Unicode.
     utf8_encoded = s.encode("utf-8")
 

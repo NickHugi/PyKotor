@@ -135,6 +135,65 @@ def universal_simplify_exception(e):
     return error_name, f"{error_name}: {','.join(e.args)}"
 
 
+
+
+MAX_CHARS_BEFORE_NEWLINE_FORMAT = 20  # Adjust as needed
+
+def format_text(text):
+    if "\n" in text or len(text) > MAX_CHARS_BEFORE_NEWLINE_FORMAT:
+        return f'"""{os.linesep}{text}{os.linesep}"""'
+    return f"'{text}'"
+
+def first_char_diff_index(str1, str2):
+    """Find the index of the first differing character in two strings."""
+    min_length = min(len(str1), len(str2))
+    for i in range(min_length):
+        if str1[i] != str2[i]:
+            return i
+    if len(str1) != len(str2):
+        return min_length  # Difference due to length
+    return -1  # No difference
+
+def generate_diff_marker_line(index, length):
+    """Generate a line of spaces with a '^' at the specified index."""
+    if index == -1:
+        return ""
+    return " " * index + "^" + " " * (length - index - 1)
+
+def compare_and_format(old_value, new_value):
+    """Compares and formats two values for diff display
+    Args:
+        old_value: The old value to compare
+        new_value: The new value to compare
+    Returns:
+        A tuple of formatted old and new values for diff display
+    Processing Logic:
+        - Converts old_value and new_value to strings and splits into lines
+        - Zips the lines to iterate in parallel
+        - Finds index of first differing character between lines
+        - Generates a diff marker line based on index
+        - Appends lines and marker lines to formatted outputs
+        - Joins lines with line separators and returns a tuple.
+    """
+    old_text = str(old_value)
+    new_text = str(new_value)
+    old_lines = old_text.split("\n")
+    new_lines = new_text.split("\n")
+    formatted_old = []
+    formatted_new = []
+
+    for old_line, new_line in zip(old_lines, new_lines):
+        diff_index = first_char_diff_index(old_line, new_line)
+        marker_line = generate_diff_marker_line(diff_index, max(len(old_line), len(new_line)))
+
+        formatted_old.append(old_line)
+        formatted_new.append(new_line)
+        if marker_line:
+            formatted_old.append(marker_line)
+            formatted_new.append(marker_line)
+
+    return os.linesep.join(formatted_old), os.linesep.join(formatted_new)
+
 def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
     """Removes RTF tags from a string.
     Strips RTF encoding utterly and completely

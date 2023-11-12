@@ -12,17 +12,20 @@ from typing import TYPE_CHECKING
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
-        sys.path.insert(0, str(pykotor_path.parent))
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
 
 from pykotor.extract.capsule import Capsule
 from pykotor.helpers.path import Path, PureWindowsPath
+from pykotor.resource.diff.gff import DiffGFF
+from pykotor.resource.diff.lip import DiffLIP
+from pykotor.resource.diff.tlk import DiffTLK
+from pykotor.resource.diff.twoda import Diff2DA
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tslpatcher.diff.gff import DiffGFF
-from pykotor.tslpatcher.diff.lip import DiffLIP
-from pykotor.tslpatcher.diff.tlk import DiffTLK
-from pykotor.tslpatcher.diff.twoda import Diff2DA
 
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource

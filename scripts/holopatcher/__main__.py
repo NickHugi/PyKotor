@@ -21,7 +21,10 @@ from typing import TYPE_CHECKING, NoReturn
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.exists():
-        sys.path.insert(0, str(pykotor_path.parent))
+        working_dir = str(pykotor_path.parent)
+        if working_dir in sys.path:
+            sys.path.remove(working_dir)
+        sys.path.insert(0, working_dir)
 
 from pykotor.common.misc import CaseInsensitiveDict, Game
 from pykotor.helpers.path import Path
