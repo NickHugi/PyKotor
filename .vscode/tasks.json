@@ -316,7 +316,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Build Toolset - Nuitka (Windows)",
+      "label": "Build Toolset - Nuitka (Windows - Untested)",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_nuitka"],
       "command": "${command:python.interpreterPath}",
