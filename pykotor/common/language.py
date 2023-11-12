@@ -144,7 +144,7 @@ class Language(IntEnum):
 
         if value != 0x7FFFFFFF:  # 0x7FFFFFFF is unset/disabled/unused
             print(f"Language integer not known: {value}")
-        return Language.UNKNOWN
+        return Language.ENGLISH
 
     def get_encoding(self):
         """Gets the encoding for a given language.
