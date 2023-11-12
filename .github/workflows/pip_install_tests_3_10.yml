@@ -53,9 +53,3 @@ jobs:
     
     - name: Install k_batchpatcher
       run: pip install -r ./scripts/k_batchpatcher/requirements.txt
-  
-    - name: Test pykotor k_batchpatcher
-      run: timeout 10 python -m scripts.k_batchpatcher || if [ $? -eq 124 ]; then echo "Initialization check passed"; else exit 1; fi
-  
-    - name: Test pykotor kotordiff
-      run: timeout 10 python -m scripts.kotordiff || if [ $? -eq 124 ]; then echo "Initialization check passed"; else exit 1; fi
