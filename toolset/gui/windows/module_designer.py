@@ -50,6 +50,18 @@ if TYPE_CHECKING:
 
 class ModuleDesigner(QMainWindow):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation):
+        """Initializes the Module Designer window
+        Args:
+            parent: Optional[QWidget]: Parent widget
+            installation: HTInstallation: Hometuck installation
+        Returns:
+            None
+        Processing Logic:
+            - Initializes UI elements and connects signals
+            - Sets up 3D and 2D renderer controls
+            - Populates resource tree and instance list
+            - Sets window title and loads module on next frame.
+        """
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
@@ -75,6 +87,15 @@ class ModuleDesigner(QMainWindow):
         self._setupSignals()
 
         def intColorToQColor(intvalue):
+            """Converts an integer color value to a QColor object
+            Args:
+                intvalue: Integer color value
+            Returns:
+                QColor: QColor object representing the color
+            - Extract RGBA components from integer color value using Color.from_rgba_integer()
+            - Multiply each component by 255 to convert to QColor expected value range of 0-255
+            - Pass converted values to QColor constructor to return QColor object.
+            """
             color = Color.from_rgba_integer(intvalue)
             return QColor(int(color.r*255), int(color.g*255), int(color.b*255), int(color.a*255))
         self.materialColors: Dict[SurfaceMaterial, QColor] = {
@@ -115,6 +136,18 @@ class ModuleDesigner(QMainWindow):
         QTimer().singleShot(33, self.openModule)
 
     def _setupSignals(self) -> None:
+        """Connect signals to slots
+        Args:
+            self: {The class instance}: Connects signals from UI elements to methods
+        Returns:
+            None: No return value
+        Processing Logic:
+            - Connect menu actions to methods like open, save
+            - Connect toggles of instance visibility checks to update method
+            - Connect double clicks on checks and instance list to methods
+            - Connect 3D renderer signals to mouse, key methods 
+            - Connect 2D renderer signals to mouse, key methods.
+        """
         self.ui.actionOpen.triggered.connect(self.openModule)
         self.ui.actionSave.triggered.connect(self.saveGit)
         self.ui.actionInstructions.triggered.connect(self.showHelpWindow)
@@ -167,6 +200,20 @@ class ModuleDesigner(QMainWindow):
         self.setWindowTitle(title)
 
     def openModule(self) -> None:
+        """Opens a module
+        Args:
+            self: The class instance
+            dialog: The dialog to select a module
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Unloads any currently loaded module
+            - Gets the selected module filepath
+            - Converts RIM file to mod if saving is disabled
+            - Loads the selected module into the installation
+            - Initializes the main renderer with the new module
+            - Sets the flat renderer resources from the new module.
+        """
         dialog = SelectModuleDialog(self, self._installation)
 
         if dialog.exec_():
@@ -200,6 +247,18 @@ class ModuleDesigner(QMainWindow):
         self._module.git().save()
 
     def rebuildResourceTree(self) -> None:
+        """Rebuilds the resource tree widget
+        Args:
+            self: The class instance
+        Returns:
+            None
+        Rebuilds the resource tree widget by:
+            - Clearing existing items
+            - Enabling the tree
+            - Grouping resources by type into categories
+            - Adding category items and resource items
+            - Sorting items alphabetically.
+        """
         self.ui.resourceTree.clear()
         self.ui.resourceTree.setEnabled(True)
 
@@ -272,6 +331,20 @@ class ModuleDesigner(QMainWindow):
         self.ui.mainRenderer.scene.clearCacheBuffer.append(ResourceIdentifier(resource.resname(), resource.restype()))
 
     def selectResourceItem(self, instance: GITInstance, clearExisting: bool = True) -> None:
+        """Select a resource item in the tree
+        Args:
+            instance: {The GIT instance to select}
+            clearExisting: {Clear existing selections if True}.
+
+        Returns
+        -------
+            None
+        Processing Logic:
+            1. Clear selection if clearExisting is True
+            2. Iterate through top level items
+            3. Iterate through child items of each top level
+            4. Check if instance matches item and select it.
+        """
         if clearExisting:
             self.ui.resourceTree.clearSelection()
 
@@ -286,6 +359,17 @@ class ModuleDesigner(QMainWindow):
                     self.ui.resourceTree.scrollToItem(item)
 
     def rebuildInstanceList(self) -> None:
+        """Rebuilds the instance list
+        Args:
+            self: The class instance
+        Returns:
+            None
+        Rebuilding Logic:
+            - Clear existing instance list
+            - Only rebuild if module is loaded
+            - Filter instances based on visible type mappings
+            - Add each instance to the list with icon, text, tooltips from the instance data.
+        """
         self.ui.instanceList.clear()
         self.ui.instanceList.setEnabled(True)
 
@@ -370,6 +454,16 @@ class ModuleDesigner(QMainWindow):
             self.ui.instanceList.addItem(item)
 
     def selectInstanceItemOnList(self, instance: GITInstance) -> None:
+        """Select an instance item on the instance list
+        Args:
+            instance (GITInstance): The instance to select
+        Returns:
+            None
+        - Clear any existing selection from the instance list
+        - Iterate through each item in the instance list
+        - Check if the item's stored data matches the passed in instance
+        - If so, select the item and scroll it into view.
+        """
         self.ui.instanceList.clearSelection()
         for i in range(self.ui.instanceList.count()):
             item = self.ui.instanceList.item(i)
@@ -396,6 +490,25 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
     def addInstance(self, instance: GITInstance, walkmeshSnap: bool = True) -> None:
+        """Adds a GIT instance to the editor.
+
+        Args:
+        ----
+            instance: {The instance to add}
+            walkmeshSnap (optional): {Whether to snap the instance to the walkmesh}.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+        1. Snaps the instance position to the walkmesh if walkmeshSnap is True
+        2. Checks if the instance is a camera, and if not:
+        3. Opens an insert instance dialog 
+        4. If accepted, rebuilds the resource tree and sets the instance resref and adds it
+        5. Also sets tag/name if waypoint/trigger/door
+        6. If a camera, just adds it
+        7. Rebuilds the instance list
+        """
         if walkmeshSnap:
             instance.position.z = self.ui.mainRenderer.walkmeshPoint(instance.position.x, instance.position.y, self.ui.mainRenderer.scene.camera.z).z
 
@@ -422,6 +535,16 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
     def addInstanceAtCursor(self, instance: GITInstance) -> None:
+        """Adds instance at cursor position
+        Args:
+            instance (GITInstance): Instance to add
+        Returns:
+            None: No return value
+        - Sets position of instance to cursor position
+        - Checks if instance is camera, opens dialog if not
+        - Adds instance to resource tree if dialog confirms
+        - Rebuilds instance list.
+        """
         instance.position.x = self.ui.mainRenderer.scene.cursor.position().x
         instance.position.y = self.ui.mainRenderer.scene.cursor.position().y
         instance.position.z = self.ui.mainRenderer.scene.cursor.position().z
@@ -490,6 +613,23 @@ class ModuleDesigner(QMainWindow):
         self.rebuildInstanceList()
 
     def moveSelected(self, x: float, y: float, z: float | None = None) -> None:
+        """Moves selected instances by the given offsets.
+
+        Args:
+        ----
+            x: Float offset to move instances along the x-axis.
+            y: Float offset to move instances along the y-axis.
+            z: Float offset to move instances along the z-axis or None.
+
+        Returns:
+        -------
+            None
+        - Checks if instance locking is enabled and returns if True
+        - Loops through selected instances
+        - Increases x, y position by offsets
+        - Increases z position by offset if provided, else sets to walkmesh height
+        - No return, modifies instances in place.
+        """
         if self.ui.lockInstancesCheck.isChecked():
             return
 
@@ -523,8 +663,21 @@ class ModuleDesigner(QMainWindow):
             self.ui.flatRenderer.snapCameraToPoint(instance.position)
 
     def onInstanceVisibilityDoubleClick(self, checkbox: QCheckBox) -> None:
-        """This method should be called whenever one of the instance visibility checkboxes have been double clicked. The
+        """Toggles visibility of a single instance type on double click.
+        This method should be called whenever one of the instance visibility checkboxes have been double clicked. The
         resulting affect should be that all checkboxes become unchecked except for the one that was pressed.
+
+        Args:
+        ----
+            checkbox (QCheckBox): Checkbox that was double clicked.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Unchecks all other instance type checkboxes
+            - Checks the checkbox that was double clicked
+            - This ensures only one instance type is visible at a time
         """
         self.ui.viewCreatureCheck.setChecked(False)
         self.ui.viewPlaceableCheck.setChecked(False)
@@ -547,6 +700,19 @@ class ModuleDesigner(QMainWindow):
         menu.exec_(self.ui.resourceTree.mapToGlobal(point))
 
     def _build_active_override_menu(self, data: ModuleResource, menu: QMenu):
+        """Builds an active override menu for a module resource
+        Args: 
+            data: ModuleResource - The module resource data
+            menu: QMenu - The menu to build actions on
+        Returns:
+            None
+        Processing Logic:
+            - Adds actions to edit active file, reload active file, and copy to override
+            - Loops through each location in the resource and adds an action
+            - Disables the active location action
+            - Disables copy to override if a location contains 'override'
+            - Connects all actions to trigger appropriate functions.
+        """
         copyToOverrideAction = QAction("Copy To Override", self)
         copyToOverrideAction.triggered.connect(lambda _, r=data: self.copyResourceToOverride(r))
 
@@ -592,6 +758,20 @@ class ModuleDesigner(QMainWindow):
             self.onContextMenuSelectionExists()
 
     def onContextMenuSelectionNone(self, world: Vector3):
+        """Displays a context menu for object insertion.
+
+        Args:
+        ----
+            world: (Vector3): World position for context menu
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+        - Creates a QMenu object
+        - Adds actions to menu for inserting different object types at world position or view position
+        - Connects actions to addInstance method
+        - Pops up menu at mouse cursor position
+        - Connects menu hide signal to reset mouse buttons
+        """
         menu = QMenu(self)
 
         view = self.ui.mainRenderer.scene.camera.true_position()
@@ -612,6 +792,17 @@ class ModuleDesigner(QMainWindow):
         menu.aboutToHide.connect(self.ui.mainRenderer.resetMouseButtons)
 
     def onContextMenuSelectionExists(self) -> None:
+        """Checks if a context menu selection exists
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        - Checks if any instances are selected
+        - If a camera instance is selected, adds camera-view snapping actions
+        - Always adds edit and remove actions
+        - Pops up the context menu at the mouse cursor position
+        - Resets mouse buttons when menu closes.
+        """
         menu = QMenu(self)
 
         if self.selectedInstances:
@@ -663,6 +854,17 @@ class ModuleDesigner(QMainWindow):
 
 class ModuleDesignerControls3d:
     def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
+        """Initializes the 3D view controller
+        Args:
+            editor: ModuleDesigner - The module designer instance
+            renderer: ModuleRenderer - The 3D renderer instance
+        Returns:
+            None - Initializes controller items and properties
+        Processing Logic:
+            - Initializes control items from settings bindings
+            - Sets initial scene and renderer properties
+            - Hides cursor if setting is unchecked.
+        """
         self.editor: ModuleDesigner = editor
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
@@ -712,7 +914,26 @@ class ModuleDesignerControls3d:
             strength = self.settings.moveCameraSensitivity3d / 1000
             self.renderer.scene.camera.z -= -delta.y * strength
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]) -> None:
+        """Moves the camera or selected instances on mouse movement.
+
+        Args:
+        ----
+            screen (Vector2): Screen position 
+            screenDelta (Vector2): Screen position change
+            world (Vector3): World position
+            buttons (set[int]): Pressed mouse buttons
+            keys (set[int]): Pressed keyboard keys
+        Returns:
+            None
+
+        Processing Logic:
+        - Moves camera if moveXYCamera or moveCameraPlane bindings are satisfied based on screenDelta
+        - Rotates camera if rotateCamera binding is satisfied based on screenDelta
+        - Zooms camera if zoomCameraMM binding is satisfied based on screenDelta
+        - Moves selected instances if moveXYSelected or moveZSelected bindings are satisfied based on screenDelta and position
+        - Rotates selected instances if rotateSelected binding is satisfied based on screenDelta
+        """
         if self.moveXYCamera.satisfied(buttons, keys):
             forward = -screenDelta.y * self.renderer.scene.camera.forward()
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
@@ -720,7 +941,7 @@ class ModuleDesignerControls3d:
             self.renderer.scene.camera.x -= (forward.x + sideward.x) * strength
             self.renderer.scene.camera.y -= (forward.y + sideward.y) * strength
 
-        if self.moveCameraPlane.satisfied(buttons, keys):
+        if self.moveCameraPlane.satisfied(buttons, keys):  # sourcery skip: extract-method
             upward = screenDelta.y * self.renderer.scene.camera.upward(False)
             sideward = screenDelta.x * self.renderer.scene.camera.sideward()
             strength = self.settings.moveCameraSensitivity3d / 1000
@@ -753,7 +974,19 @@ class ModuleDesignerControls3d:
         if self.rotateSelected.satisfied(buttons, keys):
             self.editor.rotateSelected(screenDelta.x, screenDelta.y)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+        """Handle mouse press events in the editor
+        Args:
+            screen: Vector2 - Mouse position on screen
+            buttons: set[int] - Pressed mouse buttons
+            keys: set[int] - Pressed keyboard keys
+        Returns:
+            None
+        Processing Logic:
+            - Check if select button is pressed and set doSelect flag
+            - Check if duplicate button is pressed, duplicate selected instance and add/select new instance
+            - Check if context menu button is pressed and open context menu at cursor position.
+        """
         if self.selectUnderneath.satisfied(buttons, keys):
             self.renderer.doSelect = True
 
@@ -768,10 +1001,26 @@ class ModuleDesignerControls3d:
             world = Vector3(*self.renderer.scene.cursor.position())
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
 
-    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         ...
 
-    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
+        """Handles keyboard input in the editor
+        Args:
+            buttons: Set[int]: The pressed buttons
+            keys: Set[int]: The pressed keys
+        Returns: 
+            None: Does not return anything
+        Processes keyboard input:
+            - Toggles free camera mode
+            - Snaps camera to selected instance
+            - Moves camera to cursor/entry point
+            - Deletes selected instances
+            - Rotates camera
+            - Pans camera
+            - Zooms camera
+            - Toggles instance locking.
+        """
         if self.toggleFreeCam.satisfied(buttons, keys):
             self.editor.toggleFreeCam()
 
@@ -820,12 +1069,28 @@ class ModuleDesignerControls3d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
         ...
 
 
 class ModuleDesignerControlsFreeCam:
     def __init__(self, editor: ModuleDesigner, renderer: ModuleRenderer):
+        """Initializes the free camera controller.
+
+        Args:
+        ----
+            editor: {ModuleDesigner}: The module designer instance.
+            renderer: {ModuleRenderer}: The module renderer instance.
+
+        Returns:
+        -------
+            None
+        Initializes control items for camera movement and sets up free camera mode in the renderer:
+            - Sets editor and settings references
+            - Initializes control items for camera movement bindings
+            - Hides cursor and enables free camera mode in renderer
+            - Clears any existing key presses and centers cursor in renderer view.
+        """
         self.editor: ModuleDesigner = editor
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
         self.renderer: ModuleRenderer = renderer
@@ -851,7 +1116,7 @@ class ModuleDesignerControlsFreeCam:
     def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
         ...
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector3, buttons: set[int], keys: set[int]) -> None:
         rendererPos = self.renderer.mapToGlobal(self.renderer.pos())
         mouseX = rendererPos.x() + self.renderer.width() / 2
         mouseY = rendererPos.y() + self.renderer.height() / 2
@@ -860,13 +1125,13 @@ class ModuleDesignerControlsFreeCam:
         self.renderer.rotateCamera(-screenDelta.x*strength, screenDelta.y*strength, snapRotations=False)
         self.renderer.cursor().setPos(mouseX, mouseY)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         ...
 
-    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         ...
 
-    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
         if self.toggleFreeCam.satisfied(buttons, keys):
             self.editor.toggleFreeCam()
 
@@ -890,6 +1155,21 @@ class ModuleDesignerControlsFreeCam:
 
 class ModuleDesignerControls2d:
     def __init__(self, editor: ModuleDesigner, renderer: WalkmeshRenderer):
+        """Initializes the 2D editor controller.
+
+        Args:
+        ----
+            editor: {ModuleDesigner}: The editor module.
+            renderer: {WalkmeshRenderer}: The renderer for the walkmesh.
+
+        Returns:
+        -------
+            None: None
+        Processing Logic:
+            - Sets editor and renderer references
+            - Initializes control bindings from settings
+            - Initializes ControlItem objects for each binding.
+        """
         self.editor: ModuleDesigner = editor
         self.renderer: WalkmeshRenderer = renderer
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()
@@ -906,12 +1186,39 @@ class ModuleDesignerControls2d:
         self.openContextMenu: ControlItem = ControlItem((set(), {QtMouse.RightButton}))
         self.toggleInstanceLock: ControlItem = ControlItem(self.settings.toggleLockInstancesBind)
 
-    def onMouseScrolled(self, delta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseScrolled(self, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+        """Scrolls camera zoom on mouse scroll
+        Args:
+            delta: Mouse scroll delta vector
+            buttons: Mouse buttons pressed
+            keys: Keyboard keys pressed
+        Returns:
+            None: No return value
+        - Checks if zoom camera control is satisfied by buttons and keys
+        - Calculates zoom strength from scroll delta and sensitivity setting
+        - Nudges camera zoom by calculated amount.
+        """
         if self.zoomCamera.satisfied(buttons, keys):
             strength = self.settings.moveCameraSensitivity2d / 100 / 50
             self.renderer.camera.nudgeZoom(delta.y * strength)
 
-    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseMoved(self, screen: Vector2, screenDelta: Vector2, world: Vector2, worldDelta: Vector2, buttons: set[int], keys: set[int]) -> None:
+        """Handles mouse movement events in the editor
+        Args:
+            screen: Vector2 - Mouse position on screen in pixels
+            screenDelta: Vector2 - Mouse movement since last event in pixels 
+            world: Vector2 - Mouse position in world space
+            worldDelta: Vector2 - Mouse movement since last event in world space
+            buttons: Set[int] - Mouse buttons currently held down
+            keys: Set[int] - Keyboard keys currently held down
+        Returns:
+            None
+        Processing Logic:
+            - Nudges camera position if move camera key is held based on worldDelta
+            - Nudges camera rotation if rotate camera key is held based on screenDelta
+            - Moves selected instances by worldDelta if move selected key is held
+            - Rotates selected instances around world position if rotate selected key is held.
+        """
         if self.moveCamera.satisfied(buttons, keys):
             strength = self.settings.moveCameraSensitivity2d / 100
             self.renderer.camera.nudgePosition(-worldDelta.x * strength, -worldDelta.y * strength)
@@ -931,7 +1238,19 @@ class ModuleDesignerControls2d:
                 else:
                     instance.rotate(-instance.yaw() + rotation, 0, 0)
 
-    def onMousePressed(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMousePressed(self, screen: Vector2, buttons: set[int], keys: Set[int]) -> None:
+        """Handle mouse press events in the editor
+        Args:
+            screen: Vector2 - Mouse position
+            buttons: Set[int] - Pressed buttons
+            keys: Set[int] - Pressed keys
+        Returns: 
+            None
+        Processing Logic:
+            - Check if select button is pressed and select instance under mouse
+            - Check if duplicate button is pressed and duplicate selected instance
+            - Check if context menu button is pressed and open context menu.
+        """
         if self.selectUnderneath.satisfied(buttons, keys):
             if self.renderer.instancesUnderMouse():
                 self.editor.setSelection([self.renderer.instancesUnderMouse()[-1]])
@@ -939,13 +1258,13 @@ class ModuleDesignerControls2d:
                 self.editor.setSelection([])
 
         if self.duplicateSelected.satisfied(buttons, keys) and self.editor.selectedInstances:
-            screen = self._extracted_from_onMousePressed_9()
+            self._duplicate_instance()
         if self.openContextMenu.satisfied(buttons, keys):
             world = self.renderer.toWorldCoords(screen.x, screen.y)
             self.editor.onContextMenu(world, self.renderer.mapToGlobal(QPoint(screen.x, screen.y)))
 
     # TODO Rename this here and in `onMousePressed`
-    def _extracted_from_onMousePressed_9(self):
+    def _duplicate_instance(self):
         instance = deepcopy(self.editor.selectedInstances[-1])
         result = self.renderer.mapFromGlobal(self.renderer.cursor().pos())
         instance.position = self.renderer.toWorldCoords(result.x(), result.y())
@@ -953,12 +1272,24 @@ class ModuleDesignerControls2d:
         self.editor.rebuildInstanceList()
         self.editor.setSelection([instance])
 
-        return result
-
-    def onMouseReleased(self, screen: Vector2, buttons: Set[int], keys: Set[int]) -> None:
+    def onMouseReleased(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
         ...
 
-    def onKeyboardPressed(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardPressed(self, buttons: set[int], keys: set[int]) -> None:
+        """Handle keyboard input in the editor.
+
+        Args:
+        ----
+            buttons: {Set of pressed button codes}
+            keys: {Set of pressed key codes}.
+
+        Returns:
+        -------
+            None
+        - Check if delete selection shortcut satisfied and call editor delete selection
+        - Check if snap camera to selection shortcut satisfied and snap camera to first selected instance
+        - Check if toggle instance lock shortcut satisfied and toggle lock instances checkbox
+        """
         if self.deleteSelected.satisfied(buttons, keys):
             self.editor.deleteSelected()
 
@@ -970,5 +1301,5 @@ class ModuleDesignerControls2d:
         if self.toggleInstanceLock.satisfied(buttons, keys):
             self.editor.ui.lockInstancesCheck.setChecked(not self.editor.ui.lockInstancesCheck.isChecked())
 
-    def onKeyboardReleased(self, buttons: Set[int], keys: Set[int]) -> None:
+    def onKeyboardReleased(self, buttons: set[int], keys: set[int]) -> None:
         ...

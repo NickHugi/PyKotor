@@ -10,6 +10,17 @@ from toolset.utils.misc import getStringFromKey
 
 class SetBindWidget(QWidget):
     def __init__(self, parent: QWidget):
+        """Initializes the widget for setting keybinds
+        Args:
+            parent (QWidget): Parent widget
+        Returns:
+            None
+        Processing Logic:
+            - Sets up initial keybind set as empty
+            - Loads UI from designer file
+            - Connects button click signals to methods
+            - Populates mouse combo box with mouse button options.
+        """
         super().__init__(parent)
 
         self.keybind: Set[int] = set()

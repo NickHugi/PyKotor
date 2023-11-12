@@ -76,6 +76,24 @@ def getStringFromKey(key: int) -> str:
 
 
 def getResourceFromFile(filepath: os.PathLike | str, resname: str, restype: ResourceType) -> Optional[bytes]:
+    """Gets a resource from a file by name and type.
+
+    Args:
+    ----
+        filepath: The path to the file to read from.
+        resname: The name of the resource to retrieve.
+        restype: The type of the resource.
+
+    Returns:
+    -------
+        data: The resource data as bytes or None if not found.
+    Processing Logic:
+        - Determines if the file is an ERF, RIM or generic file
+        - Reads the file using the appropriate reader
+        - Looks up the resource by name and type
+        - Raises an error if the resource is not found
+        - Returns the resource data or None.
+    """
     data = None
     c_filepath = Path(filepath)
 

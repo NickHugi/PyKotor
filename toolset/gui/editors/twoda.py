@@ -20,6 +20,18 @@ if TYPE_CHECKING:
 
 class TwoDAEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+        """Initializes the 2DA editor
+        Args:
+            parent: QWidget: The parent widget
+            installation: HTInstallation: The installation
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Sets supported resource types
+            - Initializes UI elements
+            - Connects model change signals
+            - Sets default empty model.
+        """
         supported = [ResourceType.TwoDA, ResourceType.TwoDA_CSV, ResourceType.TwoDA_JSON]
         super().__init__(parent, "2DA Editor", "none", supported, supported, installation)
         self.resize(400, 250)
@@ -44,6 +56,25 @@ class TwoDAEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Set up signal connections for UI actions and edits.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None: No return value.
+        Processing Logic:
+            - Connect textEdited signal from filter edit to doFilter slot
+            - Connect triggered signal from toggle filter action to toggleFilter slot
+            - Connect triggered signal from copy action to copySelection slot
+            - Connect triggered signal from paste action to pasteSelection slot
+            - Connect triggered signal from insert row action to insertRow slot
+            - Connect triggered signal from duplicate row action to duplicateRow slot
+            - Connect triggered signal from remove rows action to removeSelectedRows slot
+            - Connect triggered signal from redo row labels action to redoRowLabels slot
+        """
         self.ui.filterEdit.textEdited.connect(self.doFilter)
         self.ui.actionToggleFilter.triggered.connect(self.toggleFilter)
         self.ui.actionCopy.triggered.connect(self.copySelection)
@@ -55,6 +86,24 @@ class TwoDAEditor(Editor):
         self.ui.actionRedoRowLabels.triggered.connect(self.redoRowLabels)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+        """Loads data from a file into the model.
+
+        Args:
+        ----
+            filepath: The path to the file to load from.
+            resref: The resource reference.
+            restype: The resource type.
+            data: The raw file data.
+
+        Returns:
+        -------
+            None
+        - Parses the raw file data and populates the model
+        - Sets up a proxy model for sorting and filtering
+        - Catches any errors during loading and displays a message
+        - Sets the proxy model as the view model if loading fails
+        - Resets to a new empty state if loading fails
+        """
         super().load(filepath, resref, restype, data)
         self.model = QStandardItemModel(self)
         self.proxyModel = SortFilterProxyModel(self)
@@ -67,6 +116,18 @@ class TwoDAEditor(Editor):
             self.new()
 
     def _load_main(self, data):
+        """Loads data from a 2DA file into the main table
+        Args:
+            data: The 2DA data to load
+        Returns:
+            None
+        Processing Logic:
+            1. Reads the 2DA data
+            2. Sets up the model with headers
+            3. Loops through rows and inserts data
+            4. Configures vertical header menu
+            5. Sets up sorting proxy model.
+        """
         twoda = read_2da(data)
 
         headers = ["", *list(twoda.get_headers())]
@@ -116,6 +177,20 @@ class TwoDAEditor(Editor):
             self.ui.twodaTable.resizeColumnToContents(i)
 
     def build(self) -> Tuple[bytes, bytes]:
+        """Builds a 2D array from a table model
+        Args:
+            self: The object instance
+            model: The table model to convert
+        Returns:
+            Tuple[bytes, bytes]: A tuple containing the 2DA data and an empty string
+        Processing Logic:
+            - Initialize an empty TwoDA object
+            - Add column headers from the table model's horizontal header
+            - Add a row for each row in the table model
+            - Set the row label and cell values from the corresponding items in the table model
+            - Serialize the TwoDA to a byte array
+            - Return the byte array and an empty string.
+        """
         twoda = TwoDA()
 
         for i in range(self.model.columnCount())[1:]:
@@ -149,6 +224,21 @@ class TwoDAEditor(Editor):
             self.doFilter("")
 
     def copySelection(self) -> None:
+        """Copies the selected cells to the clipboard.
+
+        Args:
+        ----
+            self: The object instance.
+
+        Returns:
+        -------
+            None
+        - Gets the top, bottom, left, and right indices of the selected cells.
+        - Loops through the selected indices and maps them to the source model.
+        - Updates the top, bottom, left, and right indices.
+        - Loops through the indices range and builds a string with the cell texts separated by tabs.
+        - Copies the string to the clipboard.
+        """
         top = self.model.rowCount()
         bottom = -1
         left = self.model.columnCount()
@@ -174,6 +264,20 @@ class TwoDAEditor(Editor):
         pyperclip.copy(clipboard)
 
     def pasteSelection(self) -> None:
+        """Pastes the clipboard contents into the selected table cells
+        Args:
+            self: The object instance
+        Returns:
+            None: No return value
+        - Splits the clipboard contents into rows separated by newlines
+        - Gets the top left selected cell index and item
+        - Loops through each row
+            - Loops through each cell in the row separated by tabs
+            - Sets the text of the model item at the current row and column
+            - Increments the column
+            - Resets column to the left column after each row
+            - Increments the row.
+        """
         rows = pyperclip.paste().split("\n")
 
         topLeftIndex = self.proxyModel.mapToSource(self.ui.twodaTable.selectedIndexes()[0])
@@ -191,7 +295,22 @@ class TwoDAEditor(Editor):
             y += 1
 
     def insertRow(self) -> None:
-        """Inserts a new row at the end of the table."""
+        """Inserts a new row at the end of the table.
+
+        Args:
+        ----
+            self: The table view object.
+
+        Returns:
+        -------
+            None: No value is returned.
+        Processing Logic:
+            - Gets the current row count from the model
+            - Appends a new empty row to the model
+            - Sets the item in the first column to the row index
+            - Makes the row index bold and changes its background color
+            - Resets the vertical header labels.
+        """
         rowIndex = self.model.rowCount()
         self.model.appendRow([QStandardItem("") for _ in range(self.model.columnCount())])
         self.model.setItem(rowIndex, 0, QStandardItem(str(rowIndex)))
@@ -202,7 +321,23 @@ class TwoDAEditor(Editor):
         self.resetVerticalHeaders()
 
     def duplicateRow(self) -> None:
-        """Inserts a new row, copying values of the selected row, at the end of the table."""
+        """Duplicates the selected row in the table.
+        Inserts a new row, copying values of the selected row, at the end of the table.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        - It checks if a row is selected in the table.
+        - Gets the index of the selected row.
+        - Increases the row count of the model by 1.
+        - Appends a new row with the items copied from the selected row.
+        - Sets the item of the first column of new row to the row index in bold font and changed background.
+        - Resets the vertical headers of the table.
+        """
         if self.ui.twodaTable.selectedIndexes():
             copyRow = self.ui.twodaTable.selectedIndexes()[0].row()
 
@@ -232,6 +367,21 @@ class TwoDAEditor(Editor):
         self.resetVerticalHeaders()
 
     def resetVerticalHeaders(self) -> None:
+        """Resets the vertical headers of the two-dimensional table.
+
+        Args:
+        ----
+            self: The table widget object.
+
+        Returns:
+        -------
+            None: No value is returned.
+        Processing Logic:
+            - Clear existing vertical header styling
+            - Determine header values based on vertical header option
+            - Populate headers list with appropriate values
+            - Set vertical header item for each row using headers list values
+        """
         self.ui.twodaTable.verticalHeader().setStyleSheet("")
         headers = []
 
@@ -260,6 +410,23 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         self._filterString: str = ""
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
+        """Filters rows based on regular expression pattern match.
+
+        Args:
+        ----
+            sourceRow: Row number to check
+            sourceParent: Parent model of the row
+        Returns:
+            True: If row matches filter pattern
+            False: If row does not match filter pattern
+        Processing Logic:
+            - Get regular expression pattern from filter
+            - If pattern is empty, always return True
+            - Iterate through each column of the row
+            - Check if cell data contains pattern using lower case comparison
+            - If any cell matches, return True
+        - If no cells match, return False
+        """
         pattern = self.filterRegExp().pattern().lower()
         if self.filterRegExp().pattern() == "":
             return True

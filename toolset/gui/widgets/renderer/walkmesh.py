@@ -136,6 +136,19 @@ class WalkmeshRenderer(QWidget):
     instancePressed = QtCore.pyqtSignal(object)  # instance
 
     def __init__(self, parent: QWidget):
+        """Initializes the WalkmeshViewer widget
+        Args:
+            parent (QWidget): The parent widget
+        Returns:
+            None
+        Processing Logic:
+            - Initializes variables and properties
+            - Sets up camera
+            - Sets up selection
+            - Initializes mouse tracking
+            - Loads icon pixmaps
+            - Starts update loop.
+        """
         super().__init__(parent)
 
         self._walkmeshes: List[BWM] = []
@@ -341,8 +354,7 @@ class WalkmeshRenderer(QWidget):
 
         Args:
         ----
-            m
-        ----aterial: The surface material.
+            material: The surface material.
 
         Returns:
         -------
@@ -354,6 +366,18 @@ class WalkmeshRenderer(QWidget):
         return self._instancesUnderMouse
 
     def isInstanceVisible(self, instance: GITInstance) -> bool | None:
+        """Checks if an instance is visible based on hide settings.
+
+        Args:
+        ----
+            instance (GITInstance): Instance to check visibility for
+        Returns:
+            bool | None: True if visible, False if hidden, None if invalid type
+        Processing Logic:
+        - Check if instance is a valid subclass
+        - Return True if type is not hidden in settings
+        - Return None if type is invalid
+        """
         if isinstance(instance, GITCreature):
             return not self.hideCreatures
         if isinstance(instance, GITDoor):
@@ -399,6 +423,17 @@ class WalkmeshRenderer(QWidget):
         return self._geomPointsUnderMouse
 
     def centerCamera(self) -> None:
+        """Centers the camera on the bounding box of the world
+        Args:
+            self: The object calling the function
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+        1. Sets the camera position to the center of the bounding box
+        2. Calculates the world and screen sizes
+        3. Calculates the scale factor to fit the world in the screen
+        4. Sets the camera zoom and rotation based on the scale.
+        """
         self.camera.setPosition((self._bbmin.x + self._bbmax.x) / 2, (self._bbmin.y + self._bbmax.y) / 2)
         world_w = self._worldSize.x
         world_h = self._worldSize.y
@@ -473,6 +508,22 @@ class WalkmeshRenderer(QWidget):
     # region Events
     def paintEvent(self, e: QPaintEvent) -> None:
         # Build walkmesh faces cache
+        """Renders the scene by drawing walkmesh faces, instances and selected objects
+
+        Args:
+        ----
+            e (QPaintEvent): The paint event
+        Returns:
+            None
+
+        - Builds and caches walkmesh face geometry
+        - Sets up camera transform
+        - Fills background and draws walkmesh faces
+        - Draws instances like creatures, doors as icons
+        - Highlights first instance under mouse
+        - Highlights first geom point under mouse
+        - Highlights selected instances and geometry points
+        """
         if self._walkmeshFaceCache is None:
             self._walkmeshFaceCache = {}
             for walkmesh in self._walkmeshes:
@@ -627,6 +678,16 @@ class WalkmeshRenderer(QWidget):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), self._mouseDown, self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        """Handles mouse move events
+        Args:
+            e: QMouseEvent - Mouse event object
+        Returns:
+            None
+        Processes mouse movement:
+            - Updates mouse position
+            - Emits mouseMoved signal
+            - Finds instances and geometry points under mouse
+        """
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
         self._mousePrev = coords

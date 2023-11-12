@@ -20,6 +20,24 @@ if TYPE_CHECKING:
 
 class UTIEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+        """Initializes the Item Editor window
+        Args:
+            parent: {QWidget}: The parent widget
+            installation: {HTInstallation | None}: The installation object
+        Returns:
+            None: Does not return anything
+        {Processing Logic}:
+            - Initializes supported resource types
+            - Calls super().__init__ to initialize base class
+            - Initializes UTI object
+            - Sets up UI from designer file
+            - Sets up menus
+            - Sets up signals
+            - Sets up installation
+            - Sets installation on description editor
+            - Connects delete shortcut
+            - Calls new() to start with a new empty item.
+        """
         supported = [ResourceType.UTI]
         super().__init__(parent, "Item Editor", "item", supported, supported, installation)
 
@@ -39,6 +57,12 @@ class UTIEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Set up signal connections for UI elements
+        Args:
+            self: {The class instance}: The class instance
+        Returns:
+            None: No return value.
+        """
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.editPropertyButton.clicked.connect(self.editSelectedProperty)
@@ -53,6 +77,22 @@ class UTIEditor(Editor):
         self.ui.baseSelect.currentIndexChanged.connect(self.onUpdateIcon)
 
     def _setupInstallation(self, installation: HTInstallation):
+        """Sets up the installation for editing.
+
+        Args:
+        ----
+            installation (HTInstallation): The installation to set up.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Sets the installation property on the UI
+            - Loads required 2DAs into the installation cache
+            - Populates base item select from baseitems 2DA
+            - Populates available properties list from item properties 2DA
+            - Adds subproperties from subtype 2DAs to their parent properties.
+        """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
         self.ui.descEdit.setInstallation(installation)
@@ -94,6 +134,15 @@ class UTIEditor(Editor):
         self._loadUTI(uti)
 
     def _loadUTI(self, uti: UTI):
+        """Loads a UTI object into the UI
+        Args:
+            uti: UTI - The UTI object to load
+        Returns:
+            None - Loads UTI data into UI elements
+        Loads UTI data:
+            - Loads basic UTI data like name, description etc into corresponding UI elements.
+            - Loads properties and comments from UTI object into UI lists and text editors.
+        """
         self._uti = uti
 
         # Basic
@@ -124,6 +173,19 @@ class UTIEditor(Editor):
         self.ui.commentsEdit.setPlainText(uti.comment)
 
     def build(self) -> Tuple[bytes, bytes]:
+        """Builds a UTI object from UI input.
+
+        Args:
+        ----
+            self: The object instance
+        Returns:
+            Tuple[bytes, bytes]: Byte data and empty string
+        {Processing Logic}:
+            - Populate UTI object properties from UI elements
+            - Convert UTI to GFF structure
+            - Write GFF to byte array
+            - Return byte array and empty string
+        """
         uti = self._uti
 
         # Basic
@@ -199,6 +261,22 @@ class UTIEditor(Editor):
             self._add_property_main(propertyId, subtypeId)
 
     def _add_property_main(self, propertyId, subtypeId):
+        """Adds a property to an item.
+
+        Args:
+        ----
+            propertyId: The id of the property to add.
+            subtypeId: The subtype id of the item.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        Processing Logic:
+        - Gets the item properties table from the installation.
+        - Creates a UTIProperty object and populates it with data from the table.
+        - Adds a summary of the property to the assigned properties list widget.
+        - Sets the UTIProperty as user data on the list item.
+        """
         itemprops = self._installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
 
         utiProperty = UTIProperty()
@@ -221,6 +299,10 @@ class UTIEditor(Editor):
             self.ui.assignedPropertiesList.takeItem(index.row())
 
     def propertySummary(self, utiProperty: UTIProperty) -> str:
+        """The function retrieves the property, subproperty and cost names from the UTIEditor.
+        - It returns a formatted string combining the retrieved names.
+        - If a cost or subproperty is not present, it is omitted from the returned string.
+        """
         propName = UTIEditor.propertyName(self._installation, utiProperty.property_name)
         subpropName = UTIEditor.subpropertyName(self._installation, utiProperty.property_name, utiProperty.subtype)
         costName = UTIEditor.costName(self._installation, utiProperty.cost_table, utiProperty.cost_value)
@@ -259,6 +341,23 @@ class UTIEditor(Editor):
 
     @staticmethod
     def subpropertyName(installation: HTInstallation, prop: int, subprop: int):
+        """Gets the name of a subproperty of an item property.
+
+        Args:
+        ----
+            installation: HTInstallation - The installation object
+            prop: int - The property index
+            subprop: int - The subproperty index
+        Returns:
+            string - The name of the subproperty
+
+        Processing Logic:
+        - Gets the item properties 2DA from the cache
+        - Gets the subtype resource reference from the property row
+        - Gets the subproperties 2DA from the subtype resource
+        - Gets the name string reference from the subproperty row
+        - Returns the string from the talktable or the label if name is None
+        """
         properties = installation.htGetCache2DA(HTInstallation.TwoDA_ITEM_PROPERTIES)
         subtypeResname = properties.get_cell(prop, "subtyperesref")
         if subtypeResname  == "":
@@ -293,6 +392,18 @@ class UTIEditor(Editor):
 
 class PropertyEditor(QDialog):
     def __init__(self, installation: HTInstallation, utiProperty: UTIProperty):
+        """Initializes the UTI property editor dialog
+        Args:
+            installation: {HTInstallation object}: The installation object
+            utiProperty: {UTIProperty object}: The UTI property object
+        Returns:
+            None
+        Processing Logic:
+            - Connects UI elements to callback functions
+            - Populates cost and parameter lists from installation data
+            - Populates upgrade dropdown from installation data
+            - Sets initial values of textboxes from utiProperty.
+        """
         super().__init__()
 
         from toolset.uic.dialogs.property import Ui_Dialog
@@ -334,6 +445,14 @@ class PropertyEditor(QDialog):
         self.reloadTextboxes()
 
     def reloadTextboxes(self) -> None:
+        """Reloads textboxes with property names.
+
+        Args:
+        ----
+            self: The class instance
+        Returns:
+            None
+        """
         propertyName = UTIEditor.propertyName(self._installation, self._utiProperty.property_name)
         self.ui.propertyEdit.setText(propertyName if propertyName else "")
 

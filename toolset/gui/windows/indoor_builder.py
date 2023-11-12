@@ -53,6 +53,22 @@ if TYPE_CHECKING:
 
 class IndoorMapBuilder(QMainWindow):
     def __init__(self, parent: QWidget, installation: HTInstallation | None = None):
+        """Initialize indoor builder window.
+
+        Args:
+        ----
+            parent: QWidget - Parent widget
+            installation: HTInstallation | None - Installation object or None
+        Returns:
+            None
+        Processing Logic:
+            - Initialize UI components
+            - Set up signal connections
+            - Set up keyboard shortcuts
+            - Populate kit list
+            - Set initial map
+            - Refresh window title.
+        """
         super().__init__(parent)
 
         self._installation: HTInstallation = installation
@@ -72,6 +88,18 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.setMap(self._map)
 
     def _setupSignals(self) -> None:
+        """Connect signals to slots.
+
+        Args:
+        ----
+            self: {The class instance}: The class instance
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Connect index changed signals from kit and component selectors to selection changed slots
+            - Connect action triggers from menu to method calls
+            - Connect mouse events on map renderer to handler methods.
+        """
         self.ui.kitSelect.currentIndexChanged.connect(self.onKitSelected)
         self.ui.componentList.currentItemChanged.connect(self.onComponentSelected)
 
@@ -159,6 +187,18 @@ class IndoorMapBuilder(QMainWindow):
         self._refreshWindowTitle()
 
     def open(self) -> None:
+        """Opens a file dialog to select and load a map file.
+
+        Args:
+        ----
+            self: The object instance
+        Returns:
+            None
+        - Opens a file dialog to select an indoor map file
+        - Attempts to load the selected file and rebuild room connections
+        - Sets the filepath and refreshes window title on success
+        - Shows an error message on failure.
+        """
         filepath, _ = QFileDialog.getOpenFileName(self, "Open Map", "", "Indoor Map File (*.indoor)")
         if filepath:
             try:
@@ -199,6 +239,19 @@ class IndoorMapBuilder(QMainWindow):
         self._map.warpPoint = Vector3(x, y, z)
 
     def onKitSelected(self) -> None:
+        """Selects a kit and populates component list
+        Args:
+            self: The class instance
+        Returns: 
+            None
+        - Gets the selected kit from the UI kit selection widget
+        - Checks if a kit is selected
+        - Clears any existing items from the component list
+        - Loops through the components in the selected kit
+        - Creates a QListWidgetItem for each component
+        - Sets the component as item data
+        - Adds the item to the component list.
+        """
         kit: Kit = self.ui.kitSelect.currentData()
 
         if kit is not None:
@@ -216,6 +269,23 @@ class IndoorMapBuilder(QMainWindow):
         self.ui.mapRenderer.setCursorComponent(component)
 
     def onMouseMoved(self, screen: Vector2, delta: Vector2, buttons: set[int], keys: set[int]) -> None:
+        """Handles events when the mouse is moved in the ui
+        Args:
+            screen: Vector2 - Current screen position
+            delta: Vector2 - Change in screen position
+            buttons: set[int] - Current pressed buttons
+            keys: set[int] - Current pressed keys
+        Returns:
+            None
+        Processing Logic:
+            - Refresh status bar
+            - Convert screen delta to world delta
+            - Pan camera if LMB + CTRL pressed
+            - Rotate camera if MMB + CTRL pressed
+            - Move selected rooms if LMB pressed
+            - Update other room positions based on selected room movement
+            - Rebuild room connections.
+        """
         self._refreshStatusBar()
         worldDelta = self.ui.mapRenderer.toWorldDelta(delta.x, delta.y)
 
@@ -247,6 +317,21 @@ class IndoorMapBuilder(QMainWindow):
             self._map.rebuildRoomConnections()
 
     def onMousePressed(self, screen: Vector2, buttons: set[int], keys: set[int]) -> None:
+        """Handles mouse press events on the map view
+        Args:
+            screen: Vector2 - Mouse position on screen
+            buttons: set[int] - Pressed mouse buttons
+            keys: set[int] - Pressed modifier keys
+        Returns:
+            None
+        - Checks if left mouse button and control key are pressed
+        - Gets component under cursor and selected component
+        - Builds indoor map if component selected
+        - Clears cursor and selection if shift not pressed
+        - Selects room under mouse if room found
+        - Clears selection if no room found
+        - Toggles cursor flip if middle mouse button and no control pressed.
+        """
         if QtCore.Qt.LeftButton in buttons and QtCore.Qt.Key_Control not in keys:
             if self.ui.mapRenderer._cursorComponent is not None:
                 component = self.selectedComponent()
@@ -268,6 +353,23 @@ class IndoorMapBuilder(QMainWindow):
             self.ui.mapRenderer.toggleCursorFlip()
 
     def _build_indoor_map_room_and_refresh(self, component):
+        """Builds an indoor map room and refreshes the map.
+
+        Args:
+        ----
+            component: The component to add to the room.
+
+        Returns:
+        -------
+            None
+        Builds an indoor map room:
+            - Creates a new IndoorMapRoom object
+            - Sets its properties from the cursor properties
+            - Adds it to the map's rooms list
+        Refreshes the map:
+            - Rebuilds the room connections
+            - Resets the cursor properties
+        """
         room = IndoorMapRoom(
             component,
             self.ui.mapRenderer._cursorPoint,
@@ -330,6 +432,16 @@ class IndoorMapRenderer(QWidget):
     """Signal emitted when a mouse button is double clicked on the widget."""
 
     def __init__(self, parent: QWidget):
+        """Initialize the indoor map viewer widget
+        Args:
+            parent (QWidget): Parent widget
+        Returns:
+            None
+        Processing Logic:
+            - Initialize the indoor map object
+            - Initialize variables to track selected rooms, camera position etc
+            - Start the main update loop.
+        """
         super().__init__(parent)
 
         self._map: IndoorMap = IndoorMap()
@@ -446,6 +558,18 @@ class IndoorMapRenderer(QWidget):
         return Vector2(x2, y2)
 
     def getConnectedHooks(self, room1: IndoorMapRoom, room2: IndoorMapRoom) -> tuple:
+        """Get connected hooks between two rooms
+        Args:
+            room1: IndoorMapRoom - The first room
+            room2: IndoorMapRoom - The second room
+        Returns:
+            tuple - A tuple containing the connected hooks or None if no connection
+        Processing Logic:
+        - Loop through all hooks in room1 and get their positions
+        - Loop through all hooks in room2 and get their positions
+        - Check distance between each hook pair and return the closest pair if < 1 unit apart
+        - Return a tuple of the connected hooks or None if no connection found.
+        """
         hook1 = None
         hook2 = None
 
@@ -563,6 +687,20 @@ class IndoorMapRenderer(QWidget):
     # endregion
 
     def _drawImage(self, painter: QPainter, image: QImage, coords: Vector2, rotation: float, flip_x: bool, flip_y: bool) -> None:
+        """Draws an image
+        Args:
+            painter: QPainter - Painter to draw on
+            image: QImage - Image to draw
+            coords: Vector2 - Coordinates to draw image at
+            rotation: float - Rotation of image in radians
+            flip_x: bool - Whether to flip image horizontally
+            flip_y: bool - Whether to flip image vertically
+        Returns: 
+            None: Does not return anything
+        - Applies transformations like translation, rotation and scaling to the painter based on parameters
+        - Draws the image onto the painter using the transformed coordinates
+        - Restores original painter transformation after drawing.
+        """
         original = painter.transform()
 
         trueWidth, trueHeight = image.width(), image.height()
@@ -631,6 +769,21 @@ class IndoorMapRenderer(QWidget):
 
     # region Events
     def paintEvent(self, e: QPaintEvent) -> None:
+        """Draws the map view
+        Args:
+            e: QPaintEvent
+        Returns:
+            None
+        Processing Logic:
+            - Maps mouse position to world coordinates
+            - Applies transformations
+            - Draws background rectangle
+            - Draws each room image
+            - Draws magnets for empty hooks 
+            - Draws connections between hooked rooms
+            - Draws cursor if present
+            - Highlights rooms under mouse or selected.
+        """
         screen = self.mapFromGlobal(self.cursor().pos())
         world = self.toWorldCoords(screen.x(), screen.y())
 
@@ -699,6 +852,19 @@ class IndoorMapRenderer(QWidget):
         self.mouseScrolled.emit(Vector2(e.angleDelta().x(), e.angleDelta().y()), e.buttons(), self._keysDown)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
+        """Handles mouse move events.
+
+        Args:
+        ----
+            e: QMouseEvent - Mouse event object
+        Returns:
+            None
+        - Calculates mouse position delta since last event
+        - Emits mouseMoved signal with updated position info
+        - Converts mouse coords to world coords and sets cursor point
+        - Checks if cursor is connected to a room and updates cursor position accordingly
+        - Finds room under mouse and sets _underMouseRoom attribute.
+        """
         coords = Vector2(e.x(), e.y())
         coordsDelta = Vector2(coords.x - self._mousePrev.x, coords.y - self._mousePrev.y)
         self._mousePrev = coords
@@ -761,6 +927,22 @@ class KitDownloader(QDialog):
         self._setupDownloads()
 
     def _setupDownloads(self) -> None:
+        """Sets up downloads for kits from update info.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None
+
+        - Gets update info from server and parses JSON response
+        - Checks if each kit is already downloaded
+            - If so, sets button to "Already Downloaded" and disables
+            - If not, sets button to "Download"
+        - Adds kit name and button to layout in group box
+        """
         req = requests.get(UPDATE_INFO_LINK, timeout=15)
         updateInfoData = json.loads(req.text)
 

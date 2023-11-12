@@ -17,6 +17,21 @@ if TYPE_CHECKING:
 
 class SSFEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: Optional[Installation] = None):
+        """Initialize Soundset Editor window
+        Args:
+            parent: {Parent widget}
+            installation: {Installation object}.
+
+        Returns
+        -------
+            None
+        Processing Logic:
+            - Call super().__init__ to initialize base editor
+            - Get talktable from installation if provided
+            - Import and setup UI
+            - Setup menus and signals
+            - Call new() to start with empty soundset
+        """
         supported = [ResourceType.SSF]
         super().__init__(parent, "Soundset Editor", "soundset", supported, supported, installation)
 
@@ -32,6 +47,19 @@ class SSFEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Connects signals to update text boxes.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Connects valueChanged signals from spin boxes to updateTextBoxes method
+            - Connects triggered signal from actionSetTLK to selectTalkTable method
+        """
         self.ui.battlecry1StrrefSpin.valueChanged.connect(self.updateTextBoxes)
         self.ui.battlecry2StrrefSpin.valueChanged.connect(self.updateTextBoxes)
         self.ui.battlecry3StrrefSpin.valueChanged.connect(self.updateTextBoxes)
@@ -64,6 +92,19 @@ class SSFEditor(Editor):
         self.ui.actionSetTLK.triggered.connect(self.selectTalkTable)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+        """Loads sound data from an SSF file
+        Args:
+            filepath: {PathLike or string}: Path to SSF file
+            resref: {string}: Resource reference
+            restype: {ResourceType}: Resource type
+            data: {bytes}: SSF data
+        Returns:
+            None: No return value
+        Loads sound data from an SSF file and sets values of UI spin boxes:
+        - Reads SSF data from file
+        - Sets values of spin boxes for different sound events like battlecries, attacks, abilities etc
+        - Populates UI with sound data from file.
+        """
         super().load(filepath, resref, restype, data)
         ssf = read_ssf(data)
 
@@ -97,6 +138,17 @@ class SSFEditor(Editor):
         self.ui.poisonedStrrefSpin.setValue(ssf.get(SSFSound.POISONED))
 
     def build(self) -> tuple[bytes, bytes]:
+        """Builds sound data from UI values
+        Args:
+            self: {The class instance}: Provides UI element values
+        Returns:
+            tuple[bytes, bytes]: {The built sound data and empty string}
+        Processing Logic:
+            - Initialize SSF object
+            - Set data for each sound type from corresponding UI element value
+            - Serialize SSF to bytearray
+            - Return bytearray and empty string.
+        """
         ssf = SSF()
 
         ssf.set_data(SSFSound.BATTLE_CRY_1, self.ui.battlecry1StrrefSpin.value())
@@ -165,6 +217,16 @@ class SSFEditor(Editor):
         self.ui.poisonedStrrefSpin.setValue(0)
 
     def updateTextBoxes(self) -> None:
+        """Updates text boxes with sound and text from talktable
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Gets stringref values from UI elements
+            - Batches stringref lookups to talktable
+            - Loops through pairs of UI elements and assigns text/sound from talktable.
+        """
         if self._talktable is None:
             return
 

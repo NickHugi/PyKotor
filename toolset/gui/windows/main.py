@@ -99,6 +99,16 @@ class ToolWindow(QMainWindow):
     ]
 
     def __init__(self):
+        """Initializes the main window
+        Args:
+            self: The object instance
+        Processing Logic:
+            - Sets up superclass initialization
+            - Initializes observer and handler objects
+            - Hides unnecessary UI sections on startup
+            - Loads settings from file
+            - Checks for updates on first run.
+        """
         super().__init__()
 
         self.dogObserver = None
@@ -129,6 +139,18 @@ class ToolWindow(QMainWindow):
         self.checkForUpdates(True)
 
     def _setupSignals(self) -> None:
+        """Connects signals to slots for UI interactions
+        Args:
+            self: {The class instance}: Sets up connections for UI signals
+        Returns: 
+            None: No return value
+        {Processing Logic}:
+            - Connects game combo box index changed to change active installation
+            - Connects module/override file updated signals to update handlers
+            - Connects various widget signals like section changed to handler methods
+            - Connects button clicks to extract/open resource methods
+            - Connects menu actions to various editor, dialog and tool openings.
+        """
         self.ui.gameCombo.currentIndexChanged.connect(self.changeActiveInstallation)
 
         self.moduleFilesUpdated.connect(self.onModuleFileUpdated)

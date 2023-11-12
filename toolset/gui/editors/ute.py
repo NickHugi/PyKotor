@@ -18,6 +18,21 @@ if TYPE_CHECKING:
 
 class UTEEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+        """Initialize the trigger editor window
+        Args:
+            parent: {The parent widget of the editor}
+            installation: {The installation object being edited}.
+
+        Returns
+        -------
+            None
+        {Processing Logic}:
+            - Call super().__init__ to initialize base editor class
+            - Load UI from designer file
+            - Set up menus, signals and installation
+            - Initialize UTE object
+            - Call new() to start with a blank trigger.
+        """
         supported = [ResourceType.UTE]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
@@ -33,6 +48,19 @@ class UTEEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Connects UI signals to handler functions
+        Args:
+            self: The class instance
+        Returns:
+            None
+        Processing Logic:
+            - Connects the tagGenerateButton clicked signal to generateTag handler
+            - Connects the resrefGenerateButton clicked signal to generateResref handler
+            - Connects the infiniteRespawnCheckbox stateChanged signal to setInfiniteRespawn handler
+            - Connects the spawnSelect currentIndexChanged signal to setContinuous handler
+            - Connects the addCreatureButton clicked signal to addCreature handler
+            - Connects the removeCreatureButton clicked signal to removeSelectedCreature handler.
+        """
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.infiniteRespawnCheckbox.stateChanged.connect(self.setInfiniteRespawn)
@@ -41,6 +69,20 @@ class UTEEditor(Editor):
         self.ui.removeCreatureButton.clicked.connect(self.removeSelectedCreature)
 
     def _setupInstallation(self, installation: HTInstallation):
+        """Sets up the installation details in the UI.
+
+        Args:
+        ----
+            installation: {The installation object being edited}
+
+        Returns:
+        -------
+            None
+        - Sets the internal installation object reference
+        - Populates the name field with the installation details
+        - Fetches the faction and difficulty data from the installation
+        - Clears and populates the dropdowns with the faction and difficulty labels
+        """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
 
@@ -60,6 +102,18 @@ class UTEEditor(Editor):
         self._loadUTE(ute)
 
     def _loadUTE(self, ute: UTE) -> None:
+        """Loads UTE data into UI elements
+        Args:
+            ute (UTE): UTE object to load
+        Returns:
+            None: Does not return anything
+        Loads UTE:
+        - Sets basic UTE properties like name, tag, etc.
+        - Sets advanced properties like active, faction, respawning
+        - Loads creatures and adds them to creature table
+        - Sets script fields
+        - Sets comment text.
+        """
         self._ute = ute
 
         # Basic
@@ -96,6 +150,19 @@ class UTEEditor(Editor):
         self.ui.commentsEdit.setPlainText(ute.comment)
 
     def build(self) -> Tuple[bytes, bytes]:
+        """Builds a UTE object from UI data
+        Args:
+            self: The UTE builder object
+        Returns:
+            Tuple[bytes, bytes]: A tuple containing the UTE data and an empty string
+        Builds the UTE object by:
+            - Setting basic properties from UI elements
+            - Setting advanced properties from checkboxes and dropdowns
+            - Adding creature details from the creature table
+            - Setting script references from line edits
+            - Adding comment text
+            - Encoding the UTE object into bytes.
+        """
         ute = self._ute
 
         # Basic
@@ -167,13 +234,15 @@ class UTEEditor(Editor):
 
     def setInfiniteRespawn(self):
         if self.ui.infiniteRespawnCheckbox.isChecked():
-            self.ui.respawnCountSpin.setMinimum(-1)
-            self.ui.respawnCountSpin.setValue(-1)
-            self.ui.respawnCountSpin.setEnabled(False)
+            self._extracted_from_setInfiniteRespawn_3(-1, False)
         else:
-            self.ui.respawnCountSpin.setMinimum(0)
-            self.ui.respawnCountSpin.setValue(0)
-            self.ui.respawnCountSpin.setEnabled(True)
+            self._extracted_from_setInfiniteRespawn_3(0, True)
+
+    # TODO Rename this here and in `setInfiniteRespawn`
+    def _extracted_from_setInfiniteRespawn_3(self, arg0, boolean):
+        self.ui.respawnCountSpin.setMinimum(arg0)
+        self.ui.respawnCountSpin.setValue(arg0)
+        self.ui.respawnCountSpin.setEnabled(boolean)
 
     def setContinuous(self):
         isContinuous = self.ui.spawnSelect.currentIndex() == 1
@@ -183,6 +252,24 @@ class UTEEditor(Editor):
         self.ui.respawnTimeSpin.setEnabled(isContinuous)
 
     def addCreature(self, resname: str = "", appearanceId: int = 0, challenge: float = 0.0, singe: bool = False):
+        """Adds a new creature to the creature table.
+
+        Args:
+        ----
+            resname (str): Name of the creature
+            appearanceId (int): ID number for the creature's appearance
+            challenge (float): Difficulty rating for the creature
+            singe (bool): Whether the creature is a single creature encounter
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Gets the current row count of the creature table
+            - Inserts a new row at that index
+            - Creates widgets for the single checkbox, challenge spinbox, and appearance spinbox
+            - Sets the values of the widgets based on function arguments
+            - Sets the widgets as the cell widgets in the appropriate columns
+            - Sets the creature name as the item in the name column.
+        """
         rowId = self.ui.creatureTable.rowCount()
         self.ui.creatureTable.insertRow(rowId)
 

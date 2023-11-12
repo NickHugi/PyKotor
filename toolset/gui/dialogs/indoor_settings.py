@@ -12,6 +12,24 @@ if TYPE_CHECKING:
 
 class IndoorMapSettings(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, indoorMap: IndoorMap, kits: list[Kit]):
+        """Initializes the indoor map editor dialog.
+
+        Args:
+        ----
+            parent (QWidget): The parent widget.
+            installation (HTInstallation): The installation.
+            indoorMap (IndoorMap): The indoor map to edit.
+            kits (list[Kit]): Available kits.
+
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Initializes UI elements from indoorMap properties
+            - Populates skybox selector with options from available kits
+            - Sets initial skybox selection.
+        """
         super().__init__(parent)
 
         from toolset.uic.dialogs.indoor_settings import Ui_Dialog

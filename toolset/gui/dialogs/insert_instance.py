@@ -30,6 +30,20 @@ if TYPE_CHECKING:
 
 class InsertInstanceDialog(QDialog):
     def __init__(self, parent: QWidget, installation: HTInstallation, module: Module, restype: ResourceType):
+        """Initialize a resource editor dialog
+        Args:
+            parent: QWidget - Parent widget
+            installation: HTInstallation - HT installation object
+            module: Module - Module object 
+            restype: ResourceType - Resource type
+        Returns:
+            None - Does not return anything
+        Initializes the resource editor dialog:
+            - Sets up UI elements
+            - Connects signal handlers
+            - Populates resource list
+            - Initializes location selector.
+        """
         super().__init__(parent)
 
         self._installation: HTInstallation = installation

@@ -16,6 +16,17 @@ class ModuleDesignerWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
+        """Initializes the Module Designer UI
+        Args:
+            parent (QWidget): The parent widget
+        Returns:
+            None
+        Processing Logic:
+            - Initializes settings and binds lists
+            - Loads UI from module_designer
+            - Sets alpha channel for material colour pickers
+            - Connects reset buttons to reset methods.
+        """
         super().__init__(parent)
 
         self.settings: ModuleDesignerSettings = ModuleDesignerSettings()

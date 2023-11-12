@@ -11,6 +11,23 @@ from pykotor.helpers.path import Path
 
 class AsyncLoader(QDialog):
     def __init__(self, parent: QWidget, title: str, task: Callable, errorTitle: Optional[str] = None):
+        """Initializes a progress dialog.
+
+        Args:
+        ----
+            parent: QWidget: The parent widget of the dialog.
+            title: str: The title of the dialog window.
+            task: Callable: The task to run asynchronously.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        Processing Logic:
+            - Creates a QProgressBar and QLabel to display progress
+            - Sets the dialog layout, title and size
+            - Starts an AsyncWorker thread to run the task asynchronously
+            - Connects callbacks for successful/failed task completion.
+        """
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -87,6 +104,19 @@ class AsyncWorker(QThread):
 class AsyncBatchLoader(QDialog):
     def __init__(self, parent: QWidget, title: str, tasks: List[Callable], errorTitle: Optional[str] = None, *,
                  cascade: bool = False):
+        """Initializes a progress dialog for running multiple tasks asynchronously
+        Args:
+            parent (QWidget): Parent widget
+            title (str): Title of the progress dialog
+            tasks (List[Callable]): List of tasks to run
+            errorTitle (Optional[str]): Title for error dialog, if any
+        Returns: 
+            None: Does not return anything
+        Processing Logic:
+            - Sets up progress bar, info text and layout
+            - Starts AsyncBatchWorker thread to run tasks asynchronously
+            - Connects signals from worker for successful, failed and completed tasks.
+        """
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)

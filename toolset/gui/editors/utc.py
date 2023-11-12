@@ -32,6 +32,25 @@ if TYPE_CHECKING:
 
 class UTCEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+        """Initializes the Creature Editor window
+        Args:
+            parent: QWidget: The parent widget
+            installation: HTInstallation: The installation object
+            mainwindow: QMainWindow: The main window
+        Returns: 
+            None: Does not return anything
+        Processing Logic:
+            - Sets up supported resource types
+            - Initializes superclass with parameters
+            - Initializes settings objects
+            - Initializes UTC object
+            - Sets up UI from designer file
+            - Sets up installation
+            - Sets up signals
+            - Sets initial option states
+            - Updates 3D preview
+            - Creates new empty creature.
+        """
         supported = [ResourceType.UTC]
         super().__init__(parent, "Creature Editor", "creature", supported, supported, installation, mainwindow)
 
@@ -54,6 +73,18 @@ class UTCEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Connect signals to slots
+        Args: 
+            self: {The class instance}.
+
+        Returns
+        -------
+            None: {Does not return anything}
+        {Processing Logic}:
+        - Connects button and widget signals to appropriate slot methods
+        - Connects value changed signals from slider and dropdowns
+        - Connects menu action triggers to toggle settings.
+        """
         self.ui.firstnameRandomButton.clicked.connect(self.randomizeFirstname)
         self.ui.lastnameRandomButton.clicked.connect(self.randomizeLastname)
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
@@ -72,6 +103,16 @@ class UTCEditor(Editor):
         self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
     def _setupInstallation(self, installation: HTInstallation):
+        """Sets up the installation for character creation
+        Args:
+            installation: {HTInstallation}: The installation to load data from
+        Returns:
+            None: No return value
+        - Loads required 2da files if not already loaded
+        - Sets items for dropdown menus from loaded 2da files  
+        - Clears and populates feat and power lists from loaded 2da files
+        - Sets visibility of some checkboxes based on installation type.
+        """
         self._installation = installation
 
         self.ui.previewRenderer.installation = installation
@@ -155,6 +196,23 @@ class UTCEditor(Editor):
         self.updateItemCount()
 
     def _loadUTC(self, utc: UTC):
+        """Loads UTC data into the UI.
+
+        Args:
+        ----
+            utc (UTC): UTC object to load data from
+        Returns:
+            None: No return value
+        Loads UTC data:
+            - Sets UTC object reference
+            - Sets preview renderer creature
+            - Loads basic data like name, tags, resref
+            - Loads advanced data like flags, stats
+            - Loads classes and levels
+            - Loads feats and powers
+            - Loads scripts
+            - Loads comments
+        """
         self._utc = utc
         self.ui.previewRenderer.setCreature(utc)
 
@@ -267,7 +325,18 @@ class UTCEditor(Editor):
         self.ui.comments.setPlainText(utc.comment)
 
     def build(self) -> Tuple[bytes, bytes]:
-        utc = self._utc
+        """Builds a UTC from UI data
+        Args:
+            self: The class instance
+        Returns:
+            Tuple[bytes, bytes]: The GFF data and log
+        Processing Logic:
+            - Populate UTC object from UI fields
+            - Add class and feat data from lists
+            - Convert UTC to GFF bytes
+            - Return GFF data and empty log.
+        """
+        utc: UTC = self._utc
 
         utc.first_name = self.ui.firstnameEdit.locstring()
         utc.last_name = self.ui.lastnameEdit.locstring()
@@ -384,6 +453,16 @@ class UTCEditor(Editor):
         self.ui.tagEdit.setText(self.ui.resrefEdit.text())
 
     def portraitChanged(self, index: int) -> None:
+        """Updates the portrait picture based on the selected index
+        Args:
+            index (int): The selected index
+        Returns:
+            None
+        Updates the portrait pixmap:
+            - Checks if index is 0, creates blank image
+            - Else builds pixmap from index
+            - Sets pixmap to portrait picture widget.
+        """
         if index == 0:
             image = QImage(bytes(0 for _ in range(64 * 64 * 3)), 64, 64, QImage.Format_RGB888)
             pixmap = QPixmap.fromImage(image)
@@ -392,6 +471,17 @@ class UTCEditor(Editor):
         self.ui.portraitPicture.setPixmap(pixmap)
 
     def _build_pixmap(self, index):
+        """Builds a portrait pixmap based on character alignment
+        Args:
+            index: The character index to build a portrait for
+        Returns:
+            pixmap: A QPixmap of the character portrait
+        Builds the portrait pixmap by:
+            1. Getting the character's alignment value
+            2. Looking up the character's portrait reference in the portraits 2DA based on alignment
+            3. Loading the texture for the portrait reference
+            4. Converting the texture to a QPixmap.
+        """
         alignment = self.ui.alignmentSlider.value()
         portraits = self._installation.htGetCache2DA(HTInstallation.TwoDA_PORTRAITS)
         portrait = portraits.get_cell(index, "baseresref")
@@ -414,6 +504,17 @@ class UTCEditor(Editor):
         return QPixmap.fromImage(image)
 
     def editConversation(self) -> None:
+        """Edits a conversation
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+        1. Gets the conversation name from the UI text field
+        2. Searches the installation for the conversation resource 
+        3. If not found, prompts to create a new file in the override folder
+        4. Opens the resource editor with the conversation data.
+        """
         resname = self.ui.conversationEdit.text()
         data, filepath = None, None
 
@@ -440,9 +541,19 @@ class UTCEditor(Editor):
 
         if data is not None:
             openResourceEditor(filepath, resname, ResourceType.DLG, data, self._installation, self)
-            self._installation.load_override(".")
+            self._installation.load_override()
 
     def openInventory(self) -> None:
+        """Opens the inventory editor
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        - Loads installed capsules from the root module folder
+        - Initializes InventoryEditor with loaded capsules and current inventory/equipment
+        - If InventoryEditor is closed successfully, updates internal inventory/equipment
+        - Refreshes item count and 3D preview.
+        """
         droid = self.ui.raceSelect.currentIndex() == 0
         capsules = []
 
@@ -496,6 +607,17 @@ class UTCEditor(Editor):
         self.ui.powerSummaryEdit.setPlainText(summary)
 
     def update3dPreview(self) -> None:
+        """Updates the 3D preview based on global settings
+        Args:
+            self: The class instance
+        Returns:
+            None
+        Processing Logic:
+            - Check if the global setting for showing preview is checked
+            - If checked, show the preview renderer and set the window size
+            - If an installation is present, build the data and pass it to the renderer
+            - If not checked, hide the preview renderer and adjust the window size.
+        """
         self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTC)
 
         if self.globalSettings.showPreviewUTC:

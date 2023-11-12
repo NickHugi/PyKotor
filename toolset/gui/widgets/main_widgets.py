@@ -43,6 +43,19 @@ class ResourceList(MainWindowList):
     requestRefresh = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
+        """
+        Initializes the ResourceList widget
+        Args: 
+            parent (QWidget): The parent widget
+        Returns:
+            None: Does not return anything
+        Processing Logic:
+            - Initializes the UI from the designer file
+            - Sets up the signal connections
+            - Creates a ResourceModel and sets it as the model for the tree view
+            - Creates a QStandardItemModel for the section combo box
+            - Sets the section model as the model for the combo box
+        """
         super().__init__(parent)
 
         from toolset.uic.widgets.resource_list import Ui_Form
@@ -83,6 +96,17 @@ class ResourceList(MainWindowList):
                 self.ui.sectionCombo.setCurrentIndex(i)
 
     def setResources(self, resources: list[FileResource]) -> None:
+        """Adds and removes FileResources from the modules model.
+
+        Args:
+        ----
+            resources: {list[FileResource]}: List of FileResource objects to set
+        Returns:
+            None: No return value
+        - Loops through allResources and resources to find matching resources and update references
+        - Loops through allResources to find non-matching resources and removes them
+        - Removes any unused categories from the model.
+        """
         allResources = self.modulesModel.allResourcesItems()
 
         # Add any missing resources to the list
@@ -110,6 +134,17 @@ class ResourceList(MainWindowList):
             self.sectionModel.insertRow(self.sectionModel.rowCount(), section)
 
     def setResourceSelection(self, resource: FileResource) -> None:
+        """Sets the selected resource in the resource tree.
+
+        Args:
+        ----
+            resource (FileResource): The resource to select
+        Returns:
+            None
+        - Loops through all resources in the model to find matching resource
+        - Expands the parent item in the tree
+        - Scrolls to and selects the matching child item.
+        """
         model = self.ui.resourceTree.model().sourceModel()
 
         def select(parent, child):
@@ -139,6 +174,18 @@ class ResourceList(MainWindowList):
         self.requestRefresh.emit()
 
     def onResourceContextMenu(self, point: QPoint) -> None:
+        """Shows context menu for selected resources
+        Args:
+            point: QPoint - Mouse position for context menu
+        Returns:
+            None
+        Processing Logic:
+            - Create QMenu at mouse position
+            - Get selected resources
+            - If single resource and GFF type:
+                - Add "Open" and "Open with GFF Editor" actions
+                - Connect actions to emit signals to open resource.
+        """
         menu = QMenu(self)
 
         resources = self.selectedResources()

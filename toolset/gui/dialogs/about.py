@@ -4,6 +4,13 @@ from PyQt5.QtWidgets import QDialog, QWidget
 
 class About(QDialog):
     def __init__(self, parent: QWidget):
+        """Initializes the About dialog box
+        Args:
+            parent: The parent QWidget.
+        - Sets up the UI from the about.py UI file
+        - Connects the closeButton clicked signal to close the dialog
+        - Replaces the version placeholder in the about text with the actual version.
+        """
         super().__init__(parent)
 
         from toolset.uic.dialogs import about

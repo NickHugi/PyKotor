@@ -27,6 +27,22 @@ if TYPE_CHECKING:
 
 class UTPEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None, *, mainwindow=None):
+        """Initialize Placeable Editor
+        Args:
+            parent: {QWidget}: Parent widget
+            installation: {HTInstallation}: HTInstallation object
+            mainwindow: {QWidget}: MainWindow object
+        Returns:
+            None: Does not return anything
+        {Processing Logic}:
+        1. Initialize supported resource types and call super constructor
+        2. Initialize global settings object
+        3. Get placeables 2DA cache from installation
+        4. Initialize UTP object
+        5. Set up UI from designer file
+        6. Set up menus, signals and installation
+        7. Update 3D preview and call new() to initialize editor.
+        """
         supported = [ResourceType.UTP]
         super().__init__(parent, "Placeable Editor", "placeable", supported, supported, installation, mainwindow)
 
@@ -45,6 +61,24 @@ class UTPEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Connect UI buttons to their respective methods.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Connect tagGenerateButton clicked signal to generateTag method
+            - Connect resrefGenerateButton clicked signal to generateResref method
+            - Connect conversationModifyButton clicked signal to editConversation method
+            - Connect inventoryButton clicked signal to openInventory method
+
+            - Connect appearanceSelect currentIndexChanged signal to update3dPreview method
+            - Connect actionShowPreview triggered signal to togglePreview method
+        """
         self.ui.tagGenerateButton.clicked.connect(self.generateTag)
         self.ui.resrefGenerateButton.clicked.connect(self.generateResref)
         self.ui.conversationModifyButton.clicked.connect(self.editConversation)
@@ -54,6 +88,20 @@ class UTPEditor(Editor):
         self.ui.actionShowPreview.triggered.connect(self.togglePreview)
 
     def _setupInstallation(self, installation: HTInstallation):
+        """Sets up the installation for editing.
+
+        Args:
+        ----
+            installation: {HTInstallation}: The installation to set up for editing.
+
+        Returns:
+        -------
+            None
+        - Sets the internal installation reference and updates UI elements
+        - Loads required 2da files if not already loaded
+        - Populates appearance and faction dropdowns from loaded 2da data
+        - Hides/shows TSL specific UI elements based on installation type
+        """
         self._installation = installation
         self.ui.nameEdit.setInstallation(installation)
         self.ui.previewRenderer.installation = installation
@@ -83,6 +131,17 @@ class UTPEditor(Editor):
         self.updateItemCount()
 
     def _loadUTP(self, utp: UTP):
+        """Loads UTP data into UI elements
+        Args:
+            utp (UTP): UTP object to load data from
+        Returns:
+            None: No return value
+        Loads UTP data:
+            - Sets UI element values like name, tag, etc from UTP properties
+            - Sets checkboxes, dropdowns, spinboxes from UTP boolean and integer properties
+            - Sets script text fields from UTP script properties
+            - Sets comment text from UTP comment property.
+        """
         self._utp = utp
 
         # Basic
@@ -140,6 +199,18 @@ class UTPEditor(Editor):
         self.updateItemCount()
 
     def build(self) -> Tuple[bytes, bytes]:
+        """Builds a UTP from UI fields
+        Args:
+            self: The class instance
+            utp: The UTP object
+        Returns:
+            data: The built UTP data
+            b"": Empty byte string
+        Builds a UTP by:
+            - Setting UTP properties like name, tag, scripts from UI elements
+            - Writing the constructed UTP to a byte array
+            - Returning the byte array and an empty byte string.
+        """
         utp = self._utp
 
         # Basic
@@ -224,6 +295,16 @@ class UTPEditor(Editor):
             self.ui.resrefEdit.setText("m00xx_plc_000")
 
     def editConversation(self) -> None:
+        """Edits a conversation
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        - It gets the conversation name from the UI text field
+        - Searches the installation for the conversation resource
+        - If not found, it creates a new empty file in the override
+        - If found, it opens the resource editor window.
+        """
         resname = self.ui.conversationEdit.text()
         data, filepath = None, None
 
@@ -254,6 +335,16 @@ class UTPEditor(Editor):
             self._installation.load_override()
 
     def openInventory(self) -> None:
+        """Opens inventory editor for the module
+        Args:
+            self: The module instance
+        Returns:
+            None: Does not return anything
+        - Gets list of capsule paths for the module
+        - Creates capsule objects from the paths
+        - Initializes InventoryEditor with the capsules and other data
+        - Runs editor and updates inventory if changes were made
+        """
         capsules = []
 
         with suppress(Exception):
@@ -272,6 +363,21 @@ class UTPEditor(Editor):
         self.update3dPreview()
 
     def update3dPreview(self) -> None:
+        """Updates the model preview.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None: No value is returned.
+        Processing Logic:
+            - Build the data and model name from the provided data
+            - Get the MDL and MDX resources from the installation based on the model name
+            - If both resources exist, set them on the preview renderer
+            - If not, clear out any existing model from the preview.
+        """
         self.ui.previewRenderer.setVisible(self.globalSettings.showPreviewUTP)
         self.ui.actionShowPreview.setChecked(self.globalSettings.showPreviewUTP)
 

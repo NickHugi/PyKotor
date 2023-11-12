@@ -24,6 +24,23 @@ class ModuleOption(NamedTuple):
 
 class CloneModuleDialog(QDialog):
     def __init__(self, parent: QWidget, active: HTInstallation, installations: dict[str, HTInstallation]):
+        """Initializes the dialog for cloning a module.
+
+        Args:
+        ----
+            parent (QWidget): The parent widget.
+            active (HTInstallation): The currently active installation.
+            installations (dict[str, HTInstallation]): A dictionary of installations.
+
+        Returns:
+        -------
+            None: Does not return anything.
+        Processing Logic:
+            - Sets up the UI from the clone_module module.
+            - Stores the active installation and dictionary of installations.
+            - Connects button clicks and edits to methods.
+            - Loads available modules into the dropdown.
+        """
         super().__init__(parent)
 
         from toolset.uic.dialogs import clone_module
@@ -41,6 +58,25 @@ class CloneModuleDialog(QDialog):
         self.loadModules()
 
     def ok(self) -> None:
+        """Clones a module once user accepted the dialog query.
+        Clones a module from the selected root module with the given identifier, prefix, and name.
+        Copies textures, lightmaps, and other assets based on checkbox selections.
+        Displays status and success/failure messages.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None: No return value.
+        Processing Logic:
+        - Gets module cloning parameters from UI elements
+        - Defines cloning function 
+        - Warns user if copying textures selected due to longer wait time
+        - Runs cloning asynchronously and displays status
+        - Shows success message if clone completed.
+        """
         installation = self.ui.moduleSelect.currentData().installation
         root = self.ui.moduleSelect.currentData().root
         identifier = self.ui.filenameEdit.text().lower()
@@ -68,6 +104,17 @@ class CloneModuleDialog(QDialog):
                         f"You can now warp to the cloned module '{identifier}'.").exec_()
 
     def loadModules(self) -> None:
+        """Loads module options from installed modules
+        Args:
+            self: The class instance
+        Returns:
+            None: No value is returned
+        - Loops through all installed modules
+        - Extracts module name and root path for each file
+        - Creates a ModuleOption for each unique root
+        - Adds file paths to the ModuleOption
+        - Adds the ModuleOption to the module selection UI.
+        """
         options: dict[str, ModuleOption] = {}
         for installation in self._installations.values():
             for filename, name in installation.module_names().items():

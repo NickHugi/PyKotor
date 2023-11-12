@@ -36,6 +36,7 @@ def is_float(string: str):
 
 
 def is_nss_file(filename: str):
+    """Returns true if the given filename has a NSS file extension."""
     return filename.lower().endswith(".nss")
 
 
@@ -75,6 +76,23 @@ def is_storage_file(filename: str):
 
 
 def universal_simplify_exception(e):
+    """Simplify exceptions into a standardized format
+    Args:
+        e: Exception - The exception to simplify
+    Returns:
+        error_name: str - The name of the exception
+        error_message: str - A human-readable message for the exception
+    Processing Logic:
+    - Extract the exception name from the type
+    - Handle specific exception types differently
+      - FileNotFoundError uses filename attribute
+      - PermissionError uses filename attribute
+      - TimeoutError uses args[0]
+      - InterruptedError uses errno attribute
+      - ConnectionError uses request attribute if available
+    - Try common exception attributes for a message
+    - Return exception name and args joined as a string if no other info available.
+    """
     error_name = type(e).__name__
     try:
         # Fallback: use the exception type name itself
@@ -118,7 +136,18 @@ def universal_simplify_exception(e):
 
 
 def striprtf(text) -> str:  # noqa: C901, PLR0915, PLR0912
-    """Strips RTF encoding utterly and completely."""
+    """Removes RTF tags from a string.
+    Strips RTF encoding utterly and completely
+    Args:
+        text: {String}: The input text possibly containing RTF tags
+    Returns:
+        str: {A plain text string without any RTF tags}
+    Processes the input text by:
+    1. Using regular expressions to find RTF tags and special characters
+    2. Translating RTF tags and special characters to normal text
+    3. Ignoring certain tags and characters inside tags marked as "ignorable"
+    4. Appending/joining resulting text pieces to output.
+    """
     pattern = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I)
     # control words which specify a "destination".
     destinations = frozenset(

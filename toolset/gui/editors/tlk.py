@@ -21,6 +21,22 @@ if TYPE_CHECKING:
 
 class TLKEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: Optional[HTInstallation] = None):
+        """Initialize the TLK Editor.
+
+        Args:
+        ----
+            parent: QWidget - Parent widget
+            installation: Optional[HTInstallation] - Installation object
+        Returns:
+            None
+        Processing Logic:
+            - Set up the UI from the designer file
+            - Connect menu and signal handlers
+            - Hide search/jump boxes
+            - Set up the data model and proxy model for the table view
+            - Make bottom panel take minimal space
+            - Create a new empty TLK file.
+        """
         supported = [ResourceType.TLK, ResourceType.TLK_XML, ResourceType.TLK_JSON]
         super().__init__(parent, "TLK Editor", "none", supported, supported, installation)
 
@@ -45,6 +61,21 @@ class TLKEditor(Editor):
         self.new()
 
     def _setupSignals(self) -> None:
+        """Set up signal connections for UI actions and widgets.
+
+        Args:
+        ----
+            self: The class instance.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Connect action triggers to slot functions
+            - Connect button clicks to slot functions
+            - Connect table and text edits to update functions
+            - Set up keyboard shortcuts to trigger actions.
+        """
         self.ui.actionGoTo.triggered.connect(self.toggleGotoBox)
         self.ui.jumpButton.clicked.connect(lambda: self.gotoLine(self.ui.jumpSpinbox.value()))
         self.ui.actionFind.triggered.connect(self.toggleFilterBox)
@@ -60,6 +91,27 @@ class TLKEditor(Editor):
         QShortcut("Ctrl+I", self).activated.connect(self.insert)
 
     def load(self, filepath: os.PathLike | str, resref: str, restype: ResourceType, data: bytes) -> None:
+        """Loads data into the resource from a file.
+
+        Args:
+        ----
+            filepath: The path to the file to load from.
+            resref: The resource reference.
+            restype: The resource type. 
+            data: The raw data bytes.
+
+        Returns:
+        -------
+            None
+        Processing Logic:
+            - Clears existing model data
+            - Sets column count to 2 and hides second column
+            - Opens dialog to process loading data
+            - Sets loaded data as model
+            - Sets sorting proxy model
+            - Connects selection changed signal
+            - Sets max rows in spinbox.
+        """
         super().load(filepath, resref, restype, data)
         self.model.clear()
         self.model.setColumnCount(2)
@@ -86,6 +138,19 @@ class TLKEditor(Editor):
         self.ui.soundEdit.setEnabled(False)
 
     def build(self) -> tuple[bytes, bytes]:
+        """Builds a TLK file from the model data.
+
+        Args:
+        ----
+            self: The object instance
+        Returns:
+            tuple[bytes, bytes]: A tuple containing the TLK data and an empty bytes object
+        - Iterate through each row in the model
+        - Extract the text and sound from each item
+        - Add an entry to the TLK object with the text and sound
+        - Write the TLK object to a byte array
+        - Return the byte array and an empty bytes object as a tuple.
+        """
         tlk = TLK()
 
         for i in range(self.model.rowCount()):
@@ -116,6 +181,19 @@ class TLKEditor(Editor):
         self.ui.jumpBox.setVisible(not self.ui.jumpBox.isVisible())
 
     def selectionChanged(self) -> None:
+        """Handle selection changes in the talk table.
+
+        Args:
+        ----
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        - Check if any rows are selected in the talk table
+        - If no rows selected, disable text and sound editors
+        - If rows selected, enable text and sound editors
+        - Get selected row data from model
+        - Populate text and sound editors with data from selected row.
+        """
         selected = self.ui.talkTable.selectionModel().selection()
 
         if len(selected.indexes()) == 0:
@@ -146,6 +224,23 @@ class TLKEditor(Editor):
 
 class LoaderDialog(QDialog):
     def __init__(self, parent, fileData, model):
+        """Initializes the loading dialog.
+
+        Args:
+        ----
+            parent: {The parent widget of the dialog}
+            fileData: {The data to load}
+            model: {The model to populate}.
+
+        Returns:
+        -------
+            None: {Does not return anything}
+        Processing Logic:
+            - Creates a progress bar to display loading progress
+            - Sets up the dialog layout and adds progress bar
+            - Starts a worker thread to load the data in the background
+            - Connects signals from worker to update progress bar.
+        """
         super().__init__(parent)
 
         self._progressBar = QProgressBar(self)
@@ -196,6 +291,19 @@ class LoaderWorker(QThread):
         self._model: QStandardItemModel = model
 
     def run(self):
+        """Load tlk data from file in batches
+        Args:
+            self: The class instance
+        Returns:
+            None: Load data and emit signals
+        Processes tlk data:
+            - Reads timeline data from file
+            - Counts number of entries and emits count
+            - Loops through entries and batches data into lists of 200
+            - Emits batches and sleeps to allow UI to update
+            - Emits final batch
+            - Signals loading is complete.
+        """
         tlk = read_tlk(self._fileData)
 
         self.entryCount.emit(len(tlk))

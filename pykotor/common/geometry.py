@@ -97,6 +97,18 @@ class Vector2:
         self,
         other,
     ):
+        """Performs element-wise true division of vector by scalar value
+        Args:
+            self: The vector to be divided
+            other: The scalar value to divide elements by
+        Returns:
+            new: A new vector with elements divided by the scalar value
+        - Check if other is an integer
+        - Create a new vector from self
+        - Divide x element by other
+        - Divide y element by other
+        - Return the new vector.
+        """
         if isinstance(other, int):
             new = Vector2.from_vector2(self)
             new.x /= other
@@ -789,6 +801,19 @@ class Vector4:
         cls,
         data: int,
     ) -> Vector4:
+        """Decompresses a compressed Vector4.
+
+        Args:
+        ----
+            data: The compressed data as an integer
+        Returns: 
+            Vector4: The decompressed Vector4
+        Processing Logic:
+            - Extract x, y, z components from data bits
+            - Calculate w component from x, y, z
+            - Normalize vector if magnitude is greater than 1
+            - Return new Vector4 instance.
+        """
         x = 1 - (data & 0x7FF) / 1023
         y = 1 - ((data >> 11) & 0x7FF) / 1023
         z = 1 - (data >> 22) / 511
@@ -854,6 +879,17 @@ class Vector4:
     def to_euler(
         self,
     ) -> Vector3:
+        """Converts a quaternion to Euler angles
+        Args:
+            self: Quaternion to convert
+        Returns: 
+            Vector3: Converted Euler angles as roll, pitch, yaw
+        Processing Logic:
+            - Calculate roll by taking the atan2 of t0/t1 where t0 and t1 are functions of self.w, self.x, self.y, self.z
+            - Calculate pitch by taking the asin of t2 where t2 is a function of self.w, self.y, self.z, with bounds checking
+            - Calculate yaw by taking the atan2 of t3/t4 where t3 and t4 are functions of self.w, self.x, self.y, self.z
+            - Return a Vector3 containing the calculated roll, pitch, yaw.
+        """
         t0 = 2.0 * (self.w * self.x + self.y * self.z)
         t1 = 1 - 2 * (self.x * self.x + self.y * self.y)
         roll = math.atan2(t0, t1)
@@ -1248,6 +1284,16 @@ class Polygon2:
     def area(
         self,
     ) -> float:
+        """Calculates the area of a polygon
+        Args:
+            self: The polygon object
+        Returns:
+            float: The calculated area of the polygon
+        Processing Logic:
+            - Loops through points calculating trianglular areas
+            - Sums all triangular areas
+            - Returns absolute value of the calculated area to ensure positivity.
+        """
         # Code was adapted from this stackoverflow post:
         # https://stackoverflow.com/a/34327761
 

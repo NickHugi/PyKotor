@@ -25,6 +25,20 @@ class Capsule:
         path: os.PathLike | str,
         create_nonexisting: bool = False,
     ):
+        """Initialize a Capsule object
+        Args:
+            path: Path to the capsule file
+            create_nonexisting: Whether to create the file if it doesn't exist
+        Returns: 
+            self: The initialized Capsule object
+        Processing Logic:
+            - Check if the path points to a valid capsule file
+            - If create_nonexisting is True and file doesn't exist:
+                - Create RIM file if rim extension
+                - Create ERF file if erf/mod extension
+            - Initialize self._path and self._resources attributes
+            - Reload resources from file.
+        """
         self._path: Path = path if isinstance(path, Path) else Path(path)
         self._resources: list[FileResource] = []
 
@@ -167,6 +181,19 @@ class Capsule:
         restype: ResourceType,
         reload: bool = False,
     ) -> FileResource:
+        """Get file resource by reference and type.
+
+        Args:
+        ----
+            resref: Resource reference as string
+            restype: Resource type
+            reload: Reload resources if True
+        Returns:
+            FileResource: Matched file resource
+        - Check if reload is True and call reload()
+        - Create query object from resref and restype
+        - Return first matching resource from internal list.
+        """
         if reload:
             self.reload()
 
@@ -251,6 +278,20 @@ class Capsule:
         self,
         reader: BinaryReader,
     ):
+        """Loads an ERF resource file.
+
+        Args:
+        ----
+            reader: BinaryReader - Reader for the ERF file
+        Returns:
+            None - Populates internal resources list
+        Processing Logic:
+            - Skips header data
+            - Reads entry count and offset tables
+            - Loops through keys to read resource references, IDs and types
+            - Seeks to resource data offset table
+            - Loops to read offsets and sizes and populate resource objects.
+        """
         reader.skip(8)
         entry_count = reader.read_uint32()
         reader.skip(4)
@@ -261,7 +302,7 @@ class Capsule:
         resids = []
         restypes = []
         reader.seek(offset_to_keys)
-        for _i in range(entry_count):
+        for _ in range(entry_count):
             resrefs.append(reader.read_string(16))
             resids.append(reader.read_uint32())
             restypes.append(ResourceType.from_id(reader.read_uint16()))
@@ -279,6 +320,24 @@ class Capsule:
         self,
         reader: BinaryReader,
     ):
+        """Load resources from a rim file
+        Args:
+            reader: BinaryReader: The binary reader to read data from
+        Returns:
+            None: No value is returned
+        Processing Logic:
+            - Skip the first 4 bytes of unknown data
+            - Read the entry count from the next 4 bytes
+            - Read the offset to entries from the next 4 bytes 
+            - Seek to the offset to entries
+            - Loop through each entry
+                - Read the 16 byte resref string
+                - Read the 4 byte resource type id and convert to enum
+                - Skip the next 4 bytes of unknown data
+                - Read the 4 byte offset
+                - Read the 4 byte size
+                - Append a FileResource to the internal resources list.
+        """
         reader.skip(4)
         entry_count = reader.read_uint32()
         offset_to_entries = reader.read_uint32()
@@ -290,6 +349,4 @@ class Capsule:
             reader.read_uint32()
             offset = reader.read_uint32()
             size = reader.read_uint32()
-            self._resources.append(
-                FileResource(resref, restype, size, offset, self._path),
-            )
+            self._resources.append(FileResource(resref, restype, size, offset, self._path))

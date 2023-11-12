@@ -20,6 +20,21 @@ class BWMBinaryReader(ResourceReader):
         offset: int = 0,
         size: int = 0,
     ):
+        """Initializes a Wok object
+        Args:
+            source: {The source object to initialize from}
+            offset: {The offset into the source}
+            size: {The number of bytes to read from the source}.
+
+        Returns
+        -------
+            self: {The initialized Wok object}
+        Processing Logic:
+            - Initializes the superclass with the given source, offset and size
+            - Sets the wok attribute to None
+            - Initializes the position, relative and absolute hook vectors to null vectors
+            - Sets up the instance attributes.
+        """
         super().__init__(source, offset, size)
         self._wok: BWM | None = None
         self.position: Vector3 = Vector3.from_null()
@@ -33,6 +48,21 @@ class BWMBinaryReader(ResourceReader):
         self,
         auto_close: bool = True,
     ) -> BWM:
+        """Loads a binary BWM file and returns a BWM object
+        Args:
+            self: The BWMReader object
+            auto_close: Whether to automatically close the file after loading
+        Returns:
+            BWM: The loaded BWM object
+        Processing Logic:
+            - Reads header info like file type, version
+            - Reads BWM properties like type, positions etc
+            - Reads vertex data
+            - Loops through faces and reads index data
+            - Loops through faces and reads material data
+            - Loops through edges and reads transition data
+            - Sets loaded data to BWM object.
+        """
         self._wok = BWM()
 
         file_type = self._reader.read_string(4)
@@ -130,6 +160,22 @@ class BWMBinaryWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ) -> None:
+        """Writes the walkmesh data to a binary file.
+
+        Args:
+        ----
+            self: The walkmesh object
+            auto_close: Whether to close the file after writing (default: True)..
+
+        Returns:
+        -------
+            None: The function does not return anything
+        Processes Logic:
+            1. Extracts vertex, face, edge and other data from the walkmesh object
+            2. Packs the data into byte arrays with the correct offsets
+            3. Writes the header, offsets and packed data to the binary file
+            4. Closes the file if auto_close is True.
+        """
         vertices = self._wok.vertices()
 
         walkable = [face for face in self._wok.faces if face.material.walkable()]

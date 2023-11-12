@@ -18,6 +18,17 @@ class InstallationsWidget(QWidget):
     edited = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
+        """Initialize the Installations widget
+        Args:
+            parent: Parent widget
+        Returns:
+            None
+        - Set up model to hold installation data
+        - Load global settings
+        - Set up UI from designer file
+        - Populate UI with initial values
+        - Connect signal handlers.
+        """
         super().__init__(parent)
 
         self.installationsModel: QStandardItemModel = QStandardItemModel()
@@ -30,6 +41,17 @@ class InstallationsWidget(QWidget):
         self.setupSignals()
 
     def setupValues(self) -> None:
+        """Sets up installation values in the model
+        Args:
+            self: The class instance
+        Returns:
+            None: Does not return anything
+        - Clears existing items from the installations model
+        - Loops through installations from settings
+        - Creates a QStandardItem for each installation
+        - Sets data like path and tsl on the item
+        - Appends the item to the installations model.
+        """
         self.installationsModel.clear()
         for installation in self.settings.installations().values():
             item = QStandardItem(installation.name)
@@ -37,6 +59,22 @@ class InstallationsWidget(QWidget):
             self.installationsModel.appendRow(item)
 
     def setupSignals(self) -> None:
+        """Set up signal connections for installation management UI.
+
+        Args:
+        ----
+            self: {The class instance}
+
+        Returns:
+        -------
+            None: {No return value}
+        Processing Logic:
+            - Connect add path button click to add new installation slot
+            - Connect remove path button click to remove selected installation slot
+            - Connect path name and directory edits to update installation slot
+            - Connect TSL checkbox state change to update installation slot
+            - Connect path list selection change to selection changed slot
+        """
         self.ui.pathList.setModel(self.installationsModel)
 
         self.ui.addPathButton.clicked.connect(self.addNewInstallation)
@@ -146,6 +184,16 @@ class GlobalSettings(Settings):
         super().__init__("Global")
 
     def installations(self) -> dict[str, InstallationConfig]:
+        """Finds and records KotOR installation paths
+        Args:
+            self: The class instance
+        Returns:
+            dict: A dictionary of InstallationConfig objects keyed by installation name
+        Finds KotOR installation paths on the system, checks for duplicates, and records the paths and metadata in the user settings.
+        Paths are filtered to only existing ones. Duplicates are detected by path and the game name is incremented with a number.
+        Each new installation is added to the installations dictionary with its name, path, and game (KotOR 1 or 2) specified.
+        The installations dictionary is then saved back to the user settings.
+        """
         installations = self.settings.value("installations")
         if installations is None:
             installations = {}

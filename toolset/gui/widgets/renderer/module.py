@@ -82,6 +82,19 @@ class ModuleRenderer(QOpenGLWidget):
         QTimer.singleShot(delay, self.loop)
 
     def walkmeshPoint(self, x: float, y: float, default_z: float = 0.0) -> Vector3:
+        """Finds the face and z-height at a point on the walkmesh.
+
+        Args:
+        ----
+            x: float - The x coordinate of the point
+            y: float - The y coordinate of the point 
+            default_z: float = 0.0 - The default z height if no face is found
+        Returns:
+            Vector3 - The (x, y, z) position on the walkmesh
+        - Iterates through walkmesh resources to find the face at the given (x,y) coordinates
+        - Checks if the found face is walkable, and overrides any previous less walkable face
+        - Returns a Vector3 with the input x,y coords and either the face z height or default z if no face.
+        """
         face: Optional[BWMFace] = None
         for walkmesh in [res.resource() for res in self._module.resources.values() if
                          res.restype() == ResourceType.WOK]:

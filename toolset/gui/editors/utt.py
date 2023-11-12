@@ -18,6 +18,21 @@ if TYPE_CHECKING:
 
 class UTTEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+        """Initialize the trigger editor window
+        Args:
+            parent: {Parent widget}
+            installation: {Installation object}.
+
+        Returns
+        -------
+            None
+        Processing Logic:
+            - Initialize the base editor window
+            - Set up the UI from the designer file
+            - Connect menu and signal handlers
+            - Load data from the provided installation if given
+            - Initialize an empty UTT object.
+        """
         supported = [ResourceType.UTT]
         super().__init__(parent, "Trigger Editor", "trigger", supported, supported, installation)
 
@@ -55,6 +70,19 @@ class UTTEditor(Editor):
         self._loadUTT(utt)
 
     def _loadUTT(self, utt: UTT) -> None:
+        """Loads UTT data into UI elements
+        Args:
+            utt: UTT - UTT object to load data from
+        Returns:
+            None - No return value
+        Loads UTT data:{
+            - Sets name, tag, resref from utt
+            - Sets cursor, type indexes from utt
+            - Sets trap properties from utt
+            - Sets scripts from utt
+            - Sets comments from utt
+        }
+        """
         self._utt = utt
 
         # Basic
@@ -92,6 +120,20 @@ class UTTEditor(Editor):
         self.ui.commentsEdit.setPlainText(utt.comment)
 
     def build(self) -> tuple[bytes, bytes]:
+        """Builds an UTT from UI input.
+
+        Args:
+        ----
+            self: The UI class instance.
+
+        Returns:
+        -------
+            tuple[bytes, bytes]: A tuple containing the GFF data (bytes) and any errors (bytes).
+        Processing Logic:
+        - Gets input from various UI elements like name, tag, scripts etc and populates an UTT object
+        - Serializes the UTT to GFF format
+        - Returns the GFF data and any errors
+        """
         utt = self._utt
 
         # Basic

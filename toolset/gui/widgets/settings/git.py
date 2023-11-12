@@ -10,6 +10,19 @@ class GITWidget(SettingsWidget):
     editedSignal = QtCore.pyqtSignal()
 
     def __init__(self, parent: QWidget):
+        """Initializes the GIT settings widget
+        Args:
+            parent (QWidget): The parent widget
+        Returns:
+            None
+        Processing Logic:
+            - Calls the parent __init__ method
+            - Initializes settings object
+            - Loads UI from form
+            - Sets alpha channel allowed for colour pickers
+            - Connects reset buttons to methods
+            - Calls setupValues method.
+        """
         super().__init__(parent)
 
         self.settings = GITSettings()

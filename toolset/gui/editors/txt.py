@@ -15,6 +15,23 @@ if TYPE_CHECKING:
 
 class TXTEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+        """Initialize the text editor
+        Args:
+            parent: {Parent widget}
+            installation: {Installation object}.
+
+        Returns
+        -------
+            None
+        Initializes the text editor window:
+            - Sets supported file types
+            - Initializes parent class
+            - Sets initial window size
+            - Loads UI from designer file
+            - Sets up menus
+            - Connects signals
+            - Opens new empty document.
+        """
         supported = [ResourceType.TXT, ResourceType.TXI, ResourceType.LYT, ResourceType.VIS, ResourceType.NSS]
         super().__init__(parent, "Text Editor", "none", supported, supported, installation)
         self.resize(400, 250)

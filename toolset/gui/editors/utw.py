@@ -19,6 +19,21 @@ if TYPE_CHECKING:
 
 class UTWEditor(Editor):
     def __init__(self, parent: Optional[QWidget], installation: HTInstallation | None = None):
+        """Initialize Waypoint Editor window
+        Args:
+            parent: {Parent widget}
+            installation: {Installation object}.
+
+        Returns
+        -------
+            None
+        Processing Logic:
+            - Initialize UI elements from designer file
+            - Set up menu bar and signal connections
+            - Load installation data if provided
+            - Initialize UTW object
+            - Create new empty waypoint by default.
+        """
         supported = [ResourceType.UTW]
         super().__init__(parent, "Waypoint Editor", "waypoint", supported, supported, installation)
 
@@ -49,6 +64,17 @@ class UTWEditor(Editor):
         self._loadUTW(utw)
 
     def _loadUTW(self, utw: UTW):
+        """Load UTW data into UI elements
+        Args:
+            utw (UTW): UTW object to load data from
+        Returns:
+            None: No return value
+        Processing Logic:
+            - Load basic UTW data like name, tag and resref into line edits
+            - Load advanced data like map note flags and text into checkboxes and line edit
+            - Load comment text into plain text edit
+            - No return, simply loads UI elements from UTW object.
+        """
         self._utw = utw
 
         # Basic
@@ -65,6 +91,20 @@ class UTWEditor(Editor):
         self.ui.commentsEdit.setPlainText(utw.comment)
 
     def build(self) -> Tuple[bytes, bytes]:
+        """Builds a UTW object from UI controls.
+
+        Args:
+        ----
+            self: The UI object containing controls.
+
+        Returns:
+        -------
+            data: The serialized UTWSave object as bytes.
+            b"": An empty bytes object.
+        - Populate UTW object from UI control values
+        - Serialize UTW to bytes using GFF format
+        - Return bytes and empty bytes
+        """
         utw = self._utw
 
         utw.name = self.ui.nameEdit.locstring()
