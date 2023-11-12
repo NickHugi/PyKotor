@@ -7,7 +7,7 @@ from unittest import TestCase
 try:
     from PyQt5.QtTest import QTest
     from PyQt5.QtWidgets import QApplication
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     QTest, QApplication = None, None
 
 if getattr(sys, "frozen", False) is False:
