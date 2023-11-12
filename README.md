@@ -26,7 +26,7 @@ write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 As shown, this will save C_Gammorean01.tga to the current directory.
 
 ## Cloning the repo
-If you would like to work with the source files directly, run the following commands to get yourself setup:
+If you would like to work with the source files directly from github, run the following commands to get yourself setup:
 ```bash
 git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
