@@ -15,6 +15,23 @@ def _get_size(
     height: int,
     tpc_format: TPCTextureFormat,
 ) -> int:
+    """Calculates the size of a texture in bytes based on its format.
+
+    Args:
+    ----
+        width: int - Width of the texture in pixels
+        height: int - Height of the texture in pixels 
+        tpc_format: TPCTextureFormat - Format of the texture
+    Returns:
+        int - Size of the texture in bytes
+    Processing Logic:
+        - Calculate size based on format:
+            - Greyscale: width * height * 1 byte per pixel
+            - RGB: width * height * 3 bytes per pixel 
+            - RGBA: width * height * 4 bytes per pixel
+            - DXT1/DXT5: Compressed formats, size calculated differently
+        - Return None if invalid format.
+    """
     if tpc_format is TPCTextureFormat.Greyscale:
         return width * height * 1
     if tpc_format is TPCTextureFormat.RGB:
@@ -43,6 +60,22 @@ class TPCBinaryReader(ResourceReader):
         self,
         auto_close: bool = True,
     ) -> TPC:
+        """Loads a texture from the reader and returns a TPC object.
+
+        Args:
+        ----
+            auto_close: {Whether to close the reader after loading}
+
+        Returns:
+        -------
+            TPC: {The loaded TPC texture object}
+
+        Processing Logic:
+            - Reads header values like size, dimensions, format
+            - Skips unnecessary data
+            - Loops to read each mipmap level
+            - Sets TPC data and returns the object
+        """
         self._tpc = TPC()
 
         size = self._reader.read_uint32()
@@ -106,6 +139,22 @@ class TPCBinaryWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ) -> None:
+        """Writes the TPC texture data to the file stream.
+
+        Args:
+        ----
+            auto_close: Whether to close the file stream after writing (default: True)
+
+        Returns:
+        -------
+            None: This function does not return anything
+        Writes TPC texture data to file stream:
+            - Gets texture data from TPC object
+            - Writes header information like size, dimensions, encoding
+            - Writes raw texture data
+            - Writes TXI data
+            - Optionally closes file stream..
+        """
         data = bytearray()
         size = 0
 

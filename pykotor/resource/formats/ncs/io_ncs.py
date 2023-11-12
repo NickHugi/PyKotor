@@ -31,6 +31,22 @@ class NCSBinaryReader(ResourceReader):
         self,
         auto_close: bool = True,
     ) -> NCS:
+        """Loads an NCS file from the reader.
+
+        Args:
+        ----
+            auto_close: {Whether to automatically close the reader after loading}.
+
+        Returns:
+        -------
+            NCS: {The loaded NCS object}
+        Processing Logic:
+            - Reads the file type and version headers
+            - Reads each instruction from the file into a dictionary
+            - Resolves jump offsets to reference the target instructions
+            - Adds the instructions to the NCS object
+            - Optionally closes the reader.
+        """
         self._ncs = NCS()
 
         file_type = self._reader.read_string(4)
@@ -62,6 +78,24 @@ class NCSBinaryReader(ResourceReader):
         return self._ncs
 
     def _read_instruction(self) -> NCSInstruction:
+        """Reads an instruction from the bytecode reader.
+
+        Args:
+        ----
+            self: {The class instance}: Provides access to the bytecode reader
+
+        Returns:
+        -------
+            instruction: {An NCSInstruction object}: The instruction read from the bytecode
+
+        Processing Logic:
+        - Reads the byte code and qualifier from the reader
+        - Determines the instruction type from these values
+        - Initializes an NCSInstruction object
+        - Reads arguments from the reader based on the instruction type
+        - Handles jump offsets
+        - Returns the completed instruction
+        """
         byte_code = NCSByteCode(self._reader.read_uint8())
         qualifier = self._reader.read_uint8()
         type_value = NCSInstructionTypeValue(byte_code, qualifier)
@@ -173,6 +207,20 @@ class NCSBinaryWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ) -> None:
+        """Writes the NCS file.
+
+        Args:
+        ----
+            auto_close (bool): Whether to automatically close the writer.
+
+        Returns:
+        -------
+            None
+        - Calculates offset and size for each instruction
+        - Writes header with file type and total size
+        - Writes each instruction using pre-calculated offset and size
+        - Closes writer if auto_close is True.
+        """
         offset = 13
         for instruction in self._ncs.instructions:
             self._sizes[instruction] = self.determine_size(instruction)
@@ -190,7 +238,21 @@ class NCSBinaryWriter(ResourceWriter):
         if auto_close:
             self._writer.close()
 
-    def determine_size(self, instruction: NCSInstruction) -> int:
+    def determine_size(self, instruction: NCSInstruction) -> int:  # TODO
+        """Determines the size of an NCS instruction. This function is unfinished and is missing defs.
+
+        Args:
+        ----
+            instruction: NCSInstruction - The instruction to determine size for
+        Returns:
+            int - The size of the instruction in bytes
+        Processing Logic:
+            - Initialize size to 2 bytes
+            - Check instruction type and add additional bytes if needed
+            - Types like CONSTI, MOVSP add fixed number of bytes
+            - Types like CONSTS add variable bytes based on argument length
+            - Return calculated size
+        """
         size = 2
 
         if instruction.ins_type in [
@@ -255,7 +317,21 @@ class NCSBinaryWriter(ResourceWriter):
 
         return size
 
-    def _write_instruction(self, instruction: NCSInstruction) -> None:
+    def _write_instruction(self, instruction: NCSInstruction) -> None:  # TODO
+        """Writes an instruction to the NCS binary stream. This function is unfinished and is missing defs.
+
+        Args:
+        ----
+            instruction (NCSInstruction): The instruction to write
+        Returns:
+            None
+        Processing Logic:
+            - Writes instruction type and qualifier bytes
+            - Writes instruction arguments based on type
+                - Integer, float, string, object ID
+                - Relative jump offsets
+            - Raises error for unsupported instructions
+        """
         self._writer.write_uint8(int(instruction.ins_type.value.byte_code))
         self._writer.write_uint8(int(instruction.ins_type.value.qualifier))
 

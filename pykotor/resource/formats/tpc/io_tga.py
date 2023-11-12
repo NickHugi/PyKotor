@@ -36,11 +36,24 @@ class TPCTGAReader(ResourceReader):
         super().__init__(source, offset, size)
         self._tpc: TPC | None = None
 
-    # @autoclose
+    # @autoclose  # TODO:?
     def load(
         self,
         auto_close: bool = True,
     ) -> TPC:
+        """Loads image data from the reader into a TPC texture
+        Args:
+            self: The loader object
+            auto_close: Whether to close the reader after loading
+        Returns:
+            TPC: The loaded TPC texture
+        Processing Logic:
+            - Read header values from the reader
+            - Check for uncompressed or RLE encoded RGB data
+            - Load pixel data into rows or run lengths
+            - Assemble pixel data into a single bytearray
+            - Set the loaded data on the TPC texture.
+        """
         self._tpc = TPC()
 
         id_length = self._reader.read_uint8()
@@ -72,7 +85,7 @@ class TPCTGAReader(ResourceReader):
             pixel_rows = []
             for y in range(height):
                 pixel_rows.append(bytearray())
-                for _x in range(width):
+                for _ in range(width):
                     b, g, r = (
                         self._reader.read_uint8(),
                         self._reader.read_uint8(),
@@ -102,7 +115,7 @@ class TPCTGAReader(ResourceReader):
                 n += count
 
                 if raw:
-                    for _i in range(count):
+                    for _ in range(count):
                         b, g, r = (
                             self._reader.read_uint8(),
                             self._reader.read_uint8(),
@@ -123,7 +136,7 @@ class TPCTGAReader(ResourceReader):
                         pixel.append(self._reader.read_uint8())
                     else:
                         pixel.append(255)
-                    for _i in range(count):
+                    for _ in range(count):
                         pixels.extend(pixel)
 
                 if n == width * height:
@@ -152,6 +165,19 @@ class TPCTGAWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ) -> None:
+        """Writes the TPC texture to a BMP file
+        Args:
+            self: The TPCWriter instance
+            auto_close: Whether to close the underlying file stream (default True).
+
+        Returns
+        -------
+            None: No value is returned
+        Processing Logic:
+            - Get width and height of texture from TPC instance
+            - Write BMP file header
+            - Write pixel data in RGB or RGBA format depending on TPC format.
+        """
         width, height = self._tpc.dimensions()
 
         self._writer.write_uint8(0)  # id length
@@ -168,7 +194,7 @@ class TPCTGAWriter(ResourceWriter):
             self._writer.write_uint8(0)
             data = self._tpc.convert(TPCTextureFormat.RGB, 0).data
             pixel_reader = BinaryReader.from_bytes(data)
-            for _i in range(len(data) // 3):
+            for _ in range(len(data) // 3):
                 r = pixel_reader.read_uint8()
                 g = pixel_reader.read_uint8()
                 b = pixel_reader.read_uint8()
@@ -178,7 +204,7 @@ class TPCTGAWriter(ResourceWriter):
             self._writer.write_uint8(0)
             width, height, data = self._tpc.convert(TPCTextureFormat.RGBA, 0)
             pixel_reader = BinaryReader.from_bytes(data)
-            for _i in range(len(data) // 4):
+            for _ in range(len(data) // 4):
                 r = pixel_reader.read_uint8()
                 g = pixel_reader.read_uint8()
                 b = pixel_reader.read_uint8()

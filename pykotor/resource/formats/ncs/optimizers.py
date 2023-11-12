@@ -11,6 +11,17 @@ class RemoveNopOptimizer(NCSOptimizer):
     """
 
     def optimize(self, ncs: NCS) -> None:
+        """Optimizes a neural circuit specification by removing NOP instructions.
+
+        Args:
+        ----
+            ncs: NCS - The neural circuit specification to optimize
+        Returns:
+            None - The function modifies the NCS in-place
+        - Finds all NOP instructions in the NCS
+        - For each NOP, finds all links jumping to it and updates them to jump to the next instruction instead
+        - Removes all NOP instructions from the NCS instruction list.
+        """
         nops = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.NOP]
 
         # Process instructions which jump to a NOP and set them to jump to the proceeding instruction instead
@@ -28,6 +39,18 @@ class RemoveMoveSPEqualsZeroOptimizer(NCSOptimizer):
         super().__init__()
 
     def optimize(self, ncs: NCS) -> None:
+        """Optimizes an NCS script by removing unnecessary MOVSP=0 instructions.
+
+        Args:
+        ----
+            ncs (NCS): The NCS script to optimize
+        Returns:
+            None
+        Processing Logic:
+            - Finds all MOVSP=0 instructions
+            - Changes any jumps to those instructions to jump to the next instruction instead
+            - Removes all MOVSP=0 instructions from the program.
+        """
         movsp0 = [inst for inst in ncs.instructions if inst.ins_type == NCSInstructionType.MOVSP and inst.args[0] == 0]
 
         # Process instructions which jump to a MOVSP=0 and set them to jump to the proceeding instruction instead
@@ -55,6 +78,16 @@ class RemoveJMPToAdjacentOptimizer(NCSOptimizer):
 
 class RemoveUnusedBlocksOptimizer(NCSOptimizer):
     def optimize(self, ncs: NCS) -> None:
+        """Optimizes the NCS by removing unreachable instructions
+        Args:
+            ncs: NCS - The NCS object to optimize
+        Returns:
+            None
+        Processing Logic:
+            - Find list of reachable instructions using breadth first search
+            - Instructions not in reachable list are unreachable
+            - Remove unreachable instructions from NCS.
+        """
         # Find list of unreachable instructions
         reachable = set()
         checking = [0]

@@ -26,6 +26,16 @@ class VIS:
     def all_rooms(
         self,
     ) -> set[str]:
+        """Returns a copy of the set of rooms
+        Args:
+            self: The class instance
+        Returns: 
+            set[str]: A copy of the set of rooms
+        - Creates a copy of the internal _rooms set to avoid direct manipulation of the original set
+        - The copy() method is used to make a shallow copy of the set
+        - This allows returning the rooms set without allowing external modification of the internal state
+        - Returns the copy of the rooms set.
+        """
         return copy(self._rooms)
 
     def add_room(
@@ -69,6 +79,21 @@ class VIS:
         old: str,
         new: str,
     ):
+        """Renames a room
+        Args:
+            old (str): Old room name
+            new (str): New room name
+        Returns: 
+            None: Returns nothing
+        Processing Logic:
+            - Lowercase old and new room names
+            - Check if old and new names are the same
+            - Remove old room name from rooms list
+            - Add new room name to rooms list
+            - Copy visibility of old room to new room
+            - Delete visibility of old room
+            - Replace old room name with new in other rooms' visibility lists.
+        """
         old = old.lower()
         new = new.lower()
 
@@ -153,6 +178,15 @@ class VIS:
     def set_all_visible(
         self,
     ) -> None:
+        """Sets all rooms visible from each other
+        Args:
+            self: The instance of the class
+        Returns: 
+            None: No value is returned
+        - Loop through each room in self._rooms
+        - For that room, loop through all other rooms
+        - Set the visibility between the current room and other room to True.
+        """
         for when_inside in self._rooms:
             for show in [room for room in self._rooms if room != when_inside]:
                 self.set_visible(when_inside, show, visible=True)

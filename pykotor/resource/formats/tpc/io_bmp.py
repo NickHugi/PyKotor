@@ -19,6 +19,21 @@ class TPCBMPWriter(ResourceWriter):
         self,
         auto_close: bool = True,
     ) -> None:
+        """Writes the texture to a bitmap file.
+
+        Args:
+        ----
+            self: The Texture object
+            auto_close: Whether to close the file after writing (default True).
+
+        Returns:
+        -------
+            None: No value is returned
+        Processing Logic:
+            - Convert texture to RGB format and get width, height, data
+            - Write bitmap header and info header
+            - Read pixels from data and write to file in BGR format line by line.
+        """
         width, height, data = self._tpc.convert(TPCTextureFormat.RGB, 0)
         file_size = 14 + 40 + (width * height * 3)
 
