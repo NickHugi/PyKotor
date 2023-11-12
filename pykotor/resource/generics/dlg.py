@@ -685,6 +685,20 @@ def dismantle_dlg(
         link: DLGLink,
         nodes: list,
     ):
+        """Disassembles a link into a GFFStruct.
+
+        Args:
+        ----
+            gff_struct: GFFStruct - The struct to populate
+            link: DLGLink - The link to disassemble
+            nodes: list - The list of nodes
+        Returns:
+            None: Populates the GFFStruct
+        Processing Logic:
+            - Sets the Active resref on the GFFStruct from the link
+            - Sets the Index uint32 on the GFFStruct from the node list index
+            - If game is K2, sets additional link properties on the GFFStruct.
+        """
         gff_struct.set_resref("Active", link.active1)
         gff_struct.set_uint32("Index", nodes.index(link.node))
         if game == Game.K2:

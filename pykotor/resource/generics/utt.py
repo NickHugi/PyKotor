@@ -89,6 +89,17 @@ class UTT:
 def construct_utt(
     gff: GFF,
 ) -> UTT:
+    """Constructs a UTT object from a GFF node
+    Args:
+        gff: GFF - The GFF node to parse
+    Returns:
+        utt: UTT - The constructed UTT object
+    Processing Logic:
+    - Initialize an empty UTT object
+    - Get the root node of the GFF
+    - Acquire and set various UTT properties by parsing attributes from the root node
+    - Return the completed UTT object.
+    """
     utt = UTT()
 
     root = gff.root
@@ -130,6 +141,23 @@ def dismantle_utt(
     *,
     use_deprecated: bool = True,
 ) -> GFF:
+    """Dismantles a UTT object into a GFF structure.
+
+    Args:
+    ----
+        utt: UTT - The UTT object to dismantle
+        game: Game - The game the UTT is for (default K2) 
+        use_deprecated: bool - Whether to include deprecated fields (default True)
+
+    Returns:
+    -------
+        GFF - The dismantled UTT as a GFF structure
+
+    Processes the UTT by:
+    - Creating a GFF root node
+    - Setting UTT fields as properties on the root node
+    - Returning the completed GFF.
+    """
     gff = GFF(GFFContent.UTT)
 
     root = gff.root
