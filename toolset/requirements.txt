@@ -10,4 +10,4 @@ requests>=2.27,<2.32
 certifi==2021.10.8
 #pykotor>=1.7
 pyperclip~=1.8
-setuptools>=68
+setuptools>=68.2.2

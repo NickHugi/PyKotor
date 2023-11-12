@@ -9,7 +9,7 @@ pip install pykotor
 ```
 
 ## Requirements
-PyKotor supports any Python version within 3.7 through 3.12. See requirements.txt for additional pip dependencies.
+PyKotor supports any Python version within 3.8 through 3.12. See requirements.txt for additional pip dependencies.
 PyKotor is supported on most operating systems, including Mac OS and Linux.
 
 ## Example Usage
