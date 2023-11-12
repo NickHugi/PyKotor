@@ -15,15 +15,15 @@ PyKotor is supported on most operating systems, including Mac OS and Linux.
 ## Example Usage
 Simple example of loading data from a game directory, searching for a specific texture and exporting it to the TGA format.
 ```python
-import os
 from pykotor.resource.type import ResourceType
 from pykotor.extract.installation import Installation
 from pykotor.resource.formats.tpc import write_tpc
 
 inst = Installation("C:/Program Files (x86)/Steam/steamapps/common/swkotor")
 tex = inst.texture("C_Gammorean01")
-write_tpc(tex, os.getcwd() + "/C_Gammorean01.tga", ResourceType.TGA)
+write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 ```
+As shown, this will save C_Gammorean01.tga to the current directory.
 
 ## Cloning the repo
 If you would like to work with the source files directly, run the following commands to get yourself setup:
@@ -31,10 +31,10 @@ If you would like to work with the source files directly, run the following comm
 git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
 pip install -r requirements.txt
+pip install -r toolset/requirements.txt
 ```
 Then, you can run any entrypoint scripts, such as HoloPatcher and the Toolset, like this:
 ```bash
-cd PyKotor
 python -m scripts.holopatcher
 python -m toolset
 ```
