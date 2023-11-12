@@ -37,8 +37,8 @@ class ERFBinaryReader(ResourceReader):
             - Read entry count and offsets to keys and resources sections
             - Read keys section into lists of ref, id, type
             - Read resources section into lists of offsets and sizes
-            - Seek to each resource and read data into ERF object
-        """.
+            - Seek to each resource and read data into ERF object.
+        """
         file_type = self._reader.read_string(4)
         file_version = self._reader.read_string(4)
 
