@@ -142,11 +142,9 @@ def diff_data(
             return log_output(f"GFF resource missing in memory:\t'{file2_rel.parent / where}'")  # type: ignore[func-returns-value]
         if not gff1 and not gff2:
             return log_output(f"Both GFF resources missing in memory:\t'{where}'")  # type: ignore[func-returns-value]
-        if gff1 and gff2:
-            diff_gff = DiffGFF(gff1, gff2, log_output)
-            if not diff_gff.compare_structs(current_path=where):
-                log_output_with_separator(f"^ '{where}': GFF is different ^")
-                return False
+        if gff1 and gff2 and not gff1.compare(gff2, log_output, PureWindowsPath(where)):
+            log_output_with_separator(f"^ '{where}': GFF is different ^")
+            return False
         return True
 
     if ext == "2da":
