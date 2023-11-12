@@ -491,4 +491,5 @@ except KeyboardInterrupt:
         profiler_output_file = Path("profiler_output.pstat").resolve()
         profiler.dump_stats(str(profiler_output_file))
         log_output(f"Profiler output saved to: {profiler_output_file}")
+    log_output("KeyboardInterrupt - KotorDiff was cancelled by user.")
     raise
