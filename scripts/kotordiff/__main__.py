@@ -19,13 +19,12 @@ if getattr(sys, "frozen", False) is False:
 
 from pykotor.extract.capsule import Capsule
 from pykotor.helpers.path import Path, PureWindowsPath
-from pykotor.resource.diff.gff import DiffGFF
-from pykotor.resource.diff.lip import DiffLIP
-from pykotor.resource.diff.tlk import DiffTLK
-from pykotor.resource.diff.twoda import Diff2DA
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
+from pykotor.tslpatcher.diff.lip import DiffLIP
+from pykotor.tslpatcher.diff.tlk import DiffTLK
+from pykotor.tslpatcher.diff.twoda import Diff2DA
 
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
