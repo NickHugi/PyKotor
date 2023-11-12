@@ -268,6 +268,7 @@
         "--noconsole",
         "--onefile",
         "--clean",
+        "--noconfirm",
         "--name=HoloPatcher",
         "--icon=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.png",
         "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py"
@@ -275,7 +276,7 @@
       "problemMatcher": []
     },
     {
-      "label": "Build HoloPatcher - Nuitka (Windows)",
+      "label": "Build HoloPatcher - Nuitka (Windows only, no CLI support)",
       "type": "shell",
       "dependsOn": ["requirements.txt", "install_nuitka"],
       "command": "${command:python.interpreterPath}",
@@ -306,6 +307,7 @@
         "--noconsole",
         "--onefile",
         "--clean",
+        "--noconfirm",
         "--name=HolocronToolset",
         "--path=${workspaceFolder}${pathSeparator}toolset",
         "--icon=resources${pathSeparator}icons${pathSeparator}sith.ico",
@@ -346,6 +348,7 @@
         "--console",
         "--onefile",
         "--clean",
+        "--noconfirm",
         "--name=kotordiff",
         "scripts${pathSeparator}kotordiff${pathSeparator}__main__.py"
       ],
@@ -362,6 +365,7 @@
         "--console",
         "--onefile",
         "--clean",
+        "--noconfirm",
         "--name=K_BatchPatcher",
         "scripts${pathSeparator}k_batchpatcher${pathSeparator}__main__.py"
       ],
@@ -378,6 +382,7 @@
         "--console",
         "--onefile",
         "--clean",
+        "--noconfirm",
         "--name=gui_creator",
         "scripts${pathSeparator}guicreator${pathSeparator}__main__.py"
       ],
@@ -394,6 +399,7 @@
         "--console",
         "--onefile",
         "--clean",
+        "--noconfirm",
         "--name=mdl_decompile",
         "scripts${pathSeparator}mdl_decompile${pathSeparator}__main__.py"
       ],
