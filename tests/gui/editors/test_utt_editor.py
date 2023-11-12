@@ -38,7 +38,7 @@ class UTTEditorTest(TestCase):
     def setUp(self) -> None:
         from toolset.gui.editors.utt import UTTEditor
         self.app = QApplication([])
-        self.ui = self.UTTEditor(None, self.INSTALLATION)
+        self.ui = UTTEditor(None, self.INSTALLATION)
 
     def tearDown(self) -> None:
         self.app.deleteLater()
