@@ -250,5 +250,5 @@ def main():
         print(f"Invalid input: {input_path!s}. It's neither a file nor a directory.")
         return
 
-
-main()
+if __name__ == "__main__":
+    main()
