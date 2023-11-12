@@ -349,12 +349,12 @@ class GFFStruct:
 
             # Compare values depending on their types
             if old_ftype == GFFFieldType.Struct:
-                old_struct: GFFStruct = old_value
-                if old_struct.struct_id != old_struct.struct_id:
-                    log_func(f"Struct ID is different at '{child_path}': '{old_struct.struct_id}'-->'{old_struct.struct_id}'")
+                cur_struct_this: GFFStruct = old_value
+                if cur_struct_this.struct_id != cur_struct_this.struct_id:
+                    log_func(f"Struct ID is different at '{child_path}': '{cur_struct_this.struct_id}'-->'{cur_struct_this.struct_id}'")
                     is_same_result = False
 
-                if not self.compare(new_value, log_func, child_path):
+                if not cur_struct_this.compare(new_value, log_func, child_path):
                     is_same_result = False
                     continue
 
