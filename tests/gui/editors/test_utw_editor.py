@@ -3,8 +3,11 @@ import pathlib
 import sys
 import unittest
 
-from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import QApplication
+try:
+    from PyQt5.QtTest import QTest
+    from PyQt5.QtWidgets import QApplication
+except ImportError:
+    QTest, QApplication = None, None
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[3] / "pykotor"
@@ -21,6 +24,10 @@ K1_PATH = os.environ.get("K1_PATH")
 @unittest.skipIf(
     not K1_PATH or not pathlib.Path(K1_PATH).joinpath("chitin.key").exists(),
     "K1_PATH environment variable is not set or not found on disk.",
+)
+@unittest.skipIf(
+    not QTest or not QApplication,
+    "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTWEditorTest(unittest.TestCase):
     @classmethod
