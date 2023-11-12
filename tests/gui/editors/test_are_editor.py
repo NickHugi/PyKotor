@@ -28,10 +28,11 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class AREEditorTest(TestCase):
-    from toolset.gui.editors.are import AREEditor
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
+        from toolset.gui.editors.are import AREEditor
+        cls.AREEditor = AREEditor
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 

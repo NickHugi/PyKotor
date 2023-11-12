@@ -28,7 +28,6 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class TwoDAEditorTest(TestCase):
-    from toolset.gui.editors.twoda import TwoDAEditor
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
@@ -36,6 +35,7 @@ class TwoDAEditorTest(TestCase):
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
+        from toolset.gui.editors.twoda import TwoDAEditor
         self.app = QApplication([])
         self.ui = self.TwoDAEditor(None, self.INSTALLATION)
 

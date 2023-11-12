@@ -28,10 +28,11 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class TPCEditorTest(TestCase):
-    from toolset.gui.editors.tpc import TPCEditor
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
+        from toolset.gui.editors.tpc import TPCEditor
+        cls.TPCEditor = TPCEditor
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 

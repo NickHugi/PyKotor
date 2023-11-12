@@ -28,10 +28,11 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class GFFEditorTest(TestCase):
-    from toolset.gui.editors.gff import GFFEditor
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
+        from toolset.gui.editors.gff import GFFEditor
+        cls.GFFEditor = GFFEditor
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 

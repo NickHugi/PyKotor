@@ -29,7 +29,6 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTTEditorTest(TestCase):
-    from toolset.gui.editors.utt import UTTEditor
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
@@ -37,6 +36,7 @@ class UTTEditorTest(TestCase):
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
+        from toolset.gui.editors.utt import UTTEditor
         self.app = QApplication([])
         self.ui = self.UTTEditor(None, self.INSTALLATION)
 

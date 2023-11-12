@@ -28,11 +28,12 @@ K1_PATH = os.environ.get("K1_PATH")
     "PyQt5 is required, please run pip install -r requirements.txt before running this test.",
 )
 class UTWEditorTest(unittest.TestCase):
-    from toolset.gui.editors.utw import UTWEditor
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
         from toolset.data.installation import HTInstallation
+        from toolset.gui.editors.utw import UTWEditor
+        cls.UTWEditor = UTWEditor
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:

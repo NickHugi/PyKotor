@@ -32,19 +32,20 @@ class UTIEditorTest(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # Make sure to configure this environment path before testing!
+        from toolset.gui.editors.uti import UTIEditor
+        cls.UTIEditor = UTIEditor
         from toolset.data.installation import HTInstallation
         cls.INSTALLATION = HTInstallation(K1_PATH, "", False, None)
 
     def setUp(self) -> None:
-        from toolset.gui.editors.uti import UTIEditor
         self.app = QApplication([])
-        self.ui = UTIEditor(None, self.INSTALLATION)
+        self.ui = self.UTIEditor(None, self.INSTALLATION)
 
     def tearDown(self) -> None:
         self.app.deleteLater()
 
     def test_open_and_save(self):
-        editor = UTIEditor(None, self.INSTALLATION)
+        editor = self.UTIEditor(None, self.INSTALLATION)
 
 
 if __name__ == "__main__":
