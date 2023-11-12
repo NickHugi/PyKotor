@@ -294,6 +294,20 @@ class GFFStruct:
         log_func: Callable = print,
         current_path: PureWindowsPath | os.PathLike | str | None = None,
     ) -> bool:
+        """Recursively compares two GFFStructs. Functionally the same as __eq__, but will log/print comparison information as well
+        Args:
+            other_gff_struct: {GFFStruct}: GFFStruct to compare against
+            log_func: {Callable}: Function to log differences. Defaults to print.
+            current_path: {PureWindowsPath | os.PathLike | str | None}: Path of structure being compared
+        Returns: 
+            bool: True if structures are the same, False otherwise
+        {Processing Logic:
+        - Creates dictionaries of fields for each structure
+        - Gets union of all field labels
+        - Compares field types, values recursively for structs and lists
+        - Logs any differences found
+        }.
+        """
         current_path = PureWindowsPath(current_path or "GFFRoot")
         if len(self) != len(other_gff_struct):  # sourcery skip: class-extract-method
             log_func(f"GFFStruct: number of fields have changed at '{current_path}': '{len(self)}' --> '{len(other_gff_struct)}'")
@@ -1169,12 +1183,13 @@ class GFFList:
 
 
     def compare(self, other_gff_list: GFFList, log_func=print, current_path: PureWindowsPath | None = None) -> bool:
-        """Compare two GFFList objects and output differences.
+        """Compare two GFFLists recursively.
+        Functionally the same as __eq__, but will also log/print the differences.
 
         Args:
         ----
-            old_gff_list: GFFList - Original GFFList
-            new_gff_list: GFFList - New GFFList
+            other_gff_list: GFFList - the GFF List to compare to
+            log_func: the function to use for logging. Defaults to print.
             current_path: PureWindowsPath - Path being compared
 
         Returns:
