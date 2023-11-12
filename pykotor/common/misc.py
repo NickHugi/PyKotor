@@ -469,7 +469,7 @@ def find_best_8bit_encoding(s: str):
 
     # Then, we try to find the best match for this byte string
     # assuming it was originally encoded with an unknown 8-bit charset
-    matches = charset_normalizer.CharsetNormalizerMatches.from_bytes(utf8_encoded)
+    matches = charset_normalizer.from_bytes(utf8_encoded)
 
     # We filter out non 8-bit encodings and Unicode encodings
     eight_bit_encodings = [match for match in matches if match.encoding != "utf-8" and "iso" in match.encoding]
