@@ -35,6 +35,7 @@ pip install -r toolset/requirements.txt
 ```
 Then, you can run any entrypoint scripts, such as HoloPatcher and the Toolset, like this:
 ```bash
+cd PyKotor
 python -m scripts.holopatcher
 python -m toolset
 ```
