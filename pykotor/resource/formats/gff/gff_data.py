@@ -313,11 +313,12 @@ class GFFStruct:
             child_path = current_path / str(label)
             old_ftype, old_value = old_dict.get(label, (None, None))
             new_ftype, new_value = new_dict.get(label, (None, None))
-            if not new_ftype:
-                raise
 
             # Check for missing fields/values in either structure
             if old_ftype is None or old_value is None:
+                if new_ftype is None:
+                    msg = "new_ftype shouldn't be None here."
+                    raise RuntimeError(msg)
                 log_func(f"Extra '{new_ftype.name}' field found at '{child_path}': {format_text(new_value)}" )
                 is_same_result = False
                 continue
@@ -339,13 +340,13 @@ class GFFStruct:
                     log_func(f"Struct ID is different at '{child_path}': '{old_struct.struct_id}'-->'{old_struct.struct_id}'")
                     is_same_result = False
 
-                if not self.compare(old_value, new_value, child_path):
+                if not self.compare(new_value, log_func, child_path):
                     is_same_result = False
                     continue
 
             elif old_ftype == GFFFieldType.List:
                 gff_list: GFFList = old_value
-                if not gff_list.compare(new_value, child_path):
+                if not gff_list.compare(new_value, log_func, child_path):
                     is_same_result = False
                     continue
 
@@ -1224,7 +1225,7 @@ class GFFList:
         for list_index in common_items:
             old_child: GFFStruct = old_dict[list_index]
             new_child: GFFStruct = new_dict[list_index]
-            if not old_child.compare(old_child, new_child, log_func, current_path / str(list_index)):
+            if not old_child.compare(new_child, log_func, current_path / str(list_index)):
                 is_same_result = False
 
         return is_same_result

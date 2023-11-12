@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 
 import re
 
@@ -140,9 +141,10 @@ def universal_simplify_exception(e):
 MAX_CHARS_BEFORE_NEWLINE_FORMAT = 20  # Adjust as needed
 
 def format_text(text):
-    if "\n" in text or len(text) > MAX_CHARS_BEFORE_NEWLINE_FORMAT:
-        return f'"""{os.linesep}{text}{os.linesep}"""'
-    return f"'{text}'"
+    text_str = str(text)
+    if "\n" in text_str or len(text_str) > MAX_CHARS_BEFORE_NEWLINE_FORMAT:
+        return f'"""{os.linesep}{text_str}{os.linesep}"""'
+    return f"'{text_str}'"
 
 def first_char_diff_index(str1, str2):
     """Find the index of the first differing character in two strings."""
