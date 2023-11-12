@@ -698,7 +698,7 @@ class ConfigReader:
 
     @staticmethod
     def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
-        if value := ConfigReader.field_value_from_memory(raw_value):
+        if (value := ConfigReader.field_value_from_memory(raw_value)) is not None:
             return value
         if field_type.return_type() == ResRef:
             return FieldValueConstant(ResRef(raw_value))
