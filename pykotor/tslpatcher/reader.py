@@ -570,15 +570,15 @@ class ConfigReader:
 
         Args:
         ----
-            self: The ModOrganizer instance
+            self: The reader instance
         Returns:
             None
         - Parses the [CompileList] section of the ini file into a dictionary
         - Sets a default destination from an optional key
         - Loops through each identifier/file pair
-                - Creates a ModificationsNSS object
-                - Looks for an optional section for the file
-                - Passes any values to populate the patch
+            - Creates a ModificationsNSS object
+            - Looks for an optional section for the file
+            - Passes any values to populate the patch
         - Adds each patch to the config patches list
         """
         compilelist_section = self.get_section_name("compilelist")
@@ -620,47 +620,51 @@ class ConfigReader:
             return FieldValueTLKMemory(token_id)
         return FieldValueConstant(int(raw_value))
 
-    def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
-        """Modifies a field in a GFF based on its identifier, key and string value.
+    @staticmethod
+    def normalize_tslpatcher_float(value_str: str) -> str:
+        return value_str.replace(",", ".")
+    @staticmethod
+    def normalize_tslpatcher_crlf(value_str: str) -> str:
+        return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
 
-        Args:
-        ----
-            identifier: str - The section name
-            key: str - The key of the field to modify (part before the =)
-            string_value: str - The raw string (after the =) to assign.
-
-        Returns:
-        -------
-            ModifyFieldGFF - A data class representing the modification
-
-        Processing Logic:
-        - Lowercases the key and value for comparisons only
-        - Parses value based on prefixes like "2DAMemory" or "strref"
-        - Handles localized strings with "(strref)" or "(lang)" in key
-        - Checks for valid assignments if key starts with "2DAMemory"
-        - Returns a ModifyFieldGFF instance
-        """
-        value: FieldValue | None = None
+    def parse_field_value(self, string_value: str) -> FieldValue:
         string_value_lower = string_value.lower()
-        key_lower = key.lower()
         if string_value_lower.startswith("2damemory"):
             token_id = int(string_value[9:])
-            value = FieldValue2DAMemory(token_id)
-        elif string_value_lower.startswith("strref"):
+            return FieldValue2DAMemory(token_id)
+        if string_value_lower.startswith("strref"):
             token_id = int(string_value[6:])
-            value = FieldValueTLKMemory(token_id)
-        elif is_int(string_value):
-            value = FieldValueConstant(int(string_value))
-        elif is_float(string_value):
-            value = FieldValueConstant(float(string_value.replace(",", ".")))
-        elif string_value.count("|") == 2:
+            return FieldValueTLKMemory(token_id)
+
+        parsed_float: str = self.__class__.normalize_tslpatcher_float(string_value)
+        if is_float(parsed_float):
+            return FieldValueConstant(float(parsed_float))
+        if is_int(string_value):
+            return FieldValueConstant(int(string_value))
+        if string_value.count("|") == 2:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector3(*(float(x.replace(",", ".")) for x in components)))
-        elif string_value.count("|") == 3:
+            return FieldValueConstant(Vector3(*[float(self.__class__.normalize_tslpatcher_float(x)) for x in components]))
+        if string_value.count("|") == 3:
             components = string_value.split("|")
-            value = FieldValueConstant(Vector4(*(float(x.replace(",", ".")) for x in components)))
-        else:
-            value = FieldValueConstant(string_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
+            return FieldValueConstant(Vector4(*[float(self.__class__.normalize_tslpatcher_float(x)) for x in components]))
+
+        return FieldValueConstant(self.__class__.normalize_tslpatcher_crlf(string_value))
+
+    def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
+        """Modifies a field in a GFF based on the key(path) and string value
+        Args:
+            identifier: str - The section name (for logging purposes)
+            key: str - The key of the field to modify
+            string_value: str - The string value to set the field to
+        Returns:
+            ModifyFieldGFF - A ModifyFieldGFF object representing the modification
+        Processing Logic:
+            1. Parses the string value into a FieldValue
+            2. Handles special cases for keys containing "(strref)", "(lang)" or starting with "2damemory"
+            3. Returns a ModifyFieldGFF object representing the modification.
+        """
+        value: FieldValue = self.parse_field_value(string_value)
+        key_lower = key.lower()
         if "(strref)" in key_lower:
             value = FieldValueConstant(LocalizedStringDelta(value))
             key = key[: key_lower.index("(strref)")]
@@ -672,6 +676,7 @@ class ConfigReader:
             value = FieldValueConstant(locstring)
             key = key[: key_lower.index("(lang")]
         elif key_lower.startswith("2damemory"):
+            string_value_lower = string_value.lower()
             if string_value_lower != "!fieldpath" and not string_value_lower.startswith("2damemory"):
                 msg = f"Cannot parse '{key}={value}' in [{identifier}]. GFFList only supports 2DAMEMORY#=!FieldPath assignments"
                 raise ValueError(msg)
@@ -679,28 +684,8 @@ class ConfigReader:
 
         return ModifyFieldGFF(PureWindowsPath(key), value)
 
-    def add_field_gff(
-        self,
-        identifier: str,
-        ini_data: CaseInsensitiveDict,
-        current_path: PureWindowsPath | None = None,
-    ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
-        """Parse GFFList's AddField syntax from the ini to determine what fields/structs/lists to add.
-
-        Args:
-        ----
-            identifier: str - Identifier of the section in the ini file
-            ini_data: CaseInsensitiveDict - Data from the ini section
-            current_path: PureWindowsPath or None - Current path in the GFF
-        Returns:
-            ModifyGFF - Object containing the field modification
-        Processing Logic:
-            1. Determines the field type from the field type string
-            2. Gets the label and optional value, path from the ini data
-            3. Construct a current path from the gff root struct based on recursion level and path key.
-            3. Handles nested modifiers and structs in lists
-            4. Returns an AddFieldGFF or AddStructToListGFF object based on whether a label is provided.
-        """
+    @staticmethod
+    def parse_tslpatcher_field_type(field_type_num_str: str) -> GFFFieldType:
         fieldname_to_fieldtype = {
             "Byte": GFFFieldType.UInt8,
             "Char": GFFFieldType.Int8,
@@ -719,12 +704,36 @@ class ConfigReader:
             "Struct": GFFFieldType.Struct,
             "List": GFFFieldType.List,
         }
+        return fieldname_to_fieldtype[field_type_num_str]
+
+    def add_field_gff(
+        self,
+        identifier: str,
+        ini_data: CaseInsensitiveDict[str],
+        current_path: PureWindowsPath | None = None,
+    ) -> ModifyGFF:  # sourcery skip: extract-method, remove-unreachable-code
+        """Parse GFFList's AddField syntax from the ini to determine what fields/structs/lists to add.
+
+        Args:
+        ----
+            identifier: str - Identifier of the section in the current recursion from the ini file
+            ini_data: CaseInsensitiveDict - Data from the ini section
+            current_path: PureWindowsPath or None - Current path in the GFF
+        Returns:
+            ModifyGFF - Object containing the field modification
+        Processing Logic:
+            1. Determines the field type from the field type string
+            2. Gets the label and optional value, path from the ini data
+            3. Construct a current path from the gff root struct based on recursion level and path key.
+            3. Handles nested modifiers and structs in lists
+            4. Returns an AddFieldGFF or AddStructToListGFF object based on whether a label is provided.
+        """
         value: FieldValue | None = None
         text: str
         struct_id = 0
 
         # required
-        field_type: GFFFieldType = fieldname_to_fieldtype[ini_data["FieldType"]]
+        field_type: GFFFieldType = self.__class__.parse_tslpatcher_field_type(ini_data["FieldType"])
         label: str = ini_data["Label"].strip()
 
         # situational/optional
@@ -745,7 +754,7 @@ class ConfigReader:
                         continue
                     substring_id = int(substring[4:])
                     language, gender = l_string_delta.substring_pair(substring_id)
-                    formatted_text = text.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
+                    formatted_text = self.__class__.normalize_tslpatcher_crlf(text)
                     l_string_delta.set_data(language, gender, formatted_text)
                 value = FieldValueConstant(l_string_delta)
             elif field_type.return_type() == GFFList:
@@ -765,28 +774,25 @@ class ConfigReader:
         elif raw_value.lower().startswith("2damemory"):
             token_id = int(raw_value[9:])
             value = FieldValue2DAMemory(token_id)
-        elif raw_value.lower().endswith("strref"):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'? Or is this already handled elsewhere?
+        elif raw_value.lower().endswith("strref"):  # TODO: see if this is necessary, seems unused. Perhaps needs to be 'StrRef\d+'? Is this already handled elsewhere? Unused remnant of a copy/paste from modify_field_gff maybe?
             token_id = int(raw_value[6:])
             value = FieldValueTLKMemory(token_id)
+        elif field_type.return_type() == ResRef:
+            value = FieldValueConstant(ResRef(raw_value))
+        elif field_type.return_type() == str:
+            value = FieldValueConstant(self.__class__.normalize_tslpatcher_crlf(raw_value))
         elif field_type.return_type() == int:
             value = FieldValueConstant(int(raw_value))
         elif field_type.return_type() == float:
-            # Replace comma with dot for decimal separator to match TSLPatcher syntax.
-            value = FieldValueConstant(float(raw_value.replace(",", ".")))
-        elif field_type.return_type() == str:
-            value = FieldValueConstant(raw_value.replace("<#LF#>", "\n").replace("<#CR#>", "\r"))
-        elif field_type.return_type() == ResRef:
-            value = FieldValueConstant(ResRef(raw_value))
+            value = FieldValueConstant(float(self.__class__.normalize_tslpatcher_float(raw_value)))
         elif field_type.return_type() == Vector3:
-            # Replace comma with dot for decimal separator to match TSLPatcher syntax.
-            components = (float(axis.replace(",", ".")) for axis in raw_value.split("|"))
+            components = (float(self.__class__.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|"))
             value = FieldValueConstant(Vector3(*components))
         elif field_type.return_type() == Vector4:
-            # Replace comma with dot for decimal separator to match TSLPatcher syntax.
-            components = (float(axis.replace(",", ".")) for axis in raw_value.split("|"))
+            components = (float(self.__class__.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|"))
             value = FieldValueConstant(Vector4(*components))
         else:
-            msg = f"Could not parse fieldtype '{field_type}' in section [{identifier}]"
+            msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
             raise ValueError(msg)
 
         modifiers: list[ModifyGFF] = []
