@@ -204,7 +204,7 @@ class ConfigReader:
             - Parse range strings and handle ignore indices
             - Process TLK entries based on key syntax.
         """
-        tlk_list_section = self.get_section_name("tlklist")
+        tlk_list_section: str | None = self.get_section_name("tlklist")
         if not tlk_list_section:
             self.log.add_note("[TLKList] section missing from ini.")
             return
@@ -866,7 +866,7 @@ class ConfigReader:
         self,
         key: str,
         identifier: str,
-        modifiers: CaseInsensitiveDict,
+        modifiers: CaseInsensitiveDict[str],
     ) -> Modify2DA | None:
         """Determines the type of 2DA modification based on the key
         Args:
@@ -927,7 +927,7 @@ class ConfigReader:
 
         return modification
 
-    def add_2da_column(self, modifiers: CaseInsensitiveDict, identifier: str):
+    def add_2da_column(self, modifiers: CaseInsensitiveDict[str], identifier: str):
         """Adds a column to a 2DA table
         Args:
             modifiers: CaseInsensitiveDict - Contains column modifiers
@@ -964,7 +964,7 @@ class ConfigReader:
             store_2da,  # type: ignore[arg-type]
         )
 
-    def target_2da(self, identifier: str, modifiers: CaseInsensitiveDict) -> Target | None:
+    def target_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> Target | None:
         """Gets or creates a 2D target from modifiers.
 
         Args:
