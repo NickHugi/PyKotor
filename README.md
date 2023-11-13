@@ -26,17 +26,43 @@ write_tpc(tex, "./C_Gammorean01.tga", ResourceType.TGA)
 As shown, this will save C_Gammorean01.tga to the current directory.
 
 ## Cloning the repo
-If you would like to work with the source files directly from github, run the following commands to get yourself setup:
+If you would like to work with the source files directly from GitHub, run the following commands to get yourself set:
 ```bash
 git clone https://github.com/NickHugi/PyKotor
 cd PyKotor
 pip install -r requirements.txt
 pip install -r toolset/requirements.txt
 ```
-Then, you can run any entrypoint scripts, such as HoloPatcher and the Toolset, like this:
+Then, you can run any entry-point scripts, such as HoloPatcher and the Toolset, like this:
 ```bash
 python -m scripts.holopatcher
 python -m toolset
+```
+
+## Troubleshooting
+If you find yourself unable to run certain entry-point scripts on this repo in your python interpreter (e.g. HoloPatcher or Holocron Toolset), you may be missing some system-level dependencies. **These are *not* required when using the compiled releases**
+### Holocron Toolset
+Holocron Toolset requires PyQt5.
+#### Linux:
+- On Debian-based Linux distros, install `python3-pyqt5`
+```commandline
+sudo apt install python3-pyqt5
+```
+#### Mac OS:
+- If you've installed Python with HomeBrew (you should have), install PyQt5:
+```commandline
+brew install pyqt5
+```
+### HoloPatcher
+HoloPatcher requires `python3-tkinter`
+#### Linux:
+```commandline
+brew install python3-tkinter
+```
+#### Mac OS:
+- If you've installed Python with HomeBrew (you should have), install PyQt5:
+```commandline
+brew install python-tk
 ```
 
 ## Accessing the GUI Designer
