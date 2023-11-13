@@ -28,13 +28,14 @@ class PatcherModifications(ABC):
 
         self.action: str = "Patch" + " "
         self.override_type: str = OverrideType.WARN
-        self.skip_if_not_replace = False  # [InstallList] only?
+        self.skip_if_not_replace = False  # [InstallList] only
 
     @abstractmethod
     def apply(self, source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
         ...
 
     def pop_tslpatcher_vars(self, file_section_dict: CaseInsensitiveDict, default_destination=None) -> None:
+        """All optional TSLPatcher vars that can be parsed for a given patch list."""
         self.sourcefile = file_section_dict.pop("!SourceFile", self.sourcefile)
         # !SaveAs and !Filename are the same.
         self.saveas = file_section_dict.pop("!Filename", file_section_dict.pop("!SaveAs", self.sourcefile))
@@ -45,5 +46,5 @@ class PatcherModifications(ABC):
         if replace_file is not None:
             self.replace_file = bool(int(replace_file))
 
-        # TSLPatcher defaults to "ignore", but realistically Override file shadowing is a major problem.
+        # TSLPatcher defaults to "ignore". Realistically, Override file shadowing is a major problem.
         self.override_type = file_section_dict.pop("!OverrideType", OverrideType.WARN)

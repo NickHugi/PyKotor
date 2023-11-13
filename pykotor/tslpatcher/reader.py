@@ -459,37 +459,6 @@ class ConfigReader:
             self.log.add_note("[SSFList] section missing from ini.")
             return
 
-        configstr_to_ssfsound: dict[str, SSFSound] = {
-            "Battlecry 1": SSFSound.BATTLE_CRY_1,
-            "Battlecry 2": SSFSound.BATTLE_CRY_2,
-            "Battlecry 3": SSFSound.BATTLE_CRY_3,
-            "Battlecry 4": SSFSound.BATTLE_CRY_4,
-            "Battlecry 5": SSFSound.BATTLE_CRY_5,
-            "Battlecry 6": SSFSound.BATTLE_CRY_6,
-            "Selected 1": SSFSound.SELECT_1,
-            "Selected 2": SSFSound.SELECT_2,
-            "Selected 3": SSFSound.SELECT_3,
-            "Attack 1": SSFSound.ATTACK_GRUNT_1,
-            "Attack 2": SSFSound.ATTACK_GRUNT_2,
-            "Attack 3": SSFSound.ATTACK_GRUNT_3,
-            "Pain 1": SSFSound.PAIN_GRUNT_1,
-            "Pain 2": SSFSound.PAIN_GRUNT_2,
-            "Low health": SSFSound.LOW_HEALTH,
-            "Death": SSFSound.DEAD,
-            "Critical hit": SSFSound.CRITICAL_HIT,
-            "Target immune": SSFSound.TARGET_IMMUNE,
-            "Place mine": SSFSound.LAY_MINE,
-            "Disarm mine": SSFSound.DISARM_MINE,
-            "Stealth on": SSFSound.BEGIN_STEALTH,
-            "Search": SSFSound.BEGIN_SEARCH,
-            "Pick lock start": SSFSound.BEGIN_UNLOCK,
-            "Pick lock fail": SSFSound.UNLOCK_FAILED,
-            "Pick lock done": SSFSound.UNLOCK_SUCCESS,
-            "Leave party": SSFSound.SEPARATED_FROM_PARTY,
-            "Rejoin party": SSFSound.REJOINED_PARTY,
-            "Poisoned": SSFSound.POISONED,
-        }
-
         self.log.add_note("Loading [SSFList] patches from ini...")
 
         ssf_section_dict = CaseInsensitiveDict(self.ini[ssf_list_section].items())
@@ -518,7 +487,7 @@ class ConfigReader:
                 else:
                     new_value = NoTokenUsage(int(value))
 
-                sound = configstr_to_ssfsound[name]
+                sound = self.resolve_tslpatcher_ssf_sound(name)
                 modifier = ModifySSF(sound, new_value)
                 modifications.modifiers.append(modifier)
 
@@ -630,7 +599,43 @@ class ConfigReader:
         return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
 
     @staticmethod
-    def resolve_tslpatcher_field_type(field_type_num_str: str) -> GFFFieldType:
+    def resolve_tslpatcher_ssf_sound(name: str):
+        configstr_to_ssfsound = CaseInsensitiveDict(
+            {
+                "Battlecry 1": SSFSound.BATTLE_CRY_1,
+                "Battlecry 2": SSFSound.BATTLE_CRY_2,
+                "Battlecry 3": SSFSound.BATTLE_CRY_3,
+                "Battlecry 4": SSFSound.BATTLE_CRY_4,
+                "Battlecry 5": SSFSound.BATTLE_CRY_5,
+                "Battlecry 6": SSFSound.BATTLE_CRY_6,
+                "Selected 1": SSFSound.SELECT_1,
+                "Selected 2": SSFSound.SELECT_2,
+                "Selected 3": SSFSound.SELECT_3,
+                "Attack 1": SSFSound.ATTACK_GRUNT_1,
+                "Attack 2": SSFSound.ATTACK_GRUNT_2,
+                "Attack 3": SSFSound.ATTACK_GRUNT_3,
+                "Pain 1": SSFSound.PAIN_GRUNT_1,
+                "Pain 2": SSFSound.PAIN_GRUNT_2,
+                "Low health": SSFSound.LOW_HEALTH,
+                "Death": SSFSound.DEAD,
+                "Critical hit": SSFSound.CRITICAL_HIT,
+                "Target immune": SSFSound.TARGET_IMMUNE,
+                "Place mine": SSFSound.LAY_MINE,
+                "Disarm mine": SSFSound.DISARM_MINE,
+                "Stealth on": SSFSound.BEGIN_STEALTH,
+                "Search": SSFSound.BEGIN_SEARCH,
+                "Pick lock start": SSFSound.BEGIN_UNLOCK,
+                "Pick lock fail": SSFSound.UNLOCK_FAILED,
+                "Pick lock done": SSFSound.UNLOCK_SUCCESS,
+                "Leave party": SSFSound.SEPARATED_FROM_PARTY,
+                "Rejoin party": SSFSound.REJOINED_PARTY,
+                "Poisoned": SSFSound.POISONED,
+            }.items(),
+        )
+        return configstr_to_ssfsound[name]
+
+    @staticmethod
+    def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:
         fieldname_to_fieldtype = CaseInsensitiveDict(
             {
                 "Byte": GFFFieldType.UInt8,
@@ -777,7 +782,7 @@ class ConfigReader:
         struct_id: int | None = None
 
         # required
-        field_type: GFFFieldType = self.__class__.resolve_tslpatcher_field_type(ini_data["FieldType"])
+        field_type: GFFFieldType = self.resolve_tslpatcher_gff_field_type(ini_data["FieldType"])
         label: str = ini_data["Label"].strip()
 
         # situational/optional
@@ -799,7 +804,7 @@ class ConfigReader:
                         continue
                     substring_id = int(substring[4:])
                     language, gender = l_string_delta.substring_pair(substring_id)
-                    formatted_text = self.__class__.normalize_tslpatcher_crlf(text)
+                    formatted_text = self.normalize_tslpatcher_crlf(text)
                     l_string_delta.set_data(language, gender, formatted_text)
                 value = FieldValueConstant(l_string_delta)
             elif field_type.return_type() == GFFList:
