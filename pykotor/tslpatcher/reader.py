@@ -110,11 +110,11 @@ class ConfigReader:
 
         self.load_settings()
         self.load_tlk_list()
-        self.load_filelist()
-        self.load_2da()
-        self.load_gff()
-        self.load_nss()
-        self.load_ssf()
+        self.load_install_list()
+        self.load_2da_list()
+        self.load_gff_list()
+        self.load_compile_list()
+        self.load_ssf_list()
 
         # check for unsupported [HACKList]
         hacklist_found = self.get_section_name("HACKList")
@@ -154,7 +154,7 @@ class ConfigReader:
         self.config.required_file = settings_ini.get("Required")
         self.config.required_message = settings_ini.get("RequiredMsg", "")
 
-    def load_filelist(self) -> None:
+    def load_install_list(self) -> None:
         """Loads [InstallList] from ini configuration.
 
         Args:
@@ -391,7 +391,7 @@ class ConfigReader:
                 msg = f"Could not parse '{key}={value}' in [TLKList]"
                 raise ValueError(msg) from e
 
-    def load_2da(self) -> None:
+    def load_2da_list(self) -> None:
         """Load 2D array patches from ini file
         Processing Logic:
             - Get the section name for the [2DAList] section
@@ -442,7 +442,7 @@ class ConfigReader:
                     continue
                 modifications.modifiers.append(manipulation)
 
-    def load_ssf(self) -> None:
+    def load_ssf_list(self) -> None:
         """Loads SSF patches from the ini file.
 
         - Gets the [SSFList] section name from the ini file
@@ -491,7 +491,7 @@ class ConfigReader:
                 modifier = ModifySSF(sound, new_value)
                 modifications.modifiers.append(modifier)
 
-    def load_gff(self) -> None:
+    def load_gff_list(self) -> None:
         """Loads GFF patches from the ini file
         Args:
             self: The object instance
@@ -554,7 +554,7 @@ class ConfigReader:
 
                 modifications.modifiers.append(modifier)
 
-    def load_nss(self) -> None:
+    def load_compile_list(self) -> None:
         """Loads patches from the [CompileList] section of the ini file.
 
         Args:
