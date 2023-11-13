@@ -1,14 +1,10 @@
 .git
 .idea
-venv
 dist
 PyKotor.egg-info
 ignore
 build
 *.pyc
-.vscode/launch.json
-debug.log
-pykotorcli.build/*
 .history
 *.heapsnapshot
 *.cpuprofile
@@ -37,3 +33,4 @@ scripts/holopatcher
 nuitka_dist
 help
 kits
+pyinstaller.exe
