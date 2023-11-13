@@ -1,6 +1,12 @@
+import multiprocessing
 import os
 import pathlib
 import sys
+import traceback
+from types import TracebackType
+
+from PyQt5.QtCore import QThread
+from PyQt5.QtWidgets import QApplication
 
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[1] / "pykotor"
@@ -10,13 +16,6 @@ if getattr(sys, "frozen", False) is False:
         if working_dir in sys.path:
             sys.path.remove(working_dir)
         sys.path.insert(0, working_dir)
-
-import multiprocessing
-import traceback
-from types import TracebackType
-
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication
 
 from toolset.gui.windows.main import ToolWindow
 
