@@ -60,7 +60,7 @@ HoloPatcher requires `python3-tkinter`
 brew install python3-tkinter
 ```
 #### Mac OS:
-- If you've installed Python with HomeBrew (you should have), install PyQt5:
+- If you've installed Python with HomeBrew (you should have), install tkinter:
 ```commandline
 brew install python-tk
 ```
