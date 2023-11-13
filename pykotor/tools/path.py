@@ -84,8 +84,8 @@ class CaseAwarePath(InternalPath):
 
     def resolve(self, strict=False):
         new_path = super().resolve(strict)
-        if self.__class__.should_resolve_case(new_path):
-            new_path = self.__class__._get_case_sensitive_path(new_path)
+        if self.should_resolve_case(new_path):
+            new_path = self._get_case_sensitive_path(new_path)
         return new_path
 
     # Call __eq__ when using 'in' keyword
@@ -110,7 +110,7 @@ class CaseAwarePath(InternalPath):
         return (
             super().__str__()
             if pathlib.Path(self).exists()
-            else super(self.__class__, self.__class__._get_case_sensitive_path(self)).__str__()
+            else super(self.__class__, self._get_case_sensitive_path(self)).__str__()
         )
 
     @staticmethod

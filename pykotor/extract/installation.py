@@ -543,7 +543,7 @@ class Installation:
         if self._game is not None:
             return self._game
 
-        game = self.__class__.determine_game(self.path())
+        game = self.determine_game(self.path())
         if game is not None:
             self._game = game
             return game

@@ -64,7 +64,7 @@ class BasePurePath:
         """Call _fix_path_formatting before returning the pathlib class's __str__ result.
         In Python 3.12, pathlib's __str__ methods will return '' instead of '.', so we return '.' in this instance for backwards compatibility.
         """
-        str_result = self.__class__._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
+        str_result = self._fix_path_formatting(super().__str__(), self._flavour.sep)  # type: ignore[_flavour exists in children]
         return "." if str_result == "" else str_result
 
     def __fspath__(self):
