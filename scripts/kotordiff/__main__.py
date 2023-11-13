@@ -22,9 +22,6 @@ from pykotor.helpers.path import Path, PureWindowsPath
 from pykotor.resource.formats import gff, lip, tlk, twoda
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
-from pykotor.tslpatcher.diff.lip import DiffLIP
-from pykotor.tslpatcher.diff.tlk import DiffTLK
-from pykotor.tslpatcher.diff.twoda import Diff2DA
 
 if TYPE_CHECKING:
     from pykotor.extract.file import FileResource
@@ -165,11 +162,9 @@ def diff_data(
         if not twoda1 and not twoda2:
             message = f"Both 2DA resources missing in memory:\t'{where}'"
             return log_output(message)  # type: ignore[func-returns-value]
-        if twoda1 and twoda2:
-            diff_2da = Diff2DA(twoda2, twoda1, log_output)
-            if not diff_2da.compare_2da():
-                log_output_with_separator(f"^ '{where}': 2DA is different ^")
-                return False
+        if twoda1 and twoda2 and not twoda1.compare(twoda2, log_output):
+            log_output_with_separator(f"^ '{where}': 2DA is different ^")
+            return False
         return True
 
     if ext == "tlk":
@@ -194,11 +189,9 @@ def diff_data(
         if not tlk1 and not tlk2:
             message = f"Both TLK resources missing in memory:\t'{where}'"
             return log_output(message)  # type: ignore[func-returns-value]
-        if tlk1 and tlk2:
-            diff = DiffTLK(tlk1, tlk2, log_output)
-            if not diff.compare_tlk():
-                log_output_with_separator(f"^ '{where}': TLK is different ^", surround=True)
-                return False
+        if tlk1 and tlk2 and not tlk1.compare(tlk2, log_output):
+            log_output_with_separator(f"^ '{where}': TLK is different ^", surround=True)
+            return False
         return True
 
     if ext == "lip":
@@ -223,11 +216,9 @@ def diff_data(
             log_output(message)
             log_output(len(message) * "-")
             return True
-        if lip1 and lip2:
-            diff_lip = DiffLIP(lip1, lip2, log_output)
-            if not diff_lip.compare_lip():
-                message = f"^ '{where}': LIP is different ^"
-                return log_output_with_separator(message)
+        if lip1 and lip2 and not lip1.compare(lip2, log_output):
+            message = f"^ '{where}': LIP is different ^"
+            return log_output_with_separator(message)
         return True
 
     if parser_args.compare_hashes and compute_sha256(data1) != compute_sha256(data2):

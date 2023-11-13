@@ -85,6 +85,37 @@ class LIP:
         """
         return self.frames[index] if index < len(self.frames) else None
 
+    def compare(self, other: LIP, log_func=print) -> bool:
+        ret = True
+
+        # Check for differences in the length attribute
+        if self.length != other.length:
+            log_func(f"Length mismatch: '{self.length}' --> '{self.length}'")
+            ret = False
+
+        # Check for keyframe mismatches
+        old_frames = len(self)
+        new_frames = len(other)
+
+        if old_frames != new_frames:
+            log_func(f"Keyframe count mismatch: {old_frames} --> {new_frames}")
+            ret = False
+
+        # Compare individual keyframes
+        for i in range(min(old_frames, new_frames)):
+            old_keyframe: LIPKeyFrame = self[i]
+            new_keyframe: LIPKeyFrame = other[i]
+
+            if old_keyframe.time != new_keyframe.time:
+                log_func(f"Time mismatch at keyframe {i}: '{old_keyframe.time}' --> '{new_keyframe.time}'")
+                ret = False
+
+            if old_keyframe.shape != new_keyframe.shape:
+                log_func(f"Shape mismatch at keyframe {i}: '{old_keyframe.shape.name}' --> '{new_keyframe.shape.name}'")
+                ret = False
+
+        return ret
+
 
 class LIPShape(IntEnum):
     EE = 0

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 from pykotor.resource.type import ResourceType
 
@@ -365,6 +365,54 @@ class TwoDA:
                 max_found = max(int(label), max_found)
 
         return max_found + 1
+
+    def compare(self, other: TwoDA, log_func: Callable = print) -> bool:
+        old_headers = set(self.get_headers())
+        new_headers = set(other.get_headers())
+        ret = True
+
+        # Check for column header mismatches
+        missing_headers = old_headers - new_headers
+        extra_headers = new_headers - old_headers
+        if missing_headers:
+            log_func(f"Missing headers in new TwoDA: {', '.join(missing_headers)}")
+            ret = False
+        if extra_headers:
+            log_func(f"Extra headers in new TwoDA: {', '.join(extra_headers)}")
+            ret = False
+        if not ret:
+            return False
+
+        # Common headers
+        common_headers: set[str] = old_headers.intersection(new_headers)
+
+        # Check for row mismatches
+        old_indices: set[int | None] = {self.row_index(row) for row in self}
+        new_indices: set[int | None] = {other.row_index(row) for row in other}
+        missing_rows: set[int | None] = old_indices - new_indices
+        extra_rows: set[int | None] = new_indices - old_indices
+        if missing_rows:
+            log_func(f"Missing rows in new TwoDA: {', '.join(map(str, missing_rows))}")
+            ret = False
+        if extra_rows:
+            log_func(f"Extra rows in new TwoDA: {', '.join(map(str, extra_rows))}")
+            ret = False
+
+        # Check cell values for common rows
+        for index in old_indices.intersection(new_indices):
+            if index is None:
+                log_func("Row mismatch")
+                return False
+            old_row: TwoDARow = self.get_row(index)
+            new_row: TwoDARow = other.get_row(index)
+            for header in common_headers:
+                old_value: str = old_row.get_string(header)
+                new_value: str = new_row.get_string(header)
+                if old_value != new_value:
+                    log_func(f"Cell mismatch at RowIndex '{index}' Header '{header}': '{old_value}' --> '{new_value}'")
+                    ret = False
+
+        return ret
 
 
 class TwoDARow:

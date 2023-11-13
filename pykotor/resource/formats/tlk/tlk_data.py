@@ -1,9 +1,13 @@
-"""This module handles classes relating to editing TLK files."""
+"""This module handles classes relating to working with TLK files."""
 from __future__ import annotations
+
+from itertools import zip_longest
+from typing import Callable
 
 from pykotor.common.language import Language
 from pykotor.common.misc import ResRef
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import compare_and_format, format_text
 
 
 class TLK:
@@ -106,6 +110,48 @@ class TLK:
             self.entries.extend(
                 [TLKEntry("", ResRef.from_blank()) for _ in range(len(self), size)],
             )
+    def compare(self, other: TLK, log_func: Callable = print) -> bool:
+        if len(self) != len(other):
+            log_func(f"TLK row count mismatch. Old: {len(self)}, New: {len(other)}")
+
+        mismatch_count, extra_old, extra_new = 0, 0, 0
+
+        for (old_stringref, old_entry), (new_stringref, new_entry) in zip_longest(self, other, fillvalue=(None, None)):
+            # Both TLKs have the entry but with different content
+            if old_stringref is None or old_entry is None:
+                if new_stringref is not None and new_entry is not None:
+                    extra_new += 1
+                    continue
+                continue
+            if new_stringref is None or new_entry is None:
+                if old_stringref is not None and old_entry is not None:
+                    extra_old += 1
+                    continue
+                continue
+
+            if old_entry != new_entry:
+                text_mismatch: bool = old_entry.text.lower() != new_entry.text.lower()
+                vo_mismatch: bool = old_entry.voiceover.get().lower() != new_entry.voiceover.get().lower()
+                if not text_mismatch and not vo_mismatch:
+                    log_func("TLK entries are not equal, but no differences could be found?")
+                    continue
+
+                log_func(f"Entry mismatch at stringref: {old_stringref}")
+                if text_mismatch:
+                    log_func(format_text(compare_and_format(old_entry.text, new_entry.text)))
+                mismatch_count += 1
+                if vo_mismatch:
+                    log_func(format_text(compare_and_format(old_entry.voiceover, new_entry.voiceover)))
+
+        # Provide a summary of discrepancies
+        if mismatch_count:
+            log_func(f"{mismatch_count} entries have mismatches.")
+        if extra_old:
+            log_func(f"Old TLK has {extra_old} stringrefs that are missing in the new TLK.")
+        if extra_new:
+            log_func(f"New TLK has {extra_new} extra stringrefs that are not in the old TLK.")
+
+        return not (mismatch_count or extra_old or extra_new)
 
 
 class TLKEntry:
