@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from operator import attrgetter
 from typing import TYPE_CHECKING, ClassVar
+from copy import deepcopy
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, QRegExp, QSize
@@ -123,8 +124,12 @@ class NSSEditor(Editor):
         """
         self._installation = installation
 
-        constants: list[ScriptConstant] = TSL_CONSTANTS if self._installation.tsl else KOTOR_CONSTANTS
-        functions: list[ScriptFunction] = TSL_FUNCTIONS if self._installation.tsl else KOTOR_FUNCTIONS
+        constants: list[ScriptConstant] = deepcopy(TSL_CONSTANTS if self._installation.tsl else KOTOR_CONSTANTS)
+        functions: list[ScriptFunction] = deepcopy(TSL_FUNCTIONS if self._installation.tsl else KOTOR_FUNCTIONS)
+
+        # sort them alphabetically
+        constants.sort(key=attrgetter("name"))
+        functions.sort(key=attrgetter("name"))
 
         for function in functions:
             item = QListWidgetItem(function.name)
