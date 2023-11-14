@@ -79,9 +79,9 @@ class ModificationsNSS(PatcherModifications):
         if os.name == "nt":
             # Compile using nwnnsscomp.exe on windows.
             #  1. Create a temporary directory
-            #  2. Dump source script bytes to a temp_script.nss in that directory
-            #  3. Compile script with nwnnsscomp.exe's CLI
-            #  4. Load newly compiled script as bytes and return them.
+            #  2. Compile script with nwnnsscomp.exe's CLI to that directory.
+            #  3. Load newly compiled script as bytes and return them.
+            #  4. cleanup the temp dir
             with TemporaryDirectory() as tempdir:
                 tempdir_path = Path(tempdir)
                 source_script = self.nwnnsscomp_path.parent / self.sourcefile
