@@ -42,7 +42,7 @@ class FieldValue(ABC):
     def value(self, memory: PatcherMemory, field_type: GFFFieldType) -> Any:
         ...
 
-    def validate(self, value: Any, field_type: GFFFieldType) -> ResRef | str | int | float:
+    def validate(self, value: Any, field_type: GFFFieldType) -> ResRef | str | int | float | object:
         if field_type == GFFFieldType.ResRef and not isinstance(value, ResRef):
             value = ResRef(str(value))
         elif field_type == GFFFieldType.String and not isinstance(value, str):
@@ -132,16 +132,14 @@ class AddStructToListGFF(ModifyGFF):
     def __init__(
         self,
         identifier: str,
-        struct_id: int | None,
         value: FieldValue,
         path: PureWindowsPath,
         index_to_token: int | None = None,
         modifiers: list[ModifyGFF] | None = None,
     ):
         self.identifier: str = identifier
-        self.new_struct_location: FieldValue = value
+        self.value: FieldValue = value
         self.path: PureWindowsPath = path if isinstance(path, PureWindowsPath) else PureWindowsPath(path)
-        self.struct_id: int = struct_id or 0
         self.index_to_token: int | None = index_to_token
 
         self.modifiers: list[ModifyGFF] = [] if modifiers is None else modifiers
@@ -184,12 +182,11 @@ class AddStructToListGFF(ModifyGFF):
             reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFList."
             logger.add_error(f"Unable to add struct to list in '{self.path or f'[{self.identifier}]'}' {reason}")
             return
-        new_struct = self.new_struct_location.value(memory, GFFFieldType.Struct)
+        new_struct = self.value.value(memory, GFFFieldType.Struct)
 
         if not isinstance(new_struct, GFFStruct):
-            logger.add_error(f"Failed to add a new struct with struct_id '{self.struct_id}' to list '{self.path}' in [{self.identifier}]. Skipping...")
+            logger.add_error(f"Failed to add a new struct to list '{self.path}' in [{self.identifier}]. Skipping...")
             return
-        new_struct.struct_id = self.struct_id
         list_container._structs.append(new_struct)
         if self.index_to_token is not None:
             memory.memory_2da[self.index_to_token] = str(len(list_container) - 1)

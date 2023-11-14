@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import os
 import re
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 from pykotor.common.misc import decode_bytes_with_fallbacks
-from pykotor.resource.formats.ncs import bytes_ncs, compile_nss
-from pykotor.helpers.path import PurePath
+from pykotor.common.stream import BinaryReader, BinaryWriter
+from pykotor.helpers.path import Path, PurePath
+from pykotor.resource.formats.ncs import bytes_ncs
+from pykotor.resource.formats.ncs import compile_nss as compile_with_builtin
+from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
+from pykotor.resource.type import SOURCE_TYPES
 from pykotor.tslpatcher.mods.template import PatcherModifications
 
 if TYPE_CHECKING:
@@ -19,16 +25,17 @@ class ModificationsNSS(PatcherModifications):
         super().__init__(filename, replace, modifiers)
         self.saveas = str(PurePath(filename).with_suffix(".ncs"))
         self.action: str = "Compile"
+        self.nwnnsscomp_path: Path
 
-    def apply(self, nss_bytes: bytes, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
+    def apply(self, nss_source: SOURCE_TYPES, memory: PatcherMemory, logger: PatchLogger, game: Game) -> bytes:
         """Takes the source nss bytes and replaces instances of 2DAMEMORY# and StrRef# with the relevant data.
 
         Args:
         ----
-            nss_bytes: bytes: The bytes to patch.
-            memory: PatcherMemory: Memory references for patching.
-            logger: PatchLogger: Logger for logging messages.
-            game: Game: The game being patched.
+            nss_source (SOURCE_TYPES): The source script to patch. (path or bytes object)
+            memory (PatcherMemory): Memory references for patching.
+            logger (PatchLogger): Logger for logging messages.
+            game (Game IntEnum): The game being patched.
 
         Returns:
         -------
@@ -39,6 +46,17 @@ class ModificationsNSS(PatcherModifications):
             3. Replaces #StrRef# tokens with values from PatcherMemory
             4. Compiles the patched string and encodes to bytes.
         """
+        nss_bytes: bytes
+        if isinstance(nss_source, bytearray):
+            nss_bytes = bytes(nss_source)
+        elif isinstance(nss_source, bytes):
+            nss_bytes = nss_source
+        elif isinstance(nss_source, (os.PathLike, str)):
+            nss_bytes = BinaryReader.load_file(nss_source)
+        else:
+            logger.add_error(f"Invalid nss source provided to ModificationsNSS.apply(), got {type(nss_source)}")
+            return b""
+
         source: str = decode_bytes_with_fallbacks(nss_bytes)
 
         match = re.search(r"#2DAMEMORY\d+#", source)
@@ -55,7 +73,28 @@ class ModificationsNSS(PatcherModifications):
             source = source[: match.start()] + str(value) + source[match.end() :]
             match = re.search(r"#StrRef\d+#", source)
 
-        return bytes_ncs(compile_nss(source, game))
+        if os.name == "posix":
+            # Compile using built-in script compiler.
+            return bytes_ncs(compile_with_builtin(source, game))
+        if os.name == "nt":
+            # Compile using nwnnsscomp.exe on windows.
+            #  1. Create a temporary directory
+            #  2. Dump source script bytes to a temp_script.nss in that directory
+            #  3. Compile script with nwnnsscomp.exe's CLI
+            #  4. Load newly compiled script as bytes and return them.
+            with TemporaryDirectory() as tempdir:
+                tempdir_path = Path(tempdir)
+                tempscript_path = tempdir_path / "temp_script.nss"
+                tempcompiled_filepath = tempdir_path / "temp_script.ncs"
+                BinaryWriter.dump(tempscript_path, nss_bytes)
+
+                nwnnsscompiler = ExternalNCSCompiler(str(self.nwnnsscomp_path))
+                nwnnsscompiler.compile_script(str(tempscript_path), str(tempcompiled_filepath), game)
+                compiled_bytes: bytes = BinaryReader.load_file(tempcompiled_filepath)
+                return compiled_bytes
+
+        logger.add_error("Operating system not supported - cannot compile script.")
+        return b""
 
     def pop_tslpatcher_vars(self, file_section_dict, default_destination=PatcherModifications.DEFAULT_DESTINATION):
         super().pop_tslpatcher_vars(file_section_dict, default_destination)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from configparser import ConfigParser
 from itertools import tee
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pykotor.common.geometry import Vector3, Vector4
 from pykotor.common.language import LocalizedString
@@ -585,6 +585,7 @@ class ConfigReader:
         for identifier, file in compilelist_section_dict.items():
             replace = identifier.lower().startswith("replace")
             modifications = ModificationsNSS(file, replace)
+            modifications.nwnnsscomp_path = self.mod_path / "nwnnsscomp.exe"
 
             optional_file_section_name = self.get_section_name(file)
             if optional_file_section_name is not None:
@@ -688,41 +689,48 @@ class ConfigReader:
     @staticmethod
     def field_value_from_unknown(string_value: str) -> FieldValue:
         field_value_memory: FieldValue | None = ConfigReader.field_value_from_memory(string_value)
-        if field_value_memory is not None:
+        if field_value_memory is not None:  # strref/2damemory
             return field_value_memory
-        if is_int(string_value):
-            return FieldValueConstant(int(string_value))
-        parsed_float: str = ConfigReader.normalize_tslpatcher_float(string_value)
-        if is_float(parsed_float):
-            return FieldValueConstant(float(parsed_float))
-        if string_value.count("|") == 2:
-            components = parsed_float.split("|")
-            return FieldValueConstant(Vector3(*[float(x) for x in components]))
-        if string_value.count("|") == 3:
-            components = parsed_float.split("|")
-            return FieldValueConstant(Vector4(*[float(x) for x in components]))
 
-        return FieldValueConstant(ConfigReader.normalize_tslpatcher_crlf(string_value))
+        value: Any
+        if is_int(string_value):  # int
+            value = int(string_value)
+        else:
+            parsed_float: str = ConfigReader.normalize_tslpatcher_float(string_value)
+            if is_float(parsed_float):
+                value = float(parsed_float)
+            elif string_value.count("|") == 2:
+                value = Vector3(*[float(x) for x in parsed_float.split("|")])
+            elif string_value.count("|") == 3:
+                value = Vector4(*[float(x) for x in parsed_float.split("|")])
+            else:  # string
+                value = ConfigReader.normalize_tslpatcher_crlf(string_value)
+
+        return FieldValueConstant(value)
 
     @staticmethod
     def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
-        if (value := ConfigReader.field_value_from_memory(raw_value)) is not None:
+        value: Any = ConfigReader.field_value_from_memory(raw_value)
+        if value is not None:
             return value
+
         if field_type.return_type() == ResRef:
-            return FieldValueConstant(ResRef(raw_value))
-        if field_type.return_type() == str:
-            return FieldValueConstant(ConfigReader.normalize_tslpatcher_crlf(raw_value))
-        if field_type.return_type() == int:
-            return FieldValueConstant(int(raw_value))
-        if field_type.return_type() == float:
-            return FieldValueConstant(float(ConfigReader.normalize_tslpatcher_float(raw_value)))
-        if field_type.return_type() == Vector3:
+            value = ResRef(raw_value)
+        elif field_type.return_type() == str:
+            value = ConfigReader.normalize_tslpatcher_crlf(raw_value)
+        elif field_type.return_type() == int:
+            value = int(raw_value)
+        elif field_type.return_type() == float:
+            value = float(ConfigReader.normalize_tslpatcher_float(raw_value))
+        elif field_type.return_type() == Vector3:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
-            return FieldValueConstant(Vector3(*components))
-        if field_type.return_type() == Vector4:
+            value = Vector3(*components)
+        elif field_type.return_type() == Vector4:
             components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
-            return FieldValueConstant(Vector4(*components))
-        return None
+            value = Vector4(*components)
+        return FieldValueConstant(value)
+
+    #################
 
     def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
         """Modifies a field in a GFF based on the key(path) and string value
@@ -758,6 +766,46 @@ class ConfigReader:
 
         return ModifyFieldGFF(PureWindowsPath(key), value)
 
+    def get_addfield_value(self, ini_data: CaseInsensitiveDict, field_type: GFFFieldType, identifier: str):
+        value: FieldValue | None
+        text: str
+
+        raw_value: str | None = ini_data.pop("Value", None)
+        if raw_value is not None:
+            ret_value: FieldValue | None = self.field_value_from_type(raw_value, field_type)
+            if ret_value is None:
+                msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
+                raise ValueError(msg)
+            value = ret_value
+        elif field_type.return_type() == LocalizedString:
+            raw_stringref: str = ini_data.pop("StrRef")  # type: ignore[reportGeneralTypeIssues]
+            stringref: FieldValue | None = self.field_value_from_memory(raw_stringref)
+            if stringref is None:
+                stringref = FieldValueConstant(int(raw_stringref))
+            l_string_delta = LocalizedStringDelta(stringref)
+
+            for substring, text in ini_data.items():
+                if not substring.lower().startswith("lang"):
+                    continue
+                substring_id = int(substring[4:])
+                language, gender = l_string_delta.substring_pair(substring_id)
+                formatted_text = self.normalize_tslpatcher_crlf(text)
+                l_string_delta.set_data(language, gender, formatted_text)
+            value = FieldValueConstant(l_string_delta)
+        elif field_type.return_type() == GFFList:
+            value = FieldValueConstant(GFFList())
+        elif field_type.return_type() == GFFStruct:
+            raw_struct_id: str = ini_data.pop("TypeId", "0").strip()  # TODO: Is '0' the default value?
+            if not is_int(raw_struct_id):
+                msg = f"Invalid TypeId: expected int but got '{raw_struct_id}' in [{identifier}]"
+                raise ValueError(msg)
+
+            struct_id = int(raw_struct_id)
+            value = FieldValueConstant(GFFStruct(struct_id))
+        else:
+            value = None
+        return value
+
     def add_field_gff(
         self,
         identifier: str,
@@ -780,55 +828,27 @@ class ConfigReader:
             3. Handles nested modifiers and structs in lists
             4. Returns an AddFieldGFF or AddStructToListGFF object based on whether a label is provided.
         """
-        value: FieldValue
-        text: str
-        struct_id: int | None = None
-
         # required
-        field_type: GFFFieldType = self.resolve_tslpatcher_gff_field_type(ini_data["FieldType"])
-        label: str = ini_data["Label"].strip()
+        raw_field_type: str = ini_data.pop("FieldType")  # type: ignore[reportGeneralTypeIssues]
+        label: str = ini_data.pop("Label").strip()  # type: ignore[reportGeneralTypeIssues]
 
         # situational/optional
-        raw_path: str = ini_data.get("Path", "").strip()
-        raw_value: str | None = ini_data.get("Value")
+        raw_path: str = ini_data.pop("Path", "").strip()
+
+        # Resolve TSLPatcher -> PyKotor GFFFieldType
+        field_type: GFFFieldType = self.resolve_tslpatcher_gff_field_type(raw_field_type)
 
         # Handle current gff path
         path: PureWindowsPath = PureWindowsPath(raw_path)
-        path = path if path.name else (current_path or PureWindowsPath(""))
+        if not path.name:
+            path = current_path if current_path and current_path.name else path
+        if field_type.return_type() == GFFStruct:
+            path /= ">>##INDEXINLIST##<<"  # see the check in mods/gff.py. Perhaps need to check if label is set, first?
 
-        if raw_value is None:
-            if field_type.return_type() == LocalizedString:
-                raw_stringref = ini_data["StrRef"]
-                stringref: FieldValue = self.field_value_from_memory(raw_stringref) or FieldValueConstant(int(raw_stringref))
-                l_string_delta = LocalizedStringDelta(stringref)
-
-                for substring, text in ini_data.items():
-                    if not substring.lower().startswith("lang"):
-                        continue
-                    substring_id = int(substring[4:])
-                    language, gender = l_string_delta.substring_pair(substring_id)
-                    formatted_text = self.normalize_tslpatcher_crlf(text)
-                    l_string_delta.set_data(language, gender, formatted_text)
-                value = FieldValueConstant(l_string_delta)
-            elif field_type.return_type() == GFFList:
-                value = FieldValueConstant(GFFList())
-            elif field_type.return_type() == GFFStruct:
-                raw_struct_id = ini_data["TypeId"].strip()
-                if not is_int(raw_struct_id):
-                    msg = f"Invalid struct id: expected int but got '{raw_struct_id}' in '[{identifier}]'"
-                    raise ValueError(msg)
-
-                struct_id = int(raw_struct_id)
-                path /= ">>##INDEXINLIST##<<"  # see the check in mods/gff.py. Perhaps need to check if label is set, first?
-                value = FieldValueConstant(GFFStruct(struct_id))
-            else:
-                msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type}' in this context"
-                raise ValueError(msg)
-        else:
-            value = self.field_value_from_type(raw_value, field_type)  # type: ignore[assignment]
-            if value is None:
-                msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
-                raise ValueError(msg)
+        value: FieldValue | None = self.get_addfield_value(ini_data, field_type, identifier)
+        if value is None:
+            msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type.name}'"
+            raise ValueError(msg)
 
         modifiers: list[ModifyGFF] = []
         index_in_list_token = None
@@ -846,6 +866,8 @@ class ConfigReader:
                         path,
                     )
                     modifiers.insert(0, modifier)
+
+            # handle nested
             if lower_key.startswith("addfield"):
                 next_section_name: str | None = self.get_section_name(iterated_value)
                 if not next_section_name:
@@ -862,7 +884,6 @@ class ConfigReader:
         if not label and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
                 identifier,
-                struct_id or 0,  # TODO: Is the '0' needed? Is this the default value?
                 value,
                 path,
                 index_in_list_token,
@@ -879,6 +900,7 @@ class ConfigReader:
         )
 
     #################
+
     def discern_2da(
         self,
         key: str,

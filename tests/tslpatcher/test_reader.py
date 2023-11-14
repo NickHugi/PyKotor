@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from configparser import ConfigParser
 
+from pykotor.resource.formats.gff.gff_data import GFFFieldType, GFFStruct
+
 if getattr(sys, "frozen", False) is False:
     pykotor_path = pathlib.Path(__file__).parents[2] / "pykotor"
     if pykotor_path.joinpath("__init__.py").exists():
@@ -2237,14 +2239,18 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
+        assert(isinstance(mod_0, AddFieldGFF))
         self.assertIsInstance(mod_0.value, FieldValueConstant)
+        assert(isinstance(mod_0.value, FieldValueConstant))
         self.assertEqual(mod_0.path.name, ">>##INDEXINLIST##<<")
         self.assertEqual("SomeStruct", mod_0.label)
         self.assertEqual(321, mod_0.value.stored.struct_id)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddFieldGFF)
+        assert isinstance(mod_1, AddFieldGFF)
         self.assertIsInstance(mod_1.value, FieldValueConstant)
+        assert isinstance(mod_1.value, FieldValueConstant)
         self.assertEqual(mod_1.path.name, "SomeStruct")
         self.assertEqual("InsideStruct", mod_1.label)
         self.assertEqual(123, mod_1.value.stored)
@@ -2289,13 +2295,20 @@ class TestConfigReader(unittest.TestCase):
 
         mod_0 = config.patches_gff[0].modifiers.pop(0)
         self.assertIsInstance(mod_0, AddFieldGFF)
+        assert(isinstance(mod_0, AddFieldGFF))
         self.assertIsInstance(mod_0.value, FieldValueConstant)
+        assert(isinstance(mod_0.value, FieldValueConstant))
         self.assertFalse(mod_0.path.name)
         self.assertEqual("SomeList", mod_0.label)
 
         mod_1 = mod_0.modifiers.pop(0)
         self.assertIsInstance(mod_1, AddStructToListGFF)
-        self.assertEqual(111, mod_1.struct_id)
+        assert(isinstance(mod_1, AddStructToListGFF))
+        self.assertIsInstance(mod_1.value, FieldValueConstant)
+        assert(isinstance(mod_1.value, FieldValueConstant))
+        self.assertIsInstance(mod_1.value.value(None, GFFFieldType.Struct), GFFStruct)  # type: ignore[reportGeneralTypeIssues]
+        assert(isinstance(mod_1.value.stored, GFFStruct))
+        self.assertEqual(111, mod_1.value.stored.struct_id)
         self.assertEqual(5, mod_1.index_to_token)
 
     # endregion
