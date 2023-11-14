@@ -840,8 +840,8 @@ class ConfigReader:
 
         # Handle current gff path
         path: PureWindowsPath = PureWindowsPath(raw_path)
-        if not path.name:
-            path = current_path if current_path and current_path.name else path
+        if not path.name and current_path and current_path.name:
+            path = current_path
         if field_type.return_type() == GFFStruct:
             path /= ">>##INDEXINLIST##<<"  # see the check in mods/gff.py. Perhaps need to check if label is set, first?
 
