@@ -69,23 +69,23 @@ class ConfigReader:
         self.log = logger or PatchLogger()
 
     @classmethod
-    def from_filepath(cls, file_path: os.PathLike | str, logger: PatchLogger | None = None) -> PatcherConfig:
-        """Loads PatcherConfig from an INI file.
+    def from_filepath(cls, file_path: os.PathLike | str, logger: PatchLogger | None = None):
+        """Load PatcherConfig from an INI file path.
 
         Args:
         ----
             file_path: The path to the INI file.
-            logger: Optional logger for logging errors.
+            logger: Optional logger instance.
 
         Returns:
         -------
-            PatcherConfig: The loaded configuration.
+            instance: A PatcherConfig instance loaded from the file.
         Processing Logic:
-            1. Resolve the file path.
-            2. Initialize an ConfigParser to parse the INI file. 
-            3. Load and decode the INI file contents.
-            4. Parse the INI sections/keys and populate a PatcherConfig object.
-            5. Return the populated PatcherConfig.
+            - Resolve the file path and load its contents
+            - Parse the INI text into a ConfigParser
+            - Initialize a PatcherConfig instance
+            - Populate its config attribute from the ConfigParser
+            - Return the initialized instance
         """
         resolved_file_path = (file_path if isinstance(file_path, Path) else Path(file_path)).resolve()
 
@@ -103,7 +103,9 @@ class ConfigReader:
         ini.read_string(ini_text)
 
         config = PatcherConfig()
-        return ConfigReader(ini, resolved_file_path, logger).load(config)
+        instance = cls(ini, resolved_file_path, logger)
+        instance.config = config
+        return instance
 
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config

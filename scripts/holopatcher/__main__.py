@@ -32,7 +32,7 @@ from pykotor.tools.misc import striprtf, universal_simplify_exception
 from pykotor.tools.path import CaseAwarePath, find_kotor_paths_from_default
 from pykotor.tslpatcher.config import ModInstaller, PatcherNamespace
 from pykotor.tslpatcher.logger import PatchLogger
-from pykotor.tslpatcher.reader import NamespaceReader
+from pykotor.tslpatcher.reader import ConfigReader, NamespaceReader
 
 if TYPE_CHECKING:
     from io import TextIOWrapper
@@ -461,7 +461,9 @@ class App(tk.Tk):
         try:
             namespace_option: PatcherNamespace = next(x for x in self.namespaces if x.name == self.namespaces_combobox.get())
             changes_ini_path = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.changes_filepath())
-            game_number: int | None = self.extract_lookup_game_number(changes_ini_path)
+            reader = ConfigReader.from_filepath(changes_ini_path)
+            reader.load_settings()
+            game_number: int | None = reader.config.game_number
             if game_number:
                 self._handle_gamepaths_with_mod(game_number)
             info_rtf = CaseAwarePath(self.mod_path, "tslpatchdata", namespace_option.rtf_filepath())
@@ -476,18 +478,6 @@ class App(tk.Tk):
                 error_name,
                 f"An unexpected error occurred while loading the namespace option.{os.linesep*2}{msg}",
             )
-
-    def extract_lookup_game_number(self, changes_path: Path) -> int | None:
-        """Extracts the LookupGameNumber from the INI, for simple use with handling the gamepaths combobox."""
-        if not changes_path.exists():
-            return None
-        pattern = r"LookupGameNumber=(\d+)"
-        with changes_path.open("r", encoding="utf-8") as file:
-            for line in file:
-                match = re.search(pattern, line, re.IGNORECASE)
-                if match:
-                    return int(match[1])
-        return None
 
     def check_access(self, directory: Path, recurse=False) -> bool:
         """Check access to a directory
