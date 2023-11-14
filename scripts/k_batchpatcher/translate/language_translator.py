@@ -137,6 +137,7 @@ def get_language_code(lang: Language) -> str:
         Language.TURKISH: "tr",
         Language.HUNGARIAN: "hu",
         Language.CZECH: "cs",
+        Language.GREEK: "el",
         Language.SLOVAK: "sk",
         Language.CROATIAN: "hr",
         Language.SERBIAN_LATIN: "sr",  # sr-Latn

@@ -30,6 +30,7 @@ from pykotor.resource.formats.gff import (
     write_gff,
 )
 from pykotor.resource.formats.tlk import TLK, read_tlk, write_tlk
+from pykotor.resource.formats.tpc.txi_data import write_bitmap_font
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from scripts.k_batchpatcher.translate.language_translator import (
@@ -320,15 +321,22 @@ def run_patches(path: Path):
     if path.is_file():
         handle_capsule_and_patch(path)
 
+def create_font_pack(lang: Language):
+    print(f"Creating font pack for '{lang.name}'...")
+    write_bitmap_font(Path.cwd() / f"font_pack_{lang.name}.tga", parser_args.font_path, (parser_args.resolution, parser_args.resolution), lang)
+
 
 parser = argparse.ArgumentParser(description="Finds differences between two KOTOR installations")
 parser.add_argument("--path", type=str, help="Path to the first K1/TSL install, file, or directory to patch.")
 parser.add_argument("--output-log", type=str, help="Filepath of the desired output logfile")
 parser.add_argument("--logging", type=bool, help="Whether to log the results to a file or not (default is enabled)")
-parser.add_argument("--set-unskippable", type=str, help="Makes all dialog unskippable.")
-parser.add_argument("--translate", type=str, help="Should we ai translate the TLK and all GFF locstrings?")
+parser.add_argument("--set-unskippable", type=str, help="Makes all dialog unskippable. (y/N)")
+parser.add_argument("--translate", type=str, help="Should we ai translate the TLK and all GFF locstrings? (y/N)")
 parser.add_argument("--to-lang", type=str, help="The language to translate the files to")
 parser.add_argument("--from-lang", type=str, help="The language the files are written in (defaults to auto if available)")
+parser.add_argument("--create-fonts", type=str, help="Create font packs for the selected language(s) (y/N).")
+parser.add_argument("--font-path", type=str, help="Path to the font file to use for the font pack creation (must be a file that ends in .ttk)")
+parser.add_argument("--resolution", type=int, help="A single number representing the resolution Y x Y. Must be divisible by 256. The single number entered will be used for both the height and width, as it must be a square.")
 parser.add_argument(
     "--use-profiler",
     type=bool,
@@ -403,6 +411,45 @@ if parser_args.translate:
             continue
         break
     while True:
+        parser_args.create_fonts = parser_args.create_fonts or input(
+            "Would you like to create font packs for your language(s)? (y/N): ",
+        )
+        if parser_args.create_fonts.lower() in ["y", "yes"]:  # type: ignore[attr-defined]
+            parser_args.create_fonts = True
+        elif parser_args.create_fonts.lower() in ["n", "no"]:  # type: ignore[attr-defined]
+            parser_args.create_fonts = False
+        if not isinstance(parser_args.create_fonts, bool):
+            print("Invalid input, please enter yes or no")
+            parser_args.create_fonts = None
+            parser.print_help()
+            continue
+        break
+    if parser_args.create_fonts:
+        while True:
+            parser_args.font_path = Path(
+                parser_args.font_path
+                or input("Path to your TTF font file: "),
+            ).resolve()
+            if parser_args.font_path.exists() and parser_args.font_path.suffix.lower() == ".ttf":
+                break
+            print("Invalid font path:", parser_args.font_path)
+            parser.print_help()
+            parser_args.font_path = None
+        while True:
+            parser_args.resolution = parser_args.resolution or input("Choose the desired resolution (single number - must be a square, and probably a multiple of 256): ").upper()
+            try:
+                val = int(parser_args.resolution)
+                if val % 256 != 0:
+                    msg = "not an int of required value"
+                    raise ValueError(msg)
+                parser_args.resolution = val
+            except Exception:
+                msg = f"{parser_args.resolution.upper()} is not a resolution. Must be an int cleanly divisible by 256 (single number)."  # type: ignore[union-attr, reportGeneralTypeIssues]
+                print(msg)
+                parser_args.resolution = None
+                continue
+            break
+    while True:
         print(*TranslationOption.__members__)
         translation_option = input("Choose a preferred translator library: ")
         try:
@@ -431,11 +478,15 @@ try:
         for lang in Language.__members__:
             print(f"Translating to {lang}...")
             enum_member_lang = Language[lang]
+            if parser_args.create_fonts:
+                create_font_pack(enum_member_lang)
             parser_args.to_lang = enum_member_lang
             pytranslator = Translator(parser_args.to_lang)
             pytranslator.translation_option = translation_option  # type: ignore[assignment]
             comparison = run_patches(parser_args.path)
     else:
+        if parser_args.create_fonts:
+            create_font_pack(parser_args.to_lang)
         comparison: bool | None = run_patches(parser_args.path)
 
     if profiler is not None:

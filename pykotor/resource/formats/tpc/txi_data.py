@@ -2,10 +2,18 @@
 # From DarthParametric and Drazgar in the DeadlyStream Discord.
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING
 
+with contextlib.suppress(ImportError):
+    from PIL import Image, ImageDraw, ImageFont  # HACK: fix later
+
+from pykotor.helpers.path import Path
+
 if TYPE_CHECKING:
-    from pykotor.common.geometry import Vector2
+    import os
+
+    from pykotor.common.language import Language
 
 
 class TXIBaseInformation:
@@ -73,3 +81,115 @@ class TXIFontInformation(TXIBaseInformation):
         # self.dbmapping:  # unused in KOTOR
         self.upper_left_coords: list[tuple[float, float, int]]
         self.lower_right_coords: list[tuple[float, float, int]]
+
+def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, resolution: tuple[int, int], lang: Language) -> None:
+    """Generates a bitmap font from a TTF font file."""
+    font_path, target_path = (Path(p).resolve() for p in (font_path, target))
+
+    txi_font_info = TXIFontInformation()
+
+    # idk
+    txi_font_info.spacingR = 0.0
+
+    # Set the texture resolution in proportion
+    txi_font_info.texturewidth = resolution[0] / max(resolution)
+    txi_font_info.fontheight = resolution[1] / max(resolution)
+
+    # Calculate grid cell size for a 16x16 grid
+    characters_per_row = 16
+    grid_cell_size = min(resolution[0] // characters_per_row, resolution[1] // characters_per_row)
+
+    # Assuming a square grid cell, set the font size to fit within the cell
+    font_size = grid_cell_size - 4  # Subtracting a bit for padding
+    pil_font = ImageFont.truetype(str(font_path), font_size)
+
+    # Create charset image
+    charset_image = Image.new("RGBA", resolution, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(charset_image)
+
+    character_widths = []
+    txi_font_info.upper_left_coords = []
+    txi_font_info.lower_right_coords = []
+
+    ascent, descent = pil_font.getmetrics()
+    max_char_height = ascent + descent
+    x, y = 0, 0
+    for i in range(256):  # Standard ASCII set
+        char = bytes([i]).decode(lang.get_encoding(), errors="replace")
+        bbox = draw.textbbox((0, 0), char, font=pil_font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+
+        text_x = x + (grid_cell_size - text_width) // 2  # Center horizontally
+        text_y = y + (grid_cell_size - (ascent + descent)) // 2  # Adjust vertical position upwards
+
+        try:  # libraqm
+            draw.text((text_x, text_y), char, language=lang.get_bcp47_code(), font=pil_font, fill=(255, 255, 255, 255))
+        except Exception as e:
+            print(f"Failed to draw text with preferred arguments: {e!r}. Using fallback..")
+            draw.text((text_x, text_y), char, font=pil_font, fill=(255, 255, 255, 255))
+
+        # Calculate normalized coordinates
+        norm_x1 = text_x / resolution[0]
+        norm_y1 = text_y / resolution[1]
+        norm_x2 = (text_x + text_width) / resolution[0]
+        norm_y2 = (text_y + text_height) / resolution[1]
+
+        # Determine grid position
+        grid_x = i % 16
+        grid_y = i // 16
+        x = grid_x * grid_cell_size
+        y = grid_y * grid_cell_size
+
+        # Calculate normalized coordinates for upper left
+        norm_x1 = grid_x / 16
+        norm_y1 = grid_y / 16
+
+        # Calculate normalized coordinates for lower right
+        norm_x2 = (grid_x + 1) / 16
+        norm_y2 = (grid_y + 1) / 16
+
+        # Append to lists
+        txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
+        txi_font_info.lower_right_coords.append((norm_x2, 1 - norm_y2, 0))
+        character_widths.append(text_width)
+
+    if character_widths:
+        average_char_width = sum(character_widths) / len(character_widths)
+        txi_font_info.fontwidth = average_char_width / grid_cell_size
+        caret_proportion = 0.1  # Adjust this value as needed
+        txi_font_info.caretindent = (average_char_width * caret_proportion) / grid_cell_size
+
+    txi_font_info.baselineheight = ascent + descent
+
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    charset_image.save(target_path, format="TGA")
+
+    # Generate and save the TXI data
+    txi_data = _generate_txi_data(txi_font_info)
+    txi_target = target_path.with_suffix(".txi")
+    with txi_target.open("w") as txi_file:
+        txi_file.write(txi_data)
+
+
+def _generate_txi_data(txi_font_info: TXIFontInformation) -> str:
+    # Format the upper left coordinates
+    ul_coords_str = "\n".join([f"{x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.upper_left_coords])
+
+    # Format the lower right coordinates
+    lr_coords_str = "\n".join([f"{x:.6f} {y:.6f} {z}" for x, y, z in txi_font_info.lower_right_coords])
+    return f"""mipmap {txi_font_info.mipmap}
+filter {txi_font_info.filter}
+numchars {txi_font_info.numchars}
+fontheight {txi_font_info.fontheight}
+baselineheight {txi_font_info.baselineheight}
+texturewidth {txi_font_info.texturewidth}
+fontwidth {txi_font_info.fontwidth}
+spacingR {txi_font_info.spacingR}
+spacingB {txi_font_info.spacingB}
+caretindent {txi_font_info.caretindent}
+isdoublebyte {txi_font_info.isdoublebyte}
+upperleftcoords {txi_font_info.upperleftcoords}
+{ul_coords_str}
+lowerrightcoords {txi_font_info.lowerrightcoords}
+{lr_coords_str}"""
