@@ -148,10 +148,14 @@ def diff_data(
         try:
             twoda1 = twoda.read_2da(data1)
         except Exception:  # noqa: BLE001
+            if file1_rel.parent.name == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+                return True
             return log_output(f"Error loading 2DA {file1_rel.parent / where}!")  # type: ignore[func-returns-value]
         try:
             twoda2 = twoda.read_2da(data2)
         except Exception:  # noqa: BLE001
+            if file1_rel.parent.name == "rims" and (file1_rel.name.lower() == "global.rim" or file1_rel.name == "miniglobal.rim"):
+                return True
             return log_output(f"Error loading 2DA {file2_rel.parent / where}!")  # type: ignore[func-returns-value]
         if twoda1 and not twoda2:
             message = f"2DA resource missing in memory:\t'{file1_rel.parent / where}'"
