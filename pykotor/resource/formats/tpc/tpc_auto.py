@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
+import contextlib
 
-from PIL import Image, ImageDraw, ImageFont
+with contextlib.suppress(ImportError):
+    from PIL import Image, ImageDraw, ImageFont  # HACK: fix later
 
-from pykotor.common.geometry import Vector2
-from pykotor.common.language import Language
+from typing import TYPE_CHECKING
+
 from pykotor.common.stream import BinaryReader
 from pykotor.helpers.path import Path
 from pykotor.resource.formats.tpc import (
@@ -19,6 +20,11 @@ from pykotor.resource.formats.tpc import (
 from pykotor.resource.formats.tpc.txi_data import TXIFontInformation
 from pykotor.resource.type import SOURCE_TYPES, TARGET_TYPES, ResourceType
 from pykotor.tools.path import CaseAwarePath
+
+if TYPE_CHECKING:
+    import os
+
+    from pykotor.common.language import Language
 
 
 def detect_tpc(
