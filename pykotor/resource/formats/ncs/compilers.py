@@ -87,7 +87,7 @@ class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnssc
         if not self.filehash:
             self.calculate_filehash()
         if not self.filehash:
-            msg = "Filehash not calculated"
+            msg = "NWNNSSCOMP Filehash could not be calculated"
             raise ValueError(msg)
 
         if self.filehash.upper() == "E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D":  # KTool (2005)
