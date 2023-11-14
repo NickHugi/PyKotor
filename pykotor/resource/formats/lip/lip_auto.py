@@ -121,7 +121,7 @@ def write_lip(
 
 
 def bytes_lip(
-    lip: LIP,
+    lip: LIP | SOURCE_TYPES,
     file_format: ResourceType = ResourceType.LIP,
 ) -> bytes:
     """Returns the LIP data in the specified format (LIP or LIP_XML) as a bytes object.
@@ -141,6 +141,8 @@ def bytes_lip(
     -------
         The LIP data.
     """
+    if not isinstance(lip, LIP):
+        lip = read_lip(lip)
     data = bytearray()
     write_lip(lip, data, file_format)
     return data

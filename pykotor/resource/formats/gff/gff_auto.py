@@ -128,16 +128,16 @@ def write_gff(
 
 
 def bytes_gff(
-    gff: GFF,
+    gff: GFF | SOURCE_TYPES,
     file_format: ResourceType = ResourceType.GFF,
 ) -> bytes:
     """Returns the GFF data in the specified format (GFF or GFF_XML) as a bytes object.
 
-    This is a convenience method that wraps the write_gff() method.
+    This is a convenience method that wraps the write_gff() and read_gff() methods.
 
     Args:
     ----
-        gff: The target GFF object.
+        gff: GFF: The target GFF.
         file_format: The file format.
 
     Raises:
@@ -148,6 +148,8 @@ def bytes_gff(
     -------
         The GFF data.
     """
+    if not isinstance(gff, GFF):
+        gff = read_gff(gff)
     data = bytearray()
     write_gff(gff, data, file_format)
     return data

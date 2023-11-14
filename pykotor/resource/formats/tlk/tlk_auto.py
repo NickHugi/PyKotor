@@ -139,7 +139,7 @@ def write_tlk(
 
 
 def bytes_tlk(
-    tlk: TLK,
+    tlk: TLK | SOURCE_TYPES,
     file_format: ResourceType = ResourceType.TLK,
 ) -> bytes:
     """Returns the TLK data in the specified format (TLK or TLK_XML or TLK_JSON) as a bytes object.
@@ -159,6 +159,8 @@ def bytes_tlk(
     -------
         The TLK data.
     """
+    if not isinstance(tlk, TLK):
+        tlk = read_tlk(tlk)
     data = bytearray()
     write_tlk(tlk, data, file_format)
     return data
