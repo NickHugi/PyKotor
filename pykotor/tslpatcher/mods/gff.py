@@ -220,7 +220,7 @@ class AddFieldGFF(ModifyGFF):
 
     def apply(
         self,
-        root_struct: GFFStruct,
+        root_struct,
         memory: PatcherMemory,
         logger: PatchLogger,
     ) -> None:
@@ -338,7 +338,7 @@ class ModifyFieldGFF(ModifyGFF):
     ) -> None:
         label = self.path.name
         navigated_container: GFFList | GFFStruct | None = self._navigate_containers(root_struct, self.path.parent)
-        parent_struct_container: GFFStruct = navigated_container  # type: ignore[assignment]  checked below
+        parent_struct_container: GFFStruct = navigated_container  # type: ignore[assignment]
         if not isinstance(navigated_container, GFFStruct):
             reason: str = "does not exist!" if navigated_container is None else "is not an instance of a GFFStruct."
             logger.add_error(f"Unable to modify Field '{label}'. Parent field at '{self.path}' {reason}")
