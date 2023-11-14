@@ -28,7 +28,7 @@ class TestTGA(unittest.TestCase):
         #self.output_path.unlink()
         pass
     def test_bitmap_font(self):
-        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (512,512), Language.ENGLISH)
+        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (2048,2048), Language.RUSSIAN)
 
 
 if __name__ == "__main__":
