@@ -1,14 +1,18 @@
 from __future__ import annotations
-import os
 
 import subprocess
+from typing import TYPE_CHECKING
 
-from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader
 from pykotor.helpers.misc import generate_filehash_sha256
 from pykotor.helpers.path import Path
 from pykotor.resource.formats.ncs.ncs_auto import compile_nss, write_ncs
 from pykotor.resource.formats.ncs.ncs_data import NCSCompiler
+
+if TYPE_CHECKING:
+    import os
+
+    from pykotor.common.misc import Game
 
 
 class InbuiltNCSCompiler(NCSCompiler):
