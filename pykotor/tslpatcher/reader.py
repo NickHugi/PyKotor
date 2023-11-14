@@ -934,80 +934,73 @@ class ConfigReader:
         - Constructs the appropriate modification object
         - Returns the modification object or None.
         """
+        exclusive_column: str | None
+        modification: Modify2DA | None = None
         lowercase_key = key.lower()
-        cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
-        if lowercase_key.startswith("addcolumn"):
-            return self.add_2da_column(modifiers, identifier)
-        if lowercase_key.startswith("addrow"):
-            return AddRow2DA(
-                identifier,
-                modifiers.pop("ExclusiveColumn", None),
-                self.row_label_2da(identifier, modifiers),
-                cells,
-                store_2da,
-                store_tlk,
-            )
 
-        target = self.target_2da(identifier, modifiers)
-        if target is None:
-            return None
         if lowercase_key.startswith("changerow"):
-            return ChangeRow2DA(
+            target = self.target_2da(identifier, modifiers)
+            if target is None:
+                return None
+            cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
+            modification = ChangeRow2DA(identifier, target, cells, store_2da, store_tlk)
+        elif lowercase_key.startswith("addrow"):
+            exclusive_column = modifiers.pop("ExclusiveColumn", None)
+            row_label = self.row_label_2da(identifier, modifiers)
+            cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
+            modification = AddRow2DA(
                 identifier,
-                target,
+                exclusive_column,
+                row_label,
                 cells,
                 store_2da,
                 store_tlk,
             )
-        if lowercase_key.startswith("copyrow"):
-            return CopyRow2DA(
+        elif lowercase_key.startswith("copyrow"):
+            target = self.target_2da(identifier, modifiers)
+            if not target:
+                return None
+            exclusive_column = modifiers.pop("ExclusiveColumn", None)
+            row_label = self.row_label_2da(identifier, modifiers)
+            cells, store_2da, store_tlk = self.cells_2da(identifier, modifiers)
+            modification = CopyRow2DA(
                 identifier,
                 target,
-                modifiers.pop("ExclusiveColumn", None),
-                self.row_label_2da(identifier, modifiers),
+                exclusive_column,
+                row_label,
                 cells,
                 store_2da,
                 store_tlk,
             )
-        msg = f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']"
-        raise KeyError(msg)
-
-    def add_2da_column(self, modifiers: CaseInsensitiveDict[str], identifier: str):
-        """Adds a column to a 2DA table.
-
-        Args:
-        ----
-            modifiers: CaseInsensitiveDict[str]: Modifiers for the column
-            identifier: str: Identifier for the 2DA table
-        Returns:
-            AddColumn2DA: Object to add the column to the 2DA table
-        Processing Logic:
-        1. Gets the required 'ColumnLabel' and 'DefaultValue' modifiers
-        2. Checks for missing required modifiers and raises error
-        3. Gets index and label inserts for the new column from column_inserts_2da
-        4. Returns AddColumn2DA object to add the column.
-        """
-        def get_required_modifier(key):
-            value = modifiers.pop(key, None)
-            if value is None:
-                msg = f"Missing '{key}' in [{identifier}]"
+        elif lowercase_key.startswith("addcolumn"):
+            header = modifiers.pop("ColumnLabel", None)
+            if header is None:
+                msg = f"Missing 'ColumnLabel' in [{identifier}]"
                 raise KeyError(msg)
-            return value
-        header = get_required_modifier("ColumnLabel")
-        default = get_required_modifier("DefaultValue")
-        default = "" if default == "****" else default
-        index_insert, label_insert, store_2da = self.column_inserts_2da(
-            identifier,
-            modifiers,
-        )
-        return AddColumn2DA(
-            identifier,
-            header,
-            default,
-            index_insert,
-            label_insert,
-            store_2da,
-        )
+            default = modifiers.pop("DefaultValue", None)
+            if default is None:
+                msg = f"Missing 'DefaultValue' in [{identifier}]"
+                raise KeyError(msg)
+            default = default if default != "****" else ""
+            index_insert, label_insert, store_2da = self.column_inserts_2da(  # type: ignore[assignment]
+                identifier,
+                modifiers,
+            )
+            modification = AddColumn2DA(
+                identifier,
+                header,
+                default,
+                index_insert,
+                label_insert,
+                store_2da,  # type: ignore[arg-type]
+            )
+        else:
+            msg = (
+                f"Could not parse key '{key}={identifier}', expecting one of ['ChangeRow=', 'AddColumn=', 'AddRow=', 'CopyRow=']"
+            )
+            raise KeyError(msg)
+
+        return modification
 
     def target_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> Target | None:
         """Gets or creates a 2D target from modifiers.
