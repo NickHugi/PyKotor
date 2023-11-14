@@ -16,10 +16,11 @@ from pykotor.common.language import Language
 from pykotor.resource.formats.tpc.tpc_auto import write_bitmap_font
 from pykotor.helpers.path import Path
 
-FONT_PATH = "tests/files/roboto/Roboto-Black.ttf"
+FONT_PATH = Path("tests/files/roboto/Roboto-Black.ttf")
 
-unittest.skip("unfinished")
-class TestTGA(unittest.TestCase):
+from PIL import Image
+
+class TestWriteBitmapFont(unittest.TestCase):
     def setUp(self):
         #self.output_path = Path(TemporaryDirectory().name)
         self.output_path = Path("./test_bitmap_font_output")
@@ -28,8 +29,57 @@ class TestTGA(unittest.TestCase):
         #self.output_path.unlink()
         pass
     def test_bitmap_font(self):
-        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (2048,2048), Language.RUSSIAN)
+        write_bitmap_font(self.output_path / "test_font.tga", FONT_PATH, (512,512), Language.RUSSIAN)
+    def test_valid_inputs(self):
+        # Test with valid inputs
+        target_path = Path("output/font.tga").resolve()
+        resolution = (2048, 2048)
+        lang = Language.ENGLISH
+        
+        write_bitmap_font(target_path, FONT_PATH, resolution, lang)
+        
+        # Verify output files were generated
+        self.assertTrue(target_path.exists())
+        self.assertTrue(target_path.with_suffix(".txi").exists())
+        
+        # Verify image file
+        img = Image.open(target_path)
+        self.assertEqual(img.size, resolution)
+        self.assertEqual(img.mode, "RGBA")
+        
+    def test_invalid_font_path(self):
+        # Test with invalid font path
+        font_path = "invalid.ttf"
+        target_path = "output/font.tga"
+        resolution = (256, 256)
+        lang = Language.ENGLISH
+        
+        with self.assertRaises(OSError):
+            write_bitmap_font(target_path, font_path, resolution, lang)
+            
+    def test_invalid_language(self):
+        # Test with invalid language
+        target_path = "output/font.tga"
+        resolution = (256, 256)
+        lang = "invalid"
+        
+        with self.assertRaises((AttributeError, ValueError)):
+            write_bitmap_font(target_path, FONT_PATH, resolution, lang)
+            
+    def test_invalid_resolution(self):
+        # Test with invalid resolution
+        font_path = "tests/assets/font.ttf"
+        target_path = "output/font.tga"
+        resolution = (0, 0)
+        lang = Language.ENGLISH
+        
+        with self.assertRaises(ZeroDivisionError):
+            write_bitmap_font(target_path, font_path, resolution, lang)
+            
+# Edge cases:
+# - Resolution is very small or very large
+# - Font file contains lots of glyphs
+# - Language uses complex script 
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
