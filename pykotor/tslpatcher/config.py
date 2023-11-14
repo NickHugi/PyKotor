@@ -11,7 +11,12 @@ from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.extract.capsule import Capsule
 from pykotor.extract.file import ResourceIdentifier
 from pykotor.extract.installation import Installation
-from pykotor.helpers.path import PurePath
+from pykotor.helpers.path import Path, PurePath
+from pykotor.resource.formats.gff import GFFContent, bytes_gff, read_gff
+from pykotor.resource.formats.lip import bytes_lip, read_lip
+from pykotor.resource.formats.ssf import bytes_ssf, read_ssf
+from pykotor.resource.formats.tlk import bytes_tlk, read_tlk
+from pykotor.resource.formats.twoda import bytes_2da, read_2da
 from pykotor.tools.misc import is_capsule_file
 from pykotor.tools.path import CaseAwarePath
 from pykotor.tslpatcher.logger import PatchLogger
@@ -283,6 +288,37 @@ class ModInstaller:
             exists = output_container_path.joinpath(patch.saveas).exists()
         return (exists, capsule)
 
+    def load_resource_file(self, resource_path: Path) -> bytes:
+        """Loads a resource file and returns its contents as bytes.
+        BinaryReader.load_file works in all normal scenarios, the 
+        format checks are provided for convenience to allow the user to load XML/JSON/CSV type data as well as defaults.
+
+        Args:
+        ----
+            resource_path: Path to the resource file to load.
+
+        Returns:
+        -------
+            bytes: The contents of the resource file as bytes.
+        Processing Logic:
+            - Get the file extension of the resource_path
+            - Check if the extension matches a known GFF type and return bytes of the GFF
+            - Check if the extension matches other known types and return bytes of that type
+            - Otherwise return bytes using the default loader.
+        """
+        ext: str = resource_path.suffix.strip() and resource_path.suffix.lower()[1:]
+        if ext in GFFContent.get_valid_types():
+            return bytes_gff(resource_path)
+        if ext == "ssf":
+            return bytes_ssf(resource_path)
+        if ext == "tlk":
+            return bytes_tlk(resource_path)
+        if ext == "2da":
+            return bytes_2da(resource_path)
+        if ext == "lip":
+            return bytes_lip(resource_path)
+        return BinaryReader.load_file(resource_path)
+
     def lookup_resource(
         self,
         patch: PatcherModifications,
@@ -312,9 +348,9 @@ class ModInstaller:
         """
         try:
             if patch.replace_file or not exists_at_output_location:
-                return BinaryReader.load_file(self.mod_path / patch.sourcefile)
+                return self.load_resource_file(self.mod_path / patch.sourcefile)
             if capsule is None:
-                return BinaryReader.load_file(output_container_path / patch.saveas)
+                return self.load_resource_file(output_container_path / patch.saveas)
             return capsule.resource(*ResourceIdentifier.from_path(patch.saveas))
         except OSError as e:
             self.log.add_error(f"Could not load source file to {patch.action.lower().strip()}: {e!r}")
@@ -357,12 +393,12 @@ class ModInstaller:
                     renamed_file_path = renamed_file_path.parent / next_filename
                     i += 1
                 try:
-                    shutil.move(override_resource_path, renamed_file_path)
+                    shutil.move(str(override_resource_path), renamed_file_path)
                 except Exception as e:  # noqa: BLE001
                     # Handle exceptions such as permission errors or file in use.
                     self.log.add_error(f"Could not rename '{patch.saveas}' to '{renamed_file_path.name}' in the Override folder: {e!r}")
             elif override_type == OverrideType.WARN:
-                self.log.add_warning(f"A resource located at '{override_resource_path}' is shadowing this mod's changes in {patch.destination}!")
+                self.log.add_warning(f"A resource located at '{override_resource_path!s}' is shadowing this mod's changes in {patch.destination}!")
 
     def should_patch(
         self,
