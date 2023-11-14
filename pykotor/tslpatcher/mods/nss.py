@@ -87,8 +87,8 @@ class ModificationsNSS(PatcherModifications):
                 source_script = self.nwnnsscomp_path.parent / self.sourcefile
                 tempcompiled_filepath = tempdir_path / "temp_script.ncs"
 
-                nwnnsscompiler = ExternalNCSCompiler(str(self.nwnnsscomp_path))
-                nwnnsscompiler.compile_script(str(source_script), str(tempcompiled_filepath), game)
+                nwnnsscompiler = ExternalNCSCompiler(self.nwnnsscomp_path)
+                nwnnsscompiler.compile_script(source_script, tempcompiled_filepath, game)
                 compiled_bytes: bytes = BinaryReader.load_file(tempcompiled_filepath)
                 return compiled_bytes
 
