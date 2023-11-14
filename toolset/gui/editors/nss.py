@@ -33,7 +33,7 @@ from toolset.utils.script import compileScript, decompileScript
 if TYPE_CHECKING:
     import os
 
-    from pykotor.common.script import ScriptFunction
+    from pykotor.common.script import ScriptConstant, ScriptFunction
     from toolset.data.installation import HTInstallation
 
 
@@ -123,12 +123,8 @@ class NSSEditor(Editor):
         """
         self._installation = installation
 
-        constants = TSL_CONSTANTS if self._installation.tsl else KOTOR_CONSTANTS
-        functions = TSL_FUNCTIONS if self._installation.tsl else KOTOR_FUNCTIONS
-
-        # sort them alphabetically
-        constants.sort(key=attrgetter("name"))
-        functions.sort(key=attrgetter("name"))
+        constants: list[ScriptConstant] = TSL_CONSTANTS if self._installation.tsl else KOTOR_CONSTANTS
+        functions: list[ScriptFunction] = TSL_FUNCTIONS if self._installation.tsl else KOTOR_FUNCTIONS
 
         for function in functions:
             item = QListWidgetItem(function.name)
