@@ -437,6 +437,12 @@ class ModInstaller:
 
         memory = PatcherMemory()
 
+        # Move nwscript.nss to Override if there are any nss patches to do
+        if len(config.patches_nss) > 0:
+            file_install = InstallFile("nwscript.nss", replace_existing=True)
+            if file_install not in config.install_list:
+                config.install_list.append(file_install)
+
         patches_list: list[PatcherModifications] = [
             *config.install_list,
             *([config.patches_tlk] if config.patches_tlk.modifiers else []),
