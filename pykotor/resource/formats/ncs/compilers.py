@@ -43,6 +43,7 @@ class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnssc
         if self.filehash.upper() == "E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D":  # KTool (2005)
             subprocess.call(
                 args=[
+                    "-c",
                     str(source_filepath),
                     "--outputdir",
                     str(output_filepath.parent),
@@ -73,6 +74,56 @@ class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnssc
                     str(source_filepath),
                     "-o",
                     str(output_filepath),
+                ],
+                executable=str(self.nwnnsscomp_path),
+                cwd=str(self.nwnnsscomp_path.parent),
+                timeout=15,
+            )
+
+    def decompile_script(self, source_file: os.PathLike | str, output_file: os.PathLike | str, game: Game) -> None:
+        source_filepath = source_file if isinstance(source_file, Path) else Path(source_file)
+        output_filepath = output_file if isinstance(output_file, Path) else Path(output_file)
+
+        if not self.filehash:
+            self.calculate_filehash()
+        if not self.filehash:
+            msg = "Filehash not calculated"
+            raise ValueError(msg)
+
+        if self.filehash.upper() == "E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D":  # KTool (2005)
+            # TODO: Always incorrect args?
+            subprocess.call(
+                args=[
+                    "-d",
+                    "--outputdir",
+                    f"{output_filepath.parent!s}",
+                    "-o",
+                    output_filepath.name,
+                    "-g",
+                    str(game.value),
+                    f"{source_filepath!s}",
+                ],
+                executable=str(self.nwnnsscomp_path),
+                timeout=15,
+            )
+        elif self.filehash.upper() == "EC3E657C18A32AD13D28DA0AA3A77911B32D9661EA83CF0D9BCE02E1C4D8499D":  # v1 (2004)
+            subprocess.call(
+                args=[
+                    "-d",
+                    str(source_filepath),
+                    f"{output_filepath!s}",
+                ],
+                executable=str(self.nwnnsscomp_path),
+                timeout=15,
+            )
+        elif self.filehash.upper() == "539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820":  # TSLPatcher (2009)
+            # #TODO: Doesn't seem to accept the -d flag for decompile? Always says 'compiling' regardless.
+            subprocess.call(
+                args=[
+                    "-d",
+                    str(source_filepath),
+                    "-o",
+                    f"{output_filepath!s}",
                 ],
                 executable=str(self.nwnnsscomp_path),
                 cwd=str(self.nwnnsscomp_path.parent),

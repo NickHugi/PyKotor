@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 try:
-    from distutils.version import StrictVersion
+    from packaging.version import Version as StrictVersion
 except ImportError:
     try:
         from setuptools.version import StrictVersion
     except ImportError:
         try:
-            from packaging.version import Version as StrictVersion
+            from distutils.version import StrictVersion
         except ImportError as e3:
             msg = "Could not import StrictVersion from any known library"
             raise ImportError(msg) from e3
