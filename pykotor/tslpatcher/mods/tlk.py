@@ -43,6 +43,9 @@ class ModificationsTLK(PatcherModifications):
         if "!ReplaceFile" in file_section_dict:
             msg = "!ReplaceFile is not supported in [TLKList]"
             raise ValueError(msg)
+        if "!OverrideType" in file_section_dict:
+            msg = "!OverrideType is not supported in [TLKList]"
+            raise ValueError(msg)
 
         self.sourcefile_f = file_section_dict.pop("!SourceFileF", "appendf.tlk")  # Polish only?
         super().pop_tslpatcher_vars(file_section_dict, default_destination)

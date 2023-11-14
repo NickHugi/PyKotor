@@ -199,13 +199,21 @@ class ConfigReader:
                     file_install.pop_tslpatcher_vars(file_section_dict, foldername)
 
     def load_tlk_list(self) -> None:
-        """Load TLK list patches from ini file.
+        """Loads TLK patches from the ini file.
+
+        Args:
+        ----
+            self: Loads patches from the ini file attached to this object.
+
+        Returns:
+        -------
+            None: Modifies the TLK patches attached to this object.
 
         Processing Logic:
-            - Get [TLKList] section from ini file
-            - Load TLK list edits into a dictionary
-            - Parse range strings and handle ignore indices
-            - Process TLK entries based on key syntax.
+        - Parses the [TLKList] section to get TLK patch entries
+        - Handles different patch syntaxes like file replacements, string references etc
+        - Builds ModifyTLK objects for each patch and adds to the patch list
+        - Raises errors for invalid syntax or missing files
         """
         tlk_list_section: str | None = self.get_section_name("tlklist")
         if not tlk_list_section:
@@ -340,17 +348,20 @@ class ConfigReader:
                         is_replacement=False,
                     )
                 elif replace_file or append_file:
-                    next_section_name = self.get_section_name(value)
-                    if not next_section_name:
-                        syntax_error_caught = True
-                        raise ValueError(SECTION_NOT_FOUND_ERROR.format(value, key, value, tlk_list_section))  # noqa: TRY301
-
                     tlk_modifications_path: CaseAwarePath = self.mod_path / value
                     modifications_tlk_data: TLK = read_tlk(tlk_modifications_path)
                     if len(modifications_tlk_data) == 0:
                         syntax_error_caught = True
                         msg = f"'{value}' file in mod directory is empty, but is required to perform modifier '{key}={value}' in [TLKList]"
                         raise ValueError(msg)  # noqa: TRY301
+
+                    next_section_name = self.get_section_name(value)
+                    if not next_section_name:
+                        syntax_error_caught = True
+                        raise ValueError(SECTION_NOT_FOUND_ERROR.format(value, key, value, tlk_list_section))  # noqa: TRY301
+
+                    next_section_dict = CaseInsensitiveDict(self.ini[next_section_name].items())
+                    self.config.patches_tlk.pop_tslpatcher_vars(next_section_dict, default_destination)
 
                     process_tlk_entries(
                         modifications_tlk_data,
@@ -595,143 +606,6 @@ class ConfigReader:
 
     #################
 
-    @staticmethod
-    def normalize_tslpatcher_float(value_str: str) -> str:
-        return value_str.replace(",", ".")
-    @staticmethod
-    def normalize_tslpatcher_crlf(value_str: str) -> str:
-        return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
-
-    @staticmethod
-    def resolve_tslpatcher_ssf_sound(name: str):
-        configstr_to_ssfsound = CaseInsensitiveDict(
-            {
-                "Battlecry 1": SSFSound.BATTLE_CRY_1,
-                "Battlecry 2": SSFSound.BATTLE_CRY_2,
-                "Battlecry 3": SSFSound.BATTLE_CRY_3,
-                "Battlecry 4": SSFSound.BATTLE_CRY_4,
-                "Battlecry 5": SSFSound.BATTLE_CRY_5,
-                "Battlecry 6": SSFSound.BATTLE_CRY_6,
-                "Selected 1": SSFSound.SELECT_1,
-                "Selected 2": SSFSound.SELECT_2,
-                "Selected 3": SSFSound.SELECT_3,
-                "Attack 1": SSFSound.ATTACK_GRUNT_1,
-                "Attack 2": SSFSound.ATTACK_GRUNT_2,
-                "Attack 3": SSFSound.ATTACK_GRUNT_3,
-                "Pain 1": SSFSound.PAIN_GRUNT_1,
-                "Pain 2": SSFSound.PAIN_GRUNT_2,
-                "Low health": SSFSound.LOW_HEALTH,
-                "Death": SSFSound.DEAD,
-                "Critical hit": SSFSound.CRITICAL_HIT,
-                "Target immune": SSFSound.TARGET_IMMUNE,
-                "Place mine": SSFSound.LAY_MINE,
-                "Disarm mine": SSFSound.DISARM_MINE,
-                "Stealth on": SSFSound.BEGIN_STEALTH,
-                "Search": SSFSound.BEGIN_SEARCH,
-                "Pick lock start": SSFSound.BEGIN_UNLOCK,
-                "Pick lock fail": SSFSound.UNLOCK_FAILED,
-                "Pick lock done": SSFSound.UNLOCK_SUCCESS,
-                "Leave party": SSFSound.SEPARATED_FROM_PARTY,
-                "Rejoin party": SSFSound.REJOINED_PARTY,
-                "Poisoned": SSFSound.POISONED,
-            }.items(),
-        )
-        return configstr_to_ssfsound[name]
-
-    @staticmethod
-    def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:
-        fieldname_to_fieldtype = CaseInsensitiveDict(
-            {
-                "Byte": GFFFieldType.UInt8,
-                "Char": GFFFieldType.Int8,
-                "Word": GFFFieldType.UInt16,
-                "Short": GFFFieldType.Int16,
-                "DWORD": GFFFieldType.UInt32,
-                "Int": GFFFieldType.Int32,
-                "Int64": GFFFieldType.Int64,
-                "Float": GFFFieldType.Single,
-                "Double": GFFFieldType.Double,
-                "ExoString": GFFFieldType.String,
-                "ResRef": GFFFieldType.ResRef,
-                "ExoLocString": GFFFieldType.LocalizedString,
-                "Position": GFFFieldType.Vector3,
-                "Orientation": GFFFieldType.Vector4,
-                "Struct": GFFFieldType.Struct,
-                "List": GFFFieldType.List,
-            }.items(),
-        )
-        return fieldname_to_fieldtype[field_type_num_str]
-
-    @staticmethod
-    def field_value_from_memory(raw_value: str) -> FieldValue | None:
-        """Extract field value from memory reference string.
-
-        Args:
-        ----
-            raw_value: String value to parse
-        Returns:
-            FieldValue|None: FieldValue object or None
-        Processing Logic:
-        - Lowercase the raw value string
-        - Check if it starts with "strref" and extract token ID
-        - Check if it starts with "2damemory" and extract token ID
-        - Return FieldValue memory object with token ID, or None if no match
-        """
-        lower_str_value = raw_value.lower()
-        if lower_str_value.startswith("strref"):
-            token_id = int(raw_value[6:])
-            return FieldValueTLKMemory(token_id)
-        if lower_str_value.startswith("2damemory"):
-            token_id = int(raw_value[9:])
-            return FieldValue2DAMemory(token_id)
-        return None
-
-    @staticmethod
-    def field_value_from_unknown(string_value: str) -> FieldValue:
-        field_value_memory: FieldValue | None = ConfigReader.field_value_from_memory(string_value)
-        if field_value_memory is not None:  # strref/2damemory
-            return field_value_memory
-
-        value: Any
-        if is_int(string_value):  # int
-            value = int(string_value)
-        else:
-            parsed_float: str = ConfigReader.normalize_tslpatcher_float(string_value)
-            if is_float(parsed_float):
-                value = float(parsed_float)
-            elif string_value.count("|") == 2:
-                value = Vector3(*[float(x) for x in parsed_float.split("|")])
-            elif string_value.count("|") == 3:
-                value = Vector4(*[float(x) for x in parsed_float.split("|")])
-            else:  # string
-                value = ConfigReader.normalize_tslpatcher_crlf(string_value)
-
-        return FieldValueConstant(value)
-
-    @staticmethod
-    def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
-        value: Any = ConfigReader.field_value_from_memory(raw_value)
-        if value is not None:
-            return value
-
-        if field_type.return_type() == ResRef:
-            value = ResRef(raw_value)
-        elif field_type.return_type() == str:
-            value = ConfigReader.normalize_tslpatcher_crlf(raw_value)
-        elif field_type.return_type() == int:
-            value = int(raw_value)
-        elif field_type.return_type() == float:
-            value = float(ConfigReader.normalize_tslpatcher_float(raw_value))
-        elif field_type.return_type() == Vector3:
-            components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
-            value = Vector3(*components)
-        elif field_type.return_type() == Vector4:
-            components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
-            value = Vector4(*components)
-        return FieldValueConstant(value)
-
-    #################
-
     def modify_field_gff(self, identifier: str, key: str, string_value: str) -> ModifyFieldGFF:
         """Modifies a field in a GFF based on the key(path) and string value
         Args:
@@ -766,46 +640,6 @@ class ConfigReader:
 
         return ModifyFieldGFF(PureWindowsPath(key), value)
 
-    def get_addfield_value(self, ini_data: CaseInsensitiveDict, field_type: GFFFieldType, identifier: str):
-        value: FieldValue | None
-        text: str
-
-        raw_value: str | None = ini_data.pop("Value", None)
-        if raw_value is not None:
-            ret_value: FieldValue | None = self.field_value_from_type(raw_value, field_type)
-            if ret_value is None:
-                msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
-                raise ValueError(msg)
-            value = ret_value
-        elif field_type.return_type() == LocalizedString:
-            raw_stringref: str = ini_data.pop("StrRef")  # type: ignore[reportGeneralTypeIssues]
-            stringref: FieldValue | None = self.field_value_from_memory(raw_stringref)
-            if stringref is None:
-                stringref = FieldValueConstant(int(raw_stringref))
-            l_string_delta = LocalizedStringDelta(stringref)
-
-            for substring, text in ini_data.items():
-                if not substring.lower().startswith("lang"):
-                    continue
-                substring_id = int(substring[4:])
-                language, gender = l_string_delta.substring_pair(substring_id)
-                formatted_text = self.normalize_tslpatcher_crlf(text)
-                l_string_delta.set_data(language, gender, formatted_text)
-            value = FieldValueConstant(l_string_delta)
-        elif field_type.return_type() == GFFList:
-            value = FieldValueConstant(GFFList())
-        elif field_type.return_type() == GFFStruct:
-            raw_struct_id: str = ini_data.pop("TypeId", "0").strip()  # TODO: Is '0' the default value?
-            if not is_int(raw_struct_id):
-                msg = f"Invalid TypeId: expected int but got '{raw_struct_id}' in [{identifier}]"
-                raise ValueError(msg)
-
-            struct_id = int(raw_struct_id)
-            value = FieldValueConstant(GFFStruct(struct_id))
-        else:
-            value = None
-        return value
-
     def add_field_gff(
         self,
         identifier: str,
@@ -828,34 +662,26 @@ class ConfigReader:
             3. Handles nested modifiers and structs in lists
             4. Returns an AddFieldGFF or AddStructToListGFF object based on whether a label is provided.
         """
-        # required
+        # Parse required values
         raw_field_type: str = ini_data.pop("FieldType")  # type: ignore[reportGeneralTypeIssues]
         label: str = ini_data.pop("Label").strip()  # type: ignore[reportGeneralTypeIssues]
-
-        # situational/optional
-        raw_path: str = ini_data.pop("Path", "").strip()
 
         # Resolve TSLPatcher -> PyKotor GFFFieldType
         field_type: GFFFieldType = self.resolve_tslpatcher_gff_field_type(raw_field_type)
 
         # Handle current gff path
-        path: PureWindowsPath = PureWindowsPath(raw_path)
-        if not path.name and current_path and current_path.name:
+        raw_path: str = ini_data.pop("Path", "").strip()
+        path = PureWindowsPath(raw_path)
+        if not path.name and current_path and current_path.name:  # use current recursion path if section doesn't override with Path=
             path = current_path
         if field_type.return_type() == GFFStruct:
-            path /= ">>##INDEXINLIST##<<"  # see the check in mods/gff.py.
-
-        value: FieldValue | None = self.get_addfield_value(ini_data, field_type, identifier)
-        if value is None:
-            msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type.name}'"
-            raise ValueError(msg)
+            path /= ">>##INDEXINLIST##<<"
 
         modifiers: list[ModifyGFF] = []
         index_in_list_token = None
-        lower_iterated_value: str
         for key, iterated_value in ini_data.items():
             lower_key: str = key.lower()
-            lower_iterated_value = iterated_value.lower()
+            lower_iterated_value: str = iterated_value.lower()
             if lower_key.startswith("2damemory"):
                 if lower_iterated_value == "listindex":
                     index_in_list_token = int(key[9:])
@@ -867,7 +693,7 @@ class ConfigReader:
                     )
                     modifiers.insert(0, modifier)
 
-            # handle nested
+            # Handle nested addfield's and recurse
             if lower_key.startswith("addfield"):
                 next_section_name: str | None = self.get_section_name(iterated_value)
                 if not next_section_name:
@@ -880,6 +706,12 @@ class ConfigReader:
                 )
                 modifiers.append(nested_modifier)
 
+        # get addfield value based on this recursion level
+        value: FieldValue | None = self._get_addfield_value(ini_data, field_type, identifier)
+        if value is None:
+            msg = f"Could not find valid field return type in [{identifier}] matching field type '{field_type.name}'"
+            raise ValueError(msg)
+
         # Check if label unset to determine if current ini section is a struct inside a list.
         if not label and field_type.return_type() is GFFStruct:
             return AddStructToListGFF(
@@ -890,6 +722,7 @@ class ConfigReader:
                 modifiers,
             )
 
+        # Default to adding field
         return AddFieldGFF(
             identifier,
             label,
@@ -898,6 +731,187 @@ class ConfigReader:
             path,
             modifiers,
         )
+
+    def _get_addfield_value(
+        self,
+        ini_section_dict: CaseInsensitiveDict[str],
+        field_type: GFFFieldType,
+        identifier: str,
+    ):
+        """Gets the value for an addfield from an ini section dictionary.
+
+        Args:
+        ----
+            ini_section_dict: {CaseInsensitiveDict}: The section of the ini, as a dict.
+            field_type: {GFFFieldType}: The field type of this addfield section.
+            identifier: {str}: The name identifier for the section
+        Returns:
+            value: {FieldValue | None}: The parsed field value or None
+
+        Processing Logic:
+        - Parses the "Value" key to get a raw value and parses it based on field type
+        - For LocalizedString, see field_value_from_localized_string
+        - For GFFList and GFFStruct, constructs empty instances to be filled in later - see pykotor/tslpatcher/mods/gff.py
+        - Returns None if value cannot be parsed or field type not supported (config err)
+        """
+        value: FieldValue | None
+
+        raw_value: str | None = ini_section_dict.pop("Value", None)
+        if raw_value is not None:
+            ret_value: FieldValue | None = self.field_value_from_type(raw_value, field_type)
+            if ret_value is None:
+                msg = f"Could not parse fieldtype '{field_type}' in GFFList section [{identifier}]"
+                raise ValueError(msg)
+            value = ret_value
+        elif field_type.return_type() == LocalizedString:
+            value = self.field_value_from_localized_string(ini_section_dict)
+        elif field_type.return_type() == GFFList:
+            value = FieldValueConstant(GFFList())
+        elif field_type.return_type() == GFFStruct:
+            raw_struct_id: str = ini_section_dict.pop("TypeId", "0").strip()  # TODO: Double check that '0' is the default TypeId
+            if not is_int(raw_struct_id):
+                msg = f"Invalid TypeId: expected int but got '{raw_struct_id}' in [{identifier}]"
+                raise ValueError(msg)
+
+            struct_id = int(raw_struct_id)
+            value = FieldValueConstant(GFFStruct(struct_id))
+        else:
+            value = None
+        return value
+
+    @classmethod
+    def field_value_from_localized_string(cls, ini_section_dict: CaseInsensitiveDict) -> FieldValueConstant:
+        """Parses a localized string from an INI section dictionary (usually a GFF section).
+
+        Args:
+        ----
+            ini_section_dict: CaseInsensitiveDict containing localized string data
+        Returns:
+            FieldValueConstant: Parsed TSLPatcher localized string
+        Processing Logic:
+            1. Pop the "StrRef" key to get the base string reference
+            2. Lookup the string reference from memory or use it as-is if not found
+            3. Iterate the keys, filtering for language codes
+            4. Extract the language, gender and text from each key/value
+            5. Normalize the text and set it in the string delta
+            6. Return a FieldValueConstant containing the parsed string delta.
+        """
+        text: str
+        raw_stringref: str = ini_section_dict.pop("StrRef")  # type: ignore[reportGeneralTypeIssues]
+        stringref: FieldValue | None = cls.field_value_from_memory(raw_stringref)
+        if stringref is None:
+            stringref = FieldValueConstant(int(raw_stringref))
+        l_string_delta = LocalizedStringDelta(stringref)
+
+        for substring, text in ini_section_dict.items():
+            if not substring.lower().startswith("lang"):
+                continue
+            substring_id = int(substring[4:])
+            language, gender = l_string_delta.substring_pair(substring_id)
+            formatted_text = cls.normalize_tslpatcher_crlf(text)
+            l_string_delta.set_data(language, gender, formatted_text)
+        return FieldValueConstant(l_string_delta)
+
+    @staticmethod
+    def field_value_from_memory(raw_value: str) -> FieldValue | None:
+        """Extract field value from memory reference string.
+
+        Args:
+        ----
+            raw_value: String value to parse
+        Returns:
+            FieldValue | None: FieldValue object or None
+        Processing Logic:
+        - Lowercase the raw value string
+        - Check if it starts with "strref" and extract token ID
+        - Check if it starts with "2damemory" and extract token ID
+        - Return FieldValue memory object with token ID, or None if no match
+        """
+        lower_str_value = raw_value.lower()
+        if lower_str_value.startswith("strref"):
+            token_id = int(raw_value[6:])
+            return FieldValueTLKMemory(token_id)
+        if lower_str_value.startswith("2damemory"):
+            token_id = int(raw_value[9:])
+            return FieldValue2DAMemory(token_id)
+        return None
+
+    @staticmethod
+    def field_value_from_unknown(string_value: str) -> FieldValue:
+        """Extracts a field value from an unknown string representation.
+            This section determines how to parse GFF key/value pairs such as:
+                EntryList/0/RepliesList/0/TypeId=5
+            A helper method for determining how to represent the data in PyKotor.
+
+        Args:
+        ----
+            string_value: The string to parse.
+
+        Returns:
+        -------
+            FieldValue: The parsed value represented as a FieldValue object.
+        Processing Logic:
+            - Checks if the value is already cached in memory
+            - Tries to parse as int if possible
+            - Otherwise parses as float by normalizing the string
+            - Checks for Vector3 or Vector4 by counting pipe separators
+            - Falls back to returning as string if no other type matches
+            - Returns a FieldValueConstant wrapping the extracted value
+        """
+        field_value_memory: FieldValue | None = ConfigReader.field_value_from_memory(string_value)
+        if field_value_memory is not None:  # strref/2damemory
+            return field_value_memory
+
+        value: Any
+        if is_int(string_value):  # int
+            value = int(string_value)
+        else:
+            parsed_float: str = ConfigReader.normalize_tslpatcher_float(string_value)
+            if is_float(parsed_float):
+                value = float(parsed_float)
+            elif string_value.count("|") == 2:
+                value = Vector3(*[float(x) for x in parsed_float.split("|")])
+            elif string_value.count("|") == 3:
+                value = Vector4(*[float(x) for x in parsed_float.split("|")])
+            else:  # string
+                value = ConfigReader.normalize_tslpatcher_crlf(string_value)
+
+        return FieldValueConstant(value)
+
+    @staticmethod
+    def field_value_from_type(raw_value: str, field_type: GFFFieldType) -> FieldValue | None:
+        """Extracts field value from raw string based on field type
+        Args:
+            raw_value: {Raw string value from file}
+            field_type: {Field type enum}.
+
+        Returns
+        -------
+            FieldValue | None: {Field value object or None}
+        Processing Logic:
+            - Checks if value already exists in memory as a 2DAMEMORY or StrRef
+            - Otherwise, converts raw_value to appropriate type based on field_type
+            - Returns FieldValueConstant object wrapping extracted value.
+        """
+        value: Any = ConfigReader.field_value_from_memory(raw_value)
+        if value is not None:
+            return value
+
+        if field_type.return_type() == ResRef:
+            value = ResRef(raw_value)
+        elif field_type.return_type() == str:
+            value = ConfigReader.normalize_tslpatcher_crlf(raw_value)
+        elif field_type.return_type() == int:
+            value = int(raw_value)
+        elif field_type.return_type() == float:
+            value = float(ConfigReader.normalize_tslpatcher_float(raw_value))
+        elif field_type.return_type() == Vector3:
+            components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
+            value = Vector3(*components)
+        elif field_type.return_type() == Vector4:
+            components = [float(ConfigReader.normalize_tslpatcher_float(axis)) for axis in raw_value.split("|")]
+            value = Vector4(*components)
+        return FieldValueConstant(value)
 
     #################
 
@@ -1092,9 +1106,9 @@ class ConfigReader:
 
     def row_label_2da(self, identifier: str, modifiers: CaseInsensitiveDict[str]) -> str | None:
         if "RowLabel" in modifiers:
-            return modifiers.pop("RowLabel")
+            return modifiers.pop("RowLabel")  # type: ignore[reportGeneralTypeIssues]
         if "NewRowLabel" in modifiers:
-            return modifiers.pop("NewRowLabel")
+            return modifiers.pop("NewRowLabel")  # type: ignore[reportGeneralTypeIssues]
         return None
 
     def column_inserts_2da(
@@ -1147,6 +1161,89 @@ class ConfigReader:
 
         return index_insert, label_insert, store_2da
 
+    #################
+
+    @staticmethod
+    def normalize_tslpatcher_float(value_str: str) -> str:
+        return value_str.replace(",", ".")
+    @staticmethod
+    def normalize_tslpatcher_crlf(value_str: str) -> str:
+        return value_str.replace("<#LF#>", "\n").replace("<#CR#>", "\r")
+
+    @staticmethod
+    def resolve_tslpatcher_ssf_sound(name: str):
+        configstr_to_ssfsound = CaseInsensitiveDict(
+            {
+                "Battlecry 1": SSFSound.BATTLE_CRY_1,
+                "Battlecry 2": SSFSound.BATTLE_CRY_2,
+                "Battlecry 3": SSFSound.BATTLE_CRY_3,
+                "Battlecry 4": SSFSound.BATTLE_CRY_4,
+                "Battlecry 5": SSFSound.BATTLE_CRY_5,
+                "Battlecry 6": SSFSound.BATTLE_CRY_6,
+                "Selected 1": SSFSound.SELECT_1,
+                "Selected 2": SSFSound.SELECT_2,
+                "Selected 3": SSFSound.SELECT_3,
+                "Attack 1": SSFSound.ATTACK_GRUNT_1,
+                "Attack 2": SSFSound.ATTACK_GRUNT_2,
+                "Attack 3": SSFSound.ATTACK_GRUNT_3,
+                "Pain 1": SSFSound.PAIN_GRUNT_1,
+                "Pain 2": SSFSound.PAIN_GRUNT_2,
+                "Low health": SSFSound.LOW_HEALTH,
+                "Death": SSFSound.DEAD,
+                "Critical hit": SSFSound.CRITICAL_HIT,
+                "Target immune": SSFSound.TARGET_IMMUNE,
+                "Place mine": SSFSound.LAY_MINE,
+                "Disarm mine": SSFSound.DISARM_MINE,
+                "Stealth on": SSFSound.BEGIN_STEALTH,
+                "Search": SSFSound.BEGIN_SEARCH,
+                "Pick lock start": SSFSound.BEGIN_UNLOCK,
+                "Pick lock fail": SSFSound.UNLOCK_FAILED,
+                "Pick lock done": SSFSound.UNLOCK_SUCCESS,
+                "Leave party": SSFSound.SEPARATED_FROM_PARTY,
+                "Rejoin party": SSFSound.REJOINED_PARTY,
+                "Poisoned": SSFSound.POISONED,
+            }.items(),
+        )
+        return configstr_to_ssfsound[name]
+
+    @staticmethod
+    def resolve_tslpatcher_gff_field_type(field_type_num_str: str) -> GFFFieldType:
+        """Resolves a TSlpatcher GFF field type to a PyKotor GFFFieldType enum.
+        Use this function to work with the ini's FieldType= values in PyKotor.
+
+        Args:
+        ----
+            field_type_num_str: {String containing the field type number}.
+
+        Returns:
+        -------
+            GFFFieldType: {The GFFFieldType enum value corresponding to the input string}
+        Processing Logic:
+            - Defines a dictionary mapping field type number strings to GFFFieldType enum values
+            - Looks up the input string in the dictionary
+            - Returns the corresponding GFFFieldType value.
+        """
+        fieldname_to_fieldtype = CaseInsensitiveDict(
+            {
+                "Byte": GFFFieldType.UInt8,
+                "Char": GFFFieldType.Int8,
+                "Word": GFFFieldType.UInt16,
+                "Short": GFFFieldType.Int16,
+                "DWORD": GFFFieldType.UInt32,
+                "Int": GFFFieldType.Int32,
+                "Int64": GFFFieldType.Int64,
+                "Float": GFFFieldType.Single,
+                "Double": GFFFieldType.Double,
+                "ExoString": GFFFieldType.String,
+                "ResRef": GFFFieldType.ResRef,
+                "ExoLocString": GFFFieldType.LocalizedString,
+                "Position": GFFFieldType.Vector3,
+                "Orientation": GFFFieldType.Vector4,
+                "Struct": GFFFieldType.Struct,
+                "List": GFFFieldType.List,
+            }.items(),
+        )
+        return fieldname_to_fieldtype[field_type_num_str]
 
 class NamespaceReader:
     """Responsible for reading and loading namespaces from the namespaces.ini file."""
