@@ -349,7 +349,11 @@ class ModInstaller:
                 renamed_file_path: CaseAwarePath = override_dir / f"old_{patch.saveas}"
                 i = 2
                 while renamed_file_path.exists():  # tslpatcher does not do this loop.
-                    next_filename: str = f"{renamed_file_path.stem[:4]} ({i}){renamed_file_path.suffix}"
+                    if i == 2:
+                        stem = renamed_file_path.stem
+                    else:
+                        stem = renamed_file_path.stem[:4]
+                    next_filename: str = f"{stem} ({i}){renamed_file_path.suffix}"
                     renamed_file_path = renamed_file_path.parent / next_filename
                     i += 1
                 try:
