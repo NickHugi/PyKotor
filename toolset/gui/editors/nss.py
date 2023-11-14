@@ -25,6 +25,7 @@ from pykotor.helpers.path import Path
 from pykotor.resource.formats.erf import ERF, read_erf, write_erf
 from pykotor.resource.formats.rim import RIM, read_rim, write_rim
 from pykotor.resource.type import ResourceType
+from pykotor.tools.misc import is_bif_file, is_erf_or_mod_file, is_rim_file
 from toolset.gui.editor import Editor
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 from toolset.utils.script import compileScript, decompileScript
@@ -209,19 +210,19 @@ class NSSEditor(Editor):
             data = compileScript(source, self._installation.tsl)
 
             filepath: Path = self._filepath if self._filepath is not None else Path.cwd() / "untitled_script.ncs"
-            if filepath.endswith((".erf", ".mod")):
+            if is_erf_or_mod_file(filepath.name):
                 savePath = Path(filepath, f"{self._resref}.{self._restype.extension}")
                 erf: ERF = read_erf(filepath)
                 erf.set_data(self._resref, ResourceType.NCS, data)
                 write_erf(erf, filepath)
-            elif filepath.endswith(".rim"):
+            elif is_rim_file(filepath.name):
                 savePath = Path(filepath, f"{self._resref}.{self._restype.extension}")
                 rim: RIM = read_rim(filepath)
                 rim.set_data(self._resref, ResourceType.NCS, data)
                 write_rim(rim, filepath)
             else:
                 savePath = filepath.with_suffix(".ncs")
-                if not filepath or filepath.suffix.lower() == ".bif":
+                if not filepath or is_bif_file(filepath.name):
                     savePath = self._installation.override_path() / f"{self._resref}.ncs"
                 BinaryWriter.dump(savePath, data)
 
