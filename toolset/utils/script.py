@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from pykotor.common.misc import Game
 from pykotor.common.stream import BinaryReader, BinaryWriter
 from pykotor.helpers.path import Path
+from pykotor.resource.formats.ncs.compilers import ExternalNCSCompiler
 from pykotor.resource.formats.ncs.ncs_auto import bytes_ncs, compile_nss
 from toolset.gui.widgets.settings.installations import GlobalSettings, NoConfigurationSetError
 
@@ -136,19 +137,13 @@ def compileScript(source: str, tsl: bool) -> bytes:
         tempCompiledPath = extract_path / "tempscript.ncs"
         BinaryWriter.dump(tempSourcePath, source.encode(encoding="windows-1252"))
 
-        gameIndex = "2" if tsl else "1"
-        command = [global_settings.nssCompilerPath, "-c", tempSourcePath, "--outputdir", global_settings.extractPath, "-g", gameIndex]
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL, shell=True)
+        gameIndex = Game.K2 if tsl else Game.K1
+        ExternalNCSCompiler(global_settings.nssCompilerPath).compile_script(tempSourcePath, tempCompiledPath, gameIndex)
 
         # TODO(Cortisol): The version of nwnnsscomp bundled with the windows toolset uses registry key lookups.
         # I do not think this version matches the versions used by Mac/Linux.
         # Need to try unify this so each platform uses the same version and try
         # move away from registry keys (I don't even know how Mac/Linux determine KotOR's installation path).
-
-        output = process.communicate()[0].decode()
-        error = "Compilation aborted with errors" in output
-        if error:
-            raise ValueError(output)
 
         return BinaryReader.load_file(tempCompiledPath)
 

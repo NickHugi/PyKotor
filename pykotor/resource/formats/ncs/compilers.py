@@ -40,7 +40,7 @@ class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnssc
             msg = "Filehash not calculated"
             raise ValueError(msg)
 
-        if self.filehash.upper() == "E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D":  # KTool
+        if self.filehash.upper() == "E36AA3172173B654AE20379888EDDC9CF45C62FBEB7AB05061C57B52961C824D":  # KTool (2005)
             subprocess.call(
                 args=[
                     str(source_filepath),
@@ -55,7 +55,7 @@ class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnssc
                 executable=str(self.nwnnsscomp_path),
                 timeout=15,
             )
-        elif self.filehash.upper() == "EC3E657C18A32AD13D28DA0AA3A77911B32D9661EA83CF0D9BCE02E1C4D8499D":  # v1
+        elif self.filehash.upper() == "EC3E657C18A32AD13D28DA0AA3A77911B32D9661EA83CF0D9BCE02E1C4D8499D":  # v1 (2004)
             subprocess.call(
                 args=[
                     "-c",
@@ -66,7 +66,7 @@ class ExternalNCSCompiler(NCSCompiler):  # TODO: This currently uses the nwnnssc
                 executable=str(self.nwnnsscomp_path),
                 timeout=15,
             )
-        elif self.filehash.upper() == "539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820":  # TSLPatcher
+        elif self.filehash.upper() == "539EB689D2E0D3751AEED273385865278BEF6696C46BC0CAB116B40C3B2FE820":  # TSLPatcher (2009)
             subprocess.call(
                 args=[
                     "-c",
