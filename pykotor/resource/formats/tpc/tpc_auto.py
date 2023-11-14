@@ -5,6 +5,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 from pykotor.common.geometry import Vector2
+from pykotor.common.language import Language
 from pykotor.common.stream import BinaryReader
 from pykotor.helpers.path import Path
 from pykotor.resource.formats.tpc import (
@@ -142,7 +143,7 @@ def write_tpc(
         raise ValueError(msg)
 
 # TODO: this is still a WIP
-def write_bitmap_font(target: os.PathLike | str, font_path: str, resolution: tuple[int, int], encoding: str = "windows-1252") -> None:
+def write_bitmap_font(target: os.PathLike | str, font_path: str, resolution: tuple[int, int], lang: Language) -> None:
     """Generates a bitmap font from a TTF font file."""
     target_path = Path(target)
     txi_font_info = TXIFontInformation()
@@ -173,7 +174,7 @@ def write_bitmap_font(target: os.PathLike | str, font_path: str, resolution: tup
 
     x, y = 0, 0
     for i in range(256):  # Standard ASCII set
-        char = bytes([i]).decode(encoding, errors="replace")
+        char = bytes([i]).decode(lang.get_encoding(), errors="replace")
         bbox = draw.textbbox((0, 0), char, font=pil_font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
@@ -181,7 +182,7 @@ def write_bitmap_font(target: os.PathLike | str, font_path: str, resolution: tup
         text_x = x + (grid_cell_size - text_width) // 2
         text_y = y + (grid_cell_size - text_height) // 2
 
-        draw.text((text_x, text_y), char, font=pil_font, fill=(255, 255, 255, 255))
+        draw.text((text_x, text_y), char, language=lang.get_bcp47_code(), font=pil_font, fill=(255, 255, 255, 255))
 
         # Calculate normalized coordinates
         norm_x1 = text_x / resolution[0]

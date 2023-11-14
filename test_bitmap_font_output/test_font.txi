@@ -2,12 +2,12 @@ mipmap 0
 filter 0
 numchars 256
 fontheight 1.0
-baselineheight 0.01544189453125
+baselineheight 0.0126495361328125
 texturewidth 1.0
-fontwidth 0.4879150390625
+fontwidth 0.3916015625
 spacingR 0.0
 spacingB 0
-caretindent 0.048791503906250006
+caretindent 0.03916015625
 isdoublebyte 0
 upperleftcoords 256
 0.000000 1.000000 0
