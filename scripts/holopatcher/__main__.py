@@ -4,7 +4,6 @@ import contextlib
 import ctypes
 import os
 import pathlib
-import re
 import shutil
 import sys
 import tkinter as tk
