@@ -221,7 +221,7 @@ class NSSEditor(Editor):
                 write_rim(rim, filepath)
             else:
                 savePath = filepath.with_suffix(".ncs")
-                if not filepath or filepath.suffux.lower() == ".bif":
+                if not filepath or filepath.suffix.lower() == ".bif":
                     savePath = self._installation.override_path() / f"{self._resref}.ncs"
                 BinaryWriter.dump(savePath, data)
 
