@@ -108,6 +108,13 @@ class ConfigReader:
     def load(self, config: PatcherConfig) -> PatcherConfig:
         self.config = config
 
+        # check for unsupported [HACKList]
+        hacklist_found = self.get_section_name("HACKList")
+        if hacklist_found:
+            for _ in self.ini[hacklist_found]:
+                msg = "TSLPatcher's [HACKList] section is not currently supported."
+                raise NotImplementedError(msg)
+
         self.load_settings()
         self.load_tlk_list()
         self.load_install_list()
@@ -115,12 +122,6 @@ class ConfigReader:
         self.load_gff_list()
         self.load_compile_list()
         self.load_ssf_list()
-
-        # check for unsupported [HACKList]
-        hacklist_found = self.get_section_name("HACKList")
-        if hacklist_found:
-            msg = "TSLPatcher's [HACKList] section is not currently supported."
-            raise NotImplementedError(msg)
 
         return self.config
 
