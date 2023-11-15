@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import base64
 import json
 import xml.etree.ElementTree as ElemTree
-import zipfile
 from contextlib import suppress
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -108,7 +108,11 @@ class HelpWindow(QMainWindow):
     def checkForUpdates(self) -> None:
         with suppress(Exception):
             req = requests.get(UPDATE_INFO_LINK, timeout=15)
-            updateInfoData = json.loads(req.text)
+            req.raise_for_status()
+            file_data = req.json()
+            base64_content = file_data["content"]
+            decoded_content = base64.b64decode(base64_content)  # Correctly decoding the base64 content
+            updateInfoData = json.loads(decoded_content.decode("utf-8"))
 
             if self.version is None or updateInfoData["help"]["version"] > self.version:
                 msgbox = QMessageBox(QMessageBox.Information, "Update available",
