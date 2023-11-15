@@ -1,0 +1,1 @@
+alphamean 0.01

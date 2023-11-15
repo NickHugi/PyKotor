@@ -2,7 +2,7 @@
 	"toolsetVersion": "2.2.0",
 	"downloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset/",
 	"kits": {
-		"Sith Base": { "directDownload": "https://filedropper.com/d/s/download/3rkXqDzC1WZyApcxHifhavCMJtRn0B", "version": 2.1, "id": "sithbase" },
+		"Sith Base": { "directDownload": "https://github.com/NickHugi/PyKotor/tree/master/toolset/kits", "version": 2.1, "id": "sithbase" },
 		"Enclave Surface": { "directDownload": "https://filedropper.com/d/s/download/tOcoLLa7gefuzoLW6awDRodLlBhr0Z", "version": 2.1, "id": "enclavesurface" },
 		"Dantooine Estate": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1.1, "id": "dantooineestate" },
 		"Davik Estate": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1, "id": "davikestate" },

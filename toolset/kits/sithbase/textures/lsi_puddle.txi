@@ -1,0 +1,2 @@
+wateralpha 0.20
+envmaptexture CM_asith

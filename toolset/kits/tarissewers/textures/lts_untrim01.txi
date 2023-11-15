@@ -1,0 +1,2 @@
+bumpyshinytexture CM_Baremetal
+bumpmaptexture LTS_untrim01b
