@@ -92,7 +92,7 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
     txi_font_info.spacingR = 0.0
 
     # Set the texture resolution in proportion
-    txi_font_info.texturewidth = resolution[0] / max(resolution)
+    txi_font_info.texturewidth = resolution[0] / 100
     txi_font_info.fontheight = resolution[1] / max(resolution)
 
     # Calculate grid cell size for a 16x16 grid
@@ -113,6 +113,7 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
 
     ascent, descent = pil_font.getmetrics()
     max_char_height = ascent + descent
+    baseline_heights = []
     x, y = 0, 0
     for i in range(256):  # Standard ASCII set
         char = bytes([i]).decode(lang.get_encoding(), errors="replace")
@@ -121,7 +122,7 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
         text_height = bbox[3] - bbox[1]
 
         text_x = x + (grid_cell_size - text_width) // 2  # Center horizontally
-        text_y = y + (grid_cell_size - (ascent + descent)) // 2  # Adjust vertical position upwards
+        text_y = y + (grid_cell_size - (max_char_height)) // 2  # Adjust vertical position upwards
 
         try:  # libraqm
             draw.text((text_x, text_y), char, language=lang.get_bcp47_code(), font=pil_font, fill=(255, 255, 255, 255))
@@ -153,14 +154,17 @@ def write_bitmap_font(target: os.PathLike | str, font_path: os.PathLike | str, r
         txi_font_info.upper_left_coords.append((norm_x1, 1 - norm_y1, 0))
         txi_font_info.lower_right_coords.append((norm_x2, 1 - norm_y2, 0))
         character_widths.append(text_width)
-
+        baseline_heights.append(bbox[1])
+    # Check if baseline_heights is not empty to avoid division by zero
+    if baseline_heights:
+        average_baseline_height = sum(baseline_heights) / len(baseline_heights)
+        # Normalize the baseline height
+        txi_font_info.baselineheight = average_baseline_height / resolution[1]
     if character_widths:
         average_char_width = sum(character_widths) / len(character_widths)
         txi_font_info.fontwidth = average_char_width / grid_cell_size
         caret_proportion = 0.1  # Adjust this value as needed
         txi_font_info.caretindent = (average_char_width * caret_proportion) / grid_cell_size
-
-    txi_font_info.baselineheight = ascent + descent
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
     charset_image.save(target_path, format="TGA")
@@ -181,13 +185,13 @@ def _generate_txi_data(txi_font_info: TXIFontInformation) -> str:
     return f"""mipmap {txi_font_info.mipmap}
 filter {txi_font_info.filter}
 numchars {txi_font_info.numchars}
-fontheight {txi_font_info.fontheight}
-baselineheight {txi_font_info.baselineheight}
-texturewidth {txi_font_info.texturewidth}
-fontwidth {txi_font_info.fontwidth}
-spacingR {txi_font_info.spacingR}
-spacingB {txi_font_info.spacingB}
-caretindent {txi_font_info.caretindent}
+fontheight {txi_font_info.fontheight:.6f}
+baselineheight {txi_font_info.baselineheight:.6f}
+texturewidth {txi_font_info.texturewidth:.6f}
+fontwidth {txi_font_info.fontwidth:.6f}
+spacingR {txi_font_info.spacingR:.6f}
+spacingB {txi_font_info.spacingB:.6f}
+caretindent {txi_font_info.caretindent:.6f}
 isdoublebyte {txi_font_info.isdoublebyte}
 upperleftcoords {txi_font_info.upperleftcoords}
 {ul_coords_str}
