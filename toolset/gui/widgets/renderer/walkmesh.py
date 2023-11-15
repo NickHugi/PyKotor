@@ -5,7 +5,7 @@ from copy import copy
 from typing import TYPE_CHECKING, Dict, Generic, List, NamedTuple, Optional, Set, TypeVar, Union
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import QPointF, QRectF, QTimer
+from PyQt5.QtCore import QPointF, QRectF, QTimer, QRect
 from PyQt5.QtGui import (
     QColor,
     QKeyEvent,
@@ -16,9 +16,14 @@ from PyQt5.QtGui import (
     QPen,
     QPixmap,
     QTransform,
-    QWheelEvent,
+    QWheelEvent, QImage,
 )
 from PyQt5.QtWidgets import QWidget
+
+from pykotor.resource.formats.tpc import TPC, TPCTextureFormat
+from pykotor.resource.generics.are import ARE, ARENorthAxis
+from pykotor.resource.generics.pth import PTH
+from toolset.utils.misc import clamp
 
 from pykotor.common.geometry import SurfaceMaterial, Vector2, Vector3
 from pykotor.resource.generics.git import (
@@ -153,6 +158,9 @@ class WalkmeshRenderer(QWidget):
 
         self._walkmeshes: List[BWM] = []
         self._git: Optional[GIT] = None
+        self._pth: Optional[PTH] = None
+        self._are: Optional[ARE] = None
+        self._minimapImage: Optional[QImage] = None
 
         # Min/Max points and lengths for each axis
         self._bbmin: Vector3 = Vector3.from_null()
@@ -199,6 +207,11 @@ class WalkmeshRenderer(QWidget):
         self._instancesUnderMouse: List[GITInstance] = []
         self._geomPointsUnderMouse: List[GeomPoint] = []
 
+        self._pathNodesUnderMouse: List[Vector2] = []
+        self.pathSelection: WalkmeshSelection[Vector2] = WalkmeshSelection()
+        self._pathNodeSize: float = 0.3
+        self._pathEdgeWidth: float = 0.2
+
         self._loop()
 
     def _loop(self) -> None:
@@ -244,6 +257,16 @@ class WalkmeshRenderer(QWidget):
             git: The GIT object.
         """
         self._git = git
+
+    def setPth(self, pth: PTH) -> None:
+        self._pth = pth
+
+    def setMinimap(self, are: ARE, tpc: TPC) -> None:
+        self._are = are
+
+        image = QImage(tpc.convert(TPCTextureFormat.RGB).data, tpc.get().width, tpc.get().height, QImage.Format_RGB888)
+        crop = QRect(0, 0, 435, 256)
+        self._minimapImage = image.copy(crop)
 
     def snapCameraToPoint(self, point: Union[Vector2, Vector3], zoom: int = 8) -> None:
         self.camera.setPosition(point.x, point.y)
@@ -364,6 +387,12 @@ class WalkmeshRenderer(QWidget):
 
     def instancesUnderMouse(self) -> List[GITInstance]:
         return self._instancesUnderMouse
+
+    def pathNodesUnderMouse(self) -> List[Vector2]:
+        return self._pathNodesUnderMouse
+
+    def geomPointsUnderMouse(self) -> List[GeomPoint]:
+        return self._geomPointsUnderMouse
 
     def isInstanceVisible(self, instance: GITInstance) -> bool | None:
         """Checks if an instance is visible based on hide settings.
@@ -547,6 +576,55 @@ class WalkmeshRenderer(QWidget):
 
         # Draw the faces of the walkmesh (cached).
         painter.setTransform(transform)
+
+        # Draw the minimap
+        if self._are and self._minimapImage:
+            axis_to_rotation = {
+                ARENorthAxis.PositiveY: 0,
+                ARENorthAxis.PositiveX: 270,
+                ARENorthAxis.NegativeY: 180,
+                ARENorthAxis.NegativeX: 90,
+            }
+            rotation = axis_to_rotation[self._are.north_axis]
+            rads = math.radians(-rotation)
+
+            map_point_1_x = ((self._are.map_point_1.x - 0.5) * math.cos(rads)) - (
+                        (self._are.map_point_1.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_1_y = ((self._are.map_point_1.x - 0.5) * math.sin(rads)) + (
+                        (self._are.map_point_1.y - 0.5) * math.cos(rads)) + 0.5
+            map_point_2_x = ((self._are.map_point_2.x - 0.5) * math.cos(rads)) - (
+                        (self._are.map_point_2.y - 0.5) * math.sin(rads)) + 0.5
+            map_point_2_y = ((self._are.map_point_2.x - 0.5) * math.sin(rads)) + (
+                        (self._are.map_point_2.y - 0.5) * math.cos(rads)) + 0.5
+
+            world_point_1_x = self._are.world_point_1.x
+            world_point_1_y = self._are.world_point_1.y
+            world_point_2_x = self._are.world_point_2.x
+            world_point_2_y = self._are.world_point_2.y
+
+            # X% of the width of the image
+            widthPercent = abs(map_point_1_x - map_point_2_x)
+            heightPercent = abs(map_point_1_y - map_point_2_y)
+            # Takes up Y amount of WUs.
+            widthWU = abs(world_point_1_x - world_point_2_x)
+            heightWU = abs(world_point_1_y - world_point_2_y)
+
+            # Here we determine how many world units the full texture covers
+            # 100% of the image width/height covers X amount of world units
+            fullWidthWU = widthWU / widthPercent
+            fullHeightWU = heightWU / heightPercent
+
+            # Now we can figure out where the X/Y coords of the image go
+            # Remember world_point_1 not the corner of the image, but somewhere within the image, so we must calculate
+            # where the corner of the image is in the world space.
+            imageX = world_point_1_x - (fullWidthWU * map_point_1_x)
+            imageY = world_point_1_y - (fullHeightWU * (1 - map_point_1_y))
+
+            rotated = self._minimapImage.transformed(QTransform().rotate(rotation))
+
+            targetRect = QRectF(QPointF(imageX, imageY), QPointF(imageX + fullWidthWU, imageY + fullHeightWU))
+            painter.drawImage(targetRect, rotated)
+
         painter.setPen(QPen(QColor(10, 10, 10, 120),
                             1 / self.camera.zoom(),
                             QtCore.Qt.SolidLine) if not self.hideWalkmeshEdges else QPen(QtCore.Qt.NoPen))
@@ -569,6 +647,30 @@ class WalkmeshRenderer(QWidget):
                         path.moveTo(face.v1.x, face.v1.y)
                         path.lineTo(face.v3.x, face.v3.y)
                     painter.drawPath(path)
+
+        # Draw the pathfinding nodes and edges
+        painter.setOpacity(1.0)
+        if self._pth is not None:
+            for i, source in enumerate(self._pth):
+                painter.setPen(QPen(QColor(200, 200, 200, 255), self._pathEdgeWidth, QtCore.Qt.SolidLine))
+                for j in self._pth.outgoing(i):
+                    target = self._pth.get(j.target)
+                    painter.drawLine(QPointF(source.x, source.y), QPointF(target.x, target.y))
+
+            for point in self._pth:
+                painter.setPen(QColor(0, 0, 0, 0))
+                painter.setBrush(QColor(200, 200, 200, 255))
+                painter.drawEllipse(QPointF(point.x, point.y), self._pathNodeSize, self._pathNodeSize)
+
+            for point in self._pathNodesUnderMouse:
+                painter.setPen(QColor(0, 0, 0, 0))
+                painter.setBrush(QColor(255, 255, 255, 255))
+                painter.drawEllipse(QPointF(point.x, point.y), self._pathNodeSize, self._pathNodeSize)
+
+            for point in self.pathSelection.all():
+                painter.setPen(QColor(0, 0, 0, 0))
+                painter.setBrush(QColor(0, 255, 0, 255))
+                painter.drawEllipse(QPointF(point.x, point.y), self._pathNodeSize, self._pathNodeSize)
 
         # Draw the git instances (represented as icons)
         painter.setOpacity(0.6)
@@ -695,9 +797,12 @@ class WalkmeshRenderer(QWidget):
 
         self._instancesUnderMouse = []
         self._geomPointsUnderMouse = []
+        self._pathNodesUnderMouse = []
+
+        world = Vector2.from_vector3(self.toWorldCoords(coords.x, coords.y))  # Mouse pos in world
+
         if self._git is not None:
             instances = self._git.instances()
-            world = Vector2.from_vector3(self.toWorldCoords(coords.x, coords.y))  # Mouse pos in world
             for instance in instances:
                 position = Vector2(instance.position.x, instance.position.y)
                 if position.distance(world) <= 1 and self.isInstanceVisible(instance):
@@ -710,6 +815,11 @@ class WalkmeshRenderer(QWidget):
                         pworld = Vector2.from_vector3(instance.position + point)
                         if pworld.distance(world) <= 0.5:
                             self._geomPointsUnderMouse.append(GeomPoint(instance, point))
+
+        if self._pth is not None:
+            for point in self._pth:
+                if point.distance(world) <= self._pathNodeSize:
+                    self._pathNodesUnderMouse.append(point)
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         self._mouseDown.add(e.button())

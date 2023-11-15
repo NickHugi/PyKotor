@@ -76,6 +76,7 @@ def openResourceEditor(
     from toolset.gui.editors.uts import UTSEditor
     from toolset.gui.editors.utt import UTTEditor
     from toolset.gui.editors.utw import UTWEditor
+    from toolset.gui.editors.pth import PTHEditor
     from toolset.gui.windows.audio_player import AudioPlayer
 
     if gff_specialized is None:
@@ -181,6 +182,12 @@ def openResourceEditor(
             editor = GFFEditor(None, installation)
         else:
             editor = AREEditor(None, installation)
+
+    if restype in [ResourceType.PTH, ResourceType.PTH_XML]:
+        if installation is None or not gff_specialized:
+            editor = GFFEditor(None, installation)
+        else:
+            editor = PTHEditor(None, installation)
 
     if restype in [ResourceType.GIT, ResourceType.GIT_XML]:
         if installation is None or not gff_specialized:
