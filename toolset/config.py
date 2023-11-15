@@ -1,2 +1,2 @@
-UPDATE_INFO_LINK = "https://github.com/NickHugi/PyKotor/blob/master/toolset/toolset_update_info.json"
+UPDATE_INFO_LINK = "https://raw.githubusercontent.com/NickHugi/PyKotor/master/toolset/toolset_update_info.json"
 PROGRAM_VERSION = "2.2.0"
