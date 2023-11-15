@@ -2,14 +2,14 @@
 	"latestVersion": "2.2.0",
 	"downloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset/",
 	"kits": {
-		"Sith Base": { "directDownload": "https://github.com/NickHugi/PyKotor/tree/master/toolset/kits", "version": 2.1, "id": "sithbase" },
-		"Enclave Surface": { "directDownload": "https://filedropper.com/d/s/download/tOcoLLa7gefuzoLW6awDRodLlBhr0Z", "version": 2.1, "id": "enclavesurface" },
-		"Dantooine Estate": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1.1, "id": "dantooineestate" },
-		"Davik Estate": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1, "id": "davikestate" },
-		"Endar Spire": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1, "id": "endarspire" },
-		"Hidden Bek Base": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1, "id": "hiddenbek" },
-		"Jedi Enclave": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1, "id": "jedienclave" },
-		"Taris Sewers": { "directDownload": "https://filedropper.com/d/s/download/P3OK0RWzVRVqFQ2cmizGeyDX8BEdhW", "version": 1, "id": "tarissewers" }
+		"Sith Base": {"version": 2.1, "id": "sithbase" },
+		"Enclave Surface": { "version": 2.1, "id": "enclavesurface" },
+		"Dantooine Estate": { "version": 1.1, "id": "dantooineestate" },
+		"Davik Estate": { "version": 1, "id": "davikestate" },
+		"Endar Spire": { "version": 1, "id": "endarspire" },
+		"Hidden Bek Base": { "version": 1, "id": "hiddenbek" },
+		"Jedi Enclave": { "version": 1, "id": "jedienclave" },
+		"Taris Sewers": { "version": 1, "id": "tarissewers" }
 	},
-	"help": { "directDownload": "https://filedropper.com/d/s/download/hcm6DTgxiZpYhAJp0iJaEMw2b5uyyJ", "version": 3 }
+	"help": { "version": 3 }
 }

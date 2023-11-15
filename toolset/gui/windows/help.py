@@ -88,12 +88,12 @@ class HelpWindow(QMainWindow):
                                      "A newer version of the help book is available for download, would you like to download it?")
                 if msgbox.exec_():
                     def task():
-                        return self._downloadUpdate(updateInfoData["help"]["directDownload"])
+                        return self._downloadUpdate()
                     loader = AsyncLoader(self, "Download newer help files...", task, "Failed to update.")
                     if loader.exec_():
                         self._setupContents()
 
-    def _downloadUpdate(self, link: str) -> None:
+    def _downloadUpdate(self) -> None:
         help_path = Path("help")
         if not help_path.exists():
             help_path.mkdir(parents=True)

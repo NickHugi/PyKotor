@@ -973,7 +973,7 @@ class KitDownloader(QDialog):
         button.setEnabled(False)
 
         def task():
-            return self._downloadKit(infoDict["id"], infoDict["directDownload"])
+            return self._downloadKit(infoDict["id"])
 
         loader = AsyncLoader(self, "Downloading Kit...", task, "Failed to download.")
         if loader.exec_():
@@ -1006,5 +1006,5 @@ class KitDownloader(QDialog):
             elif item["type"] == "dir":
                 self.download_directory(repo, str(item_path), str(local_path))
 
-    def _downloadKit(self, kitId: str, link: str) -> None:
+    def _downloadKit(self, kitId: str) -> None:
         self.download_directory("NickHugi/PyKotor", f"toolset/{kitId}", "kits")
