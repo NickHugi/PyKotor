@@ -269,6 +269,13 @@
         "--onefile",
         "--clean",
         "--noconfirm",
+        "--exclude-module numpy",
+        "--exclude-module PyQt5",
+        "--exclude-module PIL",
+        "--exclude-module matplotlib",
+        "--exclude-module multiprocessing",
+        "--exclude-module PyOpenGL",
+        "--exclude-module PyGLM",
         "--name=HoloPatcher",
         "--icon=resources${pathSeparator}icons${pathSeparator}patcher_icon_v2.ico",
         "scripts${pathSeparator}holopatcher${pathSeparator}__main__.py"
