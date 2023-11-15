@@ -1,5 +1,5 @@
 {
-	"toolsetVersion": "2.2.0",
+	"latestVersion": "2.2.0",
 	"downloadLink": "https://deadlystream.com/files/file/1982-holocron-toolset/",
 	"kits": {
 		"Sith Base": { "directDownload": "https://github.com/NickHugi/PyKotor/tree/master/toolset/kits", "version": 2.1, "id": "sithbase" },

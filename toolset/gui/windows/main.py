@@ -471,12 +471,12 @@ class ToolWindow(QMainWindow):
                     QMessageBox.Ok,
                     self,
                 ).exec_()
-        except Exception:
+        except Exception as e:
             if not silent:
                 QMessageBox(
                     QMessageBox.Information,
                     "Unable to fetch latest version.",
-                    "Check if you are connected to the internet.",
+                    f"Check if you are connected to the internet.\nError: {e!r}",
                     QMessageBox.Ok,
                     self,
                 ).exec_()
